@@ -9,6 +9,7 @@ import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
+import styles from './SessionLibraryModal.module.css'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
 // Drag and drop state
@@ -176,7 +177,9 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                     <div class="item-main">
                       <div class="item-title">{session.name}</div>
                       <div class="item-meta">
-                        <span class={`difficulty-badge ${session.difficulty}`}>
+                        <span
+                          class={`${styles.difficultyBadge} ${styles[session.difficulty as keyof typeof styles] || ''}`}
+                        >
                           {session.difficulty}
                         </span>
                         <span>•</span>

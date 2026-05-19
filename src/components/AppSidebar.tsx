@@ -20,6 +20,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
+import styles from './AppSidebar.module.css'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -92,7 +93,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     >
       {/* Desktop collapse toggle */}
       <button
-        class="sidebar-collapse-btn"
+        class={styles.sidebarCollapseBtn}
         onClick={() => props.onToggleCollapse?.()}
         title={
           (props.collapsed ?? false) ? 'Expand sidebar' : 'Collapse sidebar'
@@ -115,7 +116,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Mobile close button */}
       <button
-        class="sidebar-close-btn"
+        class={styles.sidebarCloseBtn}
         onClick={() => props.onClose?.()}
         title="Close menu"
         aria-label="Close menu"
@@ -129,9 +130,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </button>
 
       {/* Learn + Guide buttons */}
-      <div class="walkthrough-control-group">
+      <div class={styles.walkthroughControlGroup}>
         <button
-          class="walkthrough-control-btn"
+          class={styles.walkthroughControlBtn}
           onClick={() => props.onOpenLearn?.()}
           title="View MercuryPitch walkthroughs"
         >
@@ -141,10 +142,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
             />
           </svg>
-          <span class="walkthrough-control-text">Learn</span>
+          <span class={styles.walkthroughControlText}>Learn</span>
         </button>
         <button
-          class="walkthrough-control-btn walkthrough-control-btn-guide"
+          class={[
+            styles.walkthroughControlBtn,
+            styles.walkthroughControlBtnGuide,
+          ].join(' ')}
           onClick={() => props.onOpenGuide?.()}
           title="Interactive guide tours"
         >
@@ -154,7 +158,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
             />
           </svg>
-          <span class="walkthrough-control-text">Guide</span>
+          <span class={styles.walkthroughControlText}>Guide</span>
         </button>
       </div>
 
@@ -164,12 +168,12 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Playback Setup section */}
       <Show when={showPlaybackSetupInfo()}>
-        <div class="sidebar-section">
-          <h2 class="panel-title">Playback Setup</h2>
+        <div class={styles.sidebarSection}>
+          <h2 class={styles.panelTitle}>Playback Setup</h2>
 
-          <div id="scale-info">
+          <div class={styles.scaleInfo}>
             <select
-              class="dropdown-select-style"
+              class={['dropdown-select-style', styles.keySelect].join(' ')}
               id="key-select"
               value={keyName()}
               onChange={(e) => {
@@ -223,9 +227,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <option value="Bb">Bb</option>
             </select>
 
-            <div class="octave-ctrl">
+            <div class={styles.octaveCtrl} data-testid="octave-ctrl">
               <button
-                class="octave-btn"
+                class={styles.octaveBtn}
+                data-testid="octave-btn-down"
                 title="Lower octave"
                 aria-label="Lower octave"
                 onClick={() => handleViewOctaveShift(-1)}
@@ -237,9 +242,12 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                   />
                 </svg>
               </button>
-              <span class="octave-value">{viewOctave()}</span>
+              <span class={styles.octaveValue} data-testid="octave-value">
+                {viewOctave()}
+              </span>
               <button
-                class="octave-btn"
+                class={styles.octaveBtn}
+                data-testid="octave-btn-up"
                 title="Higher octave"
                 aria-label="Higher octave"
                 onClick={() => handleViewOctaveShift(1)}
@@ -255,7 +263,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
             <select
               id="scale-select"
-              class="dropdown-select-style"
+              class={['dropdown-select-style', styles.scaleSelect].join(' ')}
               value={scaleType()}
               onChange={(e) => {
                 const st = e.currentTarget.value
@@ -281,13 +289,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <option value="chromatic">Chromatic</option>
               {/* Custom scales saved by the user */}
               <Show when={Object.keys(customScalesMap()).length > 0}>
-                <option disabled class="custom-scale-separator">
+                <option disabled class={styles.customScaleSeparator}>
                   {'─── Custom Scales ───'}
                 </option>
                 <For each={Object.keys(customScalesMap()).sort()}>
                   {(name) => (
                     <option
-                      class="custom-scale-option"
+                      class={styles.customScaleOption}
                       value={customScaleTypeId(name, customScalesMap()[name])}
                     >
                       {`◆ ${name}`}
@@ -298,7 +306,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </select>
             <button
               id="open-scale-builder"
-              class="ctrl-btn roll-ctrl-btn"
+              class={[
+                'ctrl-btn',
+                'roll-ctrl-btn',
+                styles.openScaleBuilder,
+              ].join(' ')}
               title="Build custom scale"
               onClick={() => props.onOpenScaleBuilder?.()}
             >
@@ -320,10 +332,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </Show>
 
       {/* Quick visibility toggles — compact 2x3 grid */}
-      <div class="sidebar-section sidebar-vis-grid">
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Ball</span>
-          <label class="settings-toggle vis-grid-toggle">
+      <div class={[styles.sidebarSection, styles.visGrid].join(' ')}>
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Ball</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={showPlaybackBall()}
@@ -336,9 +348,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <span class="settings-slider" />
           </label>
         </div>
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Playhead</span>
-          <label class="settings-toggle vis-grid-toggle">
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Playhead</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={showPlayhead()}
@@ -351,9 +363,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <span class="settings-slider" />
           </label>
         </div>
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Grid</span>
-          <label class="settings-toggle vis-grid-toggle">
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Grid</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={gridLinesVisible()}
@@ -364,9 +376,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <span class="settings-slider" />
           </label>
         </div>
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Notes</span>
-          <label class="settings-toggle vis-grid-toggle">
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Notes</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={showSidebarNoteList()}
@@ -377,9 +389,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <span class="settings-slider" />
           </label>
         </div>
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Stats</span>
-          <label class="settings-toggle vis-grid-toggle">
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Stats</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={showStats()}
@@ -390,9 +402,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <span class="settings-slider" />
           </label>
         </div>
-        <div class="vis-grid-cell">
-          <span class="vis-grid-label">Pitch</span>
-          <label class="settings-toggle vis-grid-toggle">
+        <div class={styles.visGridCell}>
+          <span class={styles.visGridLabel}>Pitch</span>
+          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
             <input
               type="checkbox"
               checked={showPitchDisplay()}
@@ -404,39 +416,57 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           </label>
         </div>
       </div>
-      <div class="fancy-divider" />
+      <div class={styles.fancyDivider} />
 
       {/* Library */}
-      <div class="sidebar-section">
+      <div class={styles.sidebarSection}>
         <LibraryTab />
       </div>
 
       {/* Stats panel */}
       <Show when={isPracticeOrSettingsTab() && showStats()}>
-        <div class="sidebar-section">
-          <div id="stats-panel">
+        <div class={styles.sidebarSection}>
+          <div class={styles.statsPanel}>
             <h3>Accuracy</h3>
             <StatsBars noteResults={props.noteResults} />
-            <div id="score-display">
-              <span id="score-label">Score:</span>
-              <span id="score-value" class="live-score-value">
+            <div class={styles.scoreDisplay} data-testid="score-display">
+              <span class={styles.scoreLabel} data-testid="score-label">
+                Score:
+              </span>
+              <span class={styles.scoreValue} data-testid="score-value">
                 {liveScore() !== null ? `${liveScore()}%` : '--'}
               </span>
             </div>
 
             {/* Session history — practice tab only */}
             <Show when={sessionResults().length > 0}>
-              <div id="session-history-panel">
+              <div
+                id="session-history-panel"
+                class={styles.sessionHistoryPanel}
+              >
                 <h3>Sessions</h3>
-                <div id="session-history-list">
+                <div
+                  id="session-history-list"
+                  class={styles.sessionHistoryList}
+                >
                   <For each={sessionResults()}>
                     {(entry) => (
-                      <div class="session-history-entry">
-                        <span class="session-history-name">
+                      <div
+                        class={styles.sessionHistoryEntry}
+                        data-testid="session-history-entry"
+                      >
+                        <span class={styles.sessionHistoryName}>
                           {entry.sessionName}
                         </span>
                         <span
-                          class={`session-history-score ${entry.score >= 80 ? 'score-high' : entry.score >= 50 ? 'score-mid' : 'score-low'}`}
+                          class={[
+                            styles.sessionHistoryScore,
+                            entry.score >= 80
+                              ? styles.scoreHigh
+                              : entry.score >= 50
+                                ? styles.scoreMid
+                                : styles.scoreLow,
+                          ].join(' ')}
                         >
                           {entry.score}%
                         </span>
@@ -452,7 +482,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Note list (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div
+          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
+        >
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}
@@ -464,7 +496,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Pitch display (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showPitchDisplay()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div
+          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
+        >
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import type { PlayButtonLabel } from '@/stores/playback-store'
+import styles from '../HeaderControls.module.css'
 
 interface CoreControlsProps {
   isPlaying: () => boolean
@@ -37,10 +38,10 @@ export const CoreControls: Component<CoreControlsProps> = (props) => {
   const playLabel = () => props.playButtonLabel()
 
   return (
-    <div class="essential-control-group">
+    <div class={styles.essentialControlGroup}>
       <Show when={isStopped()}>
         <button
-          class="ctrl-btn play-btn"
+          class={[styles.ctrlBtn, styles.playBtn].join(' ')}
           onClick={handlePlayClick}
           title="Play"
         >
@@ -53,7 +54,7 @@ export const CoreControls: Component<CoreControlsProps> = (props) => {
 
       <Show when={props.isPlaying()}>
         <button
-          class="ctrl-btn stop-btn"
+          class={[styles.ctrlBtn, styles.stopBtn].join(' ')}
           onClick={handlePlayClick}
           title="Pause"
         >
@@ -66,7 +67,7 @@ export const CoreControls: Component<CoreControlsProps> = (props) => {
 
       <Show when={props.isPaused()}>
         <button
-          class="ctrl-btn play-btn"
+          class={[styles.ctrlBtn, styles.playBtn].join(' ')}
           onClick={handlePlayClick}
           title="Continue"
         >
@@ -78,7 +79,8 @@ export const CoreControls: Component<CoreControlsProps> = (props) => {
       </Show>
 
       <button
-        class={`ctrl-btn stop-btn stop ${isActive() ? '' : 'inactive'}`}
+        class={[styles.ctrlBtn, styles.stopBtn].join(' ')}
+        classList={{ [styles.stopBtnInactive]: !isActive() }}
         onClick={handleStopClick}
         title="Stop"
       >

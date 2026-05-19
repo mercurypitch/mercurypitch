@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { For, onMount, Show } from 'solid-js'
 import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, } from '@/stores/app-store'
+import styles from './GuideSelection.module.css'
 
 interface GuideSelectionProps {
   isOpen: boolean
@@ -43,12 +44,12 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div class="guide-overlay" onClick={() => props.onClose()}>
-        <div class="guide-selection" onClick={(e) => e.stopPropagation()}>
-          <div class="guide-selection-header">
+      <div class={styles.guideOverlay} onClick={() => props.onClose()}>
+        <div class={styles.guideSelection} onClick={(e) => e.stopPropagation()}>
+          <div class={styles.guideSelectionHeader}>
             <h2>Guide Tour</h2>
             <button
-              class="guide-close-btn"
+              class={styles.guideCloseBtn}
               onClick={() => props.onClose()}
               title="Close"
               aria-label="Close"
@@ -62,14 +63,14 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
             </button>
           </div>
 
-          <p class="guide-selection-desc">
+          <p class={styles.guideSelectionDesc}>
             Choose a guided spotlight tour. The tour highlights UI elements and
             explains how they work.
           </p>
 
           {/* Quick actions */}
-          <div class="guide-quick-actions">
-            <button class="guide-quick-btn" onClick={handleStartFull}>
+          <div class={styles.guideQuickActions}>
+            <button class={styles.guideQuickBtn} onClick={handleStartFull}>
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
                   fill="currentColor"
@@ -80,7 +81,7 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
             </button>
             <Show when={incomplete().length > 0}>
               <button
-                class="guide-quick-btn guide-quick-incomplete"
+                class={`${styles.guideQuickBtn} ${styles.guideQuickIncomplete}`}
                 onClick={handleStartIncomplete}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18">
@@ -95,17 +96,21 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
           </div>
 
           {/* Section list */}
-          <div class="guide-sections-list">
+          <div class={styles.guideSectionsList}>
             <h3>Sections</h3>
             <For each={GUIDE_SECTIONS}>
               {(sec) => {
                 const done = isGuideSectionCompleted(sec.id)
                 return (
                   <button
-                    class={`guide-section-item ${done ? 'completed' : ''}`}
+                    class={
+                      done
+                        ? `${styles.guideSectionItem} ${styles.guideSectionItemCompleted}`
+                        : styles.guideSectionItem
+                    }
                     onClick={() => handleStartSection(sec.id)}
                   >
-                    <span class="guide-section-icon">
+                    <span class={styles.guideSectionIcon}>
                       <Show when={done}>
                         <svg viewBox="0 0 24 24" width="18" height="18">
                           <path
@@ -123,9 +128,11 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                         </svg>
                       </Show>
                     </span>
-                    <span class="guide-section-text">
-                      <span class="guide-section-name">{sec.title}</span>
-                      <span class="guide-section-desc">{sec.description}</span>
+                    <span class={styles.guideSectionText}>
+                      <span class={styles.guideSectionName}>{sec.title}</span>
+                      <span class={styles.guideSectionDesc}>
+                        {sec.description}
+                      </span>
                     </span>
                   </button>
                 )

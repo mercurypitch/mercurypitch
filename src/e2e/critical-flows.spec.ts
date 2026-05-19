@@ -26,14 +26,14 @@ test.describe('Critical Flows — GH #121', () => {
   test.describe('Playback Controls', () => {
     test('Play button starts playback', async ({ page }) => {
       // Play button is in the essential-controls area of practice header
-      const playBtn = page.locator('.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
       await expect(playBtn).toBeVisible()
 
       // Click play
       await playBtn.click()
 
       // Button should switch to Pause
-      const pauseBtn = page.locator('.stop-btn').first()
+      const pauseBtn = page.locator('[data-testid="pause-btn"]').first()
       await expect(pauseBtn).toBeVisible({ timeout: 3000 })
 
       // Stop playback
@@ -42,19 +42,21 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Play → Pause → Resume cycle', async ({ page }) => {
-      const playBtn = page.locator('.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
 
       // Start playback
       await playBtn.click()
       await page.waitForTimeout(500)
 
       // Should now show pause
-      await expect(page.locator('.stop-btn').first()).toBeVisible({
+      await expect(
+        page.locator('[data-testid="pause-btn"]').first(),
+      ).toBeVisible({
         timeout: 3000,
       })
 
       // Pause
-      await page.locator('.stop-btn').first().click()
+      await page.locator('[data-testid="pause-btn"]').first().click()
       await page.waitForTimeout(300)
 
       // Should show resume (play) button
@@ -65,7 +67,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Stop
-      await page.locator('.stop-btn').first().click()
+      await page.locator('[data-testid="pause-btn"]').first().click()
       await page.waitForTimeout(300)
 
       // Should show play button again
@@ -73,14 +75,14 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Stop button resets playback state', async ({ page }) => {
-      const playBtn = page.locator('.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
 
       // Start playback
       await playBtn.click()
       await page.waitForTimeout(500)
 
-      // Find and click the Stop button (class="ctrl-btn stop-btn stop")
-      const stop = page.locator('.stop-btn.stop').first()
+      // Find and click the Stop button
+      const stop = page.locator('[data-testid="stop-btn"]').first()
       await stop.click()
       await page.waitForTimeout(500)
 
@@ -452,7 +454,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(300)
 
       // Cycle progress pill should be visible
-      const cyclePill = page.locator('.cycle-progress-value')
+      const cyclePill = page.locator('[data-testid="cycle-progress-value"]')
       await expect(cyclePill).toBeVisible()
     })
 
@@ -627,12 +629,14 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(1000)
 
       // Start playback
-      const playBtn = page.locator('.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
       await playBtn.click()
       await page.waitForTimeout(1000)
 
       // Audio should be playing - check that pause button is visible
-      await expect(page.locator('.stop-btn').first()).toBeVisible({
+      await expect(
+        page.locator('[data-testid="pause-btn"]').first(),
+      ).toBeVisible({
         timeout: 3000,
       })
 
@@ -642,7 +646,9 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Audio should have stopped - pause button should not be visible
       // In practice mode, the stop button appears when playing
-      const practiceStopBtn = page.locator('#practice-panel .stop-btn').first()
+      const practiceStopBtn = page
+        .locator('#practice-panel [data-testid="pause-btn"]')
+        .first()
       const count = await practiceStopBtn.count()
       expect(count).toBe(0)
     })
@@ -653,22 +659,20 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(1000)
 
       // Click Play button - this should start playback in Editor
-      await page.locator('.ctrl-btn.play-btn').click()
+      await page.locator('[data-testid="play-btn"]').click()
       await page.waitForTimeout(1000)
 
       // A pause/stop button should appear (playback active)
-      await expect(
-        page.locator('.ctrl-btn').filter({ hasText: 'Pause' }),
-      ).toBeVisible({ timeout: 2000 })
+      await expect(page.locator('[data-testid="pause-btn"]')).toBeVisible({
+        timeout: 2000,
+      })
 
       // Switch to Practice tab - audio should stop
       await switchTab(page, 'singing')
       await page.waitForTimeout(2000)
 
       // The Play button should be visible (audio stopped)
-      await expect(
-        page.locator('.ctrl-btn').filter({ hasText: 'Play' }),
-      ).toBeVisible()
+      await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
     })
 
     test('all tabs are accessible', async ({ page }) => {
@@ -694,53 +698,63 @@ test.describe('Critical Flows — GH #121', () => {
       })
 
       // Title should be visible
-      await expect(page.locator('.settings-title')).toBeVisible()
+      await expect(page.locator('[data-testid="settings-title"]')).toBeVisible()
 
       // About section
-      await expect(page.locator('.about-name')).toContainText('MercuryPitch')
+      await expect(page.locator('[data-testid="about-name"]')).toContainText(
+        'MercuryPitch',
+      )
 
       // GitHub link
-      await expect(page.locator('.about-link')).toHaveAttribute(
+      await expect(page.locator('[data-testid="about-link"]')).toHaveAttribute(
         'href',
         /github\.com/,
       )
     })
 
     test('Focus Mode can be entered from Practice tab', async ({ page }) => {
-      const focusBtn = page.locator('.focus-btn')
+      const focusBtn = page.locator('[data-testid="focus-btn"]')
       await expect(focusBtn).toBeVisible()
 
       await focusBtn.click()
       await page.waitForTimeout(500)
 
       // Focus mode elements should be visible
-      await expect(page.locator('.focus-mode')).toBeVisible({ timeout: 3000 })
-      await expect(page.locator('.focus-topbar')).toBeVisible()
+      await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible({
+        timeout: 3000,
+      })
+      await expect(page.locator('[data-testid="focus-topbar"]')).toBeVisible()
 
       // Exit focus mode
-      const exitBtn = page.locator('.focus-exit')
+      const exitBtn = page.locator('[data-testid="focus-exit"]')
       await expect(exitBtn).toBeVisible()
       await exitBtn.click()
       await page.waitForTimeout(500)
 
       // Should be back to normal view
-      await expect(page.locator('.practice-header-bar')).toBeVisible({
+      await expect(
+        page.locator('[data-testid="practice-header-bar"]'),
+      ).toBeVisible({
         timeout: 3000,
       })
     })
 
     test('Escape key exits Focus Mode (GH #139)', async ({ page }) => {
       // Enter focus mode
-      await page.locator('.focus-btn').click()
+      await page.locator('[data-testid="focus-btn"]').click()
       await page.waitForTimeout(500)
-      await expect(page.locator('.focus-mode')).toBeVisible({ timeout: 3000 })
+      await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible({
+        timeout: 3000,
+      })
 
       // Press Escape to exit
       await page.keyboard.press('Escape')
       await page.waitForTimeout(500)
 
       // Should be back to normal view
-      await expect(page.locator('.practice-header-bar')).toBeVisible({
+      await expect(
+        page.locator('[data-testid="practice-header-bar"]'),
+      ).toBeVisible({
         timeout: 3000,
       })
     })
@@ -759,7 +773,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(scaleSelect).toHaveValue('dorian')
 
       // Octave controls
-      const octaveBtns = page.locator('.octave-btn')
+      const octaveBtns = page.locator('[data-testid^="octave-btn"]')
       await expect(octaveBtns.first()).toBeVisible()
     })
   })
@@ -777,11 +791,11 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('Focus Mode play/pause controls work', async ({ page }) => {
       // Enter focus mode
-      await page.locator('.focus-btn').click()
+      await page.locator('[data-testid="focus-btn"]').click()
       await page.waitForTimeout(500)
 
       // Play button should be visible
-      const focusPlay = page.locator('.focus-play')
+      const focusPlay = page.locator('[data-testid="focus-play"]')
       await expect(focusPlay).toBeVisible({ timeout: 3000 })
 
       // Click play
@@ -789,33 +803,33 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Should now show pause button
-      await expect(page.locator('.focus-play[title="Pause"]')).toBeVisible({
+      await expect(page.locator('[data-testid="focus-pause"]')).toBeVisible({
         timeout: 3000,
       })
 
       // Pause
-      await page.locator('.focus-play[title="Pause"]').click()
+      await page.locator('[data-testid="focus-pause"]').click()
       await page.waitForTimeout(500)
 
       // Should show resume
-      await expect(page.locator('.focus-play[title="Continue"]')).toBeVisible({
+      await expect(page.locator('[data-testid="focus-resume"]')).toBeVisible({
         timeout: 3000,
       })
 
       // Exit
-      await page.locator('.focus-exit').click()
+      await page.locator('[data-testid="focus-exit"]').click()
     })
 
     test('Focus Mode speed controls change speed', async ({ page }) => {
-      await page.locator('.focus-btn').click()
+      await page.locator('[data-testid="focus-btn"]').click()
       await page.waitForTimeout(500)
 
-      const speedLabel = page.locator('.focus-speed-label')
+      const speedLabel = page.locator('[data-testid="focus-speed-label"]')
       await expect(speedLabel).toBeVisible()
       const initialSpeed = await speedLabel.textContent()
 
       // Speed up
-      const speedUp = page.locator('.focus-speed-btn').first()
+      const speedUp = page.locator('[data-testid="focus-speed-up"]')
       await speedUp.click()
       await page.waitForTimeout(200)
 
@@ -823,7 +837,7 @@ test.describe('Critical Flows — GH #121', () => {
       expect(newSpeed).not.toBe(initialSpeed)
 
       // Exit
-      await page.locator('.focus-exit').click()
+      await page.locator('[data-testid="focus-exit"]').click()
     })
   })
 
@@ -855,7 +869,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(1000)
 
       // Verify play button exists
-      const playBtn = page.locator('.ctrl-btn.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
       await expect(playBtn).toBeVisible()
 
       // Click play - audio should initialize
@@ -870,7 +884,8 @@ test.describe('Critical Flows — GH #121', () => {
       })
 
       // Stop playback
-      const stopBtn = page.locator('.ctrl-btn.stop')
+      const stopBtn = page.locator('[data-testid="stop-btn"]')
+
       await stopBtn.click()
       await page.waitForTimeout(300)
     })
@@ -891,17 +906,19 @@ test.describe('Critical Flows — GH #121', () => {
       expect(bpm).toBe('150')
 
       // Play should start with the new BPM
-      const playBtn = page.locator('.play-btn')
+      const playBtn = page.locator('[data-testid="play-btn"]')
       await playBtn.click()
       await page.waitForTimeout(300)
 
       // Pause button should be visible (playback started)
-      await expect(page.locator('.stop-btn').first()).toBeVisible({
+      await expect(
+        page.locator('[data-testid="pause-btn"]').first(),
+      ).toBeVisible({
         timeout: 2000,
       })
 
       // Stop
-      await page.locator('.stop-btn').first().click()
+      await page.locator('[data-testid="pause-btn"]').first().click()
       await page.waitForTimeout(300)
     })
   })

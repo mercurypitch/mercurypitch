@@ -1,0 +1,409 @@
+/* Extracted from: Shared Sidebar */
+
+:global(.app-sidebar) {
+  position: relative;
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+:global(.app-sidebar.collapsed) {
+  width: 40px;
+  min-width: 40px;
+  padding: 8px 4px;
+  align-items: center;
+  overflow: hidden;
+}
+
+:global(.app-sidebar.collapsed) > *:not(:first-child) {
+  display: none;
+}
+
+.sidebarCloseBtn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  align-self: flex-end;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.sidebarCloseBtn:hover {
+  opacity: 1;
+}
+
+.sidebarToggleBtn {
+  display: none;
+}
+
+/* Sidebar Sections */
+.sidebarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebarNotesBottom {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.panelTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 8px 12px;
+}
+
+/* ============================================================
+   Sidebar Collapse Button (desktop)
+   ============================================================ */
+
+.sidebarCollapseBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+
+:global(.app-sidebar:hover) .sidebarCollapseBtn {
+  opacity: 1;
+}
+
+/* ============================================================
+   Walkthrough Control Buttons (Learn + Guide)
+   ============================================================ */
+
+.walkthroughControlGroup {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.walkthroughControlBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  height: 32px;
+  line-height: 32px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.walkthroughControlBtn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.walkthroughControlBtn:active {
+  transform: scale(0.98);
+}
+
+.walkthroughControlText {
+  font-size: 0.85rem;
+}
+
+.walkthroughControlBtnGuide {
+  background: var(--surface-dim, var(--surface));
+  border-color: var(--border-muted, var(--border));
+  opacity: 0.85;
+}
+
+.walkthroughControlBtnGuide:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ============================================================
+   Playback Setup — Scale / Key / Octave Controls
+   ============================================================ */
+
+.scaleInfo {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+}
+
+.keySelect,
+.scaleSelect {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-dim);
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.keySelect {
+  width: 100%;
+}
+
+.scaleSelect {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.octaveCtrl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-dim);
+  background: var(--accent-dim);
+}
+
+.octaveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.octaveBtn:hover {
+  background: rgba(126, 231, 135, 0.15);
+  color: var(--accent);
+}
+
+.octaveBtn:active {
+  transform: scale(0.88);
+}
+
+.octaveBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.octaveValue {
+  min-width: 18px;
+  font-size: 0.78rem;
+  color: #7ee787;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1;
+}
+
+.openScaleBuilder {
+  grid-column: 1 / -1;
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  border-radius: 10px;
+}
+
+/* ============================================================
+   Custom Scale Options in Dropdown
+   ============================================================ */
+
+.customScaleSeparator {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.customScaleOption {
+  color: rgba(56, 189, 248, 0.9);
+}
+
+/* ============================================================
+   Visibility Toggle Grid (2x3)
+   ============================================================ */
+
+.visGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.visGridCell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.visGridLabel {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.visGridToggle {
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Fancy Divider
+   ============================================================ */
+
+.fancyDivider {
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 20%,
+    var(--border) 80%,
+    transparent 100%
+  );
+  margin: 8px 0;
+}
+
+/* ============================================================
+   Stats Panel — Accuracy + Score
+   ============================================================ */
+
+.statsPanel {
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  flex-shrink: 0;
+}
+
+.statsPanel h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px;
+}
+
+.scoreDisplay {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.scoreLabel {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.scoreValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Session History Panel (sidebar)
+   ============================================================ */
+
+.sessionHistoryPanel {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.sessionHistoryPanel h3 {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sessionHistoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sessionHistoryEntry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 5px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.sessionHistoryName {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.sessionHistoryScore {
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.scoreHigh {
+  color: var(--green);
+}
+
+.scoreMid {
+  color: var(--yellow);
+}
+
+.scoreLow {
+  color: var(--red);
+}

@@ -146,11 +146,11 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await page.waitForTimeout(500)
 
     // Wait for practice-header-bar to render
-    const toolbar = page.locator('.practice-header-bar')
+    const toolbar = page.locator('[data-testid="practice-header-bar"]')
     await expect(toolbar).toBeVisible()
 
     // Play button is only visible in stopped state
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
     await expect(playBtn).toBeVisible()
 
     await playBtn.click()
@@ -158,7 +158,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
 
     // After clicking play, pause button should be visible
     // The pause button is a stop button in practice mode
-    const stopBtn = page.locator('.stop-btn').first()
+    const stopBtn = page.locator('[data-testid="pause-btn"]').first()
     await expect(stopBtn).toBeVisible({ timeout: 3000 })
   })
 
@@ -168,12 +168,12 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await page.waitForTimeout(500)
 
     // Start playback first
-    const playBtn = page.locator('.ctrl-btn.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
     await playBtn.click()
     await page.waitForTimeout(500)
 
     // Now pause button should be visible (pause button has class="ctrl-btn stop-btn")
-    const pauseBtn = page.locator('.ctrl-btn.stop-btn').first()
+    const pauseBtn = page.locator('[data-testid="pause-btn"]').first()
     await expect(pauseBtn).toBeVisible()
   })
 
@@ -182,13 +182,13 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await practiceTab.click()
     await page.waitForTimeout(500)
 
-    const playBtn = page.locator('.ctrl-btn.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
 
     await playBtn.click()
     await page.waitForTimeout(500)
 
     // Find and click the stop button (has class="ctrl-btn stop-btn stop")
-    const stop = page.locator('.ctrl-btn.stop-btn.stop').first()
+    const stop = page.locator('[data-testid="stop-btn"]').first()
     await stop.click()
     await page.waitForTimeout(500)
 
@@ -201,8 +201,8 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await practiceTab.click()
     await page.waitForTimeout(500)
 
-    const playBtn = page.locator('.ctrl-btn.play-btn').first()
-    const stopBtn = page.locator('.ctrl-btn.stop-btn.stop').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
+    const stopBtn = page.locator('[data-testid="stop-btn"]').first()
 
     // Start playback
     await playBtn.click()
@@ -439,7 +439,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
 
   test('play button has hover state', async ({ page }) => {
     const practiceTab = page.locator('#tab-singing')
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
 
     await practiceTab.click()
     await page.waitForTimeout(300)
@@ -450,18 +450,30 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
 
   test('pause button has hover state', async ({ page }) => {
     const practiceTab = page.locator('#tab-singing')
-    const pauseBtn = page.locator('.stop-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
+    const pauseBtn = page.locator('[data-testid="pause-btn"]').first()
 
     await practiceTab.click()
     await page.waitForTimeout(300)
 
+    // Must start playback to reveal pause button
+    await expect(playBtn).toBeVisible()
+    await playBtn.click()
+
+    await expect(pauseBtn).toBeVisible()
     await pauseBtn.hover()
     await page.waitForTimeout(200)
+
+    // Clean up playback state
+    const stopBtn = page.locator('[data-testid="stop-btn"]').first()
+    if (await stopBtn.isVisible()) {
+      await stopBtn.click()
+    }
   })
 
   test('stop button resets playback position to 0', async ({ page }) => {
     const practiceTab = page.locator('#tab-singing')
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
 
     await practiceTab.click()
     await page.waitForTimeout(500)
@@ -472,8 +484,9 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await page.waitForTimeout(500)
 
     // Click stop (the stop-btn appears during playback)
-    const stopBtn = page.locator('.stop-btn').first()
+    const stopBtn = page.locator('[data-testid="stop-btn"]').first()
     await expect(stopBtn).toBeVisible({ timeout: 3000 })
+    await expect(stopBtn).toBeEnabled()
     await stopBtn.click()
     await page.waitForTimeout(500)
 
@@ -525,7 +538,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]').first()
     await expect(playBtn).toBeVisible()
   })
 
@@ -720,7 +733,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
       await page.waitForTimeout(50)
 
       try {
-        await page.locator('.play-btn').click()
+        await page.locator('[data-testid="play-btn"]').click()
         await page.waitForTimeout(50)
       } catch {
         // Button might not be visible

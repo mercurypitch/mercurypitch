@@ -43,6 +43,7 @@ export {
 export { UvrSessionResult } from './UvrSessionResult'
 
 export { UvrPanel } from './UvrPanel'
+
 export { JamPanel } from './jam/JamPanel'
 export { JamPeerList } from './jam/JamPeerList'
 export { JamInviteModal } from './jam/JamInviteModal'

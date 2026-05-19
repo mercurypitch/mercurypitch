@@ -1,0 +1,87 @@
+#pitch-reference {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+#pitch-reference h3 {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+#detected-note {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+#detected-freq {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+#cents-display {
+  margin-top: 4px;
+}
+
+#cents-bar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+  margin-bottom: 6px;
+}
+
+.cents-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--border);
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+#cents-marker {
+  position: absolute;
+  top: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transform: translateX(-50%);
+  transition:
+    left 0.1s linear,
+    background-color 0.2s;
+  z-index: 2;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+#cents-marker.in-tune {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+#cents-marker.sharp {
+  background: var(--yellow);
+}
+#cents-marker.flat {
+  background: var(--blue);
+}
+
+.cents-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}

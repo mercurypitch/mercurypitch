@@ -47,7 +47,9 @@ export function getUvrApiBase(): string {
  */
 export const UVR_MODEL_BASE =
   import.meta.env.VITE_OVERRIDE_ONNX_MODEL ??
-  'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev'
+  (import.meta.env.DEV
+    ? ''
+    : 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev')
 
 export const UVR_MODEL_FILENAME = 'UVR-MDX-NET-Inst_HQ_3.onnx'
 

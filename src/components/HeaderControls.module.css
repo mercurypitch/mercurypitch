@@ -2,6 +2,15 @@
    HeaderControls — Shared styles for tab header controls
    ============================================================ */
 
+/* ── State modifier classes — exported for classList={{ [styles.active]: ... }} usage ── */
+/* These combine with component classes via CSS module compound selectors. */
+.active {
+}
+.recording {
+}
+.inactive {
+}
+
 .ctrlBtn {
   display: inline-flex;
   align-items: center;
@@ -90,7 +99,8 @@
   color: var(--red);
 }
 
-.stopBtn.inactive {
+.stopBtn.inactive,
+.stopBtnInactive {
   opacity: 0.35;
   pointer-events: none;
 }
@@ -171,6 +181,260 @@
   flex-shrink: 0;
 }
 
+/* ── Toolbar layout classes ── */
+
+/* Top-level toolbar wrapper */
+.practiceHeaderBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.practiceHeaderBar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Essential controls cluster (always visible on mobile) */
+.essentialControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+/* Secondary controls cluster (hidden on small phones) */
+.secondaryControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+/* Generic control group — wraps related buttons */
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Mic control group */
+.micGroup {
+  display: flex;
+  align-items: center;
+}
+
+/* Mode button group */
+.modeGroup {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* ── Button variants not yet in module ── */
+
+/* Mode toggle buttons (Once / Repeat / Session) */
+.modeBtn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.modeBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.modeBtn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Metronome button active state */
+.metronomeBtn {
+  position: relative;
+}
+
+.metronomeBtn.active {
+  border-color: var(--yellow);
+  background: rgba(210, 153, 34, 0.1);
+  color: var(--yellow);
+}
+
+/* Anchor tone button active state */
+.anchorToneBtn.active {
+  border-color: var(--orange);
+  background: rgba(219, 109, 40, 0.15);
+  color: var(--orange);
+}
+
+/* MIDI button active state */
+.midiBtn.active {
+  border-color: var(--purple);
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+}
+
+/* Record button text label */
+.recordText {
+  font-weight: 700;
+  font-size: 0.78rem;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.recordText.recording {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Focus button active state */
+.focusBtnActive {
+  border-color: var(--purple);
+  background: rgba(188, 140, 255, 0.1);
+  color: var(--purple);
+}
+
+/* Spaced rest select — styled like practiceSubModeSelect */
+.spacedRestSelect {
+  height: 28px;
+  min-width: 110px;
+  padding: 0 28px 0 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 11px,
+    calc(100% - 9px) 11px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.spacedRestSelect:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.spacedRestSelect:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.spacedRestSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Zoom controls (falling notes) */
+.rollZoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.rollZoomBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.zoomLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  min-width: 3ch;
+  text-align: center;
+}
+
+/* Note label toggle group (falling notes) */
+.labelToggleGroup {
+  display: inline-flex;
+  align-items: center;
+}
+
+.labelToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.labelToggleBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+.labelToggleBtn:active {
+  transform: scale(0.97);
+}
+
+.labelToggleBtn.active {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.labelToggleText {
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+}
+
+/* optLabel — small uppercase label beside a control */
+.optLabel {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Inside inline-controls-row, hide text labels (icon-only mode) */
+.inlineControl .optLabel {
+  display: none;
+}
+
 /* Count-in badge */
 .countinBadge {
   display: flex;
@@ -200,63 +464,16 @@
 
 /* Volume control */
 .volumeSlider {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-primary);
-  padding: 4px 8px;
-  font-size: 0.78rem;
+  width: 60px;
+  accent-color: var(--green);
   cursor: pointer;
-}
-
-.volumeSlider:hover {
-  border-color: var(--accent);
-}
-
-.volumeSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  margin-top: -6px;
-}
-
-.volumeSlider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  border: none;
 }
 
 /* Tempo control */
 .tempoSlider {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-primary);
-  padding: 4px 8px;
-  font-size: 0.78rem;
+  width: 80px;
+  accent-color: var(--accent);
   cursor: pointer;
-}
-
-.tempoSlider:hover {
-  border-color: var(--accent);
-}
-
-.tempoSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  margin-top: -6px;
 }
 
 /* Speed control */
@@ -307,4 +524,742 @@
 .controlLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
+}
+/* Extracted from: Controls Bar */
+
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Extracted from: Practice Mode Badge */
+
+.practiceModeBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.practiceModeBadge .modeLabel {
+  color: var(--text-secondary);
+}
+
+.practiceModeBadge .modeValue {
+  font-weight: 600;
+  min-width: 60px;
+  text-align: left;
+}
+
+/* Extracted from: Save Melody Button */
+
+.saveMelodyGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.saveMelodyBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.saveMelodyBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.saveMelodyBtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.saveMelodyBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.saveMelodyBtn.withLabel span {
+  font-size: 0.78rem;
+}
+
+/* Extracted from: Practice Options (top bar) */
+
+#practice-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#practice-options .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cyclesInput {
+  width: 52px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 3px 6px;
+  font-size: 0.8rem;
+  text-align: center;
+  outline: none;
+}
+
+.cyclesInput:focus {
+  border-color: var(--accent);
+}
+
+/* Extracted from: Tempo */
+
+.tempoGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tempoGroup .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.bpmNumberInput,
+.volNumberInput,
+.sensNumberInput {
+  width: 50px;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+/* Sens-input is narrower (1–10 range) so it doesn't waste horizontal
+   space in the inline-controls-row alongside BPM/Volume which need
+   3-digit width. */
+.sensNumberInput {
+  width: 38px;
+}
+
+.bpmNumberInput::-webkit-inner-spin-button,
+.bpmNumberInput::-webkit-outer-spin-button,
+.volNumberInput::-webkit-inner-spin-button,
+.volNumberInput::-webkit-outer-spin-button,
+.sensNumberInput::-webkit-inner-spin-button,
+.sensNumberInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bpmNumberInput:focus,
+.volNumberInput:focus,
+.sensNumberInput:focus {
+  border-color: var(--accent);
+}
+
+.tempoSlider {
+  width: 80px;
+  accent-color: var(--accent);
+}
+
+#tempo-value {
+  min-width: 26px;
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Extracted from: Sensitivity Slider */
+
+.sensitivityGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sensitivityGroup .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.sensitivitySlider {
+  width: 60px;
+  accent-color: var(--yellow);
+}
+
+/* When the sensitivity widget participates in the inline-controls-row
+   (BPM / Volume / Sensitivity / Speed), match the slider footprint of
+   its neighbours so the cluster reads as one cohesive unit rather
+   than three sliders of different widths. */
+.inlineControl.sensitivityGroup .sensitivitySlider {
+  width: 80px;
+}
+
+#sensitivity-value {
+  min-width: 20px;
+  text-align: right;
+  color: var(--yellow);
+  font-weight: 600;
+}
+
+/* Extracted from: Theme Toggle */
+
+.themeToggleBtn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.themeToggleBtn.dark {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.themeToggleBtn.dark:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.themeToggleBtn.light {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.themeToggleBtn.light:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* Extracted from: Snap to Grid Toggle */
+
+.rollSnapBtn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rollSnapBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* Extracted from: Speed Select */
+
+.speedGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.speedGroup .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.speedSelect {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.speedSelect:hover {
+  border-color: var(--accent);
+}
+
+.speedSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Extracted from: Preset Select */
+
+.presetGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.presetGroup .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.presetSelect {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.presetSelect:hover {
+  border-color: var(--accent);
+}
+
+.presetSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Extracted from: Volume Slider */
+
+.volumeGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volumeGroup .optLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.volumeSlider {
+  width: 60px;
+  accent-color: var(--green);
+}
+
+#volume-value {
+  min-width: 26px;
+  text-align: right;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Extracted from: Precount Button */
+
+#btn-precount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#btn-precount svg {
+  flex-shrink: 0;
+}
+
+/* Extracted from: Utility */
+
+.hidden {
+  display: none !important;
+}
+
+/* Extracted from: Cycles Input */
+
+.cyclesGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cyclesInput {
+  width: 50px;
+  padding: 3px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.cyclesInput::-webkit-inner-spin-button,
+.cyclesInput::-webkit-outer-spin-button {
+  width: 14px;
+}
+
+.repeatCyclesInput {
+  width: 52px;
+  padding: 3px 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+#cycle-counter {
+  color: var(--text-muted);
+}
+
+/* Extracted from: Repeat Cycles Control Group */
+
+.cyclesControlGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.cyclesLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cyclesControlGroup .cyclesInput {
+  width: 54px;
+  min-width: 54px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+}
+
+.cyclesControlGroup .cyclesInput:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.cyclesControlGroup .cyclesInput::-webkit-inner-spin-button,
+.cyclesControlGroup .cyclesInput::-webkit-outer-spin-button {
+  opacity: 1;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.cycleProgressPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--green-dim);
+  background: linear-gradient(135deg, var(--green-dim), var(--accent-dim));
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cycleProgressLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cycleProgressValue {
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green-dim);
+}
+
+/* Extracted from: Practice Sub-Mode Selector */
+
+.practiceModeControlGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.practiceModeLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.practiceSubModeSelect {
+  height: 28px;
+  min-width: 132px;
+  padding: 0 30px 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 11px,
+    calc(100% - 11px) 11px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.practiceSubModeSelect:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.practiceSubModeSelect:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.practiceSubModeSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.practiceModeControlGroup select.practiceSubModeSelect,
+.practiceModeControlGroup .practiceSubModeSelect {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-glow) !important;
+}
+
+/* Extracted from: Inline Transport Controls */
+
+.inlineControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inlineControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  white-space: nowrap;
+}
+
+.inlineControlIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #aaa);
+  flex: 0 0 auto;
+}
+
+.inlineControlValue {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text, #ddd);
+  min-width: 2ch;
+  text-align: right;
+}
+
+.inlineControl :global(.optLabel) {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .inlineControlsRow {
+    width: 100%;
+    order: 99;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Responsive overrides ──
+   Migrated from app.css — these selectors are now scoped to this module. */
+
+/* Tablets (max-width: 768px) — compact layout */
+@media (max-width: 768px) {
+  .practiceHeaderBar {
+    padding: 5px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-direction: row;
+    flex-shrink: 1;
+  }
+
+  .practiceHeaderBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .essentialControls {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+
+  .controlGroup {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .optLabel {
+    font-size: 0.65rem;
+  }
+
+  .ctrlBtn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .recordBtn {
+    min-width: auto;
+  }
+
+  .modeGroup {
+    gap: 2px;
+  }
+
+  .modeBtn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    min-height: 44px;
+  }
+
+  .countinBadge {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 0.9rem;
+    padding: 0;
+  }
+}
+
+/* Mobile narrow (max-width: 480px) — hide secondary controls */
+@media (max-width: 480px) {
+  .secondaryControls {
+    display: none;
+  }
+
+  .essentialControls {
+    display: flex;
+  }
+
+  .countinBadge {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 0.85rem;
+    padding: 0;
+  }
+}
+
+/* Small phones (max-width: 390px) — single essential row */
+@media (max-width: 390px) {
+  .practiceHeaderBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 1;
+  }
+
+  .practiceHeaderBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .essentialControls {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+
+  .controlGroup {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  /* Hide non-essential secondary controls on very small phones */
+  .tempoGroup,
+  .volumeGroup,
+  .speedGroup,
+  .sensitivityGroup {
+    display: none;
+  }
+
+  .ctrlBtn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .recordBtn {
+    min-width: auto;
+  }
+
+  .modeGroup {
+    gap: 2px;
+  }
+
+  .modeBtn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    min-height: 44px;
+  }
+
+  .countinBadge {
+    font-size: 0.75rem;
+  }
 }

@@ -1,0 +1,541 @@
+/* Extracted from: Library Tab (sidebar) */
+
+.libraryTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+}
+
+.tabHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tabHeader h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tabActions {
+  display: flex;
+  gap: 4px;
+}
+
+.tabActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+@media (hover: hover) {
+  .tabActionBtn:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.recentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.emptyTip {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
+
+.recentItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.recentItem:hover {
+  background: var(--bg-card);
+}
+
+.recentName {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.recentMeta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.recentTags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.recentTag {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.recentTag.more {
+  font-size: 0.55rem;
+  padding: 2px 5px;
+}
+
+.quickActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quickActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+@media (hover: hover) {
+  .quickActionBtn:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+/* Extracted from: Library Tab (sidebar) */
+
+.libraryTab {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+}
+
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tabHeader h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Session Items Section */
+.sessionItemsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Light theme: Library Tab */
+[data-theme='light'] .libraryTab {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85),
+    rgba(246, 248, 250, 0.75)
+  );
+  border-color: var(--accent-dim);
+}
+[data-theme='light'] .sessionItemsSection {
+  background: rgba(246, 248, 250, 0.6);
+  border-color: rgba(208, 215, 222, 0.5);
+}
+
+/* Session Items Display (Practice tab sidebar) */
+.sessionItemsDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sessionItemsDisplay h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0;
+  padding: 0 2px;
+}
+
+.sessionItemEntry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.sessionItemLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionItemType {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.sessionEmptyTip {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.activeSessionSummary {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.activeSessionSummary .sectionLabel {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebarSessionSelect {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 30px 7px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sidebarSessionSelect:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.sidebarSessionSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+.sidebarSessionSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.sectionMeta {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.sessionActions {
+  display: flex;
+  flex-shrink: 0;
+  align-self: flex-start;
+  gap: 4px;
+}
+
+.pillActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--accent-dim);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.pillActionBtn svg {
+  width: 10px;
+  height: 10px;
+}
+
+@media (hover: hover) {
+  .pillActionBtn:hover {
+    background: var(--accent);
+    color: var(--bg-primary);
+  }
+}
+
+.sessionItemsPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sessionItemPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.sessionItemPill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.melodyPill {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .melodyPill:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--green);
+  }
+}
+
+.melodyPill.selected {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.pillTags {
+  display: flex;
+  gap: 2px;
+  margin-left: 4px;
+  flex-wrap: wrap;
+}
+
+.pillTag {
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.pillTag.more {
+  font-size: 0.5rem;
+  padding: 1px 3px;
+}
+
+.pillIcon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pillIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.pillLabel {
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.62rem;
+}
+
+.pillRepeat {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.tabStats {
+  display: flex;
+  gap: 8px;
+}
+
+.statBadge {
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.recentList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionLabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.emptyTip {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+.recentItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.recentItem:hover {
+  background: var(--bg-card);
+}
+
+.recentName {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.recentMeta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.recentTags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.recentTag {
+  font-size: 0.55rem;
+  padding: 1px 5px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+.recentTag.more {
+  font-size: 0.5rem;
+  padding: 1px 4px;
+}
+
+.libraryTabBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.libraryTabBtn:hover {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}

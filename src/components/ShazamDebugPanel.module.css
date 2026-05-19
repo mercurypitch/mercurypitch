@@ -1,0 +1,178 @@
+.panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heading {
+  margin: 0 0 14px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Score bars ─────────────────────────────────────────── */
+
+.scores {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scoreLabel {
+  width: 80px;
+  font-size: 12px;
+  color: var(--color-text-muted, #94a3b8);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.scoreTrack {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.scoreFillPitch {
+  background: #4ade80;
+}
+
+.scoreFillInterval {
+  background: #60a5fa;
+}
+
+.scoreFillChroma {
+  background: #f59e0b;
+}
+
+.scoreFillRhythm {
+  background: #a78bfa;
+}
+
+.scoreFillLength {
+  background: #34d399;
+}
+
+.scoreValue {
+  width: 40px;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--color-text, #e2e8f0);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Note sequence comparison ────────────────────────────── */
+
+.noteSection {
+  margin-bottom: 16px;
+}
+
+.noteSectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.noteRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.notePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.notePillRef {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.notePillUser {
+  background: rgba(74, 222, 128, 0.08);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.15);
+}
+
+.notePillMatch {
+  background: rgba(74, 222, 128, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.notePillMismatch {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ── Metadata ────────────────────────────────────────────── */
+
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metaItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+.metaLabel {
+  font-size: 11px;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.metaValue {
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--color-text, #e2e8f0);
+}
+
+.metaValueActive {
+  color: #f59e0b;
+}
+
+.metaValueInactive {
+  color: var(--color-text-muted, #64748b);
+}

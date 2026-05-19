@@ -25,6 +25,11 @@ vi.mock('../icons', () => ({
     <span data-testid="sliders-icon">SlidersHorizontal</span>
   ),
   Share: () => <span data-testid="share-icon">Share</span>,
+  RotateCcw: () => <span data-testid="rotate-icon">RotateCcw</span>,
+  Cpu: () => <span data-testid="cpu-icon">Cpu</span>,
+  Server: () => <span data-testid="server-icon">Server</span>,
+  Zap: () => <span data-testid="zap-icon">Zap</span>,
+  X: () => <span data-testid="x-icon">X</span>,
 }))
 
 // Helper to seed a session into localStorage so getUvrSession can find it

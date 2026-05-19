@@ -17,67 +17,85 @@ test.describe('Walkthrough Feature', () => {
   })
 
   test('Walkthrough control button exists in sidebar', async ({ page }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await expect(walkthroughBtn).toBeVisible()
   })
 
   test('Clicking walkthrough button opens selection modal', async ({
     page,
   }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    const modal = page.locator('.walkthrough-selection-overlay')
+    const modal = page.locator(
+      '[class*="walkthroughSelectionOverlay"], .walkthrough-selection-overlay',
+    )
     await expect(modal).toBeVisible()
   })
 
   test('Walkthrough selection shows progress text', async ({ page }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    const progressText = page.locator('.ws-progress-text')
+    const progressText = page.locator(
+      '[class*="wsProgressText"], .ws-progress-text',
+    )
     await expect(progressText).toBeVisible()
   })
 
   test('Walkthrough modal shows chapter items', async ({ page }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    // Chapter items should be visible
-    const chapters = page.locator('.ws-chapter-item')
-    const count = await chapters.count()
-    expect(count).toBeGreaterThanOrEqual(0)
+    const chapters = page.locator('[class*="wsChapterItem"], .ws-chapter-item')
+    await expect(chapters.first()).toBeVisible()
   })
 
   test('Close button closes walkthrough selection', async ({ page }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    const modal = page.locator('.walkthrough-selection-overlay')
+    const modal = page.locator(
+      '[class*="walkthroughSelectionOverlay"], .walkthrough-selection-overlay',
+    )
     await expect(modal).toBeVisible()
 
-    const closeBtn = modal.locator('.ws-close-btn')
+    const closeBtn = modal.locator('[class*="wsCloseBtn"], .ws-close-btn')
     await closeBtn.click()
-    await page.waitForTimeout(500)
-
-    await expect(modal).not.toBeVisible()
+    await expect(modal).toBeHidden()
   })
 
   test('Footer Got it button closes walkthrough selection', async ({
     page,
   }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    const modal = page.locator('.walkthrough-selection-overlay')
+    const modal = page.locator(
+      '[class*="walkthroughSelectionOverlay"], .walkthrough-selection-overlay',
+    )
     await expect(modal).toBeVisible()
 
-    const footerBtn = modal.locator('.ws-close-footer')
+    const footerBtn = modal.locator(
+      '[class*="wsCloseFooter"], .ws-close-footer',
+    )
     await footerBtn.click()
     await page.waitForTimeout(500)
 
@@ -85,11 +103,17 @@ test.describe('Walkthrough Feature', () => {
   })
 
   test('Walkthrough modal has correct class', async ({ page }) => {
-    const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
+    const walkthroughBtn = page
+      .locator('[class*="walkthroughControlBtn"], .walkthrough-control-btn')
+      .first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
 
-    const modal = page.locator('.walkthrough-selection-overlay')
-    await expect(modal).toHaveClass(/walkthrough-selection-overlay/)
+    const modal = page.locator(
+      '[class*="walkthroughSelectionOverlay"], .walkthrough-selection-overlay',
+    )
+    await expect(modal).toHaveClass(
+      /walkthroughSelectionOverlay|walkthrough-selection-overlay/,
+    )
   })
 })

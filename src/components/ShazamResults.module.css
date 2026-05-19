@@ -1,0 +1,191 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.debugToggle {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.debugToggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text, #e2e8f0);
+}
+
+.debugToggleOn {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+}
+
+.noMatches {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.matchCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.matchHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.confidence {
+  font-size: 24px;
+  font-weight: 700;
+  min-width: 56px;
+}
+
+.confidenceAuto {
+  color: #22c55e;
+}
+
+.confidenceHigh {
+  color: #4ade80;
+}
+
+.confidenceMedium {
+  color: #facc15;
+}
+
+.confidenceLow {
+  color: #fb923c;
+}
+
+.confidenceNone {
+  color: #ef4444;
+}
+
+.name {
+  font-size: 16px;
+  color: var(--color-text, #e2e8f0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confidenceBar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 500ms ease-out;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.openBtn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-accent, #6366f1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.openBtn:hover {
+  opacity: 0.9;
+}
+
+.tierBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sourceBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.sourceMelody {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.sourceStem {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.tryAgain {
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: var(--color-text, #e2e8f0);
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.tryAgain:hover {
+  background: rgba(255, 255, 255, 0.06);
+}

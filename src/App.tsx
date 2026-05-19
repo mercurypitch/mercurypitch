@@ -67,6 +67,9 @@ import type { UvrView } from '@/components/UvrPanel'
 const UvrPanel = lazy(async () =>
   import('@/components/UvrPanel').then((m) => ({ default: m.UvrPanel })),
 )
+import './components/AppHeader.css'
+import './components/TierSelector.css'
+import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { useEditorController } from '@/features/editor/useEditorController'
@@ -86,6 +89,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
 import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
@@ -97,6 +101,7 @@ import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-s
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
+import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { FallingNotesCanvas } from './components/FallingNotesCanvas'
@@ -104,7 +109,6 @@ import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
-import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
@@ -217,13 +221,12 @@ const AppShell: Component<AppProps> = (props) => {
   const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<
     string | null
   >(null)
-  const [initialUvrView, setInitialUvrView] = createSignal<
-    'upload' | 'results' | 'mixer' | null
-  >(null)
+  const [initialUvrView, setInitialUvrView] = createSignal<UvrView | null>(null)
   const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<
     string | null
   >(null)
-  const [activeUvrView, setActiveUvrView] = createSignal<UvrView>('upload')
+  const [activeUvrView, setActiveUvrView] =
+    createSignal<UvrView>('shazam-listen')
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -728,11 +731,7 @@ const AppShell: Component<AppProps> = (props) => {
     initTheme()
 
     // Inject UVR component styles
-    const styleElements = [
-      LyricsUploaderStyles,
-      StemMixerStyles,
-      _UvrGuideStyles,
-    ]
+    const styleElements = [LyricsUploaderStyles, StemMixerStyles]
 
     styleElements.forEach((styleString) => {
       if (typeof styleString === 'string' && styleString.trim()) {
@@ -743,6 +742,22 @@ const AppShell: Component<AppProps> = (props) => {
     })
 
     melodyStore.seedDefaultSession()
+
+    // Build melody fingerprint index for Shazam Sing matching
+    const fpResult = buildFingerprintIndex()
+    if (fpResult.errors.length > 0) {
+      console.warn(
+        '[shazam] fingerprint build warnings:',
+        fpResult.errors.map((e) => `${e.name}: ${e.reason}`).join(', '),
+      )
+    }
+
+    // Load persisted stem fingerprints from IndexedDB
+    void loadStemFingerprints().then((count) => {
+      if (count > 0) {
+        console.log(`[shazam] loaded ${count} stem fingerprint(s)`)
+      }
+    })
 
     // Initialize active user session from saved default
     const activeSessionId = melodyStore.getActiveSessionId()
@@ -880,12 +895,12 @@ const AppShell: Component<AppProps> = (props) => {
               {/* Current melody indicator pill */}
               <Show when={melodyStore.getCurrentMelody()}>
                 <button
-                  class="melody-indicator-pill"
+                  class={styles.melodyIndicatorPill}
                   onClick={() => void handleTabChange(TAB_SINGING)}
                   title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
                 >
                   <svg
-                    class="melody-indicator-icon"
+                    class={styles.melodyIndicatorIcon}
                     width="16"
                     height="16"
                     viewBox="0 0 24 24"
@@ -899,11 +914,11 @@ const AppShell: Component<AppProps> = (props) => {
                     <circle cx="6" cy="18" r="3" />
                     <circle cx="18" cy="16" r="3" />
                   </svg>
-                  <span class="melody-indicator-info">
-                    <span class="melody-indicator-name">
+                  <span class={styles.melodyIndicatorInfo}>
+                    <span class={styles.melodyIndicatorName}>
                       {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
                     </span>
-                    <span class="melody-indicator-character">
+                    <span class={styles.melodyIndicatorCharacter}>
                       {selectedCharacter()}
                     </span>
                   </span>
@@ -1127,6 +1142,7 @@ const AppShell: Component<AppProps> = (props) => {
                 <Show when={advancedFeaturesEnabled()}>
                   <button
                     id="tab-analysis"
+                    data-testid="tab-analysis"
                     class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
                     onClick={() => void handleTabChange(TAB_ANALYSIS)}
                     aria-label="Vocal analysis"
@@ -1144,6 +1160,7 @@ const AppShell: Component<AppProps> = (props) => {
 
               <button
                 id="tab-settings"
+                data-testid="tab-settings"
                 class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
                 onClick={() => void handleTabChange(TAB_SETTINGS)}
                 aria-label="Settings"
@@ -1168,7 +1185,7 @@ const AppShell: Component<AppProps> = (props) => {
           </header>
 
           {/* Main layout: sidebar + content */}
-          <div class="main-layout" id="main-layout">
+          <div class={styles.mainLayout} id="main-layout">
             {/* Shared sidebar — with mobile open class */}
             <AppSidebar
               class={sidebarOpen() === true ? 'open' : ''}
@@ -1316,15 +1333,22 @@ const AppShell: Component<AppProps> = (props) => {
                     onWaveToggle={toggleMicWaveVisible}
                   />
 
-                  <div class="editor-view-toggle">
+                  <div class={styles.editorViewToggle}>
                     <button
-                      class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
+                      class={styles.viewBtn}
+                      classList={{
+                        [styles.activeViewBtn]: editorView() === 'piano-roll',
+                      }}
                       onClick={() => setEditorView('piano-roll')}
                     >
                       Piano Roll
                     </button>
                     <button
-                      class={`view-btn ${editorView() === 'session-editor' ? 'active' : ''}`}
+                      class={styles.viewBtn}
+                      classList={{
+                        [styles.activeViewBtn]:
+                          editorView() === 'session-editor',
+                      }}
                       onClick={() => setEditorView('session-editor')}
                     >
                       Session Editor
@@ -1332,7 +1356,7 @@ const AppShell: Component<AppProps> = (props) => {
                   </div>
 
                   <Show when={editorView() === 'session-editor'}>
-                    <div class="session-editor-container">
+                    <div class={styles.sessionEditorContainer}>
                       <Suspense fallback={<div class="tab-loading" />}>
                         <SessionEditor />
                       </Suspense>
@@ -1402,20 +1426,31 @@ const AppShell: Component<AppProps> = (props) => {
                       style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
                     >
                       <button
-                        class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
+                        class={styles.viewBtn}
+                        classList={{
+                          [styles.activeViewBtn]: analysisSubTab() === 'vocal',
+                        }}
                         onClick={() => setAnalysisSubTab('vocal')}
                       >
                         Vocal Analysis
                       </button>
                       <Show when={devFeaturesEnabled()}>
                         <button
-                          class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
+                          class={styles.viewBtn}
+                          classList={{
+                            [styles.activeViewBtn]:
+                              analysisSubTab() === 'detection',
+                          }}
                           onClick={() => setAnalysisSubTab('detection')}
                         >
                           Pitch Detection
                         </button>
                         <button
-                          class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
+                          class={styles.viewBtn}
+                          classList={{
+                            [styles.activeViewBtn]:
+                              analysisSubTab() === 'algorithms',
+                          }}
                           onClick={() => setAnalysisSubTab('algorithms')}
                         >
                           Pitch Algorithms
@@ -1511,6 +1546,10 @@ const AppShell: Component<AppProps> = (props) => {
                           setActiveUvrSessionId(sessionId)
                         }
                         onViewChange={(view) => setActiveUvrView(view)}
+                        onSelectMelody={(melodyId) => {
+                          melodyStore.loadMelody(melodyId)
+                          setActiveTab(TAB_SINGING)
+                        }}
                         onPracticeStart={(mode) => {
                           console.log('Starting practice with mode:', mode)
                         }}
@@ -1705,14 +1744,14 @@ const AppShell: Component<AppProps> = (props) => {
 
         {/* Score overlay */}
         <Show when={showPracticeResultPopup() && practiceResult() !== null}>
-          <div class="overlay" onClick={closeScoreOverlay}>
+          <div class={styles.overlay} onClick={closeScoreOverlay}>
             <div
               id="score-card"
               onClick={(e) => {
                 e.stopPropagation()
               }}
             >
-              <button class="overlay-close" onClick={closeScoreOverlay}>
+              <button class={styles.overlayClose} onClick={closeScoreOverlay}>
                 &times;
               </button>
               <h2 id="score-title">Run Complete!</h2>
@@ -1725,57 +1764,57 @@ const AppShell: Component<AppProps> = (props) => {
                 {practiceResult()!.avgCents.toFixed(1)}¢ avg
               </div>
               <div id="score-stats">
-                <div class="score-stat score-stat-perfect">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatPerfect}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter(
                         (r) => r.rating === 'perfect',
                       ).length
                     }
                   </div>
-                  <div class="score-stat-label">Perfect</div>
+                  <div class={styles.scoreStatLabel}>Perfect</div>
                 </div>
-                <div class="score-stat score-stat-excellent">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatExcellent}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter(
                         (r) => r.rating === 'excellent',
                       ).length
                     }
                   </div>
-                  <div class="score-stat-label">Excellent</div>
+                  <div class={styles.scoreStatLabel}>Excellent</div>
                 </div>
-                <div class="score-stat score-stat-good">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatGood}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'good')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Good</div>
+                  <div class={styles.scoreStatLabel}>Good</div>
                 </div>
-                <div class="score-stat score-stat-okay">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatOkay}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'okay')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Okay</div>
+                  <div class={styles.scoreStatLabel}>Okay</div>
                 </div>
-                <div class="score-stat score-stat-off">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatOff}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'off')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Off</div>
+                  <div class={styles.scoreStatLabel}>Off</div>
                 </div>
               </div>
               <div id="score-actions">
                 <button
-                  class="overlay-btn primary"
+                  class={[styles.overlayBtn, 'primary'].join(' ')}
                   onClick={() => {
                     closeScoreOverlay()
                     handleReset()
@@ -1784,19 +1823,19 @@ const AppShell: Component<AppProps> = (props) => {
                 >
                   Try Again
                 </button>
-                <button class="overlay-btn" onClick={closeScoreOverlay}>
+                <button class={styles.overlayBtn} onClick={closeScoreOverlay}>
                   Close
                 </button>
               </div>
 
               <Show when={getSessionHistory().length > 1}>
                 <div id="score-history">
-                  <h3 class="history-title">Recent Progress</h3>
-                  <div class="history-chart">
+                  <h3 class={styles.historyTitle}>Recent Progress</h3>
+                  <div class={styles.historyChart}>
                     <For each={getSessionHistory().slice(0, 10)}>
                       {(session) => (
                         <div
-                          class="history-bar"
+                          class={styles.historyBar}
                           style={{ height: `${session.score}%` }}
                           title={`Score: ${session.score}%`}
                         />
@@ -1815,7 +1854,7 @@ const AppShell: Component<AppProps> = (props) => {
         />
 
         <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
-          <div class="overlay" onClick={() => setSessionSummary(null)}>
+          <div class={styles.overlay} onClick={() => setSessionSummary(null)}>
             <div
               id="session-summary-card"
               onClick={(e) => {
@@ -1823,7 +1862,7 @@ const AppShell: Component<AppProps> = (props) => {
               }}
             >
               <button
-                class="overlay-close"
+                class={styles.overlayClose}
                 onClick={() => setSessionSummary(null)}
               >
                 &times;
@@ -1836,7 +1875,7 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
               <div id="score-actions">
                 <button
-                  class="overlay-btn primary"
+                  class={[styles.overlayBtn, 'primary'].join(' ')}
                   onClick={() => {
                     setSessionSummary(null)
                     showSessionPresetsLibrary()
@@ -1845,7 +1884,7 @@ const AppShell: Component<AppProps> = (props) => {
                   New Session
                 </button>
                 <button
-                  class="overlay-btn"
+                  class={styles.overlayBtn}
                   onClick={() => setSessionSummary(null)}
                 >
                   Close

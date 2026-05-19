@@ -1,0 +1,85 @@
+/* Extracted from: Notification Toast */
+
+.notificationToast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  z-index: 2000;
+  animation:
+    slideIn 0.3s ease,
+    fadeOut 0.3s ease 2.7s forwards;
+  max-width: 350px;
+}
+
+.notificationToast--info {
+  border-left: 4px solid var(--accent);
+}
+
+.notificationToast--success {
+  border-left: 4px solid var(--green);
+}
+
+.notificationToast--warning {
+  border-left: 4px solid var(--yellow);
+}
+
+.notificationToast--error {
+  border-left: 4px solid var(--red);
+}
+
+.notificationToastIcon {
+  font-size: 1.1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.notificationToast--info .notificationToastIcon {
+  color: var(--accent);
+}
+
+.notificationToast--success .notificationToastIcon {
+  color: var(--green);
+}
+
+.notificationToast--warning .notificationToastIcon {
+  color: var(--yellow);
+}
+
+.notificationToast--error .notificationToastIcon {
+  color: var(--red);
+}
+
+.notificationToastMessage {
+  flex: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

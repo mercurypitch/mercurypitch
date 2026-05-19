@@ -35,6 +35,13 @@ export const Tooltip: Component<TooltipProps> = (props) => {
     setVisible(false)
   }
 
+  const placementClass: Record<Placement, string> = {
+    top: styles.tooltipTop,
+    bottom: styles.tooltipBottom,
+    left: styles.tooltipLeft,
+    right: styles.tooltipRight,
+  }
+
   return (
     <span
       class={styles.tooltipWrapper}
@@ -44,7 +51,7 @@ export const Tooltip: Component<TooltipProps> = (props) => {
       {props.children}
       <Show when={visible() && props.text}>
         <span
-          class={`${styles.tooltip} ${styles[`tooltip-${placement()}`]}`}
+          class={`${styles.tooltip} ${placementClass[placement()]}`}
           role="tooltip"
         >
           {props.text}

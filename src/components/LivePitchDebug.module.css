@@ -1,0 +1,46 @@
+.panel {
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.heading {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.value {
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--color-text, #e2e8f0);
+}
+
+.valueDim {
+  color: var(--color-text-muted, #64748b);
+}

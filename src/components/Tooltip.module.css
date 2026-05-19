@@ -33,42 +33,42 @@
 }
 
 /* Tooltip positions */
-.tooltip-top {
+.tooltipTop {
   top: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-4px);
 }
 
-.tooltip-top.show {
+.tooltipTop.show {
   transform: translateX(-50%) translateY(0);
 }
 
-.tooltip-bottom {
+.tooltipBottom {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(4px);
 }
 
-.tooltip-bottom.show {
+.tooltipBottom.show {
   transform: translateX(-50%) translateY(0);
 }
 
-.tooltip-left {
+.tooltipLeft {
   left: 100%;
   top: 50%;
   transform: translateY(-50%) translateX(-4px);
 }
 
-.tooltip-left.show {
+.tooltipLeft.show {
   transform: translateY(-50%) translateX(0);
 }
 
-.tooltip-right {
+.tooltipRight {
   right: 100%;
   top: 50%;
   transform: translateY(-50%) translateX(4px);
 }
 
-.tooltip-right.show {
+.tooltipRight.show {
   transform: translateY(-50%) translateX(0);
 }

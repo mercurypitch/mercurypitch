@@ -1,0 +1,14 @@
+/* Extracted from: Piano Roll Editor — module-scoped classes */
+
+.pianoRollWrapper {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pianoRollContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
