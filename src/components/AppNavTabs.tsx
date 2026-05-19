@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { ActiveTab } from '@/types'
 
 export interface AppNavTabsProps {
@@ -188,6 +188,20 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
               />
             </svg>
             {props.tabLabel(TAB_CHALLENGES)}
+          </button>
+          <button
+            id="tab-exercises"
+            class={`app-tab ${props.activeTab() === TAB_EXERCISES ? 'active' : ''}`}
+            onClick={() => void props.handleTabChange(TAB_EXERCISES)}
+            aria-label="Singing Exercises"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+              <path
+                fill="currentColor"
+                d="M12 14c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2s2 .9 2 2v8c0 1.1-.9 2-2 2zm-1 4h2v2h-2zm-4.5-7.5c.8-.8 2-.8 2.8 0l1.4 1.4c.8.8.8 2 0 2.8-.8.8-2 .8-2.8 0L7.5 10.5zM3 13c0 5 4 9 9 9s9-4 9-9h-2c0 3.9-3.1 7-7 7s-7-3.1-7-7H3z"
+              />
+            </svg>
+            {props.tabLabel(TAB_EXERCISES)}
           </button>
         </Show>
         <button

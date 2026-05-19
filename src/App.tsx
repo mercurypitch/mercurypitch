@@ -82,7 +82,7 @@ import { usePracticeController } from '@/features/practice/usePracticeController
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -110,6 +110,11 @@ import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
+import ExerciseMenu from '@/features/exercises/ExerciseMenu'
+import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
+import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
+import SlideExercise from '@/features/exercises/slide/SlideExercise'
+import type { ExerciseType } from '@/features/exercises/types'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -240,6 +245,10 @@ const AppShell: Component<AppProps> = (props) => {
   >(null)
   const [activeUvrView, setActiveUvrView] =
     createSignal<UvrView>('shazam-listen')
+
+  // ── Exercises ────────────────────────────────────────────────
+  const [selectedExercise, setSelectedExercise] = createSignal<ExerciseType | null>(null)
+  const clearExercise = () => setSelectedExercise(null)
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -1392,6 +1401,39 @@ const AppShell: Component<AppProps> = (props) => {
                     <Suspense fallback={<div class="tab-loading" />}>
                       <VocalChallenges />
                     </Suspense>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_EXERCISES}>
+                <TabErrorBoundary tabName={tabLabel(TAB_EXERCISES)}>
+                  <div id="exercises-panel">
+                    <Show
+                      when={selectedExercise()}
+                      fallback={<ExerciseMenu onSelect={(type) => setSelectedExercise(type)} />}
+                    >
+                      <Show when={selectedExercise() === 'long-note'}>
+                        <LongNoteExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'vibrato'}>
+                        <VibratoExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'slide'}>
+                        <SlideExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                    </Show>
                   </div>
                 </TabErrorBoundary>
               </Show>

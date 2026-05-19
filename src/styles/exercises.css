@@ -1,0 +1,405 @@
+/* ============================================================
+   Singing Exercises — Layout and component styles
+   ============================================================ */
+
+/* ── Exercise Menu ────────────────────────────────────────── */
+
+.exercises-panel {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.exercises-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.exercises-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.exercise-card {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.exercise-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.exercise-card-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.exercise-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.exercise-card p {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+.exercise-card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.exercise-card-tags span {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  background: var(--bg-accent);
+  color: var(--text-accent);
+}
+
+/* ── Exercise Runner (shared) ─────────────────────────────── */
+
+.exercise-runner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  color: var(--text-primary);
+}
+
+.exercise-runner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.exercise-runner-header .back-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.exercise-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.exercise-score-display {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.exercise-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 200px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.exercise-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.exercise-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.exercise-btn-primary {
+  background: var(--accent-color, #6366f1);
+  color: #fff;
+}
+
+.exercise-btn-primary:hover {
+  background: var(--accent-hover, #4f46e5);
+}
+
+.exercise-btn-secondary {
+  background: var(--bg-accent);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.exercise-target-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.exercise-target-selector select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+/* ── Long Note Exercise ───────────────────────────────────── */
+
+.long-note-timer {
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+
+.long-note-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+  padding: 0 20px;
+}
+
+.long-note-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.long-note-metric-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.long-note-metric-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.long-note-metric-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-accent);
+  overflow: hidden;
+}
+
+.long-note-metric-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.long-note-metric-fill.good {
+  background: #22c55e;
+}
+
+.long-note-metric-fill.ok {
+  background: #eab308;
+}
+
+.long-note-metric-fill.poor {
+  background: #ef4444;
+}
+
+/* ── Vibrato Exercise ─────────────────────────────────────── */
+
+.vibrato-viz {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.vibrato-outer-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.vibrato-inner-ring {
+  position: absolute;
+  inset: 15px;
+  border-radius: 50%;
+  border: 1px dashed var(--border-color);
+  opacity: 0.5;
+}
+
+.vibrato-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-color, #6366f1);
+  transform: translate(-50%, -50%);
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.vibrato-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.vibrato-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.vibrato-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.vibrato-metric-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.vibrato-metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ── Slide Exercise ───────────────────────────────────────── */
+
+.slide-viz {
+  width: 100%;
+  max-width: 400px;
+  height: 150px;
+  position: relative;
+}
+
+.slide-target-start,
+.slide-target-end {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transform: translate(-50%, -50%);
+}
+
+.slide-target-end {
+  background: var(--accent-color, #6366f1);
+}
+
+.slide-pitch-trace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.slide-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.slide-metric-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.slide-metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ── Result Overlay ──────────────────────────────────────── */
+
+.exercise-result-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  gap: 12px;
+  z-index: 10;
+}
+
+.exercise-result-score {
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.exercise-result-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .exercises-grid {
+    grid-template-columns: 1fr;
+  }
+  .long-note-metrics,
+  .vibrato-metrics,
+  .slide-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
