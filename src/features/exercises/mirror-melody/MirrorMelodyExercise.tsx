@@ -2,6 +2,7 @@ import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
 import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { midiToNoteName } from '@/lib/frequency-to-note'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
@@ -15,13 +16,6 @@ interface MirrorMelodyExerciseProps {
 }
 
 const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
-
-function midiToNoteName(midi: number): string {
-  const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-  const note = midi % 12
-  const octave = Math.floor(midi / 12) - 1
-  return `${names[note]}${octave}`
-}
 
 function noteToMidi(note: string): number {
   const names = ['C', 'D', 'E', 'F', 'G', 'A', 'B']

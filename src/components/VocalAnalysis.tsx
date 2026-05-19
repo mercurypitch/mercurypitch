@@ -8,6 +8,7 @@ import { IconPlay } from '@/components/hidden-features-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { IS_DEV } from '@/lib/defaults'
+import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { LiveAnalysisSnapshot, LivePitchSample, } from '@/lib/live-pitch-analysis'
 import { analyzeLiveBuffer } from '@/lib/live-pitch-analysis'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -1839,22 +1840,3 @@ function rmsAmplitude(samples: Float32Array): number {
   return Math.sqrt(sum / samples.length)
 }
 
-function midiToNoteName(midi: number): string {
-  const names = [
-    'C',
-    'C#',
-    'D',
-    'D#',
-    'E',
-    'F',
-    'F#',
-    'G',
-    'G#',
-    'A',
-    'A#',
-    'B',
-  ]
-  const octave = Math.floor(midi / 12) - 1
-  const name = names[Math.round(midi) % 12]
-  return `${name}${octave}`
-}
