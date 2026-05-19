@@ -391,6 +391,190 @@
   margin-bottom: 8px;
 }
 
+/* ── Pitch Hold Exercise ───────────────────────────────────── */
+
+.pitch-hold-viz {
+  width: 80px;
+  height: 200px;
+  position: relative;
+  background: var(--surface-hover);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 0 auto;
+}
+
+.pitch-hold-zone {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 4px;
+  transition: top 0.3s, height 0.3s;
+}
+
+.pitch-hold-center-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--text-secondary);
+  opacity: 0.3;
+}
+
+.pitch-hold-dot {
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 0.08s linear;
+  z-index: 2;
+}
+
+.pitch-hold-dot-in {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.pitch-hold-dot-out {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.pitch-hold-target-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  z-index: 1;
+}
+
+.pitch-hold-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pitch-hold-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pitch-hold-metric-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.pitch-hold-metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ── Mirror Melody Exercise ─────────────────────────────────── */
+
+.mirror-melody-viz {
+  width: 80px;
+  height: 180px;
+  position: relative;
+  background: var(--surface-hover);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 0 auto;
+}
+
+.mirror-melody-target-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.mirror-melody-dot {
+  position: absolute;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 0.1s linear;
+  z-index: 2;
+  background: var(--text-secondary);
+}
+
+.mirror-melody-dot-close {
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+}
+
+.mirror-melody-dot-far {
+  background: #eab308;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
+}
+
+.mirror-melody-target-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, 20px);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+/* ── Pitch Pursuit Exercise ─────────────────────────────────── */
+
+.pursuit-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pursuit-target-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 88%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.pursuit-note-bar {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.pursuit-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--surface-hover);
+  border-bottom: 1px solid var(--border);
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 
 @media (max-width: 600px) {

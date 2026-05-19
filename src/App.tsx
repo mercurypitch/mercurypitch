@@ -115,6 +115,9 @@ import ExerciseMenu from '@/features/exercises/ExerciseMenu'
 import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import SlideExercise from '@/features/exercises/slide/SlideExercise'
+import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
+import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
+import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
 import type { ExerciseType } from '@/features/exercises/types'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -1440,6 +1443,27 @@ const AppShell: Component<AppProps> = (props) => {
                       </Show>
                       <Show when={selectedExercise() === 'slide'}>
                         <SlideExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'pitch-hold'}>
+                        <PitchHoldExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'mirror-melody'}>
+                        <MirrorMelodyExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'pitch-pursuit'}>
+                        <PitchPursuitExercise
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
