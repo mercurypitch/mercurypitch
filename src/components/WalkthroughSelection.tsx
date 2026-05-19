@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { getCompletedWalkthroughs, getRemainingWalkthroughs, getTotalWalkthroughCount, viewWalkthrough, } from '@/stores/walkthrough-store'
-import styles from './WalkthroughSelection.module.css'
 
 interface WalkthroughSelectionProps {
   isOpen: boolean
@@ -34,33 +33,33 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
   return (
     <Show when={props.isOpen}>
       <div
-        class={styles.walkthroughSelectionOverlay}
+        class="walkthrough-selection-overlay"
         onClick={() => props.onClose()}
       >
         <div
-          class={styles.walkthroughSelectionCard}
+          class="walkthrough-selection-card"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={handleKeydown}
           tabIndex={0}
         >
           {/* Header */}
-          <div class={styles.wsHeader}>
-            <div class={styles.wsHeaderLeft}>
+          <div class="ws-header">
+            <div class="ws-header-left">
               <svg
                 viewBox="0 0 24 24"
                 width="22"
                 height="22"
-                class={styles.wsHeaderIcon}
+                class="ws-header-icon"
               >
                 <path
                   fill="currentColor"
                   d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
                 />
               </svg>
-              <h2 class={styles.wsTitle}>Learn</h2>
+              <h2 class="ws-title">Learn</h2>
             </div>
             <button
-              class={styles.wsCloseBtn}
+              class="ws-close-btn"
               onClick={() => props.onClose()}
               title="Close"
               aria-label="Close"
@@ -75,29 +74,26 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
           </div>
 
           {/* Progress */}
-          <div class={styles.wsProgress}>
-            <div class={styles.wsProgressBar}>
+          <div class="ws-progress">
+            <div class="ws-progress-bar">
               <div
-                class={styles.wsProgressFill}
+                class="ws-progress-fill"
                 style={{
                   width: `${(completed().length / (total() || 1)) * 100}%`,
                 }}
               />
             </div>
-            <span class={styles.wsProgressText}>
+            <span class="ws-progress-text">
               {completed().length} / {total()} chapters read
             </span>
           </div>
 
           {/* Chapter list */}
-          <div class={styles.wsChapters}>
+          <div class="ws-chapters">
             <For each={remaining()}>
               {(w) => (
-                <button
-                  class={styles.wsChapterItem}
-                  onClick={() => handleView(w)}
-                >
-                  <span class={styles.wsChapterIcon}>
+                <button class="ws-chapter-item" onClick={() => handleView(w)}>
+                  <span class="ws-chapter-icon">
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
                         fill="currentColor"
@@ -105,29 +101,22 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
                       />
                     </svg>
                   </span>
-                  <span class={styles.wsChapterTitle}>{w.title}</span>
-                  <span class={styles.wsChapterTab}>{w.tab}</span>
+                  <span class="ws-chapter-title">{w.title}</span>
+                  <span class="ws-chapter-tab">{w.tab}</span>
                 </button>
               )}
             </For>
 
             {/* Completed */}
             <Show when={completed().length > 0}>
-              <div class={styles.wsCompleted}>
+              <div class="ws-completed">
                 <For each={completed()}>
                   {(w) => (
                     <button
-                      class={[styles.wsChapterItem, styles.wsChapterDone].join(
-                        ' ',
-                      )}
+                      class="ws-chapter-item ws-chapter-done"
                       onClick={() => handleView(w)}
                     >
-                      <span
-                        class={[
-                          styles.wsChapterIcon,
-                          styles.wsChapterIconDone,
-                        ].join(' ')}
-                      >
+                      <span class="ws-chapter-icon ws-chapter-icon-done">
                         <svg viewBox="0 0 24 24" width="18" height="18">
                           <path
                             fill="currentColor"
@@ -135,7 +124,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
                           />
                         </svg>
                       </span>
-                      <span class={styles.wsChapterTitle}>{w.title}</span>
+                      <span class="ws-chapter-title">{w.title}</span>
                     </button>
                   )}
                 </For>
@@ -144,11 +133,8 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
           </div>
 
           {/* Footer */}
-          <div class={styles.wsFooter}>
-            <button
-              class={styles.wsCloseFooter}
-              onClick={() => props.onClose()}
-            >
+          <div class="ws-footer">
+            <button class="ws-close-footer" onClick={() => props.onClose()}>
               Got it
             </button>
           </div>

@@ -1,9 +1,15 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 
 export async function dismissOverlays(page: Page) {
+  const pkgPath = path.resolve(process.cwd(), 'package.json')
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+  const appVersion = pkg.version
+
   // Force hide any overlays and reset focus mode via hash and localStorage
-  await page.evaluate(() => {
+  await page.evaluate((version) => {
     // Hide all overlays including focus mode in DOM immediately
     const overlays = document.querySelectorAll(
       '[class*="welcomeOverlay"], [class*="walkthroughOverlay"], [class*="welcome-overlay"], [class*="walkthrough-overlay"], .overlay, .focus-mode-backdrop, [class*="welcome-screen"]',
@@ -15,7 +21,7 @@ export async function dismissOverlays(page: Page) {
     }
 
     // Set localStorage to prevent overlays from reappearing on next load
-    localStorage.setItem('pitchperfect_welcome_version', '0.3.1')
+    localStorage.setItem('pitchperfect_welcome_version', version)
     localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
 
@@ -29,7 +35,7 @@ export async function dismissOverlays(page: Page) {
         pp.appStore.exitFocusMode()
       }
     }
-  })
+  }, appVersion)
 
   // Navigate to singing tab via hash to ensure app state is synced
   await page.goto('/#/singing')

@@ -259,7 +259,7 @@ test.describe('Settings Panel', () => {
 
   test('About section has description', async ({ page }) => {
     await switchTab(page, 'settings')
-    const descEl = page.locator('.about-desc')
+    const descEl = page.locator('[data-testid="about-desc"]')
     await expect(descEl).toBeVisible()
     const text = await descEl.textContent()
     expect(text?.length).toBeGreaterThan(20)

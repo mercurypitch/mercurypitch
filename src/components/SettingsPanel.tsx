@@ -1035,6 +1035,7 @@ export const SettingsPanel: Component = () => {
             </button>
             <p
               class={styles.aboutDesc}
+              data-testid="about-desc"
               style="user-select: none; -webkit-user-select: none;"
             >
               Master your voice with MercuryPitch. Compose melodies, extract
