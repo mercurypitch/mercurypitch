@@ -6,6 +6,7 @@ import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
 import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
+import { VOCAL_RANGES,vocalRangePreset } from './settings-store'
 
 export const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
@@ -372,6 +373,20 @@ export function seedDefaultSession(): void {
       degrees: SCALE_DEGREES.major,
     },
     {
+      scaleType: 'major',
+      key: 'C',
+      octave: 2,
+      name: 'C Major Scale (C2)',
+      degrees: SCALE_DEGREES.major,
+    },
+    {
+      scaleType: 'major',
+      key: 'G',
+      octave: 2,
+      name: 'G Major Scale (G2)',
+      degrees: SCALE_DEGREES.major,
+    },
+    {
       scaleType: 'chromatic',
       key: 'C',
       octave: 4,
@@ -590,7 +605,7 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
     bpm: DEFAULT_BPM,
     key: DEFAULT_KEY,
     scaleType: DEFAULT_SCALE_TYPE,
-    octave: DEFAULT_OCTAVE,
+    octave: VOCAL_RANGES[vocalRangePreset()].defaultOctave,
     items: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -655,11 +670,11 @@ const DEFAULT_BPM = 80
 // ============================================================
 
 export const [currentScale, setCurrentScale] = createSignal<ScaleDegree[]>(
-  buildMultiOctaveScale(DEFAULT_KEY, DEFAULT_OCTAVE, 2, DEFAULT_SCALE_TYPE),
+  buildMultiOctaveScale(DEFAULT_KEY, VOCAL_RANGES[vocalRangePreset()].defaultOctave, 2, DEFAULT_SCALE_TYPE),
 )
 
 // Octave state - use function wrapper to avoid circular dependencies
-let _octave = DEFAULT_OCTAVE
+let _octave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
 // Number of octave rows shown in the piano roll. Tracked in this store
 // so refreshScale / setOctave / setNumOctaves can rebuild the scale at
 // a consistent height. Previously this was implicit (refreshScale
