@@ -22,6 +22,13 @@ function noteToMidi(note: string): number {
   return names.indexOf(name) * 1 + (octave + 1) * 12
 }
 
+function midiToNoteName(midi: number): string {
+  const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const note = midi % 12
+  const octave = Math.floor(midi / 12) - 1
+  return `${names[note]}${octave}`
+}
+
 const CLASSIFICATION_LABELS: Record<number, string> = {
   '-1': 'No slide detected',
   0: 'Wobble',
@@ -73,6 +80,22 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const isActive = () => base.state().status === 'active'
   const isComplete = () => base.state().status === 'complete'
 
+  const currentMidi = () => {
+    const p = base.currentPitch()
+    if (!p || p.freq <= 0) return 0
+    return 12 * Math.log2(p.freq / 440) + 69
+  }
+
+  const pitchPosPct = () => {
+    const midi = currentMidi()
+    if (midi === 0) return 50
+    const from = noteToMidi(fromNote())
+    const to = noteToMidi(toNote())
+    const range = to - from
+    if (range === 0) return 50
+    return Math.max(5, Math.min(95, ((midi - from) / range) * 90 + 5))
+  }
+
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
@@ -109,7 +132,34 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
                 class="slide-target-end"
                 style="left:90%;top:50%"
               />
-              {/* Pitch trace would be drawn here with a canvas/SVG overlay */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${pitchPosPct()}%`,
+                  top: '50%',
+                  width: '14px',
+                  height: '14px',
+                  'border-radius': '50%',
+                  background: 'var(--accent)',
+                  transform: 'translate(-50%, -50%)',
+                  transition: 'left 0.1s linear',
+                  'z-index': '3',
+                  'box-shadow': '0 0 10px rgba(99, 102, 241, 0.6)',
+                }}
+              />
+              {currentMidi() > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${pitchPosPct()}%`,
+                  top: '30%',
+                  transform: 'translate(-50%, -50%)',
+                  'font-size': '0.7rem',
+                  color: 'var(--accent)',
+                  'font-weight': '600',
+                }}>
+                  {midiToNoteName(Math.round(currentMidi()))}
+                </div>
+              )}
             </div>
             <div class="slide-metrics" style="margin-top:12px">
               <div class="slide-metric">

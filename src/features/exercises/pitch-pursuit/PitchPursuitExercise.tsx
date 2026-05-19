@@ -21,7 +21,6 @@ function midiToNoteName(midi: number): string {
 }
 
 const TARGET_ZONE_FRAC = 0.88
-const FALL_DURATION_MS = 5000
 
 const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   const [tick, setTick] = createSignal(0)
@@ -38,8 +37,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
   const handleStart = async () => {
     await base.start()
+    if (base.state().status !== 'active') return
     controller.startGame()
-    vizInterval = setInterval(() => setTick((t) => t + 1), 33) // 30fps refresh
+    vizInterval = setInterval(() => setTick((t) => t + 1), 33)
   }
 
   const handleStop = () => {
@@ -73,37 +73,35 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   const isComplete = () => base.state().status === 'complete'
   const met = () => base.state().metrics
 
-  // Compute note positions each tick
+  const currentNote = () => {
+    tick()
+    const p = base.currentPitch()
+    if (!p || p.freq <= 0) return null
+    const midi = 12 * Math.log2(p.freq / 440) + 69
+    return { midi, name: midiToNoteName(Math.round(midi)) }
+  }
+
   const notesView = () => {
-    tick() // reactive dependency
+    tick()
     const now = performance.now()
     return controller.getNotes().map((n) => {
       const elapsed = now - n.spawnedAt
-      const progress = elapsed / FALL_DURATION_MS
-      const yPct = Math.min(100, progress * 100)
-      const opacity = n.scored ? (n.hit ? 0 : 0.3) : 1
-      const color = n.scored
-        ? n.hit
-          ? '#22c55e'
-          : '#ef4444'
-        : 'var(--accent)'
+      const progress = elapsed / 5000
       return {
-        ...n,
-        yPct,
-        opacity,
-        color,
+        id: n.id,
+        midi: n.midi,
+        yPct: Math.min(100, progress * 100),
+        opacity: n.scored ? (n.hit ? 0 : 0.3) : 1,
+        color: n.scored
+          ? n.hit
+            ? '#22c55e'
+            : '#ef4444'
+          : 'var(--accent)',
         noteName: midiToNoteName(n.midi),
+        scored: n.scored,
       }
     })
   }
-
-  // Current pitch indicator
-  const pitch = base.currentPitch()
-  const currentNote = (() => {
-    if (!pitch || pitch.freq <= 0) return null
-    const midi = 12 * Math.log2(pitch.freq / 440) + 69
-    return { midi, name: midiToNoteName(Math.round(midi)) }
-  })()
 
   return (
     <div class="exercise-runner">
@@ -117,7 +115,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         </span>
       </div>
 
-      <div class="exercise-canvas-area" style="position:relative;overflow:hidden;background:var(--surface);border-radius:12px;min-height:320px">
+      <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:280px">
             <IconGame size={48} />
@@ -128,8 +126,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
         {isActive() && (
           <>
-            {/* Game HUD */}
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--surface-hover);border-bottom:1px solid var(--border)">
+            <div class="pursuit-hud">
               <div style="display:flex;gap:16px;font-size:0.9rem">
                 <span><IconCheck size={14} /> {met().hits ?? 0}</span>
                 <span><IconCross size={14} /> {met().misses ?? 0}</span>
@@ -138,48 +135,25 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
                 Combo: {met().combo ?? 0}x
               </div>
               <div style="font-size:0.8rem;color:var(--text-secondary)">
-                {currentNote ? <><IconMic size={14} /> {currentNote.name}</> : '...'}
+                {currentNote() ? <><IconMic size={14} /> {currentNote()!.name}</> : '...'}
               </div>
             </div>
 
-            {/* Falling notes track */}
-            <div style="position:relative;height:240px;overflow:hidden">
-              {/* Target zone line */}
+            <div class="pursuit-track">
               <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: `${TARGET_ZONE_FRAC * 100}%`,
-                  height: '2px',
-                  background: 'var(--accent)',
-                  opacity: 0.5,
-                  'z-index': 10,
-                }}
+                class="pursuit-target-line"
+                style={`top:${TARGET_ZONE_FRAC * 100}%`}
               />
 
-              {/* Notes */}
               <For each={notesView()}>
                 {(note) => (
                   <div
+                    class="pursuit-note-bar"
                     style={{
-                      position: 'absolute',
-                      left: '15%',
-                      right: '15%',
                       top: `${note.yPct}%`,
-                      height: '28px',
                       background: note.color,
                       opacity: note.opacity,
-                      'border-radius': '4px',
-                      display: 'flex',
-                      'align-items': 'center',
-                      'justify-content': 'center',
-                      'font-size': '0.8rem',
-                      'font-weight': '700',
-                      color: '#fff',
-                      transform: 'translateY(-50%)',
                       transition: note.scored ? 'opacity 0.3s' : 'none',
-                      'z-index': 5,
                     }}
                   >
                     {note.noteName}
@@ -188,7 +162,6 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               </For>
             </div>
 
-            {/* Status */}
             <div style="text-align:center;padding:8px;font-size:0.8rem;color:var(--text-secondary)">
               {(met().totalNotes ?? 0)} / 12 notes
             </div>
@@ -196,7 +169,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         )}
 
         {isComplete() && base.result() && (
-          <div class="exercise-result-overlay" style="position:absolute">
+          <div class="exercise-result-overlay">
             <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
               {base.result()!.score}%
             </div>
@@ -226,7 +199,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             Stop
           </button>
         )}
-        {isComplete() &&(
+        {isComplete() && (
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Play Again

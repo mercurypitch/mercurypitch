@@ -15,12 +15,19 @@ interface VibratoExerciseProps {
 
 const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
 
-const CLASSIFICATION_LABELS: Record<string, string> = {
-  none: 'No vibrato detected',
-  'slow-operatic': 'Slow & Wide',
-  natural: 'Natural',
-  nervous: 'Fast & Narrow',
-  wide: 'Wide',
+const CLASSIFICATION_LABELS: Record<number, string> = {
+  0: 'No vibrato detected',
+  1: 'Slow & Wide',
+  2: 'Natural',
+  3: 'Fast & Narrow',
+  4: 'Wide',
+}
+
+function midiToNoteName(midi: number): string {
+  const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const note = midi % 12
+  const octave = Math.floor(midi / 12) - 1
+  return `${names[note]}${octave}`
 }
 
 const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
@@ -76,6 +83,13 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const isComplete = () => base.state().status === 'complete'
   const metrics = () => base.state().metrics
 
+  const currentNote = () => {
+    const p = base.currentPitch()
+    if (!p || p.freq <= 0) return '...'
+    const midi = 12 * Math.log2(p.freq / 440) + 69
+    return midiToNoteName(Math.round(midi))
+  }
+
   // Orbiting dot position (center of viz)
   const hasVibrato = () => metrics().rateHz > 0
   const orbitRadius = () => hasVibrato() ? Math.min(60, (metrics().depthCents || 0) * 1.2) : 10
@@ -104,6 +118,9 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <div style="text-align:center;margin-bottom:8px;font-size:0.9rem;color:var(--accent);font-weight:600">
+              {currentNote()}
+            </div>
             <div class="vibrato-viz">
               <div class="vibrato-outer-ring" />
               <div class="vibrato-inner-ring" />
@@ -132,7 +149,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
                 <span class="vibrato-metric-label">Style</span>
                 <span class="vibrato-metric-value" style="font-size:0.75rem">
                   {hasVibrato()
-                    ? (CLASSIFICATION_LABELS[Object.keys(CLASSIFICATION_LABELS)[metrics().classification || 0]] || '...')
+                    ? (CLASSIFICATION_LABELS[metrics().classification ?? 0] || '...')
                     : '—'}
                 </span>
               </div>
