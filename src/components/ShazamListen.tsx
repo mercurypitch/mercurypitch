@@ -226,13 +226,20 @@ export function ShazamListen(props: ShazamListenProps) {
     buffer = null
     cancelAnimationLoop()
     setListenState('processing')
+    setErrorMessage('')
 
     if (contour.noteSequence.length === 0) {
       setErrorMessage('No melody detected. Try singing a few notes!')
-      setListenState('idle')
+      setListenState('error')
       return
     }
 
+    // Defer matching to next microtask so the "processing" UI renders
+    // before the CPU-bound DTW computation blocks the main thread.
+    queueMicrotask(() => runMatching(contour))
+  }
+
+  function runMatching(contour: LivePitchContour) {
     const sourceFilter = !includeMelodies()
       ? 'stem'
       : !includeStems()
@@ -252,14 +259,14 @@ export function ShazamListen(props: ShazamListenProps) {
       setErrorMessage(
         'An error occurred while matching. Try singing a shorter phrase.',
       )
-      setListenState('idle')
+      setListenState('error')
       return
     }
     if (candidates.length === 0) {
       setErrorMessage(
         'No matches found. Try singing more clearly or a different melody.',
       )
-      setListenState('idle')
+      setListenState('error')
       return
     }
 
@@ -443,7 +450,9 @@ export function ShazamListen(props: ShazamListenProps) {
       <p class={styles.hint}>
         {listenState() === 'listening'
           ? 'Singing...'
-          : 'Tap to start singing or humming'}
+          : listenState() === 'processing'
+            ? 'Matching your melody...'
+            : 'Tap to start singing or humming'}
       </p>
 
       {/* Auto-mode toggle */}
@@ -564,8 +573,15 @@ export function ShazamListen(props: ShazamListenProps) {
         {formatTime(elapsed())}
       </div>
 
-      <Show when={listenState() === 'error'}>
-        <p class={styles.error}>{errorMessage()}</p>
+      <Show when={listenState() === 'processing'}>
+        <div class={styles.processingOverlay} data-testid="shazam-processing">
+          <div class={styles.spinner} />
+          <span>Matching your melody...</span>
+        </div>
+      </Show>
+
+      <Show when={listenState() === 'error' && errorMessage() !== ''}>
+        <p class={styles.error} data-testid="shazam-error">{errorMessage()}</p>
       </Show>
 
       <div class={styles.controls}>
@@ -587,12 +603,9 @@ export function ShazamListen(props: ShazamListenProps) {
         </button>
       </div>
 
-      <Show
-        when={
-          listenState() === 'error' && errorMessage().includes('Microphone')
-        }
-      >
-        <button class={styles.retryBtn} onClick={handleRetry}>
+      <Show when={listenState() === 'error'}>
+        <button class={styles.retryBtn} onClick={handleRetry}
+          data-testid="shazam-retry-btn">
           Try Again
         </button>
       </Show>
