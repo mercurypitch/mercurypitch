@@ -106,10 +106,11 @@ const CamChip: Component<CamChipProps> = (props) => {
 export const JamCameraWidget: Component = () => {
   const myId = jamPeerId
 
-  // Default position: top-right with enough room for chip expansion (220px chip + margin)
-  const EXPANDED_W = 250 // max chip width when expanded + margin
-  const initX = Math.max(0, window.innerWidth - EXPANDED_W - 20)
-  const [pos, setPos] = createSignal({ x: initX, y: 80 })
+  // Default position: bottom-right next to the chat widget.
+  const EXPANDED_W = 250
+  const initX = Math.max(0, window.innerWidth - 300)
+  const initY = Math.max(0, window.innerHeight - 100)
+  const [pos, setPos] = createSignal({ x: initX, y: initY })
   let dragging = false
   let dragStart = { x: 0, y: 0, px: 0, py: 0 }
   let trayRef: HTMLDivElement | undefined

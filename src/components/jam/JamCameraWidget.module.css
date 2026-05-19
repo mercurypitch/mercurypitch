@@ -8,24 +8,24 @@
   position: fixed;
   z-index: 999;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 10px;
   /* Default position set via inline style; this just provides fallback */
-  top: 80px;
-  right: 20px;
+  bottom: 20px;
+  right: 80px;
   user-select: none;
   touch-action: none;
 }
 
-/* Drag handle bar at top of the tray */
+/* Drag handle bar at left of the tray */
 .dragHandle {
-  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 6px;
-  padding: 2px 4px;
+  padding: 4px 2px;
   cursor: grab;
   opacity: 0.5;
   transition: opacity 0.15s;
@@ -42,8 +42,8 @@
 
 .dragDots {
   display: grid;
-  grid-template-columns: repeat(3, 4px);
-  grid-template-rows: repeat(2, 4px);
+  grid-template-columns: repeat(2, 4px);
+  grid-template-rows: repeat(3, 4px);
   gap: 3px;
 }
 

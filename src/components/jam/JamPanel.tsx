@@ -3,9 +3,10 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
-import { createJamRoom, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
+import { JamActivityHeatmap } from './JamActivityHeatmap'
 import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
@@ -42,12 +43,25 @@ export const JamPanel: Component = () => {
   })
 
   onMount(() => {
+    // 1. URL-based room join (highest priority)
     const roomId = jamRoomToJoin()
     if (roomId !== null) {
       setJoinRoomId(roomId.toUpperCase())
       setJamRoomToJoin(null)
-      // Auto-join if a room code was in the URL
       handleJoin()
+      return
+    }
+    // 2. SessionStorage auto-rejoin on page reload
+    if (jamState() === 'idle') {
+      const prev = getJamSessionInfo()
+      if (prev) {
+        setDisplayName(prev.displayName)
+        setJoinRoomId(prev.roomId)
+        setJoining(true)
+        joinJamRoom(prev.roomId, prev.displayName).finally(() =>
+          setJoining(false),
+        )
+      }
     }
   })
 
@@ -73,8 +87,55 @@ export const JamPanel: Component = () => {
     return Object.values(lib.melodies)
   })
 
+  const FUNNY_NAMES = [
+    'Warty',
+    'Hoary',
+    'Breezy',
+    'Dapper',
+    'Edgy',
+    'Feisty',
+    'Gutsy',
+    'Hardy',
+    'Intrepid',
+    'Jaunty',
+    'Karmic',
+    'Lucid',
+    'Maverick',
+    'Natty',
+    'Oneiric',
+    'Precise',
+    'Quantal',
+    'Raring',
+    'Saucy',
+    'Trusty',
+    'Utopic',
+    'Vivid',
+    'Wily',
+    'Xenial',
+    'Yakkety',
+    'Zesty',
+    'Artful',
+    'Bionic',
+    'Cosmic',
+    'Disco',
+    'Eoan',
+    'Focal',
+    'Groovy',
+    'Hirsute',
+    'Impish',
+    'Jammy',
+    'Kinetic',
+    'Lunar',
+    'Mantic',
+    'Noble',
+    'Oracular',
+  ]
+
+  const getRandomName = () =>
+    FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)]
+
   const handleCreate = () => {
-    const name = displayName().trim() || 'Anonymous'
+    const name = displayName().trim() || getRandomName()
     createJamRoom(name).catch(() => {})
   }
 
@@ -82,7 +143,7 @@ export const JamPanel: Component = () => {
     const roomId = joinRoomId().trim().toUpperCase()
     if (!roomId) return
     setJoining(true)
-    const name = displayName().trim() || 'Anonymous'
+    const name = displayName().trim() || getRandomName()
     joinJamRoom(roomId, name).finally(() => setJoining(false))
   }
 
@@ -92,13 +153,17 @@ export const JamPanel: Component = () => {
       <Show when={jamState() === 'idle'}>
         <div class="jam-connect">
           <h2 class="jam-title">Jam Session</h2>
-          <p class="jam-desc">
-            Play music together in real-time with other PitchPerfect users.
+          <p class="jam-desc" style={{ 'font-style': 'italic' }}>
+            "Where words fail, music speaks."
           </p>
 
           <div class="jam-field">
-            <label class="jam-label" for="jam-display-name">
-              Display Name (used for creating &amp; joining)
+            <label
+              class="jam-label"
+              for="jam-display-name"
+              style={{ 'text-transform': 'none', 'letter-spacing': 'normal' }}
+            >
+              Display Name
             </label>
             <input
               id="jam-display-name"
@@ -189,12 +254,10 @@ export const JamPanel: Component = () => {
                   <span class="jam-muted-indicator">(muted)</span>
                 </Show>
               </div>
-
               <JamPeerList peers={jamPeers()} />
               <JamPitchDisplay />
             </div>
           </div>
-
           {/* ── Main content ───────────────────────────────────── */}
           <div class={panelStyles.mainArea}>
             {/* Top bar: room info + controls */}
@@ -507,8 +570,10 @@ export const JamPanel: Component = () => {
               {/* Exercise — takes most space */}
               <div
                 class={`${exerciseCanvasStyles.container} ${panelStyles.exerciseCanvas}`}
+                style={{ position: 'relative' }}
               >
                 <JamExerciseCanvas myPeerId={jamPeerId} />
+                <JamActivityHeatmap />
               </div>
 
               {/* Shared pitch — compact strip below, toggleable */}

@@ -44,7 +44,7 @@ export function createJamService(callbacks: JamCallbacks) {
   const dataChannels = new Map<string, RTCDataChannel>()
   const pendingCandidates = new Map<string, string[]>()
   let disposed = false
-  let videoEnabled = true
+  let videoEnabled = false
   let localDisplayName = ''
 
   const signaling = createSignalingClient({
