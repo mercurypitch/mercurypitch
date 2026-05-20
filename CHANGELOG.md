@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shazam**: melody matching algorithm accuracy improvements
 - **Pitch Canvas**: scroll mode rendering after CSS module refactor
 - **Durable Object Hibernation**: `ownerName` lost after DO eviction -- now persisted in `ctx.storage`
+- **UI / Mobile Layout**: Resolved overly large toolbar buttons by implementing strict CSS modules for consistent `.ctrlBtn` sizing across all controls
+- **UI / Header**: Fixed mobile responsive navigation layout to properly wrap onto two compact rows instead of creating extra vertical space
+- **UI / Sidebar**: Fixed missing "Expand sidebar" arrow button when sidebar is collapsed by removing a conflicting global rule and scoping CSS modules correctly
 - **E2E Test**: removed assertion on deleted `.tab-badge` element
 
 ## [0.3.4] - 2026-05-19

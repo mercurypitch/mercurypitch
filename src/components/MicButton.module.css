@@ -6,8 +6,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-tertiary);
@@ -42,4 +42,10 @@
 .ctrlBtn.recording:hover {
   background: #d04a42;
   border-color: #d04a42;
+}
+
+@media (max-width: 480px) {
+  .ctrlBtn > span {
+    display: none;
+  }
 }

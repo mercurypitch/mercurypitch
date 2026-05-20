@@ -18,8 +18,8 @@
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;   /* fallback for older browsers */
-  height: 100dvh;  /* dynamic viewport height — shrinks with mobile browser chrome */
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh; /* dynamic viewport height — shrinks with mobile browser chrome */
 }
 
 :root {
@@ -119,12 +119,18 @@ body {
   overflow: hidden;
 }
 
-/* ── Global Select Normalizer ─────────────────────────────────
-   Ensures ALL dropdowns across the app share the same dark
-   background, border, custom chevron arrow, and hover/focus
-   states. Individual component styles can still override
-   size, padding, or layout-specific properties.
-   ───────────────────────────────────────────────────────────── */
+/* -- Global Select Normalizer -----------------------------------------------
+   Ensures ALL dropdowns across the app share the same dark background,
+   border, custom chevron arrow, and hover/focus states. Individual component
+   styles can still override size, padding, or layout-specific properties.
+
+   WARNING  iOS Safari: a <select> inside a CSS `transform`-ed ancestor will
+   crash or fail to open the native picker. NEVER put a <select> inside a
+   container with `transform`. Use `left`/`right` animation instead.
+   See docs/ios-safari-select-bug.md for details and safe patterns.
+   Consider using <SafeSelect> from @/components/shared/SafeSelect.tsx
+   which warns in dev mode when this bug is detected.
+   -------------------------------------------------------------------------- */
 select {
   appearance: none;
   -webkit-appearance: none;
@@ -316,33 +322,8 @@ select option:disabled {
     flex-direction: column;
   }
 
-  /* Sidebar: collapsible off-canvas panel */
-  /* Sidebar: slide via `left` instead of `transform` so that iOS
-     Safari's native <select> picker is not broken by a transformed
-     ancestor (well-known WebKit bug). */
-  .app-sidebar {
-    position: fixed;
-    top: 0;
-    left: -270px;
-    bottom: 0;
-    width: 270px;
-    z-index: 200;
-    transition: left 0.22s ease;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border);
-    border-bottom: none;
-    flex-direction: column;
-    overflow-y: auto;
-    max-height: 100vh;
-    max-height: 100dvh;
-  }
-  .app-sidebar.open {
-    left: 0;
-  }
-  /* Reset sidebar layout when open */
-  .app-sidebar > * {
-    width: 100%;
-  }
+  /* Sidebar: mobile overrides now live in AppSidebar.module.css
+     so that CSS-module load order cannot break them. */
 
   /* Sidebar toggle FAB — always visible on mobile */
   .sidebar-toggle-btn {
@@ -351,7 +332,6 @@ select option:disabled {
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 6px 10px;
-    margin-top: 4px;
     cursor: pointer;
     color: var(--text-primary);
     font-size: 0.75rem;
@@ -359,16 +339,61 @@ select option:disabled {
     gap: 4px;
     width: fit-content;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    margin: 0;
   }
   .sidebar-toggle-btn:hover {
     background: var(--bg-tertiary);
   }
 
-  .header-left {
+  header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    gap: 0px;
+  }
+
+  header .header-left {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .logo-btn .app-title {
+    font-size: 1.05rem;
+  }
+
+  #app-tabs {
+    flex-basis: 100%;
+    width: 100%;
+    order: 2;
+    padding: 0;
+    margin-top: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #app-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Icon-only tabs on mobile — hide text labels */
+  .app-tab {
+    padding: 6px 8px;
+    font-size: 0;
+    gap: 0;
+  }
+  .app-tab .tab-icon {
+    width: 18px;
+    height: 18px;
   }
 
   /* Sidebar backdrop */
@@ -384,6 +409,7 @@ select option:disabled {
   .main-content {
     min-height: 0;
     flex: 1;
+    height: auto;
   }
 
   /* Score card: compact */
@@ -478,18 +504,13 @@ select option:disabled {
 
 /* ===== Large Phones (480px) — hide secondary elements ===== */
 @media (max-width: 480px) {
-  .app-sidebar {
-    top: 0;
-  }
   #history-container {
     display: none;
   }
   .stats-panel {
     display: none;
   }
-  #note-list {
-    display: none;
-  }
+  /* #note-list hide moved to NoteList.module.css (CSS cascade fix) */
 
   /* Session player: compact */
   .session-player {
@@ -508,9 +529,6 @@ select option:disabled {
 
 /* ===== Small Phones (390px) — iPhone 13/15 Pro ===== */
 @media (max-width: 390px) {
-  .app-sidebar {
-    top: 0;
-  }
   header h1 {
     font-size: 1rem;
   }
@@ -774,6 +792,9 @@ input:checked + .settings-slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.header-right:empty {
+  display: none;
 }
 
 /* =====================================================================
@@ -1526,7 +1547,7 @@ input:checked + .settings-slider:before {
   padding: 3px 4px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
 }
 
 .tab-group-label {
@@ -2038,10 +2059,7 @@ input[type='range'] {
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
   -webkit-overflow-scrolling: touch;
-  padding: 4px 12px;
   gap: 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-primary);
 }
 
 #app-tabs::-webkit-scrollbar {
@@ -2053,9 +2071,6 @@ input[type='range'] {
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: none;
-  padding: 0;
 }
 
 #app-tabs .tab-group-label {
