@@ -4,6 +4,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -134,6 +135,30 @@ export const JamPanel: Component = () => {
   const getRandomName = () =>
     FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)]
 
+  const fancyRoomName = createMemo(() => {
+    const id = jamRoomId()
+    if (!id) return ''
+    let hash = 0
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const index = Math.abs(hash) % FUNNY_NAMES.length
+    return FUNNY_NAMES[index]
+  })
+
+  const colorMap = createMemo(() => {
+    const ids = jamPeers().map(p => p.id)
+    const myId = jamPeerId()
+    if (myId) ids.push(myId)
+    return buildPeerColorMap(ids)
+  })
+
+  const myColor = createMemo(() => {
+    const id = jamPeerId()
+    if (!id) return '#10b981' // fallback green
+    return colorMap()[id] || '#10b981'
+  })
+
   const handleCreate = () => {
     const name = displayName().trim() || getRandomName()
     createJamRoom(name).catch(() => {})
@@ -263,7 +288,38 @@ export const JamPanel: Component = () => {
             {/* Top bar: room info + controls */}
             <div class="jam-room-header">
               <div class="jam-room-info">
-                <h2 class="jam-title">Jam Room</h2>
+                <div class={panelStyles.titleRow}>
+                  <h2 class="jam-title">Jam {fancyRoomName()}</h2>
+                  <div class={panelStyles.peerBadges}>
+                    <span
+                      class={panelStyles.peerBadge}
+                      style={{
+                        'background-color': `${myColor()}33`,
+                        color: myColor(),
+                        border: `1px solid ${myColor()}`,
+                      }}
+                    >
+                      {getJamSessionInfo()?.displayName || 'You'}
+                    </span>
+                    <For each={jamConnectedPeers()}>
+                      {(peer) => {
+                        const color = colorMap()[peer.id] ?? '#f0883e'
+                        return (
+                          <span
+                            class={panelStyles.peerBadge}
+                            style={{
+                              'background-color': `${color}33`,
+                              color: color,
+                              border: `1px solid ${color}`,
+                            }}
+                          >
+                            {peer.displayName}
+                          </span>
+                        )
+                      }}
+                    </For>
+                  </div>
+                </div>
                 <div class={panelStyles.roomIdRow}>
                   <span class="jam-room-id-badge">{jamRoomId()}</span>
                   <button

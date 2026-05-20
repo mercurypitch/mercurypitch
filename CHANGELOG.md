@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Jam Session**: WebRTC video stream renegotiation to ensure camera streams connect reliably
+- **Jam Session**: Prevented remote audio source duplication causing volume overlap
+- **StemMixer Lyrics**: Prevented auto-loading incorrect lyrics for generic filenames; close picker after manual upload
+- **UI**: Visual improvements to UVR Guide modal and restored fancy gradient divider in sidebar
 - **Shazam**: processing spinner and error state display on stop/match flow
 - **Shazam**: melody matching algorithm accuracy improvements
 - **Pitch Canvas**: scroll mode rendering after CSS module refactor
