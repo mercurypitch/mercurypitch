@@ -6,9 +6,9 @@ import type { Accessor, Component, JSX, Setter } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import { MagnifyingGlass } from './icons'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
-import { MagnifyingGlass } from './icons'
 
 interface ParsedLyric {
   key: string
@@ -38,14 +38,14 @@ const SongPicker = (p: SongPickerProps) => {
   let inputRef: HTMLInputElement | undefined
 
   const lrclibQueryUrl = () => {
-    return `https://lrclib.net/search/${encodeURIComponent(p.query)}`
+    const q = p.query?.trim()
+    if (!q) return 'https://lrclib.net'
+    return `https://lrclib.net/search/${encodeURIComponent(q)}`
   }
 
   return (
     <div class="sm-song-picker">
-      <div class="sm-song-picker-header">
-        Search Lyrics Online
-      </div>
+      <div class="sm-song-picker-header">Search Lyrics Online</div>
       <div class="sm-song-picker-search">
         <input
           ref={inputRef}
@@ -71,7 +71,9 @@ const SongPicker = (p: SongPickerProps) => {
         when={p.matches.length > 0}
         fallback={
           <div class="sm-song-picker-no-results">
-            <span class="sm-song-picker-no-results-title">No matching songs found</span>
+            <span class="sm-song-picker-no-results-title">
+              No matching songs found
+            </span>
             <span class="sm-song-picker-no-results-hint">
               Try refining your search terms above or search on LRCLIB.
             </span>
@@ -87,7 +89,15 @@ const SongPicker = (p: SongPickerProps) => {
           </div>
         }
       >
-        <div class="sm-song-picker-header-count" style={{ "font-size": "0.75rem", "font-weight": "500", "color": "var(--fg-secondary, #8b949e)", "margin-top": "0.25rem" }}>
+        <div
+          class="sm-song-picker-header-count"
+          style={{
+            'font-size': '0.75rem',
+            'font-weight': '500',
+            color: 'var(--fg-secondary, #8b949e)',
+            'margin-top': '0.25rem',
+          }}
+        >
           Found {p.matches.length} matching songs:
         </div>
         <div class="sm-song-picker-list">
@@ -110,14 +120,18 @@ const SongPicker = (p: SongPickerProps) => {
         <button
           class="sm-btn sm-btn-secondary"
           onClick={() => p.onCancel()}
-          style={{ "font-size": "0.75rem", "padding": "0.35rem 0.75rem" }}
+          style={{ 'font-size': '0.75rem', padding: '0.35rem 0.75rem' }}
         >
           Cancel
         </button>
         <button
           class="sm-btn sm-btn-primary"
           onClick={() => p.onUploadFile()}
-          style={{ "font-size": "0.75rem", "padding": "0.35rem 0.75rem", "gap": "0.35rem" }}
+          style={{
+            'font-size': '0.75rem',
+            padding: '0.35rem 0.75rem',
+            gap: '0.35rem',
+          }}
         >
           <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
             <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
@@ -128,7 +142,6 @@ const SongPicker = (p: SongPickerProps) => {
     </div>
   )
 }
-
 
 export interface StemMixerLyricsPanelBodyProps {
   // State signals

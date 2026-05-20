@@ -227,66 +227,13 @@ export function createJamService(callbacks: JamCallbacks) {
       })
     }
 
-    // Handle remote audio track
-    pc.ontrack = (event) => {
-      console.info(
-        '[jam:service] ontrack from',
-        peer.id,
-        'streams:',
-        event.streams.length,
-      )
-      const remoteStream = event.streams[0]
-      if (remoteStream !== undefined) {
-        callbacks.onPeerStream(peer.id, remoteStream)
-      }
-    }
-
-    pc.onconnectionstatechange = () => {
-      console.info(
-        '[jam:service] connection state',
-        peer.id,
-        pc.connectionState,
-      )
-      const state = mapConnectionState(pc.connectionState)
-      callbacks.onConnectionStateChange(peer.id, state)
-    }
-
-    pc.oniceconnectionstatechange = () => {
-      console.info('[jam:service] ICE state', peer.id, pc.iceConnectionState)
-      // Measure RTT via stats when ICE connects
-      if (pc.iceConnectionState === 'connected') {
-        measureLatency(peer.id, pc)
-      }
-    }
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        signaling.sendIceCandidate(
-          peer.id,
-          JSON.stringify(event.candidate.toJSON()),
-        )
-      }
-    }
-
-    pc.ondatachannel = (event) => {
-      console.info('[jam:service] received DataChannel from', peer.id)
-      const dc = event.channel
-      if (dc.label === 'chat') {
-        setupDataChannel(dc, peer.id)
-      }
-    }
+    setupPeerHandlers(pc, peer.id)
 
     // Create DataChannel for chat
     const dc = pc.createDataChannel('chat')
     setupDataChannel(dc, peer.id)
 
     peerConnections.set(peer.id, pc)
-
-    // Create and send offer
-    console.info('[jam:service] sending offer to', peer.id)
-    const offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
-    signaling.sendOffer(peer.id, JSON.stringify(offer))
   }
 
   async function handleOffer(from: string, sdp: string): Promise<void> {
@@ -432,6 +379,19 @@ export function createJamService(callbacks: JamCallbacks) {
           peerId,
           JSON.stringify(event.candidate.toJSON()),
         )
+      }
+    }
+
+    // Handle renegotiation for dynamic tracks (e.g. enabling video)
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (pc.signalingState !== 'stable') return
+        console.info('[jam:service] negotiation needed for', peerId)
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        signaling.sendOffer(peerId, JSON.stringify(offer))
+      } catch (err) {
+        console.error('[jam:service] negotiation error for', peerId, err)
       }
     }
   }

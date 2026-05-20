@@ -81,12 +81,31 @@ export const [uvrProcessingMode, _setUvrProcessingMode] =
   createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
 // Force WebGPU override for local (browser) processing mode
+function getDefaultUvrWebGpu(): boolean {
+  if (typeof navigator === 'undefined') return true
+  const isLinuxFirefox =
+    /Firefox/i.test(navigator.userAgent) &&
+    /Linux/i.test(navigator.platform || navigator.userAgent)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uaData = (navigator as any).userAgentData
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+    uaData?.mobile === true
+  return !(isLinuxFirefox || isMobile)
+}
+
 export function getUvrForceWebGpu(): boolean {
-  return localStorage.getItem('pitchperfect_uvr-force-webgpu') === 'true'
+  const stored = localStorage.getItem('pitchperfect_uvr-force-webgpu')
+  if (stored !== null) return stored === 'true'
+  return getDefaultUvrWebGpu()
 }
 
 export function setUvrForceWebGpu(force: boolean): void {
-  localStorage.setItem('pitchperfect_uvr-force-webgpu', force ? 'true' : 'false')
+  localStorage.setItem(
+    'pitchperfect_uvr-force-webgpu',
+    force ? 'true' : 'false',
+  )
   _setUvrForceWebGpu(force)
 }
 

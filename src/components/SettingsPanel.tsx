@@ -841,7 +841,7 @@ export const SettingsPanel: Component = () => {
             Global shortcuts active when not typing in a text field.
           </p>
           <div class={styles.keymapTable}>
-            <div class={[styles.keymapRow, 'keymap-header'].join(' ')}>
+            <div class={[styles.keymapRow, styles.keymapHeader].join(' ')}>
               <span>Key</span>
               <span>Action</span>
             </div>

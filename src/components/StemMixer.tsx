@@ -113,8 +113,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const PITCH_WINDOW_FILL_RATIO = 0.75
 
   const lrclibSearchUrl = () => {
-    const title = extractTitle(props.songTitle ?? '')
-    if (!title) return undefined
+    const title = extractTitle(props.songTitle ?? '')?.trim()
+    if (!title) return 'https://lrclib.net'
     return `https://lrclib.net/search/${encodeURIComponent(title)}`
   }
 

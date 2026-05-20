@@ -18,6 +18,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
   const steps = [
     {
       title: 'What is Vocal Separation?',
+      icon: <Music />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
@@ -51,6 +52,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
     },
     {
       title: 'Separation Modes',
+      icon: <MusicBoard />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
@@ -90,6 +92,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
     },
     {
       title: 'Intensity Controls',
+      icon: <Headphones />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
@@ -129,6 +132,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
     },
     {
       title: 'Smoothing & Transitions',
+      icon: <IconArrowRight />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
@@ -175,6 +179,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
     },
     {
       title: 'When to Use Each Mode',
+      icon: <Voice />,
       content: (
         <div class={styles.guideSection}>
           <h4 class={styles.useCaseTitle}>Practice Scenarios</h4>
@@ -231,7 +236,53 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
       ),
     },
     {
+      title: 'Shazam & Sing',
+      icon: <Voice />,
+      content: (
+        <div class={styles.guideSection}>
+          <h4 class={styles.useCaseTitle}>Sing Any Song Instantly</h4>
+          <p class={styles.guideText}>
+            Use the <strong>Shazam tab</strong> to identify music playing around
+            you, and instantly turn it into a karaoke track!
+          </p>
+          <div class={styles.quickSteps}>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>1</div>
+              <div class={styles.stepContent}>
+                <strong>Listen</strong>
+                <p>
+                  Click "Listen" so the app can hear the song playing in the
+                  background.
+                </p>
+              </div>
+            </div>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>2</div>
+              <div class={styles.stepContent}>
+                <strong>Identify</strong>
+                <p>
+                  We'll match it using the Shazam library and fetch the song
+                  data.
+                </p>
+              </div>
+            </div>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>3</div>
+              <div class={styles.stepContent}>
+                <strong>Sing!</strong>
+                <p>
+                  Click "Sing" to find a streaming source (YouTube), separate
+                  the vocals in real-time, and fetch synced lyrics.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       title: 'Quick Start Guide',
+      icon: <Music />,
       content: (
         <div class={styles.guideSection}>
           <h4 class={styles.useCaseTitle}>First Steps</h4>
@@ -298,12 +349,13 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         >
           <IconArrowLeft />
         </button>
-        <div class={styles.guideStepIcons}>
-          <Voice />
-          <Music />
-        </div>
         <div class={styles.guideStepTitleArea}>
-          <h3 class={styles.guideStepTitle}>{steps[activeStep()].title}</h3>
+          <h3 class={styles.guideStepTitle}>
+            <span class={styles.guideStepDynamicIcon}>
+              {steps[activeStep()].icon}
+            </span>
+            {steps[activeStep()].title}
+          </h3>
           <span class={styles.guideStepBadge}>
             {activeStep() + 1} / {steps.length}
           </span>
@@ -335,14 +387,6 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             />
           )}
         </For>
-      </div>
-
-      {/* Progress bar */}
-      <div class={styles.guideProgressBar}>
-        <div
-          class={styles.guideProgressFill}
-          style={{ width: `${((activeStep() + 1) / steps.length) * 100}%` }}
-        />
       </div>
 
       {/* Content Area */}

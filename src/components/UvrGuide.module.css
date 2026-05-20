@@ -46,17 +46,17 @@
   cursor: not-allowed;
 }
 
-.guideStepIcons {
-  display: flex;
+.guideStepDynamicIcon {
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  margin-right: 0.4rem;
   color: var(--accent);
-  flex-shrink: 0;
+  vertical-align: middle;
 }
 
-.guideStepIcons svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.guideStepDynamicIcon svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .guideStepTitleArea {
@@ -125,7 +125,8 @@
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  min-height: 200px;
+  height: 440px;
+  overflow-y: auto;
 }
 
 .guideProgressBar {
