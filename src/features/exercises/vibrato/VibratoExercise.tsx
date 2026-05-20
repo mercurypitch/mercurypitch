@@ -54,6 +54,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const controller = useVibratoController(base)
 
   let vizInterval: ReturnType<typeof setInterval> | undefined
+  let hasAutoStarted = false
 
   const handleStart = async () => {
     await base.start()
@@ -74,7 +75,8 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   })
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })

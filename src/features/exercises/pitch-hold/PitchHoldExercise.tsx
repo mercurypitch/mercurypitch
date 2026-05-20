@@ -44,6 +44,8 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
   const controller = usePitchHoldController(base)
 
+  let hasAutoStarted = false
+
   const handleStart = async () => {
     controller.setTarget(noteToMidi(targetNote()))
     await base.start()
@@ -57,7 +59,8 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })

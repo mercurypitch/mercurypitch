@@ -44,6 +44,8 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   const controller = useLongNoteController(base)
 
+  let hasAutoStarted = false
+
   const handleStart = async () => {
     controller.setTarget(noteToMidi(targetNote()))
     await base.start()
@@ -56,7 +58,8 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })

@@ -48,6 +48,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   let lastCombo = 0
   let lastPopTotal = 0
   let lastPopHits = 0
+  let hasAutoStarted = false
 
   const handleStart = async () => {
     await base.start()
@@ -68,7 +69,8 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   })
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })

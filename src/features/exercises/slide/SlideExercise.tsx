@@ -53,6 +53,8 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
   const controller = useSlideController(base)
 
+  let hasAutoStarted = false
+
   const handleStart = async () => {
     controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
     await base.start()
@@ -65,7 +67,8 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })

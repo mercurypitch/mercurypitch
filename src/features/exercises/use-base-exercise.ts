@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from 'solid-js'
+import { batch, createSignal, onCleanup } from 'solid-js'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
@@ -57,6 +57,10 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   })
 
   async function start(): Promise<void> {
+    // Guard against concurrent starts — reset() fires the autoStart effect
+    // which races with explicit handleStart() calls from click handlers.
+    if (state().status !== 'idle') return
+
     setState({
       status: 'count-in',
       currentScore: 0,
@@ -73,7 +77,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         setError(
           'Microphone access denied. Please allow mic access and try again.',
         )
-        setState((s) => ({ ...s, status: 'idle' }))
+        batch(() => {
+          setState((s) => ({ ...s, status: 'idle' }))
+        })
         return
       }
     }
@@ -126,12 +132,14 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     running = false
     cancelAnimationFrame(animId)
     const finalElapsed = performance.now() - startTime
-    setResult(exerciseResult)
-    setState({
-      status: 'complete',
-      currentScore: exerciseResult.score,
-      elapsedMs: finalElapsed,
-      metrics: exerciseResult.metrics,
+    batch(() => {
+      setResult(exerciseResult)
+      setState({
+        status: 'complete',
+        currentScore: exerciseResult.score,
+        elapsedMs: finalElapsed,
+        metrics: exerciseResult.metrics,
+      })
     })
   }
 

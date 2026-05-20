@@ -45,6 +45,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
 
   const controller = useMirrorMelodyController(base, props.audioEngine)
 
+  let hasAutoStarted = false
+
   const handleStart = async () => {
     controller.setMelody(noteToMidi(startNote()))
     await base.start()
@@ -58,7 +60,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   createEffect(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
+      hasAutoStarted = true
       void handleStart()
     }
   })
