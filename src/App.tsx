@@ -201,10 +201,6 @@ const AppShell: Component<AppProps> = (props) => {
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
-
-  const [mobileNavOpen, setMobileNavOpen] = createSignal(false)
-  const toggleMobileNav = () => setMobileNavOpen(!mobileNavOpen())
-  const closeMobileNav = () => setMobileNavOpen(false)
   const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
@@ -896,63 +892,9 @@ const AppShell: Component<AppProps> = (props) => {
         {/* Guide Tour — Interactive spotlight overlay */}
         <Walkthrough />
 
-        <Show when={sidebarOpen()}>
+        <Show when={sidebarOpen() === true}>
           <div class="sidebar-backdrop" onClick={closeSidebar} />
         </Show>
-
-        <button
-          class="sidebar-toggle-btn"
-          onClick={toggleSidebar}
-          title="Menu"
-          aria-label="Menu"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path
-              fill="currentColor"
-              d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
-            />
-          </svg>
-          Menu
-        </button>
-
-        {/* Mobile Navigation Drawer Arrow Toggle */}
-        <button
-          class={`mobile-nav-toggle ${mobileNavOpen() ? 'open' : ''}`}
-          onClick={toggleMobileNav}
-          title="Toggle Navigation"
-          aria-label="Toggle Navigation"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-
-        <Show when={mobileNavOpen()}>
-          <div class="mobile-nav-backdrop" onClick={closeMobileNav} />
-        </Show>
-
-        <div class={`mobile-nav-drawer ${mobileNavOpen() ? 'open' : ''}`}>
-          <AppNavTabs
-            activeTab={activeTab}
-            handleTabChange={(tab) => {
-              handleTabChange(tab)
-              closeMobileNav()
-            }}
-            tabLabel={tabLabel}
-            advancedFeaturesEnabled={advancedFeaturesEnabled}
-            devFeaturesEnabled={devFeaturesEnabled}
-            isMobileDrawer={true}
-          />
-        </div>
 
         <Show when={!focusMode()}>
           <header>
@@ -969,6 +911,20 @@ const AppShell: Component<AppProps> = (props) => {
                 </span>
               </button>
               <p class="subtitle">Voice Pitch Practice</p>
+              <button
+                class="sidebar-toggle-btn"
+                onClick={toggleSidebar}
+                title="Menu"
+                aria-label="Menu"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path
+                    fill="currentColor"
+                    d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+                  />
+                </svg>
+                Menu
+              </button>
             </div>
             <div class="header-right">
               {/* Current melody indicator pill */}
@@ -1013,7 +969,6 @@ const AppShell: Component<AppProps> = (props) => {
               activeTab={activeTab}
               handleTabChange={(tab) => {
                 handleTabChange(tab)
-                closeMobileNav()
               }}
               tabLabel={tabLabel}
               advancedFeaturesEnabled={advancedFeaturesEnabled}
