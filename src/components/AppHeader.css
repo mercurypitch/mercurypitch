@@ -244,4 +244,17 @@ header h1 {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: width 0.22s ease;
+}
+
+@media (min-width: 769px) {
+  .header-left {
+    /* 260px + 24px header padding + 16px header gap = exactly 300px sidebar width */
+    width: 260px;
+    flex-shrink: 0;
+  }
+
+  body:has(.app-sidebar.collapsed) .header-left {
+    width: auto;
+  }
 }
