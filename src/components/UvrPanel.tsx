@@ -13,7 +13,7 @@ import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
@@ -164,19 +164,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setUvrForceWebGpu(force)
     // Destroy pipeline and re-init immediately
     destroyPipeline()
-    void preInitModel().then(() => {
-      const activeProvider = getActiveProvider()
-      if (force && activeProvider === 'wasm') {
-        // WebGPU failed to initialize, fallback to WASM
-        setUvrForceWebGpu(false)
-        showNotification(
-          'WebGPU initialization failed. Falling back to CPU processing.',
-          'warning',
-        )
-      }
-    }).catch((err) => {
-      console.error('[UvrPanel] failed to re-init model:', err)
-    })
+    void preInitModel()
+      .then(() => {
+        const activeProvider = getActiveProvider()
+        if (force && activeProvider === 'wasm') {
+          // WebGPU failed to initialize, fallback to WASM
+          setUvrForceWebGpu(false)
+          showNotification(
+            'WebGPU initialization failed. Falling back to CPU processing.',
+            'warning',
+          )
+        }
+      })
+      .catch((err) => {
+        console.error('[UvrPanel] failed to re-init model:', err)
+      })
   }
 
   // Pre-initialize ONNX model when switching to browser mode
@@ -188,18 +190,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       return
     const mode = uvrProcessingMode()
     if (mode === 'local' && uvrModelStatus() === 'unloaded') {
-      void preInitModel().then(() => {
-        const activeProvider = getActiveProvider()
-        if (uvrForceWebGpu() && activeProvider === 'wasm') {
-          setUvrForceWebGpu(false)
-          showNotification(
-            'WebGPU initialization failed. Falling back to CPU processing.',
-            'warning',
-          )
-        }
-      }).catch((err) => {
-        console.error('[UvrPanel] preInitModel failed:', err)
-      })
+      void preInitModel()
+        .then(() => {
+          const activeProvider = getActiveProvider()
+          if (uvrForceWebGpu() && activeProvider === 'wasm') {
+            setUvrForceWebGpu(false)
+            showNotification(
+              'WebGPU initialization failed. Falling back to CPU processing.',
+              'warning',
+            )
+          }
+        })
+        .catch((err) => {
+          console.error('[UvrPanel] preInitModel failed:', err)
+        })
     }
   })
 
@@ -730,23 +734,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         >
           <h3 style="margin: 0; white-space: nowrap;">Shazam Sing</h3>
           <div class="uvr-view-tabs">
-            <Show when={devFeaturesEnabled()}>
-              <button
-                class="view-tab view-tab-sing"
-                classList={{
-                  active: currentView() === 'shazam-listen',
-                }}
-                onClick={() => {
-                  setCurrentView('shazam-listen')
-                  props.onViewChange?.('shazam-listen')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-sing"
-              >
-                <SingMic />
-                <span>Sing</span>
-              </button>
-            </Show>
+            <button
+              class="view-tab view-tab-sing"
+              classList={{
+                active: currentView() === 'shazam-listen',
+              }}
+              onClick={() => {
+                setCurrentView('shazam-listen')
+                props.onViewChange?.('shazam-listen')
+                props.onSessionChange?.(null)
+              }}
+              data-testid="uvr-tab-sing"
+            >
+              <SingMic />
+              <span>Sing</span>
+            </button>
             <button
               class="view-tab"
               classList={{
@@ -894,9 +896,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <div class="view-section upload-section" data-testid="uvr-upload">
             <div class="section-header">
               <h4>Upload Audio</h4>
-              <button class="guide-toggle" onClick={() => setShowGuide(true)}>
-                <Music /> See Guide
-              </button>
             </div>
 
             <UvrUploadControl

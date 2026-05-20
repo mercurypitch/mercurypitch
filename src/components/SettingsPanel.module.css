@@ -138,6 +138,11 @@
   padding: 6px 14px;
 }
 
+.keymapRow.keymapHeader span:first-child {
+  min-width: 52px;
+  text-align: center;
+}
+
 .keymapRow kbd {
   display: inline-flex;
   align-items: center;

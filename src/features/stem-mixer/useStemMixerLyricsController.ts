@@ -475,6 +475,7 @@ export function useStemMixerLyricsController(
       setLrcLines([])
     }
     setLyricsSource('upload')
+    setShowSongPicker(false)
   }
 
   const handleLyricsChange = (e: Event) => {

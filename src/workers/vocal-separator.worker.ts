@@ -96,7 +96,10 @@ let cancelled = false
 let activeProviders: string[] = []
 let currentModelPath = ''
 
-async function loadModel(modelPath: string, forceWebGpu?: boolean): Promise<void> {
+async function loadModel(
+  modelPath: string,
+  forceWebGpu?: boolean,
+): Promise<void> {
   currentModelPath = modelPath
   // Try IndexedDB cache first
   let buffer = await getCachedModel(modelPath)
@@ -127,42 +130,10 @@ async function loadModel(modelPath: string, forceWebGpu?: boolean): Promise<void
   // If activeProviders is already set to wasm (due to fallback), don't reset it
   if (activeProviders.length === 0 || activeProviders[0] !== 'wasm') {
     activeProviders = []
-    
-    if (forceWebGpu) {
+
+    if (forceWebGpu === true) {
       if (typeof navigator !== 'undefined' && 'gpu' in navigator) {
         activeProviders.push('webgpu')
-      }
-    } else {
-      // Linux Firefox has insufficient WebGPU memory limits for this model (~300MB).
-      // Uncapped errors ("Not enough memory left") produce garbage output without
-      // throwing, so the normal WebGPU→WASM fallback never triggers.
-      // Windows/macOS Firefox handles WebGPU correctly.
-      //
-      // Android/mobile WebGPU (especially Mali GPUs) also produces garbage ONNX
-      // inference output without throwing — same class of silent corruption.
-      // Skip WebGPU on all mobile browsers and use WASM unconditionally.
-      const isLinuxFirefox =
-        /Firefox/i.test(navigator.userAgent) &&
-        /Linux/i.test(navigator.platform || navigator.userAgent)
-      // Modern iPadOS 13+ reports a desktop Mac user-agent without "iPad".
-      // Detect it via multi-touch capability combined with Macintosh UA.
-      // Samsung tablets in Chrome "Desktop site" mode also spoof a desktop
-      // Linux UA — navigator.userAgentData.mobile reveals the truth.
-      const uaData = (navigator as unknown as Record<string, unknown>)
-        .userAgentData as { mobile?: boolean } | undefined
-      const isMobile =
-        /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-        (/Macintosh/i.test(navigator.userAgent) &&
-          navigator.maxTouchPoints > 1) ||
-        uaData?.mobile === true
-      if (!isLinuxFirefox && !isMobile) {
-        try {
-          if ('gpu' in navigator) {
-            activeProviders.push('webgpu')
-          }
-        } catch {
-          // WebGPU not available
-        }
       }
     }
     activeProviders.push('wasm')
@@ -188,7 +159,10 @@ async function loadModel(modelPath: string, forceWebGpu?: boolean): Promise<void
     })
   } catch (err) {
     if (activeProviders.includes('webgpu')) {
-      console.warn('[vocal-separator] WebGPU session creation failed, falling back to WASM...', err)
+      console.warn(
+        '[vocal-separator] WebGPU session creation failed, falling back to WASM...',
+        err,
+      )
       activeProviders = ['wasm']
       session = await ort.InferenceSession.create(buffer, {
         executionProviders: activeProviders,

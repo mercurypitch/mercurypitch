@@ -119,7 +119,10 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
         <div class="upload-icon-wrapper">
           <MusicNote />
         </div>
-        <h3>Import Audio File</h3>
+        <h3>Select a Song</h3>
+        <p class="upload-subtitle">
+          Upload an audio file to separate vocals and instruments
+        </p>
       </div>
 
       {/* Upload Zone */}
@@ -146,8 +149,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
               <FileUpload />
             </div>
             <p class="upload-text">
-              Drag & drop your file here or{' '}
-              <span class="upload-text-highlight">browse</span>
+              Drag & drop an audio file here, or{' '}
+              <span class="upload-text-highlight">click to browse</span>
             </p>
           </div>
         </Show>

@@ -232,11 +232,20 @@ export function initJam() {
       })
     },
     onPeerStream: (peerId, stream) => {
+      const existing = remoteAudioNodes.get(peerId)
+      if (existing) {
+        try {
+          existing.disconnect()
+        } catch (_e) {
+          // ignore if already disconnected
+        }
+      }
       const ctx = getAudioContext()
       const source = ctx.createMediaStreamSource(stream)
       source.connect(ctx.destination)
       remoteAudioNodes.set(peerId, source)
       // Store remote stream for video display
+      // (When tracks are added to the existing stream, the browser automatically updates video elements playing it)
       setJamRemoteStreams((prev) => ({ ...prev, [peerId]: stream }))
     },
     onChatMessage: (msg) => {

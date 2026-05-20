@@ -389,7 +389,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .guide-header h3 {

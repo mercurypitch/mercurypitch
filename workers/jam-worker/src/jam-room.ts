@@ -23,10 +23,35 @@ export class JamRoom extends DurableObject<JamEnv> {
   private ownerId: string | null = null
   private ownerName: string | null = null
   private deleteTimer: ReturnType<typeof setTimeout> | null = null
+  private isHydrated = false
+
+  private hydrate(): void {
+    if (this.isHydrated) return
+    this.isHydrated = true
+    this.peers.clear()
+    this.wsToPeerId = new WeakMap()
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        const attachment = ws.deserializeAttachment() as { peerId?: string, displayName?: string, roomId?: string } | null
+        if (attachment && attachment.peerId) {
+          if (!this.roomId && attachment.roomId) this.roomId = attachment.roomId
+          this.peers.set(attachment.peerId, {
+            id: attachment.peerId,
+            displayName: attachment.displayName || '',
+            ws
+          })
+          this.wsToPeerId.set(ws, attachment.peerId)
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   // ── WebSocket upgrade ────────────────────────────────────────────
 
   override fetch(request: Request): Response {
+    this.hydrate()
     this.roomId = request.headers.get('X-Jam-Room-Id') || ''
 
     const pair = new WebSocketPair()
@@ -38,6 +63,7 @@ export class JamRoom extends DurableObject<JamEnv> {
   // ── WebSocket message handler ─────────────────────────────────────
 
   override webSocketMessage(ws: WebSocket, message: string): void {
+    this.hydrate()
     let msg: { type: string; [k: string]: unknown }
     try {
       msg = JSON.parse(message)
@@ -70,6 +96,7 @@ export class JamRoom extends DurableObject<JamEnv> {
   // ── WebSocket close / error ───────────────────────────────────────
 
   override webSocketClose(ws: WebSocket): void {
+    this.hydrate()
     const peerId = this.wsToPeerId.get(ws)
     if (peerId) {
       const peer = this.peers.get(peerId)
@@ -97,6 +124,7 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.ownerName = msg.displayName
     void this.ctx.storage.put('ownerName', msg.displayName)
 
+    ws.serializeAttachment({ peerId, displayName: msg.displayName, roomId: this.roomId })
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
     this.wsToPeerId.set(ws, peerId)
     this.cancelDelete()
@@ -140,6 +168,7 @@ export class JamRoom extends DurableObject<JamEnv> {
       peerId,
     )
 
+    ws.serializeAttachment({ peerId, displayName: msg.displayName, roomId: this.roomId })
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
     this.wsToPeerId.set(ws, peerId)
   }
