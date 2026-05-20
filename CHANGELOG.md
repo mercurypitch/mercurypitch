@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Jam Session -- Exercise History Persistence**: completed exercise scores survive page reloads via `sessionStorage`
 - **Voice Type Detector**: vocal range analysis modal for determining singer classification (soprano, alto, tenor, bass)
 - **Vocal Range Presets**: predefined singing range presets that auto-configure default octave and exercise selection
+- **Mobile UI**: Drawer-based navigation for mobile devices and compact icon-only control toolbar
 
 ### Changed
 
@@ -22,12 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Jam Session -- Random Codenames**: users who join without a display name receive a thematic one-word codename
 - **Jam Session -- Camera Widget**: repositioned to bottom-right horizontal row layout alongside chat widget
 - **Jam Session -- Signaling Protocol**: `room-created` and `room-joined` messages now include `isHost` flag from the server
+- **Jam Session -- Badges**: Added beautiful glowing pill badges for peers next to the room title
 - **Compose Tab**: removed melody count badge for cleaner, consistent navigation
 - **Jam Panel**: replaced inspirational quote branding; cleaned up display name input UI
 
 ### Fixed
 
 - **Jam Session**: WebRTC video stream renegotiation to ensure camera streams connect reliably
+- **Jam Session**: Fixed "Cam off" state sync when joining a room by broadcasting video state over the WebRTC datachannel
 - **Jam Session**: Prevented remote audio source duplication causing volume overlap
 - **StemMixer Lyrics**: Prevented auto-loading incorrect lyrics for generic filenames; close picker after manual upload
 - **UI**: Visual improvements to UVR Guide modal and restored fancy gradient divider in sidebar
