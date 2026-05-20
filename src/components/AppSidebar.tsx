@@ -137,7 +137,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           style={{
             'margin-bottom': '8px',
             'align-self': 'center',
-            width: '100%',
+            'max-width': '100%',
             'flex-shrink': 0,
           }}
           onClick={() => void setActiveTab(TAB_SINGING)}
