@@ -299,11 +299,13 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--border) 20%,
-    var(--border) 80%,
+    rgba(88, 166, 255, 0.2) 15%,
+    var(--accent) 50%,
+    rgba(88, 166, 255, 0.2) 85%,
     transparent 100%
   );
   margin: 8px 0;
+  opacity: 0.75;
 }
 
 /* ============================================================

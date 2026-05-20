@@ -167,6 +167,7 @@ export function createJamService(callbacks: JamCallbacks) {
           pc.addTrack(vt, localStream!)
         }
         videoEnabled = true
+        broadcastVideoState(true)
       }
     } catch {
       callbacks.onError('Camera access denied or unavailable')
@@ -179,6 +180,7 @@ export function createJamService(callbacks: JamCallbacks) {
       if (localStream) localStream.removeTrack(localVideo)
       localVideo = null
       videoEnabled = false
+      broadcastVideoState(false)
     }
   }
 
@@ -196,6 +198,7 @@ export function createJamService(callbacks: JamCallbacks) {
         await sender.replaceTrack(enabled ? localVideo : null)
       }
     }
+    broadcastVideoState(enabled)
   }
 
   function stopLocalStream(): void {
@@ -203,6 +206,7 @@ export function createJamService(callbacks: JamCallbacks) {
     localStream = null
     localVideo = null
     videoEnabled = false
+    broadcastVideoState(false)
   }
 
   function setMuted(muted: boolean): void {
@@ -437,11 +441,35 @@ export function createJamService(callbacks: JamCallbacks) {
           case 'playback':
             callbacks.onPlaybackMessage?.(data)
             break
+          case 'video-state':
+            callbacks.onVideoState?.(peerId, data.enabled)
+            break
         }
-      } catch (_e) {
-        // Ignore malformed messages
+      } catch (err) {
+        console.warn('[jam:service] DataChannel parse error', err)
       }
     }
+  }
+
+  // ── Broadcast helpers ────────────────────────────────────────────
+
+  function broadcastMessage(
+    text: string,
+    id: string,
+    timestamp: number,
+    displayName: string,
+  ): void {
+    broadcastData({
+      type: 'chat',
+      id,
+      displayName,
+      text,
+      timestamp,
+    })
+  }
+
+  function broadcastVideoState(enabled: boolean): void {
+    broadcastData({ type: 'video-state', enabled })
   }
 
   function sendChat(text: string): void {

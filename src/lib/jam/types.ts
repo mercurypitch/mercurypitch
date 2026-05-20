@@ -89,11 +89,18 @@ export interface JamPlaybackMessage {
   timestamp: number
 }
 
+export interface JamVideoStateMessage {
+  type: 'video-state'
+  peerId?: string
+  enabled: boolean
+}
+
 export type JamDataMessage =
   | JamChatMessage
   | JamPitchMessage
   | JamMelodyMessage
   | JamPlaybackMessage
+  | JamVideoStateMessage
 
 // ── State helpers ────────────────────────────────────────────────────
 
@@ -129,4 +136,5 @@ export interface JamCallbacks {
   onPitchMessage?: (msg: JamPitchMessage) => void
   onMelodyMessage?: (msg: JamMelodyMessage) => void
   onPlaybackMessage?: (msg: JamPlaybackMessage) => void
+  onVideoState?: (peerId: string, enabled: boolean) => void
 }

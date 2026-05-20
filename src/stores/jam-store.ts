@@ -209,6 +209,8 @@ export function initJam() {
     onPeerJoined: (peer) => {
       console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
+      // A new peer joined, so broadcast our local video state so they know
+      jamService?.setVideoEnabled(jamVideoEnabled()).catch(() => {})
     },
     onPeerLeft: (peerId) => {
       setJamPeers((prev) => prev.filter((p) => p.id !== peerId))
@@ -247,6 +249,11 @@ export function initJam() {
       // Store remote stream for video display
       // (When tracks are added to the existing stream, the browser automatically updates video elements playing it)
       setJamRemoteStreams((prev) => ({ ...prev, [peerId]: stream }))
+    },
+    onVideoState: (peerId, enabled) => {
+      setJamPeers((prev) =>
+        prev.map((p) => (p.id === peerId ? { ...p, hasVideo: enabled } : p)),
+      )
     },
     onChatMessage: (msg) => {
       setJamChatMessages((prev) => [...prev, msg])
