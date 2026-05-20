@@ -297,7 +297,7 @@ export const JamPanel: Component = () => {
                         background: `linear-gradient(135deg, ${myColor()}66, ${myColor()}cc)`,
                         color: '#fff',
                         border: `1px solid ${myColor()}`,
-                        'box-shadow': `0 0 12px ${myColor()}66, inset 0 0 8px ${myColor()}88`
+                        'box-shadow': `0 0 12px ${myColor()}66, inset 0 0 8px ${myColor()}88`,
                       }}
                     >
                       {(getJamSessionInfo()?.displayName ?? '') !== ''
@@ -314,7 +314,7 @@ export const JamPanel: Component = () => {
                               background: `linear-gradient(135deg, ${color}66, ${color}cc)`,
                               color: '#fff',
                               border: `1px solid ${color}`,
-                              'box-shadow': `0 0 12px ${color}66, inset 0 0 8px ${color}88`
+                              'box-shadow': `0 0 12px ${color}66, inset 0 0 8px ${color}88`,
                             }}
                           >
                             {peer.displayName}

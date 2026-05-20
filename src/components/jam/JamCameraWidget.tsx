@@ -122,16 +122,30 @@ export const JamCameraWidget: Component = () => {
 
   const myColor = () => colorMap()[myId() ?? ''] ?? '#58a6ff'
 
-  /** Clamp pos so the tray (at its current rendered size) stays fully in viewport. */
+  /** Clamp pos so the tray stays fully in viewport and avoids the chat widget. */
   const clamp = (px: number, py: number) => {
     const vw = window.innerWidth
     const vh = window.innerHeight
     const tw = trayRef?.offsetWidth ?? EXPANDED_W
     const th = trayRef?.offsetHeight ?? 200
-    return {
-      x: Math.max(0, Math.min(vw - tw, px)),
-      y: Math.max(0, Math.min(vh - th, py)),
+
+    let cx = Math.max(0, Math.min(vw - tw, px))
+    let cy = Math.max(0, Math.min(vh - th, py))
+
+    // Avoid bottom-right chat widget (approx 340px wide, 440px tall including padding)
+    const chatW = 340
+    const chatH = 440
+    if (cx + tw > vw - chatW && cy + th > vh - chatH) {
+      const pushLeftDist = (cx + tw) - (vw - chatW)
+      const pushUpDist = (cy + th) - (vh - chatH)
+      if (pushLeftDist < pushUpDist) {
+        cx = Math.max(0, vw - chatW - tw)
+      } else {
+        cy = Math.max(0, vh - chatH - th)
+      }
     }
+
+    return { x: cx, y: cy }
   }
 
   const onPointerDown = (e: PointerEvent) => {

@@ -9,15 +9,11 @@ export interface AppNavTabsProps {
   tabLabel: (tab: ActiveTab) => string
   advancedFeaturesEnabled: () => boolean
   devFeaturesEnabled: () => boolean
-  isMobileDrawer?: boolean
 }
 
 export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   return (
-    <nav
-      id="app-tabs"
-      class={`app-tabs-nav ${props.isMobileDrawer === true ? 'mobile-drawer-nav' : 'desktop-nav'}`}
-    >
+    <nav id="app-tabs" class="app-tabs-nav desktop-nav">
       <div class="tab-group">
         <span class="tab-group-label">Practice</span>
         <button
