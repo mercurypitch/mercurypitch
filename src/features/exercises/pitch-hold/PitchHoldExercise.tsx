@@ -118,14 +118,10 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
         {isActive() && (
           <>
-            <div style="display:flex;align-items:center;gap:12px;font-size:1.2rem;font-weight:700;margin-bottom:12px">
-              <span>{targetNote()}</span>
-              <span style="font-size:0.85rem;color:var(--text-secondary)">
-                Zone: ±{Math.round(zoneRadius())}¢
-              </span>
-              <span style="font-size:0.9rem;color:var(--accent);margin-left:auto">
-                {elapsed().toFixed(1)}s
-              </span>
+            <div class="pitch-hold-header">
+              <span class="target">{targetNote()}</span>
+              <span class="zone-label">Zone: ±{Math.round(zoneRadius())}¢</span>
+              <span class="timer">{elapsed().toFixed(1)}s</span>
             </div>
 
             <div class="pitch-hold-viz">
@@ -146,7 +142,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               <div class="pitch-hold-target-label">{targetNote()}</div>
             </div>
 
-            <div class="pitch-hold-metrics" style="margin-top:12px">
+            <div class="pitch-hold-metrics">
               <div class="pitch-hold-metric">
                 <span class="pitch-hold-metric-label">In Zone</span>
                 <span class="pitch-hold-metric-value">

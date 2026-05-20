@@ -1,4 +1,10 @@
-import { type Component, createEffect, createSignal, onCleanup, For, } from 'solid-js'
+import {
+  type Component,
+  createEffect,
+  createSignal,
+  onCleanup,
+  For,
+} from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
@@ -6,7 +12,12 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
-import { IconGame, IconCheck, IconCross, IconMic, } from '@/components/exercise-icons'
+import {
+  IconGame,
+  IconCheck,
+  IconCross,
+  IconMic,
+} from '@/components/exercise-icons'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -18,6 +29,11 @@ const TARGET_ZONE_FRAC = 0.88
 
 const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   const [tick, setTick] = createSignal(0)
+  const [comboPulse, setComboPulse] = createSignal(false)
+  const [scorePops, setScorePops] = createSignal<
+    Array<{ id: number; x: number; y: number; text: string; color: string }>
+  >([])
+  let popId = 0
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -28,10 +44,12 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   const controller = usePitchPursuitController(base)
 
   let vizInterval: ReturnType<typeof setInterval> | undefined
+  let lastCombo = 0
 
   const handleStart = async () => {
     await base.start()
     if (base.state().status !== 'active') return
+    lastCombo = 0
     controller.startGame()
     vizInterval = setInterval(() => setTick((t) => t + 1), 33)
   }
@@ -63,6 +81,16 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     }
   })
 
+  // Combo pulse effect
+  createEffect(() => {
+    const combo = base.state().metrics.combo ?? 0
+    if (combo > lastCombo && combo >= 3) {
+      setComboPulse(true)
+      setTimeout(() => setComboPulse(false), 200)
+    }
+    lastCombo = combo
+  })
+
   const isActive = () => base.state().status === 'active'
   const isComplete = () => base.state().status === 'complete'
   const met = () => base.state().metrics
@@ -81,17 +109,52 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     return controller.getNotes().map((n) => {
       const elapsed = now - n.spawnedAt
       const progress = elapsed / 5000
+      const yPct = Math.min(100, progress * 100)
+      const noteClass = n.scored
+        ? n.hit
+          ? 'pursuit-note-bar-hit'
+          : 'pursuit-note-bar-miss'
+        : 'pursuit-note-bar-default'
       return {
         id: n.id,
         midi: n.midi,
-        yPct: Math.min(100, progress * 100),
-        opacity: n.scored ? (n.hit ? 0 : 0.3) : 1,
-        color: n.scored ? (n.hit ? '#22c55e' : '#ef4444') : 'var(--accent)',
+        yPct,
+        noteClass,
         noteName: midiToNoteName(n.midi),
         scored: n.scored,
+        hit: n.hit,
       }
     })
   }
+
+  // Detect new hits/misses for score pop
+  createEffect(() => {
+    const m = met()
+    const hits = m.hits ?? 0
+    const misses = m.misses ?? 0
+    const total = hits + misses
+    if (total > 0 && (m as Record<string, number>)._lastTotal !== total) {
+      ;(m as Record<string, number>)._lastTotal = total
+      const isHit = hits > (m._lastHits ?? 0)
+      ;(m as Record<string, number>)._lastHits = hits
+      const id = popId++
+      setScorePops((prev) =>
+        [
+          ...prev,
+          {
+            id,
+            x: 40 + Math.random() * 20,
+            y: TARGET_ZONE_FRAC * 100 - 5,
+            text: isHit ? '+OK' : 'MISS',
+            color: isHit ? '#22c55e' : '#ef4444',
+          },
+        ].slice(-6),
+      )
+      setTimeout(() => {
+        setScorePops((prev) => prev.filter((p) => p.id !== id))
+      }, 700)
+    }
+  })
 
   return (
     <div class="exercise-runner">
@@ -110,32 +173,33 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
-            <IconGame size={48} />
-            <p>
-              Notes fall from above. Sing the matching pitch before they reach
-              the target line.
-            </p>
-            <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">
-              12 notes · Hit within ±50 cents
-            </p>
+            <span class="idle-icon">
+              <IconGame size={56} />
+            </span>
+            <p>Notes fall from above.</p>
+            <p>Sing the matching pitch before they reach the target line.</p>
+            <span class="idle-hint">12 notes · Hit within ±50 cents</span>
           </div>
         )}
 
         {isActive() && (
           <>
             <div class="pursuit-hud">
-              <div style="display:flex;gap:16px;font-size:0.9rem">
-                <span>
+              <div style="display:flex;gap:16px">
+                <span style="color:#22c55e">
                   <IconCheck size={14} /> {met().hits ?? 0}
                 </span>
-                <span>
+                <span style="color:#ef4444">
                   <IconCross size={14} /> {met().misses ?? 0}
                 </span>
               </div>
-              <div style="font-size:0.9rem;font-weight:600;color:var(--accent)">
-                Combo: {met().combo ?? 0}x
+              <div
+                class="pursuit-combo-text"
+                classList={{ pulse: comboPulse() }}
+              >
+                {met().combo ?? 0}x
               </div>
-              <div style="font-size:0.8rem;color:var(--text-secondary)">
+              <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary)">
                 {(() => {
                   const n = currentNote()
                   return n ? (
@@ -150,6 +214,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             </div>
 
             <div class="pursuit-track">
+              <div class="pursuit-target-zone" />
               <div
                 class="pursuit-target-line"
                 style={`top:${TARGET_ZONE_FRAC * 100}%`}
@@ -158,21 +223,34 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               <For each={notesView()}>
                 {(note) => (
                   <div
-                    class="pursuit-note-bar"
+                    class={`pursuit-note-bar ${note.noteClass}`}
                     style={{
                       top: `${note.yPct}%`,
-                      background: note.color,
-                      opacity: note.opacity,
-                      transition: note.scored ? 'opacity 0.3s' : 'none',
+                      opacity: note.scored ? (note.hit ? 0 : 0.3) : 1,
                     }}
                   >
                     {note.noteName}
                   </div>
                 )}
               </For>
+
+              <For each={scorePops()}>
+                {(pop) => (
+                  <div
+                    class="pursuit-score-pop"
+                    style={{
+                      left: `${pop.x}%`,
+                      top: `${pop.y}%`,
+                      color: pop.color,
+                    }}
+                  >
+                    {pop.text}
+                  </div>
+                )}
+              </For>
             </div>
 
-            <div style="text-align:center;padding:8px;font-size:0.8rem;color:var(--text-secondary)">
+            <div style="text-align:center;padding:4px 8px;font-size:0.75rem;color:var(--text-secondary)">
               {met().totalNotes ?? 0} / 12 notes
             </div>
           </>
@@ -192,9 +270,8 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Hits: {base.result()!.metrics.hits}/
-              {base.result()!.metrics.totalNotes} · Accuracy:{' '}
-              {base.result()!.metrics.accuracy}% · Best Combo:{' '}
+              Hits: {base.result()!.metrics.hits}/{base.result()!.metrics.totalNotes}{' '}
+              · Accuracy: {base.result()!.metrics.accuracy}% · Best Combo:{' '}
               {base.result()!.metrics.maxCombo}x
             </div>
             <button

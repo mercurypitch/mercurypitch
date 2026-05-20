@@ -134,9 +134,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
         {isActive() && (
           <>
-            <div style="text-align:center;margin-bottom:8px;font-size:0.9rem;color:var(--accent);font-weight:600">
-              {currentNote()}
-            </div>
+            <div class="vibrato-current-note">{currentNote()}</div>
             <div class="vibrato-viz">
               <div class="vibrato-outer-ring" />
               <div class="vibrato-inner-ring" />
@@ -150,7 +148,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
                   : '...'}
               </div>
             </div>
-            <div class="vibrato-metrics" style="margin-top:12px">
+            <div class="vibrato-metrics">
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Rate</span>
                 <span class="vibrato-metric-value">

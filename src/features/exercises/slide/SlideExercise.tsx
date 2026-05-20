@@ -145,7 +145,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
                 )}
               </div>
             </div>
-            <div class="slide-metrics" style="margin-top:12px">
+            <div class="slide-metrics">
               <div class="slide-metric">
                 <span class="slide-metric-label">Smoothness</span>
                 <span class="slide-metric-value">

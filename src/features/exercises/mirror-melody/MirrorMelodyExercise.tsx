@@ -119,8 +119,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
 
         {isActive() && (
           <>
-            <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
-              <div style="font-size:1.1rem;font-weight:600">
+            <div class="mirror-melody-phase">
+              <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
                 {phase() === 1 ? (
                   <>
                     <IconMusic size={16} /> Listen...
@@ -132,37 +132,28 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                 ) : (
                   '...'
                 )}
-              </div>
+              </span>
               {phase() === 2 && (
-                <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">
+                <span class="mirror-melody-current-note">
                   {midiToNoteName(currentMidi())}
-                </div>
+                </span>
               )}
             </div>
 
-            {/* Progress dots */}
-            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
+            <div class="mirror-melody-progress">
               <For each={Array.from({ length: melodyLength() })}>
                 {(_, i) => (
                   <div
-                    style={{
-                      width: '14px',
-                      height: '14px',
-                      'border-radius': '50%',
-                      background:
-                        i() < notesCompleted()
-                          ? `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`
-                          : i() === noteIndex()
-                            ? 'var(--accent)'
-                            : 'var(--surface-hover)',
-                      border:
-                        i() === noteIndex()
-                          ? '2px solid var(--accent)'
-                          : '1px solid var(--border)',
-                      transform:
-                        i() === noteIndex() ? 'scale(1.3)' : 'scale(1)',
-                      transition: 'all 0.2s',
+                    class="mirror-melody-dot-progress"
+                    classList={{
+                      active: i() === noteIndex() && i() >= notesCompleted(),
+                      done: i() < notesCompleted(),
                     }}
+                    style={
+                      i() < notesCompleted()
+                        ? { background: `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`, 'border-color': `hsl(${lastNoteScore() * 1.2}, 70%, 50%)` }
+                        : undefined
+                    }
                   />
                 )}
               </For>
@@ -191,11 +182,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
 
             {/* Note feedback */}
             {notesCompleted() > 0 && lastNoteScore() > 0 && (
-              <div style="text-align:center;margin-top:12px;font-size:0.9rem;color:var(--text-secondary)">
-                Last note:{' '}
-                <span style="font-weight:600;color:var(--accent)">
-                  {lastNoteScore()}%
-                </span>
+              <div class="mirror-melody-note-feedback">
+                Last note: <span>{lastNoteScore()}%</span>
               </div>
             )}
           </>
