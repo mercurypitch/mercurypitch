@@ -136,8 +136,8 @@ export const JamCameraWidget: Component = () => {
     const chatW = 340
     const chatH = 440
     if (cx + tw > vw - chatW && cy + th > vh - chatH) {
-      const pushLeftDist = (cx + tw) - (vw - chatW)
-      const pushUpDist = (cy + th) - (vh - chatH)
+      const pushLeftDist = cx + tw - (vw - chatW)
+      const pushUpDist = cy + th - (vh - chatH)
       if (pushLeftDist < pushUpDist) {
         cx = Math.max(0, vw - chatW - tw)
       } else {

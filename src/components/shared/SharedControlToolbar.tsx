@@ -316,7 +316,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
-            Play
+            <span>Play</span>
           </button>
         )}
 
@@ -330,7 +330,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
             </svg>
-            Pause
+            <span>Pause</span>
           </button>
         </Show>
 
@@ -344,7 +344,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
-            Continue
+            <span>Continue</span>
           </button>
         </Show>
 
@@ -362,7 +362,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path fill="currentColor" d="M6 6h12v12H6z" />
           </svg>
-          Stop
+          <span>Stop</span>
         </button>
 
         {/* Focus Mode button */}
@@ -382,7 +382,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
               />
             </svg>
-            Focus
+            <span>Focus</span>
           </button>
         </Show>
 

@@ -7,8 +7,7 @@
 /* Header */
 header {
   padding: 10px 24px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -210,9 +209,9 @@ header h1 {
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 6px;
-  background: var(--bg-tertiary);
+  background: transparent;
   color: var(--text-secondary);
   font-size: 0.78rem;
   cursor: pointer;
@@ -220,14 +219,14 @@ header h1 {
 }
 
 .app-tab:hover {
-  border-color: var(--accent);
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .app-tab.active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
+  background: var(--bg-tertiary);
   color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .tab-icon {

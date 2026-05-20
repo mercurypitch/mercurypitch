@@ -15,8 +15,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-tertiary);
@@ -1127,8 +1127,8 @@
 /* Tablets (max-width: 768px) — compact layout */
 @media (max-width: 768px) {
   .practiceHeaderBar {
-    padding: 5px 8px;
-    gap: 4px;
+    padding: 6px;
+    gap: 6px;
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
@@ -1152,19 +1152,33 @@
     flex-shrink: 0;
   }
 
+  /* Hide textual labels to save space */
   .optLabel {
-    font-size: 0.65rem;
+    display: none !important;
+  }
+
+  /* Hide button text -- icon-only on mobile */
+  .ctrlBtn > span,
+  .ctrlBtn > .recordText {
+    display: none !important;
   }
 
   .ctrlBtn {
-    padding: 6px 8px;
+    padding: 4px 6px;
     font-size: 0.72rem;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 36px;
+    min-width: 36px;
   }
 
   .recordBtn {
     min-width: auto;
+  }
+
+  /* Hide number inputs for sliders on mobile */
+  .bpmNumberInput,
+  .volNumberInput,
+  .sensNumberInput {
+    display: none !important;
   }
 
   .modeGroup {
@@ -1172,9 +1186,9 @@
   }
 
   .modeBtn {
-    padding: 6px 8px;
+    padding: 4px 6px;
     font-size: 0.72rem;
-    min-height: 44px;
+    min-height: 36px;
   }
 
   .countinBadge {
@@ -1186,12 +1200,8 @@
   }
 }
 
-/* Mobile narrow (max-width: 480px) — hide secondary controls */
+/* Mobile narrow (max-width: 480px) */
 @media (max-width: 480px) {
-  .secondaryControls {
-    display: none;
-  }
-
   .essentialControls {
     display: flex;
   }
@@ -1230,19 +1240,11 @@
     flex-shrink: 0;
   }
 
-  /* Hide non-essential secondary controls on very small phones */
-  .tempoGroup,
-  .volumeGroup,
-  .speedGroup,
-  .sensitivityGroup {
-    display: none;
-  }
-
   .ctrlBtn {
-    padding: 6px 8px;
+    padding: 4px 6px;
     font-size: 0.75rem;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 36px;
+    min-width: 36px;
   }
 
   .recordBtn {
@@ -1254,38 +1256,13 @@
   }
 
   .modeBtn {
-    padding: 6px 8px;
+    padding: 4px 6px;
     font-size: 0.72rem;
-    min-height: 44px;
+    min-height: 36px;
   }
 
   .countinBadge {
     font-size: 0.75rem;
   }
 }
-/* Mobile compact styles for Header Controls */
-@media (max-width: 768px) {
-  /* Hide button text to make buttons icon-only */
-  .ctrlBtn > span,
-  .ctrlBtn > .recordText {
-    display: none !important;
-  }
-
-  /* Hide number inputs for sliders on mobile */
-  .bpmNumberInput,
-  .volNumberInput,
-  .sensNumberInput {
-    display: none !important;
-  }
-
-  /* Hide textual labels like 'Speed:', 'Tempo:' etc to save space */
-  .optLabel {
-    display: none !important;
-  }
-
-  /* Ensure the header bar allows wrapping and looks clean */
-  .practiceHeaderBar {
-    padding: 6px;
-    gap: 6px;
-  }
-}
+/* (mobile compact styles merged into the 768px block above) */

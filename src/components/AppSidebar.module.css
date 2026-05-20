@@ -16,6 +16,37 @@
   overflow-y: auto;
 }
 
+/* Mobile: off-canvas fixed sidebar, slide via `left` instead of
+   `transform` so iOS Safari's native <select> picker is not broken
+   by a transformed ancestor (well-known WebKit bug). */
+@media (max-width: 768px) {
+  :global(.app-sidebar) {
+    position: fixed;
+    top: 0;
+    left: -270px;
+    bottom: 0;
+    width: 270px;
+    min-width: 0;
+    z-index: 200;
+    will-change: left;
+    transition: left 0.22s ease;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 100vh;
+    max-height: 100dvh;
+    height: auto;
+  }
+  :global(.app-sidebar.open) {
+    left: 0;
+  }
+  :global(.app-sidebar) > * {
+    width: 100%;
+  }
+}
+
 :global(.app-sidebar.collapsed) {
   width: 40px;
   min-width: 40px;
@@ -42,6 +73,16 @@
 }
 .sidebarCloseBtn:hover {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .sidebarCloseBtn {
+    display: flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .sidebarToggleBtn {
@@ -78,9 +119,7 @@
    ============================================================ */
 
 .sidebarCollapseBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  align-self: flex-end;
   background: none;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -92,11 +131,21 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s;
-  z-index: 1;
 }
 
-:global(.app-sidebar:hover) .sidebarCollapseBtn {
+:global(.app-sidebar:hover) :local(.sidebarCollapseBtn),
+:global(.app-sidebar.collapsed) :local(.sidebarCollapseBtn) {
   opacity: 1;
+}
+
+:global(.app-sidebar.collapsed) :local(.sidebarCollapseBtn) {
+  align-self: center;
+}
+
+@media (max-width: 768px) {
+  .sidebarCollapseBtn {
+    display: none !important;
+  }
 }
 
 /* ============================================================

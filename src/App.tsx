@@ -94,11 +94,11 @@ import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melod
 import { storageGet } from '@/lib/storage'
 import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
-import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
+import { advancedFeaturesEnabled } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { selectedCharacter, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
@@ -900,6 +900,19 @@ const AppShell: Component<AppProps> = (props) => {
           <header>
             <div class="header-left">
               <button
+                class="sidebar-toggle-btn"
+                onClick={toggleSidebar}
+                title="Menu"
+                aria-label="Menu"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path
+                    fill="currentColor"
+                    d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+                  />
+                </svg>
+              </button>
+              <button
                 id="app-title"
                 class="logo-btn"
                 onClick={() => void handleTabChange(TAB_SINGING)}
@@ -911,54 +924,10 @@ const AppShell: Component<AppProps> = (props) => {
                 </span>
               </button>
               <p class="subtitle">Voice Pitch Practice</p>
-              <button
-                class="sidebar-toggle-btn"
-                onClick={toggleSidebar}
-                title="Menu"
-                aria-label="Menu"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path
-                    fill="currentColor"
-                    d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
-                  />
-                </svg>
-                Menu
-              </button>
             </div>
             <div class="header-right">
               {/* Current melody indicator pill */}
-              <Show when={melodyStore.getCurrentMelody()}>
-                <button
-                  class={styles.melodyIndicatorPill}
-                  onClick={() => void handleTabChange(TAB_SINGING)}
-                  title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
-                >
-                  <svg
-                    class={styles.melodyIndicatorIcon}
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M9 18V5l12-2v13" />
-                    <circle cx="6" cy="18" r="3" />
-                    <circle cx="18" cy="16" r="3" />
-                  </svg>
-                  <span class={styles.melodyIndicatorInfo}>
-                    <span class={styles.melodyIndicatorName}>
-                      {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
-                    </span>
-                    <span class={styles.melodyIndicatorCharacter}>
-                      {selectedCharacter()}
-                    </span>
-                  </span>
-                </button>
-              </Show>
+
               {/* Walkthrough Control Button */}
               <WalkthroughControl
                 showOnStart={false}
@@ -972,7 +941,6 @@ const AppShell: Component<AppProps> = (props) => {
               }}
               tabLabel={tabLabel}
               advancedFeaturesEnabled={advancedFeaturesEnabled}
-              devFeaturesEnabled={devFeaturesEnabled}
             />
           </header>
 
@@ -1227,28 +1195,26 @@ const AppShell: Component<AppProps> = (props) => {
                       >
                         Vocal Analysis
                       </button>
-                      <Show when={devFeaturesEnabled()}>
-                        <button
-                          class={styles.viewBtn}
-                          classList={{
-                            [styles.activeViewBtn]:
-                              analysisSubTab() === 'detection',
-                          }}
-                          onClick={() => setAnalysisSubTab('detection')}
-                        >
-                          Pitch Detection
-                        </button>
-                        <button
-                          class={styles.viewBtn}
-                          classList={{
-                            [styles.activeViewBtn]:
-                              analysisSubTab() === 'algorithms',
-                          }}
-                          onClick={() => setAnalysisSubTab('algorithms')}
-                        >
-                          Pitch Algorithms
-                        </button>
-                      </Show>
+                      <button
+                        class={styles.viewBtn}
+                        classList={{
+                          [styles.activeViewBtn]:
+                            analysisSubTab() === 'detection',
+                        }}
+                        onClick={() => setAnalysisSubTab('detection')}
+                      >
+                        Pitch Detection
+                      </button>
+                      <button
+                        class={styles.viewBtn}
+                        classList={{
+                          [styles.activeViewBtn]:
+                            analysisSubTab() === 'algorithms',
+                        }}
+                        onClick={() => setAnalysisSubTab('algorithms')}
+                      >
+                        Pitch Algorithms
+                      </button>
                     </div>
 
                     <div
@@ -1265,17 +1231,15 @@ const AppShell: Component<AppProps> = (props) => {
                           </Suspense>
                         </div>
                       </Show>
-                      <Show when={devFeaturesEnabled()}>
-                        <Show when={analysisSubTab() === 'detection'}>
-                          <PitchTestingTab
-                            onClose={() => setActiveTab(TAB_SINGING)}
-                          />
-                        </Show>
-                        <Show when={analysisSubTab() === 'algorithms'}>
-                          <PitchAlgorithmTester
-                            onClose={() => setActiveTab(TAB_SINGING)}
-                          />
-                        </Show>
+                      <Show when={analysisSubTab() === 'detection'}>
+                        <PitchTestingTab
+                          onClose={() => setActiveTab(TAB_SINGING)}
+                        />
+                      </Show>
+                      <Show when={analysisSubTab() === 'algorithms'}>
+                        <PitchAlgorithmTester
+                          onClose={() => setActiveTab(TAB_SINGING)}
+                        />
                       </Show>
                     </div>
                   </div>

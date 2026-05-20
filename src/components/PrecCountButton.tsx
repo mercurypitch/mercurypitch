@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { Tooltip } from '@/components/Tooltip'
 import { countIn, setCountIn } from '@/stores'
+import styles from './HeaderControls.module.css'
 
 export const PrecCountButton: Component = () => {
   const isOn = () => countIn() > 0
@@ -17,7 +18,7 @@ export const PrecCountButton: Component = () => {
     <Tooltip text="Precount">
       <button
         id="btn-precount"
-        class={`ctrl-btn precount-btn ${isOn() ? 'active' : ''}`}
+        class={`${styles.ctrlBtn} ${isOn() ? styles.active : ''}`}
         onClick={toggle}
         title={isOn() ? 'Precount: On' : 'Precount: Off'}
         aria-label={isOn() ? 'Precount: On' : 'Precount: Off'}

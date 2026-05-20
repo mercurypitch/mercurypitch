@@ -607,10 +607,6 @@ select option.custom-scale-option {
   opacity: 1;
 }
 
-.app-sidebar.collapsed > *:not(.sidebar-collapse-btn) {
-  display: none;
-}
-
 /* .preset-selector {
   ...
 } */
