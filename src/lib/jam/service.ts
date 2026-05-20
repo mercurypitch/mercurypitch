@@ -453,21 +453,6 @@ export function createJamService(callbacks: JamCallbacks) {
 
   // ── Broadcast helpers ────────────────────────────────────────────
 
-  function broadcastMessage(
-    text: string,
-    id: string,
-    timestamp: number,
-    displayName: string,
-  ): void {
-    broadcastData({
-      type: 'chat',
-      id,
-      displayName,
-      text,
-      timestamp,
-    })
-  }
-
   function broadcastVideoState(enabled: boolean): void {
     broadcastData({ type: 'video-state', enabled })
   }

@@ -3,8 +3,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -137,7 +137,7 @@ export const JamPanel: Component = () => {
 
   const fancyRoomName = createMemo(() => {
     const id = jamRoomId()
-    if (!id) return ''
+    if (id === null || id === '') return ''
     let hash = 0
     for (let i = 0; i < id.length; i++) {
       hash = id.charCodeAt(i) + ((hash << 5) - hash)
@@ -147,16 +147,16 @@ export const JamPanel: Component = () => {
   })
 
   const colorMap = createMemo(() => {
-    const ids = jamPeers().map(p => p.id)
+    const ids = jamPeers().map((p) => p.id)
     const myId = jamPeerId()
-    if (myId) ids.push(myId)
+    if (myId !== null && myId !== '') ids.push(myId)
     return buildPeerColorMap(ids)
   })
 
   const myColor = createMemo(() => {
     const id = jamPeerId()
-    if (!id) return '#10b981' // fallback green
-    return colorMap()[id] || '#10b981'
+    if (id === null || id === '') return '#10b981' // fallback green
+    return colorMap()[id] ?? '#10b981'
   })
 
   const handleCreate = () => {
@@ -299,7 +299,9 @@ export const JamPanel: Component = () => {
                         border: `1px solid ${myColor()}`,
                       }}
                     >
-                      {getJamSessionInfo()?.displayName || 'You'}
+                      {(getJamSessionInfo()?.displayName ?? '') !== ''
+                        ? getJamSessionInfo()?.displayName
+                        : 'You'}
                     </span>
                     <For each={jamConnectedPeers()}>
                       {(peer) => {
