@@ -70,14 +70,24 @@ export function usePitchHoldController(base: BaseExerciseController) {
       return {
         type: EXERCISE_PITCH_HOLD,
         score: 0,
-        metrics: { durationSec: 0, zonePct: 0, minZoneCents: INITIAL_ZONE_CENTS, survivedSec: 0 },
+        metrics: {
+          durationSec: 0,
+          zonePct: 0,
+          minZoneCents: INITIAL_ZONE_CENTS,
+          survivedSec: 0,
+        },
         completedAt: Date.now(),
       }
     }
 
     // Score: zone percentage weighted by duration
-    const durationScore = Math.min(100, (durationSec / TARGET_DURATION_SEC) * 100)
-    const score = Math.round(zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT)
+    const durationScore = Math.min(
+      100,
+      (durationSec / TARGET_DURATION_SEC) * 100,
+    )
+    const score = Math.round(
+      zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT,
+    )
 
     return {
       type: EXERCISE_PITCH_HOLD,

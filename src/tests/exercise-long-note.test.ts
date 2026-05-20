@@ -27,7 +27,9 @@ function makePitchHistory(
   return samples
 }
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
     _setTargetPitch: () => {},

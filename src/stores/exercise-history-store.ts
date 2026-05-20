@@ -37,7 +37,13 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
   const entries = history().filter((e) => e.type === type)
   if (entries.length === 0) {
-    return { bestScore: 0, totalPlays: 0, lastScore: 0, lastPlayedAt: 0, avgScore: 0 }
+    return {
+      bestScore: 0,
+      totalPlays: 0,
+      lastScore: 0,
+      lastPlayedAt: 0,
+      avgScore: 0,
+    }
   }
   const scores = entries.map((e) => e.score)
   return {

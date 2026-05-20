@@ -3,7 +3,9 @@ import { usePitchHoldController } from '@/features/exercises/pitch-hold/use-pitc
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_PITCH_HOLD } from '@/features/exercises/types'
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   let elapsed = 0
   const mock: BaseExerciseController = {
     pitchHistory: () => [],

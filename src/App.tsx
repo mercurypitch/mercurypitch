@@ -251,7 +251,8 @@ const AppShell: Component<AppProps> = (props) => {
     createSignal<UvrView>('shazam-listen')
 
   // ── Exercises ────────────────────────────────────────────────
-  const [selectedExercise, setSelectedExercise] = createSignal<ExerciseType | null>(null)
+  const [selectedExercise, setSelectedExercise] =
+    createSignal<ExerciseType | null>(null)
   const clearExercise = () => {
     setSelectedExercise(null)
     setPendingDrill(null)
@@ -1425,7 +1426,11 @@ const AppShell: Component<AppProps> = (props) => {
                   <div id="exercises-panel">
                     <Show
                       when={selectedExercise()}
-                      fallback={<ExerciseMenu onSelect={(type) => setSelectedExercise(type)} />}
+                      fallback={
+                        <ExerciseMenu
+                          onSelect={(type) => setSelectedExercise(type)}
+                        />
+                      }
                     >
                       <Show when={selectedExercise() === 'long-note'}>
                         <LongNoteExercise

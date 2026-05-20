@@ -102,7 +102,8 @@ export interface PendingDrill {
   challengeName: string
 }
 
-export const [pendingDrill, setPendingDrill] = createSignal<PendingDrill | null>(null)
+export const [pendingDrill, setPendingDrill] =
+  createSignal<PendingDrill | null>(null)
 
 export function launchDrill(drill: PendingDrill): void {
   setPendingDrill(drill)
@@ -124,7 +125,8 @@ export interface CelebrationData {
   bestWindow?: { startMs: number; endMs: number; score: number }
 }
 
-export const [celebrationData, setCelebrationData] = createSignal<CelebrationData | null>(null)
+export const [celebrationData, setCelebrationData] =
+  createSignal<CelebrationData | null>(null)
 
 export function showCelebration(data: CelebrationData): void {
   setCelebrationData(data)

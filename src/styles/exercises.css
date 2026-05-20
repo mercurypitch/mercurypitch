@@ -37,7 +37,9 @@
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .exercise-card:hover {
@@ -396,7 +398,9 @@
   border-radius: 50%;
   background: var(--accent-color, #6366f1);
   transform: translate(-50%, -50%);
-  transition: left 0.05s linear, top 0.05s linear;
+  transition:
+    left 0.05s linear,
+    top 0.05s linear;
 }
 
 .vibrato-center {
@@ -574,7 +578,9 @@
   right: 4px;
   background: rgba(99, 102, 241, 0.15);
   border-radius: 4px;
-  transition: top 0.3s, height 0.3s;
+  transition:
+    top 0.3s,
+    height 0.3s;
 }
 
 .pitch-hold-center-line {

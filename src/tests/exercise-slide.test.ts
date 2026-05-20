@@ -3,7 +3,9 @@ import { useSlideController } from '@/features/exercises/slide/use-slide-control
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_SLIDE } from '@/features/exercises/types'
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
     _setTargetPitch: () => {},
@@ -77,7 +79,11 @@ describe('useSlideController', () => {
 
     // Stable at E4 for 20 samples
     for (let i = 0; i < 20; i++) {
-      history.push({ freq: midiToFreq(64), time: (25 + i) * 0.05, cents: (64 - 60) * 100 })
+      history.push({
+        freq: midiToFreq(64),
+        time: (25 + i) * 0.05,
+        cents: (64 - 60) * 100,
+      })
     }
 
     const base = createMockBase({ pitchHistory: () => history })
@@ -98,7 +104,11 @@ describe('useSlideController', () => {
       // Oscillate around C4 with noise
       const wobble = Math.sin(i * 0.3) * 1.5
       const midi = 60 + wobble
-      history.push({ freq: midiToFreq(midi), time: i * 0.05, cents: (midi - 60) * 100 })
+      history.push({
+        freq: midiToFreq(midi),
+        time: i * 0.05,
+        cents: (midi - 60) * 100,
+      })
     }
 
     const base = createMockBase({ pitchHistory: () => history })
@@ -115,12 +125,18 @@ describe('useSlideController', () => {
     const history: Array<{ freq: number; time: number; cents: number }> = []
 
     // Build a simple clean slide pattern with clear stable regions
-    for (let i = 0; i < 10; i++) history.push({ freq: midiToFreq(60), time: i * 0.05, cents: 0 })
+    for (let i = 0; i < 10; i++)
+      history.push({ freq: midiToFreq(60), time: i * 0.05, cents: 0 })
     for (let i = 0; i < 5; i++) {
       const midi = 60 + (i / 4) * 4
-      history.push({ freq: midiToFreq(midi), time: (10 + i) * 0.05, cents: (midi - 60) * 100 })
+      history.push({
+        freq: midiToFreq(midi),
+        time: (10 + i) * 0.05,
+        cents: (midi - 60) * 100,
+      })
     }
-    for (let i = 0; i < 10; i++) history.push({ freq: midiToFreq(64), time: (15 + i) * 0.05, cents: 400 })
+    for (let i = 0; i < 10; i++)
+      history.push({ freq: midiToFreq(64), time: (15 + i) * 0.05, cents: 400 })
 
     const base = createMockBase({
       pitchHistory: () => history,
@@ -160,7 +176,11 @@ describe('useSlideController', () => {
     for (let i = 0; i < 5; i++) {
       const t = i / 4
       const midi = 60 + t * 4
-      history.push({ freq: midiToFreq(midi), time: (10 + i) * 0.05, cents: (midi - 60) * 100 })
+      history.push({
+        freq: midiToFreq(midi),
+        time: (10 + i) * 0.05,
+        cents: (midi - 60) * 100,
+      })
     }
 
     // Stable at E4 for 10 samples
@@ -182,6 +202,8 @@ describe('useSlideController', () => {
 
     expect(correctResult.metrics.departureAccuracy).toBeDefined()
     // The wrong-start slide should score lower due to departure penalty
-    expect(wrongResult.metrics.departureAccuracy).toBeLessThan(correctResult.metrics.departureAccuracy)
+    expect(wrongResult.metrics.departureAccuracy).toBeLessThan(
+      correctResult.metrics.departureAccuracy,
+    )
   })
 })

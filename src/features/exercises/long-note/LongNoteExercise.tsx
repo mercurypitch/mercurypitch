@@ -14,7 +14,23 @@ interface LongNoteExerciseProps {
   onBack: () => void
 }
 
-const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+const NOTE_OPTIONS = [
+  'C3',
+  'D3',
+  'E3',
+  'F3',
+  'G3',
+  'A3',
+  'B3',
+  'C4',
+  'D4',
+  'E4',
+  'F4',
+  'G4',
+  'A4',
+  'B4',
+  'C5',
+]
 
 const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal('A3')
@@ -72,7 +88,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Long Note Practice</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -91,16 +109,23 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               <div class="long-note-metric">
                 <span class="long-note-metric-label">Stability</span>
                 <span class="long-note-metric-value">
-                  {base.state().metrics.pitchStabilityCents != null ? `${base.state().metrics.pitchStabilityCents}¢` : '—'}
+                  {base.state().metrics.pitchStabilityCents != null
+                    ? `${base.state().metrics.pitchStabilityCents}¢`
+                    : '—'}
                 </span>
                 <div class="long-note-metric-bar">
-                  <div class="long-note-metric-fill good" style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`} />
+                  <div
+                    class="long-note-metric-fill good"
+                    style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`}
+                  />
                 </div>
               </div>
               <div class="long-note-metric">
                 <span class="long-note-metric-label">Steady Zone</span>
                 <span class="long-note-metric-value">
-                  {base.state().metrics.steadyZonePct != null ? `${base.state().metrics.steadyZonePct}%` : '—'}
+                  {base.state().metrics.steadyZonePct != null
+                    ? `${base.state().metrics.steadyZonePct}%`
+                    : '—'}
                 </span>
                 <div class="long-note-metric-bar">
                   <div
@@ -115,11 +140,28 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
-            <div class="exercise-result-label">Duration: {base.result()!.metrics.durationSec}s · Stability: {base.result()!.metrics.pitchStabilityCents}¢</div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <div class="exercise-result-label">
+              Duration: {base.result()!.metrics.durationSec}s · Stability:{' '}
+              {base.result()!.metrics.pitchStabilityCents}¢
+            </div>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -131,29 +173,49 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
-              <select value={targetNote()} onChange={(e) => setTargetNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={targetNote()}
+                onChange={(e) => setTargetNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
             </div>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop & Score
           </button>
         )}
-        {isComplete() &&(
+        {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Target
             </button>
           </>

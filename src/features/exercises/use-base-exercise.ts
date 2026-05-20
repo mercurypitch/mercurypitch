@@ -25,10 +25,17 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     metrics: {},
   })
 
-  const pitchHistory = createSignal<Array<{ freq: number; time: number; cents: number }>>([])
+  const pitchHistory = createSignal<
+    Array<{ freq: number; time: number; cents: number }>
+  >([])
   const [getPitchHistory, setPitchHistory] = pitchHistory
-  const [getCurrentPitch, setCurrentPitch] = createSignal<{ freq: number; clarity: number; noteName: string } | null>(null)
-  const [getFrequencyData, setFrequencyData] = createSignal<Float32Array | null>(null)
+  const [getCurrentPitch, setCurrentPitch] = createSignal<{
+    freq: number
+    clarity: number
+    noteName: string
+  } | null>(null)
+  const [getFrequencyData, setFrequencyData] =
+    createSignal<Float32Array | null>(null)
   const [getTargetPitch, setTargetPitch] = createSignal<number | null>(null)
   const result = createSignal<ExerciseResult | null>(null)
   const [getResult, setResult] = result
@@ -63,7 +70,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     if (!practiceEngine.isMicActive()) {
       const ok = await practiceEngine.startMic()
       if (!ok) {
-        setError('Microphone access denied. Please allow mic access and try again.')
+        setError(
+          'Microphone access denied. Please allow mic access and try again.',
+        )
         setState((s) => ({ ...s, status: 'idle' }))
         return
       }
@@ -94,7 +103,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
             ...prev,
             { freq: pitch.frequency, time: elapsed / 1000, cents: pitch.cents },
           ]
-          return next.length > MAX_PITCH_HISTORY ? next.slice(-MAX_PITCH_HISTORY) : next
+          return next.length > MAX_PITCH_HISTORY
+            ? next.slice(-MAX_PITCH_HISTORY)
+            : next
         })
       }
 
@@ -158,7 +169,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _setTargetPitch: setTargetPitch,
     _getElapsed: () => performance.now() - startTime,
     _isRunning: () => running,
-    _setRunning: (v: boolean) => { running = v },
+    _setRunning: (v: boolean) => {
+      running = v
+    },
   }
 }
 

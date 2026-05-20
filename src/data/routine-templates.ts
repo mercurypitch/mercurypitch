@@ -31,7 +31,8 @@ export const dailyRoutines: RoutineTemplate[] = [
   {
     id: 'long-note-focus',
     name: 'Breath & Stability',
-    description: 'Build breath support and pitch stability with sustained notes',
+    description:
+      'Build breath support and pitch stability with sustained notes',
     segments: [
       {
         type: 'warmup',

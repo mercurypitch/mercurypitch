@@ -66,7 +66,10 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     const now = performance.now()
 
     // Spawn new notes
-    if (now - lastSpawnTime > SPAWN_INTERVAL_MS && notes.filter((n) => n.active).length < TOTAL_NOTES) {
+    if (
+      now - lastSpawnTime > SPAWN_INTERVAL_MS &&
+      notes.filter((n) => n.active).length < TOTAL_NOTES
+    ) {
       spawnNote()
       lastSpawnTime = now
     }
@@ -124,7 +127,11 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     }
 
     // Clean up old notes
-    notes = notes.filter((n) => n.active || (n.scored && performance.now() - n.spawnedAt < FALL_DURATION_MS + 1000))
+    notes = notes.filter(
+      (n) =>
+        n.active ||
+        (n.scored && performance.now() - n.spawnedAt < FALL_DURATION_MS + 1000),
+    )
 
     // Update live metrics
     const total = hits + misses
@@ -171,7 +178,14 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     const hitRate = (hits / total) * 100
     const avgAccuracy = hits > 0 ? Math.round(totalAccuracy / hits) : 0
     const comboBonus = Math.min(MAX_COMBO_BONUS, maxCombo * COMBO_MULTIPLIER)
-    const score = Math.min(100, Math.round(hitRate * SCORE_HIT_RATE_WEIGHT + avgAccuracy * SCORE_ACCURACY_WEIGHT + comboBonus))
+    const score = Math.min(
+      100,
+      Math.round(
+        hitRate * SCORE_HIT_RATE_WEIGHT +
+          avgAccuracy * SCORE_ACCURACY_WEIGHT +
+          comboBonus,
+      ),
+    )
 
     return {
       type: EXERCISE_PITCH_PURSUIT,

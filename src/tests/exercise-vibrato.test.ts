@@ -3,7 +3,9 @@ import { useVibratoController } from '@/features/exercises/vibrato/use-vibrato-c
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_VIBRATO } from '@/features/exercises/types'
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
     _setTargetPitch: () => {},

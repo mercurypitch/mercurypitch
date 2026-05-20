@@ -5,11 +5,21 @@ interface IconProps {
   class?: string
 }
 
-function iconProps(size = 24): { width: number; height: number; viewBox: string; fill: string } {
+function iconProps(size = 24): {
+  width: number
+  height: number
+  viewBox: string
+  fill: string
+} {
   return { width: size, height: size, viewBox: '0 0 24 24', fill: 'none' }
 }
 
-const strokeProps = { stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' as const, 'stroke-linejoin': 'round' as const }
+const strokeProps = {
+  stroke: 'currentColor',
+  'stroke-width': '2',
+  'stroke-linecap': 'round' as const,
+  'stroke-linejoin': 'round' as const,
+}
 
 export function IconTarget(p: IconProps): JSX.Element {
   const s = iconProps(p.size ?? 24)
@@ -60,7 +70,10 @@ export function IconMirror(p: IconProps): JSX.Element {
       <path d="M4 4h16v16H4z" />
       <line x1="4" y1="12" x2="12" y2="12" />
       <path d="M12 4v16" />
-      <path d="M12 12c1-2 2-3 4-3s3 1.5 3 3.5-1.5 3.5-3 3.5-3-1.5-4-4" opacity="0.4" />
+      <path
+        d="M12 12c1-2 2-3 4-3s3 1.5 3 3.5-1.5 3.5-3 3.5-3-1.5-4-4"
+        opacity="0.4"
+      />
       <path d="M12 12c-2 1.5-3.5 3-3.5 5s1.5 3 3.5 3" opacity="0.6" />
     </svg>
   )

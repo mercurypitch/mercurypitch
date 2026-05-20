@@ -726,7 +726,9 @@ export const VocalChallenges: Component = () => {
                       challengeName: drill.challengeName,
                     })
                   }}
-                  title={generateChallengeDrill(challenge.type, challenge.name).tip}
+                  title={
+                    generateChallengeDrill(challenge.type, challenge.name).tip
+                  }
                 >
                   Practice
                 </button>

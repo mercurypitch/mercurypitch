@@ -27,7 +27,9 @@ function scoreLabel(score: number): string {
   return 'Keep at it!'
 }
 
-export const SessionCelebration: Component<SessionCelebrationProps> = (props) => {
+export const SessionCelebration: Component<SessionCelebrationProps> = (
+  props,
+) => {
   return (
     <Show when={props.data}>
       <div class="celebration-backdrop" onClick={props.onClose}>
@@ -51,7 +53,13 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (props) =>
 
             <Show when={props.data!.bestWindow}>
               <div class="celebration-best-moment">
-                Best moment: {props.data!.bestWindow!.score}% ({((props.data!.bestWindow!.endMs - props.data!.bestWindow!.startMs) / 1000).toFixed(1)}s window)
+                Best moment: {props.data!.bestWindow!.score}% (
+                {(
+                  (props.data!.bestWindow!.endMs -
+                    props.data!.bestWindow!.startMs) /
+                  1000
+                ).toFixed(1)}
+                s window)
               </div>
             </Show>
 

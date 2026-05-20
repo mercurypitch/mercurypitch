@@ -3,7 +3,9 @@ import { useMirrorMelodyController } from '@/features/exercises/mirror-melody/us
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_MIRROR_MELODY } from '@/features/exercises/types'
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
     _setTargetPitch: () => {},
@@ -68,7 +70,9 @@ describe('useMirrorMelodyController', () => {
     let stopped = false
     const base = createMockBase({
       _commitResult: (r) => committed.push(r),
-      stop: () => { stopped = true },
+      stop: () => {
+        stopped = true
+      },
     })
     const audioEngine = { playTone: async () => {} }
 

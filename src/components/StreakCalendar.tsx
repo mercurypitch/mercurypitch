@@ -28,7 +28,10 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today.getTime() - i * DAY_MS)
       const dateStr = d.toISOString().slice(0, 10)
-      currentWeek.push({ date: dateStr, count: activityMap().get(dateStr) ?? 0 })
+      currentWeek.push({
+        date: dateStr,
+        count: activityMap().get(dateStr) ?? 0,
+      })
       if (d.getDay() === 6 || i === 0) {
         // end of week (Saturday)
         result.push(currentWeek)

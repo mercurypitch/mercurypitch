@@ -1839,4 +1839,3 @@ function rmsAmplitude(samples: Float32Array): number {
   }
   return Math.sqrt(sum / samples.length)
 }
-

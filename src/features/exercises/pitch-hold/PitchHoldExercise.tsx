@@ -14,7 +14,23 @@ interface PitchHoldExerciseProps {
   onBack: () => void
 }
 
-const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+const NOTE_OPTIONS = [
+  'C3',
+  'D3',
+  'E3',
+  'F3',
+  'G3',
+  'A3',
+  'B3',
+  'C4',
+  'D4',
+  'E4',
+  'F4',
+  'G4',
+  'A4',
+  'B4',
+  'C5',
+]
 
 const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal('A3')
@@ -83,7 +99,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Pitch Hold</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -91,7 +109,10 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconLock size={48} />
-            <p>Keep your pitch locked inside the target zone as it shrinks over time.</p>
+            <p>
+              Keep your pitch locked inside the target zone as it shrinks over
+              time.
+            </p>
           </div>
         )}
 
@@ -115,7 +136,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               <div class="pitch-hold-center-line" />
               <div
                 class="pitch-hold-dot"
-                classList={{ 'pitch-hold-dot-in': inZone(), 'pitch-hold-dot-out': !inZone() && pitch() != null && pitch()!.freq > 0 }}
+                classList={{
+                  'pitch-hold-dot-in': inZone(),
+                  'pitch-hold-dot-out':
+                    !inZone() && pitch() != null && pitch()!.freq > 0,
+                }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
               <div class="pitch-hold-target-label">{targetNote()}</div>
@@ -125,7 +150,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               <div class="pitch-hold-metric">
                 <span class="pitch-hold-metric-label">In Zone</span>
                 <span class="pitch-hold-metric-value">
-                  {base.state().metrics.zonePct != null ? `${base.state().metrics.zonePct}%` : '—'}
+                  {base.state().metrics.zonePct != null
+                    ? `${base.state().metrics.zonePct}%`
+                    : '—'}
                 </span>
               </div>
               <div class="pitch-hold-metric">
@@ -140,13 +167,28 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              In Zone: {base.result()!.metrics.zonePct}% · Survived: {base.result()!.metrics.survivedSec}s
+              In Zone: {base.result()!.metrics.zonePct}% · Survived:{' '}
+              {base.result()!.metrics.survivedSec}s
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -158,29 +200,49 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
-              <select value={targetNote()} onChange={(e) => setTargetNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={targetNote()}
+                onChange={(e) => setTargetNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
             </div>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop & Score
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Note
             </button>
           </>

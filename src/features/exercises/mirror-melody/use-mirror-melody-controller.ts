@@ -51,7 +51,11 @@ export function useMirrorMelodyController(
 
     const midi = melody[noteIndex]
     base._setTargetPitch(midiToFreq(midi))
-    base._updateMetrics({ noteIndex, melodyLength: melody.length, currentMidi: midi })
+    base._updateMetrics({
+      noteIndex,
+      melodyLength: melody.length,
+      currentMidi: midi,
+    })
 
     void audioEngine.playTone(midiToFreq(midi), TONE_DURATION_MS).then(() => {
       // After tone plays, short gap then start matching
@@ -73,7 +77,9 @@ export function useMirrorMelodyController(
     const targetMidi = melody[noteIndex]
     const history = base.pitchHistory()
 
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     let noteScore = 0
     if (recentSamples.length > 0) {
@@ -85,7 +91,8 @@ export function useMirrorMelodyController(
         })
 
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         noteScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
       }
     }
@@ -125,11 +132,14 @@ export function useMirrorMelodyController(
       }
     }
 
-    const avgAccuracy = Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
+    const avgAccuracy = Math.round(
+      noteScores.reduce((a, b) => a + b, 0) / noteScores.length,
+    )
     const bestNote = Math.max(...noteScores)
     const consistency = (() => {
       const mean = avgAccuracy
-      const variance = noteScores.reduce((s, v) => s + (v - mean) ** 2, 0) / noteScores.length
+      const variance =
+        noteScores.reduce((s, v) => s + (v - mean) ** 2, 0) / noteScores.length
       return Math.round(Math.max(0, 100 - Math.sqrt(variance) * 2))
     })()
 

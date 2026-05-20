@@ -66,7 +66,18 @@ export function frequencyToMidi(frequency: number): number {
 export function midiToNoteName(midi: number): string {
   const rounded = Math.round(midi)
   const noteNames: NoteName[] = [
-    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
   ]
   const noteIndex = rounded % 12
   const octave = Math.floor(rounded / 12) - 1
@@ -78,7 +89,18 @@ export function midiToNoteName(midi: number): string {
  */
 export function noteToMidi(note: string): number {
   const noteNames: NoteName[] = [
-    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
   ]
   const name = note.slice(0, -1)
   const octave = parseInt(note.slice(-1))

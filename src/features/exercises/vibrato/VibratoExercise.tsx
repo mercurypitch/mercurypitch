@@ -14,7 +14,23 @@ interface VibratoExerciseProps {
   onBack: () => void
 }
 
-const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+const NOTE_OPTIONS = [
+  'C3',
+  'D3',
+  'E3',
+  'F3',
+  'G3',
+  'A3',
+  'B3',
+  'C4',
+  'D4',
+  'E4',
+  'F4',
+  'G4',
+  'A4',
+  'B4',
+  'C5',
+]
 
 const CLASSIFICATION_LABELS: Record<number, string> = {
   0: 'No vibrato detected',
@@ -86,7 +102,8 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
   // Orbiting dot position (center of viz)
   const hasVibrato = () => metrics().rateHz > 0
-  const orbitRadius = () => hasVibrato() ? Math.min(60, (metrics().depthCents || 0) * 1.2) : 10
+  const orbitRadius = () =>
+    hasVibrato() ? Math.min(60, (metrics().depthCents || 0) * 1.2) : 10
   const dotX = () => 50 + orbitRadius() * Math.cos(vizPhase()) * (90 / 180)
   const dotY = () => 50 + orbitRadius() * Math.sin(vizPhase()) * (90 / 180)
 
@@ -98,7 +115,9 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Vibrato Practice</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -106,7 +125,10 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconWave size={48} />
-            <p>Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents depth.</p>
+            <p>
+              Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents
+              depth.
+            </p>
           </div>
         )}
 
@@ -123,27 +145,34 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
                 style={`left:${dotX()}%;top:${dotY()}%`}
               />
               <div class="vibrato-center">
-                {hasVibrato() ? `${(metrics().rateHz || 0).toFixed(1)} Hz` : '...'}
+                {hasVibrato()
+                  ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
+                  : '...'}
               </div>
             </div>
             <div class="vibrato-metrics" style="margin-top:12px">
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Rate</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato() ? `${(metrics().rateHz || 0).toFixed(1)} Hz` : '—'}
+                  {hasVibrato()
+                    ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
+                    : '—'}
                 </span>
               </div>
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Depth</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato() ? `${Math.round(metrics().depthCents || 0)}¢` : '—'}
+                  {hasVibrato()
+                    ? `${Math.round(metrics().depthCents || 0)}¢`
+                    : '—'}
                 </span>
               </div>
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Style</span>
                 <span class="vibrato-metric-value" style="font-size:0.75rem">
                   {hasVibrato()
-                    ? (CLASSIFICATION_LABELS[metrics().classification ?? 0] || '...')
+                    ? CLASSIFICATION_LABELS[metrics().classification ?? 0] ||
+                      '...'
                     : '—'}
                 </span>
               </div>
@@ -153,13 +182,28 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Rate: {base.result()!.metrics.rateHz} Hz · Depth: {base.result()!.metrics.depthCents}¢
+              Rate: {base.result()!.metrics.rateHz} Hz · Depth:{' '}
+              {base.result()!.metrics.depthCents}¢
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -171,29 +215,49 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
-              <select value={targetNote()} onChange={(e) => setTargetNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={targetNote()}
+                onChange={(e) => setTargetNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
             </div>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop & Score
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Note
             </button>
           </>

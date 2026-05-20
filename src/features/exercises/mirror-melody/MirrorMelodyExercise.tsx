@@ -15,7 +15,23 @@ interface MirrorMelodyExerciseProps {
   onBack: () => void
 }
 
-const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+const NOTE_OPTIONS = [
+  'C3',
+  'D3',
+  'E3',
+  'F3',
+  'G3',
+  'A3',
+  'B3',
+  'C4',
+  'D4',
+  'E4',
+  'F4',
+  'G4',
+  'A4',
+  'B4',
+  'C5',
+]
 
 const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal('C4')
@@ -84,7 +100,9 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Mirror Melody</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -92,7 +110,10 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconMirror size={48} />
-            <p>Listen to each note played, then sing it back. Match pitch and timing.</p>
+            <p>
+              Listen to each note played, then sing it back. Match pitch and
+              timing.
+            </p>
           </div>
         )}
 
@@ -100,7 +121,17 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
           <>
             <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
               <div style="font-size:1.1rem;font-weight:600">
-                {phase() === 1 ? <><IconMusic size={16} /> Listen...</> : phase() === 2 ? <><IconMic size={16} /> Your turn!</> : '...'}
+                {phase() === 1 ? (
+                  <>
+                    <IconMusic size={16} /> Listen...
+                  </>
+                ) : phase() === 2 ? (
+                  <>
+                    <IconMic size={16} /> Your turn!
+                  </>
+                ) : (
+                  '...'
+                )}
               </div>
               {phase() === 2 && (
                 <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">
@@ -120,7 +151,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                       'border-radius': '50%',
                       background:
                         i() < notesCompleted()
-                          ? `hsl(${(lastNoteScore() * 1.2)}, 70%, 50%)`
+                          ? `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`
                           : i() === noteIndex()
                             ? 'var(--accent)'
                             : 'var(--surface-hover)',
@@ -128,7 +159,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                         i() === noteIndex()
                           ? '2px solid var(--accent)'
                           : '1px solid var(--border)',
-                      transform: i() === noteIndex() ? 'scale(1.3)' : 'scale(1)',
+                      transform:
+                        i() === noteIndex() ? 'scale(1.3)' : 'scale(1)',
                       transition: 'all 0.2s',
                     }}
                   />
@@ -143,19 +175,27 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                 class="mirror-melody-dot"
                 classList={{
                   'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && pitch() != null && pitch()!.freq > 0,
+                  'mirror-melody-dot-far':
+                    Math.abs(currentCents()) > 25 &&
+                    pitch() != null &&
+                    pitch()!.freq > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
               {phase() === 2 && (
-                <div class="mirror-melody-target-label">{midiToNoteName(currentMidi())}</div>
+                <div class="mirror-melody-target-label">
+                  {midiToNoteName(currentMidi())}
+                </div>
               )}
             </div>
 
             {/* Note feedback */}
             {notesCompleted() > 0 && lastNoteScore() > 0 && (
               <div style="text-align:center;margin-top:12px;font-size:0.9rem;color:var(--text-secondary)">
-                Last note: <span style="font-weight:600;color:var(--accent)">{lastNoteScore()}%</span>
+                Last note:{' '}
+                <span style="font-weight:600;color:var(--accent)">
+                  {lastNoteScore()}%
+                </span>
               </div>
             )}
           </>
@@ -163,13 +203,29 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best: {base.result()!.metrics.bestNote}% · Notes: {base.result()!.metrics.notesCompleted}
+              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best:{' '}
+              {base.result()!.metrics.bestNote}% · Notes:{' '}
+              {base.result()!.metrics.notesCompleted}
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -181,29 +237,49 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
           <>
             <div class="exercise-target-selector">
               <label>Root Note:</label>
-              <select value={startNote()} onChange={(e) => setStartNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={startNote()}
+                onChange={(e) => setStartNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
             </div>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Root
             </button>
           </>

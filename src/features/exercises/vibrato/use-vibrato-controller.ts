@@ -19,7 +19,12 @@ export function useVibratoController(base: BaseExerciseController) {
       return {
         type: EXERCISE_VIBRATO,
         score: 0,
-        metrics: { rateHz: 0, depthCents: 0, consistency: 0, classification: 0 },
+        metrics: {
+          rateHz: 0,
+          depthCents: 0,
+          consistency: 0,
+          classification: 0,
+        },
         completedAt: Date.now(),
       }
     }
@@ -30,7 +35,10 @@ export function useVibratoController(base: BaseExerciseController) {
       midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
     }))
 
-    const sampleRate = Math.round(history.length / ((history[history.length - 1].time - history[0].time) || 1))
+    const sampleRate = Math.round(
+      history.length /
+        (history[history.length - 1].time - history[0].time || 1),
+    )
     const vibResult = detectVibrato(vibSamples, sampleRate)
 
     if (!vibResult.detected) {
@@ -49,7 +57,10 @@ export function useVibratoController(base: BaseExerciseController) {
 
     // Rate score: best in 4-7 Hz range, penalty outside
     let rateScore: number
-    if (vibResult.rateHz >= IDEAL_RATE_MIN && vibResult.rateHz <= IDEAL_RATE_MAX) {
+    if (
+      vibResult.rateHz >= IDEAL_RATE_MIN &&
+      vibResult.rateHz <= IDEAL_RATE_MAX
+    ) {
       rateScore = 100
     } else if (vibResult.rateHz < IDEAL_RATE_MIN) {
       rateScore = Math.max(0, (vibResult.rateHz / IDEAL_RATE_MIN) * 100)
@@ -59,12 +70,18 @@ export function useVibratoController(base: BaseExerciseController) {
 
     // Depth score: best in 10-50 cents range
     let depthScore: number
-    if (vibResult.depthCents >= IDEAL_DEPTH_MIN && vibResult.depthCents <= IDEAL_DEPTH_MAX) {
+    if (
+      vibResult.depthCents >= IDEAL_DEPTH_MIN &&
+      vibResult.depthCents <= IDEAL_DEPTH_MAX
+    ) {
       depthScore = 100
     } else if (vibResult.depthCents < IDEAL_DEPTH_MIN) {
       depthScore = Math.max(0, (vibResult.depthCents / IDEAL_DEPTH_MIN) * 100)
     } else {
-      depthScore = Math.max(0, 100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8)
+      depthScore = Math.max(
+        0,
+        100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8,
+      )
     }
 
     // Consistency = confidence from the detection

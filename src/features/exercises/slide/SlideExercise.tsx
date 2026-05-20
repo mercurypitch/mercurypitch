@@ -14,7 +14,23 @@ interface SlideExerciseProps {
   onBack: () => void
 }
 
-const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
+const NOTE_OPTIONS = [
+  'C3',
+  'D3',
+  'E3',
+  'F3',
+  'G3',
+  'A3',
+  'B3',
+  'C4',
+  'D4',
+  'E4',
+  'F4',
+  'G4',
+  'A4',
+  'B4',
+  'C5',
+]
 
 const CLASSIFICATION_LABELS: Record<number, string> = {
   '-1': 'No slide detected',
@@ -91,7 +107,9 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Slide Practice</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -99,7 +117,9 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconSlide size={48} />
-            <p>Slide cleanly from one note to another. No scooping, no overshoot.</p>
+            <p>
+              Slide cleanly from one note to another. No scooping, no overshoot.
+            </p>
           </div>
         )}
 
@@ -116,7 +136,10 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               <div class="slide-pitch-trace">
                 <div class="slide-pitch-dot" style={`left:${pitchPosPct()}%`} />
                 {currentMidi() > 0 && (
-                  <div class="slide-pitch-label" style={`left:${pitchPosPct()}%`}>
+                  <div
+                    class="slide-pitch-label"
+                    style={`left:${pitchPosPct()}%`}
+                  >
                     {midiToNoteName(Math.round(currentMidi()))}
                   </div>
                 )}
@@ -126,26 +149,34 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               <div class="slide-metric">
                 <span class="slide-metric-label">Smoothness</span>
                 <span class="slide-metric-value">
-                  {base.state().metrics.smoothness != null ? `${base.state().metrics.smoothness}%` : '—'}
+                  {base.state().metrics.smoothness != null
+                    ? `${base.state().metrics.smoothness}%`
+                    : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Accuracy</span>
                 <span class="slide-metric-value">
-                  {base.state().metrics.arrivalAccuracy != null ? `${base.state().metrics.arrivalAccuracy}%` : '—'}
+                  {base.state().metrics.arrivalAccuracy != null
+                    ? `${base.state().metrics.arrivalAccuracy}%`
+                    : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Time</span>
                 <span class="slide-metric-value">
-                  {base.state().metrics.slideTimeMs != null ? `${base.state().metrics.slideTimeMs}ms` : '—'}
+                  {base.state().metrics.slideTimeMs != null
+                    ? `${base.state().metrics.slideTimeMs}ms`
+                    : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Rating</span>
                 <span class="slide-metric-value" style="font-size:0.78rem">
                   {base.state().metrics.classification != null
-                    ? (CLASSIFICATION_LABELS[base.state().metrics.classification] || '...')
+                    ? CLASSIFICATION_LABELS[
+                        base.state().metrics.classification
+                      ] || '...'
                     : '—'}
                 </span>
               </div>
@@ -155,13 +186,28 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Smoothness: {base.result()!.metrics.smoothness}% · Accuracy: {base.result()!.metrics.arrivalAccuracy}%
+              Smoothness: {base.result()!.metrics.smoothness}% · Accuracy:{' '}
+              {base.result()!.metrics.arrivalAccuracy}%
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -173,33 +219,58 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
           <>
             <div class="exercise-target-selector">
               <label>From:</label>
-              <select value={fromNote()} onChange={(e) => setFromNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={fromNote()}
+                onChange={(e) => setFromNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
               <label>To:</label>
-              <select value={toNote()} onChange={(e) => setToNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
+              <select
+                value={toNote()}
+                onChange={(e) => setToNote(e.currentTarget.value)}
+              >
+                {NOTE_OPTIONS.map((n) => (
+                  <option value={n}>{n}</option>
+                ))}
               </select>
             </div>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop & Score
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Notes
             </button>
           </>

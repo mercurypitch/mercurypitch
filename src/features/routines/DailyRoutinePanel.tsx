@@ -5,7 +5,7 @@ import { useDailyRoutine } from './use-daily-routine'
 import type { SegmentKind } from './types'
 import { startExercise } from '@/stores/ui-store'
 import type { ExerciseType } from '@/features/exercises/types'
-import { IconFire, IconTarget, IconTrophy, IconWater, IconCheck } from '@/components/exercise-icons'
+import { IconFire, IconTarget, IconTrophy, IconWater, IconCheck, } from '@/components/exercise-icons'
 
 const segmentLabels: Record<SegmentKind, string> = {
   warmup: 'Warmup',
@@ -46,7 +46,8 @@ export const DailyRoutinePanel: Component = () => {
         <span class="daily-routine-title">Daily Practice</span>
         <Show when={routine.template() && !routine.isComplete()}>
           <span class="daily-routine-badge">
-            {routine.completedSegments().length}/{routine.template()!.segments.length}
+            {routine.completedSegments().length}/
+            {routine.template()!.segments.length}
           </span>
         </Show>
         <Show when={routine.isComplete()}>
@@ -82,9 +83,7 @@ export const DailyRoutinePanel: Component = () => {
             }
           >
             <div class="daily-routine-meta">
-              <span class="daily-routine-name">
-                {routine.template()!.name}
-              </span>
+              <span class="daily-routine-name">{routine.template()!.name}</span>
               <span class="daily-routine-time">
                 ~{Math.round(routine.totalDurationSec() / 60)} min
               </span>
@@ -107,7 +106,11 @@ export const DailyRoutinePanel: Component = () => {
                       class={`daily-routine-segment${done ? ' done' : ''}${current ? ' current' : ''}`}
                     >
                       <span class="daily-routine-segment-icon">
-                        {done ? <IconCheck size={13} /> : segmentIcons[seg.type]()}
+                        {done ? (
+                          <IconCheck size={13} />
+                        ) : (
+                          segmentIcons[seg.type]()
+                        )}
                       </span>
                       <span class="daily-routine-segment-type">
                         {segmentLabels[seg.type]}

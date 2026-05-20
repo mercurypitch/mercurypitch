@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, For } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, For, } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
@@ -6,7 +6,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
-import { IconGame, IconCheck, IconCross, IconMic } from '@/components/exercise-icons'
+import { IconGame, IconCheck, IconCross, IconMic, } from '@/components/exercise-icons'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -86,11 +86,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         midi: n.midi,
         yPct: Math.min(100, progress * 100),
         opacity: n.scored ? (n.hit ? 0 : 0.3) : 1,
-        color: n.scored
-          ? n.hit
-            ? '#22c55e'
-            : '#ef4444'
-          : 'var(--accent)',
+        color: n.scored ? (n.hit ? '#22c55e' : '#ef4444') : 'var(--accent)',
         noteName: midiToNoteName(n.midi),
         scored: n.scored,
       }
@@ -105,7 +101,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Pitch Pursuit</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -113,8 +111,13 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconGame size={48} />
-            <p>Notes fall from above. Sing the matching pitch before they reach the target line.</p>
-            <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">12 notes · Hit within ±50 cents</p>
+            <p>
+              Notes fall from above. Sing the matching pitch before they reach
+              the target line.
+            </p>
+            <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">
+              12 notes · Hit within ±50 cents
+            </p>
           </div>
         )}
 
@@ -122,14 +125,27 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
           <>
             <div class="pursuit-hud">
               <div style="display:flex;gap:16px;font-size:0.9rem">
-                <span><IconCheck size={14} /> {met().hits ?? 0}</span>
-                <span><IconCross size={14} /> {met().misses ?? 0}</span>
+                <span>
+                  <IconCheck size={14} /> {met().hits ?? 0}
+                </span>
+                <span>
+                  <IconCross size={14} /> {met().misses ?? 0}
+                </span>
               </div>
               <div style="font-size:0.9rem;font-weight:600;color:var(--accent)">
                 Combo: {met().combo ?? 0}x
               </div>
               <div style="font-size:0.8rem;color:var(--text-secondary)">
-                {(() => { const n = currentNote(); return n ? <><IconMic size={14} /> {n.name}</> : '...' })()}
+                {(() => {
+                  const n = currentNote()
+                  return n ? (
+                    <>
+                      <IconMic size={14} /> {n.name}
+                    </>
+                  ) : (
+                    '...'
+                  )
+                })()}
               </div>
             </div>
 
@@ -157,20 +173,37 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             </div>
 
             <div style="text-align:center;padding:8px;font-size:0.8rem;color:var(--text-secondary)">
-              {(met().totalNotes ?? 0)} / 12 notes
+              {met().totalNotes ?? 0} / 12 notes
             </div>
           </>
         )}
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Hits: {base.result()!.metrics.hits}/{base.result()!.metrics.totalNotes} · Accuracy: {base.result()!.metrics.accuracy}% · Best Combo: {base.result()!.metrics.maxCombo}x
+              Hits: {base.result()!.metrics.hits}/
+              {base.result()!.metrics.totalNotes} · Accuracy:{' '}
+              {base.result()!.metrics.accuracy}% · Best Combo:{' '}
+              {base.result()!.metrics.maxCombo}x
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Play Again
             </button>
           </div>
@@ -180,25 +213,40 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            {base.error() && (
-              <div class="exercise-error">{base.error()}</div>
-            )}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start Game
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Play Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Back
             </button>
           </>

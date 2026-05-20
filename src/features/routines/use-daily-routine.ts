@@ -16,10 +16,8 @@ function todayStr(): string {
 }
 
 export function useDailyRoutine() {
-  const [persisted, setPersisted] = createPersistedSignal<PersistedRoutine | null>(
-    STORAGE_KEY,
-    null,
-  )
+  const [persisted, setPersisted] =
+    createPersistedSignal<PersistedRoutine | null>(STORAGE_KEY, null)
 
   const today = todayStr()
   const isToday = () => persisted()?.date === today
@@ -32,8 +30,12 @@ export function useDailyRoutine() {
     return null
   })
 
-  const currentSegmentIndex = createMemo(() => persisted()?.completedSegments.length ?? 0)
-  const completedSegments = createMemo(() => persisted()?.completedSegments ?? [])
+  const currentSegmentIndex = createMemo(
+    () => persisted()?.completedSegments.length ?? 0,
+  )
+  const completedSegments = createMemo(
+    () => persisted()?.completedSegments ?? [],
+  )
   const isComplete = createMemo(() => {
     const t = template()
     if (!t) return false

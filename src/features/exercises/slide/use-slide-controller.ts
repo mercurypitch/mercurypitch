@@ -80,7 +80,8 @@ export function useSlideController(base: BaseExerciseController) {
     // Departure accuracy: how close the start pitch is to target
     let departureScore = 0
     if (targetStartMidi > 0) {
-      const startCentsOff = Math.abs(primarySlide.startMidi - targetStartMidi) * 100
+      const startCentsOff =
+        Math.abs(primarySlide.startMidi - targetStartMidi) * 100
       departureScore = Math.max(0, 100 - startCentsOff * 0.8)
     } else {
       departureScore = 70 // neutral when no start target specified

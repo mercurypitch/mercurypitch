@@ -3,7 +3,9 @@ import { usePitchPursuitController } from '@/features/exercises/pitch-pursuit/us
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_PITCH_PURSUIT } from '@/features/exercises/types'
 
-function createMockBase(overrides: Partial<BaseExerciseController> = {}): BaseExerciseController {
+function createMockBase(
+  overrides: Partial<BaseExerciseController> = {},
+): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
     _setTargetPitch: () => {},
@@ -79,7 +81,9 @@ describe('usePitchPursuitController', () => {
     let stopped = false
     const base = createMockBase({
       _commitResult: (r) => committed.push(r),
-      stop: () => { stopped = true },
+      stop: () => {
+        stopped = true
+      },
     })
     const ctrl = usePitchPursuitController(base)
 
