@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
@@ -44,8 +44,6 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   const controller = useLongNoteController(base)
 
-  let hasAutoStarted = false
-
   const handleStart = async () => {
     controller.setTarget(noteToMidi(targetNote()))
     await base.start()
@@ -57,9 +55,8 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
-  createEffect(() => {
-    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
-      hasAutoStarted = true
+  onMount(() => {
+    if (props.autoStart && base.state().status === 'idle') {
       void handleStart()
     }
   })

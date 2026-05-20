@@ -3,6 +3,7 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  onMount,
   For,
 } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -48,7 +49,6 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   let lastCombo = 0
   let lastPopTotal = 0
   let lastPopHits = 0
-  let hasAutoStarted = false
 
   const handleStart = async () => {
     await base.start()
@@ -68,9 +68,8 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     base.reset()
   })
 
-  createEffect(() => {
-    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
-      hasAutoStarted = true
+  onMount(() => {
+    if (props.autoStart && base.state().status === 'idle') {
       void handleStart()
     }
   })

@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -53,8 +53,6 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
   const controller = useSlideController(base)
 
-  let hasAutoStarted = false
-
   const handleStart = async () => {
     controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
     await base.start()
@@ -66,9 +64,8 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
-  createEffect(() => {
-    if (props.autoStart && !hasAutoStarted && base.state().status === 'idle') {
-      hasAutoStarted = true
+  onMount(() => {
+    if (props.autoStart && base.state().status === 'idle') {
       void handleStart()
     }
   })

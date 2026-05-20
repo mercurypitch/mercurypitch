@@ -147,11 +147,13 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     running = false
     cancelAnimationFrame(animId)
     practiceEngine.stopMic()
-    setState({ status: 'idle', currentScore: 0, elapsedMs: 0, metrics: {} })
-    setPitchHistory([])
-    setCurrentPitch(null)
-    setResult(null)
-    setTargetPitch(null)
+    batch(() => {
+      setState({ status: 'idle', currentScore: 0, elapsedMs: 0, metrics: {} })
+      setPitchHistory([])
+      setCurrentPitch(null)
+      setResult(null)
+      setTargetPitch(null)
+    })
   }
 
   function commitResult(exerciseResult: ExerciseResult): void {
