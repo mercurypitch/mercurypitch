@@ -126,4 +126,26 @@ describe('UvrPanel Component', () => {
       expect(screen.getByText(/Processing Results/)).toBeInTheDocument()
     })
   })
+
+  describe('Local Mode Device (CPU/GPU) Toggle', () => {
+    it('renders CPU and GPU toggle pills in browser/local mode', () => {
+      render(() => <UvrPanel {...defaultProps} />)
+      expect(screen.getByTestId('uvr-device-cpu')).toBeInTheDocument()
+      expect(screen.getByTestId('uvr-device-gpu')).toBeInTheDocument()
+    })
+
+    it('toggles CPU and GPU override states on click', () => {
+      render(() => <UvrPanel {...defaultProps} />)
+      const cpuBtn = screen.getByTestId('uvr-device-cpu')
+      const gpuBtn = screen.getByTestId('uvr-device-gpu')
+
+      gpuBtn.click()
+      expect(gpuBtn).toHaveClass('active')
+      expect(cpuBtn).not.toHaveClass('active')
+
+      cpuBtn.click()
+      expect(cpuBtn).toHaveClass('active')
+      expect(gpuBtn).not.toHaveClass('active')
+    })
+  })
 })

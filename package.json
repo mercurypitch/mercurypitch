@@ -27,6 +27,10 @@
     "check:fix:all": "run-s typecheck lint:fix fmt:write",
     "deploy:dev": "pnpm exec wrangler deploy --env dev",
     "deploy:prod": "pnpm exec wrangler deploy --env prod",
+    "deploy:jam:dev": "cd workers/jam-worker && pnpm exec wrangler deploy --env dev",
+    "deploy:jam:prod": "cd workers/jam-worker && pnpm exec wrangler deploy --env prod",
+    "deploy:all:dev": "run-s deploy:dev deploy:jam:dev",
+    "deploy:all:prod": "run-s deploy:prod deploy:jam:prod",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },
   "dependencies": {

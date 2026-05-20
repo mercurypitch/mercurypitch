@@ -131,7 +131,7 @@ export class VocalSeparator {
   }
 
   /** Initialize the ONNX model. Must be called before `separate()`. */
-  async initialize(modelPath: string): Promise<void> {
+  async initialize(modelPath: string, forceWebGpu?: boolean): Promise<void> {
     if (this._status === 'ready') return
     if (this._status === 'initializing') {
       await this.readyPromise
@@ -144,7 +144,7 @@ export class VocalSeparator {
       this.readyResolve = resolve
     })
 
-    const msg: WorkerInitMessage = { type: 'init', modelPath }
+    const msg: WorkerInitMessage = { type: 'init', modelPath, forceWebGpu }
     this.worker?.postMessage(msg)
 
     await this.readyPromise

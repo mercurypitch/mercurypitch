@@ -11,12 +11,12 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
-import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, ImportFile, Music, Settings, SingMic, Trash2, X, } from './icons'
+import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -160,6 +160,25 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
 
+  const handleForceWebGpuToggle = (force: boolean) => {
+    setUvrForceWebGpu(force)
+    // Destroy pipeline and re-init immediately
+    destroyPipeline()
+    void preInitModel().then(() => {
+      const activeProvider = getActiveProvider()
+      if (force && activeProvider === 'wasm') {
+        // WebGPU failed to initialize, fallback to WASM
+        setUvrForceWebGpu(false)
+        showNotification(
+          'WebGPU initialization failed. Falling back to CPU processing.',
+          'warning',
+        )
+      }
+    }).catch((err) => {
+      console.error('[UvrPanel] failed to re-init model:', err)
+    })
+  }
+
   // Pre-initialize ONNX model when switching to browser mode
   // Skip in E2E test mode — model files are unavailable in test environments
   createEffect(() => {
@@ -169,7 +188,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       return
     const mode = uvrProcessingMode()
     if (mode === 'local' && uvrModelStatus() === 'unloaded') {
-      void preInitModel()
+      void preInitModel().then(() => {
+        const activeProvider = getActiveProvider()
+        if (uvrForceWebGpu() && activeProvider === 'wasm') {
+          setUvrForceWebGpu(false)
+          showNotification(
+            'WebGPU initialization failed. Falling back to CPU processing.',
+            'warning',
+          )
+        }
+      }).catch((err) => {
+        console.error('[UvrPanel] preInitModel failed:', err)
+      })
     }
   })
 
@@ -755,6 +785,30 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             >
               Browser
             </button>
+            <Show when={uvrProcessingMode() === 'local'}>
+              <div class="uvr-device-toggle">
+                <button
+                  class="device-toggle-btn"
+                  classList={{ active: !uvrForceWebGpu() }}
+                  onClick={() => handleForceWebGpuToggle(false)}
+                  title="Use CPU (WASM) for vocal separation"
+                  data-testid="uvr-device-cpu"
+                >
+                  <Cpu />
+                  <span>CPU</span>
+                </button>
+                <button
+                  class="device-toggle-btn"
+                  classList={{ active: uvrForceWebGpu() }}
+                  onClick={() => handleForceWebGpuToggle(true)}
+                  title="Use GPU (WebGPU) for vocal separation"
+                  data-testid="uvr-device-gpu"
+                >
+                  <Zap />
+                  <span>GPU</span>
+                </button>
+              </div>
+            </Show>
             <Show
               when={
                 uvrProcessingMode() === 'local' && uvrModelStatus() !== 'ready'

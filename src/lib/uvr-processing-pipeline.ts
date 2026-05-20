@@ -6,7 +6,7 @@
 
 import { saveStemBlob } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
@@ -50,7 +50,8 @@ async function getSeparator(): Promise<VocalSeparator> {
   setUvrModelError('')
 
   try {
-    await separator.initialize(UVR_MODEL_PATH)
+    const forceWebGpu = uvrForceWebGpu()
+    await separator.initialize(UVR_MODEL_PATH, forceWebGpu)
     setUvrModelStatus('ready')
     return separator
   } catch (err) {
@@ -59,6 +60,10 @@ async function getSeparator(): Promise<VocalSeparator> {
     setUvrModelError(msg)
     throw err
   }
+}
+
+export function getActiveProvider(): string | null {
+  return separator?.provider ?? null
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +181,14 @@ async function processLocal(
       instrumental: { duration: result.durationSec, size: instrBlob.size },
     },
   })
+
+  if (
+    sep.provider !== undefined &&
+    sep.provider !== null &&
+    sep.provider !== ''
+  ) {
+    setUvrSessionProvider(sessionId, sep.provider)
+  }
 }
 
 // ---------------------------------------------------------------------------

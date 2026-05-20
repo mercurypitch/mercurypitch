@@ -7,6 +7,7 @@
 // CNN layers. No manual FFT needed — just feed it the waveform.
 
 import type ort from 'onnxruntime-web'
+import { configureWasmPaths, getValidatedWasmBase } from './defaults'
 import type { PitchAlgorithm } from './pitch-detector'
 
 /** SwiftF0 pitch result (aggregated from per-frame outputs) */
@@ -97,7 +98,11 @@ export class SwiftF0Detector {
         'create' in (this.ortModule as unknown as { create: unknown })
 
       if (!isMock) {
-        session = await (this.ortModule as typeof ort).InferenceSession.create(
+        const validatedBase = await getValidatedWasmBase()
+        const ortActual = this.ortModule as typeof ort
+        configureWasmPaths(ortActual, validatedBase)
+
+        session = await ortActual.InferenceSession.create(
           this.settings.modelPath,
           { executionProviders: ['wasm'] },
         )

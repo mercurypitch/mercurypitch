@@ -80,6 +80,19 @@ export function setUvrProcessingMode(mode: UvrProcessingMode): void {
 export const [uvrProcessingMode, _setUvrProcessingMode] =
   createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
+// Force WebGPU override for local (browser) processing mode
+export function getUvrForceWebGpu(): boolean {
+  return localStorage.getItem('pitchperfect_uvr-force-webgpu') === 'true'
+}
+
+export function setUvrForceWebGpu(force: boolean): void {
+  localStorage.setItem('pitchperfect_uvr-force-webgpu', force ? 'true' : 'false')
+  _setUvrForceWebGpu(force)
+}
+
+export const [uvrForceWebGpu, _setUvrForceWebGpu] =
+  createSignal<boolean>(getUvrForceWebGpu())
+
 // UVR Model status (persists across tab navigation)
 export type UvrModelStatus = 'unloaded' | 'loading' | 'ready' | 'error'
 export const [uvrModelStatus, setUvrModelStatus] =

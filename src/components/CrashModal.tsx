@@ -220,7 +220,10 @@ export const CrashModal: Component = () => {
                 {showLogs() ? 'Hide Logs' : 'View Logs'}
               </button>
 
-              <button onClick={handleReload} class={styles.crashBtnPrimary}>
+              <button
+                onClick={handleReload}
+                class={`${styles.crashBtn} ${styles.crashBtnPrimary}`}
+              >
                 <svg
                   viewBox="0 0 24 24"
                   width="16"
