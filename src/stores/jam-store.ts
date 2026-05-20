@@ -209,8 +209,7 @@ export function initJam() {
     onPeerJoined: (peer) => {
       console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
-      // A new peer joined, so broadcast our local video state so they know
-      jamService?.setVideoEnabled(jamVideoEnabled()).catch(() => {})
+      // State sync is handled via DataChannel onopen in service.ts now
     },
     onPeerLeft: (peerId) => {
       setJamPeers((prev) => prev.filter((p) => p.id !== peerId))

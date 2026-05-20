@@ -68,7 +68,7 @@ describe('UvrUploadControl Component', () => {
     it('renders upload header with icon and title', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      expect(screen.getByText('Import Audio File')).toBeInTheDocument()
+      expect(screen.getByText('Select a Song')).toBeInTheDocument()
       expect(screen.getByTestId('music-note-icon')).toBeInTheDocument()
     })
 
@@ -76,7 +76,7 @@ describe('UvrUploadControl Component', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
       expect(
-        screen.getByText(/Drag & drop your file here/i),
+        screen.getByText(/Drag & drop an audio file here/i),
       ).toBeInTheDocument()
       expect(screen.getByText(/browse/i)).toBeInTheDocument()
     })
@@ -176,7 +176,7 @@ describe('UvrUploadControl Component', () => {
     it('opens file input when browse is clicked', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      const browseLink = screen.getByText('browse')
+      const browseLink = screen.getByText(/browse/i)
       fireEvent.click(browseLink)
 
       const fileInput = document.getElementById(

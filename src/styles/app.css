@@ -2014,3 +2014,120 @@ input[type='range'] {
 .sm-pitch-analysis-controls input[type='range']:disabled::-moz-range-thumb {
   cursor: not-allowed;
 }
+/* ========================================================================= */
+/* Mobile Drawer Navigation Styles                                           */
+/* ========================================================================= */
+
+.mobile-nav-toggle {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10001;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.mobile-nav-toggle.open {
+  transform: translateY(-50%) scaleX(-1);
+  left: 240px; /* matches drawer width */
+  border-radius: 8px 0 0 8px;
+}
+
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.mobile-nav-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: -240px;
+  width: 240px;
+  height: 100vh;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border);
+  z-index: 10000;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.4);
+  padding-top: 60px; /* space for hamburger/title */
+}
+
+.mobile-nav-drawer.open {
+  transform: translateX(240px);
+}
+
+.mobile-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.mobile-drawer-nav .tab-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.mobile-drawer-nav .tab-group-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mobile-drawer-nav .app-tab {
+  justify-content: flex-start;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+.mobile-drawer-nav .tab-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Media Query for Mobile Drawer */
+@media (max-width: 768px) {
+  #app-tabs.desktop-nav {
+    display: none !important;
+  }
+
+  .mobile-nav-toggle {
+    display: flex;
+  }
+
+  .mobile-nav-backdrop,
+  .mobile-nav-drawer {
+    display: block;
+  }
+}

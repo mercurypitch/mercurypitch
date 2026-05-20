@@ -406,6 +406,7 @@ export function createJamService(callbacks: JamCallbacks) {
     dataChannels.set(peerId, dc)
     dc.onopen = () => {
       console.info('[jam:service] DataChannel open to', peerId)
+      dc.send(JSON.stringify({ type: 'video-state', enabled: videoEnabled }))
     }
     dc.onclose = () => {
       console.info('[jam:service] DataChannel closed to', peerId)
