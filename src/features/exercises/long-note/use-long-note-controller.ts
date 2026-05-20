@@ -149,11 +149,7 @@ export function useLongNoteController(base: BaseExerciseController) {
   function stopAndCompute(): ExerciseResult {
     base._setRunning(false)
     const result = computeResult()
-    base._commitResult(result)
-    base._updateScore(result.score)
-    base._updateMetrics(result.metrics)
-    // Signal complete
-    base.stop()
+    base._completeWithResult(result)
     return result
   }
 

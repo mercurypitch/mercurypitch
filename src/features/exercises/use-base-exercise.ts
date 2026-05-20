@@ -122,6 +122,19 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     setState((s) => ({ ...s, status: 'complete', elapsedMs: finalElapsed }))
   }
 
+  function completeWithResult(exerciseResult: ExerciseResult): void {
+    running = false
+    cancelAnimationFrame(animId)
+    const finalElapsed = performance.now() - startTime
+    setResult(exerciseResult)
+    setState({
+      status: 'complete',
+      currentScore: exerciseResult.score,
+      elapsedMs: finalElapsed,
+      metrics: exerciseResult.metrics,
+    })
+  }
+
   function reset(): void {
     running = false
     cancelAnimationFrame(animId)
@@ -166,6 +179,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _commitResult: commitResult,
     _updateScore: updateScore,
     _updateMetrics: updateMetrics,
+    _completeWithResult: completeWithResult,
     _setTargetPitch: setTargetPitch,
     _getElapsed: () => performance.now() - startTime,
     _isRunning: () => running,

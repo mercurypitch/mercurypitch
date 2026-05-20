@@ -23,6 +23,7 @@ interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
+  autoStart?: boolean
 }
 
 const TARGET_ZONE_FRAC = 0.88
@@ -45,6 +46,8 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
   let vizInterval: ReturnType<typeof setInterval> | undefined
   let lastCombo = 0
+  let lastPopTotal = 0
+  let lastPopHits = 0
 
   const handleStart = async () => {
     await base.start()
@@ -62,6 +65,12 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   onCleanup(() => {
     if (vizInterval) clearInterval(vizInterval)
     base.reset()
+  })
+
+  createEffect(() => {
+    if (props.autoStart && base.state().status === 'idle') {
+      void handleStart()
+    }
   })
 
   createEffect(() => {
@@ -133,10 +142,10 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     const hits = m.hits ?? 0
     const misses = m.misses ?? 0
     const total = hits + misses
-    if (total > 0 && (m as Record<string, number>)._lastTotal !== total) {
-      ;(m as Record<string, number>)._lastTotal = total
-      const isHit = hits > (m._lastHits ?? 0)
-      ;(m as Record<string, number>)._lastHits = hits
+    if (total > 0 && total !== lastPopTotal) {
+      const isHit = hits > lastPopHits
+      lastPopTotal = total
+      lastPopHits = hits
       const id = popId++
       setScorePops((prev) =>
         [

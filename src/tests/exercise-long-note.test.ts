@@ -39,6 +39,7 @@ function createMockBase(
     _commitResult: () => {},
     _updateScore: () => {},
     _updateMetrics: () => {},
+    _completeWithResult: () => {},
     state: () => ({
       status: 'active',
       currentScore: 0,
@@ -132,7 +133,7 @@ describe('useLongNoteController', () => {
     const base = createMockBase({
       pitchHistory: () => makePitchHistory(440, 50, 5),
       _getElapsed: () => 3000,
-      _commitResult: (r) => committed.push(r),
+      _completeWithResult: (r) => committed.push(r),
     })
     const ctrl = useLongNoteController(base)
     ctrl.setTarget(freqToMidi(440))

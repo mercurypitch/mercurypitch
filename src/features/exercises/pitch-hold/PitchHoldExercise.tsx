@@ -12,6 +12,7 @@ interface PitchHoldExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
+  autoStart?: boolean
 }
 
 const NOTE_OPTIONS = [
@@ -54,6 +55,12 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  createEffect(() => {
+    if (props.autoStart && base.state().status === 'idle') {
+      void handleStart()
+    }
+  })
 
   createEffect(() => {
     const r = base.result()

@@ -12,6 +12,7 @@ interface VibratoExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
+  autoStart?: boolean
 }
 
 const NOTE_OPTIONS = [
@@ -70,6 +71,12 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   onCleanup(() => {
     if (vizInterval) clearInterval(vizInterval)
     base.reset()
+  })
+
+  createEffect(() => {
+    if (props.autoStart && base.state().status === 'idle') {
+      void handleStart()
+    }
   })
 
   createEffect(() => {

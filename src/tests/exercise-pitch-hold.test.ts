@@ -16,6 +16,7 @@ function createMockBase(
     _commitResult: () => {},
     _updateScore: () => {},
     _updateMetrics: () => {},
+    _completeWithResult: () => {},
     state: () => ({
       status: 'active',
       currentScore: 0,
@@ -81,7 +82,7 @@ describe('usePitchHoldController', () => {
       currentPitch: () => ({ freq: 440, clarity: 0.8, noteName: 'A4' }),
       _getElapsed: () => 5000,
       _isRunning: () => true,
-      _commitResult: (r) => committed.push(r),
+      _completeWithResult: (r) => committed.push(r),
     })
     const ctrl = usePitchHoldController(base)
     ctrl.setTarget(69) // A4

@@ -253,9 +253,15 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Exercises ────────────────────────────────────────────────
   const [selectedExercise, setSelectedExercise] =
     createSignal<ExerciseType | null>(null)
+  const [autoStartExercise, setAutoStartExercise] = createSignal(false)
   const clearExercise = () => {
     setSelectedExercise(null)
     setPendingDrill(null)
+    setAutoStartExercise(false)
+  }
+  const handleQuickStart = (type: ExerciseType) => {
+    setSelectedExercise(type)
+    setAutoStartExercise(true)
   }
 
   // Auto-launch exercise drill from challenge "Practice" button
@@ -1429,6 +1435,7 @@ const AppShell: Component<AppProps> = (props) => {
                       fallback={
                         <ExerciseMenu
                           onSelect={(type) => setSelectedExercise(type)}
+                          onQuickStart={handleQuickStart}
                         />
                       }
                     >
@@ -1437,6 +1444,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                       <Show when={selectedExercise() === 'vibrato'}>
@@ -1444,6 +1452,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                       <Show when={selectedExercise() === 'slide'}>
@@ -1451,6 +1460,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                       <Show when={selectedExercise() === 'pitch-hold'}>
@@ -1458,6 +1468,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                       <Show when={selectedExercise() === 'mirror-melody'}>
@@ -1465,6 +1476,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                       <Show when={selectedExercise() === 'pitch-pursuit'}>
@@ -1472,6 +1484,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}
+                          autoStart={autoStartExercise()}
                         />
                       </Show>
                     </Show>

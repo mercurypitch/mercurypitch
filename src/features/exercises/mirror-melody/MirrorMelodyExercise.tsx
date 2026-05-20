@@ -13,6 +13,7 @@ interface MirrorMelodyExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
+  autoStart?: boolean
 }
 
 const NOTE_OPTIONS = [
@@ -55,6 +56,12 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  createEffect(() => {
+    if (props.autoStart && base.state().status === 'idle') {
+      void handleStart()
+    }
+  })
 
   createEffect(() => {
     const r = base.result()

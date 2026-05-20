@@ -8,6 +8,7 @@ import { IconTarget, IconWave, IconSlide, IconGame, IconMirror, IconLock, IconSt
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
+  onQuickStart?: (type: ExerciseType) => void
 }
 
 interface ExerciseCardDef {
@@ -169,6 +170,17 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                   </span>
                   <span class="exercise-card-plays">{stats().totalPlays}x</span>
                 </div>
+              </Show>
+              <Show when={card.available}>
+                <button
+                  class="exercise-card-start-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.onQuickStart?.(card.type)
+                  }}
+                >
+                  Start
+                </button>
               </Show>
             </div>
           )

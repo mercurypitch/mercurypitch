@@ -106,10 +106,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
     if (scoreUpdateTimer) clearInterval(scoreUpdateTimer)
     base._setRunning(false)
     const result = computeResult()
-    base._commitResult(result)
-    base._updateScore(result.score)
-    base._updateMetrics(result.metrics)
-    base.stop()
+    base._completeWithResult(result)
     return result
   }
 

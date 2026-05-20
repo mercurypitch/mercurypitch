@@ -15,6 +15,7 @@ function createMockBase(
     _commitResult: () => {},
     _updateScore: () => {},
     _updateMetrics: () => {},
+    _completeWithResult: () => {},
     state: () => ({
       status: 'active',
       currentScore: 0,
@@ -140,7 +141,7 @@ describe('useSlideController', () => {
 
     const base = createMockBase({
       pitchHistory: () => history,
-      _commitResult: (r) => committed.push(r),
+      _completeWithResult: (r) => committed.push(r),
     })
     const ctrl = useSlideController(base)
     ctrl.setTargets(60, 64)

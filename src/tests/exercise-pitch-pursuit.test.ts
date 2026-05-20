@@ -15,6 +15,7 @@ function createMockBase(
     _commitResult: () => {},
     _updateScore: () => {},
     _updateMetrics: () => {},
+    _completeWithResult: () => {},
     state: () => ({
       status: 'active',
       currentScore: 0,
@@ -78,12 +79,8 @@ describe('usePitchPursuitController', () => {
 
   it('stopGame commits result and stops', () => {
     const committed: unknown[] = []
-    let stopped = false
     const base = createMockBase({
-      _commitResult: (r) => committed.push(r),
-      stop: () => {
-        stopped = true
-      },
+      _completeWithResult: (r) => committed.push(r),
     })
     const ctrl = usePitchPursuitController(base)
 
@@ -91,6 +88,5 @@ describe('usePitchPursuitController', () => {
     ctrl.stopGame()
 
     expect(committed.length).toBe(1)
-    expect(stopped).toBe(true)
   })
 })

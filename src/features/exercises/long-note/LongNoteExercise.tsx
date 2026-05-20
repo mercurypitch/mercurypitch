@@ -12,6 +12,7 @@ interface LongNoteExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   onBack: () => void
+  autoStart?: boolean
 }
 
 const NOTE_OPTIONS = [
@@ -53,6 +54,12 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  createEffect(() => {
+    if (props.autoStart && base.state().status === 'idle') {
+      void handleStart()
+    }
+  })
 
   // Trigger celebration modal when result changes
   createEffect(() => {
