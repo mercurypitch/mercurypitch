@@ -6,12 +6,8 @@
 
 import type * as OrtModule from 'onnxruntime-web'
 import type { InferenceSession, Tensor } from 'onnxruntime-web'
-import mjsUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url'
-import wasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url'
-import mjsUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url'
-import wasmUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url'
 import { computeChunkRanges, overlapAdd, UVR_CHUNK_CONFIG, } from '../lib/audio-chunker'
-import { IS_DEV } from '../lib/defaults'
+import { configureWasmPaths, getValidatedWasmBase, IS_DEV, } from '../lib/defaults'
 import { getCachedModel, setCachedModel } from '../lib/model-cache'
 import { stftForward, stftInverse } from '../lib/stft-engine'
 // ---------------------------------------------------------------------------
@@ -21,6 +17,7 @@ import { stftForward, stftInverse } from '../lib/stft-engine'
 export interface WorkerInitMessage {
   type: 'init'
   modelPath: string
+  forceWebGpu?: boolean
 }
 
 export interface WorkerSeparateMessage {
@@ -54,6 +51,7 @@ export interface WorkerCompleteMessage {
     durationSec: number
     sampleRate: number
     numChunks: number
+    provider?: string
   }
 }
 
@@ -98,7 +96,7 @@ let cancelled = false
 let activeProviders: string[] = []
 let currentModelPath = ''
 
-async function loadModel(modelPath: string): Promise<void> {
+async function loadModel(modelPath: string, forceWebGpu?: boolean): Promise<void> {
   currentModelPath = modelPath
   // Try IndexedDB cache first
   let buffer = await getCachedModel(modelPath)
@@ -121,69 +119,87 @@ async function loadModel(modelPath: string): Promise<void> {
   }
 
   if (!ort) {
+    const validatedBase = await getValidatedWasmBase()
     ort = await import('onnxruntime-web')
-    ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4
-    ort.env.wasm.wasmPaths = {
-      'ort-wasm-simd-threaded.jsep.wasm': wasmUrl,
-      'ort-wasm-simd-threaded.jsep.mjs': mjsUrl,
-      'ort-wasm-simd-threaded.wasm': wasmUrlCpu,
-      'ort-wasm-simd-threaded.mjs': mjsUrlCpu,
-    } as Record<string, string>
+    configureWasmPaths(ort, validatedBase)
   }
 
   // If activeProviders is already set to wasm (due to fallback), don't reset it
   if (activeProviders.length === 0 || activeProviders[0] !== 'wasm') {
     activeProviders = []
-    // Linux Firefox has insufficient WebGPU memory limits for this model (~300MB).
-    // Uncapped errors ("Not enough memory left") produce garbage output without
-    // throwing, so the normal WebGPU→WASM fallback never triggers.
-    // Windows/macOS Firefox handles WebGPU correctly.
-    //
-    // Android/mobile WebGPU (especially Mali GPUs) also produces garbage ONNX
-    // inference output without throwing — same class of silent corruption.
-    // Skip WebGPU on all mobile browsers and use WASM unconditionally.
-    const isLinuxFirefox =
-      /Firefox/i.test(navigator.userAgent) &&
-      /Linux/i.test(navigator.platform || navigator.userAgent)
-    // Modern iPadOS 13+ reports a desktop Mac user-agent without "iPad".
-    // Detect it via multi-touch capability combined with Macintosh UA.
-    // Samsung tablets in Chrome "Desktop site" mode also spoof a desktop
-    // Linux UA — navigator.userAgentData.mobile reveals the truth.
-    const uaData = (navigator as unknown as Record<string, unknown>)
-      .userAgentData as { mobile?: boolean } | undefined
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (/Macintosh/i.test(navigator.userAgent) &&
-        navigator.maxTouchPoints > 1) ||
-      uaData?.mobile === true
-    if (!isLinuxFirefox && !isMobile) {
-      try {
-        if ('gpu' in navigator) {
-          activeProviders.push('webgpu')
+    
+    if (forceWebGpu) {
+      if (typeof navigator !== 'undefined' && 'gpu' in navigator) {
+        activeProviders.push('webgpu')
+      }
+    } else {
+      // Linux Firefox has insufficient WebGPU memory limits for this model (~300MB).
+      // Uncapped errors ("Not enough memory left") produce garbage output without
+      // throwing, so the normal WebGPU→WASM fallback never triggers.
+      // Windows/macOS Firefox handles WebGPU correctly.
+      //
+      // Android/mobile WebGPU (especially Mali GPUs) also produces garbage ONNX
+      // inference output without throwing — same class of silent corruption.
+      // Skip WebGPU on all mobile browsers and use WASM unconditionally.
+      const isLinuxFirefox =
+        /Firefox/i.test(navigator.userAgent) &&
+        /Linux/i.test(navigator.platform || navigator.userAgent)
+      // Modern iPadOS 13+ reports a desktop Mac user-agent without "iPad".
+      // Detect it via multi-touch capability combined with Macintosh UA.
+      // Samsung tablets in Chrome "Desktop site" mode also spoof a desktop
+      // Linux UA — navigator.userAgentData.mobile reveals the truth.
+      const uaData = (navigator as unknown as Record<string, unknown>)
+        .userAgentData as { mobile?: boolean } | undefined
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (/Macintosh/i.test(navigator.userAgent) &&
+          navigator.maxTouchPoints > 1) ||
+        uaData?.mobile === true
+      if (!isLinuxFirefox && !isMobile) {
+        try {
+          if ('gpu' in navigator) {
+            activeProviders.push('webgpu')
+          }
+        } catch {
+          // WebGPU not available
         }
-      } catch {
-        // WebGPU not available
       }
     }
     activeProviders.push('wasm')
     if (IS_DEV) {
+      const uaData = (navigator as unknown as Record<string, unknown>)
+        .userAgentData as { mobile?: boolean } | undefined
       console.log('[vocal-separator] provider detection:', {
         uaPrefix: navigator.userAgent.slice(0, 80),
         maxTouchPoints: navigator.maxTouchPoints,
         userAgentDataMobile: uaData?.mobile,
-        isLinuxFirefox,
-        isMobile,
+        forceWebGpu,
         providers: activeProviders.join(','),
       })
     }
   }
 
-  session = await ort.InferenceSession.create(buffer, {
-    executionProviders: activeProviders,
-    freeDimensionOverrides: {
-      batch_size: 1, // Prevent WebGPU from allocating excessive memory for dynamic batch dimensions
-    },
-  })
+  try {
+    session = await ort.InferenceSession.create(buffer, {
+      executionProviders: activeProviders,
+      freeDimensionOverrides: {
+        batch_size: 1, // Prevent WebGPU from allocating excessive memory for dynamic batch dimensions
+      },
+    })
+  } catch (err) {
+    if (activeProviders.includes('webgpu')) {
+      console.warn('[vocal-separator] WebGPU session creation failed, falling back to WASM...', err)
+      activeProviders = ['wasm']
+      session = await ort.InferenceSession.create(buffer, {
+        executionProviders: activeProviders,
+        freeDimensionOverrides: {
+          batch_size: 1,
+        },
+      })
+    } else {
+      throw err
+    }
+  }
 }
 
 function processStftForModel(
@@ -423,6 +439,7 @@ async function separate(
         durationSec: audio.length / sampleRate,
         sampleRate,
         numChunks,
+        provider: activeProviders[0],
       },
     } satisfies WorkerOutMessage,
     // Transfer ownership of the buffers
@@ -440,7 +457,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
   switch (msg.type) {
     case 'init': {
       try {
-        await loadModel(msg.modelPath)
+        await loadModel(msg.modelPath, msg.forceWebGpu)
         postMessage({
           type: 'ready',
           provider: activeProviders[0],

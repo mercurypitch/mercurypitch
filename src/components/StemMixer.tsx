@@ -492,6 +492,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // eslint-disable-next-line solid/reactivity
     songTitle: props.songTitle,
     lrclibSearchUrl,
+    triggerChangeFile: () => lyricsFileInputRef?.click(),
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -2865,6 +2866,67 @@ export const StemMixerStyles: string = `
 .sm-song-picker-upload-link:hover {
   color: var(--accent, #58a6ff);
 }
+
+.sm-song-picker-no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  gap: 0.5rem;
+  border: 1px dashed var(--border, #30363d);
+  border-radius: 0.375rem;
+  background: var(--bg-secondary, #161b22);
+  margin-top: 0.5rem;
+}
+
+.sm-song-picker-no-results-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-song-picker-no-results-hint {
+  font-size: 0.75rem;
+  color: var(--fg-muted, #8b949e);
+  margin-bottom: 0.25rem;
+}
+
+.sm-song-picker-lrclib-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--accent, #58a6ff);
+  text-decoration: none;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.375rem;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  transition: all 0.15s;
+}
+
+.sm-song-picker-lrclib-link:hover {
+  background: rgba(88, 166, 255, 0.15);
+  border-color: rgba(88, 166, 255, 0.4);
+  text-decoration: none;
+}
+
+.sm-song-picker-lrclib-link svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
+.sm-song-picker-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
 
 /* Standard Buttons */
 .sm-btn {

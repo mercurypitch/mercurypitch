@@ -8,6 +8,7 @@ import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, 
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
+import { MagnifyingGlass } from './icons'
 
 interface ParsedLyric {
   key: string
@@ -29,15 +30,21 @@ interface SongPickerProps {
   onQueryChange: (v: string) => void
   onPick: (match: LyricsSearchMatch) => void
   onRefine: () => void
-  onUpload: () => void
+  onUploadFile: () => void
+  onCancel: () => void
 }
 
 const SongPicker = (p: SongPickerProps) => {
   let inputRef: HTMLInputElement | undefined
+
+  const lrclibQueryUrl = () => {
+    return `https://lrclib.net/search/${encodeURIComponent(p.query)}`
+  }
+
   return (
     <div class="sm-song-picker">
       <div class="sm-song-picker-header">
-        Found {p.matches.length} matching songs
+        Search Lyrics Online
       </div>
       <div class="sm-song-picker-search">
         <input
@@ -59,28 +66,69 @@ const SongPicker = (p: SongPickerProps) => {
           Search
         </button>
       </div>
-      <div class="sm-song-picker-list">
-        <For each={p.matches}>
-          {(m) => (
-            <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
-              <span class="sm-song-picker-artist">{m.artist}</span>
-              <span class="sm-song-picker-sep"> - </span>
-              <span class="sm-song-picker-title">{m.title}</span>
-              {m.syncedLyrics !== undefined && (
-                <span class="sm-song-picker-badge">LRC</span>
-              )}
-            </button>
-          )}
-        </For>
-      </div>
-      <div class="sm-song-picker-footer">
-        <button class="sm-song-picker-upload-link" onClick={() => p.onUpload()}>
-          Or upload a .lrc/.txt file (or click here to cancel)
+
+      <Show
+        when={p.matches.length > 0}
+        fallback={
+          <div class="sm-song-picker-no-results">
+            <span class="sm-song-picker-no-results-title">No matching songs found</span>
+            <span class="sm-song-picker-no-results-hint">
+              Try refining your search terms above or search on LRCLIB.
+            </span>
+            <a
+              class="sm-song-picker-lrclib-link"
+              href={lrclibQueryUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MagnifyingGlass />
+              Search on LRCLIB
+            </a>
+          </div>
+        }
+      >
+        <div class="sm-song-picker-header-count" style={{ "font-size": "0.75rem", "font-weight": "500", "color": "var(--fg-secondary, #8b949e)", "margin-top": "0.25rem" }}>
+          Found {p.matches.length} matching songs:
+        </div>
+        <div class="sm-song-picker-list">
+          <For each={p.matches}>
+            {(m) => (
+              <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
+                <span class="sm-song-picker-artist">{m.artist}</span>
+                <span class="sm-song-picker-sep"> - </span>
+                <span class="sm-song-picker-title">{m.title}</span>
+                {m.syncedLyrics !== undefined && (
+                  <span class="sm-song-picker-badge">LRC</span>
+                )}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+
+      <div class="sm-song-picker-footer-actions">
+        <button
+          class="sm-btn sm-btn-secondary"
+          onClick={() => p.onCancel()}
+          style={{ "font-size": "0.75rem", "padding": "0.35rem 0.75rem" }}
+        >
+          Cancel
+        </button>
+        <button
+          class="sm-btn sm-btn-primary"
+          onClick={() => p.onUploadFile()}
+          style={{ "font-size": "0.75rem", "padding": "0.35rem 0.75rem", "gap": "0.35rem" }}
+        >
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+          </svg>
+          Upload LRC / TXT File
         </button>
       </div>
     </div>
   )
 }
+
 
 export interface StemMixerLyricsPanelBodyProps {
   // State signals
@@ -184,6 +232,7 @@ export interface StemMixerLyricsPanelBodyProps {
   handleSongPick: (match: LyricsSearchMatch) => Promise<void>
   handleSongPickerRefine: () => Promise<void>
   idSuffix?: string
+  triggerChangeFile?: () => void
 }
 
 export const StemMixerLyricsPanelBody: Component<
@@ -926,7 +975,10 @@ export const StemMixerLyricsPanelBody: Component<
             onRefine={() => {
               void props.handleSongPickerRefine()
             }}
-            onUpload={() => props.setShowSongPicker(false)}
+            onUploadFile={() => {
+              props.triggerChangeFile?.()
+            }}
+            onCancel={() => props.setShowSongPicker(false)}
           />
         </Show>
       </Show>

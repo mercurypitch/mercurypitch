@@ -5,6 +5,7 @@
 // All `import.meta.env` access is isolated here so the rest of
 // the codebase uses plain, well-named constants.
 
+import type ort from 'onnxruntime-web'
 import packageJson from '../../package.json'
 
 // ── Build mode flags ──────────────────────────────────────────
@@ -55,3 +56,73 @@ export const UVR_MODEL_FILENAME = 'UVR-MDX-NET-Inst_HQ_3.onnx'
 
 /** Full path to the main UVR model file. */
 export const UVR_MODEL_PATH = `${UVR_MODEL_BASE ?? ''}/models/${UVR_MODEL_FILENAME}`
+
+// ── ONNX WASM Paths and Fallback ─────────────────────────────
+
+export const CDN_FALLBACK =
+  'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/'
+let cachedValidatedWasmBase: string | null = null
+
+/**
+ * Validates and returns the active WASM base URL.
+ * Checks the configured VITE_ONNX_WASM_BASE_URL first, and falls back to CDN_FALLBACK if it fails.
+ */
+export async function getValidatedWasmBase(): Promise<string> {
+  if (cachedValidatedWasmBase !== null) return cachedValidatedWasmBase
+
+  const envWasmBase = import.meta.env.VITE_ONNX_WASM_BASE_URL
+  const hasEnvBase = typeof envWasmBase === 'string' && envWasmBase.length > 0
+  const envWasmBaseStr = hasEnvBase ? (envWasmBase as string) : ''
+
+  const primaryBase = hasEnvBase
+    ? envWasmBaseStr.endsWith('/')
+      ? envWasmBaseStr
+      : `${envWasmBaseStr}/`
+    : CDN_FALLBACK
+  const secondaryBase = hasEnvBase ? CDN_FALLBACK : null
+
+  const testBase = async (base: string, label: string): Promise<boolean> => {
+    try {
+      const checkUrl = `${base}ort-wasm-simd-threaded.mjs`
+      const resp = await fetch(checkUrl)
+      if (!resp.ok) {
+        console.warn(
+          `[WasmBase] ${label} base check failed for URL: ${checkUrl} with status: ${resp.status} ${resp.statusText}`,
+        )
+        return false
+      }
+      return true
+    } catch (err) {
+      console.warn(
+        `[WasmBase] ${label} base check failed for URL: ${base} due to network/CORS error:`,
+        err,
+      )
+      return false
+    }
+  }
+
+  if (await testBase(primaryBase, 'Primary')) {
+    cachedValidatedWasmBase = primaryBase
+    return primaryBase
+  }
+
+  if (secondaryBase !== null && (await testBase(secondaryBase, 'Secondary'))) {
+    console.warn(
+      `[WasmBase] Primary base ${primaryBase} failed. Falling back to secondary ${secondaryBase}`,
+    )
+    cachedValidatedWasmBase = secondaryBase
+    return secondaryBase
+  }
+
+  // If everything fails, return the primary as a final fallback
+  cachedValidatedWasmBase = primaryBase
+  return primaryBase
+}
+
+export function configureWasmPaths(
+  ortInstance: typeof ort,
+  base: string,
+): void {
+  ortInstance.env.wasm.numThreads = navigator.hardwareConcurrency || 4
+  ortInstance.env.wasm.wasmPaths = base
+}

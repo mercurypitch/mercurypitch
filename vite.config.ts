@@ -34,11 +34,24 @@ try {
   }
 }
 
+function removeWasmAssetsPlugin() {
+  return {
+    name: 'remove-wasm-assets',
+    generateBundle(_options: unknown, bundle: Record<string, unknown>) {
+      for (const fileName in bundle) {
+        if (fileName.endsWith('.wasm')) {
+          delete bundle[fileName]
+        }
+      }
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     isDev ? ssl() : [],
     solidPlugin(),
-    // removeLargeUvrModelPlugin(), // Disabled to allow same-origin model serving
+    removeWasmAssetsPlugin(),
   ],
   base: './',
   resolve: {
@@ -87,6 +100,7 @@ export default defineConfig({
     target: 'esnext',
     sourcemap: true,
     rollupOptions: {
+      external: [/.*\.wasm$/],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

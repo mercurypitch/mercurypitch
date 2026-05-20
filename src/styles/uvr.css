@@ -2579,3 +2579,51 @@
 .provider-icon.provider-gpu {
   color: var(--accent);
 }
+
+/* Device Mode Toggle */
+.uvr-device-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2px;
+  border-radius: 2rem;
+  margin-left: 0.25rem;
+}
+
+.device-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2rem;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.device-toggle-btn svg {
+  width: 10px;
+  height: 10px;
+  color: var(--fg-tertiary);
+}
+
+.device-toggle-btn:hover:not(.active) {
+  color: var(--fg-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.device-toggle-btn.active {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.25);
+  color: var(--accent);
+}
+
+.device-toggle-btn.active svg {
+  color: var(--accent);
+}
