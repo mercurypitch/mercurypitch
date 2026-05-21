@@ -111,36 +111,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     }, 0)
   }
 
-  // Function to add melodies to session - handled via drag-drop and click from MelodyPillList
-  const _handleAddMelodyToSession = (_melodyId: string) => {
-    const session = currentSession()
-    if (session == null) {
-      showNotification('No active session to add melody to', 'error')
-      return
-    }
-
-    const melody = melodyStore.getMelody(_melodyId)
-
-    const newSessionItem: Omit<SessionItem, 'id'> = {
-      type: 'melody',
-      label: melody?.name ?? 'Melody',
-      melodyId: _melodyId,
-      startBeat: getSessionEndBeat(),
-    }
-
-    const updatedSession = addItemToSession(session.id, newSessionItem)
-    if (updatedSession !== undefined) {
-      setActiveUserSession(updatedSession)
-    }
-    setSelectedMelodyIds((prev) => {
-      const next = new Set(prev)
-      next.add(_melodyId)
-      return next
-    })
-  }
-
-
-
   const handleDeleteItem = (itemId: string) => {
     const session = currentSession()
     if (session == null) {
@@ -153,13 +123,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     if (updatedSession !== undefined) {
       setActiveUserSession(updatedSession)
     }
-
-    // Update selected melody IDs if needed
-    setSelectedMelodyIds((prev) => {
-      const next = new Set(prev)
-      next.delete(itemId)
-      return next
-    })
   }
 
   const handleDragStartTimeline = (_melodyId: string) => {
