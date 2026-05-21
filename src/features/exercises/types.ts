@@ -7,6 +7,15 @@ export const EXERCISE_PITCH_PURSUIT = 'pitch-pursuit' as const
 export const EXERCISE_MIRROR_MELODY = 'mirror-melody' as const
 export const EXERCISE_PITCH_HOLD = 'pitch-hold' as const
 export const EXERCISE_INTERVAL_TRAINER = 'interval-trainer' as const
+export const EXERCISE_SCALE_RUNNER = 'scale-runner' as const
+export const EXERCISE_ARPEGGIO_JUMPER = 'arpeggio-jumper' as const
+export const EXERCISE_DRONE_INTONATION = 'drone-intonation' as const
+export const EXERCISE_SIREN = 'siren' as const
+export const EXERCISE_CALL_RESPONSE = 'call-response' as const
+export const EXERCISE_DYNAMIC_SWELL = 'dynamic-swell' as const
+export const EXERCISE_CHORD_STACKER = 'chord-stacker' as const
+export const EXERCISE_STACCATO = 'staccato-precision' as const
+export const EXERCISE_ROUTINE_RUNNER = 'routine-runner' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -16,6 +25,15 @@ export type ExerciseType =
   | typeof EXERCISE_MIRROR_MELODY
   | typeof EXERCISE_PITCH_HOLD
   | typeof EXERCISE_INTERVAL_TRAINER
+  | typeof EXERCISE_SCALE_RUNNER
+  | typeof EXERCISE_ARPEGGIO_JUMPER
+  | typeof EXERCISE_DRONE_INTONATION
+  | typeof EXERCISE_SIREN
+  | typeof EXERCISE_CALL_RESPONSE
+  | typeof EXERCISE_DYNAMIC_SWELL
+  | typeof EXERCISE_CHORD_STACKER
+  | typeof EXERCISE_STACCATO
+  | typeof EXERCISE_ROUTINE_RUNNER
 
 // ── Config ──────────────────────────────────────────────────────
 

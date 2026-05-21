@@ -360,6 +360,19 @@ export function melodyIndexAtBeat(melody: MelodyItem[], beat: number): number {
   return -1
 }
 
+/** Get scale degrees for a simplified scale type name */
+export function getScaleDegrees(
+  type: 'major' | 'minor' | 'pentatonic' | 'chromatic',
+): number[] {
+  const map: Record<string, string> = {
+    major: 'major',
+    minor: 'natural-minor',
+    pentatonic: 'pentatonic-major',
+    chromatic: 'chromatic',
+  }
+  return SCALE_DEFINITIONS[map[type]]?.degrees ?? MAJOR_SCALE_INTERVALS
+}
+
 /** Check if a note name is a black key */
 export function isBlackKey(name: string): boolean {
   return name.includes('#')

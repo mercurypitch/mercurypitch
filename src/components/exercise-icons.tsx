@@ -199,3 +199,92 @@ export function IconCircleEmpty(p: IconProps): JSX.Element {
     </svg>
   )
 }
+
+export function IconArrowUpDown(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <polyline points="8 7 12 3 16 7" />
+      <polyline points="8 17 12 21 16 17" />
+    </svg>
+  )
+}
+
+export function IconDrone(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="3" />
+      <line x1="12" y1="4" x2="12" y2="9" />
+      <line x1="12" y1="15" x2="12" y2="20" />
+    </svg>
+  )
+}
+
+export function IconSiren(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <path d="M4 18c2-8 6-12 8-12s6 4 8 12" />
+      <path d="M4 6c4 2 6 2 8 0s4 2 8 0" opacity="0.5" />
+    </svg>
+  )
+}
+
+export function IconReply(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <polyline points="9 14 4 9 9 4" />
+      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+    </svg>
+  )
+}
+
+export function IconExpand(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <path d="M12 3v18" />
+      <path d="M3 12h18" opacity="0.5" />
+      <polyline points="6 14 12 10 18 14" />
+      <polyline points="6 10 12 14 18 10" opacity="0.4" />
+    </svg>
+  )
+}
+
+export function IconLayers(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polygon points="2 12 12 17 22 12" opacity="0.6" />
+      <polygon points="2 17 12 22 22 17" opacity="0.3" />
+    </svg>
+  )
+}
+
+export function IconZap(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  )
+}
+
+export function IconList(p: IconProps): JSX.Element {
+  const s = iconProps(p.size ?? 24)
+  return (
+    <svg {...s} class={p.class} {...strokeProps}>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <circle cx="4" cy="6" r="1.5" />
+      <circle cx="4" cy="12" r="1.5" />
+      <circle cx="4" cy="18" r="1.5" />
+    </svg>
+  )
+}
