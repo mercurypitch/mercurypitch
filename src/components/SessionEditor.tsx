@@ -21,9 +21,6 @@ interface SessionEditorProps {
 
 export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const [expanded, setExpanded] = createSignal(true)
-  const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<Set<string>>(
-    new Set(),
-  )
   const [restDurationInput, setRestDurationInput] = createSignal(4000)
   const [searchQuery, setSearchQuery] = createSignal('')
 
@@ -142,19 +139,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     })
   }
 
-  const handleMelodySelect = (melodyId: string) => {
-    // Select the melody but don't add it to session (this is separate functionality)
-    const current = selectedMelodyIds()
-    if (current.has(melodyId)) {
-      const next = new Set(current)
-      next.delete(melodyId)
-      setSelectedMelodyIds(next)
-    } else {
-      const next = new Set(current)
-      next.add(melodyId)
-      setSelectedMelodyIds(next)
-    }
-  }
+
 
   const handleDeleteItem = (itemId: string) => {
     const session = currentSession()
@@ -368,14 +353,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             />
 
             <MelodyLibraryList
-              mode="multi"
+              mode="single"
               kinds={['melody']}
               entries={filteredMelodyItems()}
-              selectedIds={selectedMelodyIds()}
-              onItemActivate={(item) => {
-                handleMelodySelect(item.id)
-                _handleAddMelodyToSession(item.id)
-              }}
               onDragStart={(item, e) => handleDragStartList(e, item.id)}
             />
           </div>
