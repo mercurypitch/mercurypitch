@@ -144,7 +144,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
                 classList={{
                   'pitch-hold-dot-in': inZone(),
                   'pitch-hold-dot-out':
-                    !inZone() && pitch() != null && pitch()!.freq > 0,
+                    !inZone() && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />

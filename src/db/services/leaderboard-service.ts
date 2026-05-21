@@ -36,7 +36,7 @@ export async function updateLeaderboardEntry(
     const streak = await getCurrentStreak()
 
     const existing = await repo.findAll({
-      where: { userId, category, period } as Record<string, unknown>,
+      where: { userId, category, period },
     })
 
     if (existing.length > 0) {
@@ -50,7 +50,7 @@ export async function updateLeaderboardEntry(
     } else {
       const displayName = `Singer-${userId.slice(0, 6)}`
       const allEntries = await repo.findAll({
-        where: { category, period } as Record<string, unknown>,
+        where: { category, period },
       })
       const rank = allEntries.length + 1
       await repo.create({
@@ -79,7 +79,7 @@ export async function loadLeaderboard(
     const db = await getDb()
     const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
     const entries = await repo.findAll({
-      where: { category, period } as Record<string, unknown>,
+      where: { category, period },
       orderBy: 'rank',
     })
 
@@ -114,10 +114,7 @@ export async function loadCurrentUserEntry(
     const db = await getDb()
     const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
     const entries = await repo.findAll({
-      where: { userId: getUserId(), category, period } as Record<
-        string,
-        unknown
-      >,
+      where: { userId: getUserId(), category, period },
     })
     if (entries.length === 0) return null
     const e = entries[0]

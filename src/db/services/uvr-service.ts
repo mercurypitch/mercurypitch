@@ -43,7 +43,7 @@ export async function getStemBlobUrl(
     const db = await getDb()
     const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
     const results = await repo.findAll({
-      where: { sessionId, stemType } as Record<string, unknown>,
+      where: { sessionId, stemType },
       orderBy: 'createdAt',
       orderDir: 'desc',
       limit: 1,
@@ -88,7 +88,7 @@ export async function getOriginalFileBlob(
     const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
 
     const results = await repo.findAll({
-      where: { sessionId, stemType: 'original' } as Record<string, unknown>,
+      where: { sessionId, stemType: 'original' },
       orderBy: 'createdAt',
       orderDir: 'desc',
       limit: 1,
@@ -138,7 +138,7 @@ export async function saveStemFingerprintData(
 
     // Upsert: delete existing entry for this session
     const existing = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
+      where: { sessionId },
       limit: 1,
     })
     for (const entry of existing) {
@@ -164,7 +164,7 @@ export async function getStemFingerprintData(
     const db = await getDb()
     const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
     const results = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
+      where: { sessionId },
       orderBy: 'createdAt',
       orderDir: 'desc',
       limit: 1,
@@ -201,7 +201,7 @@ export async function deleteStemFingerprintData(
     const db = await getDb()
     const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
     const existing = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
+      where: { sessionId },
     })
     for (const entry of existing) {
       await repo.delete(entry.id)
@@ -237,7 +237,7 @@ export async function saveUvrSession(session: {
 
     // Upsert: delete existing record for this session if present
     const existing = await repo.findAll({
-      where: { appSessionId: session.sessionId } as Record<string, unknown>,
+      where: { appSessionId: session.sessionId },
       limit: 1,
     })
     if (existing.length > 0) {
@@ -276,7 +276,7 @@ export async function findSessionByFileHash(
     const db = await getDb()
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
     const results = await repo.findAll({
-      where: { fileHash } as Record<string, unknown>,
+      where: { fileHash },
       limit: 1,
     })
     if (results.length === 0) return null
@@ -294,7 +294,7 @@ export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
     // Delete associated stem blobs
     const blobRepo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
     const blobs = await blobRepo.findAll({
-      where: { sessionId } as Record<string, unknown>,
+      where: { sessionId },
     })
     for (const blob of blobs) {
       await blobRepo.delete(blob.id)
@@ -306,7 +306,7 @@ export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
     // Delete session record
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
     const existing = await repo.findAll({
-      where: { appSessionId: sessionId } as Record<string, unknown>,
+      where: { appSessionId: sessionId },
       limit: 1,
     })
     for (const rec of existing) {

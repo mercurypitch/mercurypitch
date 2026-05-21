@@ -131,7 +131,7 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
                 class="mirror-melody-dot"
                 classList={{
                   'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && pitch() != null && pitch()!.freq > 0,
+                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
