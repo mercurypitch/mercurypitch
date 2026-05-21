@@ -118,6 +118,16 @@ import SlideExercise from '@/features/exercises/slide/SlideExercise'
 import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
 import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
 import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
+import IntervalTrainerExercise from '@/features/exercises/interval-trainer/IntervalTrainerExercise'
+import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
+import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
+import DroneIntonationExercise from '@/features/exercises/drone-intonation/DroneIntonationExercise'
+import SirenExercise from '@/features/exercises/siren/SirenExercise'
+import CallResponseExercise from '@/features/exercises/call-response/CallResponseExercise'
+import DynamicSwellExercise from '@/features/exercises/dynamic-swell/DynamicSwellExercise'
+import ChordStackerExercise from '@/features/exercises/chord-stacker/ChordStackerExercise'
+import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
+import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
 import type { ExerciseType } from '@/features/exercises/types'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -1481,6 +1491,86 @@ const AppShell: Component<AppProps> = (props) => {
                       </Show>
                       <Show when={selectedExercise() === 'pitch-pursuit'}>
                         <PitchPursuitExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'interval-trainer'}>
+                        <IntervalTrainerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'scale-runner'}>
+                        <ScaleRunnerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'arpeggio-jumper'}>
+                        <ArpeggioJumperExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'drone-intonation'}>
+                        <DroneIntonationExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'siren'}>
+                        <SirenExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'call-response'}>
+                        <CallResponseExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'dynamic-swell'}>
+                        <DynamicSwellExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'chord-stacker'}>
+                        <ChordStackerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'staccato-precision'}>
+                        <StaccatoPrecisionExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'routine-runner'}>
+                        <RoutineRunnerExercise
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}

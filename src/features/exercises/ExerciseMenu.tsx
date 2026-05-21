@@ -2,9 +2,9 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import type { ExerciseType } from './types'
-import { EXERCISE_LONG_NOTE, EXERCISE_SLIDE, EXERCISE_VIBRATO, EXERCISE_PITCH_PURSUIT, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, } from './types'
+import { EXERCISE_LONG_NOTE, EXERCISE_SLIDE, EXERCISE_VIBRATO, EXERCISE_PITCH_PURSUIT, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_SIREN, EXERCISE_CALL_RESPONSE, EXERCISE_DYNAMIC_SWELL, EXERCISE_CHORD_STACKER, EXERCISE_STACCATO, EXERCISE_ROUTINE_RUNNER, } from './types'
 import { getExerciseStats, exerciseHistory, } from '@/stores/exercise-history-store'
-import { IconTarget, IconWave, IconSlide, IconGame, IconMirror, IconLock, IconStar, IconDiamond, IconCircleFill, IconCircleEmpty, } from '@/components/exercise-icons'
+import { IconTarget, IconWave, IconSlide, IconGame, IconMirror, IconLock, IconStar, IconDiamond, IconCircleFill, IconCircleEmpty, IconArrowUpDown, IconDrone, IconSiren, IconReply, IconExpand, IconLayers, IconZap, IconList, } from '@/components/exercise-icons'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -73,6 +73,96 @@ const CARDS: ExerciseCardDef[] = [
       'Keep your pitch inside a shrinking target zone. How long can you stay locked in?',
     icon: () => <IconLock size={28} />,
     tags: ['Endurance'],
+    available: true,
+  },
+  {
+    type: EXERCISE_INTERVAL_TRAINER,
+    title: 'Interval Trainer',
+    description:
+      'Sing specific intervals above and below a reference note. Train your ear to internalize musical distances.',
+    icon: () => <IconArrowUpDown size={28} />,
+    tags: ['Intervals', 'Ear Training'],
+    available: true,
+  },
+  {
+    type: EXERCISE_SCALE_RUNNER,
+    title: 'Scale Runner',
+    description:
+      'Move smoothly up and down scales. Practice major, minor, pentatonic, and chromatic patterns.',
+    icon: () => <IconArrowUpDown size={28} />,
+    tags: ['Scales', 'Agility'],
+    available: true,
+  },
+  {
+    type: EXERCISE_ARPEGGIO_JUMPER,
+    title: 'Arpeggio Jumper',
+    description:
+      'Leap between chord tones with precision. Build confidence hitting notes across wide intervals.',
+    icon: () => <IconLayers size={28} />,
+    tags: ['Arpeggios', 'Precision'],
+    available: true,
+  },
+  {
+    type: EXERCISE_DRONE_INTONATION,
+    title: 'Drone Intonation',
+    description:
+      'Sing intervals against a sustained drone. Fine-tune your sense of harmonic alignment.',
+    icon: () => <IconDrone size={28} />,
+    tags: ['Intonation', 'Harmony'],
+    available: true,
+  },
+  {
+    type: EXERCISE_SIREN,
+    title: 'Siren / Range Explorer',
+    description:
+      'Glide smoothly across your range. Develop seamless register transitions and vocal flexibility.',
+    icon: () => <IconSiren size={28} />,
+    tags: ['Range', 'Flexibility'],
+    available: true,
+  },
+  {
+    type: EXERCISE_CALL_RESPONSE,
+    title: 'Call & Response',
+    description:
+      'Hear a melodic phrase, then sing it back. Train pitch memory and rhythmic accuracy together.',
+    icon: () => <IconReply size={28} />,
+    tags: ['Memory', 'Phrasing'],
+    available: true,
+  },
+  {
+    type: EXERCISE_DYNAMIC_SWELL,
+    title: 'Dynamic Swell',
+    description:
+      'Hold a note with controlled crescendo and decrescendo. Master breath support and dynamic control.',
+    icon: () => <IconExpand size={28} />,
+    tags: ['Dynamics', 'Breath Control'],
+    available: true,
+  },
+  {
+    type: EXERCISE_CHORD_STACKER,
+    title: 'Chord Stacker',
+    description:
+      'Hear a chord played note by note, then sing each pitch back. Build harmonic awareness.',
+    icon: () => <IconLayers size={28} />,
+    tags: ['Chords', 'Harmony'],
+    available: true,
+  },
+  {
+    type: EXERCISE_STACCATO,
+    title: 'Staccato Precision',
+    description:
+      'Hit short, crisp notes dead-on. Sharpen your attack accuracy and pitch precision.',
+    icon: () => <IconZap size={28} />,
+    tags: ['Attack', 'Precision'],
+    available: true,
+  },
+  {
+    type: EXERCISE_ROUTINE_RUNNER,
+    title: 'Routine Runner',
+    description:
+      'Complete a full warm-up sequence: scales, arpeggios, and cool-down in one guided flow.',
+    icon: () => <IconList size={28} />,
+    tags: ['Warm-up', 'Endurance'],
     available: true,
   },
 ]
