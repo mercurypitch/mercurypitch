@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -78,12 +78,14 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         exerciseType: r.type,
         metrics: r.metrics,
       })
-      recordExerciseResult({
-        type: r.type,
-        score: r.score,
-        metrics: r.metrics,
-        completedAt: r.completedAt,
-      })
+      untrack(() =>
+        recordExerciseResult({
+          type: r.type,
+          score: r.score,
+          metrics: r.metrics,
+          completedAt: r.completedAt,
+        }),
+      )
     }
   })
 

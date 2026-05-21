@@ -4,6 +4,7 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  untrack,
   For,
 } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -82,12 +83,14 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         exerciseType: r.type,
         metrics: r.metrics,
       })
-      recordExerciseResult({
-        type: r.type,
-        score: r.score,
-        metrics: r.metrics,
-        completedAt: r.completedAt,
-      })
+      untrack(() =>
+        recordExerciseResult({
+          type: r.type,
+          score: r.score,
+          metrics: r.metrics,
+          completedAt: r.completedAt,
+        }),
+      )
     }
   })
 
