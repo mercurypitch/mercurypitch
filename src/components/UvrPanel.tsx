@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import { FancyDivider } from '@/components/shared'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -16,7 +17,6 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { FancyDivider } from '@/components/shared'
 import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
@@ -727,556 +727,567 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   return (
     <div class="uvr-panel">
-      <div class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}>
+      <div
+        class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
+      >
         {/* Header */}
         <div class="panel-header">
-        <div class="header-left">
-          <div
-            class="header-title-group"
-            style="display: flex; align-items: center; gap: 0.5rem;"
-          >
-            <h3>Shazam Sing</h3>
+          <div class="header-left">
+            <div
+              class="header-title-group"
+              style="display: flex; align-items: center; gap: 0.5rem;"
+            >
+              <h3>Shazam Sing</h3>
+            </div>
+            <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
+              <button
+                class="view-tab view-tab-sing"
+                classList={{
+                  active: currentView() === 'shazam-listen',
+                }}
+                onClick={() => {
+                  setCurrentView('shazam-listen')
+                  props.onViewChange?.('shazam-listen')
+                  props.onSessionChange?.(null)
+                }}
+                data-testid="uvr-tab-sing"
+              >
+                <SingMic />
+                <span>Sing</span>
+              </button>
+              <button
+                class="view-tab"
+                classList={{
+                  active: currentView() === 'upload',
+                }}
+                onClick={() => {
+                  setCurrentView('upload')
+                  props.onViewChange?.('upload')
+                  props.onSessionChange?.(null)
+                }}
+                data-testid="uvr-tab-upload"
+              >
+                <ImportFile />
+                <span>Upload</span>
+              </button>
+            </div>
           </div>
-          <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
-            <button
-              class="view-tab view-tab-sing"
-              classList={{
-                active: currentView() === 'shazam-listen',
-              }}
-              onClick={() => {
-                setCurrentView('shazam-listen')
-                props.onViewChange?.('shazam-listen')
-                props.onSessionChange?.(null)
-              }}
-              data-testid="uvr-tab-sing"
-            >
-              <SingMic />
-              <span>Sing</span>
-            </button>
-            <button
-              class="view-tab"
-              classList={{
-                active: currentView() === 'upload',
-              }}
-              onClick={() => {
-                setCurrentView('upload')
-                props.onViewChange?.('upload')
-                props.onSessionChange?.(null)
-              }}
-              data-testid="uvr-tab-upload"
-            >
-              <ImportFile />
-              <span>Upload</span>
-            </button>
-          </div>
-        </div>
-        <div class="header-actions">
-          <div class="uvr-mode-toggle">
-            <button
-              class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-              title="Processing: Server"
-              onClick={() =>
-                showNotification(
-                  'Server-side processing not yet available.',
-                  'info',
-                )
-              }
-            >
-              Server
-            </button>
-            <button
-              class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
-              title="Processing: Browser"
-              onClick={() => setUvrProcessingMode('local')}
-            >
-              Browser
-            </button>
-            <Show when={uvrProcessingMode() === 'local'}>
-              <div class="uvr-device-toggle">
-                <button
-                  class="device-toggle-btn"
-                  classList={{ active: !uvrForceWebGpu() }}
-                  onClick={() => handleForceWebGpuToggle(false)}
-                  title="Use CPU (WASM) for vocal separation"
-                  data-testid="uvr-device-cpu"
-                >
-                  <Cpu />
-                  <span>CPU</span>
-                </button>
-                <button
-                  class="device-toggle-btn"
-                  classList={{ active: uvrForceWebGpu() }}
-                  onClick={() => handleForceWebGpuToggle(true)}
-                  title="Use GPU (WebGPU) for vocal separation"
-                  data-testid="uvr-device-gpu"
-                >
-                  <Zap />
-                  <span>GPU</span>
-                </button>
-              </div>
-            </Show>
-            <Show
-              when={
-                uvrProcessingMode() === 'local' && uvrModelStatus() !== 'ready'
-              }
-            >
-              <span
-                class={`model-status-badge model-status-${uvrModelStatus()}`}
-                title={
-                  uvrModelStatus() === 'error'
-                    ? uvrModelError()
-                    : uvrModelStatus() === 'loading'
-                      ? 'Loading ONNX model...'
-                      : ''
+          <div class="header-actions">
+            <div class="uvr-mode-toggle">
+              <button
+                class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                title="Processing: Server"
+                onClick={() =>
+                  showNotification(
+                    'Server-side processing not yet available.',
+                    'info',
+                  )
                 }
               >
-                <Show when={uvrModelStatus() === 'loading'}>
-                  <span class="model-loading-dot" />
-                </Show>
-                <Show when={uvrModelStatus() === 'error'}>
-                  <span class="model-error-icon">!</span>
-                </Show>
-              </span>
-            </Show>
-          </div>
-          <div class="uvr-view-tabs">
-            <button
-              class="view-tab"
-              classList={{ active: showGuide() }}
-              onClick={() => setShowGuide(!showGuide())}
-            >
-              <Music />
-              <span>Guide</span>
-            </button>
-            <button
-              class="view-tab"
-              classList={{ active: showSettings() }}
-              onClick={() => setShowSettings(!showSettings())}
-            >
-              <Settings />
-              <span>Settings</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <FancyDivider class="uvr-header-divider" />
-
-      {/* Main Content */}
-      <div class="panel-content">
-        {showGuide() && (
-          <div class="guide-modal">
-            <div class="guide-container">
-              <div class="guide-header">
-                <h3>Vocal Separation Guide</h3>
-                <button class="guide-close" onClick={() => setShowGuide(false)}>
-                  <X />
-                </button>
-              </div>
-              <UvrGuide onClose={() => setShowGuide(false)} />
-            </div>
-          </div>
-        )}
-
-        {showSettings() && (
-          <div class="guide-modal" onClick={() => setShowSettings(false)}>
-            <div class="guide-container" onClick={(e) => e.stopPropagation()}>
-              <div class="guide-header">
-                <h3>UVR Settings</h3>
-                <button
-                  class="guide-close"
-                  onClick={() => setShowSettings(false)}
-                >
-                  <X />
-                </button>
-              </div>
-              <UvrSettings
-                stemDenoise={stemDenoise()}
-                onStemDenoiseChange={(v) => setStemDenoise(v)}
-              />
-            </div>
-          </div>
-        )}
-
-        <Show when={currentView() === 'upload'}>
-          <div class="view-section upload-section" data-testid="uvr-upload">
-            <div class="section-header">
-              <h4>Upload Audio</h4>
-            </div>
-
-            <UvrUploadControl
-              onFileSelect={(file) => {
-                void handleFileSelect(file)
-              }}
-              onFileReady={(file) => setSelectedFile(file)}
-              onProcessStart={(file) => {
-                void handleProcessStart(file)
-              }}
-              processing={session()?.status === 'processing'}
-              disabled={allSessions().some((s) => s.status === 'processing')}
-            />
-            <Show when={allSessions().length > 0}>
-              <div class="upload-divider">
-                <span class="upload-divider-text">
-                  or continue from existing session
-                </span>
-              </div>
-              <div class="section-header">
-                <h4>Recent Sessions</h4>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                Server
+              </button>
+              <button
+                class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+                title="Processing: Browser"
+                onClick={() => setUvrProcessingMode('local')}
+              >
+                Browser
+              </button>
+              <Show when={uvrProcessingMode() === 'local'}>
+                <div class="uvr-device-toggle">
                   <button
-                    class="delete-all-btn"
-                    onClick={() => setShowClearStorageConfirm(true)}
-                    title="Delete all sessions, stems, and uploaded files from database"
+                    class="device-toggle-btn"
+                    classList={{ active: !uvrForceWebGpu() }}
+                    onClick={() => handleForceWebGpuToggle(false)}
+                    title="Use CPU (WASM) for vocal separation"
+                    data-testid="uvr-device-cpu"
                   >
-                    <Trash2 /> Clear Cached Songs
+                    <Cpu />
+                    <span>CPU</span>
                   </button>
                   <button
-                    class="delete-all-btn"
-                    onClick={() => setShowDeleteAllConfirm(true)}
+                    class="device-toggle-btn"
+                    classList={{ active: uvrForceWebGpu() }}
+                    onClick={() => handleForceWebGpuToggle(true)}
+                    title="Use GPU (WebGPU) for vocal separation"
+                    data-testid="uvr-device-gpu"
                   >
-                    <Trash2 /> Delete All
+                    <Zap />
+                    <span>GPU</span>
                   </button>
                 </div>
-              </div>
-              <div class="history-list history-list-inline">
-                <For
-                  each={allSessions().sort((a, b) => b.createdAt - a.createdAt)}
-                >
-                  {(s) => (
-                    <UvrSessionResult
-                      sessionId={s.sessionId}
-                      disabled={allSessions().some(
-                        (s) => s.status === 'processing',
-                      )}
-                      onView={() => {
-                        void handleSessionView(s.sessionId)
-                      }}
-                      onExport={(type) => {
-                        void handleExportSession(
-                          s.sessionId,
-                          type as 'vocal' | 'instrumental' | 'vocal-midi',
-                        )
-                      }}
-                      onOpenMixer={(sessionId, stems) => {
-                        void handleOpenMixerFromHistory(sessionId, stems)
-                      }}
-                      onRetry={(sessionId) => {
-                        retryUvrSession(sessionId)
-                        void handleProcessStart(
-                          sessionId,
-                          getUvrSession(sessionId)?.processingMode,
-                        )
-                      }}
-                      onReindexStem={(sessionId) => {
-                        const session = getUvrSession(sessionId)
-                        const fileName =
-                          session?.originalFile?.name ?? 'Unknown'
-                        void indexStemFingerprint(sessionId, fileName)
-                      }}
-                    />
-                  )}
-                </For>
-              </div>
-            </Show>
-          </div>
-        </Show>
-
-        <Show when={currentView() === 'processing'}>
-          <div class="view-section processing-section">
-            <div class="section-header">
-              <h4>Processing Audio</h4>
-            </div>
-            {session() && (
-              <UvrProcessControl
-                sessionId={session()!.sessionId}
-                apiSessionId={session()!.apiSessionId}
-                status={session()!.status}
-                progress={session()!.progress}
-                indeterminate={session()!.indeterminate}
-                processingTime={session()!.processingTime}
-                error={session()!.error}
-                processingMode={session()!.processingMode}
-                numChunks={session()!.numChunks}
-                provider={session()!.provider}
-                originalFileName={session()!.originalFile?.name}
-                onCancel={() => {
-                  cancelUvrPipeline(
-                    session()!.processingMode ?? 'server',
-                    session()!.apiSessionId,
-                  )
-                  cancelUvrSession(session()!.sessionId)
-                  setCurrentView('upload')
-                }}
-                onRetry={() => {
-                  retryUvrSession(session()!.sessionId)
-                  void handleProcessStart(
-                    session()!.sessionId,
-                    session()!.processingMode,
-                  )
-                }}
-                onNewSession={() => setCurrentView('upload')}
-                onDeleteAndNew={() => {
-                  deleteUvrSession(session()!.sessionId)
-                  void deleteUvrSessionFromDb(session()!.sessionId)
-                  setCurrentView('upload')
-                }}
-              />
-            )}
-            <Show when={fingerprintingSession() !== ''}>
-              <div
-                style={{
-                  display: 'flex',
-                  'align-items': 'center',
-                  gap: '8px',
-                  padding: '10px 14px',
-                  background: 'rgba(99, 102, 241, 0.08)',
-                  'border-radius': '8px',
-                  'font-size': '13px',
-                  color: 'var(--color-text-muted, #94a3b8)',
-                }}
+              </Show>
+              <Show
+                when={
+                  uvrProcessingMode() === 'local' &&
+                  uvrModelStatus() !== 'ready'
+                }
               >
                 <span
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    border: '2px solid var(--color-accent, #6366f1)',
-                    'border-top-color': 'transparent',
-                    'border-radius': '50%',
-                    animation: 'spin 0.8s linear infinite',
-                    display: 'inline-block',
+                  class={`model-status-badge model-status-${uvrModelStatus()}`}
+                  title={
+                    uvrModelStatus() === 'error'
+                      ? uvrModelError()
+                      : uvrModelStatus() === 'loading'
+                        ? 'Loading ONNX model...'
+                        : ''
+                  }
+                >
+                  <Show when={uvrModelStatus() === 'loading'}>
+                    <span class="model-loading-dot" />
+                  </Show>
+                  <Show when={uvrModelStatus() === 'error'}>
+                    <span class="model-error-icon">!</span>
+                  </Show>
+                </span>
+              </Show>
+            </div>
+            <div class="uvr-view-tabs">
+              <button
+                class="view-tab"
+                classList={{ active: showGuide() }}
+                onClick={() => setShowGuide(!showGuide())}
+              >
+                <Music />
+                <span>Guide</span>
+              </button>
+              <button
+                class="view-tab"
+                classList={{ active: showSettings() }}
+                onClick={() => setShowSettings(!showSettings())}
+              >
+                <Settings />
+                <span>Settings</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <FancyDivider class="uvr-header-divider" />
+
+        {/* Main Content */}
+        <div class="panel-content">
+          {showGuide() && (
+            <div class="guide-modal">
+              <div class="guide-container">
+                <div class="guide-header">
+                  <h3>Vocal Separation Guide</h3>
+                  <button
+                    class="guide-close"
+                    onClick={() => setShowGuide(false)}
+                  >
+                    <X />
+                  </button>
+                </div>
+                <UvrGuide onClose={() => setShowGuide(false)} />
+              </div>
+            </div>
+          )}
+
+          {showSettings() && (
+            <div class="guide-modal" onClick={() => setShowSettings(false)}>
+              <div class="guide-container" onClick={(e) => e.stopPropagation()}>
+                <div class="guide-header">
+                  <h3>UVR Settings</h3>
+                  <button
+                    class="guide-close"
+                    onClick={() => setShowSettings(false)}
+                  >
+                    <X />
+                  </button>
+                </div>
+                <UvrSettings
+                  stemDenoise={stemDenoise()}
+                  onStemDenoiseChange={(v) => setStemDenoise(v)}
+                />
+              </div>
+            </div>
+          )}
+
+          <Show when={currentView() === 'upload'}>
+            <div class="view-section upload-section" data-testid="uvr-upload">
+              <div class="section-header">
+                <h4>Upload Audio</h4>
+              </div>
+
+              <UvrUploadControl
+                onFileSelect={(file) => {
+                  void handleFileSelect(file)
+                }}
+                onFileReady={(file) => setSelectedFile(file)}
+                onProcessStart={(file) => {
+                  void handleProcessStart(file)
+                }}
+                processing={session()?.status === 'processing'}
+                disabled={allSessions().some((s) => s.status === 'processing')}
+              />
+              <Show when={allSessions().length > 0}>
+                <div class="upload-divider">
+                  <span class="upload-divider-text">
+                    or continue from existing session
+                  </span>
+                </div>
+                <div class="section-header">
+                  <h4>Recent Sessions</h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      class="delete-all-btn"
+                      onClick={() => setShowClearStorageConfirm(true)}
+                      title="Delete all sessions, stems, and uploaded files from database"
+                    >
+                      <Trash2 /> Clear Cached Songs
+                    </button>
+                    <button
+                      class="delete-all-btn"
+                      onClick={() => setShowDeleteAllConfirm(true)}
+                    >
+                      <Trash2 /> Delete All
+                    </button>
+                  </div>
+                </div>
+                <div class="history-list history-list-inline">
+                  <For
+                    each={allSessions().sort(
+                      (a, b) => b.createdAt - a.createdAt,
+                    )}
+                  >
+                    {(s) => (
+                      <UvrSessionResult
+                        sessionId={s.sessionId}
+                        disabled={allSessions().some(
+                          (s) => s.status === 'processing',
+                        )}
+                        onView={() => {
+                          void handleSessionView(s.sessionId)
+                        }}
+                        onExport={(type) => {
+                          void handleExportSession(
+                            s.sessionId,
+                            type as 'vocal' | 'instrumental' | 'vocal-midi',
+                          )
+                        }}
+                        onOpenMixer={(sessionId, stems) => {
+                          void handleOpenMixerFromHistory(sessionId, stems)
+                        }}
+                        onRetry={(sessionId) => {
+                          retryUvrSession(sessionId)
+                          void handleProcessStart(
+                            sessionId,
+                            getUvrSession(sessionId)?.processingMode,
+                          )
+                        }}
+                        onReindexStem={(sessionId) => {
+                          const session = getUvrSession(sessionId)
+                          const fileName =
+                            session?.originalFile?.name ?? 'Unknown'
+                          void indexStemFingerprint(sessionId, fileName)
+                        }}
+                      />
+                    )}
+                  </For>
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          <Show when={currentView() === 'processing'}>
+            <div class="view-section processing-section">
+              <div class="section-header">
+                <h4>Processing Audio</h4>
+              </div>
+              {session() && (
+                <UvrProcessControl
+                  sessionId={session()!.sessionId}
+                  apiSessionId={session()!.apiSessionId}
+                  status={session()!.status}
+                  progress={session()!.progress}
+                  indeterminate={session()!.indeterminate}
+                  processingTime={session()!.processingTime}
+                  error={session()!.error}
+                  processingMode={session()!.processingMode}
+                  numChunks={session()!.numChunks}
+                  provider={session()!.provider}
+                  originalFileName={session()!.originalFile?.name}
+                  onCancel={() => {
+                    cancelUvrPipeline(
+                      session()!.processingMode ?? 'server',
+                      session()!.apiSessionId,
+                    )
+                    cancelUvrSession(session()!.sessionId)
+                    setCurrentView('upload')
+                  }}
+                  onRetry={() => {
+                    retryUvrSession(session()!.sessionId)
+                    void handleProcessStart(
+                      session()!.sessionId,
+                      session()!.processingMode,
+                    )
+                  }}
+                  onNewSession={() => setCurrentView('upload')}
+                  onDeleteAndNew={() => {
+                    deleteUvrSession(session()!.sessionId)
+                    void deleteUvrSessionFromDb(session()!.sessionId)
+                    setCurrentView('upload')
                   }}
                 />
-                Indexing vocal stem for Shazam matching...
+              )}
+              <Show when={fingerprintingSession() !== ''}>
+                <div
+                  style={{
+                    display: 'flex',
+                    'align-items': 'center',
+                    gap: '8px',
+                    padding: '10px 14px',
+                    background: 'rgba(99, 102, 241, 0.08)',
+                    'border-radius': '8px',
+                    'font-size': '13px',
+                    color: 'var(--color-text-muted, #94a3b8)',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid var(--color-accent, #6366f1)',
+                      'border-top-color': 'transparent',
+                      'border-radius': '50%',
+                      animation: 'spin 0.8s linear infinite',
+                      display: 'inline-block',
+                    }}
+                  />
+                  Indexing vocal stem for Shazam matching...
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          <Show when={currentView() === 'results'}>
+            <div class="view-section results-section">
+              <div class="section-header">
+                <h4>
+                  Processing Results for{' '}
+                  {session()?.originalFile?.name ?? 'audio'}
+                </h4>
+                <button
+                  class="back-btn"
+                  onClick={() => setCurrentView('upload')}
+                >
+                  <ImportFile /> Back to Upload
+                </button>
               </div>
-            </Show>
-          </div>
-        </Show>
-
-        <Show when={currentView() === 'results'}>
-          <div class="view-section results-section">
-            <div class="section-header">
-              <h4>
-                Processing Results for{' '}
-                {session()?.originalFile?.name ?? 'audio'}
-              </h4>
-              <button class="back-btn" onClick={() => setCurrentView('upload')}>
-                <ImportFile /> Back to Upload
-              </button>
+              {session() && (
+                <UvrResultViewer
+                  outputs={session()!.outputs}
+                  stemMeta={session()!.stemMeta}
+                  processingTime={session()!.processingTime}
+                  sessionId={session()!.sessionId}
+                  originalFileName={session()?.originalFile?.name}
+                  onStartPractice={(mode) => {
+                    void handlePracticeStart(mode)
+                  }}
+                  onStartMix={(stems) => {
+                    void handleMixStart(stems)
+                  }}
+                  onExport={(type) => {
+                    void handleExport(type)
+                  }}
+                />
+              )}
             </div>
-            {session() && (
-              <UvrResultViewer
-                outputs={session()!.outputs}
-                stemMeta={session()!.stemMeta}
-                processingTime={session()!.processingTime}
-                sessionId={session()!.sessionId}
-                originalFileName={session()?.originalFile?.name}
-                onStartPractice={(mode) => {
-                  void handlePracticeStart(mode)
-                }}
-                onStartMix={(stems) => {
-                  void handleMixStart(stems)
-                }}
-                onExport={(type) => {
-                  void handleExport(type)
+          </Show>
+
+          {/* Stem Mixer Inline */}
+          <Show when={currentView() === 'mixer'}>
+            <div class="view-section mixer-section">
+              <StemMixer
+                stems={mixerStems()}
+                sessionId={mixerSessionId()}
+                songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
+                practiceMode={mixerPracticeMode()}
+                requestedStems={mixerRequestedStems()}
+                initialSeekSec={mixerInitialSeekSec()}
+                autoPlay={mixerAutoPlay()}
+                onBack={() => {
+                  setMixerAutoPlay(false)
+                  setMixerInitialSeekSec(undefined)
+                  setCurrentView(prevView())
                 }}
               />
-            )}
-          </div>
-        </Show>
+            </div>
+          </Show>
 
-        {/* Stem Mixer Inline */}
-        <Show when={currentView() === 'mixer'}>
-          <div class="view-section mixer-section">
-            <StemMixer
-              stems={mixerStems()}
-              sessionId={mixerSessionId()}
-              songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
-              practiceMode={mixerPracticeMode()}
-              requestedStems={mixerRequestedStems()}
-              initialSeekSec={mixerInitialSeekSec()}
-              autoPlay={mixerAutoPlay()}
-              onBack={() => {
-                setMixerAutoPlay(false)
-                setMixerInitialSeekSec(undefined)
-                setCurrentView(prevView())
-              }}
-            />
-          </div>
-        </Show>
+          {/* Shazam Sing — Listen */}
+          <Show when={currentView() === 'shazam-listen'}>
+            <Suspense>
+              <ShazamListen
+                onMatch={({ candidates, contour, hummingNormalized: hn }) => {
+                  setLastContour(contour)
+                  setHummingNormalized(hn)
+                  // Auto-jump: if top stem match exceeds threshold, skip results
+                  const threshold = props.autoJumpThreshold ?? 85
+                  const topMatch = candidates[0]
+                  if (
+                    candidates.length > 0 &&
+                    topMatch.source === 'stem' &&
+                    topMatch.sessionId !== undefined &&
+                    topMatch.confidence >= threshold
+                  ) {
+                    // Set auto-play with match offset for stem mixer
+                    setMixerInitialSeekSec(topMatch.matchOffsetSec)
+                    setMixerAutoPlay(true)
+                    void handleOpenMixerFromHistory(topMatch.sessionId, {
+                      vocal: true,
+                    })
+                    props.onOpenStemMixer?.(topMatch.sessionId)
+                    return
+                  }
+                  setMatchCandidates(candidates)
+                  setCurrentView('shazam-results')
+                }}
+                onAutoJump={(candidate) => {
+                  if (
+                    candidate.source === 'stem' &&
+                    candidate.sessionId !== undefined
+                  ) {
+                    setMixerInitialSeekSec(candidate.matchOffsetSec)
+                    setMixerAutoPlay(true)
+                    void handleOpenMixerFromHistory(candidate.sessionId, {
+                      vocal: true,
+                    })
+                    props.onOpenStemMixer?.(candidate.sessionId)
+                  } else {
+                    props.onSelectMelody?.(candidate.melodyId)
+                  }
+                }}
+                onCancel={() => setCurrentView('upload')}
+                onSwitchToUpload={() => setCurrentView('upload')}
+              />
+            </Suspense>
+          </Show>
 
-        {/* Shazam Sing — Listen */}
-        <Show when={currentView() === 'shazam-listen'}>
-          <Suspense>
-            <ShazamListen
-              onMatch={({ candidates, contour, hummingNormalized: hn }) => {
-                setLastContour(contour)
-                setHummingNormalized(hn)
-                // Auto-jump: if top stem match exceeds threshold, skip results
-                const threshold = props.autoJumpThreshold ?? 85
-                const topMatch = candidates[0]
-                if (
-                  candidates.length > 0 &&
-                  topMatch.source === 'stem' &&
-                  topMatch.sessionId !== undefined &&
-                  topMatch.confidence >= threshold
-                ) {
-                  // Set auto-play with match offset for stem mixer
-                  setMixerInitialSeekSec(topMatch.matchOffsetSec)
-                  setMixerAutoPlay(true)
-                  void handleOpenMixerFromHistory(topMatch.sessionId, {
-                    vocal: true,
-                  })
-                  props.onOpenStemMixer?.(topMatch.sessionId)
-                  return
-                }
-                setMatchCandidates(candidates)
-                setCurrentView('shazam-results')
-              }}
-              onAutoJump={(candidate) => {
-                if (
-                  candidate.source === 'stem' &&
-                  candidate.sessionId !== undefined
-                ) {
-                  setMixerInitialSeekSec(candidate.matchOffsetSec)
-                  setMixerAutoPlay(true)
-                  void handleOpenMixerFromHistory(candidate.sessionId, {
-                    vocal: true,
-                  })
-                  props.onOpenStemMixer?.(candidate.sessionId)
-                } else {
-                  props.onSelectMelody?.(candidate.melodyId)
-                }
-              }}
-              onCancel={() => setCurrentView('upload')}
-              onSwitchToUpload={() => setCurrentView('upload')}
-            />
-          </Suspense>
-        </Show>
+          {/* Shazam Sing — Results */}
+          <Show when={currentView() === 'shazam-results'}>
+            <Suspense>
+              <ShazamResults
+                candidates={matchCandidates()}
+                liveContour={lastContour()}
+                hummingNormalized={hummingNormalized()}
+                onOpenMelody={(melodyId) => {
+                  props.onSelectMelody?.(melodyId)
+                }}
+                onOpenStemMixer={(sessionId, matchOffsetSec) => {
+                  setMixerInitialSeekSec(matchOffsetSec)
+                  setMixerAutoPlay(matchOffsetSec !== undefined)
+                  void handleOpenMixerFromHistory(sessionId, { vocal: true })
+                  props.onOpenStemMixer?.(sessionId)
+                }}
+                onTryAgain={() => {
+                  setMatchCandidates([])
+                  setCurrentView('shazam-listen')
+                }}
+              />
+            </Suspense>
+          </Show>
+        </div>
 
-        {/* Shazam Sing — Results */}
-        <Show when={currentView() === 'shazam-results'}>
-          <Suspense>
-            <ShazamResults
-              candidates={matchCandidates()}
-              liveContour={lastContour()}
-              hummingNormalized={hummingNormalized()}
-              onOpenMelody={(melodyId) => {
-                props.onSelectMelody?.(melodyId)
-              }}
-              onOpenStemMixer={(sessionId, matchOffsetSec) => {
-                setMixerInitialSeekSec(matchOffsetSec)
-                setMixerAutoPlay(matchOffsetSec !== undefined)
-                void handleOpenMixerFromHistory(sessionId, { vocal: true })
-                props.onOpenStemMixer?.(sessionId)
-              }}
-              onTryAgain={() => {
-                setMatchCandidates([])
-                setCurrentView('shazam-listen')
-              }}
-            />
-          </Suspense>
-        </Show>
-      </div>
-
-      {/* Delete All Confirmation Modal */}
-      <Show when={showDeleteAllConfirm()}>
-        <div
-          class="delete-all-overlay"
-          onClick={() => setShowDeleteAllConfirm(false)}
-        >
-          <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-            <h4>Delete All Sessions</h4>
-            <p>
-              This will remove all {allSessions().length} session
-              {allSessions().length !== 1 ? 's' : ''} from your history.
-            </p>
-            <div class="delete-all-actions">
-              <button
-                class="delete-all-cancel"
-                onClick={() => setShowDeleteAllConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button class="delete-all-confirm" onClick={handleDeleteAll}>
-                <Trash2 /> Delete All
-              </button>
+        {/* Delete All Confirmation Modal */}
+        <Show when={showDeleteAllConfirm()}>
+          <div
+            class="delete-all-overlay"
+            onClick={() => setShowDeleteAllConfirm(false)}
+          >
+            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+              <h4>Delete All Sessions</h4>
+              <p>
+                This will remove all {allSessions().length} session
+                {allSessions().length !== 1 ? 's' : ''} from your history.
+              </p>
+              <div class="delete-all-actions">
+                <button
+                  class="delete-all-cancel"
+                  onClick={() => setShowDeleteAllConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button class="delete-all-confirm" onClick={handleDeleteAll}>
+                  <Trash2 /> Delete All
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </Show>
+        </Show>
 
-      {/* Clear Storage Confirmation Modal */}
-      <Show when={showClearStorageConfirm()}>
-        <div
-          class="delete-all-overlay"
-          onClick={() => setShowClearStorageConfirm(false)}
-        >
-          <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-            <h4>Clear Cached Songs</h4>
-            <p>
-              This will permanently remove all {allSessions().length} session
-              {allSessions().length !== 1 ? 's' : ''}, generated stems, and
-              uploaded mp3 files from your local database. This action cannot be
-              undone.
-            </p>
-            <div class="delete-all-actions">
-              <button
-                class="delete-all-cancel"
-                onClick={() => setShowClearStorageConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button class="delete-all-confirm" onClick={handleClearStorage}>
-                <Trash2 /> Clear Cached Songs
-              </button>
+        {/* Clear Storage Confirmation Modal */}
+        <Show when={showClearStorageConfirm()}>
+          <div
+            class="delete-all-overlay"
+            onClick={() => setShowClearStorageConfirm(false)}
+          >
+            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+              <h4>Clear Cached Songs</h4>
+              <p>
+                This will permanently remove all {allSessions().length} session
+                {allSessions().length !== 1 ? 's' : ''}, generated stems, and
+                uploaded mp3 files from your local database. This action cannot
+                be undone.
+              </p>
+              <div class="delete-all-actions">
+                <button
+                  class="delete-all-cancel"
+                  onClick={() => setShowClearStorageConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button class="delete-all-confirm" onClick={handleClearStorage}>
+                  <Trash2 /> Clear Cached Songs
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </Show>
+        </Show>
 
-      {/* Delete All Toast */}
-      <Show when={deleteAllToast()}>
-        <div class="history-toast">
-          <span class="history-toast-icon">
-            <CheckCircle />
-          </span>
-          {deleteAllToast()}
-        </div>
-      </Show>
+        {/* Delete All Toast */}
+        <Show when={deleteAllToast()}>
+          <div class="history-toast">
+            <span class="history-toast-icon">
+              <CheckCircle />
+            </span>
+            {deleteAllToast()}
+          </div>
+        </Show>
 
-      {/* MIDI Export Progress Toast */}
-      <Show when={midiExporting()}>
-        <div class="history-toast">
-          <span class="history-toast-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24">
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                fill="none"
-                stroke="var(--border, #30363d)"
-                stroke-width="2"
-              />
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                fill="none"
-                stroke="var(--accent, #8b5cf6)"
-                stroke-width="2"
-                stroke-dasharray={String(2 * Math.PI * 10)}
-                stroke-dashoffset={String(
-                  2 * Math.PI * 10 * (1 - midiExportProgress() / 100),
-                )}
-                stroke-linecap="round"
-                transform="rotate(-90 12 12)"
-              />
-            </svg>
-          </span>
-          Generating MIDI... {midiExportProgress()}%
-        </div>
-      </Show>
+        {/* MIDI Export Progress Toast */}
+        <Show when={midiExporting()}>
+          <div class="history-toast">
+            <span class="history-toast-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--border, #30363d)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--accent, #8b5cf6)"
+                  stroke-width="2"
+                  stroke-dasharray={String(2 * Math.PI * 10)}
+                  stroke-dashoffset={String(
+                    2 * Math.PI * 10 * (1 - midiExportProgress() / 100),
+                  )}
+                  stroke-linecap="round"
+                  transform="rotate(-90 12 12)"
+                />
+              </svg>
+            </span>
+            Generating MIDI... {midiExportProgress()}%
+          </div>
+        </Show>
       </div>
     </div>
   )

@@ -118,16 +118,13 @@ export default defineConfig({
             id.includes('PitchTestingTab') ||
             id.includes('PitchAlgorithmTester') ||
             id.includes('VocalChallenges') ||
-            id.includes('VocalAnalysis')
-          )
-            return 'vocal'
-          if (
+            id.includes('VocalAnalysis') ||
             id.includes('UvrPanel') ||
             id.includes('UvrGuide') ||
             id.includes('uvr-api') ||
             id.includes('StemMixer')
           )
-            return 'uvr'
+            return 'advanced'
           if (id.includes('LibraryModal') || id.includes('SessionLibraryModal'))
             return 'library'
         },

@@ -14,6 +14,7 @@ import { generateMockSessions } from '@/lib/vocal-analysis-mock'
 import type { BreathinessResult, FatigueCheckpoint, FatigueResult, HarmonicRichnessResult, ResonanceResult, SlideTrackingResult, VibratoResult, } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, detectSlides, detectVibrato, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores'
+import { loadSessionRecords } from '@/db/services/session-service'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
 
 // ============================================================
@@ -255,8 +256,6 @@ export const VocalAnalysis: Component = () => {
   onMount(() => {
     void (async () => {
       try {
-        const { loadSessionRecords } =
-          await import('@/db/services/session-service')
         const records = await loadSessionRecords(50)
         if (records.length > 0) {
           setDbSessionRecords(

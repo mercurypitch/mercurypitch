@@ -5,7 +5,6 @@
 
 import type { JSX, ParentComponent } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
-
 import { setAppError } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
 
@@ -21,7 +20,7 @@ export const TabErrorBoundary: ParentComponent<TabErrorBoundaryProps> = (
     <ErrorBoundary
       fallback={(err) => {
         const errorObj = err instanceof Error ? err : new Error(String(err))
-        
+
         // Ensure the error has context about which tab crashed
         if (err instanceof Error) {
           errorObj.message = `[Tab: ${props.tabName}] ${errorObj.message}`
