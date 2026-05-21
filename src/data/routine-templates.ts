@@ -115,6 +115,151 @@ export const dailyRoutines: RoutineTemplate[] = [
       },
     ],
   },
+  {
+    id: 'interval-focus',
+    name: 'Interval Mastery',
+    description: 'Sharpen your ear with interval training and melody recall',
+    segments: [
+      {
+        type: 'warmup',
+        durationSec: 90,
+        config: { pattern: 'ascending-scale' },
+      },
+      {
+        type: 'exercise',
+        durationSec: 210,
+        config: { exercise: 'interval-trainer', notes: ['C4'] },
+      },
+      {
+        type: 'exercise',
+        durationSec: 210,
+        config: { exercise: 'call-response', notes: ['C4'] },
+      },
+      {
+        type: 'cooldown',
+        durationSec: 60,
+        config: { mode: 'humming' },
+      },
+    ],
+  },
+  {
+    id: 'scale-focus',
+    name: 'Scale & Agility',
+    description: 'Build vocal agility with scales, arpeggios, and staccato drills',
+    segments: [
+      {
+        type: 'warmup',
+        durationSec: 90,
+        config: { pattern: 'lip-trill' },
+      },
+      {
+        type: 'exercise',
+        durationSec: 210,
+        config: { exercise: 'scale-runner', notes: ['C4'] },
+      },
+      {
+        type: 'exercise',
+        durationSec: 180,
+        config: { exercise: 'arpeggio-jumper', notes: ['C4'] },
+      },
+      {
+        type: 'exercise',
+        durationSec: 150,
+        config: { exercise: 'staccato-precision', notes: ['C4'] },
+      },
+      {
+        type: 'cooldown',
+        durationSec: 60,
+        config: { mode: 'free-sing' },
+      },
+    ],
+  },
+  {
+    id: 'harmony-focus',
+    name: 'Harmony & Intonation',
+    description: 'Develop harmonic awareness with chords, drones, and pitch precision',
+    segments: [
+      {
+        type: 'warmup',
+        durationSec: 90,
+        config: { pattern: 'ascending-scale' },
+      },
+      {
+        type: 'exercise',
+        durationSec: 180,
+        config: { exercise: 'drone-intonation', notes: ['C4'] },
+      },
+      {
+        type: 'exercise',
+        durationSec: 210,
+        config: { exercise: 'chord-stacker', notes: ['C4'] },
+      },
+      {
+        type: 'challenge-prep',
+        durationSec: 90,
+        config: { challengeCategory: 'harmony' },
+      },
+      {
+        type: 'cooldown',
+        durationSec: 60,
+        config: { mode: 'humming' },
+      },
+    ],
+  },
+  {
+    id: 'range-focus',
+    name: 'Range & Dynamics',
+    description: 'Expand your range and control your dynamics with sirens and swells',
+    segments: [
+      {
+        type: 'warmup',
+        durationSec: 90,
+        config: { pattern: 'sirens' },
+      },
+      {
+        type: 'exercise',
+        durationSec: 240,
+        config: { exercise: 'siren', notes: ['C4'] },
+      },
+      {
+        type: 'exercise',
+        durationSec: 210,
+        config: { exercise: 'dynamic-swell', notes: ['C4'] },
+      },
+      {
+        type: 'challenge-prep',
+        durationSec: 90,
+        config: { challengeCategory: 'range' },
+      },
+      {
+        type: 'cooldown',
+        durationSec: 60,
+        config: { mode: 'free-sing' },
+      },
+    ],
+  },
+  {
+    id: 'full-warmup',
+    name: 'Complete Warm-Up',
+    description: 'A guided full warm-up sequence through all phases',
+    segments: [
+      {
+        type: 'warmup',
+        durationSec: 60,
+        config: { pattern: 'sirens' },
+      },
+      {
+        type: 'exercise',
+        durationSec: 300,
+        config: { exercise: 'routine-runner', notes: ['C4'] },
+      },
+      {
+        type: 'cooldown',
+        durationSec: 60,
+        config: { mode: 'free-sing' },
+      },
+    ],
+  },
 ]
 
 export function getRandomRoutine(): RoutineTemplate {

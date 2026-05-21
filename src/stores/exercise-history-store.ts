@@ -1,5 +1,7 @@
 import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseType } from '@/features/exercises/types'
+import { updatePracticeStreak } from '@/db/services/streak-service'
+import { updateLeaderboardEntry } from '@/db/services/leaderboard-service'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 
@@ -31,6 +33,14 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   setHistory((prev) => {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
+  })
+
+  // Fire-and-forget: update streak and leaderboard in the background
+  void updatePracticeStreak()
+  void updateLeaderboardEntry({
+    score: entry.score,
+    bestScore: entry.score,
+    accuracy: entry.metrics.avgAccuracy ?? entry.score,
   })
 }
 

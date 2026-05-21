@@ -13,6 +13,7 @@ import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { getSessionHistory } from '@/stores'
 import { launchDrill, setActiveTab } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
+import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
@@ -26,6 +27,12 @@ export type ChallengeType =
   | 'speed'
   | 'perfect'
   | 'scales'
+  | 'intervals'
+  | 'harmony'
+  | 'agility'
+  | 'range'
+  | 'dynamic'
+  | 'call-response'
 
 export interface ChallengeProgress {
   /** Challenge ID */
@@ -391,6 +398,24 @@ export const VocalChallenges: Component = () => {
         break
       case 'scales':
         challenges = mockChallenges.filter((c) => c.type === 'scales')
+        break
+      case 'intervals':
+        challenges = mockChallenges.filter((c) => c.type === 'intervals')
+        break
+      case 'harmony':
+        challenges = mockChallenges.filter((c) => c.type === 'harmony')
+        break
+      case 'agility':
+        challenges = mockChallenges.filter((c) => c.type === 'agility')
+        break
+      case 'range':
+        challenges = mockChallenges.filter((c) => c.type === 'range')
+        break
+      case 'dynamic':
+        challenges = mockChallenges.filter((c) => c.type === 'dynamic')
+        break
+      case 'call-response':
+        challenges = mockChallenges.filter((c) => c.type === 'call-response')
         break
     }
 
@@ -1034,6 +1059,12 @@ const challengeCategories = () => [
   { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
   { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
   { id: 'scales' as const, name: 'Scales', icon: IconMusicChallenge, count: 2 },
+  { id: 'intervals' as const, name: 'Intervals', icon: IconArrowUpDown, count: 2 },
+  { id: 'harmony' as const, name: 'Harmony', icon: IconLayers, count: 2 },
+  { id: 'agility' as const, name: 'Agility', icon: IconZap, count: 2 },
+  { id: 'range' as const, name: 'Range', icon: IconSiren, count: 1 },
+  { id: 'dynamic' as const, name: 'Dynamics', icon: IconExpand, count: 1 },
+  { id: 'call-response' as const, name: 'Call & Response', icon: IconReply, count: 1 },
 ]
 
 const mockChallenges: ChallengeProgress[] = [
@@ -1180,6 +1211,114 @@ const mockChallenges: ChallengeProgress[] = [
     progress: 38,
     status: 'in-progress',
     unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
+  },
+  {
+    id: 'c13',
+    type: 'intervals',
+    name: 'Interval Pro',
+    description: 'Achieve 85%+ accuracy on all interval types',
+    icon: IconArrowUpDown,
+    targetScore: 85,
+    currentScore: 60,
+    progress: 71,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
+  },
+  {
+    id: 'c14',
+    type: 'intervals',
+    name: 'Eagle Ear',
+    description: 'Identify and sing 5 different intervals perfectly',
+    icon: IconEagle,
+    targetScore: 90,
+    currentScore: 45,
+    progress: 50,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
+  },
+  {
+    id: 'c15',
+    type: 'harmony',
+    name: 'Chord Whisperer',
+    description: 'Stack 4-note chords with 90%+ accuracy per note',
+    icon: IconLayers,
+    targetScore: 90,
+    currentScore: 55,
+    progress: 61,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 4,
+  },
+  {
+    id: 'c16',
+    type: 'harmony',
+    name: 'Drone Master',
+    description: 'Lock into 6 intervals against a sustained drone',
+    icon: IconDiamond,
+    targetScore: 85,
+    currentScore: 70,
+    progress: 82,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
+  },
+  {
+    id: 'c17',
+    type: 'agility',
+    name: 'Note Ninja',
+    description: 'Hit staccato notes with 90%+ precision',
+    icon: IconZap,
+    targetScore: 90,
+    currentScore: 40,
+    progress: 44,
+    status: 'not-started',
+    unlockedDate: undefined,
+  },
+  {
+    id: 'c18',
+    type: 'agility',
+    name: 'Arpeggio Ace',
+    description: 'Jump through 4 arpeggio patterns flawlessly',
+    icon: IconLayers,
+    targetScore: 85,
+    currentScore: 30,
+    progress: 35,
+    status: 'not-started',
+    unlockedDate: undefined,
+  },
+  {
+    id: 'c19',
+    type: 'range',
+    name: 'Range Rover',
+    description: 'Glide smoothly across a full 2-octave range',
+    icon: IconSiren,
+    targetScore: 80,
+    currentScore: 50,
+    progress: 63,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
+  },
+  {
+    id: 'c20',
+    type: 'dynamic',
+    name: 'Swell Rider',
+    description: 'Hold notes with controlled dynamic swells at 85%+ accuracy',
+    icon: IconExpand,
+    targetScore: 85,
+    currentScore: 35,
+    progress: 41,
+    status: 'not-started',
+    unlockedDate: undefined,
+  },
+  {
+    id: 'c21',
+    type: 'call-response',
+    name: 'Echo Champion',
+    description: 'Reproduce melodic phrases with 90%+ pitch accuracy',
+    icon: IconReply,
+    targetScore: 90,
+    currentScore: 65,
+    progress: 72,
+    status: 'in-progress',
+    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
   },
 ]
 

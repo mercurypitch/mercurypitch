@@ -14,29 +14,59 @@ const drillConfigs: Record<
   { exercise: ExerciseType; notes: string[]; tip: string }
 > = {
   'high-notes': {
-    exercise: 'long-note',
-    notes: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
-    tip: 'Start at C4, step up by semitone only when you hit >90% accuracy',
+    exercise: 'siren',
+    notes: ['C4', 'E4', 'G4', 'C5', 'E5'],
+    tip: 'Glide smoothly up to each target note — focus on tension-free high notes',
   },
   'low-notes': {
-    exercise: 'long-note',
-    notes: ['C4', 'B3', 'A3', 'G3', 'F3', 'E3', 'D3', 'C3'],
-    tip: 'Start at C4, step down by semitone only when you hit >90% accuracy',
+    exercise: 'drone-intonation',
+    notes: ['C3', 'E3', 'G3', 'A3'],
+    tip: 'Sing each interval against the drone — lock in your intonation',
   },
   speed: {
-    exercise: 'slide',
+    exercise: 'staccato-precision',
     notes: ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4'],
-    tip: 'Move quickly and cleanly between notes — no scooping',
+    tip: 'Attack each note crisply and accurately — no scooping',
   },
   perfect: {
-    exercise: 'long-note',
-    notes: ['C4', 'E4', 'G4'],
-    tip: 'Sustain each note with <±15 cents deviation for the full duration',
+    exercise: 'interval-trainer',
+    notes: ['C4', 'E4', 'G4', 'C5'],
+    tip: 'Sing each interval with <±15 cents deviation — precision over power',
   },
   scales: {
-    exercise: 'slide',
+    exercise: 'scale-runner',
     notes: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
-    tip: 'Slide smoothly through each note in the scale',
+    tip: 'Move smoothly through each degree of the scale — even tone throughout',
+  },
+  intervals: {
+    exercise: 'interval-trainer',
+    notes: ['C4', 'E4', 'G4', 'B4', 'C5'],
+    tip: 'Internalize each interval distance — hear the gap before you sing',
+  },
+  harmony: {
+    exercise: 'chord-stacker',
+    notes: ['C4', 'E4', 'G4', 'B4'],
+    tip: 'Build chords one note at a time — feel how each voice fits together',
+  },
+  agility: {
+    exercise: 'arpeggio-jumper',
+    notes: ['C4', 'E4', 'G4', 'C5'],
+    tip: 'Leap between chord tones with clean attack and no sliding',
+  },
+  range: {
+    exercise: 'siren',
+    notes: ['C4', 'E4', 'G4', 'C5', 'E5'],
+    tip: 'Explore your full range — smooth register transitions without breaks',
+  },
+  dynamic: {
+    exercise: 'dynamic-swell',
+    notes: ['C4', 'E4', 'G4'],
+    tip: 'Control your volume from soft to loud and back — steady pitch throughout',
+  },
+  'call-response': {
+    exercise: 'call-response',
+    notes: ['C4', 'D4', 'E4', 'G4'],
+    tip: 'Listen carefully to the phrase, then reproduce it exactly',
   },
 }
 
