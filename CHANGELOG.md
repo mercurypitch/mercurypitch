@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7] - 2026-05-21
+
+### Added
+
+- **Appearance Settings**: Added a new Font Family selector in Settings allowing users to choose between Inter, Outfit, Plus Jakarta Sans, and System Default fonts.
+
+### Fixed
+
+- **Settings UI**: Fixed font dropdown layout issues and adjusted unit spacing for better readability (e.g., "100 ms" instead of "100ms").
+- **Welcome Screen**: Adjusted title styling to correctly inherit CSS variables and sizes from the global app title.
+- **Session Library**: Resolved crashing on initial render when `entries` is temporarily undefined, and fixed layout discrepancies between multi and single modes.
+
 ## [0.3.6] - 2026-05-21
 
 ### Added

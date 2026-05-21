@@ -5,12 +5,13 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import type { LibraryEntry } from '@/components/shared'
+import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
 import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
-import { MelodyPillList } from './MelodyPillList'
 import styles from './SessionEditor.module.css'
 import { SessionEditorTimeline } from './SessionEditorTimeline'
 
@@ -24,6 +25,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     new Set(),
   )
   const [restDurationInput, setRestDurationInput] = createSignal(4000)
+  const [searchQuery, setSearchQuery] = createSignal('')
 
   const sessions = (): PlaybackSession[] => {
     const sessions = melodyStore.getSessions()
@@ -53,6 +55,28 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       melodyStore.loadMelody(firstMelodyItem.melodyId)
     }
   }
+
+  const getNoteCount = (count: number) => {
+    return `${count} note${count === 1 ? '' : 's'}`
+  }
+
+  const filteredMelodyItems = createMemo<LibraryEntry[]>(() => {
+    const query = searchQuery().toLowerCase()
+    const allMelodies = melodyStore.getAllMelodies()
+    const filtered = allMelodies.filter((m) =>
+      m.name.toLowerCase().includes(query),
+    )
+
+    return filtered.map((melody) => ({
+      id: melody.id,
+      kind: 'melody' as const,
+      title: melody.name ?? 'Untitled',
+      meta: `${melody.key} • ${melody.bpm} BPM • ${getNoteCount(melody.items.length)}${(melody.playCount ?? 0) > 0 ? ` • ${melody.playCount} plays` : ''}`,
+      author: melody.author ?? undefined,
+      tags: melody.tags as string[] | undefined,
+      raw: melody,
+    }))
+  })
 
   const sessionItems = () => {
     if (props.currentSession) return props.currentSession
@@ -153,8 +177,14 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     })
   }
 
-  const handleDragStart = (_melodyId: string) => {
-    // Handled by MelodyPillList
+  const handleDragStartTimeline = (_melodyId: string) => {
+    // Handled by MelodyPillList / SessionEditorTimeline
+  }
+
+  const handleDragStartList = (e: DragEvent, melodyId: string) => {
+    if (e.dataTransfer == null) return
+    e.dataTransfer.setData('text/plain', melodyId)
+    e.dataTransfer.effectAllowed = 'copy'
   }
 
   const handleDrop = (melodyId: string, targetItemIndex?: number) => {
@@ -307,11 +337,46 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
           data-testid="session-editor-content"
         >
           <div class={styles.melodyLibrarySection}>
-            <h4 class={styles.sectionTitle}>Melody Library</h4>
-            <MelodyPillList
-              selectedMelodyIds={selectedMelodyIds()}
-              onMelodySelect={handleMelodySelect}
-              onMelodyAdd={_handleAddMelodyToSession}
+            <div
+              style={{
+                display: 'flex',
+                'justify-content': 'space-between',
+                'align-items': 'center',
+                'margin-bottom': '12px',
+              }}
+            >
+              <h4 class={styles.sectionTitle} style={{ margin: 0 }}>
+                Melody Library
+              </h4>
+            </div>
+
+            <input
+              type="text"
+              class="search-input"
+              style={{
+                'margin-bottom': '12px',
+                width: '100%',
+                padding: '8px 12px',
+                'border-radius': '6px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+              }}
+              placeholder="Search melodies..."
+              value={searchQuery()}
+              onInput={(e) => setSearchQuery(e.currentTarget.value)}
+            />
+
+            <MelodyLibraryList
+              mode="multi"
+              kinds={['melody']}
+              entries={filteredMelodyItems()}
+              selectedIds={selectedMelodyIds()}
+              onItemActivate={(item) => {
+                handleMelodySelect(item.id)
+                _handleAddMelodyToSession(item.id)
+              }}
+              onDragStart={(item, e) => handleDragStartList(e, item.id)}
             />
           </div>
 
@@ -330,7 +395,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               onAddRest={handleAddRest}
               restDuration={restDurationInput()}
               onDragOver={_handleDragOver}
-              onDragStart={handleDragStart}
+              onDragStart={handleDragStartTimeline}
               onDrop={handleDrop}
             />
           </div>

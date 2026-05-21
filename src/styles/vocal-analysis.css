@@ -51,7 +51,7 @@
 
 .vocal-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 380px 1fr;
   gap: 24px;
   min-height: calc(100% - 80px);
 }

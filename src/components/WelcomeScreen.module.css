@@ -88,6 +88,14 @@
   letter-spacing: -0.02em;
 }
 
+.welcomeTitle :global(.app-title) {
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: inherit;
+}
+
 .welcomeSubtitle {
   font-size: 0.9rem;
   color: var(--text-muted);

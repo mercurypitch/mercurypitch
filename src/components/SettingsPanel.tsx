@@ -13,9 +13,9 @@ import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
-import type { PitchAlgorithm } from '@/stores/settings-store'
+import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
-import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import styles from './SettingsPanel.module.css'
@@ -23,6 +23,8 @@ import styles from './SettingsPanel.module.css'
 export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
+  const [showFontReloadConfirm, setShowFontReloadConfirm] = createSignal(false)
+  const [pendingFont, setPendingFont] = createSignal<FontFamily | null>(null)
   const [showChangelog, setShowChangelog] = createSignal(false)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
   const bandValues = createMemo(() => {
@@ -430,7 +432,7 @@ export const SettingsPanel: Component = () => {
                 setAttack(parseInt(e.currentTarget.value))
               }}
             />
-            <span class={styles.settingsVal}>{adsr().attack}ms</span>
+            <span class={styles.settingsVal}>{adsr().attack} ms</span>
             <small>Time to reach full volume</small>
           </div>
 
@@ -447,7 +449,7 @@ export const SettingsPanel: Component = () => {
                 setDecay(parseInt(e.currentTarget.value))
               }}
             />
-            <span class={styles.settingsVal}>{adsr().decay}ms</span>
+            <span class={styles.settingsVal}>{adsr().decay} ms</span>
             <small>Time to fall to sustain level</small>
           </div>
 
@@ -464,7 +466,7 @@ export const SettingsPanel: Component = () => {
                 setSustain(parseInt(e.currentTarget.value))
               }}
             />
-            <span class={styles.settingsVal}>{adsr().sustain}%</span>
+            <span class={styles.settingsVal}>{adsr().sustain} %</span>
             <small>Volume during note held</small>
           </div>
 
@@ -481,8 +483,37 @@ export const SettingsPanel: Component = () => {
                 setRelease(parseInt(e.currentTarget.value))
               }}
             />
-            <span class={styles.settingsVal}>{adsr().release}ms</span>
+            <span class={styles.settingsVal}>{adsr().release} ms</span>
             <small>Time to fade after note ends</small>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Appearance</h3>
+          <div class={styles.settingsDivider} />
+
+          <p class={styles.settingsDesc}>
+            Choose the application font. Changing this requires a reload.
+          </p>
+          <div class={styles.settingsRow}>
+            <label for="font-select">Font Family</label>
+            <SafeSelect
+              value={fontFamily()}
+              onChange={(e) => {
+                const newFont = e.target.value as FontFamily
+                if (newFont !== fontFamily()) {
+                  setPendingFont(newFont)
+                  setShowFontReloadConfirm(true)
+                }
+              }}
+              id="font-select"
+            >
+              <option value="inter">Inter (Clean & Modern)</option>
+              <option value="outfit">Outfit (Creative)</option>
+              <option value="plus-jakarta-sans">Plus Jakarta Sans</option>
+              <option value="system">System Default</option>
+            </SafeSelect>
           </div>
         </div>
 
@@ -780,9 +811,9 @@ export const SettingsPanel: Component = () => {
               }}
             />
             <span class={styles.settingsVal}>
-              {playbackSpeed().toFixed(2)}x
+              {playbackSpeed().toFixed(2)} x
             </span>
-            <small>0.25x = slowest, 2.0x = fastest</small>
+            <small>0.25 x = slowest, 2.0 x = fastest</small>
           </div>
         </div>
 
@@ -829,7 +860,7 @@ export const SettingsPanel: Component = () => {
                 setReverbWetness(parseInt(e.currentTarget.value))
               }}
             />
-            <span class={styles.settingsVal}>{reverbConfig().wetness}%</span>
+            <span class={styles.settingsVal}>{reverbConfig().wetness} %</span>
             <small>How much reverb vs dry signal</small>
           </div>
         </div>
@@ -940,6 +971,43 @@ export const SettingsPanel: Component = () => {
                     }}
                   >
                     Reset All Data
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
+
+          {/* Font Reload Confirmation Modal */}
+          <Show when={showFontReloadConfirm()}>
+            <div class={styles.dangerConfirmOverlay}>
+              <div
+                class={styles.dangerConfirmBox}
+                role="dialog"
+                aria-modal="true"
+              >
+                <h4 class={styles.dangerConfirmTitle}>Reload Required</h4>
+                <p class={styles.dangerConfirmText}>
+                  Changing the font requires a page reload so the pitch canvases
+                  can redraw correctly. Do you want to reload now?
+                </p>
+                <div class={styles.dangerConfirmActions}>
+                  <button
+                    class={styles.dangerBtnSecondary}
+                    onClick={() => setShowFontReloadConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class={styles.dangerBtnPrimary}
+                    onClick={() => {
+                      const pf = pendingFont()
+                      if (pf) {
+                        setFontFamily(pf)
+                        window.location.reload()
+                      }
+                    }}
+                  >
+                    Yes, Reload
                   </button>
                 </div>
               </div>

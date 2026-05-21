@@ -70,7 +70,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         {/* Hero */}
         <div class={styles.welcomeHero} style="margin-bottom: 16px;">
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
-            Welcome to MercuryPitch
+            Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
           <p class={styles.welcomeSubtitle}>
             Your voice, visualized and refined
