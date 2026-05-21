@@ -46,6 +46,12 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let running = false
   let lastMicState = false
 
+  // Re-entrancy guards. If a reactive cycle causes these functions to be
+  // called recursively, we log and bail instead of cascading.
+  let completeDepth = 0
+  let resetDepth = 0
+  let startDepth = 0
+
   // Wire mic state callback
   practiceEngine.setCallbacks({
     onMicStateChange: (active) => {
@@ -61,15 +67,23 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     // which races with explicit handleStart() calls from click handlers.
     if (state().status !== 'idle') return
 
-    setState({
-      status: 'count-in',
-      currentScore: 0,
-      elapsedMs: 0,
-      metrics: {},
+    if (startDepth > 0) {
+      console.warn('[useBaseExercise] re-entrant start() call — bailing')
+      return
+    }
+    startDepth++
+
+    batch(() => {
+      setState({
+        status: 'count-in',
+        currentScore: 0,
+        elapsedMs: 0,
+        metrics: {},
+      })
+      setPitchHistory([])
+      setCurrentPitch(null)
+      setResult(null)
     })
-    setPitchHistory([])
-    setCurrentPitch(null)
-    setResult(null)
 
     if (!practiceEngine.isMicActive()) {
       const ok = await practiceEngine.startMic()
@@ -80,6 +94,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         batch(() => {
           setState((s) => ({ ...s, status: 'idle' }))
         })
+        startDepth--
         return
       }
     }
@@ -96,29 +111,36 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       const now = performance.now()
       const elapsed = now - startTime
 
-      if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
-        setCurrentPitch({
-          freq: pitch.frequency,
-          clarity: pitch.clarity,
-          noteName: pitch.noteName,
-        })
-        setFrequencyData(audioEngine.getFrequencyData())
+      batch(() => {
+        if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
+          setCurrentPitch({
+            freq: pitch.frequency,
+            clarity: pitch.clarity,
+            noteName: pitch.noteName,
+          })
+          setFrequencyData(audioEngine.getFrequencyData())
 
-        setPitchHistory((prev) => {
-          const next = [
-            ...prev,
-            { freq: pitch.frequency, time: elapsed / 1000, cents: pitch.cents },
-          ]
-          return next.length > MAX_PITCH_HISTORY
-            ? next.slice(-MAX_PITCH_HISTORY)
-            : next
-        })
-      }
+          setPitchHistory((prev) => {
+            const next = [
+              ...prev,
+              {
+                freq: pitch.frequency,
+                time: elapsed / 1000,
+                cents: pitch.cents,
+              },
+            ]
+            return next.length > MAX_PITCH_HISTORY
+              ? next.slice(-MAX_PITCH_HISTORY)
+              : next
+          })
+        }
 
-      setState((s) => ({ ...s, elapsedMs: elapsed }))
+        setState((s) => ({ ...s, elapsedMs: elapsed }))
+      })
       animId = requestAnimationFrame(loop)
     }
     animId = requestAnimationFrame(loop)
+    startDepth--
   }
 
   function stop(): void {
@@ -129,6 +151,11 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 
   function completeWithResult(exerciseResult: ExerciseResult): void {
+    if (completeDepth > 0) {
+      console.warn('[useBaseExercise] re-entrant completeWithResult() call — bailing')
+      return
+    }
+    completeDepth++
     running = false
     cancelAnimationFrame(animId)
     const finalElapsed = performance.now() - startTime
@@ -141,9 +168,15 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         metrics: exerciseResult.metrics,
       })
     })
+    completeDepth--
   }
 
   function reset(): void {
+    if (resetDepth > 0) {
+      console.warn('[useBaseExercise] re-entrant reset() call — bailing')
+      return
+    }
+    resetDepth++
     running = false
     cancelAnimationFrame(animId)
     practiceEngine.stopMic()
@@ -154,6 +187,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       setResult(null)
       setTargetPitch(null)
     })
+    resetDepth--
   }
 
   function commitResult(exerciseResult: ExerciseResult): void {
@@ -196,6 +230,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _setRunning: (v: boolean) => {
       running = v
     },
+    _getDepths: () => ({ completeDepth, resetDepth, startDepth }),
   }
 }
 

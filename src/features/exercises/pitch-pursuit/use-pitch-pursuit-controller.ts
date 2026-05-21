@@ -1,3 +1,4 @@
+import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
@@ -136,13 +137,15 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     // Update live metrics
     const total = hits + misses
     const score = total > 0 ? Math.round((hits / total) * 100) : 0
-    base._updateScore(score)
-    base._updateMetrics({
-      hits,
-      misses,
-      combo,
-      maxCombo,
-      totalNotes: total,
+    batch(() => {
+      base._updateScore(score)
+      base._updateMetrics({
+        hits,
+        misses,
+        combo,
+        maxCombo,
+        totalNotes: total,
+      })
     })
 
     // End condition

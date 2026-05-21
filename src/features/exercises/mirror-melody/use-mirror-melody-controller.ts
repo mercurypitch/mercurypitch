@@ -1,3 +1,4 @@
+import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_MIRROR_MELODY } from '../types'
@@ -50,11 +51,13 @@ export function useMirrorMelodyController(
     }
 
     const midi = melody[noteIndex]
-    base._setTargetPitch(midiToFreq(midi))
-    base._updateMetrics({
-      noteIndex,
-      melodyLength: melody.length,
-      currentMidi: midi,
+    batch(() => {
+      base._setTargetPitch(midiToFreq(midi))
+      base._updateMetrics({
+        noteIndex,
+        melodyLength: melody.length,
+        currentMidi: midi,
+      })
     })
 
     void audioEngine.playTone(midiToFreq(midi), TONE_DURATION_MS).then(() => {
@@ -101,13 +104,14 @@ export function useMirrorMelodyController(
 
     if (noteScores.length > 0) {
       const avg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
-      base._updateScore(Math.round(avg))
+      batch(() => {
+        base._updateScore(Math.round(avg))
+        base._updateMetrics({
+          lastNoteScore: noteScore,
+          notesCompleted: noteScores.length,
+        })
+      })
     }
-
-    base._updateMetrics({
-      lastNoteScore: noteScore,
-      notesCompleted: noteScores.length,
-    })
 
     noteIndex++
     phaseTimer = setTimeout(() => playCurrentNote(), 600)

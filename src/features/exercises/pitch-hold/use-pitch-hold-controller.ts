@@ -1,3 +1,4 @@
+import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
@@ -52,11 +53,13 @@ export function usePitchHoldController(base: BaseExerciseController) {
       }
 
       const zonePct = totalFrames > 0 ? (inZoneFrames / totalFrames) * 100 : 0
-      base._updateScore(Math.round(zonePct))
-      base._updateMetrics({
-        zoneRadius,
-        zonePct: Math.round(zonePct),
-        elapsedMs: Math.round(elapsed),
+      batch(() => {
+        base._updateScore(Math.round(zonePct))
+        base._updateMetrics({
+          zoneRadius,
+          zonePct: Math.round(zonePct),
+          elapsedMs: Math.round(elapsed),
+        })
       })
     }, 1000 / SCORE_UPDATE_HZ)
   }
