@@ -45,6 +45,7 @@ export function useChordStackerController(
   let noteScores: number[] = []
   let allRoundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let baseMidi = 60
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)

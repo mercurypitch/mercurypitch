@@ -32,7 +32,7 @@ export function useDroneIntonationController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  let dronePlaying = false
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
@@ -58,7 +58,6 @@ export function useDroneIntonationController(
     const targetMidi = droneMidi + interval.semitones
 
     // Start drone
-    dronePlaying = true
     void audioEngine.playTone(midiToFreq(droneMidi), MATCH_WINDOW_MS + 2000)
 
     batch(() => {
@@ -117,7 +116,6 @@ export function useDroneIntonationController(
   }
 
   function stopDrone(): void {
-    dronePlaying = false
     audioEngine.stopTone?.(100)
   }
 

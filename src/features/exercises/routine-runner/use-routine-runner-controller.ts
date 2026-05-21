@@ -24,6 +24,7 @@ export function useRoutineRunnerController(
   let noteIndex = 0
   let allScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 

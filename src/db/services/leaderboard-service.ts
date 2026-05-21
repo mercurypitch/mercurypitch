@@ -46,7 +46,7 @@ export async function updateLeaderboardEntry(
       entry.accuracy = Math.round((entry.accuracy + input.accuracy) / 2)
       entry.totalSessions += 1
       entry.streak = streak
-      await repo.save(entry.id!, entry)
+      await repo.update(entry.id!, entry)
     } else {
       const displayName = `Singer-${userId.slice(0, 6)}`
       const allEntries = await repo.findAll({

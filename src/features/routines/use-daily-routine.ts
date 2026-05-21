@@ -103,6 +103,18 @@ export function useDailyRoutine() {
       .reduce((sum, s) => sum + s.durationSec, 0)
   })
 
+  const segmentStatuses = createMemo(() => {
+    const t = template()
+    if (!t) return []
+    const comp = completedSegments()
+    const curr = currentSegmentIndex()
+    return t.segments.map((seg, i) => ({
+      seg,
+      done: comp.includes(i),
+      current: i === curr,
+    }))
+  })
+
   return {
     template,
     currentSegment,
@@ -112,6 +124,7 @@ export function useDailyRoutine() {
     progress,
     totalDurationSec,
     remainingDurationSec,
+    segmentStatuses,
     generate,
     startOrResume,
     completeSegment,

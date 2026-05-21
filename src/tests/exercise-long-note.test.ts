@@ -40,6 +40,8 @@ function createMockBase(
     _updateScore: () => {},
     _updateMetrics: () => {},
     _completeWithResult: () => {},
+    _registerDispose: () => {},
+    _getDepths: () => ({ completeDepth: 0, resetDepth: 0, startDepth: 0 }),
     state: () => ({
       status: 'active',
       currentScore: 0,

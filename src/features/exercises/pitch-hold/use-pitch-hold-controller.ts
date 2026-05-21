@@ -19,6 +19,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
   let inZoneFrames = 0
   let totalFrames = 0
   let scoreUpdateTimer: ReturnType<typeof setInterval> | undefined
+  base._registerDispose(() => { clearInterval(scoreUpdateTimer); scoreUpdateTimer = undefined })
 
   function setTarget(midi: number): void {
     targetMidi = midi

@@ -97,10 +97,11 @@ export const DailyRoutinePanel: Component = () => {
             </div>
 
             <div class="daily-routine-segments">
-              <For each={routine.template()!.segments}>
-                {(seg, i) => {
-                  const done = routine.completedSegments().includes(i())
-                  const current = i() === routine.currentSegmentIndex()
+              <For each={routine.segmentStatuses()}>
+                {(item) => {
+                  const seg = item.seg
+                  const done = item.done
+                  const current = item.current
                   return (
                     <div
                       class={`daily-routine-segment${done ? ' done' : ''}${current ? ' current' : ''}`}

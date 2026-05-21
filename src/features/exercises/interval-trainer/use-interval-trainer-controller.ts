@@ -34,6 +34,7 @@ export function useIntervalTrainerController(
   let roundIndex = 0
   let roundScores: Array<{ note1: number; note2: number }> = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let matchStartTime = 0
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)

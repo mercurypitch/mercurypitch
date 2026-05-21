@@ -3,7 +3,6 @@ import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DYNAMIC_SWELL } from '../types'
 
-const ROUNDS = 4
 const NOTE_PLAY_DURATION_MS = 800
 const HOLD_DURATION_MS = 8000
 
@@ -17,6 +16,7 @@ export function useDynamicSwellController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let holdStartTime = 0
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)

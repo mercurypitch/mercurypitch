@@ -1,4 +1,4 @@
-import { type Component, createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -20,14 +20,6 @@ const NOTE_OPTIONS = [
   'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3',
   'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5',
 ]
-
-const CHORD_LABELS: Record<string, string> = {
-  maj7: 'Major 7th',
-  min7: 'Minor 7th',
-  dom7: 'Dominant 7th',
-  dim7: 'Diminished 7th',
-  maj6: 'Major 6th',
-}
 
 const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal('C4')
@@ -75,7 +67,6 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 5
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
-  const notesCompleted = () => base.state().metrics.notesCompleted ?? 0
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {

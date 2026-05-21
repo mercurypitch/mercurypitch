@@ -15,7 +15,6 @@ interface PhraseNote {
 }
 
 function generatePhrase(baseMidi: number, length: number): PhraseNote[] {
-  const intervals = [0, 2, 3, 4, 5, 7, 9, 12]
   const notes: PhraseNote[] = [{ midi: baseMidi, durationMs: 500 }]
   for (let i = 1; i < length; i++) {
     const prev = notes[i - 1].midi
@@ -33,9 +32,9 @@ export function useCallResponseController(
 ) {
   let phrases: PhraseNote[][] = []
   let roundIndex = 0
-  let noteIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let matchStartTime = 0
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -57,7 +56,6 @@ export function useCallResponseController(
     }
 
     const phrase = phrases[roundIndex]
-    noteIndex = 0
 
     batch(() => {
       base._updateMetrics({

@@ -45,6 +45,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let startTime = 0
   let running = false
   let lastMicState = false
+  let disposeFns: Array<() => void> = []
 
   // Re-entrancy guards. If a reactive cycle causes these functions to be
   // called recursively, we log and bail instead of cascading.
@@ -179,6 +180,16 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     resetDepth++
     running = false
     cancelAnimationFrame(animId)
+
+    // Stop any currently-playing tone immediately
+    audioEngine.stopTone()
+
+    // Clear all controller timers registered via _registerDispose
+    for (const fn of disposeFns) {
+      try { fn() } catch { /* ignore */ }
+    }
+    disposeFns = []
+
     practiceEngine.stopMic()
     batch(() => {
       setState({ status: 'idle', currentScore: 0, elapsedMs: 0, metrics: {} })
@@ -229,6 +240,17 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _isRunning: () => running,
     _setRunning: (v: boolean) => {
       running = v
+      if (!v) {
+        // When external caller sets running=false, clear controller timers
+        for (const fn of disposeFns) {
+          try { fn() } catch { /* ignore */ }
+        }
+        disposeFns = []
+        audioEngine.stopTone()
+      }
+    },
+    _registerDispose: (fn: () => void) => {
+      disposeFns.push(fn)
     },
     _getDepths: () => ({ completeDepth, resetDepth, startDepth }),
   }

@@ -65,8 +65,6 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (props)
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 6
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
-  const lastNote1Score = () => base.state().metrics.lastNote1Score ?? 0
-  const lastNote2Score = () => base.state().metrics.lastNote2Score ?? 0
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {
