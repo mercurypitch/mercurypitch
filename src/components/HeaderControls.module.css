@@ -1144,22 +1144,22 @@
   .practiceHeaderBar {
     padding: 8px;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .essentialControls {
     flex-wrap: nowrap;
     flex-shrink: 0;
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    justify-content: flex-start;
   }
 
   .secondaryControls {
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: auto;
   }
 
   .controlGroup {
@@ -1233,7 +1233,7 @@
 /* Small phones (max-width: 390px) — single essential row */
 @media (max-width: 390px) {
   .practiceHeaderBar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: 6px;
     gap: 6px;
   }
@@ -1241,8 +1241,8 @@
   .essentialControls {
     flex-wrap: nowrap;
     flex-shrink: 0;
-    width: 100%;
-    justify-content: space-evenly;
+    width: auto;
+    justify-content: flex-start;
   }
 
   .controlGroup {

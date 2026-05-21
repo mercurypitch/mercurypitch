@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2026-05-21
+
+### Added
+
+- **Shazam Sing**: Debug panel is now visible by default for all users to aid in troubleshooting
+
+### Changed
+
+- **Karaoke Tab**: Redesigned tab icon to feature a clean, centered stem waveform
+- **Karaoke UI**: Centered the main content area with a bounded width for better readability on large screens, and expanded the primary dark background color to cover the entire page
+- **UI / Styling**: Replaced the plain header border in the Karaoke tab with a stylish `FancyDivider` component
+- **Onboarding**: Moved the "Start Singing" and "Take a Tour" buttons to the top of the Welcome modal to prioritize primary actions
+- **Navigation**: The "Analysis" advanced tab is now unblocked and available to all users by default
+
+### Fixed
+
+- **Global Error Handling**: Upgraded `TabErrorBoundary` to utilize the styled `CrashModal` overlay, ensuring tab crashes display proper stack traces and recovery buttons instead of unstyled placeholders
+- **Linting & Code Quality**: Resolved strict boolean expression warnings in `AppErrorBoundary` and fixed incorrect HTML comments inside JSX blocks in `AppNavTabs`
+
 ## [0.3.5] - 2026-05-19
 
 ### Added

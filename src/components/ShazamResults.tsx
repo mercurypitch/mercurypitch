@@ -7,7 +7,6 @@
 // ============================================================
 
 import { createSignal, For, lazy, Show, Suspense } from 'solid-js'
-import { IS_DEV } from '@/lib/defaults'
 import { getFingerprintIndex } from '@/lib/shazam/melody-fingerprints'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import styles from './ShazamResults.module.css'
@@ -44,8 +43,7 @@ function confidenceLabel(pct: number): string {
 }
 
 export function ShazamResults(props: ShazamResultsProps) {
-  const debugEnabled = (): boolean =>
-    IS_DEV || localStorage.getItem('pitchperfect_shazam_debug_force') === 'true'
+  const debugEnabled = (): boolean => true
 
   const [showDebug, setShowDebug] = createSignal(
     localStorage.getItem('pitchperfect_shazam_debug') === 'true',

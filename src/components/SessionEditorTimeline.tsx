@@ -346,7 +346,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
           {props.sessionItems.length > 0 && (
             <div
-              class="timeline-drop-zone rest-zone"
+              class="timeline-drop-zone rest-zone end-zone"
               onDragOver={(e) => handleDragOver(e, props.sessionItems.length)}
               onDrop={(e) => handleDrop(e, props.sessionItems.length)}
               onClick={() =>

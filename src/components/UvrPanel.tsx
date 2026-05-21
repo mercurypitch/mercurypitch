@@ -16,6 +16,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
+import { FancyDivider } from '@/components/shared'
 import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
@@ -726,21 +727,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   return (
     <div class="uvr-panel">
-      {/* Header */}
-      <div class="panel-header">
+      <div class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}>
+        {/* Header */}
+        <div class="panel-header">
         <div class="header-left">
           <div
             class="header-title-group"
             style="display: flex; align-items: center; gap: 0.5rem;"
           >
-            <div class="header-icon">
-              <svg viewBox="0 0 24 24" width="16" height="16">
-                <path
-                  fill="currentColor"
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"
-                />
-              </svg>
-            </div>
             <h3>Shazam Sing</h3>
           </div>
           <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
@@ -865,6 +859,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </div>
       </div>
+      
+      <FancyDivider class="uvr-header-divider" />
 
       {/* Main Content */}
       <div class="panel-content">
@@ -1281,6 +1277,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           Generating MIDI... {midiExportProgress()}%
         </div>
       </Show>
+      </div>
     </div>
   )
 }

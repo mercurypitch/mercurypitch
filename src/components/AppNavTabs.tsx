@@ -124,15 +124,21 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           onClick={() => void props.handleTabChange(TAB_KARAOKE)}
           aria-label="Karaoke"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
-            <path
-              fill="currentColor"
-              d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
-            />
-            <path
-              fill="currentColor"
-              d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
-            />
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            class="tab-icon"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            {/* Waveform (Stem Mixer) */}
+            <line x1="8" y1="9" x2="8" y2="15"></line>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="16" y1="10" x2="16" y2="14"></line>
           </svg>
           {props.tabLabel(TAB_KARAOKE)}
         </button>
@@ -233,23 +239,21 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           </svg>
           {props.tabLabel(TAB_COMPOSE)}
         </button>
-        <Show when={props.advancedFeaturesEnabled()}>
-          <button
-            id="tab-analysis"
-            data-testid="tab-analysis"
-            class={`app-tab ${props.activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
-            onClick={() => void props.handleTabChange(TAB_ANALYSIS)}
-            aria-label="Vocal analysis"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
-              <path
-                fill="currentColor"
-                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-              />
-            </svg>
-            {props.tabLabel(TAB_ANALYSIS)}
-          </button>
-        </Show>
+        <button
+          id="tab-analysis"
+          data-testid="tab-analysis"
+          class={`app-tab ${props.activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
+          onClick={() => void props.handleTabChange(TAB_ANALYSIS)}
+          aria-label="Vocal analysis"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+            <path
+              fill="currentColor"
+              d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+            />
+          </svg>
+          {props.tabLabel(TAB_ANALYSIS)}
+        </button>
         <button
           id="tab-settings"
           data-testid="tab-settings"

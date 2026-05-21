@@ -19,8 +19,16 @@
 .timeline-items {
   display: flex;
   align-items: stretch;
-  min-width: min-content;
+  min-width: 100%;
+  width: max-content;
   padding: 8px;
+}
+
+.end-zone {
+  flex-grow: 1;
+  min-width: 48px;
+  align-items: flex-start;
+  padding-left: 12px;
 }
 
 .timeline-item {

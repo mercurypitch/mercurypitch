@@ -108,6 +108,19 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </div>
         </div>
 
+        {/* Actions */}
+        <div class={styles.welcomeActions} style="margin-bottom: 20px;">
+          <button class={styles.welcomeCta} onClick={handleClose}>
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path fill="currentColor" d="M8 5v14l11-7z" />
+            </svg>
+            Start Singing
+          </button>
+          <button class={styles.welcomeTourBtn} onClick={handleTakeTour}>
+            Take a Tour
+          </button>
+        </div>
+
         {/* Mic Permission */}
         <div
           class={styles.welcomeMicSection}
@@ -159,7 +172,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         {/* Features - Compact Horizontal */}
         <div
           class={styles.welcomeFeatures}
-          style="flex-direction: row; gap: 8px; margin-bottom: 20px;"
+          style="flex-direction: row; gap: 8px;"
         >
           <div
             class={styles.welcomeFeature}
@@ -212,19 +225,6 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             </div>
             <strong style="font-size: 0.75rem;">Improve</strong>
           </div>
-        </div>
-
-        {/* Actions */}
-        <div class={styles.welcomeActions}>
-          <button class={styles.welcomeCta} onClick={handleClose}>
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path fill="currentColor" d="M8 5v14l11-7z" />
-            </svg>
-            Start Singing
-          </button>
-          <button class={styles.welcomeTourBtn} onClick={handleTakeTour}>
-            Take a Tour
-          </button>
         </div>
       </div>
 
