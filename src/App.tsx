@@ -286,7 +286,12 @@ const AppShell: Component<AppProps> = (props) => {
       let availableTabs = TABS_ORDER
       if (!advancedFeaturesEnabled()) {
         availableTabs = TABS_ORDER.filter(
-          (t) => t !== TAB_PITCH_TEST && t !== TAB_PITCH_ALGO,
+          (t) =>
+            t !== TAB_COMMUNITY &&
+            t !== TAB_LEADERBOARD &&
+            t !== TAB_CHALLENGES &&
+            t !== TAB_PITCH_TEST &&
+            t !== TAB_PITCH_ALGO,
         )
       }
 
