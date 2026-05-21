@@ -542,16 +542,16 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
 
     // Mode buttons (Once / Repeat / Practice)
-    await expect(page.locator('#btn-once')).toBeVisible()
+    await expect(page.getByTestId('btn-once')).toBeVisible()
   })
 
   test('Practice mode buttons are clickable', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#btn-once')).toBeVisible()
-    await expect(page.locator('#btn-repeat')).toBeVisible()
-    await expect(page.locator('#btn-session')).toBeVisible()
+    await expect(page.getByTestId('btn-once')).toBeVisible()
+    await expect(page.getByTestId('btn-repeat')).toBeVisible()
+    await expect(page.getByTestId('btn-session')).toBeVisible()
   })
 
   // ==========================================

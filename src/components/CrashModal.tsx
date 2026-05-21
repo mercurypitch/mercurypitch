@@ -89,7 +89,20 @@ export const CrashModal: Component = () => {
   const errorStack = createMemo(() => {
     const err = error()
     if (err === null) return ''
-    return err.error?.stack ?? ''
+    if (err.error?.stack !== undefined && err.error.stack !== '')
+      return err.error.stack
+
+    // Fallback for browsers/environments (like iOS Safari) that may omit .stack
+    try {
+      const serialized = JSON.stringify(
+        err.error,
+        Object.getOwnPropertyNames(err.error),
+        2,
+      )
+      return `No stack trace available. Error details:\n${serialized}`
+    } catch {
+      return 'No stack trace available.'
+    }
   })
 
   return (
@@ -242,7 +255,7 @@ export const CrashModal: Component = () => {
 
               <div class={styles.crashSecondaryActions}>
                 <a
-                  href="https://github.com/Komediruzecki/pitch-perfect/issues/new"
+                  href="https://github.com/mercurypitch/mercurypitch/issues/new"
                   target="_blank"
                   rel="noopener noreferrer"
                   class={styles.crashActionLink}

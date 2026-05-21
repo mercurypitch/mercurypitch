@@ -4,6 +4,7 @@
 
 import type { Accessor, Component, JSX, Setter } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { MagnifyingGlass } from './icons'
@@ -729,7 +730,7 @@ export const StemMixerLyricsPanelBody: Component<
                     Mark as New Block
                   </button>
                   <Show when={props.blocks().length > 0}>
-                    <select
+                    <SafeSelect
                       class="sm-lyrics-mark-add-select"
                       onChange={(e) => {
                         const val = e.currentTarget.value
@@ -745,7 +746,7 @@ export const StemMixerLyricsPanelBody: Component<
                       <For each={props.blocks()}>
                         {(b) => <option value={b.id}>{b.label}</option>}
                       </For>
-                    </select>
+                    </SafeSelect>
                   </Show>
                 </div>
               </Show>

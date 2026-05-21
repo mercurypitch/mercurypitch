@@ -30,6 +30,14 @@ const setupGlobalErrorHandler = () => {
         event.preventDefault()
         return
       }
+      
+      // Ignore cross-origin or browser-injected script errors (e.g. Firefox iOS)
+      // that do not provide an error object. These are not app crashes.
+      if (msg === 'Script error.' && !event.error) {
+        event.preventDefault()
+        console.warn('Ignored external Script error.')
+        return
+      }
     }
 
     const err: Error =

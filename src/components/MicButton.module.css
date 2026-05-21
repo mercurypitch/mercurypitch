@@ -45,7 +45,7 @@
 }
 
 @media (max-width: 480px) {
-  .ctrlBtn > span {
-    display: none;
+  .ctrlBtn {
+    padding: 6px;
   }
 }

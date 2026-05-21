@@ -240,15 +240,30 @@
 
 /* Mode toggle buttons (Once / Repeat / Session) */
 .modeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   padding: 6px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: var(--text-body);
+  font-size: 0.78rem;
+  line-height: 1;
   cursor: pointer;
   transition: var(--transition-fast);
   flex-shrink: 0;
+  height: auto;
+}
+
+@media (max-width: 600px) {
+  .modeBtn {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    gap: 4px;
+    border-radius: 5px;
+  }
 }
 
 .modeBtn:hover {
@@ -1127,24 +1142,24 @@
 /* Tablets (max-width: 768px) — compact layout */
 @media (max-width: 768px) {
   .practiceHeaderBar {
-    padding: 6px;
-    gap: 6px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    padding: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
     flex-direction: row;
-    flex-shrink: 1;
-  }
-
-  .practiceHeaderBar::-webkit-scrollbar {
-    display: none;
+    justify-content: center;
   }
 
   .essentialControls {
     flex-wrap: nowrap;
     flex-shrink: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .secondaryControls {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
   }
 
   .controlGroup {
@@ -1218,21 +1233,16 @@
 /* Small phones (max-width: 390px) — single essential row */
 @media (max-width: 390px) {
   .practiceHeaderBar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    flex-shrink: 1;
-  }
-
-  .practiceHeaderBar::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    padding: 6px;
+    gap: 6px;
   }
 
   .essentialControls {
     flex-wrap: nowrap;
     flex-shrink: 0;
+    width: 100%;
+    justify-content: space-evenly;
   }
 
   .controlGroup {
@@ -1266,3 +1276,19 @@
   }
 }
 /* (mobile compact styles merged into the 768px block above) */
+
+/* ============================================================
+// Landscape Layout Overrides
+// ============================================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .secondaryControls {
+    display: none !important;
+  }
+  .practiceHeaderBar {
+    flex-wrap: nowrap !important;
+    padding: 2px 6px !important;
+  }
+  .essentialControls {
+    width: auto !important;
+  }
+}

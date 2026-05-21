@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
@@ -101,7 +102,7 @@ export const SettingsPanel: Component = () => {
 
           <div class={styles.settingsRow}>
             <label for="preset-select">Environment</label>
-            <select
+            <SafeSelect
               id="preset-select"
               value={sensitivityPreset()}
               onChange={(e) => {
@@ -113,7 +114,7 @@ export const SettingsPanel: Component = () => {
               <option value="quiet">Quiet Room (Studio)</option>
               <option value="home">Some Noise (At Home)</option>
               <option value="noisy">High Noise (Outside)</option>
-            </select>
+            </SafeSelect>
           </div>
         </div>
 
@@ -169,7 +170,7 @@ export const SettingsPanel: Component = () => {
 
           <div class={styles.settingsRow}>
             <label for="pitch-algorithm-select">Algorithm</label>
-            <select
+            <SafeSelect
               id="pitch-algorithm-select"
               value={pitchAlgorithm()}
               onChange={(e) => {
@@ -178,7 +179,7 @@ export const SettingsPanel: Component = () => {
             >
               <option value="yin">YIN (Classic)</option>
               <option value="mpm">MPM (McLeod)</option>
-            </select>
+            </SafeSelect>
           </div>
 
           <Show when={pitchAlgorithm() === 'mpm'}>
@@ -650,7 +651,7 @@ export const SettingsPanel: Component = () => {
           <div class={styles.settingsRow}>
             <label for="vis-theme">Theme</label>
             <label>
-              <select
+              <SafeSelect
                 id="vis-theme"
                 value={theme()}
                 onChange={(e) => {
@@ -659,7 +660,7 @@ export const SettingsPanel: Component = () => {
               >
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
-              </select>
+              </SafeSelect>
             </label>
             <small>Switch between dark and light mode</small>
           </div>
@@ -795,7 +796,7 @@ export const SettingsPanel: Component = () => {
 
           <div class={styles.settingsRow}>
             <label for="reverb-type">Type</label>
-            <select
+            <SafeSelect
               id="reverb-type"
               value={reverbConfig().type}
               onChange={(e) => {
@@ -812,7 +813,7 @@ export const SettingsPanel: Component = () => {
               <option value="room">Room</option>
               <option value="hall">Hall</option>
               <option value="cathedral">Cathedral</option>
-            </select>
+            </SafeSelect>
           </div>
 
           <div class={styles.settingsRow}>

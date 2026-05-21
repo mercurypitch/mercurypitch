@@ -97,9 +97,9 @@ test.describe('Critical Flows — GH #121', () => {
     test('Practice mode buttons (Once / Repeat / Practice) switch modes', async ({
       page,
     }) => {
-      const btnOnce = page.locator('#btn-once')
-      const btnRepeat = page.locator('#btn-repeat')
-      const btnPractice = page.locator('#btn-session')
+      const btnOnce = page.getByTestId('btn-once')
+      const btnRepeat = page.getByTestId('btn-repeat')
+      const btnPractice = page.getByTestId('btn-session')
 
       await expect(btnOnce).toBeVisible()
       await expect(btnRepeat).toBeVisible()
@@ -454,7 +454,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Click Repeat mode button to reveal cycle info
-      await page.locator('#btn-repeat').click()
+      await page.getByTestId('btn-repeat').click()
       await page.waitForTimeout(300)
 
       // Cycle progress pill should be visible
@@ -467,7 +467,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Click Repeat mode button to reveal cycles input
-      await page.locator('#btn-repeat').click()
+      await page.getByTestId('btn-repeat').click()
       await page.waitForTimeout(300)
 
       const cyclesInput = page.locator('#cycles')
@@ -499,7 +499,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Click Session mode button to reveal sub-mode selector
-      await page.locator('#btn-session').click()
+      await page.getByTestId('btn-session').click()
       await page.waitForTimeout(300)
 
       const subModeSelect = page.locator('#practice-sub-mode')

@@ -7,6 +7,7 @@ import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { Tooltip } from '@/components/Tooltip'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { bpm, enterFocusMode, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
@@ -459,6 +460,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class={styles.modeGroup}>
             <button
               id="btn-once"
+              data-testid="btn-once"
+              title="Play Once"
               class={styles.modeBtn}
               classList={{
                 [styles.active]: props.playMode() === PLAYBACK_MODE_ONCE,
@@ -467,10 +470,24 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange(PLAYBACK_MODE_ONCE)
               }}
             >
-              Once
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M10 9l2-2v10"></path>
+              </svg>
             </button>
             <button
               id="btn-repeat"
+              data-testid="btn-repeat"
+              title="Repeat Loop"
               class={styles.modeBtn}
               classList={{
                 [styles.active]: props.playMode() === PLAYBACK_MODE_REPEAT,
@@ -479,12 +496,28 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange(PLAYBACK_MODE_REPEAT)
               }}
             >
-              Repeat
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M17 2l4 4-4 4"></path>
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+                <path d="M7 22l-4-4 4-4"></path>
+                <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+              </svg>
             </button>
             {/* Session button only on practice tab */}
             <Show when={isPracticeTab()}>
               <button
                 id="btn-session"
+                data-testid="btn-session"
+                title="Practice Session"
                 class={styles.modeBtn}
                 classList={{
                   [styles.active]: props.playMode() === PLAYBACK_MODE_SESSION,
@@ -493,7 +526,23 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   props.playModeChange(PLAYBACK_MODE_SESSION)
                 }}
               >
-                Session
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
               </button>
             </Show>
           </div>
@@ -547,7 +596,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             >
               Mode
             </label>
-            <select
+            <SafeSelect
               id="practice-sub-mode"
               value={props.practiceSubMode()}
               onChange={(e) => {
@@ -561,7 +610,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="random">Random (50%)</option>
               <option value="focus">Focus Errors</option>
               <option value="reverse">Reverse</option>
-            </select>
+            </SafeSelect>
           </div>
         </Show>
 
@@ -573,7 +622,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             >
               Rest
             </label>
-            <select
+            <SafeSelect
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
               onChange={(e) => {
@@ -587,7 +636,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="fourth">Fourth rest</option>
               <option value="half">Half rest</option>
               <option value="full">Full bar rest</option>
-            </select>
+            </SafeSelect>
           </div>
         </Show>
 
@@ -756,7 +805,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 <path fill="currentColor" d="M4 5v14l8-7zM14 5v14l8-7z" />
               </svg>
             </span>
-            <select
+            <SafeSelect
               id="speed-select"
               value={playbackSpeed().toString()}
               class={styles.speedSelect}
@@ -774,7 +823,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="1.25">1.25x</option>
               <option value="1.5">1.5x</option>
               <option value="2">2x</option>
-            </select>
+            </SafeSelect>
           </div>
 
           {/* Zoom — falling notes tab only */}

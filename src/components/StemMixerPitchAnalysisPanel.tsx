@@ -1,4 +1,5 @@
 import type { Component } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 
 export interface StemMixerPitchAnalysisPanelProps {
@@ -36,7 +37,7 @@ export const StemMixerPitchAnalysisPanel: Component<
         <div class="sm-pitch-analysis-controls">
           <label>
             <span>Algorithm</span>
-            <select
+            <SafeSelect
               value={props.algorithm}
               onChange={(e) =>
                 props.setAlgorithm(e.currentTarget.value as PitchAlgorithm)
@@ -46,7 +47,7 @@ export const StemMixerPitchAnalysisPanel: Component<
               <option value="yin">YIN</option>
               <option value="mpm">MPM</option>
               <option value="swift">SwiftF0 (ML)</option>
-            </select>
+            </SafeSelect>
           </label>
 
           <label>

@@ -117,6 +117,10 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;
+  /* Apple / iOS optimizations */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* -- Global Select Normalizer -----------------------------------------------
@@ -871,10 +875,21 @@ input:checked + .settings-slider:before {
   height: 100%;
 }
 
-/* -- Headers -- */
 .leaderboard-header,
 .challenges-header {
   margin-bottom: 12px;
+}
+
+#falling-notes-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#falling-notes-canvas-container {
+  flex: 1;
+  min-height: 0;
+  position: relative;
 }
 
 .leaderboard-header-content h2,
@@ -1712,14 +1727,111 @@ input:checked + .settings-slider:before {
   align-items: center;
 }
 
-.fn-song-select {
+.fn-song-select-btn {
   flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
   background: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fn-song-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fn-song-arrow {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.fn-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.fn-modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.fn-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fn-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.fn-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.fn-modal-list {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.fn-modal-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.fn-modal-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.fn-modal-active {
+  background: var(--accent-dim) !important;
+  color: var(--accent);
+}
+
+.fn-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.fn-item-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .fn-import-status {
@@ -1958,6 +2070,15 @@ input:checked + .settings-slider:before {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+@media (max-width: 600px) {
+  .ctrl-btn {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    gap: 4px;
+    border-radius: 5px;
+  }
+}
 /* ── Global Range Slider: baseline ── */
 /* Individual slider classes (.tempo-slider, .sensitivity-slider,
    .volume-slider) set their own accent-color. Do NOT set accent-color
@@ -2053,7 +2174,38 @@ input[type='range'] {
 }
 /* ========================================================================= */
 /* Mobile Horizontal Tabs Navigation Styles                                  */
-/* ========================================================================= */
+/* ============================================================
+// Print & Landscape Overrides
+// ============================================================ */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+/* Quick Landscape Layout Fix */
+@media (max-height: 500px) and (orientation: landscape) {
+  #history-container {
+    display: none !important;
+  }
+
+  header {
+    flex-wrap: nowrap !important;
+    padding: 2px 6px !important;
+  }
+
+  #app-tabs {
+    flex-basis: auto !important;
+    width: auto !important;
+    order: unset !important;
+    margin-top: 0 !important;
+    flex-grow: 1;
+    justify-content: flex-end;
+  }
+}
+
 #app-tabs {
   display: flex;
   overflow-x: auto;
@@ -2085,5 +2237,49 @@ input[type='range'] {
     color: var(--text-muted);
     text-transform: uppercase;
     margin-right: 4px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   iOS / macOS Safari — select element crash fixes
+   ---------------------------------------------------------------------------
+   Safari on iOS (and occasionally macOS) has compositing bugs that cause
+   tab crashes when <select> elements open their popover. Three known
+   triggers:
+     1. CSS `transition` on <select> — compositing conflict with the
+        native popover window
+     2. `color-scheme: dark` — forces the popover to render in dark mode
+        which sometimes deadlocks the renderer
+     3. `appearance: none` + custom background-image — the custom chevron
+        rendering path can hit an uncontended WebKit code path
+   --------------------------------------------------------------------------- */
+
+@supports (-webkit-touch-callout: none) {
+  select,
+  .settings-row select,
+  .settings-panel .settings-row select,
+  #settings-panel .settings-row select,
+  .roll-instrument-select,
+  .roll-mode-select,
+  .spacedRestSelect,
+  .practiceSubModeSelect,
+  .dropdownSelectStyle {
+    transition: none !important;
+    background-image: none !important;
+    color-scheme: normal !important;
+  }
+}
+
+@supports (font: -apple-system-body) and (not (-webkit-touch-callout: none)) {
+  select,
+  .settings-row select,
+  .settings-panel .settings-row select,
+  #settings-panel .settings-row select,
+  .roll-instrument-select,
+  .roll-mode-select,
+  .spacedRestSelect,
+  .practiceSubModeSelect,
+  .dropdownSelectStyle {
+    transition: none !important;
   }
 }

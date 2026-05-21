@@ -59,7 +59,7 @@ export const SafeSelect: Component<
 
     // Dev-only: walk up the DOM tree and warn if any ancestor has transform
     if (import.meta.env.DEV) {
-      requestIdleCallback(() => {
+      const checkFn = () => {
         let current: HTMLElement | null = el.parentElement
         while (current) {
           const style = window.getComputedStyle(current)
@@ -79,7 +79,13 @@ export const SafeSelect: Component<
           }
           current = current.parentElement
         }
-      })
+      }
+
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(checkFn)
+      } else {
+        setTimeout(checkFn, 100)
+      }
     }
   }
 

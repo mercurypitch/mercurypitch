@@ -435,8 +435,8 @@ test.describe('MercuryPitch App', () => {
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
     // Mode buttons (Once / Repeat / Practice)
-    await expect(page.locator('#btn-once')).toBeVisible()
-    await expect(page.locator('#btn-repeat')).toBeVisible()
+    await expect(page.getByTestId('btn-once')).toBeVisible()
+    await expect(page.getByTestId('btn-repeat')).toBeVisible()
   })
 
   test('Editor shows instrument selector', async ({ page }) => {

@@ -863,3 +863,51 @@ Keeps your existing styles, only adjusts layout
   background: rgba(248, 81, 73, 0.1);
   border-color: var(--red);
 }
+
+.roll-toolbar-toggle {
+  display: none;
+  width: 100%;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+}
+
+.roll-toolbar-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.roll-toolbar-toggle svg {
+  transition: transform 0.2s ease;
+  transform: rotate(180deg); /* Pointing up when open */
+}
+
+.roll-toolbar-toggle.collapsed svg {
+  transform: rotate(0deg); /* Pointing down when collapsed */
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .roll-toolbar-toggle {
+    display: flex;
+  }
+
+  .roll-toolbar {
+    transition:
+      max-height 0.3s ease,
+      padding 0.3s ease;
+    max-height: 200px; /* enough to show all tools */
+    overflow-y: hidden;
+  }
+
+  .roll-toolbar.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}

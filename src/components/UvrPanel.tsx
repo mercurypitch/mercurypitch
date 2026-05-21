@@ -728,12 +728,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     <div class="uvr-panel">
       {/* Header */}
       <div class="panel-header">
-        <div
-          class="header-left"
-          style="display: flex; align-items: center; gap: 1.5rem;"
-        >
-          <h3 style="margin: 0; white-space: nowrap;">Shazam Sing</h3>
-          <div class="uvr-view-tabs">
+        <div class="header-left">
+          <div
+            class="header-title-group"
+            style="display: flex; align-items: center; gap: 0.5rem;"
+          >
+            <div class="header-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"
+                />
+              </svg>
+            </div>
+            <h3>Shazam Sing</h3>
+          </div>
+          <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
             <button
               class="view-tab view-tab-sing"
               classList={{

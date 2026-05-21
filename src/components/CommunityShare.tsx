@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
 import { storageGet, storageSet } from '@/lib/storage'
@@ -508,7 +509,7 @@ export const CommunityShare: Component = () => {
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
         <div class="sort-select">
-          <select
+          <SafeSelect
             value={sortBy()}
             onChange={(e) =>
               setSortBy(
@@ -519,7 +520,7 @@ export const CommunityShare: Component = () => {
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
             <option value="highest">Highest Scores</option>
-          </select>
+          </SafeSelect>
         </div>
       </div>
 

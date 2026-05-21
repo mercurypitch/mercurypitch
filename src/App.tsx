@@ -82,7 +82,7 @@ import { usePracticeController } from '@/features/practice/usePracticeController
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -237,6 +237,71 @@ const AppShell: Component<AppProps> = (props) => {
   const startGuideTour = (sectionIds: string[]) => {
     closeGuideSelection()
     startWalkthrough(sectionIds)
+  }
+
+  // ── Swipe to Change Tabs ──────────────────────────────────
+  let touchStartX = 0
+  let touchStartY = 0
+
+  const handleTouchStart = (e: TouchEvent) => {
+    const target = e.target as HTMLElement
+    // Allow swiping on canvas now, but still ignore buttons, inputs, and modals
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'SELECT' ||
+      target.tagName === 'BUTTON' ||
+      target.closest('button, input, select, .fn-modal-content, .library-modal')
+    ) {
+      return
+    }
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: TouchEvent) => {
+    if (touchStartX === 0) return
+    const touchEndX = e.changedTouches[0].clientX
+    const touchEndY = e.changedTouches[0].clientY
+
+    const deltaX = touchStartX - touchEndX
+    const deltaY = touchStartY - touchEndY
+
+    // Require swiping across at least 35% of the screen width to prevent accidental tab changes
+    const swipeThreshold = window.innerWidth * 0.35
+
+    if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaY) < 80) {
+      const TABS_ORDER: ActiveTab[] = [
+        TAB_SINGING,
+        TAB_PIANO,
+        TAB_KARAOKE,
+        TAB_COMMUNITY,
+        TAB_LEADERBOARD,
+        TAB_CHALLENGES,
+        TAB_JAM,
+        TAB_COMPOSE,
+        TAB_ANALYSIS,
+        TAB_SETTINGS,
+      ]
+
+      let availableTabs = TABS_ORDER
+      if (!advancedFeaturesEnabled()) {
+        availableTabs = TABS_ORDER.filter(
+          (t) => t !== TAB_PITCH_TEST && t !== TAB_PITCH_ALGO,
+        )
+      }
+
+      const currentIdx = availableTabs.indexOf(activeTab())
+      if (currentIdx !== -1) {
+        if (deltaX > 0 && currentIdx < availableTabs.length - 1) {
+          void handleTabChange(availableTabs[currentIdx + 1])
+        } else if (deltaX < 0 && currentIdx > 0) {
+          void handleTabChange(availableTabs[currentIdx - 1])
+        }
+      }
+    }
+
+    touchStartX = 0
+    touchStartY = 0
   }
 
   // ── Hash routing ────────────────────────────────────────────
@@ -867,7 +932,7 @@ const AppShell: Component<AppProps> = (props) => {
       playSessionSequence={playSessionSequence}
       loadAndPlayMelodyForSession={loadAndPlayMelodyForSession}
     >
-      <div id="app">
+      <div id="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* Welcome Screen (shown on first visit) */}
         <Show when={showWelcome()}>
           <WelcomeScreen

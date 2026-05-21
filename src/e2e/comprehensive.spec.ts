@@ -115,7 +115,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await switchTab(page, 'singing')
     await expect(page.locator('#practice-panel')).toBeVisible()
     // The Practice mode button is #btn-session
-    const btnSession = page.locator('#btn-session')
+    const btnSession = page.getByTestId('btn-session')
     await btnSession.click()
     await page.waitForTimeout(500)
 

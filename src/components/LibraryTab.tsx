@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
@@ -311,7 +312,7 @@ export const LibraryTab: Component = () => {
           <div class={styles.sessionHeader}>
             <div class={styles.activeSessionSummary}>
               <p class={styles.sectionLabel}>Active Session</p>
-              <select
+              <SafeSelect
                 class={['session-select', styles.sidebarSessionSelect].join(
                   ' ',
                 )}
@@ -320,7 +321,7 @@ export const LibraryTab: Component = () => {
               >
                 {/*
                   NOTE: We mark `selected` per-<option> instead of using the
-                  controlled `value=` prop on <select>. With dynamic
+                  controlled `value=` prop on <SafeSelect>. With dynamic
                   <optgroup>/<For> children, the `value` prop applies before
                   options exist on the first render, so the displayed label
                   doesn't update when `userSession()` changes. Setting
@@ -353,7 +354,7 @@ export const LibraryTab: Component = () => {
                     </For>
                   </optgroup>
                 </Show>
-              </select>
+              </SafeSelect>
 
               <span class={styles.sectionMeta}>
                 {sessionItems().length} item

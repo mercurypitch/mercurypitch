@@ -1300,6 +1300,9 @@ export class PianoRollEditor {
 
   private buildDOM(): void {
     this.container.innerHTML = `
+      <button class="roll-toolbar-toggle" aria-label="Toggle Toolbar" title="Toggle Toolbar">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
      <div class="roll-toolbar">
 
   <!-- TOOLS -->
@@ -1633,6 +1636,16 @@ export class PianoRollEditor {
 
   private attachEventListeners(): void {
     const container = this.container
+
+    // Toolbar toggle
+    const toggleBtn = container.querySelector('.roll-toolbar-toggle')
+    const toolbar = container.querySelector('.roll-toolbar')
+    if (toggleBtn && toolbar) {
+      toggleBtn.addEventListener('click', () => {
+        toolbar.classList.toggle('collapsed')
+        toggleBtn.classList.toggle('collapsed')
+      })
+    }
 
     // Tool buttons
     container.querySelectorAll('.roll-tool-btn').forEach((btn) => {

@@ -7,6 +7,7 @@
 // ============================================================
 
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { midiToNote } from '@/lib/scale-data'
 import { getFingerprintArray } from '@/lib/shazam/melody-fingerprints'
 import type { MelodyFingerprint } from '@/lib/shazam/types'
@@ -88,7 +89,7 @@ export function FingerprintInspector() {
     <div class={styles.panel} data-testid="fingerprint-inspector">
       <h4 class={styles.heading}>Reference Fingerprint</h4>
 
-      <select
+      <SafeSelect
         class={styles.select}
         value={selectedId() ?? ''}
         onChange={handleChange}
@@ -103,7 +104,7 @@ export function FingerprintInspector() {
             </option>
           )}
         </For>
-      </select>
+      </SafeSelect>
 
       <Show
         when={selected()}

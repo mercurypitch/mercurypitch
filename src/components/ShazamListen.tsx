@@ -7,6 +7,7 @@
 // ============================================================
 
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { IS_DEV } from '@/lib/defaults'
@@ -854,7 +855,7 @@ export function ShazamListen(props: ShazamListenProps) {
                 Speech
               </button>
               <Show when={speechEnabled()}>
-                <select
+                <SafeSelect
                   class={styles.engineSelect}
                   value={speechEngine()}
                   onChange={(e) => {
@@ -867,7 +868,7 @@ export function ShazamListen(props: ShazamListenProps) {
                   <Show when={!isFirefox}>
                     <option value="whisper">Whisper (Offline)</option>
                   </Show>
-                </select>
+                </SafeSelect>
                 <Show
                   when={
                     speechEngine() === 'whisper' && whisperStatus() !== 'ready'

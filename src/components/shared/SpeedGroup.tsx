@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import styles from '../HeaderControls.module.css'
 
 interface SpeedGroupProps {
@@ -13,7 +14,7 @@ interface SpeedGroupProps {
 export const SpeedGroup: Component<SpeedGroupProps> = (props) => (
   <div class={styles.speedGroup}>
     <label class={styles.optLabel}>Speed:</label>
-    <select
+    <SafeSelect
       id="speed-select"
       value={props.speed.toString()}
       class={styles.speedSelect}
@@ -29,6 +30,6 @@ export const SpeedGroup: Component<SpeedGroupProps> = (props) => (
       <option value="1.25">1.25x</option>
       <option value="1.5">1.5x</option>
       <option value="2">2x</option>
-    </select>
+    </SafeSelect>
   </div>
 )

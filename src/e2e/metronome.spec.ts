@@ -38,8 +38,8 @@ test.describe('Metronome', () => {
   })
 
   test('Practice mode buttons exist', async ({ page }) => {
-    await expect(page.locator('#btn-once')).toBeVisible()
-    await expect(page.locator('#btn-repeat')).toBeVisible()
-    await expect(page.locator('#btn-session')).toBeVisible()
+    await expect(page.getByTestId('btn-once')).toBeVisible()
+    await expect(page.getByTestId('btn-repeat')).toBeVisible()
+    await expect(page.getByTestId('btn-session')).toBeVisible()
   })
 })

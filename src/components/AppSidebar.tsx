@@ -10,6 +10,7 @@ import { CharacterIcons } from '@/components/CharacterIcons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { StatsBars } from '@/components/StatsBars'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
@@ -212,7 +213,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <h2 class={styles.panelTitle}>Playback Setup</h2>
 
           <div class={styles.scaleInfo}>
-            <select
+            <SafeSelect
               class={['dropdown-select-style', styles.keySelect].join(' ')}
               id="key-select"
               value={keyName()}
@@ -265,7 +266,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <option value="B">B</option>
               <option value="F">F</option>
               <option value="Bb">Bb</option>
-            </select>
+            </SafeSelect>
 
             <div class={styles.octaveCtrl} data-testid="octave-ctrl">
               <button
@@ -301,7 +302,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               </button>
             </div>
 
-            <select
+            <SafeSelect
               id="scale-select"
               class={['dropdown-select-style', styles.scaleSelect].join(' ')}
               value={scaleType()}
@@ -343,7 +344,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                   )}
                 </For>
               </Show>
-            </select>
+            </SafeSelect>
             <button
               id="open-scale-builder"
               class={[

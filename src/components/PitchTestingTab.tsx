@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { currentScale } from '@/stores/melody-store'
@@ -720,7 +721,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <Show
               when={ensembleMode()}
               fallback={
-                <select
+                <SafeSelect
                   disabled={isDetecting() || isRunningTest()}
                   value={selectedAlgorithm()}
                   onChange={(e) =>
@@ -731,7 +732,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <option value="autocorr">Autocorrelation</option>
                   <option value="fft">FFT Max Bin</option>
                   <option value="swift">SwiftF0 ML (ONNX)</option>
-                </select>
+                </SafeSelect>
               }
             >
               <div class="ensemble-pills">
@@ -867,7 +868,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           <div class="control-group">
             <label>Detection Mode</label>
-            <select
+            <SafeSelect
               disabled={isDetecting() || isRunningTest()}
               value={detectionMode()}
               onChange={(e) =>
@@ -877,7 +878,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <option value="generate">Generate Sine Wave</option>
               <option value="file">Load Audio File</option>
               <option value="mic">Microphone Input</option>
-            </select>
+            </SafeSelect>
           </div>
 
           {/* Microphone Mode UI */}

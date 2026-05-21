@@ -43,12 +43,12 @@ interface Particle {
   maxLife: number
 }
 
-const KEYBOARD_START_RATIO = 0.85
+const getKeyboardStartRatio = (w: number, h: number) =>
+  h > w * 1.2 ? 0.7 : 0.85
 // Judgment now happens at the keyboard top edge -- no separate floating line
-const JUDGMENT_LINE_RATIO = KEYBOARD_START_RATIO
 const BLACK_KEY_HEIGHT_RATIO = 0.6
 const BLACK_KEY_WIDTH_RATIO = 0.58
-const MIN_WHITE_KEYS_VISIBLE = 15
+const getMinWhiteKeysVisible = (w: number, h: number) => (h > w * 1.2 ? 9 : 15)
 const NOTE_BORDER_RADIUS = 8
 const PARTICLE_BURST_COUNT = 24
 
@@ -154,7 +154,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
 
-    const kbTop = h * KEYBOARD_START_RATIO
+    const kbTop = h * getKeyboardStartRatio(w, h)
     if (y < kbTop) return null
 
     const kbHeightVal = h - kbTop
@@ -166,7 +166,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     const minWhiteLocal = midiToWhiteIndex(minMidi)
     const maxWhiteLocal = midiToWhiteIndex(maxMidi)
     const rangeWhiteLocal = maxWhiteLocal - minWhiteLocal + 1
-    const displayRangeLocal = Math.max(rangeWhiteLocal, MIN_WHITE_KEYS_VISIBLE)
+    const displayRangeLocal = Math.max(
+      rangeWhiteLocal,
+      getMinWhiteKeysVisible(w, h),
+    )
     const paddingLocal = Math.floor((displayRangeLocal - rangeWhiteLocal) / 2)
     const displayMinWhiteLocal = minWhiteLocal - paddingLocal
     const colWidthLocal = w / displayRangeLocal
@@ -350,7 +353,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       if (!ctx || !canvasRef) continue
       const w = canvasRef.clientWidth
       const h = canvasRef.clientHeight
-      const jLineY = h * JUDGMENT_LINE_RATIO
+      const jLineY = h * getKeyboardStartRatio(w, h)
       const col = midiToWhiteIndex(r.midiNote)
 
       const activeNotes = props.songNotes()
@@ -360,7 +363,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       const pMinWhite = midiToWhiteIndex(pMinMidi)
       const pMaxWhite = midiToWhiteIndex(pMaxMidi)
       const pRange = pMaxWhite - pMinWhite + 1
-      const pDisplay = Math.max(pRange, MIN_WHITE_KEYS_VISIBLE)
+      const pDisplay = Math.max(pRange, getMinWhiteKeysVisible(w, h))
       const pPad = Math.floor((pDisplay - pRange) / 2)
       const pDisplayMin = pMinWhite - pPad
       const pColWidth = w / pDisplay
@@ -453,8 +456,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       return
     }
 
-    const jLineY = h * JUDGMENT_LINE_RATIO
-    const kbTop = h * KEYBOARD_START_RATIO
+    const jLineY = h * getKeyboardStartRatio(w, h)
+    const kbTop = h * getKeyboardStartRatio(w, h)
     const kbHeight = h - kbTop
     const noteAreaH = jLineY
 
@@ -464,7 +467,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     const minWhite = midiToWhiteIndex(minMidi)
     const maxWhite = midiToWhiteIndex(maxMidi)
     const rangeWhite = maxWhite - minWhite + 1
-    const displayRange = Math.max(rangeWhite, MIN_WHITE_KEYS_VISIBLE)
+    const displayRange = Math.max(rangeWhite, getMinWhiteKeysVisible(w, h))
     const padding = Math.floor((displayRange - rangeWhite) / 2)
     const displayMinWhite = minWhite - padding
     const colWidth = w / displayRange

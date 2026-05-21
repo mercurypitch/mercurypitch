@@ -32,6 +32,9 @@
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border);
   min-height: 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+  gap: 1rem;
 }
 
 .header-left {
@@ -2625,4 +2628,34 @@
 
 .device-toggle-btn.active svg {
   color: var(--accent);
+}
+
+/* ============================================================
+// Mobile Layout Overrides
+// ============================================================ */
+@media (max-width: 600px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .header-left {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+    width: 100%;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
 }

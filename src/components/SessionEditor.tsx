@@ -6,6 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
 import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
@@ -233,7 +234,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             />
           </svg>
           <span>Session Editor</span>
-          <select
+          <SafeSelect
             class="session-select"
             value={currentSession()?.id || ''}
             onChange={handleSessionChange}
@@ -249,7 +250,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             <For each={sessions()}>
               {(s: PlaybackSession) => <option value={s.id}>{s.name}</option>}
             </For>
-          </select>
+          </SafeSelect>
         </div>
 
         <div

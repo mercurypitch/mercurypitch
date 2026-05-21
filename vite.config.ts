@@ -2,6 +2,7 @@ import ssl from '@vitejs/plugin-basic-ssl'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
+import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -50,6 +51,7 @@ function removeWasmAssetsPlugin() {
 export default defineConfig({
   plugins: [
     isDev ? ssl() : [],
+    isDev ? qrcode() : [],
     solidPlugin(),
     removeWasmAssetsPlugin(),
   ],

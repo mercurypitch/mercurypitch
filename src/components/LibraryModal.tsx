@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { IconCheckSolid, IconMusicNote, IconSheetMusic, } from '@/components/hidden-features-icons'
+import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { setEditorView } from '@/stores'
@@ -619,7 +620,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
                       <div class="form-group">
                         <label>Key</label>
-                        <select
+                        <SafeSelect
                           value={createKey()}
                           onChange={(e) =>
                             setCreateKey(e.currentTarget.value as NoteName)
@@ -628,12 +629,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <For each={keyNames}>
                             {(k) => <option value={k}>{k}</option>}
                           </For>
-                        </select>
+                        </SafeSelect>
                       </div>
 
                       <div class="form-group">
                         <label>Scale</label>
-                        <select
+                        <SafeSelect
                           value={createScale()}
                           onChange={(e) =>
                             setCreateScale(e.currentTarget.value)
@@ -642,7 +643,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <For each={scaleTypes}>
                             {(s) => <option value={s.value}>{s.label}</option>}
                           </For>
-                        </select>
+                        </SafeSelect>
                       </div>
                     </div>
 
@@ -730,7 +731,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
                       <div class="form-group">
                         <label>Key</label>
-                        <select
+                        <SafeSelect
                           value={editKey()}
                           onChange={(e) =>
                             setEditKey(e.currentTarget.value as NoteName)
@@ -739,19 +740,19 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <For each={keyNames}>
                             {(k) => <option value={k}>{k}</option>}
                           </For>
-                        </select>
+                        </SafeSelect>
                       </div>
 
                       <div class="form-group">
                         <label>Scale</label>
-                        <select
+                        <SafeSelect
                           value={editScale()}
                           onChange={(e) => setEditScale(e.currentTarget.value)}
                         >
                           <For each={scaleTypes}>
                             {(s) => <option value={s.value}>{s.label}</option>}
                           </For>
-                        </select>
+                        </SafeSelect>
                       </div>
                     </div>
 

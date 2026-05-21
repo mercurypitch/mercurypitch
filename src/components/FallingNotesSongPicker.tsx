@@ -1,9 +1,5 @@
-// ============================================================
-// FallingNotesSongPicker — Song selector for falling notes game
-// ============================================================
-
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { getAllMelodies } from '@/stores/melody-store'
@@ -29,10 +25,18 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
 ) => {
   const [selectedId, setSelectedId] = createSignal<string | null>(null)
   const [importStatus, setImportStatus] = createSignal<string>('')
+  const [isModalOpen, setIsModalOpen] = createSignal(false)
 
   const melodies = createMemo(() =>
     getAllMelodies().filter((m) => m.items.length > 0),
   )
+
+  const currentMelodyName = createMemo(() => {
+    const id = selectedId()
+    if (id === null || id === '') return 'Select a song...'
+    const m = melodies().find((x) => x.id === id)
+    return m ? m.name : 'Select a song...'
+  })
 
   const handleLoadWithId = (
     id: string,
@@ -88,31 +92,10 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
   return (
     <div id="falling-notes-song-picker">
       <div class="fn-picker-row">
-        <select
-          class="fn-song-select"
-          value={selectedId() ?? ''}
-          onChange={(e) => {
-            const id = e.currentTarget.value
-            if (!id) {
-              setSelectedId(null)
-              return
-            }
-            setSelectedId(id)
-
-            const currentMelodies = melodies()
-            const onLoad = props.onSongLoaded
-            queueMicrotask(() => handleLoadWithId(id, currentMelodies, onLoad))
-          }}
-        >
-          <option value="">-- Select a song --</option>
-          <For each={melodies()}>
-            {(m: MelodyData) => (
-              <option value={m.id}>
-                {m.name} ({m.items.length} notes, {m.bpm} BPM, {m.key})
-              </option>
-            )}
-          </For>
-        </select>
+        <button class="fn-song-select-btn" onClick={() => setIsModalOpen(true)}>
+          <span class="fn-song-name">🎵 {currentMelodyName()}</span>
+          <span class="fn-song-arrow">▼</span>
+        </button>
 
         <button class="fn-btn fn-btn-import" onClick={handleMidiImport}>
           Import MIDI
@@ -120,6 +103,46 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
       </div>
 
       {importStatus() && <div class="fn-import-status">{importStatus()}</div>}
+
+      <Show when={isModalOpen()}>
+        <div class="fn-modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div class="fn-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div class="fn-modal-header">
+              <h3>Select a Song</h3>
+              <button
+                class="fn-modal-close"
+                onClick={() => setIsModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div class="fn-modal-list">
+              <For each={melodies()}>
+                {(m: MelodyData) => (
+                  <button
+                    class="fn-modal-item"
+                    classList={{ 'fn-modal-active': selectedId() === m.id }}
+                    onClick={() => {
+                      setSelectedId(m.id)
+                      const currentMelodies = melodies()
+                      const onLoad = props.onSongLoaded
+                      queueMicrotask(() =>
+                        handleLoadWithId(m.id, currentMelodies, onLoad),
+                      )
+                      setIsModalOpen(false)
+                    }}
+                  >
+                    <div class="fn-item-name">{m.name}</div>
+                    <div class="fn-item-meta">
+                      {m.items.length} notes • {m.bpm} BPM • {m.key}
+                    </div>
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   )
 }

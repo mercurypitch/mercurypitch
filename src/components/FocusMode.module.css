@@ -102,6 +102,7 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  margin-bottom: 96px;
 }
 
 /* Playhead for Focus Mode */

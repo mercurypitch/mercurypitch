@@ -2245,6 +2245,46 @@
   }
 }
 
+@media (max-width: 480px) {
+  .leaderboard-tabs {
+    flex-wrap: wrap;
+  }
+  .leaderboard-tab {
+    max-width: none;
+  }
+  .leaderboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .search-container {
+    flex-direction: column;
+  }
+  .challenge-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .challenge-progress {
+    grid-column: 1;
+    justify-content: center;
+  }
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 8px 4px;
+    font-size: 0.75rem;
+  }
+  .user-td {
+    gap: 6px;
+  }
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .leaderboard-panel {
+    padding: 10px;
+  }
+}
+
 /* ============================================================
    Vocal Challenges Tab Styles
    ============================================================ */

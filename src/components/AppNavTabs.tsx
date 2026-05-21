@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, Show } from 'solid-js'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { ActiveTab } from '@/types'
 
@@ -11,8 +11,25 @@ export interface AppNavTabsProps {
 }
 
 export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
+  let navRef!: HTMLElement
+
+  createEffect(() => {
+    props.activeTab() // track dependency
+    requestAnimationFrame(() => {
+      if (navRef === undefined || navRef === null) return
+      const activeEl = navRef.querySelector('.app-tab.active')
+      if (activeEl !== null) {
+        activeEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        })
+      }
+    })
+  })
+
   return (
-    <nav id="app-tabs">
+    <nav id="app-tabs" ref={navRef}>
       <div class="tab-group">
         <span class="tab-group-label">Practice</span>
         <button
