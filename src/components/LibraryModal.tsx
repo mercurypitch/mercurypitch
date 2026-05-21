@@ -4,7 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { IconCheckSolid, IconMusicNote, IconSheetMusic, } from '@/components/hidden-features-icons'
+import type { LibraryEntry } from '@/components/shared'
+import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
@@ -143,7 +144,19 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       .sort((a, b): number => (b[1].playCount ?? 0) - (a[1].playCount ?? 0))
   })
 
-  const availableForPlaylist = createMemo(() => {
+  const filteredMelodyItems = createMemo<LibraryEntry[]>(() => {
+    return filteredMelodies().map(([key, melody]) => ({
+      id: key,
+      kind: 'melody' as const,
+      title: melody.name ?? 'Untitled',
+      meta: `${melody.key} • ${melody.bpm} BPM • ${getNoteCount(melody.items.length)}${(melody.playCount ?? 0) > 0 ? ` • ${melody.playCount} plays` : ''}`,
+      author: melody.author ?? undefined,
+      tags: melody.tags as string[] | undefined,
+      raw: melody,
+    }))
+  })
+
+  const availableForPlaylist = createMemo<LibraryEntry[]>(() => {
     const playlistEdit = playlistEditing()
     const playlistId = playlistEdit?.playlistId ?? null
     if (playlistId === null) return []
@@ -157,7 +170,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         .filter((s) => s.name.toLowerCase().includes(query))
         .map((s) => ({
           id: s.id,
-          type: 'session' as const,
+          kind: 'session' as const,
           title: s.name,
           meta: `${s.items.length} item${s.items.length === 1 ? '' : 's'}`,
         })),
@@ -165,11 +178,23 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         .filter((m) => m.name.toLowerCase().includes(query))
         .map((m) => ({
           id: m.id,
-          type: 'melody' as const,
+          kind: 'melody' as const,
           title: m.name,
           meta: `${m.key} • ${m.bpm} BPM • ${m.items.length} notes`,
         })),
     ]
+  })
+
+  const selectedPlaylistIds = createMemo(() => {
+    const edit = playlistEditing()
+    const playlistId = edit?.playlistId ?? ''
+    const ids = new Set<string>()
+    if (playlistId !== '' && playlistId in library().playlists) {
+      const playlist = library().playlists[playlistId]
+      playlist.sessionKeys?.forEach((id: string) => ids.add(id))
+      playlist.melodyKeys?.forEach((id: string) => ids.add(id))
+    }
+    return ids
   })
 
   const selectedMelody = createMemo(() => {
@@ -190,9 +215,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   const handleTogglePlaylistItem = (
     playlistId: string,
-    item: { id: string; type: 'session' | 'melody' },
+    item: { id: string; kind: 'session' | 'melody' },
   ) => {
-    if (item.type === 'session') {
+    if (item.kind === 'session') {
       handleToggleSessionInPlaylist(playlistId, item.id)
     } else if (isMelodyInPlaylist(playlistId, item.id)) {
       melodyStore.removeMelodyFromPlaylist(playlistId, item.id)
@@ -345,8 +370,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     showNotification(`Melody "${name}" created`, 'success')
   }
 
-  const getNoteCount = (itemCount: number) => {
-    return itemCount > 0 ? `${itemCount} notes` : 'Empty'
+  function getNoteCount(itemCount: number) {
+    return `${itemCount} note${itemCount === 1 ? '' : 's'}`
   }
 
   const hasNotes = (notes?: string): boolean => {
@@ -789,129 +814,87 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               )}
 
               {/* List */}
-              <div class="library-list">
-                <For each={filteredMelodies()}>
-                  {([_, melody]) => (
-                    <div
-                      class={`library-item ${selectedMelodyKey() === _ ? 'selected' : ''}`}
-                      onClick={() => setSelectedMelodyKey(_)}
-                      draggable={dragState()?.type === 'playlist'}
-                      onDragStart={(e) => handleDragStart(e, _)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDropMelodyList(e, _)}
-                    >
-                      <div class="item-main">
-                        <div class="item-title">
-                          {melody.name}
-                          <Show when={melody.author}>
-                            <span class="item-author">— {melody.author}</span>
-                          </Show>
-                        </div>
-                        <div class="item-meta">
-                          <span>{melody.key}</span>
-                          <span>•</span>
-                          <span>{melody.bpm} BPM</span>
-                          <span>•</span>
-                          <span>{getNoteCount(melody.items.length)}</span>
-                          <Show
-                            when={
-                              melody.playCount !== null &&
-                              melody.playCount !== undefined
-                            }
-                          >
-                            <span>•</span>
-                            <span>{melody.playCount} plays</span>
-                          </Show>
-                        </div>
-                        <Show when={melody.tags && melody.tags.length > 0}>
-                          <div class="item-tags">
-                            <For each={(melody.tags as string[]).slice(0, 3)}>
-                              {(tag) => <span class="tag-pill">{tag}</span>}
-                            </For>
-                            {(melody.tags as string[]).length > 3 && (
-                              <span class="tag-pill more">
-                                +{(melody.tags as string[]).length - 3}
-                              </span>
-                            )}
-                          </div>
-                        </Show>
-                      </div>
-                      <div class="item-actions">
-                        <button
-                          class="action-btn play-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handlePlay(melody)
-                          }}
-                          title="Play"
-                          aria-label="Play"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path fill="currentColor" d="M8 5v14l11-7z" />
-                          </svg>
-                        </button>
-                        <button
-                          class="action-btn load-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleLoad(melody)
-                          }}
-                          title="Load"
-                          aria-label="Load"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path
-                              fill="currentColor"
-                              d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          class="action-btn edit-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEdit(melody)
-                          }}
-                          title="Edit"
-                          aria-label="Edit"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path
-                              fill="currentColor"
-                              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          class="action-btn delete-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(_)
-                          }}
-                          title="Delete"
-                          aria-label="Delete"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path
-                              fill="currentColor"
-                              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </For>
-
-                {filteredMelodies().length === 0 && (
-                  <div class="empty-state">
-                    <p>
-                      No melodies found. Create a new melody to get started!
-                    </p>
-                  </div>
-                )}
-              </div>
+              <MelodyLibraryList
+                mode="single"
+                entries={filteredMelodyItems()}
+                kinds={['melody']}
+                selectedIds={new Set([selectedMelodyKey() ?? ''])}
+                onItemActivate={(item) => setSelectedMelodyKey(item.id)}
+                draggable={dragState()?.type === 'playlist'}
+                onDragStart={(item, e) => handleDragStart(e, item.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={(item, e) => handleDropMelodyList(e, item.id)}
+                emptyMessage="No melodies found. Create a new melody to get started!"
+                renderActions={(item) => {
+                  const melody = item.raw as MelodyData
+                  return (
+                    <>
+                      <button
+                        class="action-btn play-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePlay(melody)
+                        }}
+                        title="Play"
+                        aria-label="Play"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path fill="currentColor" d="M8 5v14l11-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn load-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleLoad(melody)
+                        }}
+                        title="Load"
+                        aria-label="Load"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEdit(melody)
+                        }}
+                        title="Edit"
+                        aria-label="Edit"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(item.id)
+                        }}
+                        title="Delete"
+                        aria-label="Delete"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                          />
+                        </svg>
+                      </button>
+                    </>
+                  )
+                }}
+              />
 
               {/* Selected Melody Details */}
               <Show when={selectedMelody() !== null}>
@@ -1000,52 +983,32 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class={styles.melodySelectList}>
-                    <For each={availableForPlaylist()}>
-                      {(item) => {
-                        const edit = playlistEditing()
-                        const playlistId = edit?.playlistId ?? ''
-                        const sel =
-                          item.type === 'session'
-                            ? isSessionInPlaylist(playlistId, item.id)
-                            : isMelodyInPlaylist(playlistId, item.id)
-                        return (
-                          <button
-                            type="button"
-                            class={`${styles.playlistPickerPill} ${sel ? styles.selected : ''}`}
-                            onClick={() =>
-                              handleTogglePlaylistItem(playlistId, item)
-                            }
-                          >
-                            <span class={styles.playlistPickerIcon}>
-                              {item.type === 'session' ? (
-                                <IconSheetMusic />
-                              ) : (
-                                <IconMusicNote />
-                              )}
-                            </span>
-                            <span class={styles.playlistPickerCopy}>
-                              <span class={styles.selectItemTitle}>
-                                {item.title}
-                              </span>
-                              <span class={styles.selectItemMeta}>
-                                {item.meta}
-                              </span>
-                            </span>
-                            <span class={styles.playlistPickerCheck}>
-                              {sel ? <IconCheckSolid /> : '+'}
-                            </span>
-                          </button>
-                        )
-                      }}
-                    </For>
+                  <MelodyLibraryList
+                    mode="multi"
+                    entries={availableForPlaylist()}
+                    kinds={['melody', 'session']}
+                    selectedIds={selectedPlaylistIds()}
+                    onSelectionChange={(ids) => {
+                      // We need to diff the old and new set to figure out what was toggled
+                      const addedId = [...ids].find(
+                        (id) => !selectedPlaylistIds().has(id),
+                      )
+                      const removedId = [...selectedPlaylistIds()].find(
+                        (id) => !ids.has(id),
+                      )
+                      const playlistId = playlistEditing()?.playlistId ?? ''
 
-                    {availableForPlaylist().length === 0 && (
-                      <div class={styles.emptyState}>
-                        <p>No matching sessions or melodies found.</p>
-                      </div>
-                    )}
-                  </div>
+                      const toggleId = addedId ?? removedId
+                      if (toggleId !== undefined) {
+                        const item = availableForPlaylist().find(
+                          (e) => e.id === toggleId,
+                        )
+                        if (item !== undefined)
+                          handleTogglePlaylistItem(playlistId, item)
+                      }
+                    }}
+                    emptyMessage="No items found matching your search."
+                  />
 
                   <div class="form-actions">
                     <button

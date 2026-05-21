@@ -98,7 +98,7 @@ import { advancedFeaturesEnabled } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
@@ -830,6 +830,32 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+
+    createEffect(() => {
+      const font = fontFamily()
+      const root = document.documentElement
+      if (font === 'inter') {
+        root.style.setProperty(
+          '--app-font',
+          "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        )
+      } else if (font === 'outfit') {
+        root.style.setProperty(
+          '--app-font',
+          "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        )
+      } else if (font === 'plus-jakarta-sans') {
+        root.style.setProperty(
+          '--app-font',
+          "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        )
+      } else {
+        root.style.setProperty(
+          '--app-font',
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        )
+      }
+    })
 
     // Inject UVR component styles
     const styleElements = [LyricsUploaderStyles, StemMixerStyles]

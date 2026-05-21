@@ -149,7 +149,7 @@ export const CrashModal: Component = () => {
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <code class={styles.crashErrorMessage}>
-                  {error()!.error.message}
+                  {error()?.error.message}
                 </code>
               </div>
               <div class={styles.crashStacktraceWrapper}>

@@ -109,11 +109,17 @@
 html,
 body {
   height: 100%;
-  font-family:
-    'Segoe UI',
+  font-family: var(
+    --app-font,
+    'Inter',
     -apple-system,
     BlinkMacSystemFont,
-    sans-serif;
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;

@@ -21,6 +21,7 @@ export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
+export type FontFamily = 'inter' | 'outfit' | 'plus-jakarta-sans' | 'system'
 export type VocalRangePreset =
   | 'soprano'
   | 'mezzo-soprano'
@@ -162,6 +163,11 @@ export const [adsr, setAdsr] = createPersistedSignal<ADSRConfig>(
 
 export const [reverbConfig, setReverbConfigSignal] =
   createPersistedSignal<ReverbConfig>('pitchperfect_reverb', DEFAULT_REVERB)
+
+export const [fontFamily, setFontFamily] = createPersistedSignal<FontFamily>(
+  'pitchperfect_font',
+  'inter',
+)
 
 export const [vocalRangePreset, setVocalRangePreset] =
   createPersistedSignal<VocalRangePreset>('pitchperfect_vocal_range', 'tenor')

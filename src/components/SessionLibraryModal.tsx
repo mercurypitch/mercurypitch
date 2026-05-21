@@ -3,13 +3,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
+import type { LibraryEntry } from '@/components/shared'
+import { MelodyLibraryList } from '@/components/shared'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
-import styles from './SessionLibraryModal.module.css'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
 // Drag and drop state
@@ -44,6 +45,16 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
         (a: PlaybackSession, b: PlaybackSession) =>
           (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created),
       )
+  })
+
+  const filteredSessionItems = createMemo<LibraryEntry[]>(() => {
+    return filteredSessions().map((session: PlaybackSession) => ({
+      id: session.id,
+      kind: 'session' as const,
+      title: session.name as string,
+      meta: `${session.difficulty} • ${session.category} • ${session.items.length} items${(session.lastPlayed ?? 0) > 0 ? ` • ${new Date(session.lastPlayed as number).toLocaleDateString()}` : ''}`,
+      raw: session,
+    }))
   })
 
   const { playSessionSequence } = usePlayback()
@@ -163,94 +174,64 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
               New Session
             </button>
 
-            <div class="library-list">
-              <For each={filteredSessions()}>
-                {(session) => (
-                  <div
-                    class="library-item session-library-item"
-                    draggable={dragState()?.type === 'playlist'}
-                    onDragStart={(e) => handleDragStartSession(e, session.id)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDropSessionToPlaylist(e, session.id)}
-                  >
-                    <div class="item-main">
-                      <div class="item-title">{session.name}</div>
-                      <div class="item-meta">
-                        <span
-                          class={`${styles.difficultyBadge} ${styles[session.difficulty as keyof typeof styles] || ''}`}
-                        >
-                          {session.difficulty}
-                        </span>
-                        <span>•</span>
-                        <span>{session.category}</span>
-                        <span>•</span>
-                        <span>{session.items.length} items</span>
-                        <Show when={session.lastPlayed}>
-                          <span>•</span>
-                          <span>
-                            {new Date(session.lastPlayed!).toLocaleDateString()}
-                          </span>
-                        </Show>
-                      </div>
-                      {/*
-                        Read-only mini timeline preview (Task 5).
-                        Renders one pill per session item so the user
-                        can scan a session's contents at a glance
-                        without opening the editor. Drag/edit/delete
-                        actions remain on the card-level item-actions
-                        cluster below.
-                      */}
-                      <SessionMiniTimeline session={session} />
-                    </div>
-                    <div class="item-actions">
-                      <button
-                        class="action-btn play-btn"
-                        onClick={() => handlePlay(session)}
-                        title="Play"
-                        aria-label="Play"
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                          <path fill="currentColor" d="M8 5v14l11-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        class="action-btn edit-btn"
-                        onClick={() => handleEdit(session)}
-                        title="Edit"
-                        aria-label="Edit"
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                          <path
-                            fill="currentColor"
-                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        class="action-btn delete-btn"
-                        onClick={() => handleDelete(session.id)}
-                        title="Delete"
-                        aria-label="Delete"
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                          <path
-                            fill="currentColor"
-                            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </For>
-
-              {filteredSessions().length === 0 && (
-                <div class="empty-state">
-                  <p>No sessions found. Create a new session to get started!</p>
-                </div>
+            <MelodyLibraryList
+              mode="single"
+              className="session-library-item"
+              kinds={['session']}
+              entries={filteredSessionItems()}
+              draggable={dragState()?.type === 'playlist'}
+              onDragStart={(item, e) => handleDragStartSession(e, item.id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={(item, e) => handleDropSessionToPlaylist(e, item.id)}
+              emptyMessage="No sessions found. Create a new session to get started!"
+              renderDetails={(item) => (
+                <SessionMiniTimeline session={item.raw as PlaybackSession} />
               )}
-            </div>
+              renderActions={(item) => {
+                const session = item.raw as PlaybackSession
+                return (
+                  <>
+                    <button
+                      class="action-btn play-btn"
+                      onClick={() => handlePlay(session)}
+                      title="Play"
+                      aria-label="Play"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14">
+                        <path fill="currentColor" d="M8 5v14l11-7z" />
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn edit-btn"
+                      onClick={() => handleEdit(session)}
+                      title="Edit"
+                      aria-label="Edit"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14">
+                        <path
+                          fill="currentColor"
+                          d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn delete-btn"
+                      onClick={() => handleDelete(session.id)}
+                      title="Delete"
+                      aria-label="Delete"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14">
+                        <path
+                          fill="currentColor"
+                          d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                        />
+                      </svg>
+                    </button>
+                  </>
+                )
+              }}
+            />
           </div>
         </div>
       </div>
