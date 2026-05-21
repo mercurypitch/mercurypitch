@@ -144,9 +144,9 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         </button>
       </div>
 
-      <Show when={props.advancedFeaturesEnabled()}>
-        <div class="tab-group">
-          <span class="tab-group-label">Social</span>
+      <div class="tab-group">
+        <span class="tab-group-label">Social</span>
+        <Show when={props.advancedFeaturesEnabled()}>
           <button
             id="tab-community"
             class={`app-tab ${props.activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
@@ -189,31 +189,31 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             </svg>
             {props.tabLabel(TAB_CHALLENGES)}
           </button>
-          <button
-            id="tab-jam"
-            class={`app-tab ${props.activeTab() === TAB_JAM ? 'active' : ''}`}
-            onClick={() => void props.handleTabChange(TAB_JAM)}
-            aria-label="Jam session"
+        </Show>
+        <button
+          id="tab-jam"
+          class={`app-tab ${props.activeTab() === TAB_JAM ? 'active' : ''}`}
+          onClick={() => void props.handleTabChange(TAB_JAM)}
+          aria-label="Jam session"
+        >
+          <svg
+            class="tab-icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <svg
-              class="tab-icon"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-            {props.tabLabel(TAB_JAM)}
-          </button>
-        </div>
-      </Show>
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+          </svg>
+          {props.tabLabel(TAB_JAM)}
+        </button>
+      </div>
 
       <div class="tab-group">
         <span class="tab-group-label">Advanced</span>

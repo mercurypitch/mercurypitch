@@ -10,7 +10,6 @@ import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'soli
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
-import { IS_DEV } from '@/lib/defaults'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
 import type { LyricsCatalogEntry } from '@/lib/shazam/lyrics-matcher'
@@ -82,9 +81,6 @@ export function ShazamListen(props: ShazamListenProps) {
     )
   })
   const [latestFrame, setLatestFrame] = createSignal<DetectedPitch | null>(null)
-
-  const debugEnabled = (): boolean =>
-    IS_DEV || localStorage.getItem('pitchperfect_shazam_debug_force') === 'true'
 
   const [showDebug, setShowDebug] = createSignal(
     localStorage.getItem('pitchperfect_shazam_debug') === 'true',
@@ -844,51 +840,49 @@ export function ShazamListen(props: ShazamListenProps) {
       <div class={styles.headerRow}>
         <h3 class={styles.heading}>Shazam Sing</h3>
         <div class={styles.headerButtons}>
-          <Show when={debugEnabled()}>
-            <div class={styles.speechControls}>
-              <button
-                class={styles.speechToggle}
-                classList={{ [styles.speechToggleOn!]: speechEnabled() }}
-                onClick={toggleSpeech}
-                data-testid="shazam-speech-toggle"
-              >
-                Speech
-              </button>
-              <Show when={speechEnabled()}>
-                <SafeSelect
-                  class={styles.engineSelect}
-                  value={speechEngine()}
-                  onChange={(e) => {
-                    setSpeechEngine(e.currentTarget.value as 'web' | 'whisper')
-                    toggleSpeech()
-                    toggleSpeech() // toggle off and on to reinit
-                  }}
-                >
-                  <option value="web">Web Speech API</option>
-                  <Show when={!isFirefox}>
-                    <option value="whisper">Whisper (Offline)</option>
-                  </Show>
-                </SafeSelect>
-                <Show
-                  when={
-                    speechEngine() === 'whisper' && whisperStatus() !== 'ready'
-                  }
-                >
-                  <span style={{ 'font-size': '10px', color: '#64748b' }}>
-                    {whisperStatus()}
-                  </span>
-                </Show>
-              </Show>
-            </div>
+          <div class={styles.speechControls}>
             <button
-              class={styles.debugToggle}
-              classList={{ [styles.debugToggleOn!]: showDebug() }}
-              onClick={toggleDebug}
-              data-testid="shazam-listen-debug-toggle"
+              class={styles.speechToggle}
+              classList={{ [styles.speechToggleOn!]: speechEnabled() }}
+              onClick={toggleSpeech}
+              data-testid="shazam-speech-toggle"
             >
-              Debug
+              Speech
             </button>
-          </Show>
+            <Show when={speechEnabled()}>
+              <SafeSelect
+                class={styles.engineSelect}
+                value={speechEngine()}
+                onChange={(e) => {
+                  setSpeechEngine(e.currentTarget.value as 'web' | 'whisper')
+                  toggleSpeech()
+                  toggleSpeech() // toggle off and on to reinit
+                }}
+              >
+                <option value="web">Web Speech API</option>
+                <Show when={!isFirefox}>
+                  <option value="whisper">Whisper (Offline)</option>
+                </Show>
+              </SafeSelect>
+              <Show
+                when={
+                  speechEngine() === 'whisper' && whisperStatus() !== 'ready'
+                }
+              >
+                <span style={{ 'font-size': '10px', color: '#64748b' }}>
+                  {whisperStatus()}
+                </span>
+              </Show>
+            </Show>
+          </div>
+          <button
+            class={styles.debugToggle}
+            classList={{ [styles.debugToggleOn!]: showDebug() }}
+            onClick={toggleDebug}
+            data-testid="shazam-listen-debug-toggle"
+          >
+            Debug
+          </button>
         </div>
       </div>
 
@@ -1009,7 +1003,7 @@ export function ShazamListen(props: ShazamListenProps) {
         </div>
       </Show>
 
-      <Show when={debugEnabled() && showDebug()}>
+      <Show when={showDebug()}>
         <div class={styles.debugPanels}>
           <LivePitchDebug
             latestFrame={latestFrame}
@@ -1063,7 +1057,7 @@ export function ShazamListen(props: ShazamListenProps) {
                   <span class={styles.liveMatchName}>{match.name}</span>
                   <span class={styles.liveMatchConf}>{match.confidence}%</span>
                 </div>
-                <Show when={debugEnabled() && showDebug()}>
+                <Show when={showDebug()}>
                   <div class={styles.liveMatchDetail}>
                     P:{match.breakdown.pitch} I:{match.breakdown.interval} C:
                     {match.breakdown.chroma} R:{match.breakdown.rhythm} L:

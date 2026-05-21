@@ -43,8 +43,6 @@ function confidenceLabel(pct: number): string {
 }
 
 export function ShazamResults(props: ShazamResultsProps) {
-  const debugEnabled = (): boolean => true
-
   const [showDebug, setShowDebug] = createSignal(
     localStorage.getItem('pitchperfect_shazam_debug') === 'true',
   )
@@ -61,16 +59,14 @@ export function ShazamResults(props: ShazamResultsProps) {
     <div class={styles.container} data-testid="shazam-results">
       <div class={styles.headerRow}>
         <h3 class={styles.heading}>Matches for your singing</h3>
-        <Show when={debugEnabled()}>
-          <button
-            class={styles.debugToggle}
-            classList={{ [styles.debugToggleOn!]: showDebug() }}
-            onClick={toggleDebug}
-            data-testid="shazam-debug-toggle"
-          >
-            Debug
-          </button>
-        </Show>
+        <button
+          class={styles.debugToggle}
+          classList={{ [styles.debugToggleOn!]: showDebug() }}
+          onClick={toggleDebug}
+          data-testid="shazam-debug-toggle"
+        >
+          Debug
+        </button>
       </div>
 
       <Show
@@ -158,12 +154,7 @@ export function ShazamResults(props: ShazamResultsProps) {
       </button>
 
       <Show
-        when={
-          debugEnabled() &&
-          showDebug() &&
-          props.candidates.length > 0 &&
-          props.liveContour
-        }
+        when={showDebug() && props.candidates.length > 0 && props.liveContour}
       >
         <Suspense>
           <ShazamDebugPanel
