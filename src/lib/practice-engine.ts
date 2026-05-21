@@ -274,7 +274,7 @@ export class PracticeEngine {
         this.currentSamples.push({
           freq: pitch.frequency,
 
-          time: (performance as unknown as { now: () => number }).now(),
+          time: performance.now(),
           cents,
         })
       }

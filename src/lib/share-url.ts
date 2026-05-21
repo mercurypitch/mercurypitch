@@ -177,11 +177,7 @@ export async function copyShareURL(
 ): Promise<boolean> {
   const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
   try {
-    await (
-      navigator as unknown as {
-        clipboard: { writeText: (text: string) => Promise<void> }
-      }
-    ).clipboard.writeText(url)
+    await navigator.clipboard.writeText(url)
     return true
   } catch {
     // Fallback for older browsers

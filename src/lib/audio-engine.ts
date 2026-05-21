@@ -612,11 +612,7 @@ export class AudioEngine {
 
       console.info('[AudioEngine] Requesting microphone access...')
 
-      this.micStream = await (
-        navigator as unknown as {
-          mediaDevices: { getUserMedia: (opts: object) => Promise<MediaStream> }
-        }
-      ).mediaDevices.getUserMedia({
+      this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
