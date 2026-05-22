@@ -819,3 +819,4 @@ export const MidiDin: Component = () => (
     <circle cx="5.3" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 )
+

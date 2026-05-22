@@ -15,3 +15,4 @@ export type {
 } from '@/types/pitch-algorithms'
 export { getAllTests } from './test-data'
 export { runBenchmarks, TEST_FREQUENCIES } from './benchmarks'
+export * from './note-segmenter'

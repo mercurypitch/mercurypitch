@@ -261,3 +261,10 @@ export interface UvrStemFingerprint extends DbEntity {
   sessionId: string // matches UvrSession.sessionId
   fingerprintJson: string // JSON-serialized MelodyFingerprint
 }
+
+export interface OfflinePitchAnalysisRecord extends DbEntity {
+  fileHash: string
+  analysisResultsJson: string
+  lrcLinesJson: string
+  segmentedNotesJson: string
+}

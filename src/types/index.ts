@@ -82,6 +82,8 @@ export interface MelodyItem {
   vibratoAmplitude?: number
   /** Visual/playback rest inserted for practice spacing. Not persisted as a real melody note. */
   isRest?: boolean
+  /** Lyric text attached to this note from LRC alignment */
+  lyricText?: string
 }
 
 /** Scale degree definition */

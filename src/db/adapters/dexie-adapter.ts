@@ -27,6 +27,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
   uvrStemBlobs: 'id, sessionId, stemType, createdAt',
   uvrStemFingerprints: 'id, sessionId, createdAt',
+  offlinePitchAnalysis: 'id, fileHash',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────
@@ -37,7 +38,25 @@ class DexieDatabase extends DexieDB {
 
   constructor() {
     super('MercuryPitchDB')
-    this.version(1).stores(STORE_SCHEMAS)
+    this.version(1).stores({
+      userProfiles: 'id',
+      sessionRecords: 'id, userId, endedAt',
+      challengeDefinitions: 'id, category, isActive, sortOrder',
+      challengeProgress: 'id, userId, challengeId',
+      badgeDefinitions: 'id, category, tier, sortOrder',
+      userBadges: 'id, userId, badgeId',
+      achievements: 'id, sortOrder',
+      userAchievements: 'id, userId, achievementId',
+      leaderboardEntries: 'id, userId, category, period',
+      sharedMelodies: 'id, userId, melodyId, isPublic',
+      sharedSessions: 'id, userId, sessionId, isPublic',
+      featureFlags: 'id, &key',
+      userSettings: 'id, userId, key',
+      uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt',
+      uvrStemFingerprints: 'id, sessionId, createdAt',
+    })
+    this.version(2).stores(STORE_SCHEMAS)
   }
 
   /** Add a new table at the next schema version. */

@@ -565,3 +565,67 @@ export function computeActiveWord(
 
   return { activeUpTo, charProgress }
 }
+
+// ── LRC to Melody Alignment ─────────────────────────────────────
+
+import type { MelodyItem } from '@/types'
+
+/**
+ * Aligns LRC lines with a set of segmented melody notes.
+ * If word-level timings are present, maps individual words to notes.
+ * Modifies the `MelodyItem` array in place by adding `lyricText`.
+ *
+ * @param notes The denoised/segmented melody notes
+ * @param lrcLines The parsed LRC lines
+ * @param bpm Used to convert beats back to seconds to match LRC times
+ */
+export function mapLyricsToMelody(
+  notes: MelodyItem[],
+  lrcLines: LrcLine[],
+  bpm: number = 120
+): void {
+  if (notes.length === 0 || lrcLines.length === 0) return
+
+  const beatsToSeconds = (beats: number) => beats / (bpm / 60)
+
+  for (let i = 0; i < lrcLines.length; i++) {
+    const line = lrcLines[i]
+    const nextLineTime = i + 1 < lrcLines.length ? lrcLines[i + 1].time : line.time + 10 // guess 10s
+
+    // Does this line have word-level timings?
+    const wordTimings = parseLrcWordTimings(line.text, line.time)
+
+    if (wordTimings) {
+      // Word-level mapping
+      const { words, wordTimes } = wordTimings
+      for (let w = 0; w < words.length; w++) {
+        const wordTime = wordTimes[w]
+        const nextWordTime = w + 1 < wordTimes.length ? wordTimes[w + 1] : nextLineTime
+        
+        // Find the note that best overlaps this word's time bracket
+        for (const note of notes) {
+          const noteStartSec = beatsToSeconds(note.startBeat)
+          const noteEndSec = beatsToSeconds(note.startBeat + note.duration)
+          
+          // Overlap check
+          if (noteEndSec > wordTime && noteStartSec < nextWordTime) {
+            // Only assign if it doesn't already have text, or append if it does
+            note.lyricText = (note.lyricText !== undefined && note.lyricText !== '') ? `${note.lyricText  } ${  words[w]}` : words[w]
+            break // Moved to the next word once we find a matching note
+          }
+        }
+      }
+    } else {
+      // Line-level mapping: attach the whole line to the first note that falls within its timeframe
+      for (const note of notes) {
+        const noteStartSec = beatsToSeconds(note.startBeat)
+        const noteEndSec = beatsToSeconds(note.startBeat + note.duration)
+        
+        if (noteEndSec > line.time && noteStartSec < nextLineTime) {
+          note.lyricText = (note.lyricText !== undefined && note.lyricText !== '') ? `${note.lyricText  } ${  line.text}` : line.text
+          break // Assigned line to the first note
+        }
+      }
+    }
+  }
+}

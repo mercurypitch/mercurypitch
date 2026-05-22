@@ -3,17 +3,28 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount,Show } from 'solid-js'
 import { OfflinePitchCanvas } from '@/components/OfflinePitchCanvas'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { getDb } from '@/db'
+import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
+import { deleteOfflineAnalysis,getOfflineAnalysis, saveOfflineAnalysis } from '@/db/services/pitch-analysis-service'
+import { saveUvrSession } from '@/db/services/uvr-service'
+import { computeFileHash } from '@/lib/file-hash'
+import type { LrcLine } from '@/lib/lyrics-service'
+import { parseLrcFile } from '@/lib/lyrics-service'
+import { mapLyricsToMelody } from '@/lib/lyrics-service'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
-import { VocalSeparator } from '@/lib/vocal-separator'
-import { UVR_MODEL_PATH } from '@/lib/defaults'
-import { uvrForceWebGpu } from '@/stores/app-store'
+import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
+import { cancelUvrPipeline,runUvrPipeline } from '@/lib/uvr-processing-pipeline'
+import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession,saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
+import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
+import { FileText } from './icons'
+import styles from './PitchTestingTab.module.css'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -28,6 +39,10 @@ export interface AnalyzedTrack {
   waveform: Float32Array
   duration: number
   analysisResults: { algorithm: AlgorithmId; pitches: TimeStampedPitchSample[] }[]
+  lrcLines?: LrcLine[]
+  segmentedNotes?: MelodyItem[]
+  isVocalStem?: boolean
+  fileHash?: string
 }
 
 interface TestNoteResult {
@@ -115,7 +130,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [ensembleTickResults, setEnsembleTickResults] = createSignal<
     EnsembleTickResult[]
   >([])
-  const [detectionMode, setDetectionMode] = createSignal<DetectionMode>('mic')
+  const [detectionMode, _setDetectionMode] = createSignal<DetectionMode>(
+    (localStorage.getItem('pitch_test_mode') as DetectionMode) || 'mic'
+  )
+  const setDetectionMode = (mode: DetectionMode) => {
+    localStorage.setItem('pitch_test_mode', mode)
+    _setDetectionMode(mode)
+  }
   const [frequency, setFrequency] = createSignal(440)
   const [generatedWaveform, setGeneratedWaveform] =
     createSignal<Float32Array | null>(null)
@@ -125,12 +146,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [activeTrackId, setActiveTrackId] = createSignal<string | null>(null)
 
   const activeTrack = createMemo(() => analyzedTracks().find(t => t.id === activeTrackId()) || null)
+
+  const [showSegmentedNotes, setShowSegmentedNotes] = createSignal(true)
   const uploadedFile = createMemo(() => activeTrack()?.file || null)
   const fileWaveform = createMemo(() => activeTrack()?.waveform || null)
-  const fileDuration = createMemo(() => activeTrack()?.duration || 0)
+  const fileDuration = createMemo(() => activeTrack()?.duration ?? 0)
   const offlineAnalysisResults = createMemo(() => activeTrack()?.analysisResults || [])
+  const currentSegmentedNotes = createMemo(() => showSegmentedNotes() ? activeTrack()?.segmentedNotes : undefined)
   
   const [isAnalyzingOffline, setIsAnalyzingOffline] = createSignal(false)
+  const [isSeparating, setIsSeparating] = createSignal(false)
+  const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<string | undefined>()
   const [offlineProgress, setOfflineProgress] = createSignal(0)
 
   // Microphone state
@@ -170,6 +196,93 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [sensitivity, setSensitivity] = createSignal(7)
   const [minConfidence, setMinConfidence] = createSignal(0.1)
   const [centsThreshold, setCentsThreshold] = createSignal(15)
+
+  onMount(async () => {
+    try {
+      const db = await getDb()
+      const sessions = await db.getRepository<UvrSessionRecord>('uvrSessions').findAll({ where: { status: 'completed' } })
+      for (const session of sessions) {
+        const sessionId = session.appSessionId
+        const vocalBlobs = await db.getRepository<UvrStemBlob>('uvrStemBlobs').findAll({ where: { sessionId, stemType: 'vocal' } })
+        
+        if (vocalBlobs.length > 0) {
+          const blob = vocalBlobs[0]
+          const fileName = session.originalFileName ? `${session.originalFileName} (Vocal).wav` : 'Vocal Stem.wav'
+          const file = new File([blob.data], fileName, { type: blob.mimeType })
+
+          let lrcLines: LrcLine[] | undefined = undefined
+          const storageKey = `lyrics_v1_${sessionId}`
+          const raw = localStorage.getItem(storageKey)
+          if (raw !== undefined && raw !== null && raw !== '') {
+            try {
+              const data = JSON.parse(raw)
+              if (data.format === 'lrc' && typeof data.text === 'string') {
+                lrcLines = parseLrcFile(data.text)
+              }
+            } catch (e) {
+              console.error(e)
+            }
+          }
+
+          const newId = Math.random().toString(36).substring(2, 9)
+          const fileHash = session.fileHash
+          
+          let cachedAnalysis: { analysisResults: unknown; lrcLines?: unknown; segmentedNotes?: unknown } | null = null
+          if (fileHash !== undefined && fileHash !== '') {
+            cachedAnalysis = await getOfflineAnalysis(fileHash)
+          }
+
+          const newTrack: AnalyzedTrack = {
+            id: newId,
+            file,
+            waveform: new Float32Array(),
+            duration: 0,
+            analysisResults: (cachedAnalysis?.analysisResults as typeof newTrack.analysisResults) ?? [],
+            lrcLines: (cachedAnalysis?.lrcLines as typeof lrcLines) ?? lrcLines,
+            segmentedNotes: (cachedAnalysis?.segmentedNotes as typeof newTrack.segmentedNotes) ?? undefined,
+            isVocalStem: true,
+            fileHash
+          }
+
+          setAnalyzedTracks(prev => [...prev, newTrack])
+
+          let ctx = audioContext()
+          if (!ctx) {
+            ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+            setAudioContext(ctx)
+          }
+
+          const bufferCopy = blob.data.slice(0)
+          const audioBuffer = await ctx.decodeAudioData(bufferCopy)
+          const rawData = audioBuffer.getChannelData(0)
+          const sampleRate = audioBuffer.sampleRate
+
+          let samples = rawData
+          if (sampleRate > 44100) {
+            const ratio = 44100 / sampleRate
+            const newLength = Math.floor(rawData.length * ratio)
+            samples = new Float32Array(newLength)
+            for (let i = 0; i < newLength; i++) {
+              samples[i] = rawData[Math.floor(i * ratio)]
+            }
+          }
+
+          setAnalyzedTracks(prev => prev.map(t => {
+            if (t.id === newId) {
+              return {
+                ...t,
+                waveform: samples,
+                duration: audioBuffer.duration
+              }
+            }
+            return t
+          }))
+        }
+      }
+    } catch (err) {
+      console.error('Failed to auto-load separated stems from DB', err)
+    }
+  })
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
@@ -223,6 +336,25 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   }
 
   // Load audio file
+  const handleLrcUpload = async (file: File, trackId: string) => {
+    try {
+      const text = await file.text()
+      const lrcLines = parseLrcFile(text)
+      setAnalyzedTracks(prev => prev.map(t => {
+        if (t.id === trackId) {
+          const updated = { ...t, lrcLines }
+          if (updated.segmentedNotes) {
+            mapLyricsToMelody(updated.segmentedNotes, lrcLines)
+          }
+          return updated
+        }
+        return t
+      }))
+    } catch (err) {
+      console.error('Error parsing LRC file', err)
+    }
+  }
+
   const handleFileUpload = (event: Event) => {
     const target = event.currentTarget as HTMLInputElement
     const file = target.files?.[0]
@@ -251,7 +383,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const processAudioFile = async (audioData: ArrayBuffer) => {
     let ctx = audioContext()
     if (!ctx) {
-      ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       setAudioContext(ctx)
     }
 
@@ -273,17 +405,29 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         }
       }
 
-      setAnalyzedTracks(prev => prev.map(t => {
-        if (t.id === activeTrackId()) {
+      const currentTracks = analyzedTracks()
+      const currentActiveId = activeTrackId()
+      const newTracks = await Promise.all(currentTracks.map(async (t) => {
+        if (t.id === currentActiveId) {
+          const fileHash = await computeFileHash(t.file)
+          let cachedAnalysis: { analysisResults: unknown; lrcLines?: unknown; segmentedNotes?: unknown } | null = null
+          if (fileHash !== undefined && fileHash !== '') {
+            cachedAnalysis = await getOfflineAnalysis(fileHash)
+          }
+
           return {
             ...t,
             waveform: samples,
             duration: audioBuffer!.duration,
-            analysisResults: []
+            analysisResults: (cachedAnalysis?.analysisResults as typeof t.analysisResults) ?? [],
+            lrcLines: (cachedAnalysis?.lrcLines as typeof t.lrcLines) ?? undefined,
+            segmentedNotes: (cachedAnalysis?.segmentedNotes as typeof t.segmentedNotes) ?? undefined,
+            fileHash
           }
         }
         return t
       }))
+      setAnalyzedTracks(newTracks)
       setOfflineProgress(0)
       stopLiveDetection() // Reset detection
     } catch (error) {
@@ -308,7 +452,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       pitches: []
     }))
 
-    const sampleRate = audioContext()?.sampleRate || 44100
+    const sampleRate = audioContext()?.sampleRate ?? 44100
     const windowSize = 2048 // 2048 samples per chunk
     const stepSize = 1024   // 1024 samples hop size
     const totalSteps = Math.floor((samples.length - windowSize) / stepSize)
@@ -326,9 +470,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         const algoId = activeAlgosArr[j] as AlgorithmId
         const detector = currentDetectors.find(d => d.algorithm === algoId)
         if (detector) {
-          let res: any = null
+          let res: PitchDetectionResult | null = null
           if ('detectAsync' in detector && typeof detector.detectAsync === 'function') {
-            res = await (detector as any).detectAsync(chunk)
+            res = await (detector as { detectAsync: (chunk: Float32Array) => Promise<PitchDetectionResult | null> }).detectAsync(chunk)
           } else {
             res = detector.detect(chunk)
           }
@@ -361,7 +505,21 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
     setAnalyzedTracks(prev => prev.map(t => {
       if (t.id === activeId) {
-        return { ...t, analysisResults: currentResults }
+        // Automatically segment pitches from the primary (first) algorithm
+        const primaryPitches = currentResults.length > 0 ? currentResults[0].pitches : []
+        const newSegmentedNotes = segmentPitchesToNotes(primaryPitches, { minClarity: 0.7 })
+        
+        // Re-map lyrics if they exist
+        if (t.lrcLines) {
+          mapLyricsToMelody(newSegmentedNotes, t.lrcLines)
+        }
+        
+        const updatedTrack = { ...t, analysisResults: currentResults, segmentedNotes: newSegmentedNotes }
+        if (updatedTrack.fileHash !== undefined) {
+          saveOfflineAnalysis(updatedTrack.fileHash, updatedTrack.analysisResults, updatedTrack.lrcLines, updatedTrack.segmentedNotes).catch(console.error)
+        }
+
+        return updatedTrack
       }
       return t
     }))
@@ -372,9 +530,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const separateVocalsFirst = async () => {
     const samples = fileWaveform()
     const activeId = activeTrackId()
-    if (!samples || isAnalyzingOffline() || !activeId) return
+    const track = analyzedTracks().find(t => t.id === activeId)
+    // Synchronously extract context to avoid reactivity warnings inside async onComplete
+    const currentAudioCtx = audioContext()
+    
+    if (!samples || isAnalyzingOffline() || isSeparating() || !activeId || !track) return
 
-    setIsAnalyzingOffline(true)
+    setIsSeparating(true)
     setOfflineProgress(0)
     setAnalyzedTracks(prev => prev.map(t => {
       if (t.id === activeId) return { ...t, analysisResults: [] }
@@ -382,39 +544,97 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }))
 
     try {
-      const separator = new VocalSeparator()
-      separator.onProgress = (pct) => {
-        setOfflineProgress(pct * 0.5) // First 50% is separation
+      const file = track.file
+      const hash = await computeFileHash(file)
+      const mode = getUvrProcessingMode()
+      const sessionId = startUvrSession(file.name, file.size, file.type, 'separate', mode, hash)
+
+      const sessions = getAllUvrSessions()
+      const session = sessions.find((s) => s.sessionId === sessionId)
+      if (session) {
+        session.status = 'processing'
+        saveAllUvrSessions(sessions)
+        setCurrentUvrSession({ ...session })
       }
-      
-      const sampleRate = audioContext()?.sampleRate || 44100
-      
-      // Need to clone the samples because worker might take ownership or we need to pass a fresh copy
-      const audioCopy = new Float32Array(samples)
-      
-      const forceWebGpu = uvrForceWebGpu()
-      await separator.initialize(UVR_MODEL_PATH, forceWebGpu)
-      const result = await separator.separate(audioCopy, sampleRate)
-      
-      setAnalyzedTracks(prev => prev.map(t => {
-        if (t.id === activeId) return { ...t, waveform: result.vocals, analysisResults: [] }
-        return t
-      }))
-      
-      separator.destroy()
-      
-      // Now analyze
-      setOfflineProgress(50)
-      
-      // Since analyzeUploadedAudio expects fileWaveform() to be updated, we yield to reactivity
-      await new Promise(r => setTimeout(r, 0))
-      
-      await analyzeUploadedAudio()
+
+      await runUvrPipeline(file, sessionId, mode, {
+        onProgress: (pct) => {
+          setOfflineProgress(pct * 0.5) // First 50% is separation
+        },
+        onComplete: async (result) => {
+          try {
+            completeUvrSession(sessionId, result.outputs, result.stemMeta)
+            
+            const s = getUvrSession(sessionId)
+            if (s) {
+              await saveUvrSession({
+                sessionId,
+                status: 'completed',
+                progress: 100,
+                fileHash: s.fileHash,
+                originalFileName: s.originalFile?.name ?? file.name,
+                originalFileSize: s.originalFile?.size ?? file.size,
+                originalFileType: s.originalFile?.mimeType ?? file.type,
+                processingMode: mode,
+                processingTime: s.processingTime,
+              })
+            }
+
+            // Now fetch the vocal stem back to Float32Array to continue with pitch detection
+            if (result.outputs !== undefined && result.outputs.vocal !== undefined) {
+              const resp = await fetch(result.outputs.vocal)
+              const ab = await resp.arrayBuffer()
+              let ctx = currentAudioCtx
+              if (!ctx) {
+                 ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+                 setAudioContext(ctx)
+              }
+              const decoded = await ctx.decodeAudioData(ab)
+              
+              const mono = new Float32Array(decoded.length)
+              if (decoded.numberOfChannels > 1) {
+                const ch0 = decoded.getChannelData(0)
+                const ch1 = decoded.getChannelData(1)
+                for (let i = 0; i < decoded.length; i++) {
+                  mono[i] = (ch0[i] + ch1[i]) * 0.5
+                }
+              } else {
+                mono.set(decoded.getChannelData(0))
+              }
+
+              setAnalyzedTracks(prev => prev.map(t => {
+                if (t.id === activeId) return { ...t, waveform: mono, analysisResults: [], isVocalStem: true }
+                return t
+              }))
+            }
+            
+            setOfflineProgress(50)
+            // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
+            await new Promise(r => setTimeout(r, 0))
+            await analyzeUploadedAudio()
+          } catch (err) {
+            console.error('Error post-processing vocal stem:', err)
+            alert('Failed to process separated vocals. See console.')
+          } finally {
+            setIsSeparating(false)
+            setActiveUvrSessionId(undefined)
+          }
+        },
+        onError: (err) => {
+          setErrorUvrSession(sessionId, err)
+          if (err !== 'Cancelled') {
+            console.error('Failed to separate vocals:', err)
+            alert('Failed to separate vocals. See console for details.')
+          }
+          setIsSeparating(false)
+          setActiveUvrSessionId(undefined)
+        }
+      })
       
     } catch (err) {
-      console.error(err)
-      alert('Stem separation failed')
-      setIsAnalyzingOffline(false)
+      console.error('Failed to initialize separation:', err)
+      alert('Failed to initialize separation. See console for details.')
+      setIsSeparating(false)
     }
   }
 
@@ -1101,18 +1321,35 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}>
                   <button
                     class="btn btn-primary btn-sm"
-                    onclick={analyzeUploadedAudio}
-                    disabled={isAnalyzingOffline()}
+                    onclick={() => { void analyzeUploadedAudio() }}
+                    disabled={isAnalyzingOffline() || isSeparating()}
                   >
                     {isAnalyzingOffline() ? `Processing... ${Math.round(offlineProgress())}%` : 'Analyze Pitch'}
                   </button>
                   <button
                     class="btn btn-outline btn-sm"
-                    onclick={separateVocalsFirst}
-                    disabled={isAnalyzingOffline()}
+                    style={{ transition: 'all 0.2s', cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = 'none')}
+                    onclick={() => { void separateVocalsFirst() }}
+                    disabled={isAnalyzingOffline() || isSeparating() || (activeTrack()?.isVocalStem === true)}
                   >
-                    Separate Vocals First
+                    {activeTrack()?.isVocalStem === true ? 'Using Vocal Stem' : isSeparating() ? `Separating... ${Math.round(offlineProgress() * 2)}%` : 'Separate Vocals First'}
                   </button>
+                  <Show when={isSeparating()}>
+                     <button class="btn btn-sm" style={{ background: 'var(--danger)', color: 'white', border: 'none' }} onClick={() => cancelUvrPipeline(getUvrProcessingMode(), activeUvrSessionId())}>Cancel Separation</button>
+                  </Show>
+                  <Show when={(activeTrack()?.analysisResults?.length ?? 0) > 0 && activeTrack()?.fileHash}>
+                     <button class="btn btn-sm" style={{ background: 'var(--danger)', color: 'white', border: 'none' }} onClick={() => {
+                       const track = activeTrack()
+                       const fileHash = track?.fileHash
+                       if (!track || !fileHash) return
+                       void (async () => {
+                         await deleteOfflineAnalysis(fileHash)
+                         setAnalyzedTracks(prev => prev.map(t => t.id === track.id ? { ...t, analysisResults: [], lrcLines: undefined, segmentedNotes: undefined } : t))
+                       })()
+                     }}>Clear Analysis Cache</button>
+                  </Show>
                 </div>
               </Show>
               <Show when={!fileWaveform()}>
@@ -1320,18 +1557,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 <For each={analyzedTracks()}>
                   {(track) => (
                     <div
-                      style={{
-                        padding: '8px 12px',
-                        background: activeTrackId() === track.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                        border: activeTrackId() === track.id ? '1px solid var(--primary)' : '1px solid var(--border)',
-                        'border-radius': '6px',
-                        cursor: 'pointer',
-                        'min-width': '180px',
-                        display: 'flex',
-                        'flex-direction': 'column',
-                        gap: '6px',
-                        transition: 'all 0.2s ease'
-                      }}
+                      classList={{ [styles.galleryItem]: true, [styles.active]: activeTrackId() === track.id }}
                       onClick={() => setActiveTrackId(track.id)}
                     >
                       <div style={{ display: 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
@@ -1361,8 +1587,31 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           )}
                         </For>
                         <Show when={track.analysisResults.length === 0}>
-                          <span style={{ 'font-size': '0.6rem', color: 'var(--text-muted)' }}>No algorithms run</span>
+                          <span class={styles.tagEmpty}>No algorithms run</span>
                         </Show>
+                      </div>
+                      <div class={styles.galleryItemActions}>
+                        <div class={styles.lyricsControls}>
+                          <button
+                            classList={{ [styles.lyricsBtn]: true, [styles.lyricsBtnPrimary]: !!track.lrcLines, [styles.lyricsBtnSecondary]: !track.lrcLines }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const input = document.createElement('input')
+                              input.type = 'file'
+                              input.accept = '.lrc,.txt'
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0]
+                                if (file) void handleLrcUpload(file, track.id)
+                              }
+                              input.click()
+                            }}
+                          >
+                            <FileText />
+                            {track.lrcLines 
+                              ? `Lyrics Loaded (${track.lrcLines.length} lines)` 
+                              : 'Add Lyrics (LRC)'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1371,8 +1620,20 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
               <Show when={fileWaveform() !== null}>
                 <div class="waveform-display">
-                  <div class="waveform-display-header" style={{ display: 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
-                    <h4 style={{ margin: 0, 'font-size': '0.85rem' }}>{uploadedFile()?.name}</h4>
+                  <div class="waveform-display-header" style={{ display: 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+                    <div style={{ display: 'flex', 'align-items': 'center', gap: '12px' }}>
+                      <h4 style={{ margin: 0, 'font-size': '0.85rem' }}>{uploadedFile()?.name}</h4>
+                      <Show when={activeTrack()?.segmentedNotes}>
+                        <label style={{ display: 'flex', 'align-items': 'center', gap: '6px', 'font-size': '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={showSegmentedNotes()} 
+                            onChange={(e) => setShowSegmentedNotes(e.currentTarget.checked)}
+                          />
+                          Denoised Melody
+                        </label>
+                      </Show>
+                    </div>
                     <span style={{ 'font-size': '0.75rem', color: 'var(--text-secondary)' }}>{fileDuration().toFixed(2)}s</span>
                   </div>
                   <div
@@ -1384,6 +1645,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         waveform={fileWaveform()}
                         durationSec={fileDuration()}
                         analysisResults={offlineAnalysisResults()}
+                        segmentedNotes={currentSegmentedNotes()}
+                        audioFile={uploadedFile()}
                       />
                     </div>
                     <div class="resize-handle" onMouseDown={onResizeMouseDown}>
@@ -1517,6 +1780,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             fallback={
               <Show when={ensembleMode()}>
                 <div class="info-panel">
+                  <Show when={isSeparating()}>
+                    <div class="processing-progress" style={{ display: 'flex', 'align-items': 'center', gap: '10px' }}>
+                      <span class="progress-text">Separating... {Math.round(offlineProgress())}%</span>
+                      <button class="btn btn-secondary" style={{ padding: '4px 8px', 'font-size': '12px' }} onClick={() => cancelUvrPipeline(getUvrProcessingMode(), activeUvrSessionId())}>Cancel</button>
+                    </div>
+                  </Show>
                   <h3>Ensemble Mode</h3>
                   <p>
                     {[...ensembleAlgorithms()]
