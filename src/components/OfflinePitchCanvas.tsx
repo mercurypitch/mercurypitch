@@ -33,6 +33,13 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
   let lastDrawState = { w: 0, h: 0, sx: -1, zoom: -1, hidden: new Set<string>() }
   let forceRedraw = true
 
+  createEffect(() => {
+    props.waveform;
+    props.analysisResults;
+    props.segmentedNotes;
+    forceRedraw = true;
+  });
+
   const [hiddenAlgos, setHiddenAlgos] = createSignal<Set<string>>(new Set())
 
   const toggleAlgo = (algo: string) => {
