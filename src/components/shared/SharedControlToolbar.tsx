@@ -822,6 +822,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="1">1x</option>
               <option value="1.25">1.25x</option>
               <option value="1.5">1.5x</option>
+              <option value="1.75">1.75x</option>
               <option value="2">2x</option>
             </SafeSelect>
           </div>

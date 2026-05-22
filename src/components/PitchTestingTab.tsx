@@ -4,10 +4,14 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { OfflinePitchCanvas } from '@/components/OfflinePitchCanvas'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
+import { VocalSeparator } from '@/lib/vocal-separator'
+import { UVR_MODEL_PATH } from '@/lib/defaults'
+import { uvrForceWebGpu } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -17,6 +21,14 @@ interface PitchTestingTabProps {
 
 type DetectionMode = 'mic' | 'file' | 'generate'
 type AlgorithmId = 'yin' | 'fft' | 'autocorr' | 'swift'
+
+export interface AnalyzedTrack {
+  id: string
+  file: File
+  waveform: Float32Array
+  duration: number
+  analysisResults: { algorithm: AlgorithmId; pitches: TimeStampedPitchSample[] }[]
+}
 
 interface TestNoteResult {
   noteName: string
@@ -108,12 +120,18 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [generatedWaveform, setGeneratedWaveform] =
     createSignal<Float32Array | null>(null)
 
-  // File upload state
-  const [uploadedFile, setUploadedFile] = createSignal<File | null>(null)
-  const [fileWaveform, setFileWaveform] = createSignal<Float32Array | null>(
-    null,
-  )
-  const [fileDuration, setFileDuration] = createSignal(0)
+  // Gallery state
+  const [analyzedTracks, setAnalyzedTracks] = createSignal<AnalyzedTrack[]>([])
+  const [activeTrackId, setActiveTrackId] = createSignal<string | null>(null)
+
+  const activeTrack = createMemo(() => analyzedTracks().find(t => t.id === activeTrackId()) || null)
+  const uploadedFile = createMemo(() => activeTrack()?.file || null)
+  const fileWaveform = createMemo(() => activeTrack()?.waveform || null)
+  const fileDuration = createMemo(() => activeTrack()?.duration || 0)
+  const offlineAnalysisResults = createMemo(() => activeTrack()?.analysisResults || [])
+  
+  const [isAnalyzingOffline, setIsAnalyzingOffline] = createSignal(false)
+  const [offlineProgress, setOfflineProgress] = createSignal(0)
 
   // Microphone state
   const [audioContext, setAudioContext] = createSignal<AudioContext | null>(
@@ -210,7 +228,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const file = target.files?.[0]
     if (!file) return
 
-    setUploadedFile(file)
+    const newId = Math.random().toString(36).substring(2, 9)
+    const newTrack: AnalyzedTrack = {
+      id: newId,
+      file,
+      waveform: new Float32Array(),
+      duration: 0,
+      analysisResults: []
+    }
+    
+    setAnalyzedTracks(prev => [...prev, newTrack])
+    setActiveTrackId(newId)
 
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -221,8 +249,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   }
 
   const processAudioFile = async (audioData: ArrayBuffer) => {
-    const ctx = audioContext()
-    if (!ctx) return
+    let ctx = audioContext()
+    if (!ctx) {
+      ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      setAudioContext(ctx)
+    }
 
     try {
       const audioBuffer = await ctx.decodeAudioData(audioData)
@@ -242,12 +273,148 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         }
       }
 
-      setFileWaveform(samples)
-      setFileDuration(audioBuffer!.duration)
+      setAnalyzedTracks(prev => prev.map(t => {
+        if (t.id === activeTrackId()) {
+          return {
+            ...t,
+            waveform: samples,
+            duration: audioBuffer!.duration,
+            analysisResults: []
+          }
+        }
+        return t
+      }))
+      setOfflineProgress(0)
       stopLiveDetection() // Reset detection
     } catch (error) {
       console.error('Error processing audio file:', error)
       alert('Failed to process audio file')
+    }
+  }
+
+  const analyzeUploadedAudio = async () => {
+    const samples = fileWaveform()
+    const activeId = activeTrackId()
+    if (!samples || isAnalyzingOffline() || !activeId) return
+
+    setIsAnalyzingOffline(true)
+    setOfflineProgress(0)
+
+    // Determine algorithms to run
+    const activeAlgosArr = Array.from(ensembleMode() ? ensembleAlgorithms() : [selectedAlgorithm()])
+
+    const results: { algorithm: AlgorithmId, pitches: TimeStampedPitchSample[] }[] = activeAlgosArr.map(algo => ({
+      algorithm: algo as AlgorithmId,
+      pitches: []
+    }))
+
+    const sampleRate = audioContext()?.sampleRate || 44100
+    const windowSize = 2048 // 2048 samples per chunk
+    const stepSize = 1024   // 1024 samples hop size
+    const totalSteps = Math.floor((samples.length - windowSize) / stepSize)
+
+    // Using existing detectors which might have state.
+    // For a cleaner offline run, we could instantiate new ones, but this is fine for debug.
+    const currentDetectors = detectors()
+
+    for (let i = 0; i < totalSteps; i++) {
+      const startIndex = i * stepSize
+      const chunk = samples.slice(startIndex, startIndex + windowSize)
+      const timestamp = (startIndex + windowSize / 2) / sampleRate
+
+      for (let j = 0; j < activeAlgosArr.length; j++) {
+        const algoId = activeAlgosArr[j] as AlgorithmId
+        const detector = currentDetectors.find(d => d.algorithm === algoId)
+        if (detector) {
+          let res: any = null
+          if ('detectAsync' in detector && typeof detector.detectAsync === 'function') {
+            res = await (detector as any).detectAsync(chunk)
+          } else {
+            res = detector.detect(chunk)
+          }
+          if (res && res.clarity >= minConfidence() && res.frequency > 0) {
+            results[j]?.pitches.push({
+              freq: res.frequency,
+              clarity: res.clarity ?? 1.0,
+              time: timestamp,
+              noteName: res.noteName ?? null
+            })
+          }
+        }
+      }
+
+      if (i % 50 === 0) {
+        setOfflineProgress((i / totalSteps) * 100)
+        await new Promise(r => setTimeout(r, 0)) // yield to UI
+      }
+    }
+
+    const currentResults = [...offlineAnalysisResults()]
+    for (const res of results) {
+      const existingIdx = currentResults.findIndex(r => r.algorithm === res.algorithm)
+      if (existingIdx !== -1) {
+        currentResults[existingIdx] = res
+      } else {
+        currentResults.push(res)
+      }
+    }
+
+    setAnalyzedTracks(prev => prev.map(t => {
+      if (t.id === activeId) {
+        return { ...t, analysisResults: currentResults }
+      }
+      return t
+    }))
+    setOfflineProgress(100)
+    setIsAnalyzingOffline(false)
+  }
+
+  const separateVocalsFirst = async () => {
+    const samples = fileWaveform()
+    const activeId = activeTrackId()
+    if (!samples || isAnalyzingOffline() || !activeId) return
+
+    setIsAnalyzingOffline(true)
+    setOfflineProgress(0)
+    setAnalyzedTracks(prev => prev.map(t => {
+      if (t.id === activeId) return { ...t, analysisResults: [] }
+      return t
+    }))
+
+    try {
+      const separator = new VocalSeparator()
+      separator.onProgress = (pct) => {
+        setOfflineProgress(pct * 0.5) // First 50% is separation
+      }
+      
+      const sampleRate = audioContext()?.sampleRate || 44100
+      
+      // Need to clone the samples because worker might take ownership or we need to pass a fresh copy
+      const audioCopy = new Float32Array(samples)
+      
+      const forceWebGpu = uvrForceWebGpu()
+      await separator.initialize(UVR_MODEL_PATH, forceWebGpu)
+      const result = await separator.separate(audioCopy, sampleRate)
+      
+      setAnalyzedTracks(prev => prev.map(t => {
+        if (t.id === activeId) return { ...t, waveform: result.vocals, analysisResults: [] }
+        return t
+      }))
+      
+      separator.destroy()
+      
+      // Now analyze
+      setOfflineProgress(50)
+      
+      // Since analyzeUploadedAudio expects fileWaveform() to be updated, we yield to reactivity
+      await new Promise(r => setTimeout(r, 0))
+      
+      await analyzeUploadedAudio()
+      
+    } catch (err) {
+      console.error(err)
+      alert('Stem separation failed')
+      setIsAnalyzingOffline(false)
     }
   }
 
@@ -382,9 +549,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
 
     setGeneratedWaveform(wave)
-    setUploadedFile(null)
-    setFileWaveform(null)
-    setFileDuration(0)
+    setActiveTrackId(null)
+    setAnalyzedTracks([])
   }
 
   // Generate test waveform
@@ -867,8 +1033,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </div>
 
           <div class="control-group">
-            <label>Detection Mode</label>
+            <label for="detection-mode-select">Detection Mode</label>
             <SafeSelect
+              id="detection-mode-select"
               disabled={isDetecting() || isRunningTest()}
               value={detectionMode()}
               onChange={(e) =>
@@ -916,18 +1083,37 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           {/* File Upload Mode UI */}
           <Show when={detectionMode() === 'file'}>
-            <div class="file-controls">
-              <input
-                type="file"
-                accept="audio/*"
-                class="file-input"
-                onChange={handleFileUpload}
-              />
+            <div class="file-controls" style={{ display: 'flex', 'flex-direction': 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', 'align-items': 'center', gap: '12px', 'flex-wrap': 'nowrap', overflow: 'hidden' }}>
+                <label class="btn btn-secondary btn-sm" style={{ display: 'inline-flex', 'align-items': 'center', 'justify-content': 'center', gap: '6px', cursor: 'pointer', margin: 0, 'white-space': 'nowrap', 'flex-shrink': 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  Browse Audio
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+
               <Show when={fileWaveform()}>
-                <span class="file-info">
-                  Loaded: {uploadedFile()?.name ?? 'audio'} •{' '}
-                  {fileDuration().toFixed(2)}s
-                </span>
+                <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick={analyzeUploadedAudio}
+                    disabled={isAnalyzingOffline()}
+                  >
+                    {isAnalyzingOffline() ? `Processing... ${Math.round(offlineProgress())}%` : 'Analyze Pitch'}
+                  </button>
+                  <button
+                    class="btn btn-outline btn-sm"
+                    onclick={separateVocalsFirst}
+                    disabled={isAnalyzingOffline()}
+                  >
+                    Separate Vocals First
+                  </button>
+                </div>
               </Show>
               <Show when={!fileWaveform()}>
                 <span class="file-info">No file loaded</span>
@@ -1123,6 +1309,93 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </div>
                 </div>
               </div>
+            </div>
+          </Show>
+
+          {/* Offline File Analysis Display */}
+          <Show when={detectionMode() === 'file' && analyzedTracks().length > 0 && !isDetecting()}>
+            <div class="results-panel">
+              <h4 style={{ margin: '0 0 12px 0', 'font-size': '0.9rem', color: 'var(--text-secondary)' }}>Session Gallery</h4>
+              <div style={{ display: 'flex', gap: '8px', 'overflow-x': 'auto', 'padding-bottom': '12px', 'margin-bottom': '12px' }}>
+                <For each={analyzedTracks()}>
+                  {(track) => (
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        background: activeTrackId() === track.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                        border: activeTrackId() === track.id ? '1px solid var(--primary)' : '1px solid var(--border)',
+                        'border-radius': '6px',
+                        cursor: 'pointer',
+                        'min-width': '180px',
+                        display: 'flex',
+                        'flex-direction': 'column',
+                        gap: '6px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => setActiveTrackId(track.id)}
+                    >
+                      <div style={{ display: 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
+                        <span style={{ 'font-size': '0.75rem', 'font-weight': '600', overflow: 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap', 'max-width': '140px' }}>
+                          {track.file.name}
+                        </span>
+                        <button
+                          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 4px', 'font-size': '1.1rem', 'line-height': '1' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const filtered = analyzedTracks().filter(t => t.id !== track.id)
+                            setAnalyzedTracks(filtered)
+                            if (activeTrackId() === track.id) {
+                              setActiveTrackId(filtered[0]?.id || null)
+                            }
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px', 'flex-wrap': 'wrap', 'min-height': '18px' }}>
+                        <For each={track.analysisResults}>
+                          {(res) => (
+                            <span style={{ 'font-size': '0.6rem', padding: '2px 6px', background: 'var(--bg-secondary-hover)', 'border-radius': '4px', color: 'var(--text-secondary)' }}>
+                              {res.algorithm.toUpperCase()}
+                            </span>
+                          )}
+                        </For>
+                        <Show when={track.analysisResults.length === 0}>
+                          <span style={{ 'font-size': '0.6rem', color: 'var(--text-muted)' }}>No algorithms run</span>
+                        </Show>
+                      </div>
+                    </div>
+                  )}
+                </For>
+              </div>
+
+              <Show when={fileWaveform() !== null}>
+                <div class="waveform-display">
+                  <div class="waveform-display-header" style={{ display: 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
+                    <h4 style={{ margin: 0, 'font-size': '0.85rem' }}>{uploadedFile()?.name}</h4>
+                    <span style={{ 'font-size': '0.75rem', color: 'var(--text-secondary)' }}>{fileDuration().toFixed(2)}s</span>
+                  </div>
+                  <div
+                    class="waveform-canvas"
+                    style={{ height: `${waveformHeight}px` }}
+                  >
+                    <div class="waveform-canvas-inner">
+                      <OfflinePitchCanvas
+                        waveform={fileWaveform()}
+                        durationSec={fileDuration()}
+                        analysisResults={offlineAnalysisResults()}
+                      />
+                    </div>
+                    <div class="resize-handle" onMouseDown={onResizeMouseDown}>
+                      <div class="resize-grip">
+                        <span class="grip-dash" />
+                        <span class="grip-dash" />
+                        <span class="grip-dash" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Show>
             </div>
           </Show>
 

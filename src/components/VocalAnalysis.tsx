@@ -15,7 +15,7 @@ import { generateMockSessions } from '@/lib/vocal-analysis-mock'
 import type { BreathinessResult, FatigueCheckpoint, FatigueResult, HarmonicRichnessResult, ResonanceResult, SlideTrackingResult, VibratoResult, } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, detectSlides, detectVibrato, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores'
-import type { PitchResult, PracticeResult, SessionResult } from '@/types'
+import type { PitchResult, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons
@@ -378,13 +378,14 @@ export const VocalAnalysis: Component = () => {
             const freqData = engines!.audioEngine.getFrequencyData()
             if (freqData.length > 0) {
               const spectral: SpectrumData[] = []
-              const step = Math.max(1, Math.floor(freqData.length / 30))
-              for (let i = 0; i < 30; i++) {
+              const NUM_BINS = 64
+              const step = Math.max(1, Math.floor(freqData.length / NUM_BINS))
+              for (let i = 0; i < NUM_BINS; i++) {
                 const idx = Math.min(i * step, freqData.length - 1)
                 spectral.push({
                   frequency: (idx / freqData.length) * 8000,
                   amplitude: Math.max(0, (freqData[idx] + 100) * 1.5),
-                  phase: (i / 30) * Math.PI * 2,
+                  phase: (i / NUM_BINS) * Math.PI * 2,
                 })
               }
               setSpectralData(spectral)
@@ -661,24 +662,34 @@ export const VocalAnalysis: Component = () => {
 
   // Start analyzing session history
   const startAnalysis = () => {
+    if (isAnalyzing()) return
     setIsAnalyzing(true)
     setVocalRunData([])
     setSpectralData([])
+    setIntensityProfile(null)
+    setBreathiness(null)
+    setSlideTracking(null)
+    setVibratoAnalysis(null)
+    setHarmonicRichness(null)
+    setResonanceData(null)
+    setFatigueData(null)
 
-    const allData = history()
-    if (allData.length > 0) {
-      // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
-      const practiceResults = allData.flatMap((s) => s.practiceItemResult)
-      const pitchResults = practiceResults
-        .flatMap((p) => p.noteResult)
-        .map((r) => ({
-          freq: r.pitchFreq || 0,
-          midi: r.item.note.midi,
-          note: r.item.note.name,
-          noteName: r.item.note.name,
-          clarity: r.avgCents || 0,
-        })) as PitchResult[]
-      setVocalRunData(pitchResults)
+    // Make it async to let UI update and show the Analyzing state
+    setTimeout(() => {
+      const allData = history()
+      if (allData.length > 0) {
+        // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
+        const practiceResults = allData.flatMap((s) => s.practiceItemResult)
+        const pitchResults = practiceResults
+          .flatMap((p) => p.noteResult)
+          .map((r) => ({
+            freq: r.pitchFreq || 0,
+            midi: r.item.note.midi,
+            note: r.item.note.name,
+            noteName: r.item.note.name,
+            clarity: r.avgCents || 0,
+          })) as PitchResult[]
+        setVocalRunData(pitchResults)
 
       // Phase 1: Intensity Profile
       const intensity = intensityFromPitchResults(
@@ -761,21 +772,51 @@ export const VocalAnalysis: Component = () => {
         setFatigueData(analyzeFatigue(checkpoints))
       }
 
-      // Build spectral approximation
-      const spectral: SpectrumData[] = practiceResults
-        .slice(-30)
-        .map((r: PracticeResult, i: number) => ({
-          frequency: r.score * 20,
-          amplitude: Math.abs(r.avgCents) * 3,
-          phase: (i / 30) * Math.PI * 2,
-        }))
+      // Synthesize a beautiful 64-bin harmonic spectrum from the session's pitch data
+      const NUM_BINS = 64
+      const bins = new Array(NUM_BINS).fill(0)
+      const maxFreq = 8000
+      
+      if (pitchResults.length > 0) {
+        // Aggregate harmonic energy across all pitches
+        pitchResults.forEach((p: PitchResult) => {
+          if (!p.midi) return
+          const freq = 440 * Math.pow(2, (p.midi - 69) / 12)
+          // Add fundamental and up to 4 harmonics
+          for (let h = 1; h <= 5; h++) {
+            const hFreq = freq * h
+            const energy = 100 / h // Higher harmonics have less energy
+            // Spread energy across nearby bins
+            for (let b = 0; b < NUM_BINS; b++) {
+              const binFreq = (b / NUM_BINS) * maxFreq
+              const dist = Math.abs(binFreq - hFreq)
+              if (dist < 500) { // Gaussian spread
+                bins[b] += energy * Math.exp(-(dist * dist) / 50000)
+              }
+            }
+          }
+        })
+        
+        // Normalize bins to 0-100 range
+        const maxBin = Math.max(...bins, 1)
+        for (let b = 0; b < NUM_BINS; b++) {
+          bins[b] = (bins[b] / maxBin) * 100
+        }
+      }
+
+      const spectral: SpectrumData[] = bins.map((amp, i) => ({
+        frequency: (i / NUM_BINS) * maxFreq,
+        amplitude: amp,
+        phase: (i / NUM_BINS) * Math.PI * 2,
+      }))
       setSpectralData(spectral)
 
       setIsAnalyzing(false)
     } else {
       setIsAnalyzing(false)
     }
-  }
+  }, 600)
+}
 
   // ── Helpers ────────────────────────────────────────────────
 
@@ -1116,7 +1157,6 @@ export const VocalAnalysis: Component = () => {
       {/* IS_DEV: Inject Mock Sessions */}
       <Show when={IS_DEV && analysisMode() === 'history'}>
         <div class="demo-hint dev-hint">
-          <p>DEV: Inject mock session data for testing.</p>
           <button class="demo-load-btn" onClick={loadDemoData}>
             Inject Mock Sessions
           </button>
@@ -1306,7 +1346,9 @@ export const VocalAnalysis: Component = () => {
             </div>
           </Show>
 
-          {/* Vocal Techniques */}
+          {/* Horizontal Layout for Techniques and Results */}
+          <div class="analysis-blocks-row">
+            {/* Vocal Techniques */}
           <div class="vocal-techniques">
             <h3>Vocal Techniques</h3>
             <div class="technique-grid">
@@ -1505,6 +1547,7 @@ export const VocalAnalysis: Component = () => {
               />
             </Show>
           </div>
+          </div>
 
           {/* Spectrogram Display */}
           <div class="spectrogram-display">
@@ -1512,18 +1555,18 @@ export const VocalAnalysis: Component = () => {
             <div class="spectrogram-container">
               <div class="spectrogram-grid">
                 <div class="freq-axis">
-                  <div class="freq-label">8000</div>
-                  <div class="freq-label">4000</div>
-                  <div class="freq-label">2000</div>
-                  <div class="freq-label">1000</div>
-                  <div class="freq-label">500</div>
+                  <div class="freq-label">100%</div>
+                  <div class="freq-label">75%</div>
+                  <div class="freq-label">50%</div>
+                  <div class="freq-label">25%</div>
+                  <div class="freq-label">0%</div>
                 </div>
                 <div class="time-axis">
-                  <div class="time-label">0s</div>
-                  <div class="time-label">2s</div>
-                  <div class="time-label">4s</div>
-                  <div class="time-label">6s</div>
-                  <div class="time-label">8s</div>
+                  <div class="time-label">0 Hz</div>
+                  <div class="time-label">2 kHz</div>
+                  <div class="time-label">4 kHz</div>
+                  <div class="time-label">6 kHz</div>
+                  <div class="time-label">8 kHz</div>
                 </div>
                 <div class="spectrogram-bars">
                   {spectralData().length === 0 && (
@@ -1586,14 +1629,14 @@ export const VocalAnalysis: Component = () => {
               <h3>Pitch History</h3>
               <div class="pitch-chart-wrap">
                 <svg
-                  viewBox="0 0 600 150"
+                  viewBox="0 0 600 120"
                   class="pitch-chart-svg"
                   preserveAspectRatio="xMidYMid meet"
                 >
                   {(() => {
                     const chart = pitchChartData()!
                     const w = 600
-                    const h = 150
+                    const h = 120
                     const pL = 42
                     const pR = 10
                     const pT = 8
@@ -1643,16 +1686,17 @@ export const VocalAnalysis: Component = () => {
                         <polygon
                           points={areaPoints}
                           fill="url(#pitchAreaGrad)"
-                          opacity="0.15"
+                          opacity="0.35"
                         />
                         {/* Pitch line */}
                         <polyline
                           points={linePoints}
                           fill="none"
                           stroke="url(#pitchLineGrad)"
-                          stroke-width="2"
+                          stroke-width="2.5"
                           stroke-linejoin="round"
                           stroke-linecap="round"
+                          filter="url(#glow)"
                         />
                         {/* Data dots */}
                         <For each={chart.points}>
@@ -1681,6 +1725,10 @@ export const VocalAnalysis: Component = () => {
                         </For>
                         {/* SVG defs for gradients */}
                         <defs>
+                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
                           <linearGradient
                             id="pitchLineGrad"
                             x1="0"
@@ -1689,7 +1737,8 @@ export const VocalAnalysis: Component = () => {
                             y2="0"
                           >
                             <stop offset="0%" stop-color="#58a6ff" />
-                            <stop offset="100%" stop-color="#bc8cff" />
+                            <stop offset="50%" stop-color="#bc8cff" />
+                            <stop offset="100%" stop-color="#f85149" />
                           </linearGradient>
                           <linearGradient
                             id="pitchAreaGrad"

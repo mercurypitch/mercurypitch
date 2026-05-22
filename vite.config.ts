@@ -51,7 +51,7 @@ function removeWasmAssetsPlugin() {
 export default defineConfig({
   plugins: [
     isDev ? ssl() : [],
-    isDev ? qrcode() : [],
+    qrcode(),
     solidPlugin(),
     removeWasmAssetsPlugin(),
   ],
