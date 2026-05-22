@@ -323,14 +323,27 @@
 }
 
 .technique-card:hover {
-  background: color-mix(in srgb, var(--exercise-color, var(--accent)) 5%, var(--bg-secondary, rgba(255, 255, 255, 0.03)));
-  border-color: color-mix(in srgb, var(--exercise-color, var(--border)) 50%, var(--border));
+  background: color-mix(
+    in srgb,
+    var(--exercise-color, var(--accent)) 5%,
+    var(--bg-secondary, rgba(255, 255, 255, 0.03))
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--exercise-color, var(--border)) 50%,
+    var(--border)
+  );
 }
 
 .technique-card.active {
   border-color: var(--exercise-color, var(--accent));
-  background: color-mix(in srgb, var(--exercise-color, var(--accent)) 10%, var(--bg-secondary, rgba(255, 255, 255, 0.03)));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--exercise-color, var(--accent)) 20%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--exercise-color, var(--accent)) 10%,
+    var(--bg-secondary, rgba(255, 255, 255, 0.03))
+  );
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--exercise-color, var(--accent)) 20%, transparent);
 }
 
 .technique-card.active .exercise-name {
@@ -1495,7 +1508,11 @@
 
 .pitch-chart-wrap {
   width: 100%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.25));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.25)
+  );
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.03);
@@ -3653,23 +3670,31 @@
 .analyze-btn.live-start {
   background: linear-gradient(135deg, #3fb950, #2ea043);
   border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(63, 185, 80, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 4px 12px rgba(63, 185, 80, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .analyze-btn.live-start:hover:not(:disabled) {
   background: linear-gradient(135deg, #46c458, #3fb950);
-  box-shadow: 0 6px 16px rgba(63, 185, 80, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 6px 16px rgba(63, 185, 80, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .analyze-btn.live-stop {
   background: linear-gradient(135deg, #f85149, #d73a49);
   border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(248, 81, 73, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 4px 12px rgba(248, 81, 73, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .analyze-btn.live-stop:hover:not(:disabled) {
   background: linear-gradient(135deg, #ff6a6a, #f85149);
-  box-shadow: 0 6px 16px rgba(248, 81, 73, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 6px 16px rgba(248, 81, 73, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Live Listening Indicator */

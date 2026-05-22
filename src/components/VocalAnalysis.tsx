@@ -691,132 +691,133 @@ export const VocalAnalysis: Component = () => {
           })) as PitchResult[]
         setVocalRunData(pitchResults)
 
-      // Phase 1: Intensity Profile
-      const intensity = intensityFromPitchResults(
-        pitchResults.map((p, i) => ({
-          time: i * 0.01,
-          clarity: p.clarity,
-          midi: p.midi,
-        })),
-      )
-      setIntensityProfile({
-        avgDb: intensity.avgDb,
-        peakDb: intensity.peakDb,
-        dynamicRange: intensity.dynamicRange,
-      })
-
-      // Phase 1: Breathiness
-      const breath = approximateBreathiness(
-        pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
-      )
-      setBreathiness(breath)
-
-      // Phase 1: Slide Tracking
-      const slides = detectSlides(
-        pitchResults.map((p, i) => ({
-          time: i * 0.01,
-          midi: p.midi,
-          freq: p.freq,
-        })),
-      )
-      setSlideTracking(slides)
-
-      // Phase 2: Vibrato Detection
-      const vibrato = detectVibrato(
-        pitchResults.map((p, i) => ({
-          time: i * 0.01,
-          freq: p.freq,
-          midi: p.midi,
-        })),
-      )
-      setVibratoAnalysis(vibrato)
-
-      // Phase 2: Harmonic Richness
-      const richness = approximateRichness(
-        pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
-      )
-      setHarmonicRichness({
-        richnessScore: richness.richnessScore,
-        harmonicCount: richness.harmonicCount,
-        harmonicProfile: [],
-        quality: richness.quality,
-      })
-
-      // Phase 2: Resonance Zone
-      const resonance = approximateResonance(
-        pitchResults.map((p) => ({ freq: p.freq })),
-      )
-      setResonanceData(resonance)
-
-      // Phase 2: Vocal Fatigue (build checkpoints from session history)
-      const sessionData = allData
-      const checkpoints: FatigueCheckpoint[] = []
-      for (let ci = 0; ci < Math.min(sessionData.length, 10); ci++) {
-        const s = sessionData[ci]
-        const sPitch = s.practiceItemResult.flatMap((pr) =>
-          pr.noteResult.map((r) => ({
-            freq: r.item.note.freq,
-            clarity: r.avgCents || 0,
+        // Phase 1: Intensity Profile
+        const intensity = intensityFromPitchResults(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            clarity: p.clarity,
+            midi: p.midi,
           })),
         )
-        const sBreath = approximateBreathiness(sPitch)
-        const sRichness = approximateRichness(sPitch)
-        checkpoints.push({
-          time: s.completedAt || ci,
-          hnrDb: sBreath.hnrDb,
-          richnessScore: sRichness.richnessScore,
-          pitchStability: s.score || 50,
+        setIntensityProfile({
+          avgDb: intensity.avgDb,
+          peakDb: intensity.peakDb,
+          dynamicRange: intensity.dynamicRange,
         })
-      }
-      if (checkpoints.length >= 3) {
-        setFatigueData(analyzeFatigue(checkpoints))
-      }
 
-      // Synthesize a beautiful 64-bin harmonic spectrum from the session's pitch data
-      const NUM_BINS = 64
-      const bins = new Array(NUM_BINS).fill(0)
-      const maxFreq = 8000
-      
-      if (pitchResults.length > 0) {
-        // Aggregate harmonic energy across all pitches
-        pitchResults.forEach((p: PitchResult) => {
-          if (!p.midi) return
-          const freq = 440 * Math.pow(2, (p.midi - 69) / 12)
-          // Add fundamental and up to 4 harmonics
-          for (let h = 1; h <= 5; h++) {
-            const hFreq = freq * h
-            const energy = 100 / h // Higher harmonics have less energy
-            // Spread energy across nearby bins
-            for (let b = 0; b < NUM_BINS; b++) {
-              const binFreq = (b / NUM_BINS) * maxFreq
-              const dist = Math.abs(binFreq - hFreq)
-              if (dist < 500) { // Gaussian spread
-                bins[b] += energy * Math.exp(-(dist * dist) / 50000)
+        // Phase 1: Breathiness
+        const breath = approximateBreathiness(
+          pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
+        )
+        setBreathiness(breath)
+
+        // Phase 1: Slide Tracking
+        const slides = detectSlides(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            midi: p.midi,
+            freq: p.freq,
+          })),
+        )
+        setSlideTracking(slides)
+
+        // Phase 2: Vibrato Detection
+        const vibrato = detectVibrato(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            freq: p.freq,
+            midi: p.midi,
+          })),
+        )
+        setVibratoAnalysis(vibrato)
+
+        // Phase 2: Harmonic Richness
+        const richness = approximateRichness(
+          pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
+        )
+        setHarmonicRichness({
+          richnessScore: richness.richnessScore,
+          harmonicCount: richness.harmonicCount,
+          harmonicProfile: [],
+          quality: richness.quality,
+        })
+
+        // Phase 2: Resonance Zone
+        const resonance = approximateResonance(
+          pitchResults.map((p) => ({ freq: p.freq })),
+        )
+        setResonanceData(resonance)
+
+        // Phase 2: Vocal Fatigue (build checkpoints from session history)
+        const sessionData = allData
+        const checkpoints: FatigueCheckpoint[] = []
+        for (let ci = 0; ci < Math.min(sessionData.length, 10); ci++) {
+          const s = sessionData[ci]
+          const sPitch = s.practiceItemResult.flatMap((pr) =>
+            pr.noteResult.map((r) => ({
+              freq: r.item.note.freq,
+              clarity: r.avgCents || 0,
+            })),
+          )
+          const sBreath = approximateBreathiness(sPitch)
+          const sRichness = approximateRichness(sPitch)
+          checkpoints.push({
+            time: s.completedAt || ci,
+            hnrDb: sBreath.hnrDb,
+            richnessScore: sRichness.richnessScore,
+            pitchStability: s.score || 50,
+          })
+        }
+        if (checkpoints.length >= 3) {
+          setFatigueData(analyzeFatigue(checkpoints))
+        }
+
+        // Synthesize a beautiful 64-bin harmonic spectrum from the session's pitch data
+        const NUM_BINS = 64
+        const bins = new Array(NUM_BINS).fill(0)
+        const maxFreq = 8000
+
+        if (pitchResults.length > 0) {
+          // Aggregate harmonic energy across all pitches
+          pitchResults.forEach((p: PitchResult) => {
+            if (!p.midi) return
+            const freq = 440 * Math.pow(2, (p.midi - 69) / 12)
+            // Add fundamental and up to 4 harmonics
+            for (let h = 1; h <= 5; h++) {
+              const hFreq = freq * h
+              const energy = 100 / h // Higher harmonics have less energy
+              // Spread energy across nearby bins
+              for (let b = 0; b < NUM_BINS; b++) {
+                const binFreq = (b / NUM_BINS) * maxFreq
+                const dist = Math.abs(binFreq - hFreq)
+                if (dist < 500) {
+                  // Gaussian spread
+                  bins[b] += energy * Math.exp(-(dist * dist) / 50000)
+                }
               }
             }
+          })
+
+          // Normalize bins to 0-100 range
+          const maxBin = Math.max(...bins, 1)
+          for (let b = 0; b < NUM_BINS; b++) {
+            bins[b] = (bins[b] / maxBin) * 100
           }
-        })
-        
-        // Normalize bins to 0-100 range
-        const maxBin = Math.max(...bins, 1)
-        for (let b = 0; b < NUM_BINS; b++) {
-          bins[b] = (bins[b] / maxBin) * 100
         }
+
+        const spectral: SpectrumData[] = bins.map((amp, i) => ({
+          frequency: (i / NUM_BINS) * maxFreq,
+          amplitude: amp,
+          phase: (i / NUM_BINS) * Math.PI * 2,
+        }))
+        setSpectralData(spectral)
+
+        setIsAnalyzing(false)
+      } else {
+        setIsAnalyzing(false)
       }
-
-      const spectral: SpectrumData[] = bins.map((amp, i) => ({
-        frequency: (i / NUM_BINS) * maxFreq,
-        amplitude: amp,
-        phase: (i / NUM_BINS) * Math.PI * 2,
-      }))
-      setSpectralData(spectral)
-
-      setIsAnalyzing(false)
-    } else {
-      setIsAnalyzing(false)
-    }
-  }, 600)
-}
+    }, 600)
+  }
 
   // ── Helpers ────────────────────────────────────────────────
 
@@ -1349,204 +1350,208 @@ export const VocalAnalysis: Component = () => {
           {/* Horizontal Layout for Techniques and Results */}
           <div class="analysis-blocks-row">
             {/* Vocal Techniques */}
-          <div class="vocal-techniques">
-            <h3>Vocal Techniques</h3>
-            <div class="technique-grid">
-              <For each={exercises}>
-                {(exercise) => (
-                  <button
-                    class={`technique-card ${activeExercise() === exercise.type ? 'active' : ''}`}
-                    style={{ '--exercise-color': exercise.color }}
-                    onClick={() => setActiveExercise(exercise.type)}
+            <div class="vocal-techniques">
+              <h3>Vocal Techniques</h3>
+              <div class="technique-grid">
+                <For each={exercises}>
+                  {(exercise) => (
+                    <button
+                      class={`technique-card ${activeExercise() === exercise.type ? 'active' : ''}`}
+                      style={{ '--exercise-color': exercise.color }}
+                      onClick={() => setActiveExercise(exercise.type)}
+                    >
+                      <span class="exercise-icon">{exercise.icon()}</span>
+                      <span class="exercise-name">{exercise.name}</span>
+                    </button>
+                  )}
+                </For>
+              </div>
+
+              {/* Exercise Results */}
+              <Show when={activeExercise()}>
+                <Show when={isAnalyzing()}>
+                  <div class="analyzing-overlay">
+                    <div class="analyzing-spinner" />
+                    <p>Analyzing your voice...</p>
+                  </div>
+                </Show>
+                <Show when={!isAnalyzing() && vocalRunData().length > 0}>
+                  <div
+                    class={`exercise-feedback ${getExerciseCheck(activeExercise() ?? 'belting').passed ? 'feedback-pass' : 'feedback-neutral'}`}
                   >
-                    <span class="exercise-icon">{exercise.icon()}</span>
-                    <span class="exercise-name">{exercise.name}</span>
-                  </button>
-                )}
-              </For>
+                    <span class="feedback-icon">
+                      {getExerciseCheck(activeExercise() ?? 'belting')
+                        .passed ? (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                      )}
+                    </span>
+                    <span>{feedbackMessage()}</span>
+                    <span class="feedback-metrics">
+                      <span>{metrics().noteCount} notes</span>
+                      <span>
+                        {metrics().minFreq.toFixed(0)}–
+                        {metrics().maxFreq.toFixed(0)} Hz
+                      </span>
+                    </span>
+                  </div>
+                </Show>
+                <Show when={!isAnalyzing() && vocalRunData().length === 0}>
+                  <div class="exercise-empty">
+                    <span>
+                      {analysisMode() === 'live' && isLiveActive()
+                        ? `Listening... sing to analyze your ${activeExercise()} technique.`
+                        : `Start singing to analyze your ${activeExercise()} technique.`}
+                    </span>
+                    <Show when={analysisMode() === 'history'}>
+                      <button
+                        class="start-analysis-btn"
+                        onClick={startAnalysis}
+                      >
+                        Start Analysis
+                      </button>
+                    </Show>
+                    <Show when={analysisMode() === 'live' && !isLiveActive()}>
+                      <button
+                        class="start-analysis-btn"
+                        onClick={() => void startLiveAnalysis()}
+                      >
+                        <IconMic /> Start Live Mic
+                      </button>
+                    </Show>
+                    <Show when={analysisMode() === 'live' && isLiveActive()}>
+                      <div class="live-listening-indicator">
+                        <span class="live-dot" />
+                        <span>Capturing audio...</span>
+                      </div>
+                    </Show>
+                  </div>
+                </Show>
+              </Show>
             </div>
 
-            {/* Exercise Results */}
-            <Show when={activeExercise()}>
-              <Show when={isAnalyzing()}>
-                <div class="analyzing-overlay">
-                  <div class="analyzing-spinner" />
-                  <p>Analyzing your voice...</p>
-                </div>
+            {/* Phase 1 & 2 History Analysis Grid */}
+            <div class="live-cards-grid analysis-results-grid">
+              <Show when={intensityProfile()}>
+                <LiveMetricCard
+                  label="Intensity"
+                  value={`${intensityProfile()!.avgDb.toFixed(1)} dB`}
+                  detail={`Peak ${intensityProfile()!.peakDb.toFixed(1)} dB (Range ${intensityProfile()!.dynamicRange.toFixed(1)} dB)`}
+                  highlight={intensityProfile()!.dynamicRange > 20}
+                  icon={IconBolt}
+                  color="#f85149"
+                />
               </Show>
-              <Show when={!isAnalyzing() && vocalRunData().length > 0}>
-                <div
-                  class={`exercise-feedback ${getExerciseCheck(activeExercise() ?? 'belting').passed ? 'feedback-pass' : 'feedback-neutral'}`}
-                >
-                  <span class="feedback-icon">
-                    {getExerciseCheck(activeExercise() ?? 'belting').passed ? (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    )}
-                  </span>
-                  <span>{feedbackMessage()}</span>
-                  <span class="feedback-metrics">
-                    <span>{metrics().noteCount} notes</span>
-                    <span>
-                      {metrics().minFreq.toFixed(0)}–
-                      {metrics().maxFreq.toFixed(0)} Hz
-                    </span>
-                  </span>
-                </div>
+              <Show when={breathiness()}>
+                <LiveMetricCard
+                  label="Breathiness"
+                  value={breathiness()!.quality}
+                  detail={`HNR: ${breathiness()!.hnrDb} dB (Eff. ${breathiness()!.efficiency}%)`}
+                  highlight={breathiness()!.quality === 'resonant'}
+                  icon={IconWind}
+                  color="#58a6ff"
+                />
               </Show>
-              <Show when={!isAnalyzing() && vocalRunData().length === 0}>
-                <div class="exercise-empty">
-                  <span>
-                    {analysisMode() === 'live' && isLiveActive()
-                      ? `Listening... sing to analyze your ${activeExercise()} technique.`
-                      : `Start singing to analyze your ${activeExercise()} technique.`}
-                  </span>
-                  <Show when={analysisMode() === 'history'}>
-                    <button class="start-analysis-btn" onClick={startAnalysis}>
-                      Start Analysis
-                    </button>
-                  </Show>
-                  <Show when={analysisMode() === 'live' && !isLiveActive()}>
-                    <button
-                      class="start-analysis-btn"
-                      onClick={() => void startLiveAnalysis()}
-                    >
-                      <IconMic /> Start Live Mic
-                    </button>
-                  </Show>
-                  <Show when={analysisMode() === 'live' && isLiveActive()}>
-                    <div class="live-listening-indicator">
-                      <span class="live-dot" />
-                      <span>Capturing audio...</span>
-                    </div>
-                  </Show>
-                </div>
+              <Show when={slideTracking()}>
+                <LiveMetricCard
+                  label="Slides & Transitions"
+                  value={`${slideTracking()!.totalTransitions} detected`}
+                  detail={`Clean: ${slideTracking()!.cleanCount} | Score: ${slideTracking()!.overallScore}%`}
+                  highlight={slideTracking()!.overallScore >= 80}
+                  icon={IconChartLine}
+                  color="#d29922"
+                />
               </Show>
-            </Show>
-          </div>
-
-          {/* Phase 1 & 2 History Analysis Grid */}
-          <div class="live-cards-grid analysis-results-grid">
-            <Show when={intensityProfile()}>
-              <LiveMetricCard
-                label="Intensity"
-                value={`${intensityProfile()!.avgDb.toFixed(1)} dB`}
-                detail={`Peak ${intensityProfile()!.peakDb.toFixed(1)} dB (Range ${intensityProfile()!.dynamicRange.toFixed(1)} dB)`}
-                highlight={intensityProfile()!.dynamicRange > 20}
-                icon={IconBolt}
-                color="#f85149"
-              />
-            </Show>
-            <Show when={breathiness()}>
-              <LiveMetricCard
-                label="Breathiness"
-                value={breathiness()!.quality}
-                detail={`HNR: ${breathiness()!.hnrDb} dB (Eff. ${breathiness()!.efficiency}%)`}
-                highlight={breathiness()!.quality === 'resonant'}
-                icon={IconWind}
-                color="#58a6ff"
-              />
-            </Show>
-            <Show when={slideTracking()}>
-              <LiveMetricCard
-                label="Slides & Transitions"
-                value={`${slideTracking()!.totalTransitions} detected`}
-                detail={`Clean: ${slideTracking()!.cleanCount} | Score: ${slideTracking()!.overallScore}%`}
-                highlight={slideTracking()!.overallScore >= 80}
-                icon={IconChartLine}
-                color="#d29922"
-              />
-            </Show>
-            <Show when={vibratoAnalysis()}>
-              <LiveMetricCard
-                label="Vibrato"
-                value={
-                  vibratoAnalysis()!.detected
-                    ? `${vibratoAnalysis()!.rateHz.toFixed(1)} Hz`
-                    : 'None'
-                }
-                detail={
-                  vibratoAnalysis()!.detected
-                    ? `${vibratoAnalysis()!.classification} (Depth ${vibratoAnalysis()!.depthCents}¢)`
-                    : 'No vibrato detected'
-                }
-                highlight={vibratoAnalysis()!.classification === 'natural'}
-                icon={IconChartBar}
-                color="#bc8cff"
-              />
-            </Show>
-            <Show when={harmonicRichness()}>
-              <LiveMetricCard
-                label="Harmonics"
-                value={harmonicRichness()!.quality}
-                detail={`Score: ${harmonicRichness()!.richnessScore}/100 (~${harmonicRichness()!.harmonicCount} harmonics)`}
-                highlight={
-                  harmonicRichness()!.quality === 'rich' ||
-                  harmonicRichness()!.quality === 'very-rich'
-                }
-                icon={IconGuitar}
-                color="#3fb950"
-              />
-            </Show>
-            <Show when={resonanceData()}>
-              <LiveMetricCard
-                label="Resonance"
-                value={resonanceData()!.dominantZone}
-                detail={`Centroid: ${resonanceData()!.spectralCentroid.toFixed(0)} Hz`}
-                highlight={
-                  resonanceData()!.dominantZone === 'mixed' ||
-                  resonanceData()!.dominantZone === 'mask'
-                }
-                icon={IconKeyboard}
-                color="#2dd4bf"
-              />
-            </Show>
-            <Show when={fatigueData()}>
-              <LiveMetricCard
-                label="Fatigue Tracker"
-                value={fatigueData()!.fatigued ? 'Fatigued' : 'Stable'}
-                detail={
-                  fatigueData()!.fatigued
-                    ? (fatigueData()!.alert ?? 'Fatigue detected')
-                    : fatigueData()!.checkpoints.length < 3
-                      ? 'Need more data'
-                      : 'No fatigue detected'
-                }
-                highlight={
-                  !fatigueData()!.fatigued &&
-                  fatigueData()!.checkpoints.length >= 3
-                }
-                icon={IconFire}
-                color={fatigueData()!.fatigued ? '#f85149' : '#3fb950'}
-              />
-            </Show>
-          </div>
+              <Show when={vibratoAnalysis()}>
+                <LiveMetricCard
+                  label="Vibrato"
+                  value={
+                    vibratoAnalysis()!.detected
+                      ? `${vibratoAnalysis()!.rateHz.toFixed(1)} Hz`
+                      : 'None'
+                  }
+                  detail={
+                    vibratoAnalysis()!.detected
+                      ? `${vibratoAnalysis()!.classification} (Depth ${vibratoAnalysis()!.depthCents}¢)`
+                      : 'No vibrato detected'
+                  }
+                  highlight={vibratoAnalysis()!.classification === 'natural'}
+                  icon={IconChartBar}
+                  color="#bc8cff"
+                />
+              </Show>
+              <Show when={harmonicRichness()}>
+                <LiveMetricCard
+                  label="Harmonics"
+                  value={harmonicRichness()!.quality}
+                  detail={`Score: ${harmonicRichness()!.richnessScore}/100 (~${harmonicRichness()!.harmonicCount} harmonics)`}
+                  highlight={
+                    harmonicRichness()!.quality === 'rich' ||
+                    harmonicRichness()!.quality === 'very-rich'
+                  }
+                  icon={IconGuitar}
+                  color="#3fb950"
+                />
+              </Show>
+              <Show when={resonanceData()}>
+                <LiveMetricCard
+                  label="Resonance"
+                  value={resonanceData()!.dominantZone}
+                  detail={`Centroid: ${resonanceData()!.spectralCentroid.toFixed(0)} Hz`}
+                  highlight={
+                    resonanceData()!.dominantZone === 'mixed' ||
+                    resonanceData()!.dominantZone === 'mask'
+                  }
+                  icon={IconKeyboard}
+                  color="#2dd4bf"
+                />
+              </Show>
+              <Show when={fatigueData()}>
+                <LiveMetricCard
+                  label="Fatigue Tracker"
+                  value={fatigueData()!.fatigued ? 'Fatigued' : 'Stable'}
+                  detail={
+                    fatigueData()!.fatigued
+                      ? (fatigueData()!.alert ?? 'Fatigue detected')
+                      : fatigueData()!.checkpoints.length < 3
+                        ? 'Need more data'
+                        : 'No fatigue detected'
+                  }
+                  highlight={
+                    !fatigueData()!.fatigued &&
+                    fatigueData()!.checkpoints.length >= 3
+                  }
+                  icon={IconFire}
+                  color={fatigueData()!.fatigued ? '#f85149' : '#3fb950'}
+                />
+              </Show>
+            </div>
           </div>
 
           {/* Spectrogram Display */}
@@ -1725,9 +1730,19 @@ export const VocalAnalysis: Component = () => {
                         </For>
                         {/* SVG defs for gradients */}
                         <defs>
-                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                          <filter
+                            id="glow"
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                          >
                             <feGaussianBlur stdDeviation="3" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            <feComposite
+                              in="SourceGraphic"
+                              in2="blur"
+                              operator="over"
+                            />
                           </filter>
                           <linearGradient
                             id="pitchLineGrad"

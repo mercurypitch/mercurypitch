@@ -334,7 +334,7 @@ export class FFTDetector implements IPitchDetector {
     const { note, octave, cents } = this.freqToNote(frequency)
     const midi = this.frequencyToMidi(frequency)
     const noteName = note + String(octave)
-    
+
     // Normalize raw amplitude (maxVal) to a 0-1 pseudo-confidence scale
     const pseudoClarity = Math.max(0.1, Math.min(1.0, maxVal * 15))
 

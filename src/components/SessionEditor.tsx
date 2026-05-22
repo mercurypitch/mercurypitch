@@ -301,6 +301,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             <input
               type="text"
               class="search-input"
+              data-testid="melody-search-input"
               style={{
                 'margin-bottom': '12px',
                 width: '100%',

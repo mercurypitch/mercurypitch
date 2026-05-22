@@ -12,10 +12,10 @@ export interface OfflinePitchCanvasProps {
 }
 
 const ALGO_COLORS: Record<string, string> = {
-  yin: 'rgba(248, 81, 73, 0.8)',      // Red
-  fft: 'rgba(88, 166, 255, 0.8)',     // Blue
+  yin: 'rgba(248, 81, 73, 0.8)', // Red
+  fft: 'rgba(88, 166, 255, 0.8)', // Blue
   autocorr: 'rgba(63, 185, 80, 0.8)', // Green
-  swift: 'rgba(163, 113, 247, 0.8)',  // Purple
+  swift: 'rgba(163, 113, 247, 0.8)', // Purple
 }
 
 const MIN_FREQ = 55 // A1
@@ -23,27 +23,37 @@ const MAX_FREQ = 2093 // C7
 const LOG_MIN = Math.log2(MIN_FREQ)
 const LOG_RANGE = Math.log2(MAX_FREQ) - LOG_MIN
 
-export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) => {
+export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
+  props,
+) => {
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
   let resizeObserver: ResizeObserver | null = null
   let animFrameId: number | null = null
   let bgCanvas: HTMLCanvasElement | null = null
   let bgCtx: CanvasRenderingContext2D | null = null
-  let lastDrawState = { w: 0, h: 0, sx: -1, zoom: -1, hidden: new Set<string>() }
+  let lastDrawState = {
+    w: 0,
+    h: 0,
+    sx: -1,
+    zoom: -1,
+    hidden: new Set<string>(),
+  }
   let forceRedraw = true
 
   createEffect(() => {
-    props.waveform;
-    props.analysisResults;
-    props.segmentedNotes;
-    forceRedraw = true;
-  });
+    const _wf = props.waveform
+    const _ar = props.analysisResults
+    const _sn = props.segmentedNotes
+    const trackReactivity = (..._args: unknown[]) => {}
+    trackReactivity(_wf, _ar, _sn)
+    forceRedraw = true
+  })
 
   const [hiddenAlgos, setHiddenAlgos] = createSignal<Set<string>>(new Set())
 
   const toggleAlgo = (algo: string) => {
-    setHiddenAlgos(prev => {
+    setHiddenAlgos((prev) => {
       const next = new Set(prev)
       if (next.has(algo)) next.delete(algo)
       else next.add(algo)
@@ -60,18 +70,21 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
     e.preventDefault()
     if (e.ctrlKey) {
       const zoomFactor = Math.exp(-e.deltaY / 200)
-      setZoom(prev => {
+      setZoom((prev) => {
         const nextZoom = Math.max(1, Math.min(prev * zoomFactor, 100))
         const mouseX = e.offsetX
         const newScrollX = ((scrollX() + mouseX) / prev) * nextZoom - mouseX
-        const maxScroll = (canvasRef!.clientWidth * nextZoom) - canvasRef!.clientWidth
+        const maxScroll =
+          canvasRef!.clientWidth * nextZoom - canvasRef!.clientWidth
         setScrollX(Math.max(0, Math.min(newScrollX, maxScroll)))
         return nextZoom
       })
     } else {
-      setScrollX(prev => {
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
-        const maxScroll = (canvasRef!.clientWidth * zoom()) - canvasRef!.clientWidth
+      setScrollX((prev) => {
+        const delta =
+          Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+        const maxScroll =
+          canvasRef!.clientWidth * zoom() - canvasRef!.clientWidth
         return Math.max(0, Math.min(prev + delta, maxScroll))
       })
     }
@@ -87,9 +100,12 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
   createEffect(() => {
     if (props.audioFile) {
       const url = URL.createObjectURL(props.audioFile)
-      if (audio) { audio.pause(); audio.src = '' }
+      if (audio) {
+        audio.pause()
+        audio.src = ''
+      }
       audio = new Audio(url)
-      
+
       const onEnded = () => setIsPlaying(false)
       const onPlay = () => setIsPlaying(true)
       const onPause = () => setIsPlaying(false)
@@ -124,8 +140,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
     const deltaX = lastX - currentX
     if (Math.abs(deltaX) > 3) dragMoved = true
     lastX = currentX
-    setScrollX(prev => {
-      const maxScroll = (canvasRef!.clientWidth * zoom()) - canvasRef!.clientWidth
+    setScrollX((prev) => {
+      const maxScroll = canvasRef!.clientWidth * zoom() - canvasRef!.clientWidth
       return Math.max(0, Math.min(prev + deltaX, maxScroll))
     })
   }
@@ -133,7 +149,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
   const handlePointerUp = (e: PointerEvent) => {
     isDragging = false
     canvasRef?.releasePointerCapture(e.pointerId)
-    
+
     // If it was just a click (no drag), scrub to that position
     if (!dragMoved && audio && props.durationSec > 0 && canvasRef) {
       const rect = canvasRef.getBoundingClientRect()
@@ -280,9 +296,12 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
             const start = Math.floor((sx + i) * step)
             const end = Math.floor((sx + i + 1) * step)
             const actualEnd = Math.min(Math.max(start + 1, end), samples.length)
-            
+
             if (start < samples.length) {
-              const stepSize = Math.max(1, Math.floor((actualEnd - start) / 100))
+              const stepSize = Math.max(
+                1,
+                Math.floor((actualEnd - start) / 100),
+              )
               for (let j = start; j < actualEnd; j += stepSize) {
                 const val = samples[j]
                 if (val < min) min = val
@@ -302,8 +321,11 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
             if (currentHidden.has(res.algorithm)) continue
 
             const hasSegmented = (props.segmentedNotes?.length ?? 0) > 0
-            const baseColor = ALGO_COLORS[res.algorithm] ?? 'rgba(255, 255, 255, 0.8)'
-            const color = hasSegmented ? baseColor.replace(/0\.8\)$/, '0.3)') : baseColor
+            const baseColor =
+              ALGO_COLORS[res.algorithm] ?? 'rgba(255, 255, 255, 0.8)'
+            const color = hasSegmented
+              ? baseColor.replace(/0\.8\)$/, '0.3)')
+              : baseColor
 
             bgCtx.strokeStyle = color
             bgCtx.fillStyle = color
@@ -316,12 +338,12 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
             for (let i = 0; i < res.pitches.length; i++) {
               const p = res.pitches[i]
               const x = (p.time / duration) * vw - sx
-              
+
               if (p.freq === null || p.freq <= 0) {
                 isDrawing = false
                 continue
               }
-              
+
               const y = freqToY(p.freq, h)
 
               if (!isDrawing) {
@@ -340,17 +362,20 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
           }
         }
 
-        if ((props.segmentedNotes?.length ?? 0) > 0 && props.segmentedNotes !== undefined) {
+        if (
+          (props.segmentedNotes?.length ?? 0) > 0 &&
+          props.segmentedNotes !== undefined
+        ) {
           const beatsToSeconds = (b: number) => b / (120 / 60)
-          
+
           for (const note of props.segmentedNotes) {
             const startSec = beatsToSeconds(note.startBeat)
             const endSec = startSec + beatsToSeconds(note.duration)
-            
+
             const x1 = (startSec / duration) * vw - sx
             const x2 = (endSec / duration) * vw - sx
             const y = freqToY(note.note.freq, h)
-            
+
             const blockHeight = 12
             const blockY = y - blockHeight / 2
             const blockWidth = Math.max(x2 - x1, 4)
@@ -358,7 +383,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
             bgCtx.fillStyle = 'rgba(255, 165, 0, 0.7)'
             bgCtx.strokeStyle = 'rgba(255, 165, 0, 1.0)'
             bgCtx.lineWidth = 1
-            
+
             bgCtx.beginPath()
             bgCtx.roundRect(x1, blockY, blockWidth, blockHeight, 4)
             bgCtx.fill()
@@ -369,7 +394,11 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
               bgCtx.font = '10px Inter, sans-serif'
               bgCtx.textAlign = 'center'
               bgCtx.textBaseline = 'top'
-              bgCtx.fillText(note.lyricText, x1 + blockWidth / 2, blockY + blockHeight + 2)
+              bgCtx.fillText(
+                note.lyricText,
+                x1 + blockWidth / 2,
+                blockY + blockHeight + 2,
+              )
             }
           }
         }
@@ -389,7 +418,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
         ctx.lineWidth = 2
         ctx.stroke()
-        
+
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
         ctx.beginPath()
         ctx.moveTo(x - 5, 0)
@@ -402,22 +431,32 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (props) =>
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%', 'touch-action': 'none' }} />
-      
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          'touch-action': 'none',
+        }}
+      />
+
       {/* HTML Overlay Legend */}
-      <div style={{
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        display: 'flex',
-        'flex-direction': 'column',
-        gap: '4px',
-        padding: '6px',
-        background: 'rgba(13, 17, 23, 0.7)',
-        'border-radius': '6px',
-        'backdrop-filter': 'blur(4px)',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          display: 'flex',
+          'flex-direction': 'column',
+          gap: '4px',
+          padding: '6px',
+          background: 'rgba(13, 17, 23, 0.7)',
+          'border-radius': '6px',
+          'backdrop-filter': 'blur(4px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
         <For each={props.analysisResults}>
           {(res) => {
             const isHidden = () => hiddenAlgos().has(res.algorithm)

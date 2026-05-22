@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2026-05-22
+
+### Added
+
+- **Analysis Tab / Vocal Analysis**: Completely revamped the Pitch Testing UI to include a new "Session Gallery" feature, allowing users to browse previously analyzed vocal tracks.
+- **Pitch Segmentation**: Built a new intelligent note segmentation algorithm (`note-segmenter.ts`) that extracts discrete, denoised musical notes from raw pitch sample arrays.
+- **Lyrics Support**: Integrated `.lrc` lyric files sync support directly into the Pitch Testing Tab (`lyrics-service.ts`) with interactive, synchronized UI highlighting.
+- **Offline Pitch Canvas**: Added a new interactive timeline viewer (`OfflinePitchCanvas.tsx`) for analyzing historical vocal performances with drag-to-seek, zooming, and scrolling capabilities.
+- **Persistent Analysis**: Added Dexie DB integration (`pitch-analysis-service.ts`) to ensure offline analysis results (pitch data and segmented notes) survive page reloads.
+
+### Changed
+
+- **Mobile Navigation**: Updated mobile swipe gestures to correctly skip hidden/advanced UI tabs instead of getting stuck.
+- **Performance**: Shifted heavy Pitch Canvas calculations to an `OffscreenCanvas` caching architecture to optimize rendering loops.
+
+### Fixed
+
+- **Analysis Tab**: Rewrote offline Pitch Canvas renderer to use `OffscreenCanvas` caching, resolving extreme frame drops and lag during waveform playback.
+- **Analysis Tab**: Fixed caching bug causing multi-second delays when swapping between vocal tracks or toggling the "Denoised Melody" overlay.
+- **Analysis Tab**: Fixed "Cancel Separation" button doing nothing by properly injecting the session ID to abort the background UVR worker.
+- **UI & Reactivity**: Transitioned gallery components to strict CSS modules and resolved SolidJS reactivity warnings ("computations created outside a createRoot") in the `PitchTestingTab`.
+
 ## [0.3.7] - 2026-05-21
 
 ### Added

@@ -201,11 +201,17 @@ const AppShell: Component<AppProps> = (props) => {
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
-  const savedSidebarCollapsed = localStorage.getItem('pitchperfect_sidebar_collapsed') === 'true'
-  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(savedSidebarCollapsed)
+  const savedSidebarCollapsed =
+    localStorage.getItem('pitchperfect_sidebar_collapsed') === 'true'
+  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(
+    savedSidebarCollapsed,
+  )
 
   createEffect(() => {
-    localStorage.setItem('pitchperfect_sidebar_collapsed', String(sidebarCollapsed()))
+    localStorage.setItem(
+      'pitchperfect_sidebar_collapsed',
+      String(sidebarCollapsed()),
+    )
   })
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)

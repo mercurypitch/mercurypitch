@@ -20,24 +20,26 @@ export interface SegmentPitchesOptions {
  */
 export function segmentPitchesToNotes(
   samples: TimeStampedPitchSample[],
-  options: SegmentPitchesOptions = {}
+  options: SegmentPitchesOptions = {},
 ): MelodyItem[] {
   const minClarity = options.minClarity ?? 0.6
   const minDuration = options.minDuration ?? 0.05 // 50ms
   const maxGap = options.maxGap ?? 0.1 // 100ms
   const pitchTolerance = options.pitchTolerance ?? 0.5
   const bpm = options.bpm ?? 120
-  
+
   if (samples.length === 0) return []
 
-  const validSamples = samples.filter(s => s.freq !== null && s.freq > 0 && s.clarity >= minClarity)
+  const validSamples = samples.filter(
+    (s) => s.freq !== null && s.freq > 0 && s.clarity >= minClarity,
+  )
   if (validSamples.length === 0) return []
 
   // Add midi value to each valid sample
-  const midiSamples = validSamples.map(s => ({
+  const midiSamples = validSamples.map((s) => ({
     time: s.time,
     freq: s.freq!,
-    midi: freqToMidi(s.freq!)
+    midi: freqToMidi(s.freq!),
   }))
 
   // Sort by time just in case
@@ -54,13 +56,13 @@ export function segmentPitchesToNotes(
     startTime: midiSamples[0].time,
     endTime: midiSamples[0].time,
     midiSum: midiSamples[0].midi,
-    count: 1
+    count: 1,
   }
 
   for (let i = 1; i < midiSamples.length; i++) {
     const s = midiSamples[i]
     const currentAvgMidi = currentNote.midiSum / currentNote.count
-    
+
     const timeDiff = s.time - currentNote.endTime
     const pitchDiff = Math.abs(s.midi - currentAvgMidi)
 
@@ -76,7 +78,7 @@ export function segmentPitchesToNotes(
         startTime: s.time,
         endTime: s.time,
         midiSum: s.midi,
-        count: 1
+        count: 1,
       }
     }
   }
@@ -92,7 +94,7 @@ export function segmentPitchesToNotes(
     if (durationSec >= minDuration) {
       const avgMidi = Math.round(n.midiSum / n.count)
       const noteInfo = midiToNote(avgMidi)
-      
+
       melodyItems.push({
         id: nextId++,
         startBeat: n.startTime * beatsPerSecond,
@@ -101,8 +103,8 @@ export function segmentPitchesToNotes(
           midi: avgMidi,
           name: noteInfo.name as NoteName,
           octave: noteInfo.octave,
-          freq: midiToFreq(avgMidi)
-        }
+          freq: midiToFreq(avgMidi),
+        },
       })
     }
   }
