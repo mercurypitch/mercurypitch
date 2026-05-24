@@ -23,6 +23,7 @@ function createMockAudioEngine(overrides: Partial<AudioEngine> = {}): AudioEngin
     getTimeData: () => new Float32Array(1024),
     getSampleRate: () => 44100,
     getBufferSize: () => 2048,
+    stopTone: () => {},
     ...overrides,
   } as unknown as AudioEngine
 }

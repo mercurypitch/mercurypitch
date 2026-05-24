@@ -15,6 +15,7 @@ function createMockAudioEngine(): AudioEngine {
     getTimeData: vi.fn().mockReturnValue(new Float32Array(1024)),
     getSampleRate: vi.fn().mockReturnValue(44100),
     getBufferSize: vi.fn().mockReturnValue(2048),
+    stopTone: vi.fn(),
   } as unknown as AudioEngine
 }
 

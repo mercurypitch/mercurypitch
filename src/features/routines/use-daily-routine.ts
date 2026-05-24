@@ -2,6 +2,7 @@ import { createMemo } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { dailyRoutines, getRandomRoutine } from '@/data/routine-templates'
 import type { RoutineSegment, RoutineTemplate } from './types'
+import type { ExerciseType } from '@/features/exercises/types'
 
 const STORAGE_KEY = 'mp_daily_routine'
 
@@ -15,9 +16,41 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Shared persisted signal so auto-advance can update it from outside the hook
+const [routineData, setRoutineData] =
+  createPersistedSignal<PersistedRoutine | null>(STORAGE_KEY, null)
+
+/**
+ * Auto-advance the daily routine if the completed exercise matches the
+ * current segment. Call this after recording an exercise result.
+ */
+export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
+  const data = routineData()
+  if (!data || data.date !== todayStr()) return
+
+  const template = dailyRoutines.find((r) => r.id === data.templateId)
+  if (!template) return
+
+  const currentIdx = data.completedSegments.length
+  if (currentIdx >= template.segments.length) return
+
+  const currentSeg = template.segments[currentIdx]
+  if (!currentSeg) return
+
+  // Only auto-advance exercise segments that match the completed type
+  if (
+    currentSeg.type === 'exercise' &&
+    currentSeg.config.exercise === exerciseType
+  ) {
+    setRoutineData({
+      ...data,
+      completedSegments: [...data.completedSegments, currentIdx],
+    })
+  }
+}
+
 export function useDailyRoutine() {
-  const [persisted, setPersisted] =
-    createPersistedSignal<PersistedRoutine | null>(STORAGE_KEY, null)
+  const [persisted, setPersisted] = [routineData, setRoutineData] as const
 
   const today = todayStr()
   const isToday = () => persisted()?.date === today

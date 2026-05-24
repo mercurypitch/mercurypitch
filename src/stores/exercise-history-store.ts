@@ -2,6 +2,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseType } from '@/features/exercises/types'
 import { updatePracticeStreak } from '@/db/services/streak-service'
 import { updateLeaderboardEntry } from '@/db/services/leaderboard-service'
+import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 
@@ -34,6 +35,9 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
   })
+
+  // Auto-advance daily routine if this exercise matches the current segment
+  autoAdvanceRoutineSegment(entry.type)
 
   // Fire-and-forget: update streak and leaderboard in the background
   void updatePracticeStreak()

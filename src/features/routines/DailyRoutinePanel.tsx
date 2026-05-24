@@ -3,8 +3,8 @@ import type { JSX } from 'solid-js/jsx-runtime'
 import { createSignal, For, Show } from 'solid-js'
 import { useDailyRoutine } from './use-daily-routine'
 import type { SegmentKind } from './types'
-import { startExercise } from '@/stores/ui-store'
-import type { ExerciseType } from '@/features/exercises/types'
+import { setActiveTab, startExercise } from '@/stores/ui-store'
+import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { IconFire, IconTarget, IconTrophy, IconWater, IconCheck, } from '@/components/exercise-icons'
 
 const segmentLabels: Record<SegmentKind, string> = {
@@ -19,13 +19,6 @@ const segmentIcons: Record<SegmentKind, () => JSX.Element> = {
   exercise: () => <IconTarget size={14} />,
   'challenge-prep': () => <IconTrophy size={14} />,
   cooldown: () => <IconWater size={14} />,
-}
-
-const segmentExercise: Record<SegmentKind, ExerciseType> = {
-  warmup: 'long-note',
-  exercise: 'vibrato',
-  'challenge-prep': 'pitch-pursuit',
-  cooldown: 'slide',
 }
 
 export const DailyRoutinePanel: Component = () => {
@@ -102,6 +95,8 @@ export const DailyRoutinePanel: Component = () => {
                   const seg = item.seg
                   const done = item.done
                   const current = item.current
+                  const segExercise = seg.config.exercise
+                  const segNotes = seg.config.notes ?? []
                   return (
                     <div
                       class={`daily-routine-segment${done ? ' done' : ''}${current ? ' current' : ''}`}
@@ -115,31 +110,59 @@ export const DailyRoutinePanel: Component = () => {
                       </span>
                       <span class="daily-routine-segment-type">
                         {segmentLabels[seg.type]}
+                        {segExercise ? `: ${segExercise}` : ''}
                       </span>
                       <span class="daily-routine-segment-dur">
                         {Math.round(seg.durationSec / 60)}m
                       </span>
                       <Show when={current && !done}>
-                        <button
-                          class="daily-routine-segment-start-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            startExercise(segmentExercise[seg.type])
-                          }}
-                          title="Start exercise"
-                        >
-                          ▶
-                        </button>
-                        <button
-                          class="daily-routine-segment-done-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            routine.completeSegment()
-                          }}
-                          title="Mark complete"
-                        >
-                          <IconCheck size={10} />
-                        </button>
+                        <Show when={segExercise} fallback={
+                          <>
+                            {seg.type === 'challenge-prep' && (
+                              <button
+                                class="daily-routine-segment-start-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveTab(TAB_CHALLENGES)
+                                }}
+                                title="Go to Challenges"
+                              >
+                                ▶
+                              </button>
+                            )}
+                            <button
+                              class="daily-routine-segment-done-btn"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                routine.completeSegment()
+                              }}
+                              title="Mark complete"
+                            >
+                              <IconCheck size={10} />
+                            </button>
+                          </>
+                        }>
+                          <button
+                            class="daily-routine-segment-start-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              startExercise(segExercise!, { notes: segNotes })
+                            }}
+                            title={`Start ${segExercise}`}
+                          >
+                            ▶
+                          </button>
+                          <button
+                            class="daily-routine-segment-done-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              routine.completeSegment()
+                            }}
+                            title="Mark complete"
+                          >
+                            <IconCheck size={10} />
+                          </button>
+                        </Show>
                       </Show>
                     </div>
                   )
