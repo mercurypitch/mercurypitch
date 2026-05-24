@@ -26,7 +26,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   })
 
   const pitchHistory = createSignal<
-    Array<{ freq: number; time: number; cents: number }>
+    Array<{ freq: number; time: number; cents: number; clarity?: number }>
   >([])
   const [getPitchHistory, setPitchHistory] = pitchHistory
   const [getCurrentPitch, setCurrentPitch] = createSignal<{
@@ -128,6 +128,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
                 freq: pitch.frequency,
                 time: elapsed / 1000,
                 cents: pitch.cents,
+                clarity: pitch.clarity,
               },
             ]
             return next.length > MAX_PITCH_HISTORY

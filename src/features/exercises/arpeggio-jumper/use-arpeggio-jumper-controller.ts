@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 
 type ArpeggioType = 'major' | 'minor' | 'diminished' | 'augmented'
 
@@ -137,13 +138,22 @@ export function useArpeggioJumperController(
     const avgAccuracy = Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
     const bestNote = Math.max(...noteScores)
 
+    const history = base.pitchHistory()
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
     return {
       type: EXERCISE_ARPEGGIO_JUMPER,
-      score: Math.round(avgAccuracy * 0.6 + bestNote * 0.4),
+      score: Math.round(avgAccuracy * 0.45 + bestNote * 0.3 + richness * 0.25),
       metrics: {
         notesCompleted: noteScores.length,
         avgAccuracy,
         bestNote,
+        richnessScore: Math.round(richness),
       },
       completedAt: Date.now(),
     }

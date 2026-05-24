@@ -3,6 +3,7 @@ import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SCALE_RUNNER } from '../types'
 import { getScaleDegrees } from '@/lib/scale-data'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 
 type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
 
@@ -121,14 +122,30 @@ export function useScaleRunnerController(
       return {
         type: EXERCISE_SCALE_RUNNER,
         score: 0,
-        metrics: { notesCompleted: 0, avgAccuracy: 0, bestNote: 0 },
+        metrics: { notesCompleted: 0, avgAccuracy: 0, bestNote: 0, evennessStdDev: 0, richnessScore: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
     const bestNote = Math.max(...noteScores)
 
-    const score = Math.round(avgAccuracy * 0.6 + bestNote * 0.4)
+    const evennessStdDev = (() => {
+      if (noteScores.length < 2) return 0
+      const mean = avgAccuracy
+      const variance = noteScores.reduce((s, v) => s + (v - mean) ** 2, 0) / noteScores.length
+      return Math.round(Math.sqrt(variance) * 10) / 10
+    })()
+    const evennessScore = Math.max(0, Math.min(100, 100 - evennessStdDev * 3))
+
+    const history = base.pitchHistory()
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
+    const score = Math.round(avgAccuracy * 0.4 + bestNote * 0.15 + evennessScore * 0.25 + richness * 0.2)
 
     return {
       type: EXERCISE_SCALE_RUNNER,
@@ -137,6 +154,8 @@ export function useScaleRunnerController(
         notesCompleted: noteScores.length,
         avgAccuracy,
         bestNote,
+        evennessStdDev,
+        richnessScore: Math.round(richness),
       },
       completedAt: Date.now(),
     }

@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SIREN } from '../types'
+import { detectSlides } from '@/lib/vocal-analyzer'
 
 const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 600
@@ -136,20 +137,36 @@ export function useSirenController(
       return {
         type: EXERCISE_SIREN,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, slideQuality: 0, cleanSlides: 0, scoopSlides: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
     const bestRound = Math.max(...roundScores)
 
+    const history = base.pitchHistory()
+    const slideSamples = history
+      .filter((p) => p.freq > 0)
+      .map((p) => ({
+        time: p.time,
+        midi: 12 * Math.log2(p.freq / 440) + 69,
+        freq: p.freq,
+      }))
+    const slideResult = detectSlides(slideSamples)
+    const slideQuality = slideResult.overallScore
+    const cleanSlides = slideResult.cleanCount
+    const scoopSlides = slideResult.scoopCount
+
     return {
       type: EXERCISE_SIREN,
-      score: Math.round(avgAccuracy * 0.7 + bestRound * 0.3),
+      score: Math.round(avgAccuracy * 0.45 + bestRound * 0.25 + slideQuality * 0.3),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        slideQuality,
+        cleanSlides,
+        scoopSlides,
       },
       completedAt: Date.now(),
     }

@@ -2,6 +2,8 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
+import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
+import { approximateRichness, analyzeFatigue } from '@/lib/vocal-analyzer'
 
 const PHASES: Array<{ name: string; notes: number[] }> = [
   { name: 'Warm-up', notes: [0, 2, 4, 2, 0] },                    // gentle ascending/descending
@@ -23,6 +25,7 @@ export function useRoutineRunnerController(
   let phaseIndex = 0
   let noteIndex = 0
   let allScores: number[] = []
+  let fatigueCheckpoints: FatigueCheckpoint[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
 
@@ -32,6 +35,7 @@ export function useRoutineRunnerController(
     baseMidi = midi
     phaseIndex = 0
     allScores = []
+    fatigueCheckpoints = []
   }
 
   function startRoutine(): void {
@@ -62,7 +66,8 @@ export function useRoutineRunnerController(
   function playCurrentNote(): void {
     const phase = PHASES[phaseIndex]
     if (noteIndex >= phase.notes.length) {
-      // Phase complete, move to next
+      // Collect fatigue checkpoint before advancing
+      collectCheckpoint()
       phaseIndex++
       phaseTimer = setTimeout(() => startPhase(), 500)
       return
@@ -127,6 +132,38 @@ export function useRoutineRunnerController(
     phaseTimer = setTimeout(() => playCurrentNote(), 400)
   }
 
+  function collectCheckpoint(): void {
+    const history = base.pitchHistory()
+    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const claritySamples = recentSamples
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+
+    if (claritySamples.length < 3) return
+
+    const avgClarity = claritySamples.reduce((s, p) => s + p.clarity, 0) / claritySamples.length
+    const hnrDb = Math.round(Math.min(35, Math.max(0, avgClarity * 0.35)) * 10) / 10
+    const richness = approximateRichness(claritySamples)
+
+    const validMidis = recentSamples
+      .filter((p) => p.freq > 0)
+      .map((p) => 12 * Math.log2(p.freq / 440) + 69)
+    const pitchStability = (() => {
+      if (validMidis.length < 2) return 100
+      const mean = validMidis.reduce((a, b) => a + b, 0) / validMidis.length
+      const variance = validMidis.reduce((s, v) => s + (v - mean) ** 2, 0) / validMidis.length
+      const stdDevCents = Math.sqrt(variance) * 100
+      return Math.round(Math.max(0, 100 - stdDevCents * 2))
+    })()
+
+    fatigueCheckpoints.push({
+      time: history[history.length - 1]?.time ?? 0,
+      hnrDb,
+      richnessScore: richness.richnessScore,
+      pitchStability,
+    })
+  }
+
   function finish(): void {
     const result = computeResult()
     base._completeWithResult(result)
@@ -137,21 +174,40 @@ export function useRoutineRunnerController(
       return {
         type: EXERCISE_ROUTINE_RUNNER,
         score: 0,
-        metrics: { phasesCompleted: 0, totalNotes: 0, avgAccuracy: 0, bestNote: 0 },
+        metrics: { phasesCompleted: 0, totalNotes: 0, avgAccuracy: 0, bestNote: 0, fatigueScore: 0, richnessScore: 0, hnrTrend: 0, richnessTrend: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
     const bestNote = Math.max(...allScores)
 
+    // Fatigue analysis
+    const fatigueResult = analyzeFatigue(fatigueCheckpoints)
+    const fatigueScore = fatigueResult.fatigued
+      ? Math.max(0, 100 + fatigueResult.trends.hnrTrend * 2)
+      : 100
+
+    // Richness from all clarity samples
+    const history = base.pitchHistory()
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
     return {
       type: EXERCISE_ROUTINE_RUNNER,
-      score: Math.round(avgAccuracy * 0.6 + bestNote * 0.4),
+      score: Math.round(avgAccuracy * 0.35 + bestNote * 0.15 + fatigueScore * 0.3 + richness * 0.2),
       metrics: {
         phasesCompleted: PHASES.length,
         totalNotes: allScores.length,
         avgAccuracy,
         bestNote,
+        fatigueScore,
+        richnessScore: Math.round(richness),
+        hnrTrend: fatigueResult.trends.hnrTrend,
+        richnessTrend: fatigueResult.trends.richnessTrend,
       },
       completedAt: Date.now(),
     }

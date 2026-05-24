@@ -2,14 +2,16 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_MIRROR_MELODY } from '../types'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 
 const MATCH_WINDOW_MS = 2500
 const TONE_DURATION_MS = 1200
 const GAP_BEFORE_MATCH_MS = 400
 const MELODY_LENGTH = 5
-const SCORE_ACCURACY_WEIGHT = 0.5
-const SCORE_BEST_NOTE_WEIGHT = 0.2
-const SCORE_CONSISTENCY_WEIGHT = 0.3
+const SCORE_ACCURACY_WEIGHT = 0.35
+const SCORE_BEST_NOTE_WEIGHT = 0.15
+const SCORE_CONSISTENCY_WEIGHT = 0.25
+const SCORE_RICHNESS_WEIGHT = 0.25
 
 function generateMelody(baseMidi: number, length: number): number[] {
   const pool = [-4, -2, 0, 2, 4, 7, 9]
@@ -144,10 +146,19 @@ export function useMirrorMelodyController(
       return Math.round(Math.max(0, 100 - Math.sqrt(variance) * 2))
     })()
 
+    const history = base.pitchHistory()
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
     const score = Math.round(
       avgAccuracy * SCORE_ACCURACY_WEIGHT +
         bestNote * SCORE_BEST_NOTE_WEIGHT +
-        consistency * SCORE_CONSISTENCY_WEIGHT,
+        consistency * SCORE_CONSISTENCY_WEIGHT +
+        richness * SCORE_RICHNESS_WEIGHT,
     )
 
     return {
@@ -158,6 +169,7 @@ export function useMirrorMelodyController(
         avgAccuracy,
         bestNote,
         consistency,
+        richnessScore: Math.round(richness),
       },
       completedAt: Date.now(),
     }

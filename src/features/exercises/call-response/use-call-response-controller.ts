@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_CALL_RESPONSE } from '../types'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 
 const ROUNDS = 5
 const NOTE_PLAY_DURATION_MS = 500
@@ -157,13 +158,22 @@ export function useCallResponseController(
     const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
     const bestRound = Math.max(...roundScores)
 
+    const history = base.pitchHistory()
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
     return {
       type: EXERCISE_CALL_RESPONSE,
-      score: Math.round(avgAccuracy * 0.7 + bestRound * 0.3),
+      score: Math.round(avgAccuracy * 0.5 + bestRound * 0.25 + richness * 0.25),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        richnessScore: Math.round(richness),
       },
       completedAt: Date.now(),
     }

@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION } from '../types'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 
 const ROUNDS = 6
 const MATCH_WINDOW_MS = 4000
@@ -129,20 +130,40 @@ export function useDroneIntonationController(
       return {
         type: EXERCISE_DRONE_INTONATION,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, stabilityCents: 0, richnessScore: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
     const bestRound = Math.max(...roundScores)
 
+    const history = base.pitchHistory()
+    const validSamples = history.filter((p) => p.freq > 0)
+    const stabilityCents = (() => {
+      if (validSamples.length < 2) return 0
+      const midis = validSamples.map((p) => 12 * Math.log2(p.freq / 440) + 69)
+      const mean = midis.reduce((a, b) => a + b, 0) / midis.length
+      const variance = midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length
+      return Math.round(Math.sqrt(variance) * 100)
+    })()
+    const stabilityScore = Math.max(0, Math.min(100, 100 - stabilityCents * 0.8))
+
+    const claritySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
+    const richness = claritySamples.length > 2
+      ? approximateRichness(claritySamples).richnessScore
+      : 0
+
     return {
       type: EXERCISE_DRONE_INTONATION,
-      score: Math.round(avgAccuracy * 0.7 + bestRound * 0.3),
+      score: Math.round(avgAccuracy * 0.4 + bestRound * 0.15 + stabilityScore * 0.25 + richness * 0.2),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        stabilityCents,
+        richnessScore: Math.round(richness),
       },
       completedAt: Date.now(),
     }

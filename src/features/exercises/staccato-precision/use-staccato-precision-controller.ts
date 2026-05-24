@@ -22,6 +22,7 @@ export function useStaccatoPrecisionController(
   let targetNotes: number[] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  let attackPrecisionScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
 
@@ -31,6 +32,7 @@ export function useStaccatoPrecisionController(
     targetNotes = generateNotes(baseMidi)
     roundIndex = 0
     roundScores = []
+    attackPrecisionScores = []
   }
 
   function startRounds(): void {
@@ -74,20 +76,27 @@ export function useStaccatoPrecisionController(
     const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
 
     let roundScore = 0
+    let attackPrecision = 0
     if (recentSamples.length > 0) {
-      const deviations = recentSamples
-        .filter((p) => p.freq > 0)
-        .map((p) => {
+      const validSamples = recentSamples.filter((p) => p.freq > 0)
+      if (validSamples.length > 0) {
+        const deviations = validSamples.map((p) => {
           const midi = 12 * Math.log2(p.freq / 440) + 69
           return Math.abs((midi - targetMidi) * 100)
         })
-      if (deviations.length > 0) {
         const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
         roundScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
+
+        // Attack precision: % of early samples within ±25 cents
+        const earlyCount = Math.max(1, Math.floor(validSamples.length * 0.3))
+        const earlyDeviations = deviations.slice(0, earlyCount)
+        const onTarget = earlyDeviations.filter((d) => d <= 25).length
+        attackPrecision = Math.round((onTarget / earlyDeviations.length) * 100)
       }
     }
 
     roundScores.push(roundScore)
+    attackPrecisionScores.push(attackPrecision)
 
     const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length
     batch(() => {
@@ -112,20 +121,24 @@ export function useStaccatoPrecisionController(
       return {
         type: EXERCISE_STACCATO,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, attackPrecision: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
     const bestRound = Math.max(...roundScores)
+    const attackPrecision = attackPrecisionScores.length > 0
+      ? Math.round(attackPrecisionScores.reduce((a, b) => a + b, 0) / attackPrecisionScores.length)
+      : 0
 
     return {
       type: EXERCISE_STACCATO,
-      score: Math.round(avgAccuracy * 0.6 + bestRound * 0.4),
+      score: Math.round(avgAccuracy * 0.45 + bestRound * 0.2 + attackPrecision * 0.35),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        attackPrecision,
       },
       completedAt: Date.now(),
     }

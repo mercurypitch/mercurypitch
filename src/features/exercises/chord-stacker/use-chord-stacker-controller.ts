@@ -25,6 +25,10 @@ const NOTE_PLAY_DURATION_MS = 600
 const GAP_BETWEEN_NOTES_MS = 300
 const MATCH_WINDOW_MS = 2500
 
+function avgOf(arr: number[]): number {
+  return arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -185,12 +189,25 @@ export function useChordStackerController(
       return {
         type: EXERCISE_CHORD_STACKER,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, maj7Avg: 0, min7Avg: 0, dom7Avg: 0, dim7Avg: 0, maj6Avg: 0 },
         completedAt: Date.now(),
       }
     }
     const avgAccuracy = Math.round(allRoundScores.reduce((a, b) => a + b, 0) / allRoundScores.length)
     const bestRound = Math.max(...allRoundScores)
+
+    // Per-chord-type breakdown
+    const chordScores: Record<ChordType, number[]> = { maj7: [], min7: [], dom7: [], dim7: [], maj6: [] }
+    for (let i = 0; i < Math.min(chordTypes.length, allRoundScores.length); i++) {
+      chordScores[chordTypes[i]].push(allRoundScores[i])
+    }
+    const chordAvgs = {
+      maj7Avg: avgOf(chordScores.maj7),
+      min7Avg: avgOf(chordScores.min7),
+      dom7Avg: avgOf(chordScores.dom7),
+      dim7Avg: avgOf(chordScores.dim7),
+      maj6Avg: avgOf(chordScores.maj6),
+    }
 
     return {
       type: EXERCISE_CHORD_STACKER,
@@ -199,6 +216,7 @@ export function useChordStackerController(
         roundsCompleted: allRoundScores.length,
         avgAccuracy,
         bestRound,
+        ...chordAvgs,
       },
       completedAt: Date.now(),
     }

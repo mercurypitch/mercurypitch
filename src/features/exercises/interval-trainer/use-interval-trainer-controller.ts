@@ -33,6 +33,7 @@ export function useIntervalTrainerController(
   let intervals: Array<[number, number]> = []
   let roundIndex = 0
   let roundScores: Array<{ note1: number; note2: number }> = []
+  let intervalSpans: Array<{ span: number; score: number }> = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let matchStartTime = 0
@@ -43,6 +44,7 @@ export function useIntervalTrainerController(
     intervals = generateIntervals(baseMidi)
     roundIndex = 0
     roundScores = []
+    intervalSpans = []
     base._setTargetPitch(0)
   }
 
@@ -123,6 +125,8 @@ export function useIntervalTrainerController(
     roundScores.push({ note1: note1Score, note2: note2Score })
 
     const roundAvg = (note1Score + note2Score) / 2
+    const span = Math.abs(target2 - target1)
+    intervalSpans.push({ span, score: Math.round(roundAvg) })
     batch(() => {
       base._updateScore(Math.round(roundAvg))
       base._updateMetrics({
@@ -147,7 +151,7 @@ export function useIntervalTrainerController(
       return {
         type: EXERCISE_INTERVAL_TRAINER,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, smallIntervalAvg: 0, mediumIntervalAvg: 0, largeIntervalAvg: 0 },
         completedAt: Date.now(),
       }
     }
@@ -156,13 +160,30 @@ export function useIntervalTrainerController(
     const avgAccuracy = Math.round(roundAvgs.reduce((a, b) => a + b, 0) / roundAvgs.length)
     const bestRound = Math.round(Math.max(...roundAvgs))
 
+    // Per-interval-size breakdown
+    const small = intervalSpans.filter((s) => s.span <= 4)
+    const medium = intervalSpans.filter((s) => s.span > 4 && s.span <= 8)
+    const large = intervalSpans.filter((s) => s.span > 8)
+    const smallAvg = small.length > 0 ? Math.round(small.reduce((a, b) => a + b.score, 0) / small.length) : 0
+    const mediumAvg = medium.length > 0 ? Math.round(medium.reduce((a, b) => a + b.score, 0) / medium.length) : 0
+    const largeAvg = large.length > 0 ? Math.round(large.reduce((a, b) => a + b.score, 0) / large.length) : 0
+
+    // Difficulty-weighted: larger intervals are harder, weight accordingly
+    const totalSpans = intervalSpans.reduce((s, v) => s + v.span, 0)
+    const difficultyWeightedScore = intervalSpans.length > 0 && totalSpans > 0
+      ? Math.round(intervalSpans.reduce((s, v) => s + v.score * (v.span / totalSpans), 0) * intervalSpans.length)
+      : 0
+
     return {
       type: EXERCISE_INTERVAL_TRAINER,
-      score: avgAccuracy,
+      score: Math.round(avgAccuracy * 0.5 + Math.min(100, difficultyWeightedScore) * 0.5),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        smallIntervalAvg: smallAvg,
+        mediumIntervalAvg: mediumAvg,
+        largeIntervalAvg: largeAvg,
       },
       completedAt: Date.now(),
     }

@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DYNAMIC_SWELL } from '../types'
+import { intensityFromPitchResults } from '@/lib/vocal-analyzer'
 
 const NOTE_PLAY_DURATION_MS = 800
 const HOLD_DURATION_MS = 8000
@@ -116,13 +117,28 @@ export function useDynamicSwellController(
     const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
     const bestRound = Math.max(...roundScores)
 
+    const history = base.pitchHistory()
+    const intensitySamples = history
+      .filter((p) => p.freq > 0 && p.clarity !== undefined)
+      .map((p) => ({
+        time: p.time,
+        clarity: p.clarity!,
+        midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
+      }))
+    const intensity = intensityFromPitchResults(intensitySamples)
+    const dynamicRangeDb = Math.round(intensity.dynamicRange * 10) / 10
+    const dynamicScore = Math.min(100, dynamicRangeDb * 3)
+
     return {
       type: EXERCISE_DYNAMIC_SWELL,
-      score: Math.round(avgAccuracy * 0.6 + bestRound * 0.4),
+      score: Math.round(avgAccuracy * 0.45 + bestRound * 0.2 + dynamicScore * 0.35),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,
         bestRound,
+        dynamicRangeDb,
+        avgDb: Math.round(intensity.avgDb * 10) / 10,
+        peakDb: Math.round(intensity.peakDb * 10) / 10,
       },
       completedAt: Date.now(),
     }
