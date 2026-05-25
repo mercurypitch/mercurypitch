@@ -33,10 +33,12 @@ export function useMirrorMelodyController(
   let noteScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setMelody(baseMidi: number): void {
+    _cancelled = false
     melody = generateMelody(baseMidi, MELODY_LENGTH)
     noteIndex = 0
     noteScores = []
@@ -64,17 +66,20 @@ export function useMirrorMelodyController(
     })
 
     void audioEngine.playTone(midiToFreq(midi), TONE_DURATION_MS).then(() => {
-      // After tone plays, short gap then start matching
+      if (_cancelled) return
       phaseTimer = setTimeout(() => {
+        if (_cancelled) return
         startMatching()
       }, GAP_BEFORE_MATCH_MS)
     })
   }
 
   function startMatching(): void {
+    if (_cancelled) return
     base._updateMetrics({ phase: 2 }) // matching phase indicator
 
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       evaluateMatch()
     }, MATCH_WINDOW_MS)
   }
@@ -117,7 +122,7 @@ export function useMirrorMelodyController(
     }
 
     noteIndex++
-    phaseTimer = setTimeout(() => playCurrentNote(), 600)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playCurrentNote() }, 600)
   }
 
   function finish(): void {
@@ -176,6 +181,7 @@ export function useMirrorMelodyController(
   }
 
   function stopSequence(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

@@ -37,10 +37,12 @@ export function useIntervalTrainerController(
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let matchStartTime = 0
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
+    _cancelled = false
     intervals = generateIntervals(baseMidi)
     roundIndex = 0
     roundScores = []
@@ -70,12 +72,16 @@ export function useIntervalTrainerController(
 
     // Play note1
     void audioEngine.playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS).then(() => {
+      if (_cancelled) return
       base._updateMetrics({ currentMidi: note2 })
       setTimeout(() => {
+        if (_cancelled) return
         // Play note2
         void audioEngine.playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS).then(() => {
+          if (_cancelled) return
           // Gap before user sings
           phaseTimer = setTimeout(() => {
+            if (_cancelled) return
             startMatching()
           }, GAP_BEFORE_MATCH_MS)
         })
@@ -84,12 +90,14 @@ export function useIntervalTrainerController(
   }
 
   function startMatching(): void {
+    if (_cancelled) return
     matchStartTime = performance.now()
     batch(() => {
       base._updateMetrics({ phase: 2 }) // matching phase
     })
 
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       evaluateRound()
     }, MATCH_WINDOW_MS)
   }
@@ -138,7 +146,7 @@ export function useIntervalTrainerController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => playRound(), 400)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 400)
   }
 
   function finish(): void {
@@ -190,6 +198,7 @@ export function useIntervalTrainerController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

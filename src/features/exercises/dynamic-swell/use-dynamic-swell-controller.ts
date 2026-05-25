@@ -19,10 +19,12 @@ export function useDynamicSwellController(
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let holdStartTime = 0
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
+    _cancelled = false
     targetNotes = INTERVALS.map((i) => baseMidi + i)
     // Shuffle for variety
     targetNotes.sort(() => Math.random() - 0.5)
@@ -52,14 +54,16 @@ export function useDynamicSwellController(
     })
 
     void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
+      if (_cancelled) return
       startHolding()
     })
   }
 
   function startHolding(): void {
+    if (_cancelled) return
     holdStartTime = performance.now()
     batch(() => base._updateMetrics({ phase: 2 })) // hold phase
-    phaseTimer = setTimeout(() => evaluateRound(), HOLD_DURATION_MS)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, HOLD_DURATION_MS)
   }
 
   function evaluateRound(): void {
@@ -97,7 +101,7 @@ export function useDynamicSwellController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => playRound(), 600)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 600)
   }
 
   function finish(): void {
@@ -145,6 +149,7 @@ export function useDynamicSwellController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

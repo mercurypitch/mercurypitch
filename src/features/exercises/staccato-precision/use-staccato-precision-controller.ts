@@ -25,10 +25,12 @@ export function useStaccatoPrecisionController(
   let attackPrecisionScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
+    _cancelled = false
     targetNotes = generateNotes(baseMidi)
     roundIndex = 0
     roundScores = []
@@ -57,17 +59,19 @@ export function useStaccatoPrecisionController(
 
     // Play a short staccato reference
     void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
-      phaseTimer = setTimeout(() => startMatching(), GAP_BEFORE_MATCH_MS)
+      if (_cancelled) return
+      phaseTimer = setTimeout(() => { if (_cancelled) return; startMatching() }, GAP_BEFORE_MATCH_MS)
     })
   }
 
   function startMatching(): void {
+    if (_cancelled) return
     const midi = targetNotes[roundIndex]
     batch(() => {
       base._setTargetPitch(midiToFreq(midi))
       base._updateMetrics({ phase: 2 })
     })
-    phaseTimer = setTimeout(() => evaluateRound(), MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, MATCH_WINDOW_MS)
   }
 
   function evaluateRound(): void {
@@ -108,7 +112,7 @@ export function useStaccatoPrecisionController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => playRound(), 400)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 400)
   }
 
   function finish(): void {
@@ -145,6 +149,7 @@ export function useStaccatoPrecisionController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

@@ -37,10 +37,12 @@ export function useCallResponseController(
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let matchStartTime = 0
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
+    _cancelled = false
     phrases = Array.from({ length: ROUNDS }, () => generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2)))
     roundIndex = 0
     roundScores = []
@@ -51,6 +53,7 @@ export function useCallResponseController(
   }
 
   async function playRound(): Promise<void> {
+    if (_cancelled) return
     if (roundIndex >= phrases.length) {
       finish()
       return
@@ -81,16 +84,18 @@ export function useCallResponseController(
     // Gap before user responds
     await new Promise((r) => setTimeout(r, GAP_BEFORE_MATCH_MS))
 
+    if (_cancelled) return
     // Start matching phase
     startMatching()
   }
 
   function startMatching(): void {
+    if (_cancelled) return
     matchStartTime = performance.now()
     batch(() => {
       base._updateMetrics({ phase: 2 }) // response phase
     })
-    phaseTimer = setTimeout(() => evaluateRound(), MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, MATCH_WINDOW_MS)
   }
 
   function evaluateRound(): void {
@@ -137,6 +142,7 @@ export function useCallResponseController(
 
     roundIndex++
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       void playRound()
     }, 600)
   }
@@ -180,6 +186,7 @@ export function useCallResponseController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

@@ -51,10 +51,12 @@ export function useChordStackerController(
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
   let baseMidi = 60
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(midi: number): void {
+    _cancelled = false
     baseMidi = midi
     chordTypes = shuffleArray(Object.keys(CHORD_DEGREES) as ChordType[])
     roundIndex = 0
@@ -90,22 +92,27 @@ export function useChordStackerController(
   }
 
   async function playChordNotes(): Promise<void> {
+    if (_cancelled) return
     for (let i = 0; i < chordNotes.length; i++) {
       const midi = chordNotes[i]
       batch(() => base._updateMetrics({ currentMidi: midi }))
       await audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      if (_cancelled) return
       if (i < chordNotes.length - 1) {
         await new Promise((r) => setTimeout(r, GAP_BETWEEN_NOTES_MS))
+        if (_cancelled) return
       }
     }
 
     // Short gap then start matching
     await new Promise((r) => setTimeout(r, 400))
+    if (_cancelled) return
     noteIndex = 0
     startMatchingNote()
   }
 
   function startMatchingNote(): void {
+    if (_cancelled) return
     if (noteIndex >= chordNotes.length) {
       evaluateChordRound()
       return
@@ -122,6 +129,7 @@ export function useChordStackerController(
     })
 
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       scoreCurrentNote()
     }, MATCH_WINDOW_MS)
   }
@@ -157,7 +165,7 @@ export function useChordStackerController(
     })
 
     noteIndex++
-    phaseTimer = setTimeout(() => startMatchingNote(), 500)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; startMatchingNote() }, 500)
   }
 
   function evaluateChordRound(): void {
@@ -176,7 +184,7 @@ export function useChordStackerController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => playRound(), 600)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 600)
   }
 
   function finish(): void {
@@ -223,6 +231,7 @@ export function useChordStackerController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()

@@ -34,10 +34,12 @@ export function useDroneIntonationController(
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
+    _cancelled = false
     droneMidi = baseMidi
     rounds = pickIntervals(ROUNDS)
     roundIndex = 0
@@ -49,6 +51,7 @@ export function useDroneIntonationController(
   }
 
   async function playRound(): Promise<void> {
+    if (_cancelled) return
     if (roundIndex >= rounds.length) {
       stopDrone()
       finish()
@@ -75,6 +78,7 @@ export function useDroneIntonationController(
 
     // Give user time to match
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       evaluateRound()
     }, MATCH_WINDOW_MS)
   }
@@ -112,6 +116,7 @@ export function useDroneIntonationController(
 
     roundIndex++
     phaseTimer = setTimeout(() => {
+      if (_cancelled) return
       void playRound()
     }, 600)
   }
@@ -170,6 +175,7 @@ export function useDroneIntonationController(
   }
 
   function stopRounds(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     stopDrone()
     base._setRunning(false)

@@ -39,6 +39,7 @@ export function useArpeggioJumperController(
   let noteScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
@@ -47,6 +48,7 @@ export function useArpeggioJumperController(
     arpeggioType: ArpeggioType = 'major',
     direction: 'up' | 'down' = 'up',
   ): void {
+    _cancelled = false
     arpeggioNotes = buildArpeggioNotes(baseMidi, arpeggioType, direction)
     noteIndex = 0
     noteScores = []
@@ -74,15 +76,18 @@ export function useArpeggioJumperController(
     })
 
     void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
+      if (_cancelled) return
       phaseTimer = setTimeout(() => {
+        if (_cancelled) return
         startMatching(noteIndex)
       }, GAP_BETWEEN_NOTES_MS)
     })
   }
 
   function startMatching(idx: number): void {
+    if (_cancelled) return
     batch(() => base._updateMetrics({ phase: 2 }))
-    phaseTimer = setTimeout(() => evaluateNote(idx), MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateNote(idx) }, MATCH_WINDOW_MS)
   }
 
   function evaluateNote(idx: number): void {
@@ -118,7 +123,7 @@ export function useArpeggioJumperController(
     }
 
     noteIndex++
-    phaseTimer = setTimeout(() => playCurrentNote(), 400)
+    phaseTimer = setTimeout(() => { if (_cancelled) return; playCurrentNote() }, 400)
   }
 
   function finish(): void {
@@ -160,6 +165,7 @@ export function useArpeggioJumperController(
   }
 
   function stopArpeggio(): void {
+    _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
     base._setRunning(false)
     finish()
