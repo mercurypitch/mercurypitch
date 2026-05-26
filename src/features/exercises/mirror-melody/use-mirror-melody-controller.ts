@@ -1,8 +1,9 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_MIRROR_MELODY } from '../types'
-import { approximateRichness } from '@/lib/vocal-analyzer'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const MATCH_WINDOW_MS = 2500
 const TONE_DURATION_MS = 1200
@@ -38,7 +39,6 @@ export function useMirrorMelodyController(
   })
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setMelody(baseMidi: number): void {
     _cancelled = false

@@ -1,9 +1,10 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
+import { analyzeFatigue,approximateRichness } from '@/lib/vocal-analyzer'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
-import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
-import { approximateRichness, analyzeFatigue } from '@/lib/vocal-analyzer'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const PHASES: Array<{ name: string; notes: number[] }> = [
   { name: 'Warm-up', notes: [0, 2, 4, 2, 0] }, // gentle ascending/descending
@@ -33,7 +34,6 @@ export function useRoutineRunnerController(
   })
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(midi: number): void {
     _cancelled = false

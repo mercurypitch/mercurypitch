@@ -1,17 +1,18 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import type {Component} from 'solid-js';
+import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { For } from 'solid-js'
-import type { AudioEngine } from '@/lib/audio-engine'
-import type { PracticeEngine } from '@/lib/practice-engine'
-import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
-import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
-import { useBaseExercise } from '../use-base-exercise'
-import { useScaleRunnerController } from './use-scale-runner-controller'
+import { IconArrowUpDown, IconMic,IconMusic,  } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
-import { IconArrowUpDown, IconMusic, IconMic, } from '@/components/exercise-icons'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import type { PracticeEngine } from '@/lib/practice-engine'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { vocalRangePreset } from '@/stores/settings-store'
+import { showCelebration } from '@/stores/ui-store'
+import { useBaseExercise } from '../use-base-exercise'
+import { useScaleRunnerController } from './use-scale-runner-controller'
 
 interface ScaleRunnerExerciseProps {
   audioEngine: AudioEngine
@@ -57,7 +58,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   onMount(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
     }
   })
@@ -251,9 +252,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                   setScaleType(e.currentTarget.value as ScaleType)
                 }
               >
-                {SCALE_TYPES.map((s) => (
+                <For each={SCALE_TYPES}>{(s) => (
                   <option value={s.value}>{s.label}</option>
-                ))}
+                )}</For>
               </select>
             </div>
             <div class="exercise-target-selector">
@@ -268,7 +269,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                 <option value="down">Descending</option>
               </select>
             </div>
-            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

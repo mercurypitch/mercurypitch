@@ -1,13 +1,14 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, For, } from 'solid-js'
+import type {Component} from 'solid-js';
+import {  createEffect, createSignal, For,onCleanup, onMount, untrack  } from 'solid-js'
+import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import type { AudioEngine } from '@/lib/audio-engine'
-import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
-import { showCelebration } from '@/stores/ui-store'
+import type { PracticeEngine } from '@/lib/practice-engine'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { showCelebration } from '@/stores/ui-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { IconGame, IconCheck, IconCross, IconMic, } from '@/components/exercise-icons'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -58,7 +59,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   })
 
   onMount(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
     }
   })
@@ -296,7 +297,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

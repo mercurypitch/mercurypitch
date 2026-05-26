@@ -1,7 +1,8 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 800
@@ -45,7 +46,6 @@ export function useIntervalTrainerController(
   let matchStartTime = 0
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(baseMidi: number): void {
     _cancelled = false

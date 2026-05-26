@@ -1,7 +1,8 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_CHORD_STACKER } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 type ChordType = 'maj7' | 'min7' | 'dom7' | 'dim7' | 'maj6'
 
@@ -58,7 +59,6 @@ export function useChordStackerController(
   let baseMidi = 60
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setBase(midi: number): void {
     _cancelled = false

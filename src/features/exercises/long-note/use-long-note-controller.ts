@@ -1,6 +1,6 @@
-import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_LONG_NOTE } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const STEADY_ZONE_THRESHOLD_CENTS = 15
 const SCORE_WINDOW_MS = 3000

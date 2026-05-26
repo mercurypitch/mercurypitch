@@ -1,15 +1,16 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import type {Component} from 'solid-js';
+import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { IconWave } from '@/components/exercise-icons'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
-import { IconWave } from '@/components/exercise-icons'
 
 interface VibratoExerciseProps {
   audioEngine: AudioEngine
@@ -52,7 +53,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   })
 
   onMount(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
     }
   })
@@ -183,7 +184,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

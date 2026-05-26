@@ -1,17 +1,18 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import type {Component} from 'solid-js';
+import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { For } from 'solid-js'
-import type { AudioEngine } from '@/lib/audio-engine'
-import type { PracticeEngine } from '@/lib/practice-engine'
-import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
-import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
-import { useBaseExercise } from '../use-base-exercise'
-import { useMirrorMelodyController } from './use-mirror-melody-controller'
+import { IconMic,IconMirror, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
-import { IconMirror, IconMusic, IconMic } from '@/components/exercise-icons'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import type { PracticeEngine } from '@/lib/practice-engine'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { vocalRangePreset } from '@/stores/settings-store'
+import { showCelebration } from '@/stores/ui-store'
+import { useBaseExercise } from '../use-base-exercise'
+import { useMirrorMelodyController } from './use-mirror-melody-controller'
 
 interface MirrorMelodyExerciseProps {
   audioEngine: AudioEngine
@@ -46,7 +47,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   onMount(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
     }
   })
@@ -231,7 +232,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
               selected={startNote()}
               onChange={setStartNote}
             />
-            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

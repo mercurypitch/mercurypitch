@@ -1,7 +1,7 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const INITIAL_ZONE_CENTS = 50
 const MIN_ZONE_CENTS = 10

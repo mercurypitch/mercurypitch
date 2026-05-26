@@ -1,16 +1,17 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import type { AudioEngine } from '@/lib/audio-engine'
-import type { PracticeEngine } from '@/lib/practice-engine'
-import { noteToMidi } from '@/lib/frequency-to-note'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
-import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
-import { useBaseExercise } from '../use-base-exercise'
-import { useLongNoteController } from './use-long-note-controller'
+import type {Component} from 'solid-js';
+import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { IconTarget } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
-import { IconTarget } from '@/components/exercise-icons'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { noteToMidi } from '@/lib/frequency-to-note'
+import type { PracticeEngine } from '@/lib/practice-engine'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { vocalRangePreset } from '@/stores/settings-store'
+import { showCelebration } from '@/stores/ui-store'
+import { useBaseExercise } from '../use-base-exercise'
+import { useLongNoteController } from './use-long-note-controller'
 
 interface LongNoteExerciseProps {
   audioEngine: AudioEngine
@@ -44,7 +45,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   onCleanup(() => base.reset())
 
   onMount(() => {
-    if (props.autoStart && base.state().status === 'idle') {
+    if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
     }
   })
@@ -178,7 +179,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

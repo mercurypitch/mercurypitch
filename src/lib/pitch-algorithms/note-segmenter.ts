@@ -34,7 +34,7 @@ export function segmentPitchesToNotes(
   if (samples.length === 0) return []
 
   const validSamples = samples.filter(
-    (s) => s.freq !== null && s.freq > 0 && s.clarity >= minClarity,
+    (s) => s.freq !== null && s.freq > 0 && (s.clarity ?? 0) >= minClarity,
   )
   if (validSamples.length === 0) return []
 

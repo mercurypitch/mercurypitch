@@ -1,7 +1,7 @@
 import { detectVibrato } from '@/lib/vocal-analyzer'
-import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_VIBRATO } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const IDEAL_RATE_MIN = 4
 const IDEAL_RATE_MAX = 7

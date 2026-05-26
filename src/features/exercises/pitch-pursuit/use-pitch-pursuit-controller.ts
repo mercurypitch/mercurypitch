@@ -1,7 +1,7 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const HIT_TOLERANCE_CENTS = 50
 const FALL_DURATION_MS = 5000

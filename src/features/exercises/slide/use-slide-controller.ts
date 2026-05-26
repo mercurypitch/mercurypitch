@@ -1,7 +1,7 @@
 import { detectSlides } from '@/lib/vocal-analyzer'
-import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SLIDE } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 const SCORE_SMOOTHNESS_WEIGHT = 0.3
 const SCORE_ARRIVAL_WEIGHT = 0.3

@@ -1,9 +1,10 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
-import type { ExerciseResult } from '../types'
-import { EXERCISE_SCALE_RUNNER } from '../types'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { getScaleDegrees } from '@/lib/scale-data'
 import { approximateRichness } from '@/lib/vocal-analyzer'
+import type { ExerciseResult } from '../types'
+import { EXERCISE_SCALE_RUNNER } from '../types'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
 
@@ -43,7 +44,6 @@ export function useScaleRunnerController(
   })
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setScale(
     baseMidi: number,

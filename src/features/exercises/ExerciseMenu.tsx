@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
+import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList,IconLock, IconMirror, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap,  } from '@/components/exercise-icons'
+import { exerciseHistory,getExerciseStats,  } from '@/stores/exercise-history-store'
 import type { ExerciseType } from './types'
-import { EXERCISE_LONG_NOTE, EXERCISE_SLIDE, EXERCISE_VIBRATO, EXERCISE_PITCH_PURSUIT, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_SIREN, EXERCISE_CALL_RESPONSE, EXERCISE_DYNAMIC_SWELL, EXERCISE_CHORD_STACKER, EXERCISE_STACCATO, EXERCISE_ROUTINE_RUNNER, } from './types'
-import { getExerciseStats, exerciseHistory, } from '@/stores/exercise-history-store'
-import { IconTarget, IconWave, IconSlide, IconGame, IconMirror, IconLock, IconStar, IconDiamond, IconCircleFill, IconCircleEmpty, IconArrowUpDown, IconDrone, IconSiren, IconReply, IconExpand, IconLayers, IconZap, IconList, } from '@/components/exercise-icons'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER,EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO,  } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -229,7 +229,7 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
       </div>
 
       <div class="exercises-grid">
-        {CARDS.map((card) => {
+        <For each={CARDS}>{(card) => {
           const stats = createMemo(() => getExerciseStats(card.type))
           return (
             <div
@@ -244,9 +244,9 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
               <h3>{card.title}</h3>
               <p>{card.description}</p>
               <div class="exercise-card-tags">
-                {card.tags.map((t) => (
+                <For each={card.tags}>{(t) => (
                   <span>{t}</span>
-                ))}
+                )}</For>
               </div>
               <Show when={stats().totalPlays > 0}>
                 <div class="exercise-card-stats">
@@ -274,7 +274,7 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
               </Show>
             </div>
           )
-        })}
+        }}</For>
       </div>
 
       <Show when={recentEntries().length > 0}>

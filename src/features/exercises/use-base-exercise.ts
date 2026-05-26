@@ -1,6 +1,6 @@
 import { batch, createSignal, onCleanup } from 'solid-js'
-import type { PracticeEngine } from '@/lib/practice-engine'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type { PracticeEngine } from '@/lib/practice-engine'
 import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
 
 const MAX_PITCH_HISTORY = 2000
@@ -26,7 +26,13 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   })
 
   const pitchHistory = createSignal<
-    Array<{ freq: number; time: number; cents: number; clarity?: number }>
+    Array<{
+      freq: number
+      time: number
+      cents: number
+      clarity?: number
+      noteName?: string
+    }>
   >([])
   const [getPitchHistory, setPitchHistory] = pitchHistory
   const [getCurrentPitch, setCurrentPitch] = createSignal<{

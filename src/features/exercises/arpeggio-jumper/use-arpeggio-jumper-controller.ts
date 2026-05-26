@@ -1,8 +1,9 @@
 import { batch } from 'solid-js'
-import type { BaseExerciseController } from '../use-base-exercise'
+import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import { approximateRichness } from '@/lib/vocal-analyzer'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
-import { approximateRichness } from '@/lib/vocal-analyzer'
+import type { BaseExerciseController } from '../use-base-exercise'
 
 type ArpeggioType = 'major' | 'minor' | 'diminished' | 'augmented'
 
@@ -44,7 +45,6 @@ export function useArpeggioJumperController(
   })
   let _cancelled = false
 
-  const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
   function setArpeggio(
     baseMidi: number,
