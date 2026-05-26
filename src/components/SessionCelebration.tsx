@@ -27,6 +27,13 @@ function scoreLabel(score: number): string {
   return 'Keep at it!'
 }
 
+function metricLabel(key: string): string {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^[a-z]/, (s) => s.toUpperCase())
+    .trim()
+}
+
 export const SessionCelebration: Component<SessionCelebrationProps> = (
   props,
 ) => {
@@ -66,7 +73,7 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
             <div class="celebration-metrics">
               {Object.entries(props.data!.metrics).map(([key, val]) => (
                 <div class="celebration-metric">
-                  <span class="celebration-metric-label">{key}</span>
+                  <span class="celebration-metric-label">{metricLabel(key)}</span>
                   <span class="celebration-metric-value">
                     {typeof val === 'number' ? Math.round(val) : val}
                   </span>

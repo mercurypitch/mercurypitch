@@ -1,3 +1,4 @@
+import { batch } from 'solid-js'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_LONG_NOTE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -9,13 +10,65 @@ const SCORE_DRIFT_WEIGHT = 0.2
 const SCORE_STEADY_WEIGHT = 0.3
 const SCORE_DURATION_WEIGHT = 0.15
 const TARGET_DURATION_SEC = 30
+const METRIC_UPDATE_HZ = 10
+const METRIC_WINDOW_SEC = 3
 
 export function useLongNoteController(base: BaseExerciseController) {
   let targetMidi = 0
+  let metricTimer: ReturnType<typeof setInterval> | undefined
+  base._registerDispose(() => {
+    clearInterval(metricTimer)
+    metricTimer = undefined
+  })
 
   function setTarget(midi: number): void {
     targetMidi = midi
     base._setTargetPitch(midi)
+  }
+
+  function startLoop(): void {
+    metricTimer = setInterval(() => {
+      if (!base._isRunning()) return
+      const history = base.pitchHistory()
+      if (history.length < 2) return
+
+      const now = history[history.length - 1]!.time
+      const windowStart = now - METRIC_WINDOW_SEC
+      const deviations: number[] = []
+      for (let i = history.length - 1; i >= 0; i--) {
+        const p = history[i]!
+        if (p.time < windowStart) break
+        if (p.freq > 0) {
+          const midi = 12 * Math.log2(p.freq / 440) + 69
+          deviations.push((midi - targetMidi) * 100)
+        }
+      }
+      if (deviations.length < 2) return
+
+      const mean = deviations.reduce((a, b) => a + b, 0) / deviations.length
+      const variance =
+        deviations.reduce((sum, d) => sum + (d - mean) ** 2, 0) /
+        deviations.length
+      const stabilityCents = Math.round(Math.sqrt(variance))
+
+      const absDeviations = deviations.map((d) => Math.abs(d))
+      const maxDrift = Math.round(Math.max(...absDeviations))
+      const steadyCount = absDeviations.filter(
+        (d) => d <= STEADY_ZONE_THRESHOLD_CENTS,
+      ).length
+      const steadyPct = Math.round((steadyCount / deviations.length) * 100)
+
+      batch(() => {
+        base._updateMetrics({
+          pitchStabilityCents: stabilityCents,
+          maxDriftCents: maxDrift,
+          steadyZonePct: steadyPct,
+        })
+        base._updateScore(
+          Math.max(0, 100 - stabilityCents * 2),
+        )
+      })
+    }, 1000 / METRIC_UPDATE_HZ)
   }
 
   function computeResult(): ExerciseResult {
@@ -147,6 +200,7 @@ export function useLongNoteController(base: BaseExerciseController) {
   }
 
   function stopAndCompute(): ExerciseResult {
+    if (metricTimer) clearInterval(metricTimer)
     base._setRunning(false)
     const result = computeResult()
     base._completeWithResult(result)
@@ -155,6 +209,7 @@ export function useLongNoteController(base: BaseExerciseController) {
 
   return {
     setTarget,
+    startLoop,
     computeResult,
     stopAndCompute,
   }

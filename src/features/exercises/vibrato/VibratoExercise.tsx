@@ -42,6 +42,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
   const handleStart = async () => {
     await base.start()
+    controller.startLoop()
   }
 
   const handleStop = () => {

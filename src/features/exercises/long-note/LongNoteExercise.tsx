@@ -33,9 +33,12 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   const controller = useLongNoteController(base)
 
+  const targetMidi = () => noteToMidi(targetNote())
+
   const handleStart = async () => {
-    controller.setTarget(noteToMidi(targetNote()))
+    controller.setTarget(targetMidi())
     await base.start()
+    controller.startLoop()
   }
 
   const handleStop = () => {
@@ -97,14 +100,19 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
           <div class="exercise-idle-placeholder">
             <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
+            <p class="exercise-idle-target-note">Target: <strong>{targetNote()}</strong></p>
           </div>
         )}
 
         {isActive() && (
           <>
+            <div class="long-note-target-display">
+              Target: <strong>{targetNote()}</strong>
+            </div>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
               isActive={isActive}
+              targetNoteMidi={targetMidi}
             />
             <div class="long-note-timer">{elapsed().toFixed(1)}s</div>
             <div class="long-note-metrics">

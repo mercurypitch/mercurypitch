@@ -16,6 +16,7 @@ interface PitchOverTimeCanvasProps {
   scaleNotes?: () => ScaleDegree[]
   autoZoom?: boolean
   onAutoZoomChange?: (enabled: boolean) => void
+  targetNoteMidi?: () => number | undefined
 }
 
 const Y_AXIS_NOTES = [
@@ -198,6 +199,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawScaleGridLines(w, h, effLogMin, effLogRange)
+      drawTargetLine(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
       drawSamples(w, h, effLogMin, effLogRange)
 
@@ -290,6 +292,60 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       ctx.fillText(semitoneMap.get(semitone)!, scaleLabelX, y)
     }
+  }
+
+  const drawTargetLine = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
+    if (!ctx) return
+    const targetMidi = props.targetNoteMidi?.()
+    if (targetMidi == null || targetMidi <= 0) return
+
+    const freq = 440 * 2 ** ((targetMidi - 69) / 12)
+    const y = freqToY(freq, h, logMin, logRange)
+    if (y < 4 || y > h - 4) return
+
+    const label = (() => {
+      const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+      const octave = Math.floor((targetMidi - 12) / 12)
+      return `${names[(Math.round(targetMidi) % 12 + 12) % 12]}${octave}`
+    })()
+
+    ctx.strokeStyle = 'rgba(63,185,80,0.55)'
+    ctx.lineWidth = 1.2
+    ctx.setLineDash([8, 6])
+    ctx.beginPath()
+    ctx.moveTo(MARGIN, y)
+    ctx.lineTo(w - MARGIN, y)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Label pill on the right side
+    ctx.font = 'bold 10px sans-serif'
+    const textWidth = ctx.measureText(label).width
+    const pillW = textWidth + 12
+    const pillH = 16
+    const pillX = w - MARGIN - pillW
+    const pillY = y - pillH / 2
+
+    ctx.fillStyle = 'rgba(13,17,23,0.85)'
+    ctx.beginPath()
+    ctx.roundRect(pillX - 2, pillY, pillW, pillH, 4)
+    ctx.fill()
+
+    ctx.strokeStyle = 'rgba(63,185,80,0.5)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.roundRect(pillX - 2, pillY, pillW, pillH, 4)
+    ctx.stroke()
+
+    ctx.fillStyle = 'rgba(63,185,80,0.9)'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, pillX + pillW / 2, y)
   }
 
   const drawTimeLabels = (w: number, h: number) => {

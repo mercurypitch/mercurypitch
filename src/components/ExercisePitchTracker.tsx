@@ -11,6 +11,7 @@ interface ExercisePitchTrackerProps {
     noteName?: string
   }>
   isActive: () => boolean
+  targetNoteMidi?: () => number | undefined
 }
 
 export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
@@ -52,6 +53,7 @@ export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
             samples={props.pitchHistory}
             isDetecting={props.isActive}
             visibleWindowSeconds={10}
+            targetNoteMidi={props.targetNoteMidi}
           />
         </div>
       </Show>

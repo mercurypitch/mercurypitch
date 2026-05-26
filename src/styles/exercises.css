@@ -511,11 +511,34 @@
   background-clip: text;
 }
 
+.long-note-target-display {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+.long-note-target-display strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .long-note-current-note {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--accent);
   margin-bottom: 4px;
+}
+
+.exercise-idle-target-note {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.exercise-idle-target-note strong {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .long-note-metrics {

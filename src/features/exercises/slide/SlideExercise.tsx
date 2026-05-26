@@ -45,6 +45,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const handleStart = async () => {
     controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
     await base.start()
+    controller.startLoop()
   }
 
   const handleStop = () => {
