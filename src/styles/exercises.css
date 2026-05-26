@@ -340,6 +340,102 @@
   font-size: 0.85rem;
 }
 
+/* ── Note Pill Selector ────────────────────────────────────── */
+
+.note-pill-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.note-pill-selector-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.note-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  max-width: 420px;
+}
+
+.note-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-accent);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.note-pill:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.note-pill-selected {
+  background: var(--accent-color, #6366f1);
+  color: #fff;
+  border-color: var(--accent-color, #6366f1);
+}
+
+.note-pill-selected:hover {
+  background: var(--accent-hover, #4f46e5);
+  color: #fff;
+  border-color: var(--accent-hover, #4f46e5);
+}
+
+/* ── Exercise Pitch Tracker ────────────────────────────────── */
+
+.exercise-pitch-tracker-toggle {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-accent);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: inherit;
+}
+
+.exercise-pitch-tracker-toggle:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.exercise-pitch-tracker-toggle-on {
+  background: var(--accent-color, #6366f1);
+  color: #fff;
+  border-color: var(--accent-color, #6366f1);
+}
+
+.exercise-pitch-tracker-toggle-on:hover {
+  background: var(--accent-hover, #4f46e5);
+  color: #fff;
+}
+
+.exercise-pitch-tracker {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+
 /* ── Long Note Exercise ───────────────────────────────────── */
 
 .long-note-timer {

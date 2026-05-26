@@ -1,11 +1,14 @@
 import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import { IconWave } from '@/components/exercise-icons'
 
 interface VibratoExerciseProps {
@@ -14,24 +17,6 @@ interface VibratoExerciseProps {
   onBack: () => void
   autoStart?: boolean
 }
-
-const NOTE_OPTIONS = [
-  'C3',
-  'D3',
-  'E3',
-  'F3',
-  'G3',
-  'A3',
-  'B3',
-  'C4',
-  'D4',
-  'E4',
-  'F4',
-  'G4',
-  'A4',
-  'B4',
-  'C5',
-]
 
 const CLASSIFICATION_LABELS: Record<number, string> = {
   0: 'No vibrato detected',
@@ -42,8 +27,7 @@ const CLASSIFICATION_LABELS: Record<number, string> = {
 }
 
 const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
-  const [targetNote, setTargetNote] = createSignal('A3')
-  const [vizPhase, setVizPhase] = createSignal(0)
+  const [targetNote, setTargetNote] = createSignal(getDefaultNote(vocalRangePreset()))
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -53,23 +37,15 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
   const controller = useVibratoController(base)
 
-  let vizInterval: ReturnType<typeof setInterval> | undefined
-
   const handleStart = async () => {
     await base.start()
-    // Animate the orbiting dot
-    vizInterval = setInterval(() => {
-      setVizPhase((p) => (p + 0.05) % (Math.PI * 2))
-    }, 16)
   }
 
   const handleStop = () => {
-    if (vizInterval) clearInterval(vizInterval)
     controller.stopAndCompute()
   }
 
   onCleanup(() => {
-    if (vizInterval) clearInterval(vizInterval)
     base.reset()
   })
 
@@ -102,19 +78,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const isComplete = () => base.state().status === 'complete'
   const metrics = () => base.state().metrics
 
-  const currentNote = () => {
-    const p = base.currentPitch()
-    if (!p || p.freq <= 0) return '...'
-    const midi = 12 * Math.log2(p.freq / 440) + 69
-    return midiToNoteName(Math.round(midi))
-  }
-
-  // Orbiting dot position (center of viz)
-  const hasVibrato = () => metrics().rateHz > 0
-  const orbitRadius = () =>
-    hasVibrato() ? Math.min(60, (metrics().depthCents || 0) * 1.2) : 10
-  const dotX = () => 50 + orbitRadius() * Math.cos(vizPhase()) * (90 / 180)
-  const dotY = () => 50 + orbitRadius() * Math.sin(vizPhase()) * (90 / 180)
+  const currentNote = () => base.currentPitch()?.noteName ?? '...'
 
   return (
     <div class="exercise-runner">
@@ -143,25 +107,16 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="vibrato-current-note">{currentNote()}</div>
-            <div class="vibrato-viz">
-              <div class="vibrato-outer-ring" />
-              <div class="vibrato-inner-ring" />
-              <div
-                class="vibrato-dot"
-                style={`left:${dotX()}%;top:${dotY()}%`}
-              />
-              <div class="vibrato-center">
-                {hasVibrato()
-                  ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
-                  : '...'}
-              </div>
-            </div>
             <div class="vibrato-metrics">
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Rate</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato()
+                  {metrics().rateHz > 0
                     ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
                     : '—'}
                 </span>
@@ -169,7 +124,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Depth</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato()
+                  {metrics().rateHz > 0
                     ? `${Math.round(metrics().depthCents || 0)}¢`
                     : '—'}
                 </span>
@@ -177,7 +132,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Style</span>
                 <span class="vibrato-metric-value" style="font-size:0.75rem">
-                  {hasVibrato()
+                  {metrics().rateHz > 0
                     ? CLASSIFICATION_LABELS[metrics().classification ?? 0] ||
                       '...'
                     : '—'}
@@ -220,17 +175,12 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            <div class="exercise-target-selector">
-              <label>Target:</label>
-              <select
-                value={targetNote()}
-                onChange={(e) => setTargetNote(e.currentTarget.value)}
-              >
-                {NOTE_OPTIONS.map((n) => (
-                  <option value={n}>{n}</option>
-                ))}
-              </select>
-            </div>
+            <NotePillSelector
+              label="Target"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={targetNote()}
+              onChange={setTargetNote}
+            />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"

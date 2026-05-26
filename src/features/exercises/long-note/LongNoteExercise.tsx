@@ -2,10 +2,14 @@ import { type Component, createEffect, createSignal, onCleanup, onMount, untrack
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useLongNoteController } from './use-long-note-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import { IconTarget } from '@/components/exercise-icons'
 
 interface LongNoteExerciseProps {
@@ -15,26 +19,8 @@ interface LongNoteExerciseProps {
   autoStart?: boolean
 }
 
-const NOTE_OPTIONS = [
-  'C3',
-  'D3',
-  'E3',
-  'F3',
-  'G3',
-  'A3',
-  'B3',
-  'C4',
-  'D4',
-  'E4',
-  'F4',
-  'G4',
-  'A4',
-  'B4',
-  'C5',
-]
-
 const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
-  const [targetNote, setTargetNote] = createSignal('A3')
+  const [targetNote, setTargetNote] = createSignal(getDefaultNote(vocalRangePreset()))
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -113,6 +99,10 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="long-note-timer">{elapsed().toFixed(1)}s</div>
             <div class="long-note-metrics">
               <div class="long-note-metric">
@@ -180,17 +170,12 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            <div class="exercise-target-selector">
-              <label>Target:</label>
-              <select
-                value={targetNote()}
-                onChange={(e) => setTargetNote(e.currentTarget.value)}
-              >
-                {NOTE_OPTIONS.map((n) => (
-                  <option value={n}>{n}</option>
-                ))}
-              </select>
-            </div>
+            <NotePillSelector
+              label="Target"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={targetNote()}
+              onChange={setTargetNote}
+            />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"

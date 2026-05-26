@@ -3,10 +3,14 @@ import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useRoutineRunnerController } from './use-routine-runner-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import { IconList, IconMusic, IconMic } from '@/components/exercise-icons'
 
 interface RoutineRunnerExerciseProps {
@@ -16,15 +20,10 @@ interface RoutineRunnerExerciseProps {
   autoStart?: boolean
 }
 
-const NOTE_OPTIONS = [
-  'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3',
-  'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5',
-]
-
 const PHASE_NAMES = ['Warm-up', 'Scale Up', 'Scale Down', 'Arpeggio', 'Cool Down']
 
 const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (props) => {
-  const [startNote, setStartNote] = createSignal('C4')
+  const [startNote, setStartNote] = createSignal(getDefaultNote(vocalRangePreset()))
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -104,6 +103,10 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (props) => 
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="mirror-melody-phase">
               <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
                 {phase() === 1 ? <><IconMusic size={16} /> {currentPhaseName()} — Listen...</>
@@ -183,12 +186,12 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (props) => 
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            <div class="exercise-target-selector">
-              <label>Key:</label>
-              <select value={startNote()} onChange={(e) => setStartNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
-              </select>
-            </div>
+            <NotePillSelector
+              label="Key"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={startNote()}
+              onChange={setStartNote}
+            />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
             <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
               Start Routine

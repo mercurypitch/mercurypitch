@@ -14,6 +14,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import {
   IconGame,
   IconCheck,
@@ -197,6 +198,10 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="pursuit-hud">
               <div style="display:flex;gap:16px">
                 <span style="color:#22c55e">

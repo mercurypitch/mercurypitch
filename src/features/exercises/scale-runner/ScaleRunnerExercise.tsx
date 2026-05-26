@@ -3,10 +3,14 @@ import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useScaleRunnerController } from './use-scale-runner-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import { IconArrowUpDown, IconMusic, IconMic } from '@/components/exercise-icons'
 
 interface ScaleRunnerExerciseProps {
@@ -18,11 +22,6 @@ interface ScaleRunnerExerciseProps {
 
 type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
 
-const NOTE_OPTIONS = [
-  'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3',
-  'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5',
-]
-
 const SCALE_TYPES: { value: ScaleType; label: string }[] = [
   { value: 'major', label: 'Major' },
   { value: 'minor', label: 'Minor' },
@@ -31,7 +30,7 @@ const SCALE_TYPES: { value: ScaleType; label: string }[] = [
 ]
 
 const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
-  const [startNote, setStartNote] = createSignal('C4')
+  const [startNote, setStartNote] = createSignal(getDefaultNote(vocalRangePreset()))
   const [scaleType, setScaleType] = createSignal<ScaleType>('major')
   const [direction, setDirection] = createSignal<'up' | 'down'>('up')
 
@@ -109,6 +108,10 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="mirror-melody-phase">
               <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
                 {phase() === 1 ? <><IconMusic size={16} /> Listen to the note...</>
@@ -189,12 +192,12 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            <div class="exercise-target-selector">
-              <label>Starting Note:</label>
-              <select value={startNote()} onChange={(e) => setStartNote(e.currentTarget.value)}>
-                {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
-              </select>
-            </div>
+            <NotePillSelector
+              label="Starting Note"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={startNote()}
+              onChange={setStartNote}
+            />
             <div class="exercise-target-selector">
               <label>Scale:</label>
               <select value={scaleType()} onChange={(e) => setScaleType(e.currentTarget.value as ScaleType)}>

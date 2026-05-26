@@ -2,10 +2,14 @@ import { type Component, createEffect, createSignal, onCleanup, onMount, untrack
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useSlideController } from './use-slide-controller'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
 import { IconSlide } from '@/components/exercise-icons'
 
 interface SlideExerciseProps {
@@ -14,24 +18,6 @@ interface SlideExerciseProps {
   onBack: () => void
   autoStart?: boolean
 }
-
-const NOTE_OPTIONS = [
-  'C3',
-  'D3',
-  'E3',
-  'F3',
-  'G3',
-  'A3',
-  'B3',
-  'C4',
-  'D4',
-  'E4',
-  'F4',
-  'G4',
-  'A4',
-  'B4',
-  'C5',
-]
 
 const CLASSIFICATION_LABELS: Record<number, string> = {
   '-1': 'No slide detected',
@@ -42,8 +28,8 @@ const CLASSIFICATION_LABELS: Record<number, string> = {
 }
 
 const SlideExercise: Component<SlideExerciseProps> = (props) => {
-  const [fromNote, setFromNote] = createSignal('C4')
-  const [toNote, setToNote] = createSignal('E4')
+  const [fromNote, setFromNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [toNote, setToNote] = createSignal(getDefaultNote(vocalRangePreset()))
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -134,6 +120,10 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
         {isActive() && (
           <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
             <div class="slide-note-display">
               <span>{fromNote()}</span>
               <span style="color:var(--text-secondary)">→</span>
@@ -226,26 +216,18 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            <div class="exercise-target-selector">
-              <label>From:</label>
-              <select
-                value={fromNote()}
-                onChange={(e) => setFromNote(e.currentTarget.value)}
-              >
-                {NOTE_OPTIONS.map((n) => (
-                  <option value={n}>{n}</option>
-                ))}
-              </select>
-              <label>To:</label>
-              <select
-                value={toNote()}
-                onChange={(e) => setToNote(e.currentTarget.value)}
-              >
-                {NOTE_OPTIONS.map((n) => (
-                  <option value={n}>{n}</option>
-                ))}
-              </select>
-            </div>
+            <NotePillSelector
+              label="From"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={fromNote()}
+              onChange={setFromNote}
+            />
+            <NotePillSelector
+              label="To"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={toNote()}
+              onChange={setToNote}
+            />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
             <button
               class="exercise-btn exercise-btn-primary"
