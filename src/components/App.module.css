@@ -59,8 +59,8 @@
   backdrop-filter: blur(2px);
 }
 
-#score-card,
-#session-summary-card {
+:global(#score-card),
+:global(#session-summary-card) {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -96,7 +96,7 @@
   color: var(--text-secondary);
 }
 
-#score-title {
+:global(#score-title) {
   font-size: 0.9rem;
   color: var(--text-secondary);
   font-weight: 400;
@@ -105,55 +105,55 @@
   margin-bottom: 12px;
 }
 
-#score-grade {
+:global(#score-grade) {
   font-size: 3rem;
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 16px;
 }
 
-#score-grade.gradePerfect {
+:global(#score-grade.grade-perfect) {
   background: linear-gradient(135deg, var(--green), #7ee8a0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.gradeExcellent {
+:global(#score-grade.grade-excellent) {
   background: linear-gradient(135deg, var(--accent), var(--purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.gradeGood {
+:global(#score-grade.grade-good) {
   background: linear-gradient(135deg, var(--teal), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.gradeOkay {
+:global(#score-grade.grade-okay) {
   background: linear-gradient(135deg, var(--yellow), var(--orange));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.gradeNeedsWork {
+:global(#score-grade.grade-needs-work) {
   color: var(--red);
 }
 
-#score-pct {
+:global(#score-pct) {
   font-size: 2.2rem;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 6px;
 }
 
-#score-detail {
+:global(#score-detail) {
   font-size: 0.82rem;
   color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
-#score-stats {
+:global(#score-stats) {
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -195,7 +195,7 @@
   color: var(--red);
 }
 
-#score-actions {
+:global(#score-actions) {
   display: flex;
   gap: 10px;
   justify-content: center;
@@ -222,7 +222,7 @@
   color: var(--accent);
 }
 
-#score-history {
+:global(#score-history) {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
@@ -262,24 +262,24 @@
 
 /* Extracted from: Session Summary */
 
-#session-summary-card {
+:global(#session-summary-card) {
   text-align: center;
 }
 
-#session-summary-card h2 {
+:global(#session-summary-card) h2 {
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--green);
   margin: 0 0 4px;
 }
 
-#session-summary-name {
+:global(#session-summary-name) {
   font-size: 0.92rem;
   color: var(--text-secondary);
   margin: 0 0 16px;
 }
 
-#session-summary-score {
+:global(#session-summary-score) {
   font-size: 3.5rem;
   font-weight: 800;
   color: var(--text-primary);
@@ -287,7 +287,7 @@
   margin-bottom: 8px;
 }
 
-#session-summary-items {
+:global(#session-summary-items) {
   font-size: 0.82rem;
   color: var(--text-muted);
   margin-bottom: 20px;
