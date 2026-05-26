@@ -1,12 +1,4 @@
-import {
-  type Component,
-  createEffect,
-  createSignal,
-  onCleanup,
-  onMount,
-  untrack,
-  For,
-} from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, For, } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
@@ -15,12 +7,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import {
-  IconGame,
-  IconCheck,
-  IconCross,
-  IconMic,
-} from '@/components/exercise-icons'
+import { IconGame, IconCheck, IconCross, IconMic, } from '@/components/exercise-icons'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -288,8 +275,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Hits: {base.result()!.metrics.hits}/{base.result()!.metrics.totalNotes}{' '}
-              · Accuracy: {base.result()!.metrics.accuracy}% · Best Combo:{' '}
+              Hits: {base.result()!.metrics.hits}/
+              {base.result()!.metrics.totalNotes} · Accuracy:{' '}
+              {base.result()!.metrics.accuracy}% · Best Combo:{' '}
               {base.result()!.metrics.maxCombo}x
             </div>
             <button

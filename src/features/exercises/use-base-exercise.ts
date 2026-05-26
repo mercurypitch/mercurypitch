@@ -154,7 +154,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
 
   function completeWithResult(exerciseResult: ExerciseResult): void {
     if (completeDepth > 0) {
-      console.warn('[useBaseExercise] re-entrant completeWithResult() call — bailing')
+      console.warn(
+        '[useBaseExercise] re-entrant completeWithResult() call — bailing',
+      )
       return
     }
     completeDepth++
@@ -187,7 +189,11 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
 
     // Clear all controller timers registered via _registerDispose
     for (const fn of disposeFns) {
-      try { fn() } catch { /* ignore */ }
+      try {
+        fn()
+      } catch {
+        /* ignore */
+      }
     }
     disposeFns = []
 
@@ -244,7 +250,11 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       if (!v) {
         // When external caller sets running=false, clear controller timers
         for (const fn of disposeFns) {
-          try { fn() } catch { /* ignore */ }
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
         }
         disposeFns = []
         audioEngine.stopTone()

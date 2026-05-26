@@ -32,7 +32,10 @@ export function useMirrorMelodyController(
   let noteIndex = 0
   let noteScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -122,7 +125,10 @@ export function useMirrorMelodyController(
     }
 
     noteIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playCurrentNote() }, 600)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playCurrentNote()
+    }, 600)
   }
 
   function finish(): void {
@@ -155,9 +161,10 @@ export function useMirrorMelodyController(
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
-    const richness = claritySamples.length > 2
-      ? approximateRichness(claritySamples).richnessScore
-      : 0
+    const richness =
+      claritySamples.length > 2
+        ? approximateRichness(claritySamples).richnessScore
+        : 0
 
     const score = Math.round(
       avgAccuracy * SCORE_ACCURACY_WEIGHT +

@@ -26,7 +26,9 @@ const GAP_BETWEEN_NOTES_MS = 300
 const MATCH_WINDOW_MS = 2500
 
 function avgOf(arr: number[]): number {
-  return arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
+  return arr.length > 0
+    ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+    : 0
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -49,7 +51,10 @@ export function useChordStackerController(
   let noteScores: number[] = []
   let allRoundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let baseMidi = 60
   let _cancelled = false
 
@@ -137,7 +142,9 @@ export function useChordStackerController(
   function scoreCurrentNote(): void {
     const targetMidi = chordNotes[noteIndex]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     let noteScore = 0
     if (recentSamples.length > 0) {
@@ -148,7 +155,8 @@ export function useChordStackerController(
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         noteScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
       }
     }
@@ -165,16 +173,21 @@ export function useChordStackerController(
     })
 
     noteIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; startMatchingNote() }, 500)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      startMatchingNote()
+    }, 500)
   }
 
   function evaluateChordRound(): void {
-    const roundScore = noteScores.length > 0
-      ? Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
-      : 0
+    const roundScore =
+      noteScores.length > 0
+        ? Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
+        : 0
     allRoundScores.push(roundScore)
 
-    const avg = allRoundScores.reduce((a, b) => a + b, 0) / allRoundScores.length
+    const avg =
+      allRoundScores.reduce((a, b) => a + b, 0) / allRoundScores.length
     batch(() => {
       base._updateScore(Math.round(avg))
       base._updateMetrics({
@@ -184,7 +197,10 @@ export function useChordStackerController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 600)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playRound()
+    }, 600)
   }
 
   function finish(): void {
@@ -197,16 +213,37 @@ export function useChordStackerController(
       return {
         type: EXERCISE_CHORD_STACKER,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, maj7Avg: 0, min7Avg: 0, dom7Avg: 0, dim7Avg: 0, maj6Avg: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          maj7Avg: 0,
+          min7Avg: 0,
+          dom7Avg: 0,
+          dim7Avg: 0,
+          maj6Avg: 0,
+        },
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(allRoundScores.reduce((a, b) => a + b, 0) / allRoundScores.length)
+    const avgAccuracy = Math.round(
+      allRoundScores.reduce((a, b) => a + b, 0) / allRoundScores.length,
+    )
     const bestRound = Math.max(...allRoundScores)
 
     // Per-chord-type breakdown
-    const chordScores: Record<ChordType, number[]> = { maj7: [], min7: [], dom7: [], dim7: [], maj6: [] }
-    for (let i = 0; i < Math.min(chordTypes.length, allRoundScores.length); i++) {
+    const chordScores: Record<ChordType, number[]> = {
+      maj7: [],
+      min7: [],
+      dom7: [],
+      dim7: [],
+      maj6: [],
+    }
+    for (
+      let i = 0;
+      i < Math.min(chordTypes.length, allRoundScores.length);
+      i++
+    ) {
       chordScores[chordTypes[i]].push(allRoundScores[i])
     }
     const chordAvgs = {

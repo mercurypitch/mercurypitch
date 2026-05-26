@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -21,7 +21,9 @@ interface SirenExerciseProps {
 }
 
 const SirenExercise: Component<SirenExerciseProps> = (props) => {
-  const [startNote, setStartNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [startNote, setStartNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -52,8 +54,19 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'siren') {
-      showCelebration({ score: r.score, exerciseType: r.type, metrics: r.metrics })
-      untrack(() => recordExerciseResult({ type: r.type, score: r.score, metrics: r.metrics, completedAt: r.completedAt }))
+      showCelebration({
+        score: r.score,
+        exerciseType: r.type,
+        metrics: r.metrics,
+      })
+      untrack(() =>
+        recordExerciseResult({
+          type: r.type,
+          score: r.score,
+          metrics: r.metrics,
+          completedAt: r.completedAt,
+        }),
+      )
     }
   })
 
@@ -78,10 +91,14 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>← Back</button>
+        <button class="back-btn" onClick={props.onBack}>
+          ← Back
+        </button>
         <h2 class="exercise-title">Siren</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -89,8 +106,13 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconSiren size={48} />
-            <p>Hear two notes, then glide your voice smoothly between them. Develop vocal flexibility and range control.</p>
-            <span class="idle-hint">6 rounds · Ascending and descending sirens</span>
+            <p>
+              Hear two notes, then glide your voice smoothly between them.
+              Develop vocal flexibility and range control.
+            </p>
+            <span class="idle-hint">
+              6 rounds · Ascending and descending sirens
+            </span>
           </div>
         )}
 
@@ -102,8 +124,16 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
             />
             <div class="mirror-melody-phase">
               <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-                {phase() === 1 ? <><IconMusic size={16} /> Listen to the two notes...</>
-                  : <><IconMic size={16} /> Glide to {midiToNoteName(currentMidi())}!</>}
+                {phase() === 1 ? (
+                  <>
+                    <IconMusic size={16} /> Listen to the two notes...
+                  </>
+                ) : (
+                  <>
+                    <IconMic size={16} /> Glide to{' '}
+                    {midiToNoteName(currentMidi())}!
+                  </>
+                )}
               </span>
             </div>
 
@@ -118,7 +148,10 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
                     }}
                     style={
                       i() < roundsCompleted()
-                        ? { background: `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`, 'border-color': `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)` }
+                        ? {
+                            background: `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
+                            'border-color': `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
+                          }
                         : undefined
                     }
                   />
@@ -132,12 +165,15 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
                 class="mirror-melody-dot"
                 classList={{
                   'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
+                  'mirror-melody-dot-far':
+                    Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
               {phase() === 2 && (
-                <div class="mirror-melody-target-label">{midiToNoteName(currentMidi())}</div>
+                <div class="mirror-melody-target-label">
+                  {midiToNoteName(currentMidi())}
+                </div>
               )}
             </div>
 
@@ -155,16 +191,25 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
               class="exercise-result-score"
               classList={{
                 'exercise-result-score-good': base.result()!.score >= 80,
-                'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
                 'exercise-result-score-poor': base.result()!.score < 50,
               }}
             >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best Round: {base.result()!.metrics.bestRound}% · Rounds: {base.result()!.metrics.roundsCompleted}
+              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best Round:{' '}
+              {base.result()!.metrics.bestRound}% · Rounds:{' '}
+              {base.result()!.metrics.roundsCompleted}
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -181,22 +226,39 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
               onChange={setStartNote}
             />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Note
             </button>
           </>

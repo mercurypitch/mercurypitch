@@ -22,7 +22,10 @@ function generatePhrase(baseMidi: number, length: number): PhraseNote[] {
     const dir = Math.random() > 0.5 ? 1 : -1
     const steps = [0, 2, 3, 4, 5, 7]
     const step = steps[Math.floor(Math.random() * steps.length)]
-    notes.push({ midi: prev + dir * step, durationMs: 400 + Math.floor(Math.random() * 300) })
+    notes.push({
+      midi: prev + dir * step,
+      durationMs: 400 + Math.floor(Math.random() * 300),
+    })
   }
   return notes
 }
@@ -35,7 +38,10 @@ export function useCallResponseController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let matchStartTime = 0
   let _cancelled = false
 
@@ -43,7 +49,9 @@ export function useCallResponseController(
 
   function setBase(baseMidi: number): void {
     _cancelled = false
-    phrases = Array.from({ length: ROUNDS }, () => generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2)))
+    phrases = Array.from({ length: ROUNDS }, () =>
+      generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2)),
+    )
     roundIndex = 0
     roundScores = []
   }
@@ -95,7 +103,10 @@ export function useCallResponseController(
     batch(() => {
       base._updateMetrics({ phase: 2 }) // response phase
     })
-    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      evaluateRound()
+    }, MATCH_WINDOW_MS)
   }
 
   function evaluateRound(): void {
@@ -126,9 +137,10 @@ export function useCallResponseController(
       }
     }
 
-    const roundScore = noteScores.length > 0
-      ? Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
-      : 0
+    const roundScore =
+      noteScores.length > 0
+        ? Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
+        : 0
     roundScores.push(roundScore)
 
     const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length
@@ -161,16 +173,19 @@ export function useCallResponseController(
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
+    const avgAccuracy = Math.round(
+      roundScores.reduce((a, b) => a + b, 0) / roundScores.length,
+    )
     const bestRound = Math.max(...roundScores)
 
     const history = base.pitchHistory()
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
-    const richness = claritySamples.length > 2
-      ? approximateRichness(claritySamples).richnessScore
-      : 0
+    const richness =
+      claritySamples.length > 2
+        ? approximateRichness(claritySamples).richnessScore
+        : 0
 
     return {
       type: EXERCISE_CALL_RESPONSE,

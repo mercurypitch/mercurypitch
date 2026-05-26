@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -21,7 +21,9 @@ interface MirrorMelodyExerciseProps {
 }
 
 const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
-  const [startNote, setStartNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [startNote, setStartNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -150,7 +152,10 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                     }}
                     style={
                       i() < notesCompleted()
-                        ? { background: `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`, 'border-color': `hsl(${lastNoteScore() * 1.2}, 70%, 50%)` }
+                        ? {
+                            background: `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`,
+                            'border-color': `hsl(${lastNoteScore() * 1.2}, 70%, 50%)`,
+                          }
                         : undefined
                     }
                   />
@@ -165,7 +170,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                 class="mirror-melody-dot"
                 classList={{
                   'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
+                  'mirror-melody-dot-far':
+                    Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />

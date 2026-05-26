@@ -37,7 +37,10 @@ export function useSirenController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -70,18 +73,22 @@ export function useSirenController(
     })
 
     // Play start note
-    void audioEngine.playTone(midiToFreq(round.startMidi), NOTE_PLAY_DURATION_MS).then(() => {
-      if (_cancelled) return
-      // Play end note
-      base._updateMetrics({ currentMidi: round.endMidi })
-      void audioEngine.playTone(midiToFreq(round.endMidi), NOTE_PLAY_DURATION_MS).then(() => {
+    void audioEngine
+      .playTone(midiToFreq(round.startMidi), NOTE_PLAY_DURATION_MS)
+      .then(() => {
         if (_cancelled) return
-        phaseTimer = setTimeout(() => {
-          if (_cancelled) return
-          startMatching()
-        }, GAP_BETWEEN_NOTES_MS)
+        // Play end note
+        base._updateMetrics({ currentMidi: round.endMidi })
+        void audioEngine
+          .playTone(midiToFreq(round.endMidi), NOTE_PLAY_DURATION_MS)
+          .then(() => {
+            if (_cancelled) return
+            phaseTimer = setTimeout(() => {
+              if (_cancelled) return
+              startMatching()
+            }, GAP_BETWEEN_NOTES_MS)
+          })
       })
-    })
   }
 
   function startMatching(): void {
@@ -91,13 +98,18 @@ export function useSirenController(
       base._setTargetPitch(midiToFreq(round.endMidi))
       base._updateMetrics({ phase: 2 }) // siren phase
     })
-    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      evaluateRound()
+    }, MATCH_WINDOW_MS)
   }
 
   function evaluateRound(): void {
     const round = rounds[roundIndex]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     // Score how close user got to the target end note
     let roundScore = 0
@@ -113,7 +125,8 @@ export function useSirenController(
         const sorted = [...deviations].sort((a, b) => a - b)
         const bestCount = Math.max(1, Math.floor(sorted.length * 0.2))
         const bestDeviations = sorted.slice(0, bestCount)
-        const avgBest = bestDeviations.reduce((a, b) => a + b, 0) / bestDeviations.length
+        const avgBest =
+          bestDeviations.reduce((a, b) => a + b, 0) / bestDeviations.length
         roundScore = Math.round(Math.max(0, 100 - avgBest * 1.5))
       }
     }
@@ -130,7 +143,10 @@ export function useSirenController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 600)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playRound()
+    }, 600)
   }
 
   function finish(): void {
@@ -143,11 +159,20 @@ export function useSirenController(
       return {
         type: EXERCISE_SIREN,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, slideQuality: 0, cleanSlides: 0, scoopSlides: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          slideQuality: 0,
+          cleanSlides: 0,
+          scoopSlides: 0,
+        },
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
+    const avgAccuracy = Math.round(
+      roundScores.reduce((a, b) => a + b, 0) / roundScores.length,
+    )
     const bestRound = Math.max(...roundScores)
 
     const history = base.pitchHistory()
@@ -165,7 +190,9 @@ export function useSirenController(
 
     return {
       type: EXERCISE_SIREN,
-      score: Math.round(avgAccuracy * 0.45 + bestRound * 0.25 + slideQuality * 0.3),
+      score: Math.round(
+        avgAccuracy * 0.45 + bestRound * 0.25 + slideQuality * 0.3,
+      ),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,

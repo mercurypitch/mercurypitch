@@ -38,7 +38,10 @@ export function useArpeggioJumperController(
   let noteIndex = 0
   let noteScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -75,25 +78,32 @@ export function useArpeggioJumperController(
       })
     })
 
-    void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
-      if (_cancelled) return
-      phaseTimer = setTimeout(() => {
+    void audioEngine
+      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      .then(() => {
         if (_cancelled) return
-        startMatching(noteIndex)
-      }, GAP_BETWEEN_NOTES_MS)
-    })
+        phaseTimer = setTimeout(() => {
+          if (_cancelled) return
+          startMatching(noteIndex)
+        }, GAP_BETWEEN_NOTES_MS)
+      })
   }
 
   function startMatching(idx: number): void {
     if (_cancelled) return
     batch(() => base._updateMetrics({ phase: 2 }))
-    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateNote(idx) }, MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      evaluateNote(idx)
+    }, MATCH_WINDOW_MS)
   }
 
   function evaluateNote(idx: number): void {
     const targetMidi = arpeggioNotes[idx]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     let noteScore = 0
     if (recentSamples.length > 0) {
@@ -104,7 +114,8 @@ export function useArpeggioJumperController(
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         noteScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
       }
     }
@@ -123,7 +134,10 @@ export function useArpeggioJumperController(
     }
 
     noteIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playCurrentNote() }, 400)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playCurrentNote()
+    }, 400)
   }
 
   function finish(): void {
@@ -140,16 +154,19 @@ export function useArpeggioJumperController(
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
+    const avgAccuracy = Math.round(
+      noteScores.reduce((a, b) => a + b, 0) / noteScores.length,
+    )
     const bestNote = Math.max(...noteScores)
 
     const history = base.pitchHistory()
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
-    const richness = claritySamples.length > 2
-      ? approximateRichness(claritySamples).richnessScore
-      : 0
+    const richness =
+      claritySamples.length > 2
+        ? approximateRichness(claritySamples).richnessScore
+        : 0
 
     return {
       type: EXERCISE_ARPEGGIO_JUMPER,

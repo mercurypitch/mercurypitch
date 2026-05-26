@@ -85,7 +85,12 @@ export interface ExerciseController {
   reset: () => void
   result: () => ExerciseResult | null
   /** Pitch history for visualization */
-  pitchHistory: () => Array<{ freq: number; time: number; cents: number; clarity?: number }>
+  pitchHistory: () => Array<{
+    freq: number
+    time: number
+    cents: number
+    clarity?: number
+  }>
   currentPitch: () => { freq: number; clarity: number; noteName: string } | null
   frequencyData: () => Float32Array | null
   targetPitch: () => number | null

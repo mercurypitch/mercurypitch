@@ -11,7 +11,11 @@ const NOTE_PLAY_DURATION_MS = 700
 const GAP_BETWEEN_NOTES_MS = 250
 const MATCH_WINDOW_MS = 2000
 
-function buildScaleNotes(baseMidi: number, scaleType: ScaleType, direction: 'up' | 'down'): number[] {
+function buildScaleNotes(
+  baseMidi: number,
+  scaleType: ScaleType,
+  direction: 'up' | 'down',
+): number[] {
   const degrees = getScaleDegrees(scaleType)
   let notes = [baseMidi]
   for (const deg of degrees.slice(1)) {
@@ -33,12 +37,19 @@ export function useScaleRunnerController(
   let noteIndex = 0
   let noteScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 
-  function setScale(baseMidi: number, scaleType: ScaleType = 'major', direction: 'up' | 'down' = 'up'): void {
+  function setScale(
+    baseMidi: number,
+    scaleType: ScaleType = 'major',
+    direction: 'up' | 'down' = 'up',
+  ): void {
     _cancelled = false
     scaleNotes = buildScaleNotes(baseMidi, scaleType, direction)
     noteIndex = 0
@@ -66,25 +77,32 @@ export function useScaleRunnerController(
       })
     })
 
-    void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
-      if (_cancelled) return
-      phaseTimer = setTimeout(() => {
+    void audioEngine
+      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      .then(() => {
         if (_cancelled) return
-        startMatching(noteIndex)
-      }, GAP_BETWEEN_NOTES_MS)
-    })
+        phaseTimer = setTimeout(() => {
+          if (_cancelled) return
+          startMatching(noteIndex)
+        }, GAP_BETWEEN_NOTES_MS)
+      })
   }
 
   function startMatching(idx: number): void {
     if (_cancelled) return
     batch(() => base._updateMetrics({ phase: 2 }))
-    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateNote(idx) }, MATCH_WINDOW_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      evaluateNote(idx)
+    }, MATCH_WINDOW_MS)
   }
 
   function evaluateNote(idx: number): void {
     const targetMidi = scaleNotes[idx]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     let noteScore = 0
     if (recentSamples.length > 0) {
@@ -95,7 +113,8 @@ export function useScaleRunnerController(
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         noteScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
       }
     }
@@ -114,7 +133,10 @@ export function useScaleRunnerController(
     }
 
     noteIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playCurrentNote() }, 400)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playCurrentNote()
+    }, 400)
   }
 
   function finish(): void {
@@ -127,17 +149,26 @@ export function useScaleRunnerController(
       return {
         type: EXERCISE_SCALE_RUNNER,
         score: 0,
-        metrics: { notesCompleted: 0, avgAccuracy: 0, bestNote: 0, evennessStdDev: 0, richnessScore: 0 },
+        metrics: {
+          notesCompleted: 0,
+          avgAccuracy: 0,
+          bestNote: 0,
+          evennessStdDev: 0,
+          richnessScore: 0,
+        },
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(noteScores.reduce((a, b) => a + b, 0) / noteScores.length)
+    const avgAccuracy = Math.round(
+      noteScores.reduce((a, b) => a + b, 0) / noteScores.length,
+    )
     const bestNote = Math.max(...noteScores)
 
     const evennessStdDev = (() => {
       if (noteScores.length < 2) return 0
       const mean = avgAccuracy
-      const variance = noteScores.reduce((s, v) => s + (v - mean) ** 2, 0) / noteScores.length
+      const variance =
+        noteScores.reduce((s, v) => s + (v - mean) ** 2, 0) / noteScores.length
       return Math.round(Math.sqrt(variance) * 10) / 10
     })()
     const evennessScore = Math.max(0, Math.min(100, 100 - evennessStdDev * 3))
@@ -146,11 +177,17 @@ export function useScaleRunnerController(
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
-    const richness = claritySamples.length > 2
-      ? approximateRichness(claritySamples).richnessScore
-      : 0
+    const richness =
+      claritySamples.length > 2
+        ? approximateRichness(claritySamples).richnessScore
+        : 0
 
-    const score = Math.round(avgAccuracy * 0.4 + bestNote * 0.15 + evennessScore * 0.25 + richness * 0.2)
+    const score = Math.round(
+      avgAccuracy * 0.4 +
+        bestNote * 0.15 +
+        evennessScore * 0.25 +
+        richness * 0.2,
+    )
 
     return {
       type: EXERCISE_SCALE_RUNNER,

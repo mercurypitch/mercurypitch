@@ -16,7 +16,9 @@ const INTERVALS: Array<{ semitones: number; label: string }> = [
   { semitones: 12, label: 'Octave' },
 ]
 
-function pickIntervals(count: number): Array<{ semitones: number; label: string }> {
+function pickIntervals(
+  count: number,
+): Array<{ semitones: number; label: string }> {
   const shuffled = [...INTERVALS].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, count)
 }
@@ -33,7 +35,10 @@ export function useDroneIntonationController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let _cancelled = false
 
   const midiToFreq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
@@ -87,7 +92,9 @@ export function useDroneIntonationController(
     const interval = rounds[roundIndex]
     const targetMidi = droneMidi + interval.semitones
     const history = base.pitchHistory()
-    const recentSamples = history.slice(-Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)))
+    const recentSamples = history.slice(
+      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    )
 
     let roundScore = 0
     if (recentSamples.length > 0) {
@@ -98,7 +105,8 @@ export function useDroneIntonationController(
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         roundScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
       }
     }
@@ -135,11 +143,19 @@ export function useDroneIntonationController(
       return {
         type: EXERCISE_DRONE_INTONATION,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, stabilityCents: 0, richnessScore: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          stabilityCents: 0,
+          richnessScore: 0,
+        },
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
+    const avgAccuracy = Math.round(
+      roundScores.reduce((a, b) => a + b, 0) / roundScores.length,
+    )
     const bestRound = Math.max(...roundScores)
 
     const history = base.pitchHistory()
@@ -148,21 +164,31 @@ export function useDroneIntonationController(
       if (validSamples.length < 2) return 0
       const midis = validSamples.map((p) => 12 * Math.log2(p.freq / 440) + 69)
       const mean = midis.reduce((a, b) => a + b, 0) / midis.length
-      const variance = midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length
+      const variance =
+        midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length
       return Math.round(Math.sqrt(variance) * 100)
     })()
-    const stabilityScore = Math.max(0, Math.min(100, 100 - stabilityCents * 0.8))
+    const stabilityScore = Math.max(
+      0,
+      Math.min(100, 100 - stabilityCents * 0.8),
+    )
 
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
-    const richness = claritySamples.length > 2
-      ? approximateRichness(claritySamples).richnessScore
-      : 0
+    const richness =
+      claritySamples.length > 2
+        ? approximateRichness(claritySamples).richnessScore
+        : 0
 
     return {
       type: EXERCISE_DRONE_INTONATION,
-      score: Math.round(avgAccuracy * 0.4 + bestRound * 0.15 + stabilityScore * 0.25 + richness * 0.2),
+      score: Math.round(
+        avgAccuracy * 0.4 +
+          bestRound * 0.15 +
+          stabilityScore * 0.25 +
+          richness * 0.2,
+      ),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,

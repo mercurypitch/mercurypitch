@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
@@ -27,7 +27,9 @@ const CLASSIFICATION_LABELS: Record<number, string> = {
 }
 
 const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
-  const [targetNote, setTargetNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [targetNote, setTargetNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,

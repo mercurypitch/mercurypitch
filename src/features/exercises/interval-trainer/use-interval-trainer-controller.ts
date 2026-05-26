@@ -11,18 +11,21 @@ const MATCH_WINDOW_MS = 3000
 
 function generateIntervals(baseMidi: number): Array<[number, number]> {
   const intervals: Array<[number, number]> = [
-    [0, 2],  // Major 2nd
-    [0, 4],  // Major 3rd
-    [0, 5],  // Perfect 4th
-    [0, 7],  // Perfect 5th
-    [0, 9],  // Major 6th
+    [0, 2], // Major 2nd
+    [0, 4], // Major 3rd
+    [0, 5], // Perfect 4th
+    [0, 7], // Perfect 5th
+    [0, 9], // Major 6th
     [0, 12], // Octave
   ]
   // Shuffle and pick
   const shuffled = [...intervals].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, ROUNDS).map(([a, b]) => {
     const octaveShift = Math.floor(Math.random() * 2) * 12
-    return [baseMidi + a, baseMidi + b + (Math.random() > 0.5 ? octaveShift : 0)]
+    return [
+      baseMidi + a,
+      baseMidi + b + (Math.random() > 0.5 ? octaveShift : 0),
+    ]
   })
 }
 
@@ -35,7 +38,10 @@ export function useIntervalTrainerController(
   let roundScores: Array<{ note1: number; note2: number }> = []
   let intervalSpans: Array<{ span: number; score: number }> = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let matchStartTime = 0
   let _cancelled = false
 
@@ -71,22 +77,26 @@ export function useIntervalTrainerController(
     })
 
     // Play note1
-    void audioEngine.playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS).then(() => {
-      if (_cancelled) return
-      base._updateMetrics({ currentMidi: note2 })
-      setTimeout(() => {
+    void audioEngine
+      .playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS)
+      .then(() => {
         if (_cancelled) return
-        // Play note2
-        void audioEngine.playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS).then(() => {
+        base._updateMetrics({ currentMidi: note2 })
+        setTimeout(() => {
           if (_cancelled) return
-          // Gap before user sings
-          phaseTimer = setTimeout(() => {
-            if (_cancelled) return
-            startMatching()
-          }, GAP_BEFORE_MATCH_MS)
-        })
-      }, GAP_BETWEEN_NOTES_MS)
-    })
+          // Play note2
+          void audioEngine
+            .playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS)
+            .then(() => {
+              if (_cancelled) return
+              // Gap before user sings
+              phaseTimer = setTimeout(() => {
+                if (_cancelled) return
+                startMatching()
+              }, GAP_BEFORE_MATCH_MS)
+            })
+        }, GAP_BETWEEN_NOTES_MS)
+      })
   }
 
   function startMatching(): void {
@@ -120,7 +130,9 @@ export function useIntervalTrainerController(
           (best, p) => {
             const freq = 440 * Math.pow(2, (target - 69) / 12)
             const error = Math.abs(p.freq - freq)
-            return error < best.error ? { error, cents: (Math.log2(p.freq / freq)) * 1200 } : best
+            return error < best.error
+              ? { error, cents: Math.log2(p.freq / freq) * 1200 }
+              : best
           },
           { error: Infinity, cents: 0 },
         )
@@ -146,7 +158,10 @@ export function useIntervalTrainerController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 400)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playRound()
+    }, 400)
   }
 
   function finish(): void {
@@ -159,32 +174,58 @@ export function useIntervalTrainerController(
       return {
         type: EXERCISE_INTERVAL_TRAINER,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0, smallIntervalAvg: 0, mediumIntervalAvg: 0, largeIntervalAvg: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          smallIntervalAvg: 0,
+          mediumIntervalAvg: 0,
+          largeIntervalAvg: 0,
+        },
         completedAt: Date.now(),
       }
     }
 
     const roundAvgs = roundScores.map((s) => (s.note1 + s.note2) / 2)
-    const avgAccuracy = Math.round(roundAvgs.reduce((a, b) => a + b, 0) / roundAvgs.length)
+    const avgAccuracy = Math.round(
+      roundAvgs.reduce((a, b) => a + b, 0) / roundAvgs.length,
+    )
     const bestRound = Math.round(Math.max(...roundAvgs))
 
     // Per-interval-size breakdown
     const small = intervalSpans.filter((s) => s.span <= 4)
     const medium = intervalSpans.filter((s) => s.span > 4 && s.span <= 8)
     const large = intervalSpans.filter((s) => s.span > 8)
-    const smallAvg = small.length > 0 ? Math.round(small.reduce((a, b) => a + b.score, 0) / small.length) : 0
-    const mediumAvg = medium.length > 0 ? Math.round(medium.reduce((a, b) => a + b.score, 0) / medium.length) : 0
-    const largeAvg = large.length > 0 ? Math.round(large.reduce((a, b) => a + b.score, 0) / large.length) : 0
+    const smallAvg =
+      small.length > 0
+        ? Math.round(small.reduce((a, b) => a + b.score, 0) / small.length)
+        : 0
+    const mediumAvg =
+      medium.length > 0
+        ? Math.round(medium.reduce((a, b) => a + b.score, 0) / medium.length)
+        : 0
+    const largeAvg =
+      large.length > 0
+        ? Math.round(large.reduce((a, b) => a + b.score, 0) / large.length)
+        : 0
 
     // Difficulty-weighted: larger intervals are harder, weight accordingly
     const totalSpans = intervalSpans.reduce((s, v) => s + v.span, 0)
-    const difficultyWeightedScore = intervalSpans.length > 0 && totalSpans > 0
-      ? Math.round(intervalSpans.reduce((s, v) => s + v.score * (v.span / totalSpans), 0) * intervalSpans.length)
-      : 0
+    const difficultyWeightedScore =
+      intervalSpans.length > 0 && totalSpans > 0
+        ? Math.round(
+            intervalSpans.reduce(
+              (s, v) => s + v.score * (v.span / totalSpans),
+              0,
+            ) * intervalSpans.length,
+          )
+        : 0
 
     return {
       type: EXERCISE_INTERVAL_TRAINER,
-      score: Math.round(avgAccuracy * 0.5 + Math.min(100, difficultyWeightedScore) * 0.5),
+      score: Math.round(
+        avgAccuracy * 0.5 + Math.min(100, difficultyWeightedScore) * 0.5,
+      ),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,

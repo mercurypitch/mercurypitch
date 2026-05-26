@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
@@ -20,7 +20,9 @@ interface PitchHoldExerciseProps {
 }
 
 const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
-  const [targetNote, setTargetNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [targetNote, setTargetNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -133,8 +135,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
                 class="pitch-hold-dot"
                 classList={{
                   'pitch-hold-dot-in': inZone(),
-                  'pitch-hold-dot-out':
-                    !inZone() && (pitch()?.freq ?? 0) > 0,
+                  'pitch-hold-dot-out': !inZone() && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />

@@ -17,7 +17,10 @@ export function useDynamicSwellController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
-  base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+  base._registerDispose(() => {
+    clearTimeout(phaseTimer)
+    phaseTimer = undefined
+  })
   let holdStartTime = 0
   let _cancelled = false
 
@@ -53,17 +56,22 @@ export function useDynamicSwellController(
       })
     })
 
-    void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS).then(() => {
-      if (_cancelled) return
-      startHolding()
-    })
+    void audioEngine
+      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      .then(() => {
+        if (_cancelled) return
+        startHolding()
+      })
   }
 
   function startHolding(): void {
     if (_cancelled) return
     holdStartTime = performance.now()
     batch(() => base._updateMetrics({ phase: 2 })) // hold phase
-    phaseTimer = setTimeout(() => { if (_cancelled) return; evaluateRound() }, HOLD_DURATION_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      evaluateRound()
+    }, HOLD_DURATION_MS)
   }
 
   function evaluateRound(): void {
@@ -84,7 +92,8 @@ export function useDynamicSwellController(
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
-        const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+        const avgDeviation =
+          deviations.reduce((a, b) => a + b, 0) / deviations.length
         roundScore = Math.round(Math.max(0, 100 - avgDeviation * 2.0))
       }
     }
@@ -101,7 +110,10 @@ export function useDynamicSwellController(
     })
 
     roundIndex++
-    phaseTimer = setTimeout(() => { if (_cancelled) return; playRound() }, 600)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      playRound()
+    }, 600)
   }
 
   function finish(): void {
@@ -118,7 +130,9 @@ export function useDynamicSwellController(
         completedAt: Date.now(),
       }
     }
-    const avgAccuracy = Math.round(roundScores.reduce((a, b) => a + b, 0) / roundScores.length)
+    const avgAccuracy = Math.round(
+      roundScores.reduce((a, b) => a + b, 0) / roundScores.length,
+    )
     const bestRound = Math.max(...roundScores)
 
     const history = base.pitchHistory()
@@ -135,7 +149,9 @@ export function useDynamicSwellController(
 
     return {
       type: EXERCISE_DYNAMIC_SWELL,
-      score: Math.round(avgAccuracy * 0.45 + bestRound * 0.2 + dynamicScore * 0.35),
+      score: Math.round(
+        avgAccuracy * 0.45 + bestRound * 0.2 + dynamicScore * 0.35,
+      ),
       metrics: {
         roundsCompleted: roundScores.length,
         avgAccuracy,

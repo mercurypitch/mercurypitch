@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -28,7 +28,9 @@ const CLASSIFICATION_LABELS: Record<number, string> = {
 }
 
 const SlideExercise: Component<SlideExerciseProps> = (props) => {
-  const [fromNote, setFromNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [fromNote, setFromNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
   const [toNote, setToNote] = createSignal(getDefaultNote(vocalRangePreset()))
 
   const base = useBaseExercise({

@@ -1,4 +1,4 @@
-import { type Component, createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -20,8 +20,12 @@ interface StaccatoPrecisionExerciseProps {
   autoStart?: boolean
 }
 
-const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (props) => {
-  const [startNote, setStartNote] = createSignal(getDefaultNote(vocalRangePreset()))
+const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
+  props,
+) => {
+  const [startNote, setStartNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
 
   const base = useBaseExercise({
     audioEngine: props.audioEngine,
@@ -52,8 +56,19 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'staccato-precision') {
-      showCelebration({ score: r.score, exerciseType: r.type, metrics: r.metrics })
-      untrack(() => recordExerciseResult({ type: r.type, score: r.score, metrics: r.metrics, completedAt: r.completedAt }))
+      showCelebration({
+        score: r.score,
+        exerciseType: r.type,
+        metrics: r.metrics,
+      })
+      untrack(() =>
+        recordExerciseResult({
+          type: r.type,
+          score: r.score,
+          metrics: r.metrics,
+          completedAt: r.completedAt,
+        }),
+      )
     }
   })
 
@@ -78,10 +93,14 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>← Back</button>
+        <button class="back-btn" onClick={props.onBack}>
+          ← Back
+        </button>
         <h2 class="exercise-title">Staccato Precision</h2>
         <span class="exercise-score-display">
-          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
@@ -89,8 +108,13 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
         {base.state().status === 'idle' && (
           <div class="exercise-idle-placeholder">
             <IconZap size={48} />
-            <p>Hear a short note, then sing it back with a crisp, precise attack. Sharpen your pitch accuracy on quick entries.</p>
-            <span class="idle-hint">8 rounds · Short attacks · Spanning one octave</span>
+            <p>
+              Hear a short note, then sing it back with a crisp, precise attack.
+              Sharpen your pitch accuracy on quick entries.
+            </p>
+            <span class="idle-hint">
+              8 rounds · Short attacks · Spanning one octave
+            </span>
           </div>
         )}
 
@@ -102,8 +126,16 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
             />
             <div class="mirror-melody-phase">
               <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-                {phase() === 1 ? <><IconMusic size={16} /> Listen...</>
-                  : <><IconMic size={16} /> Sing {midiToNoteName(currentMidi())} — crisp and short!</>}
+                {phase() === 1 ? (
+                  <>
+                    <IconMusic size={16} /> Listen...
+                  </>
+                ) : (
+                  <>
+                    <IconMic size={16} /> Sing {midiToNoteName(currentMidi())} —
+                    crisp and short!
+                  </>
+                )}
               </span>
             </div>
 
@@ -118,7 +150,10 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
                     }}
                     style={
                       i() < roundsCompleted()
-                        ? { background: `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`, 'border-color': `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)` }
+                        ? {
+                            background: `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
+                            'border-color': `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
+                          }
                         : undefined
                     }
                   />
@@ -132,12 +167,15 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
                 class="mirror-melody-dot"
                 classList={{
                   'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
+                  'mirror-melody-dot-far':
+                    Math.abs(currentCents()) > 25 && (pitch()?.freq ?? 0) > 0,
                 }}
                 style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
               {phase() === 2 && (
-                <div class="mirror-melody-target-label">{midiToNoteName(currentMidi())}</div>
+                <div class="mirror-melody-target-label">
+                  {midiToNoteName(currentMidi())}
+                </div>
               )}
             </div>
 
@@ -155,16 +193,25 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
               class="exercise-result-score"
               classList={{
                 'exercise-result-score-good': base.result()!.score >= 80,
-                'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
                 'exercise-result-score-poor': base.result()!.score < 50,
               }}
             >
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best Note: {base.result()!.metrics.bestRound}% · Rounds: {base.result()!.metrics.roundsCompleted}
+              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best Note:{' '}
+              {base.result()!.metrics.bestRound}% · Rounds:{' '}
+              {base.result()!.metrics.roundsCompleted}
             </div>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
           </div>
@@ -181,22 +228,39 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (pr
               onChange={setStartNote}
             />
             {base.error() && <div class="exercise-error">{base.error()}</div>}
-            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
               Start
             </button>
           </>
         )}
         {isActive() && (
-          <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
             Stop
           </button>
         )}
         {isComplete() && (
           <>
-            <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
               Try Again
             </button>
-            <button class="exercise-btn exercise-btn-secondary" onClick={() => { base.reset() }}>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
               Change Note
             </button>
           </>
