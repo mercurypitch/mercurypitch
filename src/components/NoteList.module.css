@@ -131,7 +131,7 @@
 }
 
 /* Note list */
-#note-list {
+:global(#note-list) {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -144,7 +144,7 @@
    Vite loads CSS modules after global CSS, so a same-specificity
    media-query override in app.css would lose to this base rule. */
 @media (max-width: 480px) {
-  #note-list {
+  :global(#note-list) {
     display: none;
   }
 }
