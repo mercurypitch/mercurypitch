@@ -16,7 +16,7 @@
   margin-bottom: 8px;
 }
 
-#stats-bars {
+:global(#stats-bars) {
   display: flex;
   flex-direction: column;
   gap: 5px;

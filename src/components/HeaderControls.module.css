@@ -882,13 +882,13 @@
 
 /* Extracted from: Precount Button */
 
-#btn-precount {
+:global(#btn-precount) {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-#btn-precount svg {
+:global(#btn-precount) svg {
   flex-shrink: 0;
 }
 
