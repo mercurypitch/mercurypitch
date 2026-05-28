@@ -13,6 +13,8 @@ export interface SegmentPitchesOptions {
   pitchTolerance?: number
   /** BPM, used to convert times to beats for MelodyItem */
   bpm?: number
+  /** Max gap in seconds for dropout bridging (look-ahead for same-pitch resumption) */
+  dropoutBridgeMax?: number
 }
 
 /**
@@ -23,10 +25,11 @@ export function segmentPitchesToNotes(
   options: SegmentPitchesOptions = {},
 ): MelodyItem[] {
   const minClarity = options.minClarity ?? 0.6
-  const minDuration = options.minDuration ?? 0.05 // 50ms
+  const minDuration = options.minDuration ?? 0.08 // 80ms, matches merger default
   const maxGap = options.maxGap ?? 0.1 // 100ms
   const pitchTolerance = options.pitchTolerance ?? 0.5
   const bpm = options.bpm ?? 120
+  const dropoutBridgeMax = options.dropoutBridgeMax ?? 0.2 // 200ms look-ahead for bridging
 
   if (samples.length === 0) return []
 
@@ -66,7 +69,14 @@ export function segmentPitchesToNotes(
     const timeDiff = s.time - currentNote.endTime
     const pitchDiff = Math.abs(s.midi - currentAvgMidi)
 
-    if (timeDiff <= maxGap && pitchDiff <= pitchTolerance) {
+    // Bridge momentary dropouts: if the gap exceeds maxGap but pitch matches
+    // (±pitchTolerance) AND there's a same-pitch resumption within
+    // dropoutBridgeMax, don't split — treat it as a single sustained note.
+    const pitchMatches = pitchDiff <= pitchTolerance
+    const isDropoutGap =
+      timeDiff > maxGap && timeDiff <= dropoutBridgeMax && pitchMatches
+
+    if ((timeDiff <= maxGap && pitchMatches) || isDropoutGap) {
       // Continue the current note
       currentNote.endTime = s.time
       currentNote.midiSum += s.midi
@@ -84,29 +94,53 @@ export function segmentPitchesToNotes(
   }
   rawNotes.push(currentNote)
 
-  // Filter out short notes and build final MelodyItem array
+  // Phase 1: filter out notes shorter than minDuration
   const beatsPerSecond = bpm / 60
+  const minDurNotes = rawNotes.filter(
+    (n) => n.endTime - n.startTime >= minDuration,
+  )
+
+  // Phase 2: isolated-singleton filter — drop short notes (<100ms) that have
+  // large gaps (>200ms) on both sides. These are typically spurious detections,
+  // not part of a musical phrase.
+  const SINGLETON_MAX_DUR = 0.1
+  const SINGLETON_MIN_GAP = 0.2
+  const filteredNotes =
+    minDurNotes.length <= 1
+      ? minDurNotes
+      : minDurNotes.filter((n, i) => {
+          const dur = n.endTime - n.startTime
+          if (dur >= SINGLETON_MAX_DUR) return true
+          const gapBefore =
+            i === 0 ? Infinity : n.startTime - minDurNotes[i - 1].endTime
+          const gapAfter =
+            i === minDurNotes.length - 1
+              ? Infinity
+              : minDurNotes[i + 1].startTime - n.endTime
+          return !(
+            gapBefore > SINGLETON_MIN_GAP && gapAfter > SINGLETON_MIN_GAP
+          )
+        })
+
   let nextId = 1
   const melodyItems: MelodyItem[] = []
 
-  for (const n of rawNotes) {
+  for (const n of filteredNotes) {
     const durationSec = n.endTime - n.startTime
-    if (durationSec >= minDuration) {
-      const avgMidi = Math.round(n.midiSum / n.count)
-      const noteInfo = midiToNote(avgMidi)
+    const avgMidi = Math.round(n.midiSum / n.count)
+    const noteInfo = midiToNote(avgMidi)
 
-      melodyItems.push({
-        id: nextId++,
-        startBeat: n.startTime * beatsPerSecond,
-        duration: durationSec * beatsPerSecond,
-        note: {
-          midi: avgMidi,
-          name: noteInfo.name as NoteName,
-          octave: noteInfo.octave,
-          freq: midiToFreq(avgMidi),
-        },
-      })
-    }
+    melodyItems.push({
+      id: nextId++,
+      startBeat: n.startTime * beatsPerSecond,
+      duration: durationSec * beatsPerSecond,
+      note: {
+        midi: avgMidi,
+        name: noteInfo.name as NoteName,
+        octave: noteInfo.octave,
+        freq: midiToFreq(avgMidi),
+      },
+    })
   }
 
   return melodyItems
