@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
-import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList,IconLock, IconMirror, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap,  } from '@/components/exercise-icons'
-import { exerciseHistory,getExerciseStats,  } from '@/stores/exercise-history-store'
+import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER,EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO,  } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -229,52 +229,54 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
       </div>
 
       <div class="exercises-grid">
-        <For each={CARDS}>{(card) => {
-          const stats = createMemo(() => getExerciseStats(card.type))
-          return (
-            <div
-              class="exercise-card"
-              classList={{ 'exercise-card-disabled': !card.available }}
-              onClick={() => card.available && props.onSelect(card.type)}
-              style={
-                card.available ? {} : { opacity: 0.5, cursor: 'not-allowed' }
-              }
-            >
-              <div class="exercise-card-icon">{card.icon()}</div>
-              <h3>{card.title}</h3>
-              <p>{card.description}</p>
-              <div class="exercise-card-tags">
-                <For each={card.tags}>{(t) => (
-                  <span>{t}</span>
-                )}</For>
-              </div>
-              <Show when={stats().totalPlays > 0}>
-                <div class="exercise-card-stats">
-                  <span
-                    class={`exercise-card-grade ${gradeClass(stats().bestScore)}`}
-                  >
-                    {gradeLabel(stats().bestScore)}
-                  </span>
-                  <span class="exercise-card-best">
-                    Best: {stats().bestScore}%
-                  </span>
-                  <span class="exercise-card-plays">{stats().totalPlays}x</span>
+        <For each={CARDS}>
+          {(card) => {
+            const stats = createMemo(() => getExerciseStats(card.type))
+            return (
+              <div
+                class="exercise-card"
+                classList={{ 'exercise-card-disabled': !card.available }}
+                onClick={() => card.available && props.onSelect(card.type)}
+                style={
+                  card.available ? {} : { opacity: 0.5, cursor: 'not-allowed' }
+                }
+              >
+                <div class="exercise-card-icon">{card.icon()}</div>
+                <h3>{card.title}</h3>
+                <p>{card.description}</p>
+                <div class="exercise-card-tags">
+                  <For each={card.tags}>{(t) => <span>{t}</span>}</For>
                 </div>
-              </Show>
-              <Show when={card.available}>
-                <button
-                  class="exercise-card-start-btn"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    props.onQuickStart?.(card.type)
-                  }}
-                >
-                  Start
-                </button>
-              </Show>
-            </div>
-          )
-        }}</For>
+                <Show when={stats().totalPlays > 0}>
+                  <div class="exercise-card-stats">
+                    <span
+                      class={`exercise-card-grade ${gradeClass(stats().bestScore)}`}
+                    >
+                      {gradeLabel(stats().bestScore)}
+                    </span>
+                    <span class="exercise-card-best">
+                      Best: {stats().bestScore}%
+                    </span>
+                    <span class="exercise-card-plays">
+                      {stats().totalPlays}x
+                    </span>
+                  </div>
+                </Show>
+                <Show when={card.available}>
+                  <button
+                    class="exercise-card-start-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      props.onQuickStart?.(card.type)
+                    }}
+                  >
+                    Start
+                  </button>
+                </Show>
+              </div>
+            )
+          }}
+        </For>
       </div>
 
       <Show when={recentEntries().length > 0}>

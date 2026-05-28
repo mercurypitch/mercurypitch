@@ -71,14 +71,16 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
             </Show>
 
             <div class="celebration-metrics">
-              {Object.entries(props.data!.metrics).map(([key, val]) => (
+              <For each={Object.entries(props.data!.metrics)}>{([key, val]) => (
                 <div class="celebration-metric">
-                  <span class="celebration-metric-label">{metricLabel(key)}</span>
+                  <span class="celebration-metric-label">
+                    {metricLabel(key)}
+                  </span>
                   <span class="celebration-metric-value">
                     {typeof val === 'number' ? Math.round(val) : val}
                   </span>
                 </div>
-              ))}
+              )}</For>
             </div>
 
             <button class="celebration-btn" onClick={props.onClose}>

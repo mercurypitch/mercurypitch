@@ -46,7 +46,6 @@ export function useCallResponseController(
   let matchStartTime = 0
   let _cancelled = false
 
-
   function setBase(baseMidi: number): void {
     _cancelled = false
     phrases = Array.from({ length: ROUNDS }, () =>

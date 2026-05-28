@@ -59,7 +59,6 @@ export function useChordStackerController(
   let baseMidi = 60
   let _cancelled = false
 
-
   function setBase(midi: number): void {
     _cancelled = false
     baseMidi = midi

@@ -1,6 +1,7 @@
-import { Show, type Component } from 'solid-js'
-import { createPersistedSignal } from '@/lib/storage'
+import type {Component} from 'solid-js';
+import { Show } from 'solid-js'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
+import { createPersistedSignal } from '@/lib/storage'
 
 interface ExercisePitchTrackerProps {
   pitchHistory: () => Array<{

@@ -1,8 +1,8 @@
-import { createPersistedSignal } from '@/lib/storage'
-import type { ExerciseType } from '@/features/exercises/types'
-import { updatePracticeStreak } from '@/db/services/streak-service'
 import { updateLeaderboardEntry } from '@/db/services/leaderboard-service'
+import { updatePracticeStreak } from '@/db/services/streak-service'
+import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import { createPersistedSignal } from '@/lib/storage'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 

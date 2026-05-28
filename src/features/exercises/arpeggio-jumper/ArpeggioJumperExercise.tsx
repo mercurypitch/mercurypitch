@@ -1,7 +1,7 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
-import { IconLayers, IconMic,IconMusic } from '@/components/exercise-icons'
+import { IconLayers, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -254,9 +254,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
                   setArpeggioType(e.currentTarget.value as ArpeggioType)
                 }
               >
-                <For each={ARPEGGIO_TYPES}>{(s) => (
-                  <option value={s.value}>{s.label}</option>
-                )}</For>
+                <For each={ARPEGGIO_TYPES}>
+                  {(s) => <option value={s.value}>{s.label}</option>}
+                </For>
               </select>
             </div>
             <div class="exercise-target-selector">
@@ -271,7 +271,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
                 <option value="down">Descending</option>
               </select>
             </div>
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

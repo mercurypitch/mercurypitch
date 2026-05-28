@@ -2,18 +2,38 @@
 // Database Layer — Factory & Singleton
 // ============================================================
 
+import { API_BASE_URL } from '@/lib/defaults'
 import { DexieAdapter } from './adapters/dexie-adapter'
+import { ServerAdapter } from './adapters/server-adapter'
 import { seedAll } from './seed'
 import type { DatabaseAdapter } from './types'
 
 let dbPromise: Promise<DatabaseAdapter> | null = null
 
+/**
+ * Resolve which adapter to use.
+ *
+ *   VITE_API_BASE_URL=https://api.example.com pnpm dev   → ServerAdapter
+ *   pnpm dev                                              → DexieAdapter (local)
+ */
+function resolveAdapter(): DatabaseAdapter {
+  if (API_BASE_URL) {
+    console.info('[db] using ServerAdapter →', API_BASE_URL)
+    return new ServerAdapter({ baseUrl: API_BASE_URL })
+  }
+
+  console.info('[db] using DexieAdapter (local)')
+  return new DexieAdapter()
+}
+
 /** Create a new database adapter instance. Called once at app init. */
 export async function createDatabase(): Promise<DatabaseAdapter> {
-  const adapter = new DexieAdapter()
+  const adapter = resolveAdapter()
 
-  // Seed sample data on first run
-  await seedAll(adapter)
+  // Seed sample data on first run (local adapter only — server seeds itself)
+  if (adapter instanceof DexieAdapter) {
+    await seedAll(adapter)
+  }
 
   return adapter
 }

@@ -44,7 +44,10 @@ export function useVibratoController(base: BaseExerciseController) {
 
       // Rate score
       let rateScore: number
-      if (vibResult.rateHz >= IDEAL_RATE_MIN && vibResult.rateHz <= IDEAL_RATE_MAX) {
+      if (
+        vibResult.rateHz >= IDEAL_RATE_MIN &&
+        vibResult.rateHz <= IDEAL_RATE_MAX
+      ) {
         rateScore = 100
       } else if (vibResult.rateHz < IDEAL_RATE_MIN) {
         rateScore = Math.max(0, (vibResult.rateHz / IDEAL_RATE_MIN) * 100)
@@ -54,12 +57,18 @@ export function useVibratoController(base: BaseExerciseController) {
 
       // Depth score
       let depthScore: number
-      if (vibResult.depthCents >= IDEAL_DEPTH_MIN && vibResult.depthCents <= IDEAL_DEPTH_MAX) {
+      if (
+        vibResult.depthCents >= IDEAL_DEPTH_MIN &&
+        vibResult.depthCents <= IDEAL_DEPTH_MAX
+      ) {
         depthScore = 100
       } else if (vibResult.depthCents < IDEAL_DEPTH_MIN) {
         depthScore = Math.max(0, (vibResult.depthCents / IDEAL_DEPTH_MIN) * 100)
       } else {
-        depthScore = Math.max(0, 100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8)
+        depthScore = Math.max(
+          0,
+          100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8,
+        )
       }
 
       const currentScore = Math.round(

@@ -1,5 +1,5 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, For,onCleanup, onMount, untrack  } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -297,7 +297,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       <div class="exercise-controls">
         {base.state().status === 'idle' && (
           <>
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { usePitchPursuitController } from '@/features/exercises/pitch-pursuit/use-pitch-pursuit-controller'
-import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_PITCH_PURSUIT } from '@/features/exercises/types'
+import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},

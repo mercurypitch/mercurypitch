@@ -1,8 +1,8 @@
 import { createRoot } from 'solid-js'
 import { describe, expect, it } from 'vitest'
+import { useBaseExercise } from '@/features/exercises/use-base-exercise'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { useBaseExercise } from '@/features/exercises/use-base-exercise'
 
 /**
  * Tests for the exercise stop/complete/reset flow.
@@ -12,7 +12,9 @@ import { useBaseExercise } from '@/features/exercises/use-base-exercise'
  * signal values and re-entrancy guard depths rather than effect callbacks.
  */
 
-function createMockAudioEngine(overrides: Partial<AudioEngine> = {}): AudioEngine {
+function createMockAudioEngine(
+  overrides: Partial<AudioEngine> = {},
+): AudioEngine {
   return {
     init: () => Promise.resolve(),
     resume: () => Promise.resolve(),
@@ -50,7 +52,12 @@ function makeResult(score = 85) {
   return {
     type: 'vibrato' as const,
     score,
-    metrics: { rateHz: 5.5, depthCents: 30, consistency: 80, classification: 2 },
+    metrics: {
+      rateHz: 5.5,
+      depthCents: 30,
+      consistency: 80,
+      classification: 2,
+    },
     completedAt: Date.now(),
   }
 }

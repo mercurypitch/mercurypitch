@@ -60,7 +60,7 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   }
 
   function formatDate(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00')
+    const d = new Date(`${dateStr  }T00:00:00`)
     return d.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -71,16 +71,16 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   return (
     <div class="streak-calendar">
       <div class="sc-grid">
-        {weeks().map((week) => (
+        <For each={weeks()}>{(week) => (
           <div class="sc-week">
-            {week.map((day) => (
+            <For each={week}>{(day) => (
               <div
                 class={cellClass(day.count)}
                 title={`${formatDate(day.date)}: ${day.count} session${day.count !== 1 ? 's' : ''}`}
               />
-            ))}
+            )}</For>
           </div>
-        ))}
+        )}</For>
       </div>
       <div class="sc-legend">
         <span class="sc-legend-label">Less</span>

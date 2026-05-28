@@ -4,6 +4,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
@@ -13,7 +14,6 @@ import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { getSessionHistory } from '@/stores'
 import { launchDrill, setActiveTab } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
-import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
@@ -1059,12 +1059,22 @@ const challengeCategories = () => [
   { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
   { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
   { id: 'scales' as const, name: 'Scales', icon: IconMusicChallenge, count: 2 },
-  { id: 'intervals' as const, name: 'Intervals', icon: IconArrowUpDown, count: 2 },
+  {
+    id: 'intervals' as const,
+    name: 'Intervals',
+    icon: IconArrowUpDown,
+    count: 2,
+  },
   { id: 'harmony' as const, name: 'Harmony', icon: IconLayers, count: 2 },
   { id: 'agility' as const, name: 'Agility', icon: IconZap, count: 2 },
   { id: 'range' as const, name: 'Range', icon: IconSiren, count: 1 },
   { id: 'dynamic' as const, name: 'Dynamics', icon: IconExpand, count: 1 },
-  { id: 'call-response' as const, name: 'Call & Response', icon: IconReply, count: 1 },
+  {
+    id: 'call-response' as const,
+    name: 'Call & Response',
+    icon: IconReply,
+    count: 1,
+  },
 ]
 
 const mockChallenges: ChallengeProgress[] = [

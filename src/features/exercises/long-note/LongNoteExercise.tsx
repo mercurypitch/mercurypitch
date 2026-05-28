@@ -1,5 +1,5 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconTarget } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
@@ -100,7 +100,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
           <div class="exercise-idle-placeholder">
             <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
-            <p class="exercise-idle-target-note">Target: <strong>{targetNote()}</strong></p>
+            <p class="exercise-idle-target-note">
+              Target: <strong>{targetNote()}</strong>
+            </p>
           </div>
         )}
 
@@ -187,7 +189,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

@@ -1,7 +1,7 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
-import { IconMic,IconMusic, IconZap } from '@/components/exercise-icons'
+import { IconMic, IconMusic, IconZap } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -228,7 +228,9 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
               selected={startNote()}
               onChange={setStartNote}
             />
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

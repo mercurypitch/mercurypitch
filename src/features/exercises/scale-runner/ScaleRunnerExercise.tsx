@@ -1,7 +1,7 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
-import { IconArrowUpDown, IconMic,IconMusic,  } from '@/components/exercise-icons'
+import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -252,9 +252,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                   setScaleType(e.currentTarget.value as ScaleType)
                 }
               >
-                <For each={SCALE_TYPES}>{(s) => (
-                  <option value={s.value}>{s.label}</option>
-                )}</For>
+                <For each={SCALE_TYPES}>
+                  {(s) => <option value={s.value}>{s.label}</option>}
+                </For>
               </select>
             </div>
             <div class="exercise-target-selector">
@@ -269,7 +269,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                 <option value="down">Descending</option>
               </select>
             </div>
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

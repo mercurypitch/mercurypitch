@@ -39,7 +39,6 @@ export function useMirrorMelodyController(
   })
   let _cancelled = false
 
-
   function setMelody(baseMidi: number): void {
     _cancelled = false
     melody = generateMelody(baseMidi, MELODY_LENGTH)

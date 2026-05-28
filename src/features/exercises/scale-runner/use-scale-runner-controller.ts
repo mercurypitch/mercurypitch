@@ -44,7 +44,6 @@ export function useScaleRunnerController(
   })
   let _cancelled = false
 
-
   function setScale(
     baseMidi: number,
     scaleType: ScaleType = 'major',

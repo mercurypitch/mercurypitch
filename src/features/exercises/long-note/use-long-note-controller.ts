@@ -64,9 +64,7 @@ export function useLongNoteController(base: BaseExerciseController) {
           maxDriftCents: maxDrift,
           steadyZonePct: steadyPct,
         })
-        base._updateScore(
-          Math.max(0, 100 - stabilityCents * 2),
-        )
+        base._updateScore(Math.max(0, 100 - stabilityCents * 2))
       })
     }, 1000 / METRIC_UPDATE_HZ)
   }

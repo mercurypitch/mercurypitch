@@ -42,7 +42,6 @@ export function useDroneIntonationController(
   })
   let _cancelled = false
 
-
   function setBase(baseMidi: number): void {
     _cancelled = false
     droneMidi = baseMidi

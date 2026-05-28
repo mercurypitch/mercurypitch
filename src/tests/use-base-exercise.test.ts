@@ -1,8 +1,8 @@
 import { createRoot } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
+import { useBaseExercise } from '@/features/exercises/use-base-exercise'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { useBaseExercise } from '@/features/exercises/use-base-exercise'
 
 function createMockAudioEngine(): AudioEngine {
   return {
@@ -28,9 +28,7 @@ function createMockPracticeEngine(
     isMicActive: vi.fn().mockReturnValue(false),
     update: vi.fn().mockReturnValue(null),
     setCallbacks: vi.fn(),
-    getWaveformData: vi
-      .fn()
-      .mockReturnValue(new Float32Array(1024)),
+    getWaveformData: vi.fn().mockReturnValue(new Float32Array(1024)),
     detectPitch: vi.fn().mockReturnValue(null),
     setAlgorithm: vi.fn(),
     setSensitivity: vi.fn(),

@@ -309,9 +309,22 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     if (y < 4 || y > h - 4) return
 
     const label = (() => {
-      const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+      const names = [
+        'C',
+        'C#',
+        'D',
+        'D#',
+        'E',
+        'F',
+        'F#',
+        'G',
+        'G#',
+        'A',
+        'A#',
+        'B',
+      ]
       const octave = Math.floor((targetMidi - 12) / 12)
-      return `${names[(Math.round(targetMidi) % 12 + 12) % 12]}${octave}`
+      return `${names[((Math.round(targetMidi) % 12) + 12) % 12]}${octave}`
     })()
 
     ctx.strokeStyle = 'rgba(63,185,80,0.55)'
@@ -531,7 +544,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
         type="button"
         class={`pitch-canvas-auto-toggle${isAutoZoom() ? ' pitch-canvas-auto-on' : ''}`}
         onClick={toggleAutoZoom}
-        title={isAutoZoom() ? 'Auto-zoom ON — click for manual' : 'Manual zoom — click for auto'}
+        title={
+          isAutoZoom()
+            ? 'Auto-zoom ON — click for manual'
+            : 'Manual zoom — click for auto'
+        }
       >
         {isAutoZoom() ? 'AUTO' : 'MAN'}
       </button>

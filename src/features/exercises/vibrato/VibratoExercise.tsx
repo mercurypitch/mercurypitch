@@ -1,5 +1,5 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconWave } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
@@ -185,7 +185,9 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

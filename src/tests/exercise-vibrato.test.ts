@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { useVibratoController } from '@/features/exercises/vibrato/use-vibrato-controller'
-import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_VIBRATO } from '@/features/exercises/types'
+import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
+import { useVibratoController } from '@/features/exercises/vibrato/use-vibrato-controller'
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},

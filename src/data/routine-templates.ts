@@ -145,7 +145,8 @@ export const dailyRoutines: RoutineTemplate[] = [
   {
     id: 'scale-focus',
     name: 'Scale & Agility',
-    description: 'Build vocal agility with scales, arpeggios, and staccato drills',
+    description:
+      'Build vocal agility with scales, arpeggios, and staccato drills',
     segments: [
       {
         type: 'warmup',
@@ -177,7 +178,8 @@ export const dailyRoutines: RoutineTemplate[] = [
   {
     id: 'harmony-focus',
     name: 'Harmony & Intonation',
-    description: 'Develop harmonic awareness with chords, drones, and pitch precision',
+    description:
+      'Develop harmonic awareness with chords, drones, and pitch precision',
     segments: [
       {
         type: 'warmup',
@@ -209,7 +211,8 @@ export const dailyRoutines: RoutineTemplate[] = [
   {
     id: 'range-focus',
     name: 'Range & Dynamics',
-    description: 'Expand your range and control your dynamics with sirens and swells',
+    description:
+      'Expand your range and control your dynamics with sirens and swells',
     segments: [
       {
         type: 'warmup',

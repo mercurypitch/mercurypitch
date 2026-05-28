@@ -1,5 +1,5 @@
-import type { ExerciseType } from '@/features/exercises/types'
 import type { ChallengeType } from '@/components/VocalChallenges'
+import type { ExerciseType } from '@/features/exercises/types'
 
 export interface ChallengeDrill {
   exercise: ExerciseType

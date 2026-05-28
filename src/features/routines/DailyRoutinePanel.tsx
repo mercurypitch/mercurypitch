@@ -1,11 +1,11 @@
 import type { Component } from 'solid-js'
-import type { JSX } from 'solid-js/jsx-runtime'
 import { createSignal, For, Show } from 'solid-js'
-import { useDailyRoutine } from './use-daily-routine'
-import type { SegmentKind } from './types'
-import { setActiveTab, startExercise } from '@/stores/ui-store'
+import type { JSX } from 'solid-js/jsx-runtime'
+import { IconCheck,IconFire, IconTarget, IconTrophy, IconWater,  } from '@/components/exercise-icons'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
-import { IconFire, IconTarget, IconTrophy, IconWater, IconCheck, } from '@/components/exercise-icons'
+import { setActiveTab, startExercise } from '@/stores/ui-store'
+import type { SegmentKind } from './types'
+import { useDailyRoutine } from './use-daily-routine'
 
 const segmentLabels: Record<SegmentKind, string> = {
   warmup: 'Warmup',
@@ -116,32 +116,35 @@ export const DailyRoutinePanel: Component = () => {
                         {Math.round(seg.durationSec / 60)}m
                       </span>
                       <Show when={current && !done}>
-                        <Show when={segExercise} fallback={
-                          <>
-                            {seg.type === 'challenge-prep' && (
+                        <Show
+                          when={segExercise}
+                          fallback={
+                            <>
+                              {seg.type === 'challenge-prep' && (
+                                <button
+                                  class="daily-routine-segment-start-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setActiveTab(TAB_CHALLENGES)
+                                  }}
+                                  title="Go to Challenges"
+                                >
+                                  ▶
+                                </button>
+                              )}
                               <button
-                                class="daily-routine-segment-start-btn"
+                                class="daily-routine-segment-done-btn"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setActiveTab(TAB_CHALLENGES)
+                                  routine.completeSegment()
                                 }}
-                                title="Go to Challenges"
+                                title="Mark complete"
                               >
-                                ▶
+                                <IconCheck size={10} />
                               </button>
-                            )}
-                            <button
-                              class="daily-routine-segment-done-btn"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                routine.completeSegment()
-                              }}
-                              title="Mark complete"
-                            >
-                              <IconCheck size={10} />
-                            </button>
-                          </>
-                        }>
+                            </>
+                          }
+                        >
                           <button
                             class="daily-routine-segment-start-btn"
                             onClick={(e) => {

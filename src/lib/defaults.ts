@@ -33,6 +33,10 @@ export const PROD_DOMAIN =
 export const DEV_DOMAIN =
   import.meta.env.VITE_DEV_DOMAIN ?? 'dev.mercurypitch.com'
 
+/** When set, the app connects to a remote API instead of local IndexedDB. */
+export const API_BASE_URL: string | undefined =
+  import.meta.env.VITE_API_BASE_URL
+
 export function getUvrApiBase(): string {
   return IS_DEV
     ? `https://${DEV_DOMAIN}/api/uvr`

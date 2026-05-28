@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { useLongNoteController } from '@/features/exercises/long-note/use-long-note-controller'
-import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
+import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
 function freqToMidi(freq: number): number {
   return 12 * Math.log2(freq / 440) + 69

@@ -1,4 +1,5 @@
-import { For, type Component } from 'solid-js'
+import type {Component} from 'solid-js';
+import { For } from 'solid-js'
 
 interface NotePillSelectorProps {
   notes: string[]
@@ -11,7 +12,9 @@ interface NotePillSelectorProps {
 export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
   return (
     <div class={`note-pill-selector ${props.class ?? ''}`}>
-      {props.label && <span class="note-pill-selector-label">{props.label}</span>}
+      {props.label && (
+        <span class="note-pill-selector-label">{props.label}</span>
+      )}
       <div class="note-pill-row">
         <For each={props.notes}>
           {(note) => (

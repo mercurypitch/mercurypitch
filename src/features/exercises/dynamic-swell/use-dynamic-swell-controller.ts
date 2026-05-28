@@ -25,7 +25,6 @@ export function useDynamicSwellController(
   let holdStartTime = 0
   let _cancelled = false
 
-
   function setBase(baseMidi: number): void {
     _cancelled = false
     targetNotes = INTERVALS.map((i) => baseMidi + i)

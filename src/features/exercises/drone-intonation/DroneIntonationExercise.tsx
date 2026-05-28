@@ -1,5 +1,5 @@
-import type {Component} from 'solid-js';
-import {  createEffect, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconDrone, IconMic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -241,7 +241,9 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
               selected={startNote()}
               onChange={setStartNote}
             />
-            {base.error() != null && <div class="exercise-error">{base.error()}</div>}
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}

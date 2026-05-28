@@ -32,10 +32,12 @@ export function useSlideController(base: BaseExerciseController) {
       if (history.length < 3) return
 
       const recent = history.slice(-20)
-      const validSamples = recent.filter((p) => p.freq > 0).map((p) => ({
-        time: p.time,
-        midi: 12 * Math.log2(p.freq / 440) + 69,
-      }))
+      const validSamples = recent
+        .filter((p) => p.freq > 0)
+        .map((p) => ({
+          time: p.time,
+          midi: 12 * Math.log2(p.freq / 440) + 69,
+        }))
       if (validSamples.length < 2) return
 
       // Rough smoothness: how linear (low variance from linear regression)
@@ -58,24 +60,17 @@ export function useSlideController(base: BaseExerciseController) {
       const avgResidual = totalResidual / n
       const smoothness = Math.round(Math.max(0, 100 - avgResidual * 100 * 2))
 
-      // Progress: how far between start and end based on latest pitch
-      const latest = validSamples[validSamples.length - 1]!
-      const span = targetEndMidi - targetStartMidi
-      const progress =
-        span !== 0
-          ? Math.round(
-              Math.max(0, Math.min(100, ((latest.midi - targetStartMidi) / span) * 100)),
-            )
-          : 0
-
       // Arrival accuracy from latest pitch
+      const latest = validSamples[validSamples.length - 1]!
       const arrivalOff = Math.abs(latest.midi - targetEndMidi) * 100
       const arrivalAccuracy = Math.round(Math.max(0, 100 - arrivalOff * 0.8))
 
       // Departure accuracy from first valid sample
       const first = validSamples[0]!
       const departureOff = Math.abs(first.midi - targetStartMidi) * 100
-      const departureAccuracy = Math.round(Math.max(0, 100 - departureOff * 0.8))
+      const departureAccuracy = Math.round(
+        Math.max(0, 100 - departureOff * 0.8),
+      )
 
       // Elapsed
       const latestTime = validSamples[validSamples.length - 1]!.time
@@ -90,7 +85,9 @@ export function useSlideController(base: BaseExerciseController) {
           slideTimeMs: elapsedMs,
         })
         base._updateScore(
-          Math.round(smoothness * 0.4 + arrivalAccuracy * 0.4 + departureAccuracy * 0.2),
+          Math.round(
+            smoothness * 0.4 + arrivalAccuracy * 0.4 + departureAccuracy * 0.2,
+          ),
         )
       })
     }, 1000 / METRIC_UPDATE_HZ)

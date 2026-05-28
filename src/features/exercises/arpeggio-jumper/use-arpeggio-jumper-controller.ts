@@ -45,7 +45,6 @@ export function useArpeggioJumperController(
   })
   let _cancelled = false
 
-
   function setArpeggio(
     baseMidi: number,
     arpeggioType: ArpeggioType = 'major',

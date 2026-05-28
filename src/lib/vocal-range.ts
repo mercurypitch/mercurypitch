@@ -1,6 +1,6 @@
+import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
-import { midiToNoteName } from '@/lib/frequency-to-note'
 
 /**
  * Return the comfortable MIDI range for a given voice type preset.

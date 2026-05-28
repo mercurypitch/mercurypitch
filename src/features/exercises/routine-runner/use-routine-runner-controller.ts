@@ -1,7 +1,7 @@
 import { batch } from 'solid-js'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
-import { analyzeFatigue,approximateRichness } from '@/lib/vocal-analyzer'
+import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -33,7 +33,6 @@ export function useRoutineRunnerController(
     phaseTimer = undefined
   })
   let _cancelled = false
-
 
   function setBase(midi: number): void {
     _cancelled = false

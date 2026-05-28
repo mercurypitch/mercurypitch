@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { useSlideController } from '@/features/exercises/slide/use-slide-controller'
-import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { EXERCISE_SLIDE } from '@/features/exercises/types'
+import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},

@@ -1,8 +1,8 @@
 import { createMemo } from 'solid-js'
-import { createPersistedSignal } from '@/lib/storage'
 import { dailyRoutines, getRandomRoutine } from '@/data/routine-templates'
-import type { RoutineSegment, RoutineTemplate } from './types'
 import type { ExerciseType } from '@/features/exercises/types'
+import { createPersistedSignal } from '@/lib/storage'
+import type { RoutineSegment, RoutineTemplate } from './types'
 
 const STORAGE_KEY = 'mp_daily_routine'
 
@@ -34,8 +34,7 @@ export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
   const currentIdx = data.completedSegments.length
   if (currentIdx >= template.segments.length) return
 
-  const currentSeg = template.segments[currentIdx]
-  if (!currentSeg) return
+  const currentSeg = template.segments[currentIdx]!
 
   // Only auto-advance exercise segments that match the completed type
   if (
