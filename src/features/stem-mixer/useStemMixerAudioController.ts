@@ -135,6 +135,8 @@ export interface StemMixerAudioController {
   handleStop: () => void
   handleRestart: () => void
   seekTo: (time: number) => void
+  speed: Accessor<number>
+  setSpeed: (speed: number) => void
 
   // Download
   handleDownload: (track: StemTrack) => Promise<void>
@@ -176,6 +178,7 @@ export const useStemMixerAudioController = (
   )
   const [windowStart, setWindowStart] = createSignal(0)
   const [windowDuration, setWindowDuration] = createSignal(30)
+  const [speed, setSpeedLocal] = createSignal(1.0)
 
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -183,7 +186,9 @@ export const useStemMixerAudioController = (
   let vocalAnalyser: AnalyserNode | null = null
   let pitchDetector: PitchDetector | null = null
   let rafId = 0
-  let startTime = 0
+  let wallPlayStart = 0
+  let bufferPlayStart = 0
+  let playbackSpeed = 1.0
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
 
@@ -353,6 +358,7 @@ export const useStemMixerAudioController = (
       }
 
       src.start(now, offset)
+      src.playbackRate.value = playbackSpeed
       src.onended = () => {
         try {
           src.disconnect()
@@ -461,12 +467,29 @@ export const useStemMixerAudioController = (
     }, FADE_OUT_MS + 20)
   }
 
+  // ── Speed ────────────────────────────────────────────────────
+  const setSpeed = (newSpeed: number) => {
+    const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
+    if (clamped === playbackSpeed) return
+    playbackSpeed = clamped
+    setSpeedLocal(clamped)
+
+    if (playing()) {
+      const currentElapsed = elapsed()
+      disconnectSources()
+      createSources(currentElapsed)
+      wallPlayStart = audioCtx!.currentTime
+      bufferPlayStart = currentElapsed
+    }
+  }
+
   // ── Transport ────────────────────────────────────────────────
   const handlePlay = () => {
     ensureAudioCtx()
     disconnectSources()
     createSources(pauseOffset)
-    startTime = audioCtx!.currentTime - pauseOffset
+    wallPlayStart = audioCtx!.currentTime
+    bufferPlayStart = pauseOffset
     setPlayingLocal(true)
     pitchHistory = []
     deps.resetMicPitchHistory()
@@ -475,7 +498,7 @@ export const useStemMixerAudioController = (
   }
 
   const handlePause = () => {
-    pauseOffset = audioCtx!.currentTime - startTime
+    pauseOffset = elapsed()
     disconnectSources()
     setPlayingLocal(false)
     cancelAnimationFrame(rafId)
@@ -539,7 +562,8 @@ export const useStemMixerAudioController = (
     if (playing()) {
       disconnectSources()
       createSources(pauseOffset)
-      startTime = audioCtx!.currentTime - pauseOffset
+      wallPlayStart = audioCtx!.currentTime
+      bufferPlayStart = pauseOffset
       pitchHistory = []
       pitchDetector?.resetHistory()
     }
@@ -560,7 +584,7 @@ export const useStemMixerAudioController = (
       if (!audioCtx || !playing()) return
 
       const now = audioCtx.currentTime
-      const elapsedTime = now - startTime
+      const elapsedTime = bufferPlayStart + (now - wallPlayStart) * playbackSpeed
       setElapsed(Math.min(elapsedTime, duration()))
 
       // Pitch detection from vocal analyser
@@ -713,6 +737,8 @@ export const useStemMixerAudioController = (
     handleRestart,
     seekTo,
     handleDownload,
+    speed,
+    setSpeed,
     getPitchHistory: () => pitchHistory,
     setPitchHistory: (h: PitchNote[]) => {
       pitchHistory = h
