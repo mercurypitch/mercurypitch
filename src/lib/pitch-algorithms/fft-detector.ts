@@ -338,6 +338,11 @@ export class FFTDetector implements IPitchDetector {
     // Normalize raw amplitude (maxVal) to a 0-1 pseudo-confidence scale
     const pseudoClarity = Math.max(0.1, Math.min(1.0, maxVal * 15))
 
+    // Gate on minConfidence — discard weak detections that would produce cluttered output
+    if (pseudoClarity < this.settings.minConfidence) {
+      return null
+    }
+
     return {
       frequency,
       clarity: pseudoClarity,
