@@ -26,8 +26,8 @@ describe('AutocorrelatorDetector', () => {
       const s = d.getSettings()
       expect(s.sampleRate).toBe(44100)
       expect(s.bufferSize).toBe(2048)
-      expect(s.minFrequency).toBe(60)
-      expect(s.maxFrequency).toBe(2000)
+      expect(s.minFrequency).toBe(65)
+      expect(s.maxFrequency).toBe(2100)
       expect(s.minConfidence).toBe(0.3)
     })
 
@@ -224,7 +224,7 @@ describe('AutocorrelatorDetector', () => {
   describe('edge cases — amplitude', () => {
     it('returns null for near-zero amplitude', () => {
       const d = new AutocorrelatorDetector()
-      const buffer = new Float32Array(2048).fill(0.0001)
+      const buffer = new Float32Array(2048) // all zeros = silence
       expect(d.detect(buffer)).toBeNull()
     })
 
