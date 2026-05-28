@@ -53,7 +53,7 @@ export function alignPitchToWords(
       const overlapDuration = overlapEnd - overlapStart
       const overlapRatio = overlapDuration / wordDuration
 
-      if (overlapRatio > bestOverlap) {
+      if (overlapRatio >= bestOverlap) {
         bestOverlap = overlapRatio
         bestNote = note
       }
