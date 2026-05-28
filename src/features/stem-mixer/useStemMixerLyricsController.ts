@@ -95,6 +95,7 @@ export interface StemMixerLyricsController {
 
   // Actions — lyrics loading
   loadLyrics: () => Promise<void>
+  cancelSearch: () => void
   handleForceSearch: () => Promise<void>
   handleSongPickerRefine: () => Promise<void>
   handleSongPick: (match: LyricsSearchMatch) => Promise<void>
@@ -232,6 +233,7 @@ export function useStemMixerLyricsController(
   let lyricsScrollContainer: HTMLElement | null = null
   let isAutoScrolling = false
   let lyricsScrollTimeout: ReturnType<typeof setTimeout> | null = null
+  let abortRef: AbortController | null = null
 
   // ── Signals ────────────────────────────────────────────────────
   const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
@@ -412,8 +414,18 @@ export function useStemMixerLyricsController(
     }
   }
 
+  const cancelSearch = () => {
+    if (abortRef) {
+      abortRef.abort()
+      abortRef = null
+    }
+    setLyricsLoading(false)
+    setLyricsSource('none')
+  }
+
   const handleForceSearch = async () => {
-    // Just open the picker so the user can search for a new lyric file manually
+    // Cancel any ongoing auto-search and open the picker for manual search
+    cancelSearch()
     setSongMatches([])
     setSongPickerQuery('')
     setShowSongPicker(true)
@@ -442,12 +454,16 @@ export function useStemMixerLyricsController(
       return
     }
 
+    // Create new abort controller for this search session
+    abortRef = new AbortController()
+    const signal = abortRef.signal
+
     setLyricsLoading(true)
     try {
-      const multiResults = await searchLyricsMulti(title)
+      const multiResults = await searchLyricsMulti(title, signal)
       if (multiResults.length === 1) {
         const match = multiResults[0]
-        const lyrics = await fetchLyricsById(match.id)
+        const lyrics = await fetchLyricsById(match.id, signal)
         if (lyrics) {
           applyLyricsResult(lyrics, title)
           setLyricsLoading(false)
@@ -461,7 +477,7 @@ export function useStemMixerLyricsController(
         return
       }
 
-      const result = await searchLyrics(title)
+      const result = await searchLyrics(title, signal)
       if (result) {
         applyLyricsResult(result, title)
         setLyricsSource('api')
@@ -469,9 +485,15 @@ export function useStemMixerLyricsController(
         setLyricsSource('none')
       }
     } catch {
-      setLyricsSource('none')
+      // If aborted intentionally, show the uploader instead of "none"
+      if (signal.aborted) {
+        setLyricsSource('none')
+      } else {
+        setLyricsSource('none')
+      }
     } finally {
       setLyricsLoading(false)
+      abortRef = null
     }
   }
 
@@ -1846,6 +1868,7 @@ export function useStemMixerLyricsController(
 
     // Actions — lyrics loading
     loadLyrics,
+    cancelSearch,
     handleForceSearch,
     handleSongPickerRefine,
     handleSongPick,

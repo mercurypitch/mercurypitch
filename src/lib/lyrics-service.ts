@@ -72,17 +72,31 @@ export interface LyricsSearchResult {
   format: 'txt' | 'lrc'
 }
 
-function createTimeoutSignal(ms: number): {
+function createTimeoutSignal(
+  ms: number,
+  externalSignal?: AbortSignal,
+): {
   signal: AbortSignal
   clear: () => void
 } {
   const ctrl = new AbortController()
   const id = setTimeout(() => ctrl.abort(), ms)
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      ctrl.abort(externalSignal.reason)
+      return { signal: ctrl.signal, clear: () => clearTimeout(id) }
+    }
+    const onAbort = () => ctrl.abort(externalSignal.reason)
+    externalSignal.addEventListener('abort', onAbort, { once: true })
+  }
+
   return { signal: ctrl.signal, clear: () => clearTimeout(id) }
 }
 
 export async function searchLyrics(
   rawInput: string,
+  signal?: AbortSignal,
 ): Promise<LyricsSearchResult | null> {
   const { artist, title } = parseArtistTitle(rawInput)
 
@@ -91,7 +105,7 @@ export async function searchLyrics(
   // 1. Try strict GET match first if we have both artist and title
   if (artist && cleanTitle) {
     try {
-      const result = await fetchLyricsLrclib(artist, cleanTitle)
+      const result = await fetchLyricsLrclib(artist, cleanTitle, signal)
       if (result) return result
     } catch {
       /* ignore */
@@ -103,7 +117,7 @@ export async function searchLyrics(
   const queryStr = artist ? `${artist} ${cleanTitle}` : cleanTitle
 
   try {
-    const results = await fetchSearchLrclib(queryStr)
+    const results = await fetchSearchLrclib(queryStr, signal)
     if (results.length > 0) {
       // Find best match with synced lyrics first
       const synced = results.find(
@@ -130,12 +144,13 @@ export async function searchLyrics(
 async function fetchLyricsLrclib(
   artist: string,
   title: string,
+  externalSignal?: AbortSignal,
 ): Promise<LyricsSearchResult | null> {
   const params = new URLSearchParams()
   params.set('track_name', title)
   if (artist) params.set('artist_name', artist)
 
-  const { signal, clear } = createTimeoutSignal(25000)
+  const { signal, clear } = createTimeoutSignal(25000, externalSignal)
   const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
     signal,
     headers: {
@@ -170,6 +185,7 @@ export interface LyricsSearchMatch {
 
 export async function searchLyricsMulti(
   rawInput: string,
+  signal?: AbortSignal,
 ): Promise<LyricsSearchMatch[]> {
   const { artist, title } = parseArtistTitle(rawInput)
 
@@ -196,7 +212,7 @@ export async function searchLyricsMulti(
   for (const q of queries) {
     if (results.length >= 20) break
     try {
-      const batch = await fetchSearchLrclib(q)
+      const batch = await fetchSearchLrclib(q, signal)
       if (batch.length > 0) {
         for (const match of batch) {
           if (results.length >= 20) break
@@ -218,11 +234,12 @@ export async function searchLyricsMulti(
 
 export async function fetchLyricsById(
   id: number,
+  signal?: AbortSignal,
 ): Promise<LyricsSearchResult | null> {
   try {
-    const { signal, clear } = createTimeoutSignal(25000)
+    const { signal: timeoutSignal, clear } = createTimeoutSignal(25000, signal)
     const resp = await fetch(`https://lrclib.net/api/get/${id}`, {
-      signal,
+      signal: timeoutSignal,
       headers: {
         'LrcLib-Client': 'MercuryPitch/1.0.0',
       },
@@ -247,14 +264,17 @@ export async function fetchLyricsById(
   }
 }
 
-async function fetchSearchLrclib(query: string): Promise<LyricsSearchMatch[]> {
+async function fetchSearchLrclib(
+  query: string,
+  externalSignal?: AbortSignal,
+): Promise<LyricsSearchMatch[]> {
   const params = new URLSearchParams()
   params.set('q', query)
 
   if (IS_DEV) {
     console.log(`[Lyrics Service] -> Fetching search API: q="${query}"`)
   }
-  const { signal, clear } = createTimeoutSignal(25000)
+  const { signal, clear } = createTimeoutSignal(25000, externalSignal)
 
   try {
     const resp = await fetch(

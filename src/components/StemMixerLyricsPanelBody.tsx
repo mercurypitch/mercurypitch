@@ -242,6 +242,7 @@ export interface StemMixerLyricsPanelBodyProps {
   // Misc
   songTitle: string
   lrclibSearchUrl: Accessor<string | undefined>
+  cancelSearch: () => void
   handleLyricsUpload: (result: LyricsUploadResult) => void
   handleSongPick: (match: LyricsSearchMatch) => Promise<void>
   handleSongPickerRefine: () => Promise<void>
@@ -256,7 +257,34 @@ export const StemMixerLyricsPanelBody: Component<
   return (
     <>
       <Show when={props.lyricsLoading()}>
-        <div class="sm-lyrics-loading">Searching...</div>
+        <div class="sm-lyrics-loading">
+          <div class="sm-lyrics-loading-inner">
+            <div class="sm-lyrics-loading-spinner" />
+            <div class="sm-lyrics-loading-text">Searching for lyrics...</div>
+            <div class="sm-lyrics-loading-actions">
+              <button
+                class="sm-lyrics-loading-btn sm-lyrics-loading-cancel"
+                onClick={() => props.cancelSearch()}
+              >
+                Cancel
+              </button>
+              <button
+                class="sm-lyrics-loading-btn sm-lyrics-loading-upload"
+                onClick={() => {
+                  props.cancelSearch()
+                  // Trigger file upload via the hidden input
+                  document
+                    .querySelector<HTMLInputElement>(
+                      `.sm-song-picker-upload-input${sfx()}`,
+                    )
+                    ?.click()
+                }}
+              >
+                Upload LRC / TXT
+              </button>
+            </div>
+          </div>
+        </div>
       </Show>
 
       <Show
