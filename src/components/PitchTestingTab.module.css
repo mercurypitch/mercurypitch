@@ -58,3 +58,67 @@
   font-size: 0.6rem;
   color: var(--text-muted);
 }
+
+/* Pitch Canvas Toolbar (global so PitchCanvasToolbar can consume them) */
+:global(.pitch-canvas-toolbar) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+:global(.pitch-canvas-toggle) {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.55rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--fg-tertiary, #484f58);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+:global(.pitch-canvas-toggle:hover) {
+  color: var(--fg-secondary, #8b949e);
+  border-color: var(--fg-tertiary, #484f58);
+}
+
+:global(.pitch-canvas-toggle.active) {
+  background: var(--accent, #8b5cf6);
+  border-color: var(--accent, #8b5cf6);
+  color: #fff;
+}
+
+:global(.pitch-canvas-toggle svg) {
+  flex-shrink: 0;
+}
+
+:global(.pitch-alignment-stats) {
+  font-size: 0.55rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+:global(.pitch-alignment-stats.whisper-processing) {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  animation: sm-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
