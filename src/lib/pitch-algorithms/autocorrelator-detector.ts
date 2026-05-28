@@ -229,8 +229,8 @@ export class AutocorrelatorDetector implements IPitchDetector {
       sampleRate: options.sampleRate ?? 44100,
       bufferSize: options.bufferSize ?? 2048,
       threshold: options.threshold ?? 0.1,
-      minFrequency: options.minFrequency ?? 60,
-      maxFrequency: options.maxFrequency ?? 2000,
+      minFrequency: options.minFrequency ?? 65,
+      maxFrequency: options.maxFrequency ?? 2100,
       minConfidence: options.minConfidence ?? 0.3,
       minAmplitude: options.minAmplitude ?? 0.02,
     }
