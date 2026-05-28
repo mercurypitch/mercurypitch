@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { OfflinePitchCanvas } from '@/components/OfflinePitchCanvas'
+import { PitchCanvasToolbar } from '@/components/PitchCanvasToolbar'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { getDb } from '@/db'
@@ -15,10 +16,13 @@ import { computeFileHash } from '@/lib/file-hash'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import { mapLyricsToMelody } from '@/lib/lyrics-service'
+import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
+import { alignPitchToWords, filterWordSegments, type AlignmentResult, } from '@/lib/pitch-word-alignment'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { resampleTo16kHz, WhisperService, type WhisperSegment, } from '@/lib/whisper-service'
 import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
@@ -46,6 +50,7 @@ export interface AnalyzedTrack {
   segmentedNotes?: MelodyItem[]
   isVocalStem?: boolean
   fileHash?: string
+  audioBuffer?: AudioBuffer
 }
 
 interface TestNoteResult {
@@ -153,6 +158,37 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   )
 
   const [showSegmentedNotes, setShowSegmentedNotes] = createSignal(true)
+  const [showNoteLabels, setShowNoteLabels] = createSignal(false)
+
+  // ── Whisper transcription ────────────────────────────────────
+  const [whisperStatus, setWhisperStatus] = createSignal<
+    'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
+  >('idle')
+  const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
+    [],
+  )
+  let whisperServiceRef: WhisperService | null = null
+  let whisperTranscribing = false
+
+  // ── Pitch-word alignment memo ────────────────────────────────
+  const activeAlignment = createMemo<AlignmentResult>(() => {
+    const track = activeTrack()
+    const notes = track?.segmentedNotes
+    const segments = whisperSegments()
+    if (!notes || notes.length === 0 || segments.length === 0) {
+      return {
+        alignedWords: [],
+        totalWords: 0,
+        mappedWords: 0,
+        unmappedWords: 0,
+        accuracy: 0,
+      }
+    }
+    const merged = melodyItemsToMergedNotes(notes, 120)
+    const filtered = filterWordSegments(segments)
+    return alignPitchToWords(merged, filtered)
+  })
+
   const uploadedFile = createMemo(() => activeTrack()?.file || null)
   const fileWaveform = createMemo(() => activeTrack()?.waveform || null)
   const fileDuration = createMemo(() => activeTrack()?.duration ?? 0)
@@ -311,6 +347,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     ...t,
                     waveform: samples,
                     duration: audioBuffer.duration,
+                    audioBuffer,
                   }
                 }
                 return t
@@ -322,6 +359,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         console.error('Failed to auto-load separated stems from DB', err)
       }
     })()
+
+    // ── Whisper service init ──────────────────────────────────
+    whisperServiceRef = new WhisperService()
+    whisperServiceRef.onStatusChange = (status: string) => {
+      setWhisperStatus(
+        status as 'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error',
+      )
+    }
+    whisperServiceRef.init().then(() => {
+      setWhisperStatus('ready')
+    })
   })
 
   let detectionTimerId: number | null = null
@@ -471,6 +519,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               ...t,
               waveform: samples,
               duration: audioBuffer!.duration,
+              audioBuffer: audioBuffer!,
               analysisResults:
                 (cachedAnalysis?.analysisResults as typeof t.analysisResults) ??
                 [],
@@ -728,6 +777,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         waveform: mono,
                         analysisResults: [],
                         isVocalStem: true,
+                        audioBuffer: decoded,
                       }
                     return t
                   }),
@@ -919,6 +969,30 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     generateWaveform()
   })
 
+  // ── Whisper auto-transcription ──────────────────────────────
+  createEffect(() => {
+    const status = whisperStatus()
+    const track = activeTrack()
+    const buffer = track?.audioBuffer
+    if (status !== 'ready' || !buffer || whisperTranscribing) return
+    whisperTranscribing = true
+    setWhisperStatus('processing')
+
+    resampleTo16kHz(buffer)
+      .then((audioData) => whisperServiceRef!.transcribe(audioData))
+      .then((result) => {
+        setWhisperSegments(result.chunks)
+        setWhisperStatus('done')
+      })
+      .catch((err) => {
+        console.error('[PitchTestingTab] Whisper transcription failed:', err)
+        setWhisperStatus('error')
+      })
+      .finally(() => {
+        whisperTranscribing = false
+      })
+  })
+
   // Start live detection
   const startLiveDetection = () => {
     setIsDetecting(true)
@@ -1079,6 +1153,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   onCleanup(() => {
     stopLiveDetection()
+    whisperServiceRef?.destroy()
   })
 
   // Memoized detector lookup to avoid reactivity loops
@@ -1958,6 +2033,30 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           Denoised Melody
                         </label>
                       </Show>
+                      <Show when={activeTrack()?.segmentedNotes}>
+                        <PitchCanvasToolbar
+                          showNoteLabels={showNoteLabels}
+                          setShowNoteLabels={setShowNoteLabels}
+                        />
+                      </Show>
+                      <Show when={whisperStatus() === 'processing'}>
+                        <span class="pitch-alignment-stats whisper-processing">
+                          Transcribing...
+                        </span>
+                      </Show>
+                      <Show
+                        when={
+                          whisperStatus() === 'done' &&
+                          activeAlignment().totalWords > 0
+                        }
+                      >
+                        <span
+                          class="pitch-alignment-stats"
+                          title={`${activeAlignment().mappedWords} of ${activeAlignment().totalWords} words mapped to pitch`}
+                        >
+                          {Math.round(activeAlignment().accuracy * 100)}% mapped
+                        </span>
+                      </Show>
                     </div>
                     <span
                       style={{
@@ -1979,6 +2078,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         analysisResults={offlineAnalysisResults()}
                         segmentedNotes={currentSegmentedNotes()}
                         audioFile={uploadedFile()}
+                        showNoteLabels={showNoteLabels()}
                       />
                     </div>
                     <div class="resize-handle" onMouseDown={onResizeMouseDown}>

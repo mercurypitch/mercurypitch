@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount } from 'solid-js'
+import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -9,6 +10,7 @@ export interface OfflinePitchCanvasProps {
   analysisResults: { algorithm: string; pitches: TimeStampedPitchSample[] }[]
   segmentedNotes?: MelodyItem[]
   audioFile?: File | Blob | null
+  showNoteLabels?: boolean
 }
 
 const ALGO_COLORS: Record<string, string> = {
@@ -388,6 +390,17 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
             bgCtx.roundRect(x1, blockY, blockWidth, blockHeight, 4)
             bgCtx.fill()
             bgCtx.stroke()
+
+            if (props.showNoteLabels) {
+              drawNoteLabelOnBlock(
+                bgCtx,
+                `${note.note.name}${note.note.octave}`,
+                x1,
+                blockY,
+                blockWidth,
+                blockHeight,
+              )
+            }
 
             if (note.lyricText !== undefined && note.lyricText !== '') {
               bgCtx.fillStyle = 'rgba(255, 255, 255, 0.9)'
