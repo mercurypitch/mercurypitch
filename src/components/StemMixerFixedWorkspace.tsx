@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
+import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
@@ -45,6 +46,10 @@ interface StemMixerFixedWorkspaceProps {
   // Note labels toggle
   showNoteLabels: Accessor<boolean>
   setShowNoteLabels: Setter<boolean>
+
+  // Whisper alignment
+  whisperStatus: Accessor<string>
+  alignmentResult: Accessor<AlignmentResult>
 }
 
 export const StemMixerFixedWorkspace: Component<
@@ -325,6 +330,24 @@ export const StemMixerFixedWorkspace: Component<
               data-fixed-panel="pitch"
             >
               <div class="sm-panel-header">Vocal Pitch
+                <Show when={props.whisperStatus() === 'processing'}>
+                  <span class="pitch-alignment-stats whisper-processing">
+                    Transcribing...
+                  </span>
+                </Show>
+                <Show
+                  when={
+                    props.whisperStatus() === 'done' &&
+                    props.alignmentResult().totalWords > 0
+                  }
+                >
+                  <span
+                    class="pitch-alignment-stats"
+                    title={`${props.alignmentResult().mappedWords} of ${props.alignmentResult().totalWords} words mapped to pitch`}
+                  >
+                    {Math.round(props.alignmentResult().accuracy * 100)}% mapped
+                  </span>
+                </Show>
                 <PitchCanvasToolbar
                   showNoteLabels={props.showNoteLabels}
                   setShowNoteLabels={props.setShowNoteLabels}

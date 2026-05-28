@@ -13,6 +13,8 @@ import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMic
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
+import { alignPitchToWords, filterWordSegments, type AlignmentResult, } from '@/lib/pitch-word-alignment'
+import { resampleTo16kHz, WhisperService, type WhisperSegment, } from '@/lib/whisper-service'
 import { showNotification } from '@/stores/notifications-store'
 import { ChevronLeft, Settings, Share } from './icons'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
@@ -380,6 +382,33 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     false,
   )
 
+  // ── Whisper transcription ────────────────────────────────────
+  const [whisperStatus, setWhisperStatus] = createSignal<
+    'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
+  >('idle')
+  const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
+    [],
+  )
+  let whisperServiceRef: WhisperService | null = null
+  let whisperTranscribing = false
+
+  // ── Pitch-word alignment memo ────────────────────────────────
+  const alignmentResult = createMemo<AlignmentResult>(() => {
+    const merged = pitchAnalysis.offlineMergedNotes()
+    const segments = whisperSegments()
+    if (merged.length === 0 || segments.length === 0) {
+      return {
+        alignedWords: [],
+        totalWords: 0,
+        mappedWords: 0,
+        unmappedWords: 0,
+        accuracy: 0,
+      }
+    }
+    const filtered = filterWordSegments(segments)
+    return alignPitchToWords(merged, filtered)
+  })
+
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
     elapsed: audio.elapsed,
@@ -595,6 +624,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     audio.loadStems()
     loadLyrics()
 
+    // Initialize whisper transcription service
+    whisperServiceRef = new WhisperService()
+    whisperServiceRef.onStatusChange = (status: string) => {
+      setWhisperStatus(
+        status as 'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error',
+      )
+    }
+    whisperServiceRef.init().then(() => {
+      setWhisperStatus('ready')
+    })
+
     canvas.initObserver()
     canvas.queueCanvasRedraw()
 
@@ -679,9 +719,33 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  // Auto-transcribe vocal stem when whisper is ready and vocal buffer is loaded
+  createEffect(() => {
+    const status = whisperStatus()
+    const buffer = vocal().buffer
+    if (status !== 'ready' || !buffer || whisperTranscribing) return
+    whisperTranscribing = true
+    setWhisperStatus('processing')
+
+    resampleTo16kHz(buffer)
+      .then((audioData) => whisperServiceRef!.transcribe(audioData))
+      .then((result) => {
+        setWhisperSegments(result.chunks)
+        setWhisperStatus('done')
+      })
+      .catch((err) => {
+        console.error('[StemMixer] Whisper transcription failed:', err)
+        setWhisperStatus('error')
+      })
+      .finally(() => {
+        whisperTranscribing = false
+      })
+  })
+
   onCleanup(() => {
     audio.disconnectSources()
     cancelAnimationFrame(audio.getRafId())
+    whisperServiceRef?.destroy()
     canvas.disconnectObserver()
     const smWin = window as unknown as SmWindow
     if (smWin.__smKeydown !== undefined) {
@@ -839,6 +903,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
+          whisperStatus={whisperStatus}
+          alignmentResult={alignmentResult}
           workspaceRef={(el) => {
             workspaceRef = el
           }}
@@ -866,6 +932,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
+          whisperStatus={whisperStatus}
+          alignmentResult={alignmentResult}
         />
       </Show>
 
@@ -1147,6 +1215,28 @@ export const StemMixerStyles: string = `
 
 .pitch-canvas-toggle svg {
   flex-shrink: 0;
+}
+
+.pitch-alignment-stats {
+  font-size: 0.55rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.pitch-alignment-stats.whisper-processing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  animation: sm-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sm-drag-icon {

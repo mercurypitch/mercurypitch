@@ -10,6 +10,7 @@ import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
+import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 
 interface StemMixerGridWorkspaceProps {
@@ -51,6 +52,10 @@ interface StemMixerGridWorkspaceProps {
   // Note labels toggle
   showNoteLabels: Accessor<boolean>
   setShowNoteLabels: Setter<boolean>
+
+  // Whisper alignment
+  whisperStatus: Accessor<string>
+  alignmentResult: Accessor<AlignmentResult>
 
   // Workspace ref + wheel handler
   workspaceRef: (el: HTMLDivElement) => void
@@ -181,6 +186,24 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               <path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z" />
             </svg>
             Vocal Pitch
+            <Show when={props.whisperStatus() === 'processing'}>
+              <span class="pitch-alignment-stats whisper-processing">
+                Transcribing...
+              </span>
+            </Show>
+            <Show
+              when={
+                props.whisperStatus() === 'done' &&
+                props.alignmentResult().totalWords > 0
+              }
+            >
+              <span
+                class="pitch-alignment-stats"
+                title={`${props.alignmentResult().mappedWords} of ${props.alignmentResult().totalWords} words mapped to pitch`}
+              >
+                {Math.round(props.alignmentResult().accuracy * 100)}% mapped
+              </span>
+            </Show>
             <PitchCanvasToolbar
               showNoteLabels={props.showNoteLabels}
               setShowNoteLabels={props.setShowNoteLabels}
