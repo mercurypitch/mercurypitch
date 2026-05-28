@@ -73,6 +73,7 @@ export interface StemMixerAudioDeps {
 
   // Lyrics (for RAF tick)
   updateCurrentLine: () => void
+  setCurrentLineIdx: (idx: number) => void
   setUserScrolled: (v: boolean) => void
 
   // Mic comparison (for RAF tick) — simplified in Phase 5a
@@ -499,6 +500,7 @@ export const useStemMixerAudioController = (
     setCurrentPitch(null)
     pitchHistory = []
     deps.resetMicPitchHistory()
+    deps.setCurrentLineIdx(-1)
     deps.setUserScrolled(false)
     setWindowStart(0)
     cancelAnimationFrame(rafId)
@@ -519,6 +521,7 @@ export const useStemMixerAudioController = (
     setCurrentPitch(null)
     pitchHistory = []
     pitchDetector?.resetHistory()
+    deps.setCurrentLineIdx(-1)
     deps.setUserScrolled(false)
     setWindowStart(0)
     cancelAnimationFrame(rafId)
