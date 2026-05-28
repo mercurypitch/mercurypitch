@@ -35,6 +35,10 @@ export interface StemMixerTransportProps {
 
   // Formatting
   formatTime: (t: number) => string
+
+  // Playback speed
+  speed: Accessor<number>
+  onSpeedChange: (speed: number) => void
 }
 
 export const StemMixerTransport: Component<StemMixerTransportProps> = (
@@ -160,6 +164,23 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         >
           <Mic />
         </button>
+
+        <select
+          class="sm-speed-select"
+          value={props.speed().toString()}
+          onChange={(e) => {
+            props.onSpeedChange(parseFloat(e.currentTarget.value))
+          }}
+          title="Playback speed"
+        >
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1">1x</option>
+          <option value="1.2">1.2x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+        </select>
 
         <div class="sm-zoom-control">
           <button

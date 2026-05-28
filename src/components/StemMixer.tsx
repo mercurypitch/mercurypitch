@@ -802,6 +802,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           micError={mic.micError}
           onToggleMic={() => void mic.toggleMic()}
           formatTime={canvas.formatTime}
+          speed={audio.speed}
+          onSpeedChange={audio.setSpeed}
         />
 
         <StemMixerGridWorkspace
@@ -2480,6 +2482,26 @@ export const StemMixerStyles: string = `
   font-family: monospace;
   min-width: 28px;
   text-align: center;
+}
+
+.sm-speed-select {
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.3rem;
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.65rem;
+  font-family: monospace;
+  padding: 0.2rem 0.3rem;
+  cursor: pointer;
+  margin: 0 0.3rem;
+  height: 1.75rem;
+}
+.sm-speed-select:hover {
+  border-color: var(--fg-tertiary, #484f58);
+}
+.sm-speed-select:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
 }
 
 .sm-progress-area {
