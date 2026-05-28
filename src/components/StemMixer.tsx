@@ -305,6 +305,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Actions — lyrics loading
     loadLyrics,
+    cancelSearch,
     handleForceSearch,
     handleSongPickerRefine,
     handleSongPick,
@@ -521,6 +522,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getBlockForLine,
     computeActiveWord,
     getGenLines,
+    cancelSearch,
     handleLyricsUpload,
     handleSongPick,
     handleSongPickerRefine,
@@ -1454,10 +1456,80 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-loading {
-  padding: 0.5rem;
-  font-size: 0.62rem;
-  color: var(--fg-tertiary, #484f58);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 160px;
+  padding: 1rem;
+}
+
+.sm-lyrics-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sm-lyrics-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-primary, #30363d);
+  border-top-color: var(--accent, #58a6ff);
+  border-radius: 50%;
+  animation: sm-spin 0.8s linear infinite;
+}
+
+@keyframes sm-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sm-lyrics-loading-text {
+  font-size: 0.85rem;
+  color: var(--fg-secondary, #c9d1d9);
+  font-weight: 500;
+}
+
+.sm-lyrics-loading-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.sm-lyrics-loading-btn {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-primary, #30363d);
+  border-radius: 6px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-secondary, #c9d1d9);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sm-lyrics-loading-btn:hover {
+  background: var(--bg-tertiary, #21262d);
+  border-color: var(--border-secondary, #484f58);
+}
+
+.sm-lyrics-loading-cancel {
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.3);
+}
+
+.sm-lyrics-loading-cancel:hover {
+  background: rgba(248, 81, 73, 0.1);
+  border-color: rgba(248, 81, 73, 0.5);
+}
+
+.sm-lyrics-loading-upload {
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.sm-lyrics-loading-upload:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .sm-lyrics-lines {
@@ -1562,6 +1634,29 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-upload-btn:hover {
+  color: #8b5cf6;
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
 }
 
 /* Lyrics toolbar (zoom + column toggle) */

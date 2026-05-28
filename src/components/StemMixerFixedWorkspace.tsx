@@ -224,6 +224,23 @@ export const StemMixerFixedWorkspace: Component<
                     </svg>
                   </button>
                 </Show>
+                <Show when={lp().lyricsSource() === 'none'}>
+                  <button
+                    class="sm-lyrics-upload-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      props.triggerChangeFile()
+                    }}
+                    title="Load LRC / TXT file"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"
+                      />
+                    </svg>
+                  </button>
+                </Show>
                 <input
                   type="file"
                   accept=".txt,.lrc"
