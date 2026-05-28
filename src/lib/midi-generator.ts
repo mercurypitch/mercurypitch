@@ -3,7 +3,7 @@
 // ============================================================
 
 import { PitchDetector } from './pitch-detector'
-import { freqToMidi, midiToFreq } from './scale-data'
+import { freqToMidi, midiToFreq, midiToNote } from './scale-data'
 
 export interface MidiNoteEvent {
   midi: number
@@ -46,8 +46,10 @@ export interface MergedNote {
 }
 
 /** Merge consecutive same-pitch detections into sustained notes.
- *  Adjacent detections within `maxGapSec` of each other are merged.
- *  Notes shorter than `minDurationSec` are dropped. */
+ *  Uses ±0.5 semitone tolerance (MIDI diff ≤ 1) to match the
+ *  segmenter's pitchTolerance default. Adjacent detections within
+ *  `maxGapSec` of each other are merged. Notes shorter than
+ *  `minDurationSec` are dropped. */
 export function mergeConsecutiveNotes(
   detections: PitchDetection[],
   maxGapSec: number = WINDOW_STEP_SEC + 0.02,
@@ -57,36 +59,43 @@ export function mergeConsecutiveNotes(
 
   const notes: MergedNote[] = []
   let noteStartSec = detections[0].timeSec
-  let currentMidi = detections[0].midi
-  let currentName = detections[0].noteName
+  let midiSum = detections[0].midi
+  let midiCount = 1
 
   for (let i = 1; i < detections.length; i++) {
     const gap = detections[i].timeSec - detections[i - 1].timeSec
-    if (detections[i].midi === currentMidi && gap < maxGapSec) {
+    const avgMidi = Math.round(midiSum / midiCount)
+    if (Math.abs(detections[i].midi - avgMidi) <= 1 && gap < maxGapSec) {
+      midiSum += detections[i].midi
+      midiCount++
       continue
     }
+    const finalMidi = Math.round(midiSum / midiCount)
     const noteEndSec = detections[i - 1].timeSec + WINDOW_STEP_SEC
     const duration = noteEndSec - noteStartSec
     if (duration >= minDurationSec) {
+      const { name, octave } = midiToNote(finalMidi)
       notes.push({
-        midi: currentMidi,
-        noteName: currentName,
+        midi: finalMidi,
+        noteName: `${name}${octave}`,
         startSec: noteStartSec,
         endSec: noteEndSec,
       })
     }
     noteStartSec = detections[i].timeSec
-    currentMidi = detections[i].midi
-    currentName = detections[i].noteName
+    midiSum = detections[i].midi
+    midiCount = 1
   }
 
   // Final note
+  const finalMidi = Math.round(midiSum / midiCount)
   const lastTime = detections[detections.length - 1].timeSec + WINDOW_STEP_SEC
   const lastDuration = lastTime - noteStartSec
   if (lastDuration >= minDurationSec) {
+    const { name, octave } = midiToNote(finalMidi)
     notes.push({
-      midi: currentMidi,
-      noteName: currentName,
+      midi: finalMidi,
+      noteName: `${name}${octave}`,
       startSec: noteStartSec,
       endSec: lastTime,
     })
