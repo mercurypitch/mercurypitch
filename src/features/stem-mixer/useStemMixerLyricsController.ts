@@ -268,6 +268,18 @@ export function useStemMixerLyricsController(
   )
   const [userScrolled, setUserScrolled] = createSignal(false)
 
+  // Snapshot of pre-gen LRC state so Cancel can restore
+  let preGenSnapshot: {
+    wordTimings: WordTimingsMap
+    lrcLines: LrcLine[]
+    rawLyricsText: string
+    lyricsLines: string[]
+    lyricsSource: LyricsSource
+  } | null = null
+
+  // Track which lines were explicitly mapped during this gen session
+  let touchedLines = new Set<number>()
+
   // ── Persistence ──────────────────────────────────────────────────
 
   const persistLyrics = (
@@ -917,6 +929,7 @@ export function useStemMixerLyricsController(
     const tplLineCount = tplEnd - tplStart
     const templateWordTimes = lrcGenWordTimings()
 
+    for (let j = 0; j < tplLineCount; j++) touchedLines.add(instStart + j)
     setLrcGenLineTimes((prev) => {
       const next = [...prev]
       for (let j = 0; j < tplLineCount; j++) {
@@ -993,6 +1006,16 @@ export function useStemMixerLyricsController(
   const startLrcGen = () => {
     const lines = getGenLines()
     if (lines.length === 0) return
+
+    // Snapshot current LRC state so Cancel can restore it
+    preGenSnapshot = {
+      wordTimings: structuredClone(wordTimings()),
+      lrcLines: structuredClone(lrcLines()),
+      rawLyricsText: rawLyricsText(),
+      lyricsLines: structuredClone(lyricsLines()),
+      lyricsSource: lyricsSource(),
+    }
+    touchedLines = new Set()
 
     let resumeLineIdx = 0
     let resumeWordIdx = 0
@@ -1074,6 +1097,7 @@ export function useStemMixerLyricsController(
       return
     }
 
+    touchedLines.add(idx)
     setLrcGenLineTimes((prev) => {
       const next = [...prev]
       next[idx] = t
@@ -1150,6 +1174,7 @@ export function useStemMixerLyricsController(
     const wordIdx = lrcGenWordIdx()
 
     if (wordIdx === 0) {
+      touchedLines.add(lineIdx)
       setLrcGenLineTimes((prev) => {
         const next = [...prev]
         next[lineIdx] = t
@@ -1213,30 +1238,72 @@ export function useStemMixerLyricsController(
     const wordTimes = lrcGenWordTimings()
     const rawText = lines.join('\n')
 
-    const lastMappedIdx =
-      lineTimes.length > 0
-        ? lineTimes.reduce(
-            (best, _t, i) => (lineTimes[i] !== undefined ? i : best),
-            -1,
-          )
-        : -1
-    const lastMappedTime = lastMappedIdx >= 0 ? lineTimes[lastMappedIdx] : 0
-    const allUnmapped = lines.reduce<number[]>((acc, _line, i) => {
-      if (i > lastMappedIdx && lineTimes[i] === undefined) acc.push(i)
-      return acc
-    }, [])
-    const songEnd = deps.duration() || lastMappedTime + allUnmapped.length * 4
+    const allMapped = lrcGenLineIdx() >= lines.length
 
-    const finalTimes: (number | undefined)[] = lineTimes.slice()
-    if (allUnmapped.length > 0) {
-      const gap = songEnd - lastMappedTime
-      allUnmapped.forEach((lineIdx, pos) => {
-        finalTimes[lineIdx] =
-          Math.round(
-            (lastMappedTime + gap * ((pos + 1) / (allUnmapped.length + 1))) *
-              1000,
-          ) / 1000
+    let finalTimes: (number | undefined)[]
+    let mergedWordTimes: WordTimingsMap
+
+    if (allMapped) {
+      // Full map: use all new timings
+      finalTimes = lineTimes.slice()
+      mergedWordTimes = wordTimes
+    } else {
+      // Partial merge: only update explicitly touched lines
+      const origWt = preGenSnapshot?.wordTimings
+      finalTimes = lines.map((_line, i) => {
+        if (touchedLines.has(i)) return lineTimes[i]
+        // Keep original timestamp if it existed
+        if (origWt?.[i] !== undefined) return origWt[i][0]
+        return undefined
       })
+
+      // Merge word timings: touched lines get new, rest keep original
+      mergedWordTimes = {}
+      if (origWt) {
+        for (const k of Object.keys(origWt)) {
+          const ki = +k
+          if (!touchedLines.has(ki)) mergedWordTimes[ki] = [...origWt[ki]]
+        }
+      }
+      for (const k of Object.keys(wordTimes)) {
+        if (touchedLines.has(+k)) mergedWordTimes[+k] = [...wordTimes[+k]]
+      }
+
+      // Fill gaps: interpolate between mapped lines for any that are undefined
+      // and past the last line the user has seen (end-of-song).
+      // Lines before the first touched line with no timestamp keep [00:00.00].
+      const lastTouched = Math.max(-1, ...Array.from(touchedLines))
+      const songEnd = deps.duration()
+      let prevMappedIdx = -1
+      let prevMappedTime = 0
+      for (let i = 0; i <= lastTouched; i++) {
+        if (touchedLines.has(i)) {
+          if (finalTimes[i] !== undefined) {
+            prevMappedIdx = i
+            prevMappedTime = finalTimes[i]!
+          }
+        } else if (finalTimes[i] === undefined) {
+          // Find next mapped time (or end of song)
+          let nextMappedTime = songEnd
+          for (let j = i + 1; j <= lastTouched; j++) {
+            if (touchedLines.has(j) && finalTimes[j] !== undefined) {
+              nextMappedTime = finalTimes[j]!
+              break
+            }
+          }
+          const gap = nextMappedTime - prevMappedTime
+          const posInGap = i - prevMappedIdx
+          const gapLen = (() => {
+            let n = prevMappedIdx + 1
+            while (n <= lastTouched && !touchedLines.has(n)) n++
+            return n
+          })() - prevMappedIdx
+          finalTimes[i] =
+            Math.round(
+              (prevMappedTime + gap * (posInGap / gapLen)) * 1000,
+            ) / 1000
+        }
+      }
     }
 
     const lrcText = lines
@@ -1252,20 +1319,31 @@ export function useStemMixerLyricsController(
       .join('\n')
 
     const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
-    persistLyrics(lrcText, 'lrc', filename, wordTimes, rawText)
+    persistLyrics(lrcText, 'lrc', filename, mergedWordTimes, rawText)
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
     setLyricsLines([])
-    setWordTimings(wordTimes)
+    setWordTimings(mergedWordTimes)
     setLrcGenMode(false)
     clearLrcGenProgress()
+    preGenSnapshot = null
   }
 
   const handleLrcGenReset = () => {
+    // Cancel: restore pre-gen LRC state, don't touch anything
+    if (preGenSnapshot) {
+      setWordTimings(preGenSnapshot.wordTimings)
+      setLrcLines(preGenSnapshot.lrcLines)
+      setRawLyricsText(preGenSnapshot.rawLyricsText)
+      setLyricsLines(preGenSnapshot.lyricsLines)
+      setLyricsSource(preGenSnapshot.lyricsSource)
+      preGenSnapshot = null
+    }
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
     setLrcGenWordTimings({})
+    setLrcGenMode(false)
     clearLrcGenProgress()
   }
 
