@@ -26,31 +26,50 @@ describe('FFTDetector', () => {
     expect(Math.abs(result!.frequency - 440)).toBeLessThan(2)
   })
 
-  it('rejects low-confidence detection when pseudoClarity < minConfidence', () => {
-    // Use a high minConfidence threshold so low-amplitude signals are rejected
+  it('rejects pure noise — no discernible tone (clarity < minConfidence)', () => {
+    // Pure white noise has no dominant spectral peak — SNR will be low
     const detector = new FFTDetector({
       sampleRate: 44100,
       bufferSize: 2048,
-      minConfidence: 0.8,
+      minConfidence: 0.5,
       minAmplitude: 0.001,
     })
-    // Low amplitude produces low pseudoClarity — should be rejected
-    const signal = generateSine(440, 44100, 0.1, 0.01)
+    const n = Math.floor(44100 * 0.1)
+    const signal = new Float32Array(n)
+    for (let i = 0; i < n; i++) {
+      signal[i] = (Math.random() * 2 - 1) * 0.3
+    }
     const result = detector.detect(signal)
     expect(result).toBeNull()
   })
 
-  it('accepts strong detection when pseudoClarity >= minConfidence', () => {
+  it('accepts clean detection when SNR is high (clarity >= minConfidence)', () => {
     const detector = new FFTDetector({
       sampleRate: 44100,
       bufferSize: 2048,
       minConfidence: 0.3,
       minAmplitude: 0.001,
     })
+    // Clean signal — peak dominates noise floor, SNR is high
     const signal = generateSine(440, 44100, 0.1, 0.5)
     const result = detector.detect(signal)
     expect(result).not.toBeNull()
     expect(result!.clarity).toBeGreaterThanOrEqual(0.3)
+  })
+
+  it('gives high confidence for quiet but clean tones (level-independence)', () => {
+    const detector = new FFTDetector({
+      sampleRate: 44100,
+      bufferSize: 2048,
+      minConfidence: 0.2,
+      minAmplitude: 0.001,
+    })
+    // Very quiet clean sine — old pseudoClarity would score this low,
+    // but SNR-based confidence scores it high because peak dominates noise floor
+    const signal = generateSine(440, 44100, 0.1, 0.02)
+    const result = detector.detect(signal)
+    expect(result).not.toBeNull()
+    expect(result!.clarity).toBeGreaterThan(0.5)
   })
 
   it('rejects frequencies below minFrequency', () => {

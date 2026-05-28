@@ -5,6 +5,29 @@
 
 import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 
+/**
+ * Compute spectral concentration: how much the peak bin dominates the spectrum.
+ * For a pure tone, energy is concentrated in a few bins around the peak.
+ * For white noise, energy is spread evenly across all bins.
+ * Returns the ratio of peak magnitude to the RMS of non-peak bins.
+ */
+function computeNoiseFloor(magnitudes: Float32Array, peakIdx: number): number {
+  const peakRegion = 5
+  const start = Math.max(1, peakIdx - peakRegion)
+  const end = Math.min(magnitudes.length - 1, peakIdx + peakRegion)
+
+  let sumSq = 0
+  let count = 0
+  for (let i = 1; i < magnitudes.length; i++) {
+    if (i >= start && i <= end) continue
+    sumSq += magnitudes[i] * magnitudes[i]
+    count++
+  }
+  if (count === 0) return 0
+  // Return RMS of non-peak bins
+  return Math.sqrt(sumSq / count)
+}
+
 export class FFTDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'fft'
 
@@ -335,17 +358,23 @@ export class FFTDetector implements IPitchDetector {
     const midi = this.frequencyToMidi(frequency)
     const noteName = note + String(octave)
 
-    // Normalize raw amplitude (maxVal) to a 0-1 pseudo-confidence scale
-    const pseudoClarity = Math.max(0.1, Math.min(1.0, maxVal * 15))
+    // SNR-based confidence: peak magnitude relative to RMS noise floor.
+    // Level-independent — a quiet clean tone gets high confidence, a loud noisy
+    // signal gets low confidence. This replaces the old level-dependent
+    // pseudoClarity formula (maxVal * 15).
+    const noiseFloor = computeNoiseFloor(magnitudes, maxIdx)
+    const snr = noiseFloor > 0 ? maxVal / noiseFloor : 20
+    // Map SNR to 0-1: SNR=1 (peak equals noise) -> 0, SNR >= 10 -> 1
+    const clarity = Math.max(0, Math.min(1, (snr - 1) / 9))
 
     // Gate on minConfidence — discard weak detections that would produce cluttered output
-    if (pseudoClarity < this.settings.minConfidence) {
+    if (clarity < this.settings.minConfidence) {
       return null
     }
 
     return {
       frequency,
-      clarity: pseudoClarity,
+      clarity,
       noteName,
       octave,
       cents,
