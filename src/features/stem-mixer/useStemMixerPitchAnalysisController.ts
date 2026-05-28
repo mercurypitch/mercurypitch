@@ -1,6 +1,6 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, type MergedNote, } from '@/lib/midi-generator'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi } from '@/lib/scale-data'
@@ -23,6 +23,7 @@ export interface StemMixerPitchAnalysisController {
   pitchSourceMode: Accessor<'realtime' | 'offline'>
   setPitchSourceMode: Setter<'realtime' | 'offline'>
   offlinePitchHistory: Accessor<PitchNote[]>
+  offlineMergedNotes: Accessor<MergedNote[]>
 
   algorithm: Accessor<PitchAlgorithm>
   setAlgorithm: Setter<PitchAlgorithm>
@@ -54,6 +55,9 @@ export const useStemMixerPitchAnalysisController = (
   >('realtime')
   const [offlinePitchHistory, setOfflinePitchHistory] = createSignal<
     PitchNote[]
+  >([])
+  const [offlineMergedNotes, setOfflineMergedNotes] = createSignal<
+    MergedNote[]
   >([])
 
   const [algorithm, setAlgorithm] = createSignal<PitchAlgorithm>('yin')
@@ -133,6 +137,8 @@ export const useStemMixerPitchAnalysisController = (
         0.05,
       )
 
+      setOfflineMergedNotes(merged)
+
       const newHistory: PitchNote[] = []
       // Convert merged notes back into a "history" format that canvas expects
       // We can just populate it densely or sparsely. Canvas expects a point per frame ideally,
@@ -181,6 +187,7 @@ export const useStemMixerPitchAnalysisController = (
     pitchSourceMode,
     setPitchSourceMode,
     offlinePitchHistory,
+    offlineMergedNotes,
     algorithm,
     setAlgorithm,
     bufferSize,
