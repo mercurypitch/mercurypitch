@@ -201,6 +201,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawMidiCanvas: () => {},
   }
   let updateCurrentLineForAudio = () => {}
+  let setCurrentLineIdxForAudio = (_idx: number) => {}
   let setUserScrolledForAudio = (_v: boolean) => {}
 
   // ── Audio controller ─────────────────────────────────────────
@@ -218,6 +219,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setMidiNotes,
     canvas: canvasForAudio,
     updateCurrentLine: () => updateCurrentLineForAudio(),
+    setCurrentLineIdx: setCurrentLineIdxForAudio,
     setUserScrolled: setUserScrolledForAudio,
     micActive: mic.micActive,
     getMicAnalyserNode: mic.getMicAnalyserNode,
@@ -289,6 +291,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     blockEditTarget,
     setBlockEditTarget,
     setUserScrolled,
+    setCurrentLineIdx,
 
     // Memos
     canonicalLrcLines,
@@ -401,6 +404,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawMidiCanvas: canvas.drawMidiCanvas,
   })
   updateCurrentLineForAudio = updateCurrentLine
+  setCurrentLineIdxForAudio = setCurrentLineIdx
 
   // ── Layout Management ──────────────────────────────────────────
   const layout = useStemMixerLayoutController({

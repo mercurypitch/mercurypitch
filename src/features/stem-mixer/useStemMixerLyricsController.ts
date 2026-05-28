@@ -32,6 +32,7 @@ export interface StemMixerLyricsController {
   rawLyricsText: () => string
   setRawLyricsText: Setter<string>
   currentLineIdx: () => number
+  setCurrentLineIdx: Setter<number>
   lyricsSource: () => LyricsSource
   lyricsLoading: () => boolean
   songMatches: () => LyricsSearchMatch[]
@@ -1665,8 +1666,11 @@ export function useStemMixerLyricsController(
       const activeLine = lines[idx] as HTMLElement
       const containerRect = container.getBoundingClientRect()
       const lineRect = activeLine.getBoundingClientRect()
-      const threshold = containerRect.top + containerRect.height * 0.57
-      if (lineRect.bottom > threshold) {
+      const thresholdBottom = containerRect.top + containerRect.height * 0.57
+      const thresholdTop = containerRect.top + containerRect.height * 0.15
+      const needsScrollDown = lineRect.bottom > thresholdBottom
+      const needsScrollUp = lineRect.top < thresholdTop
+      if (needsScrollDown || needsScrollUp) {
         const scrollTarget =
           container.scrollTop +
           (lineRect.top - containerRect.top) -
@@ -1710,6 +1714,7 @@ export function useStemMixerLyricsController(
     rawLyricsText,
     setRawLyricsText,
     currentLineIdx,
+    setCurrentLineIdx,
     lyricsSource,
     lyricsLoading,
     songMatches,
