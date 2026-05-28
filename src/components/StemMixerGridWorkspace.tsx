@@ -10,6 +10,7 @@ import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
+import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 
 interface StemMixerGridWorkspaceProps {
   // Layout
@@ -46,6 +47,10 @@ interface StemMixerGridWorkspaceProps {
 
   // Conditional MIDI
   showMidi: Accessor<boolean>
+
+  // Note labels toggle
+  showNoteLabels: Accessor<boolean>
+  setShowNoteLabels: Setter<boolean>
 
   // Workspace ref + wheel handler
   workspaceRef: (el: HTMLDivElement) => void
@@ -176,6 +181,10 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               <path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z" />
             </svg>
             Vocal Pitch
+            <PitchCanvasToolbar
+              showNoteLabels={props.showNoteLabels}
+              setShowNoteLabels={props.setShowNoteLabels}
+            />
           </div>
           <canvas
             ref={props.setCanvasRef('pitch')}

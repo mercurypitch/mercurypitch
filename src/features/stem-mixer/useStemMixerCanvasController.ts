@@ -30,6 +30,7 @@ export interface StemMixerCanvasDeps {
   micActive: Accessor<boolean>
   currentPitch: Accessor<DetectedPitch | null>
   midiNotes: Accessor<MidiNoteEvent[]>
+  showNoteLabels: Accessor<boolean>
   seekTo: (time: number) => void
   setWindowStart: Setter<number>
   setWindowDuration: Setter<number>
@@ -323,6 +324,7 @@ export const useStemMixerCanvasController = (
         const y = (11 - noteIdx) * rowH + rowH * 0.16
         const pillH = rowH * 0.68
         const r = Math.min(pillH / 2, 3)
+        const pillW = Math.max(x2 - x1, 3)
         drawPill(x1, x2, y, pillH, r)
         ctx.fillStyle = fillStyle
         ctx.fill()
@@ -332,6 +334,13 @@ export const useStemMixerCanvasController = (
           ctx.setLineDash([3, 3])
           ctx.stroke()
           ctx.setLineDash([])
+        }
+        if (deps.showNoteLabels() && pillW > 24) {
+          ctx.fillStyle = '#fff'
+          ctx.font = 'bold 9px monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(n.noteName, x1 + pillW / 2, y + pillH / 2 + 3)
+          ctx.textAlign = 'start'
         }
       }
     }

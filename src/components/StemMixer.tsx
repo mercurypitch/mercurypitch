@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createPersistedSignal } from '@/lib/storage'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -374,6 +375,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
 
   // ── Canvas controller ──────────────────────────────────────────
+  const [showNoteLabels, setShowNoteLabels] = createPersistedSignal<boolean>(
+    'pitchperfect_show_note_labels',
+    false,
+  )
+
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
     elapsed: audio.elapsed,
@@ -389,6 +395,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
     midiNotes,
+    showNoteLabels,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
@@ -830,6 +837,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handleLyricsChange={handleLyricsChange}
           triggerChangeFile={() => lyricsFileInputRef?.click()}
           showMidi={showMidi}
+          showNoteLabels={showNoteLabels}
+          setShowNoteLabels={setShowNoteLabels}
           workspaceRef={(el) => {
             workspaceRef = el
           }}
@@ -855,6 +864,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handleLyricsChange={handleLyricsChange}
           triggerChangeFile={() => lyricsFileInputRef?.click()}
           showMidi={showMidi}
+          showNoteLabels={showNoteLabels}
+          setShowNoteLabels={setShowNoteLabels}
         />
       </Show>
 
@@ -1094,6 +1105,48 @@ export const StemMixerStyles: string = `
 
 .sm-panel-header:active {
   cursor: grabbing;
+}
+
+/* Pitch Canvas Toolbar */
+.pitch-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.pitch-canvas-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.55rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--fg-tertiary, #484f58);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.pitch-canvas-toggle:hover {
+  color: var(--fg-secondary, #8b949e);
+  border-color: var(--fg-tertiary, #484f58);
+}
+
+.pitch-canvas-toggle.active {
+  background: var(--accent, #8b5cf6);
+  border-color: var(--accent, #8b5cf6);
+  color: #fff;
+}
+
+.pitch-canvas-toggle svg {
+  flex-shrink: 0;
 }
 
 .sm-drag-icon {

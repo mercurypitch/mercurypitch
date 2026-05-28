@@ -3,13 +3,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import type { Accessor } from 'solid-js'
+import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
+import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 
 interface StemMixerFixedWorkspaceProps {
   // Layout
@@ -40,6 +41,10 @@ interface StemMixerFixedWorkspaceProps {
 
   // Conditional MIDI
   showMidi: Accessor<boolean>
+
+  // Note labels toggle
+  showNoteLabels: Accessor<boolean>
+  setShowNoteLabels: Setter<boolean>
 }
 
 export const StemMixerFixedWorkspace: Component<
@@ -319,7 +324,11 @@ export const StemMixerFixedWorkspace: Component<
               style={{ height: `${props.fixedPanelHeights().pitch}px` }}
               data-fixed-panel="pitch"
             >
-              <div class="sm-panel-header">Vocal Pitch</div>
+              <div class="sm-panel-header">Vocal Pitch
+                <PitchCanvasToolbar
+                  showNoteLabels={props.showNoteLabels}
+                  setShowNoteLabels={props.setShowNoteLabels}
+                /></div>
               <canvas
                 ref={props.setCanvasRef('pitch')}
                 class="sm-canvas sm-canvas-pitch"
