@@ -3,14 +3,16 @@
 // and LRC↔canonical index mapping
 // ============================================================
 
+import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
 import type { LrcLine } from './lyrics-service'
 import { parseLrcWordTimings } from './lyrics-service'
-import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
 
 const REST_THRESHOLD = 20
 
 /** Build canonical entries with synthetic ~Rest~ for gaps > 20s. */
-export function buildCanonicalEntries(lrcLines: LrcLine[]): CanonicalLrcEntry[] {
+export function buildCanonicalEntries(
+  lrcLines: LrcLine[],
+): CanonicalLrcEntry[] {
   const result: CanonicalLrcEntry[] = []
 
   for (let i = 0; i < lrcLines.length; i++) {

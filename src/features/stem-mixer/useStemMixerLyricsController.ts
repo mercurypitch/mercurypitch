@@ -4,10 +4,10 @@
 
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
+import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
-import { buildCanonicalEntries, buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
-import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -166,7 +166,10 @@ export interface StemMixerLyricsController {
 
   // LRC gen persistence helpers
   loadPersistedLyrics: () =>
-    | (LyricsUploadResult & { wordTimings?: WordTimingsMap; originalText?: string })
+    | (LyricsUploadResult & {
+        wordTimings?: WordTimingsMap
+        originalText?: string
+      })
     | null
   persistLyrics: (
     text: string,
@@ -248,7 +251,9 @@ export function useStemMixerLyricsController(
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
   const [lrcGenWordIdx, setLrcGenWordIdx] = createSignal(0)
-  const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<(number | undefined)[]>([])
+  const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<
+    (number | undefined)[]
+  >([])
   const [lrcGenWordTimings, setLrcGenWordTimings] =
     createSignal<WordTimingsMap>({})
   const [blocks, setBlocks] = createSignal<LyricsBlock[]>([])
@@ -1311,7 +1316,8 @@ export function useStemMixerLyricsController(
       if (origWtCanon) {
         for (const k of Object.keys(origWtCanon)) {
           const ki = +k
-          if (!touchedLines.has(ki)) mergedWordTimesCanon[ki] = [...origWtCanon[ki]]
+          if (!touchedLines.has(ki))
+            mergedWordTimesCanon[ki] = [...origWtCanon[ki]]
         }
       }
       for (const k of Object.keys(wordTimes)) {

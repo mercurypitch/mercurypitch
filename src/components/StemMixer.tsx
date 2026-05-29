@@ -10,9 +10,9 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import { IS_DEV } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
-import { IS_DEV } from '@/lib/defaults'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
@@ -668,8 +668,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       setWhisperProgress(progress)
     }
     whisperServiceRef.init().catch((err) => {
-        if (IS_DEV) console.warn('[StemMixer] Whisper init timed out, model may still be downloading:', err)
-      })
+      if (IS_DEV)
+        console.warn(
+          '[StemMixer] Whisper init timed out, model may still be downloading:',
+          err,
+        )
+    })
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()

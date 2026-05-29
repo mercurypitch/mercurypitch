@@ -42,7 +42,7 @@ export class WhisperService {
         }
       } else if (type === 'progress') {
         const { progressInfo } = e.data
-        if (progressInfo && typeof progressInfo.progress === 'number') {
+        if (progressInfo != null && typeof progressInfo.progress === 'number') {
           this.progress = progressInfo.progress
           this.onProgressChange?.(this.progress)
         }
