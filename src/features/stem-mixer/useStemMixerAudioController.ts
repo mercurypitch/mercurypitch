@@ -584,7 +584,8 @@ export const useStemMixerAudioController = (
       if (!audioCtx || !playing()) return
 
       const now = audioCtx.currentTime
-      const elapsedTime = bufferPlayStart + (now - wallPlayStart) * playbackSpeed
+      const elapsedTime =
+        bufferPlayStart + (now - wallPlayStart) * playbackSpeed
       setElapsed(Math.min(elapsedTime, duration()))
 
       // Pitch detection from vocal analyser

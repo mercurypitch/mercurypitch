@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { mergeConsecutiveNotes } from '../midi-generator'
 import type { PitchDetection } from '../midi-generator'
+import { mergeConsecutiveNotes } from '../midi-generator'
 
 /** Build a pitch detection at the given time and MIDI value. */
 function d(timeSec: number, midi: number, noteName?: string): PitchDetection {

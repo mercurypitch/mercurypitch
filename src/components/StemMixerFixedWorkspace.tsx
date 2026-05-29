@@ -7,11 +7,11 @@ import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
-import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 
 interface StemMixerFixedWorkspaceProps {
   // Layout

@@ -1,6 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, type MergedNote, } from '@/lib/midi-generator'
+import type { MergedNote } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi } from '@/lib/scale-data'

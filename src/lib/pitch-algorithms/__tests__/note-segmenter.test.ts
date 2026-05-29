@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { segmentPitchesToNotes } from '../note-segmenter'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
+import { segmentPitchesToNotes } from '../note-segmenter'
 
 /** Build a pitch sample at the given time (seconds), frequency, and clarity. */
 function s(time: number, freq: number, clarity = 0.8): TimeStampedPitchSample {
