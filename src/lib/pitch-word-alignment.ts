@@ -97,6 +97,8 @@ export function filterWordSegments(
 ): WhisperSegment[] {
   return segments.filter((s) => {
     const text = s.text.trim()
-    return text.length > 0 && text !== '.' && text !== '...' && text !== '[Music]'
+    return (
+      text.length > 0 && text !== '.' && text !== '...' && text !== '[Music]'
+    )
   })
 }

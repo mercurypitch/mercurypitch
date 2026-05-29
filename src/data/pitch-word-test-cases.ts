@@ -181,9 +181,7 @@ export const PITCH_WORD_TEST_CASES: PitchWordTestCase[] = [
     id: 'no-words',
     category: 'silence_gap',
     description: 'Notes with no word segments',
-    melody: [
-      { midi: 60, noteName: 'C4', startSec: 0.0, endSec: 1.0 },
-    ],
+    melody: [{ midi: 60, noteName: 'C4', startSec: 0.0, endSec: 1.0 }],
     lyrics: [],
     expectedMapping: [],
   },

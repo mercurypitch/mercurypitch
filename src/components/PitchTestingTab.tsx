@@ -20,9 +20,11 @@ import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
-import { alignPitchToWords, filterWordSegments, type AlignmentResult, } from '@/lib/pitch-word-alignment'
+import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { alignPitchToWords, filterWordSegments, } from '@/lib/pitch-word-alignment'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import { resampleTo16kHz, WhisperService, type WhisperSegment, } from '@/lib/whisper-service'
+import type { WhisperSegment } from '@/lib/whisper-service'
+import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
 import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
@@ -364,7 +366,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     whisperServiceRef = new WhisperService()
     whisperServiceRef.onStatusChange = (status: string) => {
       setWhisperStatus(
-        status as 'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error',
+        status as
+          | 'idle'
+          | 'loading'
+          | 'ready'
+          | 'processing'
+          | 'done'
+          | 'error',
       )
     }
     whisperServiceRef.init().then(() => {

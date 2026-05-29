@@ -2,8 +2,8 @@
 // Note display utilities — shared between StemMixer and PitchTestingTab
 // ============================================================
 
-import type { MergedNote } from './midi-generator'
 import type { MelodyItem } from '@/types'
+import type { MergedNote } from './midi-generator'
 
 /**
  * Convert beat-based MelodyItem[] to time-based MergedNote[]

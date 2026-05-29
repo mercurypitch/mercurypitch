@@ -3,12 +3,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { alignPitchToWords, filterWordSegments } from './pitch-word-alignment'
-import {
-  PITCH_WORD_TEST_CASES,
-  validateAlignment,
-} from '@/data/pitch-word-test-cases'
+import { PITCH_WORD_TEST_CASES, validateAlignment, } from '@/data/pitch-word-test-cases'
 import type { MergedNote } from './midi-generator'
+import { alignPitchToWords, filterWordSegments } from './pitch-word-alignment'
 import type { WhisperSegment } from './whisper-service'
 
 describe('alignPitchToWords', () => {
@@ -16,10 +13,7 @@ describe('alignPitchToWords', () => {
   for (const tc of PITCH_WORD_TEST_CASES) {
     it(`${tc.id}: ${tc.description}`, () => {
       const result = alignPitchToWords(tc.melody, tc.lyrics)
-      const { passed, failures } = validateAlignment(
-        result,
-        tc.expectedMapping,
-      )
+      const { passed, failures } = validateAlignment(result, tc.expectedMapping)
       if (!passed) {
         console.error('Failures:', failures)
       }
@@ -79,9 +73,7 @@ describe('alignPitchToWords', () => {
   })
 
   it('handles words with no notes (all unmapped)', () => {
-    const segments: WhisperSegment[] = [
-      { text: 'quiet', timestamp: [0, 1.0] },
-    ]
+    const segments: WhisperSegment[] = [{ text: 'quiet', timestamp: [0, 1.0] }]
     const result = alignPitchToWords([], segments)
     expect(result.totalWords).toBe(1)
     expect(result.mappedWords).toBe(0)
@@ -95,9 +87,7 @@ describe('alignPitchToWords', () => {
       { midi: 60, noteName: 'C4', startSec: 0, endSec: 0.3 },
       { midi: 64, noteName: 'E4', startSec: 0.2, endSec: 1.0 },
     ]
-    const segments: WhisperSegment[] = [
-      { text: 'word', timestamp: [0, 1.0] },
-    ]
+    const segments: WhisperSegment[] = [{ text: 'word', timestamp: [0, 1.0] }]
     const result = alignPitchToWords(notes, segments)
     // E4 covers 0.2-1.0 = 0.8s of the word; C4 covers 0-0.3 = 0.3s → E4 wins
     expect(result.alignedWords[0].midi).toBe(64)
@@ -108,19 +98,14 @@ describe('alignPitchToWords', () => {
     const notes: MergedNote[] = [
       { midi: 60, noteName: 'C4', startSec: 0.25, endSec: 1.0 },
     ]
-    const segments: WhisperSegment[] = [
-      { text: 'half', timestamp: [0, 0.5] },
-    ]
+    const segments: WhisperSegment[] = [{ text: 'half', timestamp: [0, 0.5] }]
     const result = alignPitchToWords(notes, segments)
     // Word [0, 0.5] duration=0.5s; note overlaps [0.25, 0.5] = 0.25s → 0.5 ratio
     expect(result.alignedWords[0].confidence).toBeCloseTo(0.5, 2)
   })
 
   it('returns zero confidence for unmapped words', () => {
-    const result = alignPitchToWords(
-      [],
-      [{ text: 'nope', timestamp: [0, 1] }],
-    )
+    const result = alignPitchToWords([], [{ text: 'nope', timestamp: [0, 1] }])
     expect(result.alignedWords[0].confidence).toBe(0)
     expect(result.alignedWords[0].midi).toBeNull()
     expect(result.alignedWords[0].noteName).toBeNull()
