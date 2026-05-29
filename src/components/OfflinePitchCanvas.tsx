@@ -391,7 +391,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
             bgCtx.fill()
             bgCtx.stroke()
 
-            if (props.showNoteLabels) {
+            if (props.showNoteLabels === true) {
               drawNoteLabelOnBlock(
                 bgCtx,
                 `${note.note.name}${note.note.octave}`,
