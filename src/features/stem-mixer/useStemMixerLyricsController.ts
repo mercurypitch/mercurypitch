@@ -5,7 +5,8 @@
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { buildCanonicalEntries, buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -1081,10 +1082,7 @@ export function useStemMixerLyricsController(
       // are placed at the correct canonical positions (which may include
       // synthetic ~Rest~ entries for large gaps).
       const canonical = canonicalLrcLines()
-      const lrcToCanonical = new Map<number, number>()
-      for (const entry of canonical) {
-        if (entry.lrcIndex >= 0) lrcToCanonical.set(entry.lrcIndex, entry.canonicalIndex)
-      }
+      const lrcToCanonical = buildLrcToCanonicalMap(canonical)
 
       const eb = editBuffer()
       if (Object.keys(eb).length > 0) {
@@ -1295,14 +1293,7 @@ export function useStemMixerLyricsController(
     const wordTimes = lrcGenWordTimings()
 
     // Build canonical↔LRC index maps for correct output
-    const canonToLrc = new Map<number, number>()
-    const lrcToCanon = new Map<number, number>()
-    for (const entry of canonical) {
-      if (entry.lrcIndex >= 0) {
-        canonToLrc.set(entry.canonicalIndex, entry.lrcIndex)
-        lrcToCanon.set(entry.lrcIndex, entry.canonicalIndex)
-      }
-    }
+    const lrcToCanon = buildLrcToCanonicalMap(canonical)
 
     // Convert preGenSnapshot wordTimings from LRC→canonical indices
     const origWtLrc = preGenSnapshot?.wordTimings
@@ -1535,56 +1526,7 @@ export function useStemMixerLyricsController(
   const canonicalLrcLines = createMemo<CanonicalLrcEntry[]>(() => {
     const lrc = lrcLines()
     if (lrc.length === 0) return []
-
-    const REST_THRESHOLD = 20
-    const result: CanonicalLrcEntry[] = []
-
-    for (let i = 0; i < lrc.length; i++) {
-      const line = lrc[i]
-      const gap = i > 0 ? line.time - lrc[i - 1].time : 0
-
-      // Insert synthetic ~Rest~ for large gaps (only when prev line wasn't already ~Rest~)
-      if (gap > REST_THRESHOLD) {
-        result.push({
-          type: 'rest',
-          lrcIndex: -1,
-          canonicalIndex: result.length,
-          time: lrc[i - 1].time + gap / 2,
-          text: '~Rest~',
-          words: [],
-        })
-      }
-
-      // If lrcLine itself is ~Rest~, treat it as type rest with real lrcIndex
-      if (line.text === '~Rest~') {
-        result.push({
-          type: 'rest',
-          lrcIndex: i,
-          canonicalIndex: result.length,
-          time: line.time,
-          text: '~Rest~',
-          words: [],
-        })
-        continue
-      }
-
-      const parsedWt = parseLrcWordTimings(line.text, line.time)
-      const words = parsedWt
-        ? parsedWt.words
-        : line.text.split(/\s+/).filter((w: string) => w.length > 0)
-
-      result.push({
-        type: 'line',
-        lrcIndex: i,
-        canonicalIndex: result.length,
-        time: line.time,
-        text: line.text,
-        words,
-        wordTimes: parsedWt?.wordTimes,
-      })
-    }
-
-    return result
+    return buildCanonicalEntries(lrc)
   })
 
   const stableParsedLyrics = createMemo(() => {
@@ -1725,7 +1667,7 @@ export function useStemMixerLyricsController(
     return sections
   })
 
-  const hasMultipleSections = () => lyricsSections().length >= 2
+  const hasMultipleSections = createMemo(() => lyricsSections().length >= 2)
 
   const genViewData = createMemo(() => {
     const lines = getGenLines()
