@@ -14,7 +14,7 @@ import { IS_DEV } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, } from '@/lib/pitch-word-alignment'
+import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
@@ -432,7 +432,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     const filtered = filterWordSegments(segments)
-    return alignPitchToWords(merged, filtered)
+    const split = splitMultiWordSegments(filtered)
+    return alignPitchToWords(merged, split)
   })
 
   const canvas = useStemMixerCanvasController({
@@ -811,9 +812,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
         setWhisperSegments(deduped)
         setWhisperStatus('done')
-        console.log(
-          `[StemMixer] Whisper transcription complete: ${deduped.length} word segments`,
+        // Log segment samples so the user can gauge quality
+        const wordCount = deduped.reduce(
+          (c, s) => c + s.text.split(/\s+/).filter(Boolean).length,
+          0,
         )
+        console.log(
+          `[StemMixer] Whisper transcription complete: ${deduped.length} segments, ~${wordCount} words`,
+          deduped.slice(0, 5).map((s) => ({ text: s.text, t: s.timestamp })),
+        )
+        // Log alignment after a microtick to let the memo recompute
+        setTimeout(() => {
+          const r = alignmentResult()
+          console.log(
+            `[StemMixer] Word-to-note alignment: ${r.mappedWords}/${r.totalWords} mapped (${(r.accuracy * 100).toFixed(0)}%), ${r.unmappedWords} unmapped`,
+          )
+        }, 0)
       })
       .catch((err) => {
         console.error('[StemMixer] Whisper transcription failed:', err)

@@ -350,7 +350,7 @@ export const useStemMixerCanvasController = (
             .alignedWords()
             .filter(
               (w) =>
-                w.noteName === n.noteName &&
+                w.midi != null &&
                 w.startSec < n.endSec &&
                 w.endSec > n.startSec,
             )

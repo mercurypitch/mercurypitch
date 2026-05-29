@@ -97,6 +97,34 @@ export function alignPitchToWords(
 }
 
 /**
+ * Split multi-word whisper segments into individual word segments
+ * with evenly-distributed timestamps. Single-word segments pass through unchanged.
+ * This handles whisper-tiny returning line-level chunks instead of word-level.
+ */
+export function splitMultiWordSegments(
+  segments: WhisperSegment[],
+): WhisperSegment[] {
+  const result: WhisperSegment[] = []
+  for (const seg of segments) {
+    const words = seg.text.trim().split(/\s+/).filter(Boolean)
+    if (words.length <= 1) {
+      result.push(seg)
+      continue
+    }
+    const [start, end] = seg.timestamp
+    const duration = Math.max(0.001, end - start)
+    const perWord = duration / words.length
+    for (let i = 0; i < words.length; i++) {
+      result.push({
+        text: words[i],
+        timestamp: [start + i * perWord, start + (i + 1) * perWord],
+      })
+    }
+  }
+  return result
+}
+
+/**
  * Filter segments to only those containing actual words,
  * stripping empty/filler entries.
  */
