@@ -64,9 +64,9 @@ export class WhisperService {
         } else if (this.status === 'error') {
           clearInterval(check)
           reject(new Error('Whisper model failed to load'))
-        } else if (Date.now() - startedAt > 120_000) {
+        } else if (Date.now() - startedAt > 300_000) {
           clearInterval(check)
-          reject(new Error('Whisper model load timed out (120s)'))
+          reject(new Error('Whisper model load timed out (300s)'))
         }
       }, 200)
     })
