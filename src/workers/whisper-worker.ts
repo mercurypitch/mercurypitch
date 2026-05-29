@@ -9,8 +9,8 @@ let loadingPromise: Promise<void> | null = null
 
 // Load the model
 async function loadModel() {
-  if (whisperPipeline) return
-  if (loadingPromise) return loadingPromise
+  if (whisperPipeline != null) return
+  if (loadingPromise != null) return loadingPromise
 
   loadingPromise = (async () => {
     try {
@@ -60,7 +60,7 @@ self.addEventListener('message', (e) => {
     if (type === 'transcribe') {
       try {
         await loadModel()
-        if (!whisperPipeline) throw new Error('Pipeline not loaded')
+        if (whisperPipeline == null) throw new Error('Pipeline not loaded')
 
         self.postMessage({ type: 'status', status: 'processing' })
 
