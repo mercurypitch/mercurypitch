@@ -575,6 +575,15 @@ export function useStemMixerLyricsController(
     deps.seekTo(targetTime)
     deps.setWindowStart(Math.max(0, targetTime - deps.windowDuration() * 0.3))
 
+    // In LRC gen mode, clicking a line sets it as the starting point
+    // so the user can resume or fix a specific section without
+    // redoing the entire song from the beginning.
+    if (lrcGenMode()) {
+      setLrcGenLineIdx(idx)
+      setLrcGenWordIdx(0)
+      saveLrcGenProgress()
+    }
+
     const container = document.querySelector(
       LYRICS_CONTAINER_SELECTOR,
     ) as HTMLElement | null
@@ -1686,6 +1695,7 @@ export function useStemMixerLyricsController(
         ? getBlockById(blockForLine.blockId)
         : undefined
       return {
+        index: i,
         line,
         words,
         isCurrent: i === curLine,

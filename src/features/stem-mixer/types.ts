@@ -48,6 +48,7 @@ export interface BlockStartsInfo {
 }
 
 export interface GenViewLine {
+  index: number
   line: string
   words: string[]
   isCurrent: boolean
