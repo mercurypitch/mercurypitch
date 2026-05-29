@@ -451,6 +451,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     currentPitch: audio.currentPitch,
     midiNotes,
     showNoteLabels,
+    alignedWords: () => alignmentResult().alignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
@@ -810,6 +811,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
         setWhisperSegments(deduped)
         setWhisperStatus('done')
+        console.log(
+          `[StemMixer] Whisper transcription complete: ${deduped.length} word segments`,
+        )
       })
       .catch((err) => {
         console.error('[StemMixer] Whisper transcription failed:', err)
