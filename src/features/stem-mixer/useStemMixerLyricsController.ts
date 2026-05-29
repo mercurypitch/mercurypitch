@@ -414,16 +414,22 @@ export function useStemMixerLyricsController(
     }
   }
 
+  let preSearchSource: LyricsSource = 'none'
+
   const cancelSearch = () => {
     if (abortRef) {
       abortRef.abort()
       abortRef = null
     }
     setLyricsLoading(false)
-    setLyricsSource('none')
+    setShowSongPicker(false)
+    // Restore the source that was active before the search started
+    setLyricsSource(preSearchSource)
   }
 
   const handleForceSearch = async () => {
+    // Save current source so cancelSearch can restore it
+    preSearchSource = lyricsSource()
     // Cancel any ongoing auto-search and open the picker for manual search
     cancelSearch()
     setSongMatches([])
