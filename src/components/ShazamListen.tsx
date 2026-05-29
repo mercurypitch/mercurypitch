@@ -17,6 +17,7 @@ import { matchTranscriptToLyrics, resolveSeekPosition, } from '@/lib/shazam/lyri
 import { matchPitchContourWithMeta } from '@/lib/shazam/melody-matcher'
 import { detectOnsets, segmentNotes } from '@/lib/shazam/onset-detector'
 import type { LivePitchContour, MatchCandidate, TimestampedPitch, } from '@/lib/shazam/types'
+import { IS_DEV } from '@/lib/defaults'
 import type { SpeechRecognizer } from '@/lib/speech-recognition'
 import { createSpeechRecognizer } from '@/lib/speech-recognition'
 import type { WhisperSegment } from '@/lib/whisper-service'
@@ -469,13 +470,15 @@ export function ShazamListen(props: ShazamListenProps) {
           3,
         )
         if (lyricsResults.length > 0) {
-          console.log(
-            '[ShazamListen] Lyrics match:',
-            lyricsResults[0].songName,
-            `${lyricsResults[0].confidence}%`,
-            'at',
-            `${lyricsResults[0].matchOffsetSec.toFixed(1)}s`,
-          )
+          if (IS_DEV) {
+            console.log(
+              '[ShazamListen] Lyrics match:',
+              lyricsResults[0].songName,
+              `${lyricsResults[0].confidence}%`,
+              'at',
+              `${lyricsResults[0].matchOffsetSec.toFixed(1)}s`,
+            )
+          }
           // For each stem candidate, resolve melody vs lyrics offset
           for (const candidate of candidates) {
             if (
@@ -495,9 +498,11 @@ export function ShazamListen(props: ShazamListenProps) {
               lyricsMatch.matchOffsetSec,
             )
             if (resolved.source === 'lyrics') {
-              console.log(
-                `[ShazamListen] Using lyrics offset ${resolved.offsetSec?.toFixed(1)}s for ${candidate.name} (lyrics ${lyricsMatch.confidence}% > melody ${candidate.confidence}%)`,
-              )
+              if (IS_DEV) {
+                console.log(
+                  `[ShazamListen] Using lyrics offset ${resolved.offsetSec?.toFixed(1)}s for ${candidate.name} (lyrics ${lyricsMatch.confidence}% > melody ${candidate.confidence}%)`,
+                )
+              }
               candidate.matchOffsetSec = resolved.offsetSec
             }
           }
