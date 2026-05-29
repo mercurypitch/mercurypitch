@@ -128,6 +128,22 @@ describe('filterWordSegments', () => {
     expect(filtered[1].text).toBe('world')
   })
 
+  it('removes parenthesized tags and unicode symbols', () => {
+    const segments: WhisperSegment[] = [
+      { text: '(Music)', timestamp: [0, 0.1] },
+      { text: '(laughing)', timestamp: [0.1, 0.2] },
+      { text: '[applause]', timestamp: [0.2, 0.3] },
+      { text: '\u266a', timestamp: [0.3, 0.4] },
+      { text: '~', timestamp: [0.4, 0.5] },
+      { text: ',', timestamp: [0.5, 0.6] },
+      { text: '-', timestamp: [0.6, 0.7] },
+      { text: 'actual', timestamp: [0.7, 0.8] },
+    ]
+    const filtered = filterWordSegments(segments)
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0].text).toBe('actual')
+  })
+
   it('keeps whitespace-trimmable text', () => {
     const segments: WhisperSegment[] = [
       { text: '  word  ', timestamp: [0, 0.5] },
@@ -135,5 +151,72 @@ describe('filterWordSegments', () => {
     const filtered = filterWordSegments(segments)
     expect(filtered).toHaveLength(1)
     expect(filtered[0].text.trim()).toBe('word')
+  })
+})
+
+describe('alignPitchToWords — debugEntries', () => {
+  it('returns debugEntries with correct fields for mapped words', () => {
+    const notes: MergedNote[] = [
+      { midi: 60, noteName: 'C4', startSec: 0, endSec: 0.5 },
+    ]
+    const segments: WhisperSegment[] = [{ text: 'do', timestamp: [0, 0.5] }]
+    const result = alignPitchToWords(notes, segments)
+    expect(result.debugEntries).toHaveLength(1)
+    const entry = result.debugEntries[0]
+    expect(entry.idx).toBe(0)
+    expect(entry.word).toBe('do')
+    expect(entry.mappedNote).toBe('C4')
+    expect(entry.mappedMidi).toBe(60)
+    expect(entry.confidence).toBeCloseTo(1.0)
+    expect(entry.overlapSec).toBeCloseTo(0.5)
+    expect(entry.nearestNote).toBeNull()
+    expect(entry.nearestGapSec).toBeNull()
+  })
+
+  it('returns nearest note info for unmapped words', () => {
+    const notes: MergedNote[] = [
+      { midi: 60, noteName: 'C4', startSec: 2.0, endSec: 3.0 },
+    ]
+    const segments: WhisperSegment[] = [{ text: 'far', timestamp: [0, 0.5] }]
+    const result = alignPitchToWords(notes, segments)
+    expect(result.debugEntries).toHaveLength(1)
+    const entry = result.debugEntries[0]
+    expect(entry.mappedNote).toBeNull()
+    expect(entry.nearestNote).toBe('C4')
+    expect(entry.nearestGapSec).toBeGreaterThan(0)
+  })
+})
+
+describe('alignPitchToWords — minimum overlap threshold', () => {
+  it('rejects words with overlap below default 10% threshold', () => {
+    const notes: MergedNote[] = [
+      { midi: 60, noteName: 'C4', startSec: 0.95, endSec: 2.0 },
+    ]
+    // Word [0, 1.0] overlaps note at [0.95, 1.0] = 0.05s = 5% of word duration
+    const segments: WhisperSegment[] = [{ text: 'barely', timestamp: [0, 1.0] }]
+    const result = alignPitchToWords(notes, segments)
+    expect(result.alignedWords[0].midi).toBeNull()
+    expect(result.unmappedWords).toBe(1)
+  })
+
+  it('accepts words above the threshold', () => {
+    const notes: MergedNote[] = [
+      { midi: 60, noteName: 'C4', startSec: 0.8, endSec: 2.0 },
+    ]
+    // Word [0, 1.0] overlaps note at [0.8, 1.0] = 0.2s = 20% of word duration
+    const segments: WhisperSegment[] = [{ text: 'enough', timestamp: [0, 1.0] }]
+    const result = alignPitchToWords(notes, segments)
+    expect(result.alignedWords[0].midi).toBe(60)
+    expect(result.mappedWords).toBe(1)
+  })
+
+  it('allows custom threshold via parameter', () => {
+    const notes: MergedNote[] = [
+      { midi: 60, noteName: 'C4', startSec: 0.95, endSec: 2.0 },
+    ]
+    const segments: WhisperSegment[] = [{ text: 'barely', timestamp: [0, 1.0] }]
+    // With threshold 0.01, the 5% overlap should pass
+    const result = alignPitchToWords(notes, segments, { minOverlapRatio: 0.01 })
+    expect(result.alignedWords[0].midi).toBe(60)
   })
 })

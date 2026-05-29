@@ -7,6 +7,7 @@ import { For, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { MagnifyingGlass } from './icons'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -248,12 +249,57 @@ export interface StemMixerLyricsPanelBodyProps {
   handleSongPickerRefine: () => Promise<void>
   idSuffix?: string
   triggerChangeFile?: () => void
+
+  // Note labels on words
+  showLyricNoteLabels: Accessor<boolean>
+  alignmentResult: Accessor<AlignmentResult>
 }
 
 export const StemMixerLyricsPanelBody: Component<
   StemMixerLyricsPanelBodyProps
 > = (props) => {
   const sfx = () => props.idSuffix ?? ''
+
+  // Look up the mapped note for a word by temporal overlap with alignment data
+  const getWordNote = (
+    parsedLyric: ParsedLyric,
+    wi: number,
+  ): { noteName: string; midi: number } | null => {
+    if (!props.showLyricNoteLabels()) return null
+    const result = props.alignmentResult()
+    if (result.alignedWords.length === 0) return null
+
+    const wordTimes = parsedLyric.wordTimes
+    let wordStart: number
+    let wordEnd: number
+    if (wordTimes && wordTimes.length > 0 && wordTimes[wi] !== undefined) {
+      wordStart = wordTimes[wi]
+      wordEnd =
+        wi + 1 < wordTimes.length ? wordTimes[wi + 1] : parsedLyric.endTime
+    } else {
+      const wordCount = parsedLyric.words.length
+      const duration = parsedLyric.endTime - parsedLyric.time
+      const perWord = Math.max(0.05, duration / wordCount)
+      wordStart = parsedLyric.time + wi * perWord
+      wordEnd = wordStart + perWord
+    }
+
+    let best: { noteName: string; midi: number } | null = null
+    let bestOverlap = 0
+    for (const aw of result.alignedWords) {
+      if (aw.midi == null) continue
+      const overlap = Math.max(
+        0,
+        Math.min(wordEnd, aw.endSec) - Math.max(wordStart, aw.startSec),
+      )
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap
+        best = { noteName: aw.noteName!, midi: aw.midi }
+      }
+    }
+    return best
+  }
+
   return (
     <>
       <Show when={props.lyricsLoading()}>
@@ -954,11 +1000,26 @@ export const StemMixerLyricsPanelBody: Component<
                           ? props.lrcLines()[idx]?.text || ''
                           : props.lyricsLines()[idx] || ''
                         : parsedLyric.words.map((word, wi) => {
+                            const noteInfo = getWordNote(parsedLyric, wi)
+                            const noteLabel = noteInfo ? (
+                              <span class="sm-lyrics-word-note">
+                                {noteInfo.noteName}
+                              </span>
+                            ) : (
+                              <span class="sm-lyrics-word-note sm-lyrics-word-note-spacer">
+                                {'\u00A0'}
+                              </span>
+                            )
                             if (wi <= activeWordInfo().activeUpTo) {
                               return (
-                                <span class="sm-lyrics-word sm-lyrics-word-done">
-                                  {word}{' '}
-                                </span>
+                                <>
+                                  <span class="sm-lyrics-word-with-note">
+                                    {noteLabel}
+                                    <span class="sm-lyrics-word sm-lyrics-word-done">
+                                      {word}
+                                    </span>
+                                  </span>{' '}
+                                </>
                               )
                             }
                             if (
@@ -966,20 +1027,34 @@ export const StemMixerLyricsPanelBody: Component<
                               activeWordInfo().charProgress > 0
                             ) {
                               return (
-                                <span class="sm-lyrics-word sm-lyrics-word-current">
-                                  <span class="sm-lyrics-char-done">
-                                    {word.slice(
-                                      0,
-                                      activeWordInfo().charProgress,
-                                    )}
-                                  </span>
-                                  <span class="sm-lyrics-char-remaining">
-                                    {word.slice(activeWordInfo().charProgress)}
+                                <>
+                                  <span class="sm-lyrics-word-with-note">
+                                    {noteLabel}
+                                    <span class="sm-lyrics-word sm-lyrics-word-current">
+                                      <span class="sm-lyrics-char-done">
+                                        {word.slice(
+                                          0,
+                                          activeWordInfo().charProgress,
+                                        )}
+                                      </span>
+                                      <span class="sm-lyrics-char-remaining">
+                                        {word.slice(
+                                          activeWordInfo().charProgress,
+                                        )}
+                                      </span>
+                                    </span>
                                   </span>{' '}
-                                </span>
+                                </>
                               )
                             }
-                            return <span class="sm-lyrics-word">{word} </span>
+                            return (
+                              <>
+                                <span class="sm-lyrics-word-with-note">
+                                  {noteLabel}
+                                  <span class="sm-lyrics-word">{word}</span>
+                                </span>{' '}
+                              </>
+                            )
                           })}
                     </span>
                   </>

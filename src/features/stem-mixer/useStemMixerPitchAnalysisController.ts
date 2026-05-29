@@ -2,6 +2,8 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { MergedNote } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
+import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
+import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi } from '@/lib/scale-data'
@@ -25,6 +27,8 @@ export interface StemMixerPitchAnalysisController {
   setPitchSourceMode: Setter<'realtime' | 'offline'>
   offlinePitchHistory: Accessor<PitchNote[]>
   offlineMergedNotes: Accessor<MergedNote[]>
+  /** Denoised notes from segmentPitchesToNotes, converted to MergedNote[] */
+  offlineSegmentedNotes: Accessor<MergedNote[]>
 
   algorithm: Accessor<PitchAlgorithm>
   setAlgorithm: Setter<PitchAlgorithm>
@@ -58,6 +62,9 @@ export const useStemMixerPitchAnalysisController = (
     PitchNote[]
   >([])
   const [offlineMergedNotes, setOfflineMergedNotes] = createSignal<
+    MergedNote[]
+  >([])
+  const [offlineSegmentedNotes, setOfflineSegmentedNotes] = createSignal<
     MergedNote[]
   >([])
 
@@ -140,6 +147,22 @@ export const useStemMixerPitchAnalysisController = (
 
       setOfflineMergedNotes(merged)
 
+      // Run denoised segmentation on raw pitch samples
+      const rawPitchSamples = rawDetections.map((d) => ({
+        time: d.timeSec,
+        freq: 440 * Math.pow(2, (d.midi - 69) / 12),
+        clarity: 1.0,
+        noteName: d.noteName,
+      }))
+      const segmented = segmentPitchesToNotes(rawPitchSamples, {
+        minClarity: 0.7,
+      })
+      const segmentedMerged = melodyItemsToMergedNotes(segmented, 120)
+      setOfflineSegmentedNotes(segmentedMerged)
+      console.log(
+        `[PitchAnalysis] Raw merged: ${merged.length} notes, Denoised segmented: ${segmentedMerged.length} notes`,
+      )
+
       const newHistory: PitchNote[] = []
       // Convert merged notes back into a "history" format that canvas expects
       // We can just populate it densely or sparsely. Canvas expects a point per frame ideally,
@@ -189,6 +212,7 @@ export const useStemMixerPitchAnalysisController = (
     setPitchSourceMode,
     offlinePitchHistory,
     offlineMergedNotes,
+    offlineSegmentedNotes,
     algorithm,
     setAlgorithm,
     bufferSize,

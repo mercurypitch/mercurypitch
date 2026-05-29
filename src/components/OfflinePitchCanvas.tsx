@@ -1,6 +1,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount } from 'solid-js'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
+import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -11,6 +12,8 @@ export interface OfflinePitchCanvasProps {
   segmentedNotes?: MelodyItem[]
   audioFile?: File | Blob | null
   showNoteLabels?: boolean
+  showLyricLabels?: boolean
+  alignedWords?: AlignedWord[]
 }
 
 const ALGO_COLORS: Record<string, string> = {
@@ -48,8 +51,10 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     const _ar = props.analysisResults
     const _sn = props.segmentedNotes
     const _sl = props.showNoteLabels
+    const _sll = props.showLyricLabels
+    const _aw = props.alignedWords
     const trackReactivity = (..._args: unknown[]) => {}
-    trackReactivity(_wf, _ar, _sn, _sl)
+    trackReactivity(_wf, _ar, _sn, _sl, _sll, _aw)
     forceRedraw = true
   })
 
@@ -452,7 +457,47 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
               )
             }
 
-            if (note.lyricText !== undefined && note.lyricText !== '') {
+            // Determine if per-word whisper labels are active
+            const hasWhisperWords =
+              props.showLyricLabels === true &&
+              props.alignedWords != null &&
+              props.alignedWords.length > 0
+
+            // Auto-hide word labels when zoomed out: if pixels-per-second
+            // is below threshold, text would be unreadable mush.
+            const pxPerSec = vw / duration
+            const showWords = hasWhisperWords && pxPerSec >= 6
+
+            if (showWords) {
+              // Per-word whisper alignment labels (preferred when available)
+              const matchingWords: string[] = []
+              for (const aw of props.alignedWords!) {
+                if (aw.midi == null) continue
+                const overlap =
+                  Math.min(endSec, aw.endSec) - Math.max(startSec, aw.startSec)
+                if (overlap > 0) {
+                  matchingWords.push(aw.word)
+                }
+              }
+              if (matchingWords.length > 0) {
+                const wordText = matchingWords.join(' ').slice(0, 20)
+                bgCtx.fillStyle = 'rgba(255, 255, 255, 0.75)'
+                bgCtx.font = '9px Inter, sans-serif'
+                bgCtx.textAlign = 'center'
+                bgCtx.textBaseline = 'top'
+                bgCtx.fillText(
+                  wordText,
+                  x1 + blockWidth / 2,
+                  blockY + blockHeight + 2,
+                )
+              }
+            } else if (
+              !hasWhisperWords &&
+              note.lyricText !== undefined &&
+              note.lyricText !== ''
+            ) {
+              // Fallback: old LRC line-level text baked into the note
+              // Only shown when whisper per-word labels are NOT active
               bgCtx.fillStyle = 'rgba(255, 255, 255, 0.9)'
               bgCtx.font = '10px Inter, sans-serif'
               bgCtx.textAlign = 'center'

@@ -10,14 +10,16 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
-import { IS_DEV } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
+import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
+import { lrcEntriesToSegments } from '@/lib/pitch-word-alignment'
+import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
-import type { WhisperSegment } from '@/lib/whisper-service'
-import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
+import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { showNotification } from '@/stores/notifications-store'
 import { ChevronLeft, Settings, Share } from './icons'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
@@ -386,34 +388,98 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     'pitchperfect_show_note_labels',
     false,
   )
-
-  const [whisperStatus, setWhisperStatus] = createSignal<
-    'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
-  >('idle')
-  const [whisperProgress, setWhisperProgress] = createSignal(0)
-  const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
-    [],
+  const [showLyricLabels, setShowLyricLabels] = createPersistedSignal<boolean>(
+    'pitchperfect_show_lyric_labels',
+    false,
   )
-  let whisperServiceRef: WhisperService | null = null
-  let whisperTranscribing = false
-  const [transcribeElapsed, setTranscribeElapsed] = createSignal(-1)
-  let transcribeTimer: ReturnType<typeof setInterval> | null = null
+  const [showLyricNoteLabels, setShowLyricNoteLabels] =
+    createPersistedSignal<boolean>('pitchperfect_show_lyric_note_labels', false)
+
+  const whisper = useWhisperTranscription({
+    getAudioBuffer: () => vocal().buffer,
+    logTag: 'StemMixer',
+    onTranscriptionComplete: (segments) => {
+      // Log alignment comparison after transcription
+      setTimeout(() => {
+        const r = alignmentResult()
+        const currentSegmented = pitchAnalysis.offlineSegmentedNotes()
+        const currentMerged = pitchAnalysis.offlineMergedNotes()
+        formatAlignmentDebugLog('StemMixer', r)
+        logAlignmentComparison(
+          'StemMixer',
+          currentMerged,
+          currentSegmented,
+          segments,
+        )
+      }, 0)
+    },
+  })
+  // Aliases for backward compatibility with prop-passing
+  const whisperStatus = whisper.status
+  const whisperProgress = whisper.progress
+  const transcribeElapsed = whisper.elapsed
+
+  // ── Alignment note source toggle ────────────────────────────────
+  const [useDenoised, setUseDenoised] = createSignal(true)
+  // Expose for console debugging: window.__stemMixerDebug.setUseDenoised(false)
+  ;(globalThis as Record<string, unknown>).__stemMixerDebug = {
+    ...(((globalThis as Record<string, unknown>).__stemMixerDebug as object) ??
+      {}),
+    useDenoised,
+    setUseDenoised,
+  }
 
   // ── Pitch-word alignment memo ────────────────────────────────
   const alignmentResult = createMemo<AlignmentResult>(() => {
-    const merged = pitchAnalysis.offlineMergedNotes()
+    // Prefer denoised (segmented) notes, fall back to raw merged
+    let merged: MergedNote[] = []
+    let noteSource = 'none'
+
+    // Always read both signals unconditionally for proper SolidJS tracking
+    const segmentedNotes = pitchAnalysis.offlineSegmentedNotes()
+    const mergedNotes = pitchAnalysis.offlineMergedNotes()
+    const wsSegs = whisper.segments()
+
+    if (useDenoised() && segmentedNotes.length > 0) {
+      merged = segmentedNotes
+      noteSource = 'denoised'
+    }
+
+    if (merged.length === 0 && mergedNotes.length > 0) {
+      merged = mergedNotes
+      noteSource = 'raw-offline'
+    }
+
+    // Fallback: use realtime pitch history when offline analysis hasn't run
     if (merged.length === 0) {
+      const pitchHistory = audio.getPitchHistory()
+      if (pitchHistory.length > 0) {
+        const detections: PitchDetection[] = pitchHistory.map((p) => ({
+          midi: freqToMidi(p.frequency),
+          noteName: p.noteName,
+          timeSec: p.time,
+        }))
+        merged = mergeConsecutiveNotes(detections)
+        if (merged.length > 0) noteSource = 'raw-realtime'
+      }
+    }
+
+    if (merged.length === 0) {
+      console.log(
+        `[StemMixer] Alignment: no notes available (denoised=${segmentedNotes.length}, raw-offline=${mergedNotes.length}, whisper=${wsSegs.length})`,
+      )
       return {
         alignedWords: [],
         totalWords: 0,
         mappedWords: 0,
         unmappedWords: 0,
         accuracy: 0,
+        debugEntries: [],
       }
     }
 
     // Prefer whisper segments; fall back to LRC word timings
-    let segments = whisperSegments()
+    let segments = wsSegs
     if (segments.length === 0) {
       const lrc = canonicalLrcLines()
       if (lrc.length > 0) {
@@ -422,18 +488,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     if (segments.length === 0) {
+      console.log(
+        `[StemMixer] Alignment: no word segments (${noteSource} has ${merged.length} notes but no whisper/LRC segments)`,
+      )
       return {
         alignedWords: [],
         totalWords: 0,
         mappedWords: 0,
         unmappedWords: 0,
         accuracy: 0,
+        debugEntries: [],
       }
     }
 
-    const filtered = filterWordSegments(segments)
-    const split = splitMultiWordSegments(filtered)
-    return alignPitchToWords(merged, split)
+    console.log(
+      `[StemMixer] Alignment using ${noteSource} notes (${merged.length} notes, ${segments.length} word segments)`,
+    )
+    return computeAlignment(merged, segments)
   })
 
   const canvas = useStemMixerCanvasController({
@@ -452,6 +523,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     currentPitch: audio.currentPitch,
     midiNotes,
     showNoteLabels,
+    showLyricLabels,
     alignedWords: () => alignmentResult().alignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
@@ -654,28 +726,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     loadLyrics()
 
     // Initialize whisper transcription service
-    whisperServiceRef = new WhisperService()
-    whisperServiceRef.onStatusChange = (status: string) => {
-      setWhisperStatus(
-        status as
-          | 'idle'
-          | 'loading'
-          | 'ready'
-          | 'processing'
-          | 'done'
-          | 'error',
-      )
-    }
-    whisperServiceRef.onProgressChange = (progress: number) => {
-      setWhisperProgress(progress)
-    }
-    whisperServiceRef.init().catch((err) => {
-      if (IS_DEV)
-        console.warn(
-          '[StemMixer] Whisper init timed out, model may still be downloading:',
-          err,
-        )
-    })
+    whisper.initWhisper()
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()
@@ -762,91 +813,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
 
   const startWhisperTranscription = () => {
-    const buffer = vocal().buffer
-    if (!buffer || whisperTranscribing) return
-    whisperTranscribing = true
-    setWhisperStatus('processing')
-    setTranscribeElapsed(0)
-    transcribeTimer = setInterval(() => {
-      setTranscribeElapsed((n) => n + 1)
-    }, 1000)
-
-    resampleTo16kHz(buffer)
-      .then(async (audioData) => {
-        const SAMPLE_RATE = 16000
-        const CHUNK_SEC = 30
-        const OVERLAP_SEC = 5
-        const chunkLen = CHUNK_SEC * SAMPLE_RATE
-        const stride = (CHUNK_SEC - OVERLAP_SEC) * SAMPLE_RATE
-
-        const audioChunks: Float32Array[] = []
-        for (let off = 0; off < audioData.length; off += stride) {
-          audioChunks.push(
-            audioData.slice(off, Math.min(off + chunkLen, audioData.length)),
-          )
-        }
-
-        const merged: { text: string; timestamp: [number, number] }[] = []
-        for (let ci = 0; ci < audioChunks.length; ci++) {
-          const result = await whisperServiceRef!.transcribe(audioChunks[ci])
-          const timeBase = ci * (CHUNK_SEC - OVERLAP_SEC)
-          for (const seg of result.chunks) {
-            merged.push({
-              text: seg.text,
-              timestamp: [
-                seg.timestamp[0] + timeBase,
-                seg.timestamp[1] + timeBase,
-              ],
-            })
-          }
-        }
-
-        // Deduplicate overlapping segments: drop a segment if its midpoint
-        // falls before the end of the previous segment.
-        const deduped = merged.filter((seg, i) => {
-          if (i === 0) return true
-          const prevEnd = merged[i - 1].timestamp[1]
-          const mid = (seg.timestamp[0] + seg.timestamp[1]) / 2
-          return mid > prevEnd
-        })
-
-        setWhisperSegments(deduped)
-        setWhisperStatus('done')
-        // Log segment samples so the user can gauge quality
-        const wordCount = deduped.reduce(
-          (c, s) => c + s.text.split(/\s+/).filter(Boolean).length,
-          0,
-        )
-        console.log(
-          `[StemMixer] Whisper transcription complete: ${deduped.length} segments, ~${wordCount} words`,
-          deduped.slice(0, 5).map((s) => ({ text: s.text, t: s.timestamp })),
-        )
-        // Log alignment after a microtick to let the memo recompute
-        setTimeout(() => {
-          const r = alignmentResult()
-          console.log(
-            `[StemMixer] Word-to-note alignment: ${r.mappedWords}/${r.totalWords} mapped (${(r.accuracy * 100).toFixed(0)}%), ${r.unmappedWords} unmapped`,
-          )
-        }, 0)
-      })
-      .catch((err) => {
-        console.error('[StemMixer] Whisper transcription failed:', err)
-        setWhisperStatus('error')
-      })
-      .finally(() => {
-        whisperTranscribing = false
-        if (transcribeTimer !== null) {
-          clearInterval(transcribeTimer)
-          transcribeTimer = null
-        }
-        setTranscribeElapsed(-1)
-      })
+    whisper.startTranscription()
   }
 
   onCleanup(() => {
     audio.disconnectSources()
     cancelAnimationFrame(audio.getRafId())
-    whisperServiceRef?.destroy()
+    whisper.destroy()
     canvas.disconnectObserver()
     const smWin = window as unknown as SmWindow
     if (smWin.__smKeydown !== undefined) {
@@ -1004,6 +977,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
+          showLyricLabels={showLyricLabels}
+          setShowLyricLabels={setShowLyricLabels}
+          showLyricNoteLabels={showLyricNoteLabels}
+          setShowLyricNoteLabels={setShowLyricNoteLabels}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
           transcribeElapsed={transcribeElapsed}
@@ -1036,6 +1013,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
+          showLyricLabels={showLyricLabels}
+          setShowLyricLabels={setShowLyricLabels}
+          showLyricNoteLabels={showLyricNoteLabels}
+          setShowLyricNoteLabels={setShowLyricNoteLabels}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
           transcribeElapsed={transcribeElapsed}
@@ -1869,6 +1850,58 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-char-remaining {
   color: var(--fg-secondary, #8b949e);
+}
+
+/* Word-with-note label (word-to-pitch mapping) */
+.sm-lyrics-word-with-note {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: top;
+}
+
+.sm-lyrics-word-note {
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: var(--accent, #58a6ff);
+  line-height: 1;
+  white-space: nowrap;
+  margin-bottom: 1px;
+  opacity: 0.85;
+}
+
+.sm-lyrics-word-note-spacer {
+  visibility: hidden;
+}
+
+/* Note label toggle in lyrics toolbar */
+.sm-lyrics-note-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-note-toggle:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-note-toggle.active {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.12);
 }
 
 /* ── Edit mode ──────────────────────────────────────────── */

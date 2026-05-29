@@ -7,6 +7,8 @@ import type { Accessor, Component, Setter } from 'solid-js'
 export interface PitchCanvasToolbarProps {
   showNoteLabels: Accessor<boolean>
   setShowNoteLabels: Setter<boolean>
+  showLyricLabels: Accessor<boolean>
+  setShowLyricLabels: Setter<boolean>
 }
 
 export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
@@ -34,6 +36,30 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
           <line x1="12" y1="4" x2="12" y2="20" />
         </svg>
         <span>Note Labels</span>
+      </button>
+      <button
+        class={`pitch-canvas-toggle${props.showLyricLabels() ? ' active' : ''}`}
+        onClick={() => props.setShowLyricLabels((prev) => !prev)}
+        title={
+          props.showLyricLabels() ? 'Hide lyric labels' : 'Show lyric labels'
+        }
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 5h12" />
+          <path d="M3 12h8" />
+          <path d="M3 19h14" />
+          <path d="M18 9l3 3-3 3" />
+        </svg>
+        <span>Lyric Labels</span>
       </button>
     </div>
   )
