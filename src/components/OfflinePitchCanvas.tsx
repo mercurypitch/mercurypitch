@@ -98,7 +98,51 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
   let lastX = 0
 
   let audio: HTMLAudioElement | null = null
+  let audioCtx: AudioContext | null = null
+  let mediaSource: MediaElementAudioSourceNode | null = null
+  let gainNode: GainNode | null = null
   const [isPlaying, setIsPlaying] = createSignal(false)
+
+  const ensureAudioCtx = () => {
+    if (!audioCtx) {
+      audioCtx = new AudioContext()
+      gainNode = audioCtx.createGain()
+      gainNode.gain.value = 1
+      gainNode.connect(audioCtx.destination)
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume()
+    }
+    return audioCtx
+  }
+
+  const fadeInPlay = () => {
+    if (!audio) return
+    const ctx = ensureAudioCtx()
+    if (!mediaSource && gainNode) {
+      mediaSource = ctx.createMediaElementSource(audio)
+      mediaSource.connect(gainNode)
+    }
+    const now = ctx.currentTime
+    gainNode!.gain.cancelScheduledValues(now)
+    gainNode!.gain.setValueAtTime(0, now)
+    gainNode!.gain.linearRampToValueAtTime(1, now + 0.03)
+    audio.play()
+  }
+
+  const fadeOutPause = () => {
+    if (!audio || !gainNode || !audioCtx) {
+      audio?.pause()
+      return
+    }
+    const now = audioCtx.currentTime
+    gainNode.gain.cancelScheduledValues(now)
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now)
+    gainNode.gain.linearRampToValueAtTime(0, now + 0.05)
+    setTimeout(() => {
+      if (audio) audio.pause()
+    }, 60)
+  }
 
   createEffect(() => {
     if (props.audioFile) {
@@ -106,6 +150,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       if (audio) {
         audio.pause()
         audio.src = ''
+        mediaSource?.disconnect()
+        mediaSource = null
       }
       audio = new Audio(url)
 
@@ -125,6 +171,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
           audio.pause()
           audio.src = ''
         }
+        mediaSource?.disconnect()
+        mediaSource = null
         URL.revokeObjectURL(url)
       })
     }
@@ -169,8 +217,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     if (e.code === 'Space') {
       e.preventDefault()
       if (!audio) return
-      if (audio.paused) audio.play()
-      else audio.pause()
+      if (audio.paused) fadeInPlay()
+      else fadeOutPause()
     }
   }
 
@@ -200,6 +248,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       window.removeEventListener('keydown', handleKeyDown)
       resizeObserver?.disconnect()
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
+      audioCtx?.close()
     })
   })
 

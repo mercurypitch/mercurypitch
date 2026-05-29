@@ -13,7 +13,7 @@ import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useSt
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { alignPitchToWords, filterWordSegments, } from '@/lib/pitch-word-alignment'
+import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
@@ -398,8 +398,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Pitch-word alignment memo ────────────────────────────────
   const alignmentResult = createMemo<AlignmentResult>(() => {
     const merged = pitchAnalysis.offlineMergedNotes()
-    const segments = whisperSegments()
-    if (merged.length === 0 || segments.length === 0) {
+    if (merged.length === 0) {
       return {
         alignedWords: [],
         totalWords: 0,
@@ -408,6 +407,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         accuracy: 0,
       }
     }
+
+    // Prefer whisper segments; fall back to LRC word timings
+    let segments = whisperSegments()
+    if (segments.length === 0) {
+      const lrc = canonicalLrcLines()
+      if (lrc.length > 0) {
+        segments = lrcEntriesToSegments(lrc)
+      }
+    }
+
+    if (segments.length === 0) {
+      return {
+        alignedWords: [],
+        totalWords: 0,
+        mappedWords: 0,
+        unmappedWords: 0,
+        accuracy: 0,
+      }
+    }
+
     const filtered = filterWordSegments(segments)
     return alignPitchToWords(merged, filtered)
   })
@@ -735,11 +754,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
-  // Auto-transcribe vocal stem when whisper is ready and vocal buffer is loaded
-  createEffect(() => {
-    const status = whisperStatus()
+  const startWhisperTranscription = () => {
     const buffer = vocal().buffer
-    if (status !== 'ready' || !buffer || whisperTranscribing) return
+    if (!buffer || whisperTranscribing) return
     whisperTranscribing = true
     setWhisperStatus('processing')
 
@@ -756,7 +773,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       .finally(() => {
         whisperTranscribing = false
       })
-  })
+  }
 
   onCleanup(() => {
     audio.disconnectSources()
@@ -921,6 +938,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
           alignmentResult={alignmentResult}
+          startWhisperTranscription={startWhisperTranscription}
           workspaceRef={(el) => {
             workspaceRef = el
           }}
@@ -950,6 +968,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
           alignmentResult={alignmentResult}
+          startWhisperTranscription={startWhisperTranscription}
         />
       </Show>
 
@@ -2035,6 +2054,31 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.08);
+}
+
+/* ── Whisper Transcribe button ─────────────────────────────── */
+
+.sm-transcribe-btn {
+  padding: 0 0.45rem;
+  height: 1.15rem;
+  font-size: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--accent, #58a6ff);
+  border-radius: 0.2rem;
+  color: var(--accent, #58a6ff);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sm-transcribe-btn:hover {
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
 }
 
 .sm-lyrics-markmode-btn--active {

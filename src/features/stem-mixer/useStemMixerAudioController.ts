@@ -154,7 +154,7 @@ export interface StemMixerAudioController {
 
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
-const FADE_OUT_MS = 30
+const FADE_OUT_MS = 50
 
 // ── Controller ─────────────────────────────────────────────────
 
@@ -343,7 +343,7 @@ export const useStemMixerAudioController = (
       const gain = ctx.createGain()
       const targetGain = isAudible ? track.volume : 0
       gain.gain.setValueAtTime(0, now)
-      gain.gain.linearRampToValueAtTime(targetGain, now + 0.02)
+      gain.gain.linearRampToValueAtTime(targetGain, now + 0.03)
 
       const analyser = ctx.createAnalyser()
       analyser.fftSize = FFT_SIZE
