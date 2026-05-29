@@ -353,12 +353,18 @@ export const StemMixerFixedWorkspace: Component<
                 Vocal Pitch
                 <Show when={props.whisperStatus() === 'loading'}>
                   <span class="pitch-alignment-stats whisper-processing">
-                    Loading whisper{props.whisperProgress() > 0 ? ` (${Math.round(props.whisperProgress())}%)` : '...'}
+                    Loading whisper
+                    {props.whisperProgress() > 0
+                      ? ` (${Math.round(props.whisperProgress())}%)`
+                      : '...'}
                   </span>
                 </Show>
                 <Show when={props.whisperStatus() === 'processing'}>
                   <span class="pitch-alignment-stats whisper-processing">
-                    Transcribing{props.transcribeElapsed() >= 0 ? ` (${props.transcribeElapsed()}s)` : '...'}
+                    Transcribing
+                    {props.transcribeElapsed() >= 0
+                      ? ` (${props.transcribeElapsed()}s)`
+                      : '...'}
                   </span>
                 </Show>
                 <Show

@@ -150,7 +150,7 @@ export function buildLrcTextFromCanonical(
       const lineWt = wordTimings?.[lrcIdx] ?? entry.wordTimes
 
       // Word-level output when per-word timestamps are available
-      if (lineWt?.length && entry.words.length > 0) {
+      if (lineWt != null && lineWt.length > 0 && entry.words.length > 0) {
         return entry.words
           .map((w, wi) => {
             const t = lineWt[wi]

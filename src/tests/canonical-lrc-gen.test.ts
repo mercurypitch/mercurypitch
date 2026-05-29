@@ -4,10 +4,10 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { LrcLine } from '@/lib/lyrics-service'
-import { computeActiveWord, parseLrcFile, parseLrcWordTimings } from '@/lib/lyrics-service'
-import { buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
+import { buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
+import type { LrcLine } from '@/lib/lyrics-service'
+import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyrics-service'
 
 // ═══════════════════════════════════════════════════════════════
 // DUMMY TEST DATA
@@ -114,8 +114,12 @@ describe('REQ-UV-028: Canonical entry construction', () => {
     // BUT gap from 5→40=35 >20 so synthetic rest before explicit rest
     // AND gap from 40→60=20 NOT >20 so no synthetic rest there
     expect(entries.length).toBeGreaterThanOrEqual(3)
-    const syntheticRests = entries.filter((e) => e.type === 'rest' && e.lrcIndex === -1)
-    const explicitRests = entries.filter((e) => e.type === 'rest' && e.lrcIndex >= 0)
+    const syntheticRests = entries.filter(
+      (e) => e.type === 'rest' && e.lrcIndex === -1,
+    )
+    const explicitRests = entries.filter(
+      (e) => e.type === 'rest' && e.lrcIndex >= 0,
+    )
     // At least one explicit rest at lrcIndex 1
     expect(explicitRests.some((e) => e.lrcIndex === 1)).toBe(true)
     // At least one synthetic rest
@@ -325,7 +329,9 @@ describe('REQ-UV-043: LRC gen Finish canonical→LRC output', () => {
       if (lt === undefined) {
         result.push(`[00:00.00] ${entry.text}`)
       } else {
-        const m = Math.floor(lt / 60).toString().padStart(2, '0')
+        const m = Math.floor(lt / 60)
+          .toString()
+          .padStart(2, '0')
         const s = (lt % 60).toFixed(2).padStart(5, '0')
         if (!entry.text.trim() || entry.text.trim() === '~Rest~') {
           result.push(`[${m}:${s}] ~Rest~`)
@@ -389,7 +395,12 @@ describe('REQ-UV-043: LRC gen Finish canonical→LRC output', () => {
     const entries = buildCanonicalEntries(lrc)
     // Original: line0=5s, line1=35s, line2=40s
     // User touched only line1 (canonical index 2), changed it to 38s
-    const lineTimes: (number | undefined)[] = [undefined, undefined, 38, undefined]
+    const lineTimes: (number | undefined)[] = [
+      undefined,
+      undefined,
+      38,
+      undefined,
+    ]
     const output = buildLrcOutput(entries, lineTimes)
 
     expect(output).toHaveLength(3)
@@ -594,7 +605,12 @@ describe('REQ-UV-042: Partial gen merge logic', () => {
     const newTimes = new Array<number | undefined>(entries.length)
     const touched = new Set<number>([])
 
-    const { finalTimes, origWtCanon } = partialMerge(entries, newTimes, origWt, touched)
+    const { finalTimes, origWtCanon } = partialMerge(
+      entries,
+      newTimes,
+      origWt,
+      touched,
+    )
 
     // LRC index 0→canon 0, LRC index 1→canon 2, LRC index 2→canon 3
     expect(finalTimes[0]).toBe(5)

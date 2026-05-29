@@ -2058,7 +2058,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       </Show>
                       <Show when={whisperStatus() === 'loading'}>
                         <span class="pitch-alignment-stats whisper-processing">
-                          Downloading Model... {Math.round(whisperProgress() ?? 0)}%
+                          Downloading Model...{' '}
+                          {Math.round(whisperProgress() ?? 0)}%
                         </span>
                       </Show>
                       <Show when={whisperStatus() === 'processing'}>
@@ -2069,7 +2070,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       <Show when={whisperStatus() === 'ready'}>
                         <button
                           class="sm-transcribe-btn"
-                          style={{ "margin-left": "auto" }}
+                          style={{ 'margin-left': 'auto' }}
                           onClick={(e) => {
                             e.stopPropagation()
                             startWhisperTranscription()

@@ -23,7 +23,7 @@ async function loadModel() {
         {
           device: 'webgpu', // Try WebGPU first if supported
           dtype: 'fp32',
-          progress_callback: (progressInfo: any) => {
+          progress_callback: (progressInfo) => {
             self.postMessage({ type: 'progress', progressInfo })
           },
         },
@@ -43,7 +43,7 @@ async function loadModel() {
           {
             device: 'wasm',
             dtype: 'q8',
-            progress_callback: (progressInfo: any) => {
+            progress_callback: (progressInfo) => {
               self.postMessage({ type: 'progress', progressInfo })
             },
           },
