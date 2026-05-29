@@ -427,7 +427,9 @@ export const StemMixerLyricsPanelBody: Component<
                         class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
                         style={{
                           '--block-color': props.getBlockColor(bi.blockId),
+                          cursor: 'pointer',
                         }}
+                        onClick={() => props.handleLyricLineClick(item.index)}
                       >
                         <span class="sm-lyrics-gen-line-time">
                           {item.lineTime !== undefined
@@ -453,9 +455,11 @@ export const StemMixerLyricsPanelBody: Component<
                             '--block-color': props.getBlockColor(
                               item.blockInfo.blockId,
                             ),
+                            cursor: 'pointer',
                           }
-                        : {}
+                        : { cursor: 'pointer' }
                     }
+                    onClick={() => props.handleLyricLineClick(item.index)}
                   >
                     <span class="sm-lyrics-gen-line-time">
                       {item.lineTime !== undefined
