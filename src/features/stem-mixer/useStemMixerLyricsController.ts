@@ -1547,16 +1547,20 @@ export function useStemMixerLyricsController(
 
     if (canonical.length > 0) {
       canonical.forEach((entry, i) => {
-        // Find endTime by looking ahead to the next real line, skipping ~Rest~
-        // entries. If we don't skip rests, a rest at the same timestamp as the
-        // current line collapses lineDuration to ~0, killing word-by-word
-        // progressive highlighting.
+        // Find endTime by looking ahead to the next entry, skipping ~Rest~
+        // entries only when they're at nearly the same timestamp as the current
+        // line (within 0.5s). Rests at the same timestamp would collapse
+        // lineDuration to ~0, killing word-by-word progressive highlighting —
+        // but rests substantially later represent real pauses in the song and
+        // should be honored as endTime so highlighting doesn't stretch across
+        // long gaps.
         let endTime = dur
         for (let j = i + 1; j < canonical.length; j++) {
-          if (canonical[j].type !== 'rest') {
-            endTime = canonical[j].time
-            break
-          }
+          const next = canonical[j]
+          const timeDiff = next.time - entry.time
+          if (next.type === 'rest' && timeDiff < 0.5) continue
+          endTime = next.time
+          break
         }
         map.set(i, {
           key: `lrc-${i}`,
