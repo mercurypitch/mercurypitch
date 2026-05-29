@@ -15,7 +15,9 @@ export class WhisperService {
   private rejects = new Map<number, (err: Error) => void>()
 
   public status: 'idle' | 'loading' | 'ready' | 'processing' | 'error' = 'idle'
+  public progress = 0
   public onStatusChange?: (status: string) => void
+  public onProgressChange?: (progress: number) => void
 
   constructor() {
     this.worker = new Worker()
@@ -37,6 +39,12 @@ export class WhisperService {
           this.rejects.get(id)!(new Error(message))
           this.resolves.delete(id)
           this.rejects.delete(id)
+        }
+      } else if (type === 'progress') {
+        const { progressInfo } = e.data
+        if (progressInfo && typeof progressInfo.progress === 'number') {
+          this.progress = progressInfo.progress
+          this.onProgressChange?.(this.progress)
         }
       }
     })

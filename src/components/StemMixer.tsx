@@ -385,10 +385,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     false,
   )
 
-  // ── Whisper transcription ────────────────────────────────────
   const [whisperStatus, setWhisperStatus] = createSignal<
     'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
   >('idle')
+  const [whisperProgress, setWhisperProgress] = createSignal(0)
   const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
     [],
   )
@@ -659,6 +659,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           | 'done'
           | 'error',
       )
+    }
+    whisperServiceRef.onProgressChange = (progress: number) => {
+      setWhisperProgress(progress)
     }
     whisperServiceRef
       .init()
@@ -937,6 +940,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
+          whisperProgress={whisperProgress}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
           workspaceRef={(el) => {
@@ -967,6 +971,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
+          whisperProgress={whisperProgress}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
         />

@@ -23,6 +23,9 @@ async function loadModel() {
         {
           device: 'webgpu', // Try WebGPU first if supported
           dtype: 'fp32',
+          progress_callback: (progressInfo: any) => {
+            self.postMessage({ type: 'progress', progressInfo })
+          },
         },
       )
 
@@ -40,6 +43,9 @@ async function loadModel() {
           {
             device: 'wasm',
             dtype: 'q8',
+            progress_callback: (progressInfo: any) => {
+              self.postMessage({ type: 'progress', progressInfo })
+            },
           },
         )
         self.postMessage({ type: 'status', status: 'ready' })
@@ -76,7 +82,7 @@ self.addEventListener('message', (e) => {
           task: 'transcribe',
           chunk_length_s: 30,
           stride_length_s: 5,
-          return_timestamps: true,
+          return_timestamps: 'word',
         })
 
         const text = (result as { text: string }).text
