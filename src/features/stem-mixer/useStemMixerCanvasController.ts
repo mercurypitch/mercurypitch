@@ -6,6 +6,7 @@ import type { Accessor, Setter } from 'solid-js'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
 import type { DetectedPitch } from '@/lib/pitch-detector'
+import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { PitchNote } from './types'
 
@@ -31,6 +32,7 @@ export interface StemMixerCanvasDeps {
   currentPitch: Accessor<DetectedPitch | null>
   midiNotes: Accessor<MidiNoteEvent[]>
   showNoteLabels: Accessor<boolean>
+  alignedWords: Accessor<AlignedWord[]>
   seekTo: (time: number) => void
   setWindowStart: Setter<number>
   setWindowDuration: Setter<number>
@@ -339,8 +341,30 @@ export const useStemMixerCanvasController = (
           ctx.fillStyle = '#fff'
           ctx.font = 'bold 9px monospace'
           ctx.textAlign = 'center'
-          ctx.fillText(n.noteName, x1 + pillW / 2, y + pillH / 2 + 3)
+          const labelY = y + pillH / 2 + 3
+          ctx.fillText(n.noteName, x1 + pillW / 2, labelY)
           ctx.textAlign = 'start'
+
+          // Draw aligned word below note name
+          const words = deps
+            .alignedWords()
+            .filter(
+              (w) =>
+                w.noteName === n.noteName &&
+                w.startSec < n.endSec &&
+                w.endSec > n.startSec,
+            )
+          if (words.length > 0) {
+            const wordText = words
+              .map((w) => w.word)
+              .join(' ')
+              .slice(0, 20)
+            ctx.font = '7px monospace'
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'
+            ctx.textAlign = 'center'
+            ctx.fillText(wordText, x1 + pillW / 2, labelY + 10)
+            ctx.textAlign = 'start'
+          }
         }
       }
     }
