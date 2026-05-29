@@ -346,7 +346,8 @@ export const StemMixerFixedWorkspace: Component<
               style={{ height: `${props.fixedPanelHeights().pitch}px` }}
               data-fixed-panel="pitch"
             >
-              <div class="sm-panel-header">Vocal Pitch
+              <div class="sm-panel-header">
+                Vocal Pitch
                 <Show when={props.whisperStatus() === 'processing'}>
                   <span class="pitch-alignment-stats whisper-processing">
                     Transcribing...
@@ -368,7 +369,8 @@ export const StemMixerFixedWorkspace: Component<
                 <PitchCanvasToolbar
                   showNoteLabels={props.showNoteLabels}
                   setShowNoteLabels={props.setShowNoteLabels}
-                /></div>
+                />
+              </div>
               <canvas
                 ref={props.setCanvasRef('pitch')}
                 class="sm-canvas sm-canvas-pitch"

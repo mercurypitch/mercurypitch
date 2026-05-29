@@ -1321,15 +1321,15 @@ export function useStemMixerLyricsController(
           }
           const gap = nextMappedTime - prevMappedTime
           const posInGap = i - prevMappedIdx
-          const gapLen = (() => {
-            let n = prevMappedIdx + 1
-            while (n <= lastTouched && !touchedLines.has(n)) n++
-            return n
-          })() - prevMappedIdx
+          const gapLen =
+            (() => {
+              let n = prevMappedIdx + 1
+              while (n <= lastTouched && !touchedLines.has(n)) n++
+              return n
+            })() - prevMappedIdx
           finalTimes[i] =
-            Math.round(
-              (prevMappedTime + gap * (posInGap / gapLen)) * 1000,
-            ) / 1000
+            Math.round((prevMappedTime + gap * (posInGap / gapLen)) * 1000) /
+            1000
         }
       }
     }
