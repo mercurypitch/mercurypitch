@@ -47,8 +47,9 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     const _wf = props.waveform
     const _ar = props.analysisResults
     const _sn = props.segmentedNotes
+    const _sl = props.showNoteLabels
     const trackReactivity = (..._args: unknown[]) => {}
-    trackReactivity(_wf, _ar, _sn)
+    trackReactivity(_wf, _ar, _sn, _sl)
     forceRedraw = true
   })
 

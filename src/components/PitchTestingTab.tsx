@@ -375,9 +375,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           | 'error',
       )
     }
-    whisperServiceRef.init().then(() => {
-      setWhisperStatus('ready')
-    })
+    whisperServiceRef
+      .init()
+      .then(() => {
+        setWhisperStatus('ready')
+      })
+      .catch((err) => {
+        console.error('[PitchTestingTab] Whisper init failed:', err)
+        setWhisperStatus('error')
+      })
   })
 
   let detectionTimerId: number | null = null
