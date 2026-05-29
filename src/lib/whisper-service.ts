@@ -47,13 +47,20 @@ export class WhisperService {
 
     this.worker.postMessage({ type: 'load' })
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const startedAt = Date.now()
       const check = setInterval(() => {
         if (this.status === 'ready') {
           clearInterval(check)
           resolve()
+        } else if (this.status === 'error') {
+          clearInterval(check)
+          reject(new Error('Whisper model failed to load'))
+        } else if (Date.now() - startedAt > 120_000) {
+          clearInterval(check)
+          reject(new Error('Whisper model load timed out (120s)'))
         }
-      }, 100)
+      }, 200)
     })
   }
 
@@ -63,8 +70,20 @@ export class WhisperService {
     const id = this.messageId++
 
     return new Promise((resolve, reject) => {
-      this.resolves.set(id, resolve)
-      this.rejects.set(id, reject)
+      const timeout = setTimeout(() => {
+        this.resolves.delete(id)
+        this.rejects.delete(id)
+        reject(new Error('Whisper transcription timed out (180s)'))
+      }, 180_000)
+
+      this.resolves.set(id, (val) => {
+        clearTimeout(timeout)
+        resolve(val)
+      })
+      this.rejects.set(id, (err) => {
+        clearTimeout(timeout)
+        reject(err)
+      })
 
       this.worker.postMessage({
         type: 'transcribe',

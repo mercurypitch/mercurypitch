@@ -641,9 +641,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           | 'error',
       )
     }
-    whisperServiceRef.init().then(() => {
-      setWhisperStatus('ready')
-    })
+    whisperServiceRef
+      .init()
+      .then(() => {
+        setWhisperStatus('ready')
+      })
+      .catch((err) => {
+        console.error('[StemMixer] Whisper init failed:', err)
+        setWhisperStatus('error')
+      })
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()

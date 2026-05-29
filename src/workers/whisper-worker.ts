@@ -32,16 +32,22 @@ async function loadModel() {
         'Failed to load whisper pipeline with WebGPU, falling back to WASM',
         err,
       )
-      // Fallback to WASM
-      whisperPipeline = await pipeline(
-        'automatic-speech-recognition',
-        'Xenova/whisper-tiny',
-        {
-          device: 'wasm',
-          dtype: 'q8',
-        },
-      )
-      self.postMessage({ type: 'status', status: 'ready' })
+      try {
+        // Fallback to WASM
+        whisperPipeline = await pipeline(
+          'automatic-speech-recognition',
+          'Xenova/whisper-tiny',
+          {
+            device: 'wasm',
+            dtype: 'q8',
+          },
+        )
+        self.postMessage({ type: 'status', status: 'ready' })
+      } catch (wasmErr) {
+        console.error('Failed to load whisper pipeline with WASM', wasmErr)
+        self.postMessage({ type: 'status', status: 'error' })
+        loadingPromise = null
+      }
     }
   })()
 
