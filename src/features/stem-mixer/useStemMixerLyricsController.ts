@@ -55,9 +55,9 @@ export interface StemMixerLyricsController {
   lrcGenMode: () => boolean
   lrcGenLineIdx: () => number
   lrcGenWordIdx: () => number
-  lrcGenLineTimes: () => number[]
+  lrcGenLineTimes: () => (number | undefined)[]
   lrcGenWordTimings: () => WordTimingsMap
-  setLrcGenLineTimes: Setter<number[]>
+  setLrcGenLineTimes: Setter<(number | undefined)[]>
   setLrcGenWordTimings: Setter<WordTimingsMap>
   blocks: () => LyricsBlock[]
   setBlocks: Setter<LyricsBlock[]>
@@ -254,7 +254,7 @@ export function useStemMixerLyricsController(
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
   const [lrcGenWordIdx, setLrcGenWordIdx] = createSignal(0)
-  const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<number[]>([])
+  const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<(number | undefined)[]>([])
   const [lrcGenWordTimings, setLrcGenWordTimings] =
     createSignal<WordTimingsMap>({})
   const [blocks, setBlocks] = createSignal<LyricsBlock[]>([])
@@ -1077,22 +1077,41 @@ export function useStemMixerLyricsController(
     }
 
     if (resumeLineIdx === 0 && resumeWordIdx === 0) {
+      // Build LRC→canonical index map so wordTimings (keyed by LRC index)
+      // are placed at the correct canonical positions (which may include
+      // synthetic ~Rest~ entries for large gaps).
+      const canonical = canonicalLrcLines()
+      const lrcToCanonical = new Map<number, number>()
+      for (const entry of canonical) {
+        if (entry.lrcIndex >= 0) lrcToCanonical.set(entry.lrcIndex, entry.canonicalIndex)
+      }
+
       const eb = editBuffer()
       if (Object.keys(eb).length > 0) {
-        setLrcGenLineTimes(
-          Object.keys(eb)
-            .map((k) => eb[+k][0] ?? 0)
-            .slice(0, lines.length),
-        )
-        setLrcGenWordTimings(structuredClone(eb))
+        const lineTimes = new Array<number | undefined>(lines.length)
+        const wordT: WordTimingsMap = {}
+        for (const k of Object.keys(eb)) {
+          const canonIdx = lrcToCanonical.get(+k)
+          if (canonIdx !== undefined) {
+            lineTimes[canonIdx] = eb[+k][0] ?? 0
+            wordT[canonIdx] = [...eb[+k]]
+          }
+        }
+        setLrcGenLineTimes(lineTimes)
+        setLrcGenWordTimings(wordT)
       } else if (Object.keys(wordTimings()).length > 0) {
         const wt = wordTimings()
-        setLrcGenLineTimes(
-          Object.keys(wt)
-            .map((k) => wt[+k][0] ?? 0)
-            .slice(0, lines.length),
-        )
-        setLrcGenWordTimings(structuredClone(wt))
+        const lineTimes = new Array<number | undefined>(lines.length)
+        const wordT: WordTimingsMap = {}
+        for (const k of Object.keys(wt)) {
+          const canonIdx = lrcToCanonical.get(+k)
+          if (canonIdx !== undefined) {
+            lineTimes[canonIdx] = wt[+k][0] ?? 0
+            wordT[canonIdx] = [...wt[+k]]
+          }
+        }
+        setLrcGenLineTimes(lineTimes)
+        setLrcGenWordTimings(wordT)
       } else {
         setLrcGenLineTimes([])
         setLrcGenWordTimings({})
@@ -1270,45 +1289,63 @@ export function useStemMixerLyricsController(
   const handleLrcGenFinish = () => {
     expandAllBlockInstances()
 
+    const canonical = canonicalLrcLines()
     const lines = getGenLines()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
-    const rawText = lines.join('\n')
+
+    // Build canonical↔LRC index maps for correct output
+    const canonToLrc = new Map<number, number>()
+    const lrcToCanon = new Map<number, number>()
+    for (const entry of canonical) {
+      if (entry.lrcIndex >= 0) {
+        canonToLrc.set(entry.canonicalIndex, entry.lrcIndex)
+        lrcToCanon.set(entry.lrcIndex, entry.canonicalIndex)
+      }
+    }
+
+    // Convert preGenSnapshot wordTimings from LRC→canonical indices
+    const origWtLrc = preGenSnapshot?.wordTimings
+    const origWtCanon: WordTimingsMap | undefined = origWtLrc
+      ? (() => {
+          const m: WordTimingsMap = {}
+          for (const k of Object.keys(origWtLrc)) {
+            const ci = lrcToCanon.get(+k)
+            if (ci !== undefined) m[ci] = [...origWtLrc[+k]]
+          }
+          return m
+        })()
+      : undefined
 
     const allMapped = lrcGenLineIdx() >= lines.length
 
     let finalTimes: (number | undefined)[]
-    let mergedWordTimes: WordTimingsMap
+    let mergedWordTimesCanon: WordTimingsMap
 
     if (allMapped) {
-      // Full map: use all new timings
       finalTimes = lineTimes.slice()
-      mergedWordTimes = wordTimes
+      mergedWordTimesCanon = wordTimes
     } else {
       // Partial merge: only update explicitly touched lines
-      const origWt = preGenSnapshot?.wordTimings
       finalTimes = lines.map((_line, i) => {
         if (touchedLines.has(i)) return lineTimes[i]
-        // Keep original timestamp if it existed
-        if (origWt?.[i] !== undefined) return origWt[i][0]
+        if (origWtCanon?.[i] !== undefined) return origWtCanon[i][0]
         return undefined
       })
 
       // Merge word timings: touched lines get new, rest keep original
-      mergedWordTimes = {}
-      if (origWt) {
-        for (const k of Object.keys(origWt)) {
+      mergedWordTimesCanon = {}
+      if (origWtCanon) {
+        for (const k of Object.keys(origWtCanon)) {
           const ki = +k
-          if (!touchedLines.has(ki)) mergedWordTimes[ki] = [...origWt[ki]]
+          if (!touchedLines.has(ki)) mergedWordTimesCanon[ki] = [...origWtCanon[ki]]
         }
       }
       for (const k of Object.keys(wordTimes)) {
-        if (touchedLines.has(+k)) mergedWordTimes[+k] = [...wordTimes[+k]]
+        if (touchedLines.has(+k)) mergedWordTimesCanon[+k] = [...wordTimes[+k]]
       }
 
-      // Fill gaps: interpolate between mapped lines for any that are undefined
-      // and past the last line the user has seen (end-of-song).
-      // Lines before the first touched line with no timestamp keep [00:00.00].
+      // Fill gaps: interpolate between mapped lines
       const lastTouched = Math.max(-1, ...Array.from(touchedLines))
       const songEnd = deps.duration()
       let prevMappedIdx = -1
@@ -1320,7 +1357,6 @@ export function useStemMixerLyricsController(
             prevMappedTime = finalTimes[i]!
           }
         } else if (finalTimes[i] === undefined) {
-          // Find next mapped time (or end of song)
           let nextMappedTime = songEnd
           for (let j = i + 1; j <= lastTouched; j++) {
             if (touchedLines.has(j) && finalTimes[j] !== undefined) {
@@ -1343,20 +1379,33 @@ export function useStemMixerLyricsController(
       }
     }
 
-    const lrcText = lines
-      .map((line: string, i: number) => {
-        const lt = finalTimes[i]
-        if (!line.trim()) {
-          if (lt === undefined) return ''
-          return `[${formatTimeLrcWord(lt)}] ~Rest~`
-        }
-        if (lt === undefined) return `[00:00.00] ${line}`
-        return `[${formatTimeLrcWord(lt)}] ${line}`
-      })
-      .join('\n')
+    // Build LRC text from canonical entries — skip synthetic ~Rest~,
+    // output only real lines with correct LRC-indexed times.
+    // Also build mergedWordTimes keyed by LRC index.
+    const mergedWordTimes: WordTimingsMap = {}
+    for (const entry of canonical) {
+      if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
+      const ci = entry.canonicalIndex
+      const wts = mergedWordTimesCanon[ci]
+      if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
+    }
+
+    const rawLinesForText: string[] = []
+    for (const entry of canonical) {
+      if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
+      const ci = entry.canonicalIndex
+      const lt = finalTimes[ci]
+      if (!entry.text.trim()) {
+        if (lt !== undefined) rawLinesForText.push(`[${formatTimeLrcWord(lt)}] ~Rest~`)
+        continue
+      }
+      if (lt === undefined) rawLinesForText.push(`[00:00.00] ${entry.text}`)
+      else rawLinesForText.push(`[${formatTimeLrcWord(lt)}] ${entry.text}`)
+    }
+    const lrcText = rawLinesForText.join('\n')
 
     const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
-    persistLyrics(lrcText, 'lrc', filename, mergedWordTimes, rawText)
+    persistLyrics(lrcText, 'lrc', filename, mergedWordTimes, lrcText)
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
     setLyricsLines([])
