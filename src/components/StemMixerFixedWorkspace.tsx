@@ -50,6 +50,7 @@ interface StemMixerFixedWorkspaceProps {
   // Whisper alignment
   whisperStatus: Accessor<string>
   alignmentResult: Accessor<AlignmentResult>
+  startWhisperTranscription: () => void
 }
 
 export const StemMixerFixedWorkspace: Component<
@@ -365,6 +366,18 @@ export const StemMixerFixedWorkspace: Component<
                   >
                     {Math.round(props.alignmentResult().accuracy * 100)}% mapped
                   </span>
+                </Show>
+                <Show when={props.whisperStatus() === 'ready'}>
+                  <button
+                    class="sm-transcribe-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      props.startWhisperTranscription()
+                    }}
+                    title="Transcribe words from vocal stem"
+                  >
+                    Transcribe
+                  </button>
                 </Show>
                 <PitchCanvasToolbar
                   showNoteLabels={props.showNoteLabels}

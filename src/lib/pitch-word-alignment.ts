@@ -22,6 +22,14 @@ export interface AlignmentResult {
   accuracy: number
 }
 
+/** Minimal shape needed from LRC entries to extract word timings. */
+export interface LrcWordEntry {
+  time: number
+  endTime?: number
+  words: string[]
+  wordTimes?: number[]
+}
+
 /**
  * Map whisper-timestamped word segments to detected pitch notes
  * by temporal overlap. Each word is assigned to the note with the
@@ -101,4 +109,54 @@ export function filterWordSegments(
       text.length > 0 && text !== '.' && text !== '...' && text !== '[Music]'
     )
   })
+}
+
+/**
+ * Convert LRC canonical entries (with optional word-level timestamps)
+ * into WhisperSegment-shaped objects for use with alignPitchToWords.
+ * Skips rest entries.
+ */
+export function lrcEntriesToSegments(
+  entries: LrcWordEntry[],
+): WhisperSegment[] {
+  const segments: WhisperSegment[] = []
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+    if (entry.words.length === 0) continue
+
+    const wordTimes = entry.wordTimes
+    const lineEnd =
+      entry.endTime ??
+      (i + 1 < entries.length ? entries[i + 1].time : entry.time + 5)
+
+    if (wordTimes && wordTimes.length > 0) {
+      for (let j = 0; j < entry.words.length; j++) {
+        const start = wordTimes[j] ?? entry.time
+        const end =
+          j + 1 < wordTimes.length
+            ? wordTimes[j + 1]
+            : j + 1 < entry.words.length
+              ? lineEnd
+              : lineEnd
+        segments.push({
+          text: entry.words[j],
+          timestamp: [start, Math.max(start + 0.05, end)],
+        })
+      }
+    } else {
+      // No word-level timestamps — distribute evenly across line duration
+      const duration = lineEnd - entry.time
+      const wordDuration = Math.max(0.05, duration / entry.words.length)
+      for (let j = 0; j < entry.words.length; j++) {
+        const start = entry.time + j * wordDuration
+        segments.push({
+          text: entry.words[j],
+          timestamp: [start, start + wordDuration],
+        })
+      }
+    }
+  }
+
+  return segments
 }
