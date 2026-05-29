@@ -32,6 +32,7 @@ export interface StemMixerCanvasDeps {
   currentPitch: Accessor<DetectedPitch | null>
   midiNotes: Accessor<MidiNoteEvent[]>
   showNoteLabels: Accessor<boolean>
+  showLyricLabels: Accessor<boolean>
   alignedWords: Accessor<AlignedWord[]>
   seekTo: (time: number) => void
   setWindowStart: Setter<number>
@@ -71,8 +72,16 @@ export const useStemMixerCanvasController = (
     midi: undefined,
   }
 
-  const setCanvasRef = (id: string) => (el: HTMLCanvasElement) => {
+  const setCanvasRef = (id: string) => (el: HTMLCanvasElement | null) => {
+    // Clean up previous listener when SolidJS calls ref(null) on unmount/change
+    if (el === null) {
+      const prev = canvasRefs[id]
+      if (prev) prev.removeEventListener('wheel', handleCanvasWheel)
+      canvasRefs[id] = undefined
+      return
+    }
     canvasRefs[id] = el
+    el.addEventListener('wheel', handleCanvasWheel, { passive: false })
   }
 
   // ── Sizing ───────────────────────────────────────────────────
@@ -346,24 +355,26 @@ export const useStemMixerCanvasController = (
           ctx.textAlign = 'start'
 
           // Draw aligned word below note name
-          const words = deps
-            .alignedWords()
-            .filter(
-              (w) =>
-                w.midi != null &&
-                w.startSec < n.endSec &&
-                w.endSec > n.startSec,
-            )
-          if (words.length > 0) {
-            const wordText = words
-              .map((w) => w.word)
-              .join(' ')
-              .slice(0, 20)
-            ctx.font = '7px monospace'
-            ctx.fillStyle = 'rgba(255,255,255,0.7)'
-            ctx.textAlign = 'center'
-            ctx.fillText(wordText, x1 + pillW / 2, labelY + 10)
-            ctx.textAlign = 'start'
+          if (deps.showLyricLabels()) {
+            const words = deps
+              .alignedWords()
+              .filter(
+                (w) =>
+                  w.midi != null &&
+                  w.startSec < n.endSec &&
+                  w.endSec > n.startSec,
+              )
+            if (words.length > 0) {
+              const wordText = words
+                .map((w) => w.word)
+                .join(' ')
+                .slice(0, 20)
+              ctx.font = '7px monospace'
+              ctx.fillStyle = 'rgba(255,255,255,0.7)'
+              ctx.textAlign = 'center'
+              ctx.fillText(wordText, x1 + pillW / 2, labelY + 10)
+              ctx.textAlign = 'start'
+            }
           }
         }
       }

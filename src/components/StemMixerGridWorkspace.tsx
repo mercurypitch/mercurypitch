@@ -35,7 +35,10 @@ interface StemMixerGridWorkspaceProps {
   stemControls: Omit<StemMixerStemControlsProps, 'direction'>
 
   // Lyrics panel body props
-  lyricsPanel: Omit<StemMixerLyricsPanelBodyProps, 'idSuffix'>
+  lyricsPanel: Omit<
+    StemMixerLyricsPanelBodyProps,
+    'idSuffix' | 'showLyricNoteLabels' | 'alignmentResult'
+  >
 
   // Lyrics header actions (not in lyricsPanel)
   handleForceSearch: () => void
@@ -52,6 +55,10 @@ interface StemMixerGridWorkspaceProps {
   // Note labels toggle
   showNoteLabels: Accessor<boolean>
   setShowNoteLabels: Setter<boolean>
+  showLyricLabels: Accessor<boolean>
+  setShowLyricLabels: Setter<boolean>
+  showLyricNoteLabels: Accessor<boolean>
+  setShowLyricNoteLabels: Setter<boolean>
 
   // Whisper alignment
   whisperStatus: Accessor<string>
@@ -113,7 +120,6 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             ref={props.setCanvasRef('overview')}
             class="sm-canvas sm-canvas-overview"
             onClick={(e) => props.handleWaveformClick(e)}
-            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -153,7 +159,6 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
           <canvas
             ref={props.setCanvasRef('live')}
             class="sm-canvas sm-canvas-live"
-            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -233,12 +238,13 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <PitchCanvasToolbar
               showNoteLabels={props.showNoteLabels}
               setShowNoteLabels={props.setShowNoteLabels}
+              showLyricLabels={props.showLyricLabels}
+              setShowLyricLabels={props.setShowLyricLabels}
             />
           </div>
           <canvas
             ref={props.setCanvasRef('pitch')}
             class="sm-canvas sm-canvas-pitch"
-            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -578,9 +584,34 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   </button>
                 </div>
               </Show>
+              <Show when={props.alignmentResult().totalWords > 0}>
+                <button
+                  class={`sm-lyrics-note-toggle${props.showLyricNoteLabels() ? ' active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.setShowLyricNoteLabels((prev) => !prev)
+                  }}
+                  title={
+                    props.showLyricNoteLabels()
+                      ? 'Hide note labels on words'
+                      : 'Show note labels on words'
+                  }
+                >
+                  <svg viewBox="0 0 24 24" width="10" height="10">
+                    <path
+                      fill="currentColor"
+                      d="M12 3l6 4H6zm0 18l-6-4h12zm-6-4V7l6 4-6 4zm12 0l-6-4-6 4h12z"
+                    />
+                  </svg>
+                </button>
+              </Show>
             </div>
           </div>
-          <StemMixerLyricsPanelBody {...lp()} />
+          <StemMixerLyricsPanelBody
+            {...lp()}
+            showLyricNoteLabels={props.showLyricNoteLabels}
+            alignmentResult={props.alignmentResult}
+          />
           <div
             class="sm-resize-handle"
             onPointerDown={(e) => props.handleResizeStart('lyrics', e)}

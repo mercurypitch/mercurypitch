@@ -16,15 +16,18 @@ import { computeFileHash } from '@/lib/file-hash'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import { mapLyricsToMelody } from '@/lib/lyrics-service'
+import type { MergedNote } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { alignPitchToWords, filterWordSegments, } from '@/lib/pitch-word-alignment'
+import { alignPitchToWords, filterWordSegments, lrcLinesToSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
+import { freqToMidi } from '@/lib/scale-data'
+import { formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import type { WhisperSegment } from '@/lib/whisper-service'
-import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
 import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
@@ -161,35 +164,131 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   const [showSegmentedNotes, setShowSegmentedNotes] = createSignal(true)
   const [showNoteLabels, setShowNoteLabels] = createSignal(false)
+  const [showLyricLabels, setShowLyricLabels] = createSignal(false)
 
   // ── Whisper transcription ────────────────────────────────────
-  const [whisperStatus, setWhisperStatus] = createSignal<
-    'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
-  >('idle')
-  const [whisperProgress, setWhisperProgress] = createSignal(0)
-  const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
-    [],
-  )
-  let whisperServiceRef: WhisperService | null = null
-  let whisperTranscribing = false
+  const whisper = useWhisperTranscription({
+    getAudioBuffer: () => activeTrack()?.audioBuffer,
+    logTag: 'PitchTestingTab',
+    onTranscriptionComplete: (segments) => {
+      setTimeout(() => {
+        const r = activeAlignment()
+        formatAlignmentDebugLog('PitchTestingTab', r)
+        // Compare raw vs denoised
+        const track = activeTrack()
+        const rawNotes: MergedNote[] = []
+        const denoisedNotes: MergedNote[] = []
+        if (
+          track?.analysisResults != null &&
+          track.analysisResults.length > 0
+        ) {
+          const primaryPitches = track.analysisResults[0].pitches
+          const detections = primaryPitches
+            .filter((p) => p.freq != null && p.freq > 0)
+            .map((p) => ({
+              midi: freqToMidi(p.freq!),
+              noteName: p.noteName ?? '',
+              timeSec: p.time,
+            }))
+          rawNotes.push(...mergeConsecutiveNotes(detections))
+        }
+        if (track?.segmentedNotes != null && track.segmentedNotes.length > 0) {
+          denoisedNotes.push(
+            ...melodyItemsToMergedNotes(track.segmentedNotes, 120),
+          )
+        }
+        logAlignmentComparison(
+          'PitchTestingTab',
+          rawNotes,
+          denoisedNotes,
+          segments,
+        )
+      }, 0)
+    },
+  })
+  // Aliases for backward compatibility
+  const whisperStatus = whisper.status
+  const whisperProgress = whisper.progress
+  const whisperSegments = whisper.segments
+  const transcribeElapsed = whisper.elapsed
+
+  // Clear whisper state when active track changes -- each track has its own
+  // transcription. Without this, stale words from a previous track leak over.
+  createEffect(() => {
+    activeTrackId() // track the signal for reactivity
+    // Reset segments and status so old results don't bleed into new tracks
+    whisper.setSegments([])
+    if (whisper.status() === 'done') {
+      whisper.setStatus('ready')
+    }
+  })
 
   // ── Pitch-word alignment memo ────────────────────────────────
   const activeAlignment = createMemo<AlignmentResult>(() => {
     const track = activeTrack()
-    const notes = track?.segmentedNotes
-    const segments = whisperSegments()
-    if (!notes || notes.length === 0 || segments.length === 0) {
+    const useDenoised = showSegmentedNotes()
+
+    // Determine note source based on denoised toggle
+    let merged: MergedNote[] = []
+    if (
+      useDenoised &&
+      track?.segmentedNotes &&
+      track.segmentedNotes.length > 0
+    ) {
+      merged = melodyItemsToMergedNotes(track.segmentedNotes, 120)
+    } else if (track?.analysisResults && track.analysisResults.length > 0) {
+      // Fall back to raw pitches from primary algorithm
+      const primaryPitches = track.analysisResults[0].pitches
+      if (primaryPitches.length > 0) {
+        const detections = primaryPitches
+          .filter((p) => p.freq != null && p.freq > 0)
+          .map((p) => ({
+            midi: freqToMidi(p.freq!),
+            noteName: p.noteName ?? '',
+            timeSec: p.time,
+          }))
+        merged = mergeConsecutiveNotes(detections)
+      }
+    }
+
+    if (merged.length === 0) {
       return {
         alignedWords: [],
         totalWords: 0,
         mappedWords: 0,
         unmappedWords: 0,
         accuracy: 0,
+        debugEntries: [],
       }
     }
-    const merged = melodyItemsToMergedNotes(notes, 120)
+
+    // Prefer whisper segments; fall back to LRC word timings
+    let segments = whisperSegments()
+    if (segments.length === 0) {
+      const lrc = track?.lrcLines
+      if (lrc && lrc.length > 0) {
+        segments = lrcLinesToSegments(lrc)
+      }
+    }
+
+    if (segments.length === 0) {
+      return {
+        alignedWords: [],
+        totalWords: 0,
+        mappedWords: 0,
+        unmappedWords: 0,
+        accuracy: 0,
+        debugEntries: [],
+      }
+    }
+
     const filtered = filterWordSegments(segments)
-    return alignPitchToWords(merged, filtered)
+    const split = splitMultiWordSegments(filtered)
+    const noteSource = useDenoised ? 'denoised' : 'raw'
+    console.log(
+      `[PitchTestingTab] Alignment using ${noteSource} notes (${merged.length} notes, ${split.length} words)`,
+    )
+    return alignPitchToWords(merged, split)
   })
 
   const uploadedFile = createMemo(() => activeTrack()?.file || null)
@@ -364,30 +463,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     })()
 
     // ── Whisper service init ──────────────────────────────────
-    whisperServiceRef = new WhisperService()
-    whisperServiceRef.onStatusChange = (status: string) => {
-      setWhisperStatus(
-        status as
-          | 'idle'
-          | 'loading'
-          | 'ready'
-          | 'processing'
-          | 'done'
-          | 'error',
-      )
-    }
-    whisperServiceRef.onProgressChange = (progress: number) => {
-      setWhisperProgress(progress)
-    }
-    whisperServiceRef
-      .init()
-      .then(() => {
-        setWhisperStatus('ready')
-      })
-      .catch((err) => {
-        console.error('[PitchTestingTab] Whisper init failed:', err)
-        setWhisperStatus('error')
-      })
+    whisper.initWhisper()
   })
 
   let detectionTimerId: number | null = null
@@ -988,26 +1064,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   })
 
   const startWhisperTranscription = () => {
-    const status = whisperStatus()
-    const track = activeTrack()
-    const buffer = track?.audioBuffer
-    if (status !== 'ready' || !buffer || whisperTranscribing) return
-    whisperTranscribing = true
-    setWhisperStatus('processing')
-
-    resampleTo16kHz(buffer)
-      .then((audioData) => whisperServiceRef!.transcribe(audioData))
-      .then((result) => {
-        setWhisperSegments(result.chunks)
-        setWhisperStatus('done')
-      })
-      .catch((err) => {
-        console.error('[PitchTestingTab] Whisper transcription failed:', err)
-        setWhisperStatus('error')
-      })
-      .finally(() => {
-        whisperTranscribing = false
-      })
+    whisper.startTranscription()
   }
 
   // Start live detection
@@ -1170,7 +1227,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   onCleanup(() => {
     stopLiveDetection()
-    whisperServiceRef?.destroy()
+    whisper.destroy()
   })
 
   // Memoized detector lookup to avoid reactivity loops
@@ -2054,6 +2111,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         <PitchCanvasToolbar
                           showNoteLabels={showNoteLabels}
                           setShowNoteLabels={setShowNoteLabels}
+                          showLyricLabels={showLyricLabels}
+                          setShowLyricLabels={setShowLyricLabels}
                         />
                       </Show>
                       <Show when={whisperStatus() === 'loading'}>
@@ -2064,7 +2123,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       </Show>
                       <Show when={whisperStatus() === 'processing'}>
                         <span class="pitch-alignment-stats whisper-processing">
-                          Transcribing...
+                          Transcribing
+                          {transcribeElapsed() >= 0
+                            ? ` (${transcribeElapsed()}s)`
+                            : '...'}
                         </span>
                       </Show>
                       <Show when={whisperStatus() === 'ready'}>
@@ -2115,6 +2177,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         segmentedNotes={currentSegmentedNotes()}
                         audioFile={uploadedFile()}
                         showNoteLabels={showNoteLabels()}
+                        showLyricLabels={showLyricLabels()}
+                        alignedWords={activeAlignment().alignedWords}
                       />
                     </div>
                     <div class="resize-handle" onMouseDown={onResizeMouseDown}>
