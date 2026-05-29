@@ -7,6 +7,7 @@ import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import { buildCanonicalEntries, buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
+import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -210,13 +211,7 @@ const formatTimeMs = (secs: number): string => {
   return `${m.toString().padStart(2, '0')}:${s}.${h}`
 }
 
-const formatTimeLrcWord = (secs: number): string => {
-  const m = Math.floor(secs / 60)
-    .toString()
-    .padStart(2, '0')
-  const s = (secs % 60).toFixed(2).padStart(5, '0')
-  return `${m}:${s}`
-}
+const formatTimeLrcWord = formatTimeLrc
 
 // ── Controller factory ─────────────────────────────────────────────
 
@@ -731,18 +726,8 @@ export function useStemMixerLyricsController(
 
     let text: string
     if (hasCanonical) {
-      text = canonical
-        .map((entry) => {
-          if (entry.type === 'rest') {
-            if (entry.lrcIndex === -1) return ''
-            const lineTime = merged[entry.lrcIndex]?.[0] ?? entry.time
-            return `[${formatTimeLrcWord(lineTime)}] ~Rest~`
-          }
-          const lineTime = merged[entry.lrcIndex]?.[0] ?? entry.time
-          return `[${formatTimeLrcWord(lineTime)}] ${entry.text}`
-        })
-        .filter((l) => l !== '')
-        .join('\n')
+      const lineTimes = canonical.map((e) => merged[e.lrcIndex]?.[0])
+      text = buildLrcTextFromCanonical(canonical, lineTimes)
     } else {
       text = lyricsLines()
         .map((line, i) => {
@@ -1378,19 +1363,8 @@ export function useStemMixerLyricsController(
       if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
     }
 
-    const rawLinesForText: string[] = []
-    for (const entry of canonical) {
-      if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
-      const ci = entry.canonicalIndex
-      const lt = finalTimes[ci]
-      if (!entry.text.trim()) {
-        if (lt !== undefined) rawLinesForText.push(`[${formatTimeLrcWord(lt)}] ~Rest~`)
-        continue
-      }
-      if (lt === undefined) rawLinesForText.push(`[00:00.00] ${entry.text}`)
-      else rawLinesForText.push(`[${formatTimeLrcWord(lt)}] ${entry.text}`)
-    }
-    const lrcText = rawLinesForText.join('\n')
+    const rawLinesForText = finalTimes.map((t) => t ?? 0)
+    const lrcText = buildLrcTextFromCanonical(canonical, rawLinesForText)
 
     const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
     persistLyrics(lrcText, 'lrc', filename, mergedWordTimes, lrcText)
@@ -1431,76 +1405,16 @@ export function useStemMixerLyricsController(
     const rawText = persisted?.rawText
 
     if (hasWordTimings === true && rawText !== undefined) {
-      const lines = rawText.split('\n')
-      lrcText = lines
-        .map((line: string, i: number) => {
-          if (!line.trim()) return ''
-          const wordList = line.split(/\s+/).filter((w: string) => w.length > 0)
-          const lineWt = savedWt[i]
-          if (
-            lineWt === undefined ||
-            lineWt.length === 0 ||
-            wordList.length === 0
-          ) {
-            return `[00:00.00] ${line}`
-          }
-          return wordList
-            .map((w: string, wi: number) => {
-              const t = lineWt[wi]
-              return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
-            })
-            .join(' ')
-        })
-        .filter((l: string) => l !== '')
-        .join('\n')
+      lrcText = buildWordLevelLrc(rawText.split('\n'), savedWt)
     } else if (lrcLines().length > 0) {
-      const canonical = canonicalLrcLines()
-      const wt = wordTimings()
-      lrcText = canonical
-        .map((entry) => {
-          if (entry.type === 'rest') {
-            if (entry.lrcIndex === -1) return ''
-            return `[${formatTimeLrcWord(entry.time)}] ~Rest~`
-          }
-          const i = entry.lrcIndex
-          const lineWt = wt[i] ?? entry.wordTimes
-          if (
-            lineWt !== undefined &&
-            lineWt.length > 0 &&
-            entry.words.length > 0
-          ) {
-            return entry.words
-              .map((w: string, wi: number) => {
-                const t = lineWt[wi]
-                return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
-              })
-              .join(' ')
-          }
-          return `[${formatTimeLrcWord(entry.time)}] ${entry.text}`
-        })
-        .filter((l: string) => l !== '')
-        .join('\n')
+      lrcText = buildLrcTextFromCanonical(
+        canonicalLrcLines(),
+        undefined,
+        wordTimings(),
+      )
     } else if (lyricsLines().length > 0) {
       const wt = wordTimings()
-      const hasWt = Object.keys(wt).length > 0
-      lrcText = lyricsLines()
-        .map((line, i) => {
-          if (!line.trim()) return ''
-          if (hasWt) {
-            const lineWt = wt[i]
-            const words = line.split(/\s+/).filter((w: string) => w.length > 0)
-            if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
-              return words
-                .map((w: string, wi: number) => {
-                  const t = lineWt[wi]
-                  return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
-                })
-                .join(' ')
-            }
-          }
-          return `[00:00.00] ${line}`
-        })
-        .join('\n')
+      lrcText = buildWordLevelLrc(lyricsLines(), wt)
     }
 
     if (!lrcText.trim()) return
