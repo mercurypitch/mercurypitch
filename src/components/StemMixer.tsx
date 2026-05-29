@@ -12,6 +12,7 @@ import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMic
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
+import { IS_DEV } from '@/lib/defaults'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { alignPitchToWords, filterWordSegments, lrcEntriesToSegments, } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
@@ -395,6 +396,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   )
   let whisperServiceRef: WhisperService | null = null
   let whisperTranscribing = false
+  const [transcribeElapsed, setTranscribeElapsed] = createSignal(-1)
+  let transcribeTimer: ReturnType<typeof setInterval> | null = null
 
   // ── Pitch-word alignment memo ────────────────────────────────
   const alignmentResult = createMemo<AlignmentResult>(() => {
@@ -664,14 +667,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     whisperServiceRef.onProgressChange = (progress: number) => {
       setWhisperProgress(progress)
     }
-    whisperServiceRef
-      .init()
-      .then(() => {
-        setWhisperStatus('ready')
-      })
-      .catch((err) => {
-        console.error('[StemMixer] Whisper init failed:', err)
-        setWhisperStatus('error')
+    whisperServiceRef.init().catch((err) => {
+        if (IS_DEV) console.warn('[StemMixer] Whisper init timed out, model may still be downloading:', err)
       })
 
     canvas.initObserver()
@@ -763,6 +760,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!buffer || whisperTranscribing) return
     whisperTranscribing = true
     setWhisperStatus('processing')
+    setTranscribeElapsed(0)
+    transcribeTimer = setInterval(() => {
+      setTranscribeElapsed((n) => n + 1)
+    }, 1000)
 
     resampleTo16kHz(buffer)
       .then((audioData) => whisperServiceRef!.transcribe(audioData))
@@ -776,6 +777,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       })
       .finally(() => {
         whisperTranscribing = false
+        if (transcribeTimer !== null) {
+          clearInterval(transcribeTimer)
+          transcribeTimer = null
+        }
+        setTranscribeElapsed(-1)
       })
   }
 
@@ -942,6 +948,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
+          transcribeElapsed={transcribeElapsed}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
           workspaceRef={(el) => {
@@ -973,6 +980,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowNoteLabels={setShowNoteLabels}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
+          transcribeElapsed={transcribeElapsed}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
         />
