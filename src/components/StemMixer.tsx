@@ -630,7 +630,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     whisperServiceRef = new WhisperService()
     whisperServiceRef.onStatusChange = (status: string) => {
       setWhisperStatus(
-        status as 'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error',
+        status as
+          | 'idle'
+          | 'loading'
+          | 'ready'
+          | 'processing'
+          | 'done'
+          | 'error',
       )
     }
     whisperServiceRef.init().then(() => {
