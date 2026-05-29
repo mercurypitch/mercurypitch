@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.9] - 2026-05-29
+
+### Added
+
+- **Word-to-Pitch Alignment**: New alignment algorithm (`pitch-word-alignment.ts`) maps whisper-transcribed words or LRC word timings to detected pitch notes via temporal overlap. Includes multi-word segment splitting for models that return line-level chunks.
+- **Pitch Pill Labels**: Note name labels now render on pitch canvas pills (toggleable via "Show Note Labels" in the PitchCanvasToolbar).
+- **Word Labels on Pills**: Aligned lyric words appear below note names on pitch pills when word-to-pitch alignment data is available.
+- **LRC Word Timings Fallback**: When whisper transcription is unavailable, LRC files with per-word timestamps are used as the word source for pitch alignment.
+- **Manual Whisper Button**: Whisper transcription is now triggered manually via a "Transcribe Words" button instead of auto-running on load.
+- **PitchCanvasToolbar**: Compact toggle bar for pitch canvas display options (note labels, future toggles).
+- **OfflinePitchCanvas Note Labels**: Segmented note blocks in the offline pitch canvas now display note names.
+- **LRC Generator Improvements**: Can now start LRC generation from any clicked line. Cancel search restores previous lyrics source. Improved loading UI with cancel/upload support during LRC search.
+
+### Changed
+
+- **Pitch Detection Accuracy**:
+  - Added FFT confidence gate to filter out low-confidence pitch detections.
+  - Replaced FFT `pseudoClarity` with SNR-based confidence scoring.
+  - Standardized Autocorr frequency range from 60–2000 Hz to 65–2100 Hz.
+  - Segmenter improvements: minimum note duration enforcement, singleton note filter, dropout bridging for short gaps.
+  - Aligned segmenter/merger grouping tolerance to ±0.5 semitones.
+- **Refactoring**: Extracted `canonical-lrc.ts`, consolidated LRC text building into `lrc-generator.ts`, replaced per-controller seekTo/duration signals with shared `seekTo` abstraction, renamed `rawText` to `originalText` across lyrics controller and LRC panel.
+
+### Fixed
+
+- **Whisper Timeout**: Fixed 180s transcription timeout by chunking long audio into 30s segments with 5s overlap, processing sequentially, and deduplicating overlapping word segments.
+- **Whisper Model Load Timeout**: Added progress feedback during whisper model download and increased load timeout to 300s.
+- **Whisper Errors**: Added proper error handling and status display for whisper transcription failures.
+- **Show Mixer Button**: Now shows active/accent state when sidebar is visible, neutral when hidden.
+- **ESLint**: Resolved all `strict-boolean-expressions` and `no-explicit-any` errors across the project.
+- **LRC Generator**: Fixed index mismatch corruption when finishing LRC generation.
+- **LRC Player**: Fixed highlighting stretching across long gaps between lines.
+- **Shazam Debug Logs**: Gated debug `console.log` calls behind `IS_DEV` flag.
+
 ## [0.3.8] - 2026-05-22
 
 ### Added
