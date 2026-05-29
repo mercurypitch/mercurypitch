@@ -17,9 +17,7 @@ export interface StemMixerLyricsDeps {
   duration: () => number
   playing: () => boolean
   elapsed: () => number
-  seekTo: (t: number) => void
-  windowDuration: () => number
-  setWindowStart: (v: number) => void
+  seekToWithWindow: (t: number) => void
 }
 
 // ── Controller return type ────────────────────────────────────────
@@ -573,8 +571,7 @@ export function useStemMixerLyricsController(
       targetTime = (idx / lyricsLines().length) * deps.duration()
     }
     if (targetTime === null) return
-    deps.seekTo(targetTime)
-    deps.setWindowStart(Math.max(0, targetTime - deps.windowDuration() * 0.3))
+    deps.seekToWithWindow(targetTime)
 
     // In LRC gen mode, clicking a line sets it as the starting point
     // so the user can resume or fix a specific section without
