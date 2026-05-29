@@ -34,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Whisper Model Load Timeout**: Added progress feedback during whisper model download and increased load timeout to 300s.
 - **Whisper Errors**: Added proper error handling and status display for whisper transcription failures.
 - **Show Mixer Button**: Now shows active/accent state when sidebar is visible, neutral when hidden.
-- **ESLint**: Resolved all `strict-boolean-expressions` and `no-explicit-any` errors across the project.
 - **LRC Generator**: Fixed index mismatch corruption when finishing LRC generation.
 - **LRC Player**: Fixed highlighting stretching across long gaps between lines.
 - **Shazam Debug Logs**: Gated debug `console.log` calls behind `IS_DEV` flag.
