@@ -55,6 +55,7 @@ interface StemMixerGridWorkspaceProps {
 
   // Whisper alignment
   whisperStatus: Accessor<string>
+  whisperProgress: Accessor<number>
   alignmentResult: Accessor<AlignmentResult>
   startWhisperTranscription: () => void
 
@@ -187,6 +188,11 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               <path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z" />
             </svg>
             Vocal Pitch
+            <Show when={props.whisperStatus() === 'loading'}>
+              <span class="pitch-alignment-stats whisper-processing">
+                Downloading Model... {Math.round(props.whisperProgress() ?? 0)}%
+              </span>
+            </Show>
             <Show when={props.whisperStatus() === 'processing'}>
               <span class="pitch-alignment-stats whisper-processing">
                 Transcribing...

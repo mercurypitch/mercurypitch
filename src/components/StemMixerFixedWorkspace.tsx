@@ -49,6 +49,7 @@ interface StemMixerFixedWorkspaceProps {
 
   // Whisper alignment
   whisperStatus: Accessor<string>
+  whisperProgress: Accessor<number>
   alignmentResult: Accessor<AlignmentResult>
   startWhisperTranscription: () => void
 }
@@ -349,6 +350,11 @@ export const StemMixerFixedWorkspace: Component<
             >
               <div class="sm-panel-header">
                 Vocal Pitch
+                <Show when={props.whisperStatus() === 'loading'}>
+                  <span class="pitch-alignment-stats whisper-processing">
+                    Downloading Model... {Math.round(props.whisperProgress() ?? 0)}%
+                  </span>
+                </Show>
                 <Show when={props.whisperStatus() === 'processing'}>
                   <span class="pitch-alignment-stats whisper-processing">
                     Transcribing...

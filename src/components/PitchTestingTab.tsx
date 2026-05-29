@@ -166,6 +166,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [whisperStatus, setWhisperStatus] = createSignal<
     'idle' | 'loading' | 'ready' | 'processing' | 'done' | 'error'
   >('idle')
+  const [whisperProgress, setWhisperProgress] = createSignal(0)
   const [whisperSegments, setWhisperSegments] = createSignal<WhisperSegment[]>(
     [],
   )
@@ -374,6 +375,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           | 'done'
           | 'error',
       )
+    }
+    whisperServiceRef.onProgressChange = (progress: number) => {
+      setWhisperProgress(progress)
     }
     whisperServiceRef
       .init()
@@ -983,8 +987,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     generateWaveform()
   })
 
-  // ── Whisper auto-transcription ──────────────────────────────
-  createEffect(() => {
+  const startWhisperTranscription = () => {
     const status = whisperStatus()
     const track = activeTrack()
     const buffer = track?.audioBuffer
@@ -1005,7 +1008,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       .finally(() => {
         whisperTranscribing = false
       })
-  })
+  }
 
   // Start live detection
   const startLiveDetection = () => {
@@ -2053,10 +2056,28 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           setShowNoteLabels={setShowNoteLabels}
                         />
                       </Show>
+                      <Show when={whisperStatus() === 'loading'}>
+                        <span class="pitch-alignment-stats whisper-processing">
+                          Downloading Model... {Math.round(whisperProgress() ?? 0)}%
+                        </span>
+                      </Show>
                       <Show when={whisperStatus() === 'processing'}>
                         <span class="pitch-alignment-stats whisper-processing">
                           Transcribing...
                         </span>
+                      </Show>
+                      <Show when={whisperStatus() === 'ready'}>
+                        <button
+                          class="sm-transcribe-btn"
+                          style={{ "margin-left": "auto" }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startWhisperTranscription()
+                          }}
+                          title="Transcribe words from vocal stem"
+                        >
+                          Transcribe
+                        </button>
                       </Show>
                       <Show
                         when={
