@@ -3,6 +3,8 @@
 // Tests: src/tests/lrc-generator.test.ts
 // ============================================================
 
+import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
+
 export interface LrcGenTimings {
   /** Per-line start times (undefined = unmapped) */
   lineTimes: (number | undefined)[]
@@ -119,6 +121,49 @@ export function buildWordLevelLrc(
           return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
         })
         .join(' ')
+    })
+    .filter((l) => l !== '')
+    .join('\n')
+}
+
+/**
+ * Build LRC-formatted text from canonical entries.
+ *
+ * - Synthetic ~Rest~ entries (lrcIndex < 0) are always skipped.
+ * - Explicit ~Rest~ entries and blank lines become `[time] ~Rest~`.
+ * - If word timings are available, word-level output is produced
+ *   (`[t1] word1 [t2] word2 ...`).
+ * - If no word timings, line-level output (`[time] full text`).
+ * - Falls back to entry.time when lineTimes entry is undefined.
+ */
+export function buildLrcTextFromCanonical(
+  entries: CanonicalLrcEntry[],
+  lineTimes?: (number | undefined)[],
+  wordTimings?: Record<number, (number | undefined)[]>,
+): string {
+  return entries
+    .map((entry) => {
+      if (entry.lrcIndex < 0) return ''
+
+      const time = lineTimes?.[entry.canonicalIndex] ?? entry.time
+      const lrcIdx = entry.lrcIndex
+      const lineWt = wordTimings?.[lrcIdx] ?? entry.wordTimes
+
+      // Word-level output when per-word timestamps are available
+      if (lineWt?.length && entry.words.length > 0) {
+        return entry.words
+          .map((w, wi) => {
+            const t = lineWt[wi]
+            return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
+          })
+          .join(' ')
+      }
+
+      // Line-level output
+      if (entry.type === 'rest' || !entry.text.trim()) {
+        return `[${formatTimeLrc(time)}] ~Rest~`
+      }
+      return `[${formatTimeLrc(time)}] ${entry.text}`
     })
     .filter((l) => l !== '')
     .join('\n')
