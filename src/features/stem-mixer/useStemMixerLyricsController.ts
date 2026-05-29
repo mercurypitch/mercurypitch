@@ -166,14 +166,14 @@ export interface StemMixerLyricsController {
 
   // LRC gen persistence helpers
   loadPersistedLyrics: () =>
-    | (LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string })
+    | (LyricsUploadResult & { wordTimings?: WordTimingsMap; originalText?: string })
     | null
   persistLyrics: (
     text: string,
     format: 'txt' | 'lrc',
     filename: string,
     wt?: WordTimingsMap,
-    rawText?: string,
+    originalText?: string,
   ) => void
 }
 
@@ -283,7 +283,7 @@ export function useStemMixerLyricsController(
     format: 'txt' | 'lrc',
     filename: string,
     wt?: WordTimingsMap,
-    rawText?: string,
+    originalText?: string,
   ) => {
     try {
       const payload: Record<string, unknown> = {
@@ -293,7 +293,7 @@ export function useStemMixerLyricsController(
         timestamp: Date.now(),
       }
       if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
-      if (rawText !== undefined) payload.rawText = rawText
+      if (originalText !== undefined) payload.originalText = originalText
       const bl = blocks()
       if (bl.length > 0) payload.blocks = bl
       const bi = blockInstances()
@@ -308,7 +308,7 @@ export function useStemMixerLyricsController(
   const loadPersistedLyrics = ():
     | (LyricsUploadResult & {
         wordTimings?: WordTimingsMap
-        rawText?: string
+        originalText?: string
       })
     | null => {
     try {
@@ -321,15 +321,15 @@ export function useStemMixerLyricsController(
       ) {
         const result: LyricsUploadResult & {
           wordTimings?: WordTimingsMap
-          rawText?: string
+          originalText?: string
         } = {
           text: data.text,
           format: data.format,
           filename:
             typeof data.filename === 'string' ? data.filename : 'saved.txt',
         }
-        if (typeof data.rawText === 'string') {
-          result.rawText = data.rawText
+        if (typeof data.originalText === 'string') {
+          result.originalText = data.originalText
         }
         if (typeof data.wordTimings === 'object') {
           result.wordTimings = data.wordTimings as WordTimingsMap
@@ -1402,10 +1402,10 @@ export function useStemMixerLyricsController(
     const persisted = loadPersistedLyrics()
     const savedWt = persisted?.wordTimings
     const hasWordTimings = savedWt && Object.keys(savedWt).length > 0
-    const rawText = persisted?.rawText
+    const originalText = persisted?.originalText
 
-    if (hasWordTimings === true && rawText !== undefined) {
-      lrcText = buildWordLevelLrc(rawText.split('\n'), savedWt)
+    if (hasWordTimings === true && originalText !== undefined) {
+      lrcText = buildWordLevelLrc(originalText.split('\n'), savedWt)
     } else if (lrcLines().length > 0) {
       lrcText = buildLrcTextFromCanonical(
         canonicalLrcLines(),
