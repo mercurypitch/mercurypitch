@@ -770,9 +770,45 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }, 1000)
 
     resampleTo16kHz(buffer)
-      .then((audioData) => whisperServiceRef!.transcribe(audioData))
-      .then((result) => {
-        setWhisperSegments(result.chunks)
+      .then(async (audioData) => {
+        const SAMPLE_RATE = 16000
+        const CHUNK_SEC = 30
+        const OVERLAP_SEC = 5
+        const chunkLen = CHUNK_SEC * SAMPLE_RATE
+        const stride = (CHUNK_SEC - OVERLAP_SEC) * SAMPLE_RATE
+
+        const audioChunks: Float32Array[] = []
+        for (let off = 0; off < audioData.length; off += stride) {
+          audioChunks.push(
+            audioData.slice(off, Math.min(off + chunkLen, audioData.length)),
+          )
+        }
+
+        const merged: { text: string; timestamp: [number, number] }[] = []
+        for (let ci = 0; ci < audioChunks.length; ci++) {
+          const result = await whisperServiceRef!.transcribe(audioChunks[ci])
+          const timeBase = ci * (CHUNK_SEC - OVERLAP_SEC)
+          for (const seg of result.chunks) {
+            merged.push({
+              text: seg.text,
+              timestamp: [
+                seg.timestamp[0] + timeBase,
+                seg.timestamp[1] + timeBase,
+              ],
+            })
+          }
+        }
+
+        // Deduplicate overlapping segments: drop a segment if its midpoint
+        // falls before the end of the previous segment.
+        const deduped = merged.filter((seg, i) => {
+          if (i === 0) return true
+          const prevEnd = merged[i - 1].timestamp[1]
+          const mid = (seg.timestamp[0] + seg.timestamp[1]) / 2
+          return mid > prevEnd
+        })
+
+        setWhisperSegments(deduped)
         setWhisperStatus('done')
       })
       .catch((err) => {
@@ -3091,6 +3127,17 @@ export const StemMixerStyles: string = `
 .sm-sidebar-toggle:hover {
   background: var(--bg-hover, #30363d);
   color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-sidebar-toggle--active {
+  background: var(--accent, #58a6ff);
+  color: #fff;
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-sidebar-toggle--active:hover {
+  background: var(--accent-hover, #79c0ff);
+  color: #fff;
 }
 
 .sm-song-picker {
