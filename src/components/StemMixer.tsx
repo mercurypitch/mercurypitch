@@ -361,9 +361,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     duration: audio.duration,
     playing: audio.playing,
     elapsed: audio.elapsed,
-    seekTo: audio.seekTo,
-    windowDuration: audio.windowDuration,
-    setWindowStart: audio.setWindowStart,
+    seekToWithWindow: (t: number) => {
+      audio.seekTo(t)
+      audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
+    },
   })
 
   // Backfill holder refs that audio controller needs
