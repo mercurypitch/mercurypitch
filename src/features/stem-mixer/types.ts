@@ -74,7 +74,7 @@ export interface LyricsUploadResult {
   format: 'txt' | 'lrc'
   filename: string
   wordTimings?: WordTimingsMap
-  rawText?: string
+  originalText?: string
 }
 
 export type LyricsSource = 'api' | 'upload' | 'none'
