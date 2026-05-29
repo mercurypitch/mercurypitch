@@ -209,6 +209,9 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         <Show when={props.workspaceLayout() === 'fixed-2col'}>
           <button
             class="sm-sidebar-toggle"
+            classList={{
+              'sm-sidebar-toggle--active': !props.sidebarHidden(),
+            }}
             onClick={() => props.setSidebarHidden((prev) => !prev)}
             title={
               props.sidebarHidden()
