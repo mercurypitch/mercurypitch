@@ -272,12 +272,7 @@ export const StemMixerLyricsPanelBody: Component<
                 class="sm-lyrics-loading-btn sm-lyrics-loading-upload"
                 onClick={() => {
                   props.cancelSearch()
-                  // Trigger file upload via the hidden input
-                  document
-                    .querySelector<HTMLInputElement>(
-                      `.sm-song-picker-upload-input${sfx()}`,
-                    )
-                    ?.click()
+                  props.triggerChangeFile?.()
                 }}
               >
                 Upload LRC / TXT
