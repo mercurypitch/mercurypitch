@@ -17,6 +17,7 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
       class={`${styles.ctrlBtn} ${props.active ? styles.active : ''}`}
       onClick={() => props.onClick()}
       title="Toggle metronome"
+      aria-label="Toggle metronome"
     >
       <svg viewBox="0 0 24 24" width="18" height="18">
         <path
@@ -33,7 +34,6 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
         />
         <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
       </svg>
-      <span>Metronome</span>
     </button>
   )
 }
