@@ -209,10 +209,20 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
             {/* Quick actions */}
             <div class={styles.scaleQuickActions}>
-              <button class={styles.btnSecondary} onClick={selectNaturalNotes} aria-label="Select natural notes" title="Select natural notes">
+              <button
+                class={styles.btnSecondary}
+                onClick={selectNaturalNotes}
+                aria-label="Select natural notes"
+                title="Select natural notes"
+              >
                 <MusicNote /> Natural Notes (7)
               </button>
-              <button class={styles.btnSecondary} onClick={clearAll} aria-label="Clear all notes" title="Clear all notes">
+              <button
+                class={styles.btnSecondary}
+                onClick={clearAll}
+                aria-label="Clear all notes"
+                title="Clear all notes"
+              >
                 <X /> Clear All
               </button>
             </div>

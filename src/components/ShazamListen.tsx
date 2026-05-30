@@ -7,7 +7,7 @@
 // ============================================================
 
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Cpu, FileUpload, MagnifyingGlass, RotateCcw, Voice, X } from '@/components/icons'
+import { Cpu, FileUpload, MagnifyingGlass, RotateCcw, Voice, X, } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { getAllLrcLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { AudioEngine } from '@/lib/audio-engine'

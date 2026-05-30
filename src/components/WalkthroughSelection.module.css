@@ -207,3 +207,50 @@
 .wsCloseFooter:hover {
   background: var(--accent);
 }
+
+/* Responsive: narrow viewports */
+@media (max-width: 480px) {
+  .wsHeader {
+    padding: 14px 16px 12px;
+  }
+
+  .wsTitle {
+    font-size: 1rem;
+  }
+
+  .wsChapters {
+    padding: 0 10px 12px;
+  }
+
+  .wsChapterItem {
+    padding: 10px 12px;
+    gap: 8px;
+    font-size: 0.82rem;
+  }
+
+  .wsChapterTitle {
+    font-size: 0.78rem;
+  }
+
+  .wsFooter {
+    padding: 12px 16px;
+  }
+
+  .wsProgress {
+    padding: 0 16px 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .wsHeader {
+    padding: 12px 12px 10px;
+  }
+
+  .wsChapters {
+    padding: 0 8px 10px;
+  }
+
+  .wsChapterItem {
+    padding: 8px 10px;
+  }
+}

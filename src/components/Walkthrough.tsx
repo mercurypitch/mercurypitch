@@ -15,8 +15,8 @@ import styles from './Walkthrough.module.css'
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
 const TOOLTIP_GAP = 12
-const TOOLTIP_WIDTH = 340
-const TOOLTIP_HEIGHT = 200
+const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
+const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
 
 export const Walkthrough: Component = () => {
   let highlightRef: HTMLDivElement | undefined
@@ -167,8 +167,9 @@ export const Walkthrough: Component = () => {
       const vw = window.innerWidth
       const vh = window.innerHeight
       const tooltipRect = tooltipRef.getBoundingClientRect()
-      const tW = tooltipRect.width > 0 ? tooltipRect.width : TOOLTIP_WIDTH
-      const tH = tooltipRect.height > 0 ? tooltipRect.height : TOOLTIP_HEIGHT
+      const tW = tooltipRect.width > 0 ? tooltipRect.width : getTooltipWidth()
+      const tH =
+        tooltipRect.height > 0 ? tooltipRect.height : getTooltipHeight()
       updateTooltipCentered(tW, tH, vw, vh)
       return
     }
@@ -179,10 +180,15 @@ export const Walkthrough: Component = () => {
     const vh = window.innerHeight
 
     const tooltipRect = tooltipRef.getBoundingClientRect()
-    const tW = tooltipRect.width > 0 ? tooltipRect.width : TOOLTIP_WIDTH
-    const tH = tooltipRect.height > 0 ? tooltipRect.height : TOOLTIP_HEIGHT
+    const tW = tooltipRect.width > 0 ? tooltipRect.width : getTooltipWidth()
+    const tH = tooltipRect.height > 0 ? tooltipRect.height : getTooltipHeight()
 
     let placement: Placement = getPlacement()
+
+    // On narrow viewports, prefer bottom placement to avoid horizontal overflow
+    if (vw < 480 && (placement === 'left' || placement === 'right')) {
+      placement = 'bottom'
+    }
 
     const targetCenterX = targetRect.left + targetRect.width / 2
     const targetCenterY = targetRect.top + targetRect.height / 2

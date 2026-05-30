@@ -6,8 +6,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
-import { Cpu, Ear, MusicBoard, RotateCcw, SlidersHorizontal, Voice, X } from '@/components/icons'
 import { AppSidebar } from '@/components/AppSidebar'
+import { Cpu, Ear, MusicBoard, RotateCcw, SlidersHorizontal, Voice, X, } from '@/components/icons'
 import { AppNavTabs } from './components'
 
 const CommunityLeaderboard = lazy(async () =>
@@ -1959,7 +1959,12 @@ const AppShell: Component<AppProps> = (props) => {
                 >
                   <RotateCcw /> Try Again
                 </button>
-                <button class={styles.overlayBtn} onClick={closeScoreOverlay} aria-label="Close" title="Close">
+                <button
+                  class={styles.overlayBtn}
+                  onClick={closeScoreOverlay}
+                  aria-label="Close"
+                  title="Close"
+                >
                   <X /> Close
                 </button>
               </div>

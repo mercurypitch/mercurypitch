@@ -1241,7 +1241,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Cancel
                 </button>
-                <button class="delete-all-confirm" onClick={handleDeleteAll} aria-label="Delete All">
+                <button
+                  class="delete-all-confirm"
+                  onClick={handleDeleteAll}
+                  aria-label="Delete All"
+                >
                   <Trash2 />
                 </button>
               </div>
@@ -1270,7 +1274,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Cancel
                 </button>
-                <button class="delete-all-confirm" onClick={handleClearStorage} aria-label="Clear Cached Songs">
+                <button
+                  class="delete-all-confirm"
+                  onClick={handleClearStorage}
+                  aria-label="Clear Cached Songs"
+                >
                   <Trash2 />
                 </button>
               </div>

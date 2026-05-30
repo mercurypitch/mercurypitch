@@ -30,7 +30,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px 22px;
-  width: 340px;
+  width: min(340px, calc(100vw - 24px));
   z-index: 10000;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
   color: var(--text-primary);
@@ -204,4 +204,47 @@
 
 .walkthroughNext:hover {
   background: #5850e0;
+}
+
+/* Responsive: narrow viewports */
+@media (max-width: 480px) {
+  .walkthroughTooltip {
+    padding: 12px 16px;
+    border-radius: 10px;
+  }
+
+  .walkthroughStepTitle {
+    font-size: 14px;
+  }
+
+  .walkthroughStepDesc {
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .walkthroughPrev,
+  .walkthroughNext {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .walkthroughSkipSection {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .walkthroughTooltip {
+    padding: 8px 12px;
+  }
+
+  .walkthroughActions {
+    gap: 4px;
+  }
+
+  .walkthroughActionsCenter {
+    gap: 4px;
+  }
 }
