@@ -43,6 +43,7 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
         onClick={handlePlayClick}
         disabled={props.disabled}
         title={`${playLabel()} playback`}
+        aria-label={`${playLabel()} playback`}
       >
         {playLabel() === 'Pause' ? (
           <svg viewBox="0 0 24 24" width="18" height="18">
@@ -53,7 +54,6 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
             <path fill="currentColor" d="M8 5v14l11-7z" />
           </svg>
         )}
-        <span>{playLabel()}</span>
       </button>
       <button
         id="btn-reset"
@@ -61,11 +61,11 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
         onClick={handleResetClick}
         disabled={!resetEnabled() || props.disabled}
         title="Reset playback"
+        aria-label="Reset playback"
       >
         <svg viewBox="0 0 24 24" width="18" height="18">
           <path fill="currentColor" d="M6 6h12v12H6z" />
         </svg>
-        <span>Reset</span>
       </button>
     </>
   )

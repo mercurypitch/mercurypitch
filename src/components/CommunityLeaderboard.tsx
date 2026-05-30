@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { CheckCircle, ChevronDown, Eye, Play } from '@/components/icons'
 import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
 import { loadLeaderboard } from '@/db/services/leaderboard-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
@@ -531,8 +532,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           value={searchQuery()}
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
-        <button class="filter-btn">
-          <IconFilter /> Filter
+        <button class="filter-btn" aria-label="Filter" title="Filter">
+          <IconFilter />
         </button>
       </div>
 
@@ -583,7 +584,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                   <button
                     class="challenge-join-btn"
                     disabled={challenge.userScore >= challenge.targetScore}
+                    aria-label={challenge.userScore >= challenge.targetScore ? 'Completed' : 'Join challenge'}
+                    title={challenge.userScore >= challenge.targetScore ? 'Completed' : 'Join challenge'}
                   >
+                    {challenge.userScore >= challenge.targetScore ? <CheckCircle /> : <Play />}
                     {challenge.userScore >= challenge.targetScore
                       ? 'Completed'
                       : 'Join Challenge'}
@@ -699,7 +703,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
           {/* Load More */}
           <div class="load-more-container">
-            <button class="load-more-btn">Load More Players</button>
+            <button class="load-more-btn" aria-label="Load more players" title="Load more players"><ChevronDown /> Load More Players</button>
           </div>
         </div>
       </Show>
@@ -794,8 +798,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             </div>
 
             <div class="profile-actions">
-              <button class="profile-follow-btn">Follow Player</button>
-              <button class="profile-view-btn">View Profile</button>
+              <button class="profile-follow-btn" aria-label="Follow player" title="Follow player"><CheckCircle /> Follow Player</button>
+              <button class="profile-view-btn" aria-label="View profile" title="View profile"><Eye /> View Profile</button>
             </div>
           </div>
         </div>

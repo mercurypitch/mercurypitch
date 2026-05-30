@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { CheckCircle, MusicNote, Play, X } from '@/components/icons'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { keyName, setScaleType, showNotification } from '@/stores'
@@ -208,11 +209,11 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
             {/* Quick actions */}
             <div class={styles.scaleQuickActions}>
-              <button class={styles.btnSecondary} onClick={selectNaturalNotes}>
-                Natural Notes (7)
+              <button class={styles.btnSecondary} onClick={selectNaturalNotes} aria-label="Select natural notes" title="Select natural notes">
+                <MusicNote /> Natural Notes (7)
               </button>
-              <button class={styles.btnSecondary} onClick={clearAll}>
-                Clear All
+              <button class={styles.btnSecondary} onClick={clearAll} aria-label="Clear all notes" title="Clear all notes">
+                <X /> Clear All
               </button>
             </div>
 
@@ -282,15 +283,19 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
               class={styles.btnSecondary}
               onClick={saveScale}
               disabled={customNotes().size === 0}
+              aria-label="Save scale"
+              title="Save scale"
             >
-              Save Scale
+              <CheckCircle /> Save Scale
             </button>
             <button
               class={styles.btnPrimary}
               onClick={applyScale}
               disabled={customNotes().size < 2}
+              aria-label="Apply scale"
+              title="Apply scale"
             >
-              Apply Scale
+              <Play /> Apply Scale
             </button>
           </div>
         </div>

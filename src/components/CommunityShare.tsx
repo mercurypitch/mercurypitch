@@ -484,17 +484,15 @@ export const CommunityShare: Component = () => {
           </p>
         </div>
         <div class="community-actions">
-          <button class="share-btn" onClick={exportMelody}>
+          <button class="share-btn" onClick={exportMelody} aria-label="Share melody" title="Share melody">
             <span>
               <IconShare />
-            </span>{' '}
-            Share Melody
+            </span>
           </button>
-          <button class="share-btn" onClick={exportSession}>
+          <button class="share-btn" onClick={exportSession} aria-label="Share session" title="Share session">
             <span>
               <IconShare />
-            </span>{' '}
-            Share Session
+            </span>
           </button>
         </div>
       </div>
@@ -571,17 +569,17 @@ export const CommunityShare: Component = () => {
                     <button
                       class="action-btn copy-btn"
                       onClick={() => copyShareLink('melody', melody.id)}
+                      aria-label="Copy link"
+                      title="Copy link"
                     >
                       <span>
                         <IconLink />
-                      </span>{' '}
-                      Copy Link
+                      </span>
                     </button>
-                    <button class="action-btn view-btn">
+                    <button class="action-btn view-btn" aria-label="View" title="View">
                       <span>
                         <IconEye />
-                      </span>{' '}
-                      View
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -595,8 +593,8 @@ export const CommunityShare: Component = () => {
                   Share your melodies with the community to start building your
                   library.
                 </p>
-                <button class="primary-btn" onClick={exportMelody}>
-                  Share Your First Melody
+                <button class="primary-btn" onClick={exportMelody} aria-label="Share your first melody" title="Share your first melody">
+                  <IconShare /> Share Your First Melody
                 </button>
               </div>
             )}
@@ -655,17 +653,17 @@ export const CommunityShare: Component = () => {
                     <button
                       class="action-btn copy-btn"
                       onClick={() => copyShareLink('session', session.id)}
+                      aria-label="Copy link"
+                      title="Copy link"
                     >
                       <span>
                         <IconLink />
-                      </span>{' '}
-                      Copy Link
+                      </span>
                     </button>
-                    <button class="action-btn view-btn">
+                    <button class="action-btn view-btn" aria-label="View" title="View">
                       <span>
                         <IconEye />
-                      </span>{' '}
-                      View
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -679,8 +677,8 @@ export const CommunityShare: Component = () => {
                   Share your practice sessions to track progress and inspire
                   others.
                 </p>
-                <button class="primary-btn" onClick={exportSession}>
-                  Share Your First Session
+                <button class="primary-btn" onClick={exportSession} aria-label="Share your first session" title="Share your first session">
+                  <IconShare /> Share Your First Session
                 </button>
               </div>
             )}
