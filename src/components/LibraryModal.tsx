@@ -14,6 +14,7 @@ import { setEditorView } from '@/stores'
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { CheckCircle, FilePlus, MusicBoard, MusicNote, Trash2, X } from '@/components/icons'
 import type { MelodyData, NoteName } from '@/types'
 import styles from './LibraryModal.module.css'
 
@@ -553,14 +554,20 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
             <button
               class={`library-modal-tab ${activeTab() === 'melodies' ? 'active' : ''}`}
               onClick={() => setActiveTab('melodies')}
+              aria-label="Melodies"
+              title="Melodies"
             >
+              <MusicNote />
               Melodies
               <span class="tab-count">{filteredMelodies().length}</span>
             </button>
             <button
               class={`library-modal-tab ${activeTab() === 'playlists' ? 'active' : ''}`}
               onClick={() => setActiveTab('playlists')}
+              aria-label="Playlists"
+              title="Playlists"
             >
+              <MusicBoard />
               Playlists
               <span class="tab-count">
                 {Object.keys(library().playlists).length}
@@ -703,10 +710,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           setCreateTags('')
                           setCreateNotes('')
                         }}
+                        aria-label="Cancel"
+                        title="Cancel"
                       >
+                        <X />
                         Cancel
                       </button>
-                      <button class="save-btn" onClick={handleCreateMelody}>
+                      <button class="save-btn" onClick={handleCreateMelody} aria-label="Create melody" title="Create melody">
+                        <CheckCircle />
                         Create
                       </button>
                     </div>
@@ -802,10 +813,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </div>
 
                     <div class="form-actions">
-                      <button class="cancel-btn" onClick={cancelEdit}>
+                      <button class="cancel-btn" onClick={cancelEdit} aria-label="Cancel" title="Cancel">
+                        <X />
                         Cancel
                       </button>
-                      <button class="save-btn" onClick={handleSaveMelody}>
+                      <button class="save-btn" onClick={handleSaveMelody} aria-label="Save changes" title="Save changes">
+                        <CheckCircle />
                         Save
                       </button>
                     </div>
@@ -1017,13 +1030,19 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         setPlaylistEditing(null)
                         setAddMelodySearch('')
                       }}
+                      aria-label="Cancel"
+                      title="Cancel"
                     >
+                      <X />
                       Cancel
                     </button>
                     <button
                       class="save-btn"
                       onClick={() => setPlaylistEditing(null)}
+                      aria-label="Done"
+                      title="Done"
                     >
+                      <CheckCircle />
                       Done
                     </button>
                   </div>
@@ -1048,10 +1067,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   </div>
 
                   <div class="form-actions">
-                    <button class="cancel-btn" onClick={cancelRename}>
+                    <button class="cancel-btn" onClick={cancelRename} aria-label="Cancel" title="Cancel">
+                      <X />
                       Cancel
                     </button>
-                    <button class="save-btn" onClick={_handleCreatePlaylist}>
+                    <button class="save-btn" onClick={_handleCreatePlaylist} aria-label="Create playlist" title="Create playlist">
+                      <FilePlus />
                       Create Playlist
                     </button>
                   </div>
@@ -1081,10 +1102,15 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   </div>
 
                   <div class="form-actions">
-                    <button class="cancel-btn" onClick={cancelRename}>
+                    <button class="cancel-btn" onClick={cancelRename} aria-label="Cancel" title="Cancel">
+                      <X />
                       Cancel
                     </button>
-                    <button class="save-btn" onClick={handleRenamePlaylist}>
+                    <button class="save-btn" onClick={handleRenamePlaylist} aria-label="Rename playlist" title="Rename playlist">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        <path d="m15 5 4 4" />
+                      </svg>
                       Rename
                     </button>
                   </div>
@@ -1101,10 +1127,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   </p>
 
                   <div class="form-actions">
-                    <button class="cancel-btn" onClick={cancelRename}>
+                    <button class="cancel-btn" onClick={cancelRename} aria-label="Cancel" title="Cancel">
+                      <X />
                       Cancel
                     </button>
-                    <button class="delete-btn" onClick={_handleDeletePlaylist}>
+                    <button class="delete-btn" onClick={_handleDeletePlaylist} aria-label="Delete playlist" title="Delete playlist">
+                      <Trash2 />
                       Delete
                     </button>
                   </div>
@@ -1123,6 +1151,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     })
                     setRenameInput('')
                   }}
+                  aria-label="New playlist"
+                  title="New playlist"
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     <path
@@ -1130,7 +1160,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
                     />
                   </svg>
-                  New Playlist
                 </button>
 
                 {Object.keys(library().playlists).length === 0 && (

@@ -28,6 +28,7 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
           class={`${styles.btn} ${styles.btnSelect}`}
           onClick={() => props.onSelectExercise()}
           title="Choose a melody to practice"
+          aria-label="Choose a melody to practice"
         >
           <svg
             width="15"
@@ -43,7 +44,6 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
           </svg>
-          <span>Exercise</span>
         </button>
 
         <Show when={jamExerciseMelody()}>
@@ -63,6 +63,11 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
                     ? 'Resume playback'
                     : 'Start playback for all peers'
                 }
+                aria-label={
+                  isPaused()
+                    ? 'Resume playback'
+                    : 'Start playback for all peers'
+                }
               >
                 <svg
                   width="15"
@@ -72,7 +77,6 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
                 >
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                <span>{isPaused() ? 'Resume' : 'Play'}</span>
               </button>
             }
           >
@@ -80,6 +84,7 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
               class={`${styles.btn} ${styles.btnPause}`}
               onClick={jamPlaybackPause}
               title="Pause playback"
+              aria-label="Pause playback"
             >
               <svg
                 width="15"
@@ -90,7 +95,6 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
                 <rect x="6" y="4" width="4" height="16" rx="1" />
                 <rect x="14" y="4" width="4" height="16" rx="1" />
               </svg>
-              <span>Pause</span>
             </button>
           </Show>
 
@@ -100,11 +104,11 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
             disabled={isStopped()}
             onClick={jamPlaybackStop}
             title={isStopped() ? 'Not playing' : 'Stop and reset playback'}
+            aria-label={isStopped() ? 'Not playing' : 'Stop and reset playback'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <rect x="4" y="4" width="16" height="16" rx="2" />
             </svg>
-            <span>Stop</span>
           </button>
 
           {/* Loop toggle */}
@@ -113,6 +117,11 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
               class={`${styles.btn} ${props.loopEnabled === true ? styles.btnLoopOn : styles.btnLoopOff}`}
               onClick={() => props.onToggleLoop?.()}
               title={
+                props.loopEnabled === true
+                  ? 'Loop on — click to disable'
+                  : 'Loop off — click to enable'
+              }
+              aria-label={
                 props.loopEnabled === true
                   ? 'Loop on — click to disable'
                   : 'Loop off — click to enable'
@@ -133,7 +142,6 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
                 <polyline points="7 23 3 19 7 15" />
                 <path d="M21 13v2a4 4 0 0 1-4 4H3" />
               </svg>
-              <span>Loop</span>
             </button>
           </Show>
 

@@ -226,7 +226,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   stroke="none"
                 />
               </svg>
-              <span>MIDI</span>
             </button>
           </div>
         </Show>
@@ -265,6 +264,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   ? 'Stop recording'
                   : 'Record to piano roll'
               }
+              aria-label={
+                (props.isRecording?.() ?? false)
+                  ? 'Stop recording'
+                  : 'Record to piano roll'
+              }
               onClick={() =>
                 void (async () => {
                   await props.onRecordToggle?.()
@@ -290,16 +294,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   />
                 </svg>
               </Show>
-              <span
-                class={[
-                  styles.recordText,
-                  (props.isRecording?.() ?? false) ? styles.recording : '',
-                ]
-                  .join(' ')
-                  .trim()}
-              >
-                {(props.isRecording?.() ?? false) ? 'STOP' : 'RECORD'}
-              </span>
             </button>
           </div>
         </Show>
@@ -313,11 +307,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             data-testid="play-btn"
             onClick={() => void props.onPlay()}
             title="Play"
+            aria-label="Play"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
-            <span>Play</span>
           </button>
         )}
 
@@ -327,11 +321,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             data-testid="pause-btn"
             onClick={() => void props.onPause()}
             title="Pause"
+            aria-label="Pause"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
             </svg>
-            <span>Pause</span>
           </button>
         </Show>
 
@@ -341,11 +335,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             data-testid="resume-btn"
             onClick={() => void props.onResume()}
             title="Continue"
+            aria-label="Continue"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
-            <span>Continue</span>
           </button>
         </Show>
 
@@ -359,11 +353,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           disabled={!isActive()}
           onClick={() => void props.onStop()}
           title="Stop"
+          aria-label="Stop"
         >
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path fill="currentColor" d="M6 6h12v12H6z" />
           </svg>
-          <span>Stop</span>
         </button>
 
         {/* Focus Mode button */}
@@ -376,6 +370,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               enterFocusMode()
             }}
             title="Enter Focus Mode (minimal UI)"
+            aria-label="Enter Focus Mode (minimal UI)"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path
@@ -383,7 +378,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
               />
             </svg>
-            <span>Focus</span>
           </button>
         </Show>
 
@@ -891,7 +885,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                     d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
                   />
                 </svg>
-                <span class={styles.labelToggleText}>Labels</span>
               </button>
             </div>
           </Show>

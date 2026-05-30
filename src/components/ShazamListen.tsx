@@ -7,6 +7,7 @@
 // ============================================================
 
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { Cpu, FileUpload, MagnifyingGlass, RotateCcw, Voice, X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { getAllLrcLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -828,8 +829,10 @@ export function ShazamListen(props: ShazamListenProps) {
               classList={{ [styles.speechToggleOn!]: speechEnabled() }}
               onClick={toggleSpeech}
               data-testid="shazam-speech-toggle"
+              aria-label="Toggle speech recognition"
+              title="Toggle speech recognition"
             >
-              Speech
+              <Voice /> Speech
             </button>
             <Show when={speechEnabled()}>
               <SafeSelect
@@ -862,8 +865,10 @@ export function ShazamListen(props: ShazamListenProps) {
             classList={{ [styles.debugToggleOn!]: showDebug() }}
             onClick={toggleDebug}
             data-testid="shazam-listen-debug-toggle"
+            aria-label="Toggle debug panel"
+            title="Toggle debug panel"
           >
-            Debug
+            <Cpu /> Debug
           </button>
         </div>
       </div>
@@ -1062,16 +1067,20 @@ export function ShazamListen(props: ShazamListenProps) {
           onClick={() => void handleStop()}
           disabled={listenState() !== 'listening'}
           data-testid="shazam-stop-btn"
+          aria-label="Stop and match"
+          title="Stop and match"
         >
-          Stop & Match
+          <MagnifyingGlass /> Stop & Match
         </button>
         <button
           class={styles.cancelBtn}
           onClick={handleCancel}
           disabled={listenState() === 'processing' || listenState() === 'error'}
           data-testid="shazam-cancel"
+          aria-label="Cancel"
+          title="Cancel"
         >
-          Cancel
+          <X /> Cancel
         </button>
       </div>
 
@@ -1103,8 +1112,10 @@ export function ShazamListen(props: ShazamListenProps) {
                   class={styles.retryBtn}
                   onClick={handleRetry}
                   data-testid="shazam-retry-btn"
+                  aria-label="Try again"
+                  title="Try again"
                 >
-                  Try Again
+                  <RotateCcw /> Try Again
                 </button>
                 <button
                   class={styles.resultDismiss}
@@ -1114,8 +1125,10 @@ export function ShazamListen(props: ShazamListenProps) {
                     pitchHistory = []
                   }}
                   data-testid="shazam-dismiss-btn"
+                  aria-label="Cancel"
+                  title="Cancel"
                 >
-                  Cancel
+                  <X /> Cancel
                 </button>
               </div>
             </Show>
@@ -1127,8 +1140,10 @@ export function ShazamListen(props: ShazamListenProps) {
         class={styles.uploadLink}
         onClick={() => props.onSwitchToUpload()}
         data-testid="shazam-upload-link"
+        aria-label="Upload audio instead"
+        title="Upload audio instead"
       >
-        Upload audio instead
+        <FileUpload /> Upload audio instead
       </button>
     </div>
   )

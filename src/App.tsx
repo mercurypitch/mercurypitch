@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
+import { Cpu, Ear, MusicBoard, RotateCcw, SlidersHorizontal, Voice, X } from '@/components/icons'
 import { AppSidebar } from '@/components/AppSidebar'
 import { AppNavTabs } from './components'
 
@@ -1317,8 +1318,10 @@ const AppShell: Component<AppProps> = (props) => {
                         [styles.activeViewBtn]: editorView() === 'piano-roll',
                       }}
                       onClick={() => setEditorView('piano-roll')}
+                      aria-label="Piano Roll"
+                      title="Piano Roll"
                     >
-                      Piano Roll
+                      <MusicBoard /> Piano Roll
                     </button>
                     <button
                       class={styles.viewBtn}
@@ -1328,8 +1331,10 @@ const AppShell: Component<AppProps> = (props) => {
                       }}
                       data-testid="view-session-editor"
                       onClick={() => setEditorView('session-editor')}
+                      aria-label="Session Editor"
+                      title="Session Editor"
                     >
-                      Session Editor
+                      <SlidersHorizontal /> Session Editor
                     </button>
                   </div>
 
@@ -1409,8 +1414,10 @@ const AppShell: Component<AppProps> = (props) => {
                           [styles.activeViewBtn]: analysisSubTab() === 'vocal',
                         }}
                         onClick={() => setAnalysisSubTab('vocal')}
+                        aria-label="Vocal Analysis"
+                        title="Vocal Analysis"
                       >
-                        Vocal Analysis
+                        <Voice /> Vocal Analysis
                       </button>
                       <button
                         class={styles.viewBtn}
@@ -1419,8 +1426,10 @@ const AppShell: Component<AppProps> = (props) => {
                             analysisSubTab() === 'detection',
                         }}
                         onClick={() => setAnalysisSubTab('detection')}
+                        aria-label="Pitch Detection"
+                        title="Pitch Detection"
                       >
-                        Pitch Detection
+                        <Ear /> Pitch Detection
                       </button>
                       <button
                         class={styles.viewBtn}
@@ -1429,8 +1438,10 @@ const AppShell: Component<AppProps> = (props) => {
                             analysisSubTab() === 'algorithms',
                         }}
                         onClick={() => setAnalysisSubTab('algorithms')}
+                        aria-label="Pitch Algorithms"
+                        title="Pitch Algorithms"
                       >
-                        Pitch Algorithms
+                        <Cpu /> Pitch Algorithms
                       </button>
                     </div>
 
@@ -1820,14 +1831,18 @@ const AppShell: Component<AppProps> = (props) => {
                             <button
                               class="fn-btn fn-btn-play"
                               onClick={() => void fallingNotes.startGame()}
+                              aria-label="Play again"
+                              title="Play again"
                             >
-                              Play Again
+                              <RotateCcw /> Play Again
                             </button>
                             <button
                               class="fn-btn fn-btn-close"
                               onClick={fallingNotes.resetGame}
+                              aria-label="Close"
+                              title="Close"
                             >
-                              Close
+                              <X /> Close
                             </button>
                           </div>
                         </div>
@@ -1939,11 +1954,13 @@ const AppShell: Component<AppProps> = (props) => {
                     handleReset()
                     handlePlay()
                   }}
+                  aria-label="Try again"
+                  title="Try again"
                 >
-                  Try Again
+                  <RotateCcw /> Try Again
                 </button>
-                <button class={styles.overlayBtn} onClick={closeScoreOverlay}>
-                  Close
+                <button class={styles.overlayBtn} onClick={closeScoreOverlay} aria-label="Close" title="Close">
+                  <X /> Close
                 </button>
               </div>
 
