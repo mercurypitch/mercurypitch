@@ -8,9 +8,12 @@ interface VersionEntry {
   sections: { label: string; items: string[] }[]
 }
 
-type TextSegment = { text: string; bold: boolean }
+type TextSegment =
+  | { type: 'text'; text: string }
+  | { type: 'bold'; text: string }
+  | { type: 'code'; text: string }
 
-const BOLD_REGEX = /\*\*(.*?)\*\*/g
+const INLINE_MD_REGEX = /\*\*(.*?)\*\*|`([^`]+)`/g
 
 function parseChangelog(md: string): VersionEntry[] {
   const versions: VersionEntry[] = []
@@ -48,31 +51,45 @@ function parseChangelog(md: string): VersionEntry[] {
   return versions
 }
 
-function parseMarkdownBold(text: string): TextSegment[] {
-  // Reset lastIndex since BOLD_REGEX is shared at module scope
-  BOLD_REGEX.lastIndex = 0
+function parseInlineMarkdown(text: string): TextSegment[] {
+  INLINE_MD_REGEX.lastIndex = 0
   const segments: TextSegment[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
-  while ((match = BOLD_REGEX.exec(text)) !== null) {
+  while ((match = INLINE_MD_REGEX.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ text: text.slice(lastIndex, match.index), bold: false })
+      segments.push({ type: 'text', text: text.slice(lastIndex, match.index) })
     }
-    segments.push({ text: match[1], bold: true })
+    if (match[1] !== undefined) {
+      segments.push({ type: 'bold', text: match[1] })
+    } else {
+      segments.push({ type: 'code', text: match[2] })
+    }
     lastIndex = match.index + match[0].length
   }
   if (lastIndex < text.length) {
-    segments.push({ text: text.slice(lastIndex), bold: false })
+    segments.push({ type: 'text', text: text.slice(lastIndex) })
   }
   return segments
 }
 
 const changelog = parseChangelog(rawChangelog)
 
+function renderSegment(seg: TextSegment) {
+  switch (seg.type) {
+    case 'bold':
+      return <strong>{seg.text}</strong>
+    case 'code':
+      return <code class="changelog-code">{seg.text}</code>
+    default:
+      return seg.text
+  }
+}
+
 const ChangelogItem = (props: { item: string }) => (
   <li class="changelog-entry">
-    <For each={parseMarkdownBold(props.item)}>
-      {(seg) => (seg.bold ? <strong>{seg.text}</strong> : seg.text)}
+    <For each={parseInlineMarkdown(props.item)}>
+      {(seg) => renderSegment(seg)}
     </For>
   </li>
 )
