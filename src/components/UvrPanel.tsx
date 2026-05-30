@@ -18,7 +18,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, Cpu, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, Cpu, ExportGroup, ImportFile, Music, Server, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -778,6 +778,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <button
                 class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
                 title="Processing: Server"
+                aria-label="Processing: Server"
                 onClick={() =>
                   showNotification(
                     'Server-side processing not yet available.',
@@ -785,14 +786,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   )
                 }
               >
-                Server
+                <Server /> Server
               </button>
               <button
                 class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
                 title="Processing: Browser"
+                aria-label="Processing: Browser"
                 onClick={() => setUvrProcessingMode('local')}
               >
-                Browser
+                <Cpu /> Browser
               </button>
               <Show when={uvrProcessingMode() === 'local'}>
                 <div class="uvr-device-toggle">
