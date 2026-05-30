@@ -346,3 +346,68 @@
 
 /* Tier selection styles moved to TierSelector.css (global)
    so they resolve for both WelcomeScreen and SettingsPanel. */
+
+/* Responsive: narrow viewports */
+@media (max-width: 480px) {
+  .welcomeCard {
+    padding: 20px 16px 18px;
+    border-radius: 10px;
+  }
+
+  .welcomeTitle {
+    font-size: 1.25rem;
+  }
+
+  .welcomeSubtitle {
+    font-size: 0.8rem;
+  }
+
+  .welcomeHero {
+    margin-bottom: 16px;
+  }
+
+  .welcomeMicSection {
+    padding: 10px 12px;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .welcomeFeature {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .welcomeFeatureText strong {
+    font-size: 0.75rem;
+  }
+
+  .welcomeFeatureText p {
+    font-size: 0.7rem;
+  }
+
+  .welcomeActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .welcomeCta,
+  .welcomeTourBtn {
+    font-size: 0.82rem;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .welcomeCard {
+    padding: 16px 12px 14px;
+  }
+
+  .welcomeTitle {
+    font-size: 1.1rem;
+  }
+
+  .welcomeMicSection {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+  }
+}
