@@ -109,9 +109,9 @@ describe('UvrPanel Component', () => {
 
     it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByText('Guide')).toBeInTheDocument()
-      expect(screen.getByText('Settings')).toBeInTheDocument()
-      expect(screen.getByText('Upload')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Guide' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Upload' })).toBeInTheDocument()
     })
 
     it('defaults to upload when initialView is not set', () => {
