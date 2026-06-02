@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, saveUvrSession, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
@@ -332,13 +332,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     const processingMode = mode ?? getUvrProcessingMode()
 
-    // Set session to processing status
-    const sessions = getAllUvrSessions()
-    const session = sessions.find((s) => s.sessionId === sessionId)
+    // Set session to processing status (immutable update via store API)
+    const session = getUvrSession(sessionId)
     if (session) {
-      session.status = 'processing'
-      saveAllUvrSessions(sessions)
-      setCurrentUvrSession({ ...session })
+      const updated = { ...session, status: 'processing' as const }
+      saveAllUvrSessions(
+        getAllUvrSessions().map((s) =>
+          s.sessionId === sessionId ? updated : s,
+        ),
+      )
+      setCurrentUvrSession(updated)
     }
 
     try {
@@ -348,21 +351,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         },
         onComplete: (result) => {
           completeUvrSession(sessionId, result.outputs, result.stemMeta)
-          // Persist session to IndexedDB for hash-based dedup
-          const s = getUvrSession(sessionId)
-          if (s) {
-            void saveUvrSession({
-              sessionId,
-              status: 'completed',
-              progress: 100,
-              fileHash: s.fileHash,
-              originalFileName: s.originalFile?.name ?? file.name,
-              originalFileSize: s.originalFile?.size ?? file.size,
-              originalFileType: s.originalFile?.mimeType ?? file.type,
-              processingMode: processingMode,
-              processingTime: s.processingTime,
-            })
-          }
           // Auto-extract stem fingerprint for Shazam matching
           // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
           setTimeout(() => {

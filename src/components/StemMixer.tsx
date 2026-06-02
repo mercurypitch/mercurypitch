@@ -2500,8 +2500,8 @@ export const StemMixerStyles: string = `
 .sm-lyrics-gen-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.4rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
   border-bottom: 1px solid var(--border, #30363d);
   flex-wrap: wrap;
 }
@@ -2540,15 +2540,15 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.4rem;
-  height: 1.25rem;
-  font-size: 0.52rem;
+  padding: 0.15rem 0.6rem;
+  height: 1.6rem;
+  font-size: 0.65rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--accent, #58a6ff);
   color: var(--bg-primary, #0d1117);
   border: none;
-  border-radius: 0.2rem;
+  border-radius: 0.25rem;
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -2561,15 +2561,15 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.4rem;
-  height: 1.25rem;
-  font-size: 0.52rem;
+  padding: 0.15rem 0.6rem;
+  height: 1.6rem;
+  font-size: 0.65rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--bg-tertiary, #21262d);
   color: var(--fg-secondary, #8b949e);
   border: 1px solid var(--border, #30363d);
-  border-radius: 0.2rem;
+  border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -2583,15 +2583,15 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.4rem;
-  height: 1.25rem;
-  font-size: 0.52rem;
+  padding: 0.15rem 0.6rem;
+  height: 1.6rem;
+  font-size: 0.65rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--ok-green, #3fb950);
   color: var(--bg-primary, #0d1117);
   border: none;
-  border-radius: 0.2rem;
+  border-radius: 0.25rem;
   cursor: pointer;
   transition: opacity 0.15s;
   margin-left: auto;
@@ -2605,15 +2605,15 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.4rem;
-  height: 1.25rem;
-  font-size: 0.52rem;
+  padding: 0.15rem 0.6rem;
+  height: 1.6rem;
+  font-size: 0.65rem;
   font-weight: 500;
   font-family: inherit;
   background: transparent;
   color: var(--fg-tertiary, #484f58);
   border: 1px solid var(--border, #30363d);
-  border-radius: 0.2rem;
+  border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.15s;
 }

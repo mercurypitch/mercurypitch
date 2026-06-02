@@ -94,7 +94,7 @@ import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melod
 import { storageGet } from '@/lib/storage'
 import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
-import { advancedFeaturesEnabled } from '@/stores/app-store'
+import { advancedFeaturesEnabled, initSessionStore } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -846,6 +846,10 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+
+    // Load UVR sessions from IndexedDB into the in-memory cache.
+    // Fire-and-forget: the cache starts empty and populates async.
+    void initSessionStore()
 
     createEffect(() => {
       const font = fontFamily()

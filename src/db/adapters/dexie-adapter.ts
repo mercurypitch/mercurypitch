@@ -27,6 +27,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
   uvrStemBlobs: 'id, sessionId, stemType, createdAt',
   uvrStemFingerprints: 'id, sessionId, createdAt',
+  uvrSessionLyrics: 'id, sessionId',
   offlinePitchAnalysis: 'id, fileHash',
 }
 
@@ -56,7 +57,11 @@ class DexieDatabase extends DexieDB {
       uvrStemBlobs: 'id, sessionId, stemType, createdAt',
       uvrStemFingerprints: 'id, sessionId, createdAt',
     })
-    this.version(2).stores(STORE_SCHEMAS)
+    this.version(2).stores({
+      ...STORE_SCHEMAS,
+      // v2 added offlinePitchAnalysis (uvrSessionLyrics not yet present)
+    })
+    this.version(3).stores(STORE_SCHEMAS)
   }
 
   /** Add a new table at the next schema version. */

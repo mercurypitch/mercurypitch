@@ -63,4 +63,5 @@ export type {
   UvrSessionRecord,
   UvrStemBlob,
   UvrStemFingerprint,
+  UvrSessionLyrics,
 } from './entities'

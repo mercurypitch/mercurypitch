@@ -5,6 +5,7 @@
 import { getDb } from '@/db'
 import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { IS_DEV } from '@/lib/defaults'
 
 // ── Stem Blob Operations ─────────────────────────────────────────
 
@@ -28,7 +29,8 @@ export async function saveStemBlob(
       fileName,
     })
     return created.id
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] saveStemBlob failed:', err)
     return null
   }
 }
@@ -50,7 +52,8 @@ export async function getStemBlobUrl(
     const entry = results[0]
     const blob = new Blob([entry.data], { type: entry.mimeType })
     return URL.createObjectURL(blob)
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] getStemBlobUrl failed:', err)
     return null
   }
 }
@@ -70,7 +73,8 @@ export async function getOriginalFileBlob(
     if (results.length === 0) return null
     const entry = results[0]
     return new File([entry.data], entry.fileName, { type: entry.mimeType })
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] getOriginalFileBlob failed:', err)
     return null
   }
 }
@@ -90,7 +94,8 @@ export async function hydrateStemUrls(
     if (vocalUrl !== null) result.vocal = vocalUrl
     if (instrUrl !== null) result.instrumental = instrUrl
     return result
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] hydrateStemUrls failed:', err)
     return null
   }
 }
@@ -122,7 +127,9 @@ export async function saveStemFingerprintData(
       fingerprintJson: JSON.stringify(fingerprint),
     })
     return true
-  } catch {
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[UvrService] saveStemFingerprintData failed:', err)
     return false
   }
 }
@@ -141,7 +148,8 @@ export async function getStemFingerprintData(
     })
     if (results.length === 0) return null
     return JSON.parse(results[0].fingerprintJson) as MelodyFingerprint
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] getStemFingerprintData failed:', err)
     return null
   }
 }
@@ -156,7 +164,9 @@ export async function getAllStemFingerprintData(): Promise<
     return results.map((entry) =>
       JSON.parse(entry.fingerprintJson),
     ) as MelodyFingerprint[]
-  } catch {
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[UvrService] getAllStemFingerprintData failed:', err)
     return []
   }
 }
@@ -173,8 +183,9 @@ export async function deleteStemFingerprintData(
     for (const entry of existing) {
       await repo.delete(entry.id)
     }
-  } catch {
-    // Best-effort
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[UvrService] deleteStemFingerprintData failed:', err)
   }
 }
 
@@ -229,7 +240,8 @@ export async function saveUvrSession(session: {
       originalFileBlobId: session.originalFileBlobId,
     })
     return created.id
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] saveUvrSession failed:', err)
     return null
   }
 }
@@ -246,7 +258,8 @@ export async function findSessionByFileHash(
     })
     if (results.length === 0) return null
     return { sessionId: results[0].appSessionId }
-  } catch {
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] findSessionByFileHash failed:', err)
     return null
   }
 }
@@ -276,8 +289,8 @@ export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
     for (const rec of existing) {
       await repo.delete(rec.id)
     }
-  } catch {
-    // Best-effort cleanup
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] deleteUvrSessionFromDb failed:', err)
   }
 }
 
@@ -305,7 +318,8 @@ export async function deleteAllUvrSessionsFromDb(): Promise<void> {
     for (const rec of existing) {
       await repo.delete(rec.id)
     }
-  } catch {
-    // Best-effort cleanup
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[UvrService] deleteAllUvrSessionsFromDb failed:', err)
   }
 }

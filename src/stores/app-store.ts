@@ -1,5 +1,4 @@
 import { createSignal } from 'solid-js'
-import { z } from 'zod/v4'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
@@ -180,66 +179,202 @@ export interface UvrSession {
   createdAt: number
 }
 
-const UvrSessionSchema = z.object({
-  sessionId: z.string(),
-  apiSessionId: z.string().optional(),
-  status: z.enum([
-    'idle',
-    'uploading',
-    'processing',
-    'completed',
-    'error',
-    'cancelled',
-  ]),
-  progress: z.number(),
-  indeterminate: z.boolean().optional(),
-  processingTime: z.number().optional(),
-  error: z.string().optional(),
-  fileHash: z.string().optional(),
-  originalFile: z
-    .object({
-      name: z.string(),
-      size: z.number(),
-      mimeType: z.string(),
-    })
-    .optional(),
-  outputs: z
-    .object({
-      vocal: z.string().optional(),
-      instrumental: z.string().optional(),
-      vocalMidi: z.string().optional(),
-      instrumentalMidi: z.string().optional(),
-    })
-    .optional(),
-  stemMeta: z
-    .record(
-      z.string(),
-      z.object({
-        duration: z.number().optional(),
-        size: z.number().optional(),
-      }),
-    )
-    .optional(),
-  processingMode: z.enum(['server', 'local']).optional(),
-  provider: z.string().optional(),
-  numChunks: z.number().optional(),
-  createdAt: z.number(),
-})
-
-const UvrSessionArraySchema = z.array(UvrSessionSchema)
-
 /** Current UVR session state */
 export const [currentUvrSession, setCurrentUvrSession] =
   createSignal<UvrSession | null>(null)
 
-/** Reactive version counter — bumped on every session mutation */
+// ── In-memory signal cache (source of truth for synchronous reads) ──
+
+const [_sessionsCache, _setSessionsCache] = createSignal<UvrSession[]>([])
+
+/** Reactive version counter -- bumped on every session mutation */
 const [sessionsVersion, setSessionsVersion] = createSignal(0)
 
 function bumpSessions() {
   setSessionsVersion((v) => v + 1)
 }
 
-/** Get all sessions (reactive — reads sessionsVersion to track dependency) */
+// ── DB helpers ──────────────────────────────────────────────────────
+
+import type { UvrSessionRecord } from '@/db/entities'
+import { getUserId } from '@/db/seed'
+import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
+
+/** Convert a UvrSession (in-memory) to a DB record shape for persistence. */
+function sessionToDbRecord(
+  session: UvrSession,
+): Omit<UvrSessionRecord, 'id' | 'createdAt' | 'updatedAt'> {
+  return {
+    appSessionId: session.sessionId,
+    userId: getUserId(),
+    status: session.status,
+    progress: session.progress,
+    indeterminate: session.indeterminate,
+    fileHash: session.fileHash,
+    originalFileName: session.originalFile?.name ?? '',
+    originalFileSize: session.originalFile?.size ?? 0,
+    originalFileType: session.originalFile?.mimeType ?? '',
+    processingMode: session.processingMode ?? 'local',
+    provider: session.provider,
+    numChunks: session.numChunks,
+    processingTime: session.processingTime,
+    error: session.error,
+    stemMetaJson:
+      session.stemMeta !== undefined
+        ? JSON.stringify(session.stemMeta)
+        : undefined,
+    appCreatedAt: session.createdAt,
+  }
+}
+
+/** Convert a DB record back to a UvrSession (in-memory). */
+function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
+  let stemMeta: UvrSession['stemMeta']
+  if (rec.stemMetaJson !== undefined) {
+    try {
+      stemMeta = JSON.parse(rec.stemMetaJson)
+    } catch (err) {
+      if (IS_DEV) console.warn('[SessionStore] corrupt stemMetaJson:', err)
+    }
+  }
+  return {
+    sessionId: rec.appSessionId,
+    status: rec.status as UvrStatus,
+    progress: rec.progress,
+    indeterminate: rec.indeterminate,
+    fileHash: rec.fileHash,
+    originalFile: {
+      name: rec.originalFileName,
+      size: rec.originalFileSize,
+      mimeType: rec.originalFileType,
+    },
+    stemMeta,
+    processingMode: (rec.processingMode as UvrProcessingMode) ?? 'local',
+    provider: rec.provider,
+    numChunks: rec.numChunks,
+    processingTime: rec.processingTime,
+    error: rec.error,
+    createdAt: rec.appCreatedAt ?? Date.parse(rec.createdAt),
+  }
+}
+
+/** Persist a single session to the DB (fire-and-forget). */
+function persistSessionToDb(session: UvrSession): void {
+  void (async () => {
+    try {
+      const db = await getDb()
+      const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+
+      // Upsert: find existing by appSessionId
+      const existing = await repo.findAll({
+        where: { appSessionId: session.sessionId } as Record<string, unknown>,
+        limit: 1,
+      })
+      if (existing.length > 0) {
+        await repo.update(existing[0].id, sessionToDbRecord(session))
+      } else {
+        await repo.create(sessionToDbRecord(session))
+      }
+    } catch (err) {
+      if (IS_DEV) console.warn('[SessionStore] persistSessionToDb failed:', err)
+    }
+  })()
+}
+
+/** Persist the entire sessions list to DB (replaces all). */
+function persistAllSessionsToDb(sessions: UvrSession[]): void {
+  void (async () => {
+    try {
+      const db = await getDb()
+      const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+
+      // Get all existing records
+      const existing = await repo.findAll({})
+      const existingMap = new Map(existing.map((r) => [r.appSessionId, r]))
+
+      const activeIds = new Set(sessions.map((s) => s.sessionId))
+
+      // Delete records not in the new list
+      for (const rec of existing) {
+        if (!activeIds.has(rec.appSessionId)) {
+          await repo.delete(rec.id)
+        }
+      }
+
+      // Upsert each session
+      for (const session of sessions) {
+        const rec = existingMap.get(session.sessionId)
+        if (rec) {
+          await repo.update(rec.id, sessionToDbRecord(session))
+        } else {
+          await repo.create(sessionToDbRecord(session))
+        }
+      }
+    } catch (err) {
+      if (IS_DEV)
+        console.warn('[SessionStore] persistAllSessionsToDb failed:', err)
+    }
+  })()
+}
+
+// ── Update the cache + persist ──────────────────────────────────────
+
+function updateCacheAndPersist(sessions: UvrSession[]): void {
+  _setSessionsCache(sessions)
+  bumpSessions()
+  persistAllSessionsToDb(sessions)
+}
+
+function upsertSessionInCache(session: UvrSession): void {
+  _setSessionsCache((prev) => {
+    const idx = prev.findIndex((s) => s.sessionId === session.sessionId)
+    if (idx >= 0) {
+      const next = [...prev]
+      next[idx] = session
+      return next
+    }
+    return [...prev, session]
+  })
+  bumpSessions()
+  persistSessionToDb(session)
+}
+
+// ── Initialization (must be called at app boot) ─────────────────────
+
+let _sessionStoreReady = false
+
+/**
+ * Initialize the session store: load from IndexedDB and populate the
+ * in-memory cache.
+ *
+ * Must be called once at app startup (e.g. in the root component or
+ * before any UVR panel renders).
+ */
+export async function initSessionStore(): Promise<void> {
+  if (_sessionStoreReady) return
+
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+
+    // Load all sessions from DB into cache
+    const allRecords = await repo.findAll({})
+    const sessions = allRecords.map(dbRecordToSession)
+    _setSessionsCache(sessions)
+  } catch (err) {
+    if (IS_DEV) console.warn('[SessionStore] initSessionStore failed:', err)
+    _setSessionsCache([])
+  }
+
+  _sessionStoreReady = true
+
+  // Run stale-session cleanup on the loaded cache
+  cleanupStaleUvrSessions()
+}
+
+// ── Public API (synchronous reads, fire-and-forget DB writes) ──────
+
+/** Get all sessions (reactive -- reads sessionsVersion to track dependency) */
 export function getAllUvrSessionsReactive(): UvrSession[] {
   sessionsVersion() // track signal dependency
   return getAllUvrSessions()
@@ -259,22 +394,14 @@ export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
   )
 }
 
-/** Get all sessions */
+/** Get all sessions (synchronous read from in-memory cache) */
 export function getAllUvrSessions(): UvrSession[] {
-  const saved = localStorage.getItem('pitchperfect_uvr_sessions')
-  if (saved !== null) {
-    try {
-      return UvrSessionArraySchema.parse(JSON.parse(saved))
-    } catch {
-      return []
-    }
-  }
-  return []
+  return _sessionsCache()
 }
 
-/** Save all sessions */
+/** Save all sessions (replaces the entire list) */
 export function saveAllUvrSessions(sessions: UvrSession[]): void {
-  localStorage.setItem('pitchperfect_uvr_sessions', JSON.stringify(sessions))
+  updateCacheAndPersist(sessions)
 }
 
 /** Start a new UVR session */
@@ -299,11 +426,7 @@ export function startUvrSession(
     createdAt: now,
   }
 
-  const sessions = getAllUvrSessions()
-  sessions.push(newSession)
-  saveAllUvrSessions(sessions)
-  bumpSessions()
-
+  upsertSessionInCache(newSession)
   setCurrentUvrSession(newSession)
   return sessionId
 }
@@ -315,17 +438,17 @@ export function updateUvrSessionProgress(
   processingTime?: number,
   indeterminate?: boolean,
 ): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.progress = progress
-    session.indeterminate = indeterminate ?? false
-    if (processingTime !== undefined) {
-      session.processingTime = processingTime
+    const updated: UvrSession = {
+      ...session,
+      progress,
+      indeterminate: indeterminate ?? false,
+      processingTime:
+        processingTime !== undefined ? processingTime : session.processingTime,
     }
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
@@ -334,13 +457,11 @@ export function setUvrSessionApiId(
   sessionId: string,
   apiSessionId: string,
 ): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.apiSessionId = apiSessionId
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    const updated = { ...session, apiSessionId }
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
@@ -349,13 +470,11 @@ export function setUvrSessionProvider(
   sessionId: string,
   provider: string,
 ): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.provider = provider
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    const updated = { ...session, provider }
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
@@ -365,66 +484,64 @@ export function completeUvrSession(
   outputs: UvrSession['outputs'],
   stemMeta?: UvrSession['stemMeta'],
 ): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.status = 'completed'
-    session.outputs = outputs
-    session.stemMeta = stemMeta
-    session.progress = 100
-    session.processingTime = Date.now() - session.createdAt
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    const updated: UvrSession = {
+      ...session,
+      status: 'completed',
+      outputs,
+      stemMeta,
+      progress: 100,
+      processingTime: Date.now() - session.createdAt,
+    }
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
 /** Set UVR session error */
 export function setErrorUvrSession(sessionId: string, error: string): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.status = 'error'
-    session.error = error
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    const updated: UvrSession = { ...session, status: 'error', error }
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
 /** Cancel UVR session */
 export function cancelUvrSession(sessionId: string): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (session) {
-    session.status = 'cancelled'
-    saveAllUvrSessions(sessions)
-    bumpSessions()
-    setCurrentUvrSession({ ...session })
+    const updated: UvrSession = { ...session, status: 'cancelled' }
+    upsertSessionInCache(updated)
+    setCurrentUvrSession(updated)
   }
 }
 
 /** Reset a failed/cancelled session for retry */
 export function retryUvrSession(sessionId: string): void {
-  const sessions = getAllUvrSessions()
-  const idx = sessions.findIndex((s) => s.sessionId === sessionId)
-  if (idx === -1) return
-  sessions[idx].status = 'processing'
-  sessions[idx].progress = 0
-  sessions[idx].error = undefined
-  sessions[idx].processingTime = 0
-  sessions[idx].indeterminate = true
-  sessions[idx].apiSessionId = undefined
-  saveAllUvrSessions(sessions)
-  bumpSessions()
-  setCurrentUvrSession({ ...sessions[idx] })
+  const session = getUvrSession(sessionId)
+  if (!session) return
+  const updated: UvrSession = {
+    ...session,
+    status: 'processing',
+    progress: 0,
+    error: undefined,
+    processingTime: 0,
+    indeterminate: true,
+    apiSessionId: undefined,
+  }
+  upsertSessionInCache(updated)
+  setCurrentUvrSession(updated)
 }
 
 /** Delete UVR session */
 export function deleteUvrSession(sessionId: string): void {
   const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
-  saveAllUvrSessions(sessions)
-  bumpSessions()
+  updateCacheAndPersist(sessions)
+  // Clean up associated lyrics from DB
+  void deleteLyricsFromDb(sessionId)
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
   }
@@ -432,8 +549,9 @@ export function deleteUvrSession(sessionId: string): void {
 
 /** Delete all UVR sessions */
 export function deleteAllUvrSessions(): void {
-  saveAllUvrSessions([])
-  bumpSessions()
+  updateCacheAndPersist([])
+  // Clean up all lyrics from DB
+  void deleteAllLyricsFromDb()
   setCurrentUvrSession(null)
 }
 
@@ -455,25 +573,29 @@ export function getUvrSessionStats(): {
   }
 }
 
-// Auto-cleanup stale sessions on module load
+// Auto-cleanup stale sessions
 export function cleanupStaleUvrSessions(): void {
   if (typeof window === 'undefined') return
   const sessions = getAllUvrSessions()
   let changed = false
-  for (const session of sessions) {
+  const updated = sessions.map((session) => {
     if (session.status === 'processing' || session.status === 'uploading') {
-      session.status = 'error'
-      session.error = 'Session interrupted by page reload or closure.'
       changed = true
+      return {
+        ...session,
+        status: 'error' as UvrStatus,
+        error: 'Session interrupted by page reload or closure.',
+      }
     }
-  }
+    return session
+  })
   if (changed) {
-    saveAllUvrSessions(sessions)
+    updateCacheAndPersist(updated)
   }
 }
 
-// Run cleanup immediately
-cleanupStaleUvrSessions()
+// Note: cleanupStaleUvrSessions() is now called inside initSessionStore()
+// after the cache is loaded from DB. It is NOT run at module load anymore.
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
@@ -500,8 +622,7 @@ export function updateUvrSessionOutputs(
   sessionId: string,
   files: { stem: string; path: string; duration?: number; size?: number }[],
 ): void {
-  const sessions = getAllUvrSessions()
-  const session = sessions.find((s) => s.sessionId === sessionId)
+  const session = getUvrSession(sessionId)
   if (!session) return
 
   const outputs: UvrSession['outputs'] = {
@@ -521,12 +642,10 @@ export function updateUvrSessionOutputs(
     }
   }
 
-  session.outputs = outputs
-  session.stemMeta = meta
-  saveAllUvrSessions(sessions)
-  bumpSessions()
+  const updated: UvrSession = { ...session, outputs, stemMeta: meta }
+  upsertSessionInCache(updated)
   if (currentUvrSession()?.sessionId === sessionId) {
-    setCurrentUvrSession({ ...session })
+    setCurrentUvrSession(updated)
   }
 }
 

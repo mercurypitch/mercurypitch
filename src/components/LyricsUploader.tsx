@@ -55,6 +55,26 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
     reader.readAsText(file)
   }
 
+  const handlePaste = async () => {
+    setError('')
+    try {
+      const text = await navigator.clipboard.readText()
+      if (!text.trim()) {
+        setError('Clipboard is empty')
+        return
+      }
+      // Auto-detect LRC format by checking for timestamp patterns
+      const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+      props.onUpload({
+        text,
+        format: isLrc ? 'lrc' : 'txt',
+        filename: isLrc ? 'pasted.lrc' : 'pasted.txt',
+      })
+    } catch {
+      setError('Could not read clipboard — check browser permissions')
+    }
+  }
+
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     setDragOver(false)
@@ -103,6 +123,27 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
           <span class="lu-browse-btn">Browse files</span>
         </Show>
       </label>
+
+      <button
+        class="lu-paste-btn"
+        onClick={() => void handlePaste()}
+        title="Paste lyrics text from clipboard"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+          <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+        </svg>
+        Paste from clipboard
+      </button>
 
       <Show when={error()}>
         <span class="lu-error">{error()}</span>
@@ -291,5 +332,35 @@ export const LyricsUploaderStyles: string = `
 .lu-dismiss:hover {
   color: var(--fg-secondary, #8b949e);
   background: var(--bg-tertiary, #21262d);
+}
+
+.lu-paste-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.lu-paste-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--fg-tertiary, #484f58);
+  background: var(--bg-secondary, #161b22);
+}
+
+.lu-paste-btn svg {
+  flex-shrink: 0;
+  color: var(--fg-tertiary, #484f58);
 }
 `

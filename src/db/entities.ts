@@ -234,6 +234,7 @@ export interface UvrSessionRecord extends DbEntity {
   userId: string
   status: string // 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
   progress: number
+  indeterminate?: boolean
   fileHash?: string // SHA-256 hex digest of the original file
   originalFileName: string
   originalFileSize: number
@@ -243,9 +244,13 @@ export interface UvrSessionRecord extends DbEntity {
   numChunks?: number
   processingTime?: number
   error?: string
-  vocalStemId?: string // FK → uvrStemBlobs.id
+  vocalStemId?: string // FK -> uvrStemBlobs.id
   instrumentalStemId?: string
-  originalFileBlobId?: string // FK → uvrStemBlobs.id
+  originalFileBlobId?: string // FK -> uvrStemBlobs.id
+  /** JSON-serialized Record<string, { duration?: number; size?: number }> */
+  stemMetaJson?: string
+  /** Timestamp from the original UvrSession.createdAt (epoch ms) */
+  appCreatedAt?: number
 }
 
 export interface UvrStemBlob extends DbEntity {
@@ -260,6 +265,21 @@ export interface UvrStemBlob extends DbEntity {
 export interface UvrStemFingerprint extends DbEntity {
   sessionId: string // matches UvrSession.sessionId
   fingerprintJson: string // JSON-serialized MelodyFingerprint
+}
+
+export interface UvrSessionLyrics extends DbEntity {
+  sessionId: string // matches UvrSession.sessionId
+  text: string
+  format: 'txt' | 'lrc'
+  filename: string
+  /** JSON-serialized WordTimingsMap */
+  wordTimingsJson?: string
+  originalText?: string
+  /** JSON-serialized LyricsBlock[] */
+  blocksJson?: string
+  /** JSON-serialized BlockInstancesMap */
+  blockInstancesJson?: string
+  fontSize?: number
 }
 
 export interface OfflinePitchAnalysisRecord extends DbEntity {

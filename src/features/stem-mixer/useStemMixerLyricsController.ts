@@ -4,8 +4,10 @@
 
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import type { LyricsData } from '@/db/services/lyrics-db-service'
+import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import { buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
-import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
+import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
@@ -221,7 +223,6 @@ const formatTimeLrcWord = formatTimeLrc
 export function useStemMixerLyricsController(
   deps: StemMixerLyricsDeps,
 ): StemMixerLyricsController {
-  const storageKey = () => `lyrics_v1_${deps.sessionId}`
   const genKey = () => `lyrics_gen_v1_${deps.sessionId}`
 
   const LYRICS_CONTAINER_SELECTOR =
@@ -283,6 +284,11 @@ export function useStemMixerLyricsController(
 
   // ── Persistence ──────────────────────────────────────────────────
 
+  // ── Local lyrics data cache (keeps loadPersistedLyrics sync) ─────
+  type CachedLyricsPayload = LyricsData & { timestamp?: number }
+  const [_lyricsCache, _setLyricsCache] =
+    createSignal<CachedLyricsPayload | null>(null)
+
   const persistLyrics = (
     text: string,
     format: 'txt' | 'lrc',
@@ -290,24 +296,25 @@ export function useStemMixerLyricsController(
     wt?: WordTimingsMap,
     originalText?: string,
   ) => {
-    try {
-      const payload: Record<string, unknown> = {
-        text,
-        format,
-        filename,
-        timestamp: Date.now(),
-      }
-      if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
-      if (originalText !== undefined) payload.originalText = originalText
-      const bl = blocks()
-      if (bl.length > 0) payload.blocks = bl
-      const bi = blockInstances()
-      if (Object.keys(bi).length > 0) payload.blockInstances = bi
-      payload.fontSize = lyricsFontSize()
-      localStorage.setItem(storageKey(), JSON.stringify(payload))
-    } catch {
-      /* storage full or unavailable */
+    const payload: CachedLyricsPayload = {
+      text,
+      format,
+      filename,
+      timestamp: Date.now(),
     }
+    if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
+    if (originalText !== undefined) payload.originalText = originalText
+    const bl = blocks()
+    if (bl.length > 0) payload.blocks = bl
+    const bi = blockInstances()
+    if (Object.keys(bi).length > 0) payload.blockInstances = bi
+    payload.fontSize = lyricsFontSize()
+
+    // Update local cache immediately (keeps reads sync)
+    _setLyricsCache(payload)
+
+    // Persist to IndexedDB (fire-and-forget)
+    void saveLyricsToDb(deps.sessionId, payload)
   }
 
   const loadPersistedLyrics = ():
@@ -316,54 +323,49 @@ export function useStemMixerLyricsController(
         originalText?: string
       })
     | null => {
-    try {
-      const raw = localStorage.getItem(storageKey())
-      if (raw === null) return null
-      const data: Record<string, unknown> = JSON.parse(raw)
-      if (
-        typeof data.text === 'string' &&
-        (data.format === 'txt' || data.format === 'lrc')
-      ) {
-        const result: LyricsUploadResult & {
-          wordTimings?: WordTimingsMap
-          originalText?: string
-        } = {
-          text: data.text,
-          format: data.format,
-          filename:
-            typeof data.filename === 'string' ? data.filename : 'saved.txt',
-        }
-        if (typeof data.originalText === 'string') {
-          result.originalText = data.originalText
-        }
-        if (typeof data.wordTimings === 'object') {
-          result.wordTimings = data.wordTimings as WordTimingsMap
-        }
-        if (typeof data.fontSize === 'number') setLyricsFontSize(data.fontSize)
-        if (Array.isArray(data.blocks)) setBlocks(data.blocks as LyricsBlock[])
-        if (typeof data.blockInstances === 'object') {
-          setBlockInstances(data.blockInstances as BlockInstancesMap)
-        }
-        return result
+    // Read from local cache (populated by _loadLyricsFromDbOrLocalStorage)
+    const cached = _lyricsCache()
+    if (cached !== null) {
+      const result: LyricsUploadResult & {
+        wordTimings?: WordTimingsMap
+        originalText?: string
+      } = {
+        text: cached.text,
+        format: cached.format,
+        filename: cached.filename,
       }
-    } catch {
-      /* corrupted data */
+      if (cached.originalText !== undefined) {
+        result.originalText = cached.originalText
+      }
+      if (cached.wordTimings !== undefined) {
+        result.wordTimings = cached.wordTimings as WordTimingsMap
+      }
+      if (typeof cached.fontSize === 'number')
+        setLyricsFontSize(cached.fontSize)
+      if (Array.isArray(cached.blocks))
+        setBlocks(cached.blocks as LyricsBlock[])
+      if (
+        typeof cached.blockInstances === 'object' &&
+        cached.blockInstances !== null
+      ) {
+        setBlockInstances(cached.blockInstances as BlockInstancesMap)
+      }
+      return result
     }
     return null
   }
 
   const persistBlocks = () => {
-    try {
-      const key = storageKey()
-      const raw = localStorage.getItem(key)
-      if (raw === null) return
-      const data = JSON.parse(raw)
-      data.blocks = blocks()
-      data.blockInstances = blockInstances()
-      localStorage.setItem(key, JSON.stringify(data))
-    } catch {
-      /* ignore */
+    // Update the cache and re-persist everything
+    const cached = _lyricsCache()
+    if (cached === null) return
+    const updated = {
+      ...cached,
+      blocks: blocks(),
+      blockInstances: blockInstances(),
     }
+    _setLyricsCache(updated)
+    void saveLyricsToDb(deps.sessionId, updated as LyricsData)
   }
 
   // ── Lyrics loading ───────────────────────────────────────────────
@@ -437,6 +439,14 @@ export function useStemMixerLyricsController(
   }
 
   const loadLyrics = async () => {
+    // Populate the local cache from IndexedDB
+    if (_lyricsCache() === null) {
+      const dbData = await loadLyricsFromDb(deps.sessionId)
+      if (dbData !== null) {
+        _setLyricsCache(dbData as CachedLyricsPayload)
+      }
+    }
+
     const persisted = loadPersistedLyrics()
     if (persisted) {
       setRawLyricsText(persisted.text)
@@ -577,7 +587,17 @@ export function useStemMixerLyricsController(
     // so the user can resume or fix a specific section without
     // redoing the entire song from the beginning.
     if (lrcGenMode()) {
-      setLrcGenLineIdx(idx)
+      const genLines = getGenLines()
+      let targetIdx = idx
+      // Skip Rest/blank lines — land on the next real line
+      while (
+        targetIdx < genLines.length &&
+        (!genLines[targetIdx].trim() || genLines[targetIdx].trim() === '~Rest~')
+      ) {
+        targetIdx++
+      }
+      if (targetIdx >= genLines.length) targetIdx = genLines.length
+      setLrcGenLineIdx(targetIdx)
       setLrcGenWordIdx(0)
       saveLrcGenProgress()
     }
@@ -1279,10 +1299,16 @@ export function useStemMixerLyricsController(
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
 
-    // Build canonical↔LRC index maps for correct output
+    // Guard: if no lines were mapped, treat as cancel
+    if (touchedLines.size === 0 && lrcGenLineIdx() < lines.length) {
+      handleLrcGenReset()
+      return
+    }
+
+    // Build canonical<->LRC index maps for correct output
     const lrcToCanon = buildLrcToCanonicalMap(canonical)
 
-    // Convert preGenSnapshot wordTimings from LRC→canonical indices
+    // Convert preGenSnapshot wordTimings from LRC->canonical indices
     const origWtLrc = preGenSnapshot?.wordTimings
     const origWtCanon: WordTimingsMap | undefined = origWtLrc
       ? (() => {
@@ -1358,27 +1384,118 @@ export function useStemMixerLyricsController(
       }
     }
 
-    // Build LRC text from canonical entries — skip synthetic ~Rest~,
-    // output only real lines with correct LRC-indexed times.
-    // Also build mergedWordTimes keyed by LRC index.
-    const mergedWordTimes: WordTimingsMap = {}
-    for (const entry of canonical) {
-      if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
-      const ci = entry.canonicalIndex
-      const wts = mergedWordTimesCanon[ci]
-      if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
+    // Estimate times for completely unmapped lines beyond the last touched line
+    // so they get distributed across the remaining song duration instead of
+    // collapsing to 0.
+    const dur = deps.duration()
+    if (dur > 0) {
+      finalTimes = estimateUnmappedTimes(finalTimes, lines, dur)
     }
 
-    const rawLinesForText = finalTimes.map((t) => t ?? 0)
-    const lrcText = buildLrcTextFromCanonical(canonical, rawLinesForText)
+    // Enforce monotonic non-decreasing time order.
+    // If a user mapped line 5 at 1:00 then line 20 at 0:30, interpolated
+    // lines between them could go backwards.  Clamp each line to be >= the
+    // previous so timestamps always flow forward.
+    {
+      let prev = 0
+      for (let i = 0; i < finalTimes.length; i++) {
+        if (finalTimes[i] !== undefined) {
+          if (finalTimes[i]! < prev) {
+            finalTimes[i] = prev
+          }
+          prev = finalTimes[i]!
+        }
+      }
+    }
+
+    // Determine original text to preserve for future re-gen.
+    // Use the pre-gen snapshot's raw text if available, otherwise fall back
+    // to the currently persisted original text or raw lyrics text.
+    const snapshotOriginalText = (() => {
+      const snapText = preGenSnapshot?.rawLyricsText
+      if (snapText != null && snapText.length > 0) return snapText
+      const persistedText = loadPersistedLyrics()?.originalText
+      if (persistedText != null && persistedText.length > 0)
+        return persistedText
+      return rawLyricsText()
+    })()
+
+    let lrcText: string
+    let mergedWordTimes: WordTimingsMap
+
+    if (canonical.length > 0) {
+      // LRC source: build from canonical entries with correct indices
+      mergedWordTimes = {}
+      for (const entry of canonical) {
+        if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
+        const ci = entry.canonicalIndex
+        const wts = mergedWordTimesCanon[ci]
+        if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
+      }
+
+      const rawLinesForText = finalTimes.map((t) => t ?? 0)
+      lrcText = buildLrcTextFromCanonical(
+        canonical,
+        rawLinesForText,
+        mergedWordTimes,
+      )
+    } else {
+      // Plain text source: canonical is empty, build LRC directly from lines.
+      // Use word-level output for lines with word timings, line-level for the rest.
+      mergedWordTimes = { ...mergedWordTimesCanon }
+
+      lrcText = lines
+        .map((line, i) => {
+          if (!line.trim()) return ''
+          const lineWt = mergedWordTimes[i]
+          const words = line.split(/\s+/).filter((w) => w.length > 0)
+          if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
+            // Word-level output
+            return words
+              .map((w, wi) => {
+                const t = lineWt[wi]
+                return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
+              })
+              .join(' ')
+          }
+          // Line-level output with estimated/interpolated time
+          const t = finalTimes[i] ?? 0
+          return `[${formatTimeLrc(t)}] ${line}`
+        })
+        .filter((l) => l !== '')
+        .join('\n')
+    }
+
+    // Safeguard: if the generated LRC is empty, do NOT overwrite the
+    // persisted lyrics — treat this as a failed gen and restore snapshot.
+    if (!lrcText.trim()) {
+      console.warn(
+        '[LRC Gen] Finish produced empty LRC text — aborting to prevent data loss',
+      )
+      handleLrcGenReset()
+      return
+    }
 
     const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
-    persistLyrics(lrcText, 'lrc', filename, mergedWordTimes, lrcText)
+    persistLyrics(
+      lrcText,
+      'lrc',
+      filename,
+      mergedWordTimes,
+      snapshotOriginalText,
+    )
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
     setLyricsLines([])
     setWordTimings(mergedWordTimes)
+
+    // Reset gen state fully
     setLrcGenMode(false)
+    setLrcGenLineIdx(0)
+    setLrcGenWordIdx(0)
+    setLrcGenLineTimes([])
+    setLrcGenWordTimings({})
+    touchedLines = new Set()
     clearLrcGenProgress()
     preGenSnapshot = null
   }
@@ -1713,6 +1830,34 @@ export function useStemMixerLyricsController(
           container.removeEventListener('scrollend', resetAutoScroll)
           isAutoScrolling = false
         }, 500)
+      }
+    }
+  })
+
+  // ── Auto-scroll effect for LRC gen mode ──────────────────────────
+
+  createEffect(() => {
+    const idx = lrcGenLineIdx()
+    if (!lrcGenMode()) return
+    const container = document.querySelector(
+      '.sm-lyrics-gen-lines',
+    ) as HTMLElement | null
+    if (!container) return
+    const lineEls = container.querySelectorAll('.sm-lyrics-gen-line')
+    if (idx < lineEls.length) {
+      const activeLine = lineEls[idx] as HTMLElement
+      const containerRect = container.getBoundingClientRect()
+      const lineRect = activeLine.getBoundingClientRect()
+      const thresholdBottom = containerRect.top + containerRect.height * 0.6
+      const thresholdTop = containerRect.top + containerRect.height * 0.15
+      const needsScrollDown = lineRect.bottom > thresholdBottom
+      const needsScrollUp = lineRect.top < thresholdTop
+      if (needsScrollDown || needsScrollUp) {
+        const scrollTarget =
+          container.scrollTop +
+          (lineRect.top - containerRect.top) -
+          containerRect.height * 0.35
+        container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
       }
     }
   })

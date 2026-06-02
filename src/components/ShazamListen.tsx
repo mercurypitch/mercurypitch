@@ -8,6 +8,7 @@
 
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { getAllLrcLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { IS_DEV } from '@/lib/defaults'
@@ -425,10 +426,10 @@ export function ShazamListen(props: ShazamListenProps) {
 
     // Defer matching to next microtask so the "processing" UI renders
     // before the CPU-bound DTW computation blocks the main thread.
-    queueMicrotask(() => runMatching(contour))
+    queueMicrotask(() => { void runMatching(contour) })
   }
 
-  function runMatching(contour: LivePitchContour) {
+  async function runMatching(contour: LivePitchContour) {
     const sourceFilter = !includeMelodies()
       ? 'stem'
       : !includeStems()
@@ -462,7 +463,13 @@ export function ShazamListen(props: ShazamListenProps) {
     // If we have Whisper transcript segments, try lyrics-based matching
     // to potentially find a better seek position for stem sessions
     if (whisperSegments.length > 0) {
-      const catalog = buildLyricsCatalog()
+      const dbLyrics = await getAllLrcLyricsFromDb()
+      const catalog: LyricsCatalogEntry[] = dbLyrics.map(entry => ({
+        songId: entry.sessionId,
+        songName: entry.filename.replace(/\.lrc$/i, ''),
+        lrcContent: entry.text,
+      }))
+      
       if (catalog.length > 0) {
         const lyricsResults = matchTranscriptToLyrics(
           whisperSegments,
@@ -519,38 +526,6 @@ export function ShazamListen(props: ShazamListenProps) {
     }
 
     props.onMatch({ candidates, contour, hummingNormalized })
-  }
-
-  /**
-   * Build a lyrics catalog from session data stored in localStorage.
-   * Sessions with synced LRC lyrics become searchable via Whisper transcript.
-   */
-  function buildLyricsCatalog(): LyricsCatalogEntry[] {
-    const catalog: LyricsCatalogEntry[] = []
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key === null || !key.startsWith('lyrics_v1_')) continue
-        const sessionId = key.replace('lyrics_v1_', '')
-        const raw = localStorage.getItem(key)
-        if (raw === null) continue
-        const data = JSON.parse(raw) as Record<string, unknown>
-        if (data.format !== 'lrc' || typeof data.text !== 'string') continue
-        if (data.text.length < 20) continue
-
-        catalog.push({
-          songId: sessionId,
-          songName:
-            typeof data.filename === 'string'
-              ? data.filename.replace(/\.lrc$/i, '')
-              : sessionId,
-          lrcContent: data.text,
-        })
-      }
-    } catch {
-      // localStorage may be inaccessible
-    }
-    return catalog
   }
 
   function handleCancel() {

@@ -48,12 +48,16 @@ export function buildCanonicalEntries(
       ? parsedWt.words
       : line.text.split(/\s+/).filter((w: string) => w.length > 0)
 
+    // When word-level timestamps were parsed, use the clean joined words
+    // as text so embedded [mm:ss.xx] timestamps don't appear as literal text.
+    const cleanText = parsedWt ? parsedWt.words.join(' ') : line.text
+
     result.push({
       type: 'line',
       lrcIndex: i,
       canonicalIndex: result.length,
       time: line.time,
-      text: line.text,
+      text: cleanText,
       words,
       wordTimes: parsedWt?.wordTimes,
     })
