@@ -5,6 +5,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrSessionResult } from '../UvrSessionResult'
+import { saveAllUvrSessions } from '@/stores/app-store'
 
 // Mock icons
 vi.mock('../icons', () => ({
@@ -32,9 +33,9 @@ vi.mock('../icons', () => ({
   X: () => <span data-testid="x-icon">X</span>,
 }))
 
-// Helper to seed a session into localStorage so getUvrSession can find it
+// Helper to seed a session into the store so getUvrSession can find it
 function seedSession(session: Record<string, unknown>) {
-  localStorage.setItem('pitchperfect_uvr_sessions', JSON.stringify([session]))
+  saveAllUvrSessions([session as any])
 }
 
 describe('UvrSessionResult Component', () => {
@@ -47,7 +48,7 @@ describe('UvrSessionResult Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
+    saveAllUvrSessions([])
   })
 
   describe('Rendering', () => {
