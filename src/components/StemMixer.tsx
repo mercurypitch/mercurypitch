@@ -2511,8 +2511,8 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.3rem;
+  width: 2.2rem;
+  height: 1.8rem;
   padding: 0;
   background: var(--accent, #58a6ff);
   color: var(--bg-primary, #0d1117);
@@ -2529,10 +2529,10 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-gen-progress {
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   font-family: monospace;
   color: var(--fg-secondary, #8b949e);
-  margin: 0 0.2rem;
+  margin: 0 0.5rem;
   flex-shrink: 0;
 }
 
@@ -2540,9 +2540,9 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0.6rem;
-  height: 1.6rem;
-  font-size: 0.65rem;
+  padding: 0.2rem 0.8rem;
+  height: 1.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--accent, #58a6ff);
@@ -2561,9 +2561,9 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0.6rem;
-  height: 1.6rem;
-  font-size: 0.65rem;
+  padding: 0.2rem 0.8rem;
+  height: 1.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--bg-tertiary, #21262d);
@@ -2583,9 +2583,9 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0.6rem;
-  height: 1.6rem;
-  font-size: 0.65rem;
+  padding: 0.2rem 0.8rem;
+  height: 1.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   font-family: inherit;
   background: var(--ok-green, #3fb950);
@@ -2605,9 +2605,9 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0.6rem;
-  height: 1.6rem;
-  font-size: 0.65rem;
+  padding: 0.2rem 0.8rem;
+  height: 1.8rem;
+  font-size: 0.7rem;
   font-weight: 500;
   font-family: inherit;
   background: transparent;

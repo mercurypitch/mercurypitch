@@ -37,6 +37,7 @@
     "@cloudflare/containers": "^0.3.3",
     "@huggingface/transformers": "^4.2.0",
     "dexie": "^4.4.2",
+    "fflate": "^0.8.3",
     "lightningcss": "^1.32.0",
     "midi-writer-js": "^3.2.1",
     "onnxruntime-web": "^1.25.1",

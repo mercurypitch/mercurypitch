@@ -596,6 +596,15 @@ export function cleanupStaleUvrSessions(): void {
 
 // Note: cleanupStaleUvrSessions() is now called inside initSessionStore()
 // after the cache is loaded from DB. It is NOT run at module load anymore.
+/** Import an existing session (e.g. from ZIP) */
+export function importUvrSession(session: UvrSession): void {
+  const currentSessions = getAllUvrSessions()
+  // Ensure we don't accidentally duplicate
+  const exists = currentSessions.some((s) => s.sessionId === session.sessionId)
+  if (!exists) {
+    updateCacheAndPersist([session, ...currentSessions])
+  }
+}
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {

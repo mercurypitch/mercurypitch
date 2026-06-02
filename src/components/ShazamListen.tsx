@@ -426,7 +426,9 @@ export function ShazamListen(props: ShazamListenProps) {
 
     // Defer matching to next microtask so the "processing" UI renders
     // before the CPU-bound DTW computation blocks the main thread.
-    queueMicrotask(() => { void runMatching(contour) })
+    queueMicrotask(() => {
+      void runMatching(contour)
+    })
   }
 
   async function runMatching(contour: LivePitchContour) {
@@ -464,12 +466,12 @@ export function ShazamListen(props: ShazamListenProps) {
     // to potentially find a better seek position for stem sessions
     if (whisperSegments.length > 0) {
       const dbLyrics = await getAllLrcLyricsFromDb()
-      const catalog: LyricsCatalogEntry[] = dbLyrics.map(entry => ({
+      const catalog: LyricsCatalogEntry[] = dbLyrics.map((entry) => ({
         songId: entry.sessionId,
         songName: entry.filename.replace(/\.lrc$/i, ''),
         lrcContent: entry.text,
       }))
-      
+
       if (catalog.length > 0) {
         const lyricsResults = matchTranscriptToLyrics(
           whisperSegments,

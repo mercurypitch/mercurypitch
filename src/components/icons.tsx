@@ -715,18 +715,16 @@ export const Clock: Component = () => (
   </svg>
 )
 
-// Import File Icon (upload arrow into tray — from piano roll MIDI import)
+// Export File Icon (download arrow into tray)
+export const ExportFile: Component = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+  </svg>
+)
+
+// Import File Icon (upload arrow into tray)
 export const ImportFile: Component = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    width="24"
-    height="24"
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
     <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5z" />
   </svg>
 )

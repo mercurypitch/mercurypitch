@@ -8,16 +8,13 @@ import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Box, Calendar, CheckCircle, Cpu, Download, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
   disabled?: boolean
   onView?: (sessionId: string) => void
-  onExport?: (
-    sessionId: string,
-    type: 'vocal' | 'instrumental' | 'vocal-midi',
-  ) => void
+  onExport?: (sessionId: string) => void
   onOpenMixer?: (
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
@@ -231,6 +228,19 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           disabled={props.disabled}
         >
           <Trash2 />
+        </button>
+        <button
+          class="session-share-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            props.onExport?.(props.sessionId)
+          }}
+          title="Export session to ZIP"
+          disabled={
+            props.disabled === true || session()?.status !== 'completed'
+          }
+        >
+          <Download />
         </button>
         <button
           class="session-share-btn"

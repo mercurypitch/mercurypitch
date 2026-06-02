@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component, JSX, Setter } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createEffect, For, on, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
@@ -259,6 +259,23 @@ export const StemMixerLyricsPanelBody: Component<
   StemMixerLyricsPanelBodyProps
 > = (props) => {
   const sfx = () => props.idSuffix ?? ''
+
+  // Auto-scroll LRC generator view to the currently active line
+  createEffect(
+    on(
+      () => props.lrcGenLineIdx(),
+      () => {
+        if (props.lrcGenMode() && props.playing()) {
+          requestAnimationFrame(() => {
+            const el = document.querySelector('.sm-lyrics-gen-line-current')
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          })
+        }
+      },
+    ),
+  )
 
   // Look up the mapped note for a word by temporal overlap with alignment data
   const getWordNote = (

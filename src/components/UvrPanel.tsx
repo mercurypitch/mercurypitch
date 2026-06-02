@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
+import { exportAllSessions, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -17,7 +18,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, Cpu, ExportFile, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -129,7 +130,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
-  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
@@ -138,6 +138,39 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [midiExportProgress, setMidiExportProgress] = createSignal(0)
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
+  const [isExporting, setIsExporting] = createSignal(false)
+  const [exportProgress, setExportProgress] = createSignal(0)
+  const [isImporting, setIsImporting] = createSignal(false)
+
+  const handleExportAll = async () => {
+    if (isExporting()) return
+    setIsExporting(true)
+    setExportProgress(0)
+    try {
+      await exportAllSessions((pct) => setExportProgress(pct))
+      showNotification('All sessions successfully exported.', 'success')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleImportZip = async (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+    showNotification('Extracting sessions from ZIP...', 'info')
+    try {
+      const count = await importSessionsFromZip(file)
+      showNotification(`Successfully imported ${count} session(s).`, 'success')
+    } catch (_err) {
+      showNotification('Failed to import sessions.', 'error')
+    } finally {
+      setIsImporting(false)
+      input.value = ''
+    }
+  }
   const [mixerStems, setMixerStems] = createSignal<{
     vocal?: string
     vocalMidi?: string
@@ -593,73 +626,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleExportSession = async (
-    sessionId: string,
-    type: 'vocal' | 'instrumental' | 'vocal-midi',
-  ) => {
-    const s = getUvrSession(sessionId)
-    if (!s?.outputs) return
-
-    const url =
-      type === 'vocal'
-        ? s.outputs.vocal
-        : type === 'instrumental'
-          ? s.outputs.instrumental
-          : s.outputs.vocalMidi
-
-    if (url === undefined) return
-
-    try {
-      let blob: Blob
-      const ext = type === 'vocal-midi' ? '.mid' : '.wav'
-
-      if (
-        type === 'vocal-midi' &&
-        (url === '' || url === undefined) &&
-        s.outputs.vocal !== undefined
-      ) {
-        setMidiExporting(true)
-        setMidiExportProgress(0)
-        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) =>
-          setMidiExportProgress(pct),
-        )
-        setMidiExporting(false)
-        if (!midiBlob) {
-          console.error('MIDI generation produced no notes')
-          return
-        }
-        blob = midiBlob
-      } else {
-        const resp = await fetch(url)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        blob = await resp.blob()
-      }
-
-      const blobUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      const base = (s.originalFile?.name ?? 'audio')
-        .replace(/\.[^.]+$/, '')
-        .replace(/\s+/g, '_')
-        .replace(/[^a-zA-Z0-9_-]/g, '')
-      a.href = blobUrl
-      a.download = `${base}_${type.replace('-', '_')}${ext}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
-    } catch (err) {
-      setMidiExporting(false)
-      console.error('Download failed:', err)
-    }
-  }
-
-  const handleDeleteAll = () => {
-    deleteAllUvrSessions()
-    setShowDeleteAllConfirm(false)
-    setDeleteAllToast('All sessions deleted')
-    setTimeout(() => setDeleteAllToast(''), 2500)
-  }
-
   const handleClearStorage = () => {
     deleteAllUvrSessions()
     void deleteAllUvrSessionsFromDb()
@@ -909,30 +875,61 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
               />
-              <Show when={allSessions().length > 0}>
-                <div class="upload-divider">
-                  <span class="upload-divider-text">
+              <div class="upload-divider">
+                <span class="upload-divider-text">
+                  <Show
+                    when={allSessions().length > 0}
+                    fallback="or import existing sessions"
+                  >
                     or continue from existing session
-                  </span>
-                </div>
-                <div class="section-header">
+                  </Show>
+                </span>
+              </div>
+              <div class="section-header">
+                <Show
+                  when={allSessions().length > 0}
+                  fallback={<h4>Session Library</h4>}
+                >
                   <h4>Recent Sessions</h4>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                </Show>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Show when={allSessions().length > 0}>
                     <button
-                      class="delete-all-btn"
+                      class="section-action-btn icon-only"
+                      onClick={() => void handleExportAll()}
+                      disabled={isExporting()}
+                      title="Export all sessions to a ZIP file"
+                    >
+                      <ExportFile />
+                    </button>
+                  </Show>
+                  <label
+                    class="section-action-btn icon-only"
+                    title="Import sessions from a ZIP file"
+                    style={{ cursor: isImporting() ? 'default' : 'pointer' }}
+                  >
+                    <ImportFile />
+                    <input
+                      type="file"
+                      accept=".zip"
+                      style={{ display: 'none' }}
+                      onChange={(e) => void handleImportZip(e)}
+                      disabled={isImporting()}
+                    />
+                  </label>
+                  <Show when={allSessions().length > 0}>
+                    <button
+                      class="section-action-btn section-action-btn-danger icon-only"
                       onClick={() => setShowClearStorageConfirm(true)}
-                      title="Delete all sessions, stems, and uploaded files from database"
+                      title="Clear All Sessions & Cache"
                     >
-                      <Trash2 /> Clear Cached Songs
+                      <Trash2 />
                     </button>
-                    <button
-                      class="delete-all-btn"
-                      onClick={() => setShowDeleteAllConfirm(true)}
-                    >
-                      <Trash2 /> Delete All
-                    </button>
-                  </div>
+                  </Show>
                 </div>
+              </div>
+
+              <Show when={allSessions().length > 0}>
                 <div class="history-list history-list-inline">
                   <For
                     each={allSessions().sort(
@@ -948,11 +945,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         onView={() => {
                           void handleSessionView(s.sessionId)
                         }}
-                        onExport={(type) => {
-                          void handleExportSession(
-                            s.sessionId,
-                            type as 'vocal' | 'instrumental' | 'vocal-midi',
-                          )
+                        onExport={(sessionId) => {
+                          void exportSession(sessionId)
                         }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
@@ -1178,33 +1172,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </Show>
         </div>
 
-        {/* Delete All Confirmation Modal */}
-        <Show when={showDeleteAllConfirm()}>
-          <div
-            class="delete-all-overlay"
-            onClick={() => setShowDeleteAllConfirm(false)}
-          >
-            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-              <h4>Delete All Sessions</h4>
-              <p>
-                This will remove all {allSessions().length} session
-                {allSessions().length !== 1 ? 's' : ''} from your history.
-              </p>
-              <div class="delete-all-actions">
-                <button
-                  class="delete-all-cancel"
-                  onClick={() => setShowDeleteAllConfirm(false)}
-                >
-                  Cancel
-                </button>
-                <button class="delete-all-confirm" onClick={handleDeleteAll}>
-                  <Trash2 /> Delete All
-                </button>
-              </div>
-            </div>
-          </div>
-        </Show>
-
         {/* Clear Storage Confirmation Modal */}
         <Show when={showClearStorageConfirm()}>
           <div
@@ -1212,7 +1179,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             onClick={() => setShowClearStorageConfirm(false)}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-              <h4>Clear Cached Songs</h4>
+              <h4>Clear All Data</h4>
               <p>
                 This will permanently remove all {allSessions().length} session
                 {allSessions().length !== 1 ? 's' : ''}, generated stems, and
@@ -1227,7 +1194,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   Cancel
                 </button>
                 <button class="delete-all-confirm" onClick={handleClearStorage}>
-                  <Trash2 /> Clear Cached Songs
+                  <Trash2 /> Clear All
                 </button>
               </div>
             </div>
@@ -1241,6 +1208,39 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <CheckCircle />
             </span>
             {deleteAllToast()}
+          </div>
+        </Show>
+
+        {/* Export All Progress Toast */}
+        <Show when={isExporting()}>
+          <div class="history-toast">
+            <span class="history-toast-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--border, #30363d)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--accent, #8b5cf6)"
+                  stroke-width="2"
+                  stroke-dasharray={String(2 * Math.PI * 10)}
+                  stroke-dashoffset={String(
+                    2 * Math.PI * 10 * (1 - exportProgress() / 100),
+                  )}
+                  stroke-linecap="round"
+                  transform="rotate(-90 12 12)"
+                />
+              </svg>
+            </span>
+            Preparing ZIP... {exportProgress()}%
           </div>
         </Show>
 

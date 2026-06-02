@@ -71,8 +71,6 @@ export async function loadLyricsFromDb(
     const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
     const results = await repo.findAll({
       where: { sessionId } as Record<string, unknown>,
-      orderBy: 'createdAt',
-      orderDir: 'desc',
       limit: 1,
     })
     if (results.length === 0) return null
@@ -144,20 +142,22 @@ export async function deleteAllLyricsFromDb(): Promise<void> {
 }
 
 /** Retrieve all LRC format lyrics for Shazam catalog building */
-export async function getAllLrcLyricsFromDb(): Promise<{ sessionId: string; text: string; filename: string }[]> {
+export async function getAllLrcLyricsFromDb(): Promise<
+  { sessionId: string; text: string; filename: string }[]
+> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
     const all = await repo.findAll({
-      where: { format: 'lrc' } as Record<string, unknown>
+      where: { format: 'lrc' } as Record<string, unknown>,
     })
-    
+
     return all
-      .filter(entry => entry.text.length >= 20)
-      .map(entry => ({
+      .filter((entry) => entry.text.length >= 20)
+      .map((entry) => ({
         sessionId: entry.sessionId,
         text: entry.text,
-        filename: entry.filename
+        filename: entry.filename,
       }))
   } catch (err) {
     if (IS_DEV) console.warn('[LyricsDB] getAllLrcLyricsFromDb failed:', err)

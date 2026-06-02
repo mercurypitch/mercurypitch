@@ -23,6 +23,8 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
   const [dragOver, setDragOver] = createSignal(false)
   const [error, setError] = createSignal('')
   const [loading, setLoading] = createSignal(false)
+  const [showPasteArea, setShowPasteArea] = createSignal(false)
+  const [pastedText, setPastedText] = createSignal('')
 
   const readFile = (file: File) => {
     setError('')
@@ -55,21 +57,25 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
     reader.readAsText(file)
   }
 
-  const handlePaste = async () => {
+  const handlePasteSubmit = () => {
     setError('')
+    const text = pastedText().trim()
+    if (!text) {
+      setError('Please enter some lyrics first')
+      return
+    }
+    const isLrc = /^\[\d{1,3}:\d{2}/.test(text)
+    props.onUpload({
+      text,
+      format: isLrc ? 'lrc' : 'txt',
+      filename: isLrc ? 'pasted.lrc' : 'pasted.txt',
+    })
+  }
+
+  const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText()
-      if (!text.trim()) {
-        setError('Clipboard is empty')
-        return
-      }
-      // Auto-detect LRC format by checking for timestamp patterns
-      const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
-      props.onUpload({
-        text,
-        format: isLrc ? 'lrc' : 'txt',
-        filename: isLrc ? 'pasted.lrc' : 'pasted.txt',
-      })
+      setPastedText(text)
     } catch {
       setError('Could not read clipboard — check browser permissions')
     }
@@ -124,26 +130,75 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
         </Show>
       </label>
 
-      <button
-        class="lu-paste-btn"
-        onClick={() => void handlePaste()}
-        title="Paste lyrics text from clipboard"
+      <Show
+        when={!showPasteArea()}
+        fallback={
+          <div class="lu-paste-area">
+            <div class="lu-paste-toolbar">
+              <span class="lu-paste-title">Paste Lyrics</span>
+              <button
+                class="lu-paste-action-btn"
+                onClick={() => void handlePasteFromClipboard()}
+                title="Paste from clipboard"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                </svg>
+                Read Clipboard
+              </button>
+            </div>
+            <textarea
+              class="lu-paste-textarea"
+              placeholder="Paste or type your lyrics here..."
+              value={pastedText()}
+              onInput={(e) => setPastedText(e.currentTarget.value)}
+              rows="6"
+            />
+            <div class="lu-paste-actions">
+              <button
+                class="lu-paste-cancel"
+                onClick={() => setShowPasteArea(false)}
+              >
+                Cancel
+              </button>
+              <button class="lu-paste-submit" onClick={handlePasteSubmit}>
+                Confirm Lyrics
+              </button>
+            </div>
+          </div>
+        }
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+        <button
+          class="lu-paste-btn"
+          onClick={() => setShowPasteArea(true)}
+          title="Paste lyrics text"
         >
-          <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-          <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-        </svg>
-        Paste from clipboard
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+          </svg>
+          Enter or paste lyrics
+        </button>
+      </Show>
 
       <Show when={error()}>
         <span class="lu-error">{error()}</span>
@@ -362,5 +417,100 @@ export const LyricsUploaderStyles: string = `
 .lu-paste-btn svg {
   flex-shrink: 0;
   color: var(--fg-tertiary, #484f58);
+}
+
+.lu-paste-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lu-paste-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lu-paste-title {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--fg-secondary, #8b949e);
+}
+
+.lu-paste-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--accent, #58a6ff);
+  font-size: 0.6rem;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.2rem;
+  transition: all 0.15s;
+}
+
+.lu-paste-action-btn:hover {
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.1);
+}
+
+.lu-paste-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+  padding: 0.5rem;
+  color: var(--fg-primary, #c9d1d9);
+  font-family: inherit;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.lu-paste-textarea:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.lu-paste-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.lu-paste-cancel {
+  background: none;
+  border: 1px solid var(--border, #30363d);
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.65rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.lu-paste-cancel:hover {
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.lu-paste-submit {
+  background: var(--accent, #58a6ff);
+  border: none;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.65rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lu-paste-submit:hover {
+  background: var(--accent-hover, #318bf8);
 }
 `

@@ -40,6 +40,7 @@ export {
   X,
   Download,
   FileText,
+  ExportFile,
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
 
