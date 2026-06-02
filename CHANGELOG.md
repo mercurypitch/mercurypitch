@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.10] - 2026-06-02
+
+### Added
+
+- **Session Import/Export**: Added the ability to export all sessions to a ZIP file and import sessions from a ZIP file to easily backup and migrate data. Includes visual progress rings during export extraction and generation.
+
+### Changed
+
+- **Database Migration**: Moved lyrics and session storage from `localStorage` to IndexedDB for improved reliability and storage capacity. *(Note: Users may need to clear/reset data via the "Clear All Data" button for the app to function stably after this migration).*
+- **UI Consolidation**: Replaced duplicate delete buttons with a single unified "Clear All Data" wipe button to completely remove cached songs and session history.
+
+### Fixed
+
+- **LRC Lyrics Sync**: Fixed actual word timings matching in LRC files ensuring that only the specific user-mapped lines are modified and correctly synchronized.
+
 ## [0.3.9] - 2026-05-30
 
 ### Added
