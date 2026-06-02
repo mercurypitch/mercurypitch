@@ -4,8 +4,9 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { UvrSessionResult } from '../UvrSessionResult'
 import { saveAllUvrSessions } from '@/stores/app-store'
+import type { UvrSession } from '@/types/uvr'
+import { UvrSessionResult } from '../UvrSessionResult'
 
 // Mock icons
 vi.mock('../icons', () => ({
@@ -35,7 +36,7 @@ vi.mock('../icons', () => ({
 
 // Helper to seed a session into the store so getUvrSession can find it
 function seedSession(session: Record<string, unknown>) {
-  saveAllUvrSessions([session as any])
+  saveAllUvrSessions([session as unknown as UvrSession])
 }
 
 describe('UvrSessionResult Component', () => {
