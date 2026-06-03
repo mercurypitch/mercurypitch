@@ -873,6 +873,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           layout.setSidebarHidden((prev) => !prev)
         }
       }
+
+      // Loop shortcuts: A = set start, B = set end, S = seek to loop start,
+      // L = toggle loop
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        audio.setLoopStart(audio.elapsed())
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault()
+        audio.setLoopEnd(audio.elapsed())
+        audio.setLoopEnabled(true)
+      }
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        if (audio.loopEnabled() && audio.loopStart() > 0) {
+          audio.seekTo(audio.loopStart())
+        }
+      }
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault()
+        audio.setLoopEnabled((prev) => !prev)
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     ;(window as unknown as SmWindow).__smKeydown = handleKeyDown
