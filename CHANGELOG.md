@@ -13,13 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Karaoke UI**: Re-styled the Karaoke Settings modal to be more compact, removed redundant title, and fixed oversized SVG icons. Added a styled "filename pill" with truncation and hover tooltip to the audio processing view and the results view.
+- **Routing**: Renamed the URL hash from `#/uvr/...` to `#/karaoke/...` for better consistency with the Karaoke tab, while maintaining backwards compatibility for old links.
 - **Database Migration**: Moved lyrics and session storage from `localStorage` to IndexedDB for improved reliability and storage capacity. *(Note: Users may need to clear/reset data via the "Clear All Data" button for the app to function stably after this migration).*
 - **UI Consolidation**: Replaced duplicate delete buttons with a single unified "Clear All Data" wipe button to completely remove cached songs and session history.
 
 ### Fixed
 
+- **UI / Modal**: The Escape key now properly closes the Karaoke Settings modal.
+- **Whisper Transcription**: Fixed a crash (`serviceRef is null`) during transcription caused by component unmounting or HMR during a transcription loop.
+- **Session Data**: Fixed a bug where identical sessions were duplicated in the "Recent Sessions" list upon page reload, and deleting one deleted both (fixed state duplication during IndexedDB load/save).
 - **LRC Lyrics Sync**: Fixed actual word timings matching in LRC files ensuring that only the specific user-mapped lines are modified and correctly synchronized.
-
 ## [0.3.9] - 2026-05-30
 
 ### Added
