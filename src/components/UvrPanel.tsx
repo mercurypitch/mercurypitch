@@ -509,7 +509,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
     const current = currentUvrSession()
-    if (!current?.outputs) return
+    if (!current?.outputs && !current?.stemMeta) return
     const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
@@ -545,7 +545,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   const handleMixStart = async (selectedStems: string[]) => {
     const current = currentUvrSession()
-    if (!current?.outputs) return
+    if (!current?.outputs && !current?.stemMeta) return
     const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
@@ -584,7 +584,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
     const raw = getUvrSession(sessionId)
-    if (!raw?.outputs) return
+    if (!raw?.outputs && !raw?.stemMeta) return
     const s = await ensureHydrated(raw)
     if (!s.outputs) return
     setCurrentUvrSession(s)
@@ -946,7 +946,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void handleSessionView(s.sessionId)
                         }}
                         onExport={(sessionId) => {
-                          void exportSession(sessionId)
+                          if (isExporting()) return
+                          setIsExporting(true)
+                          setExportProgress(0)
+                          void exportSession(sessionId, (pct) =>
+                            setExportProgress(pct),
+                          ).finally(() => setIsExporting(false))
                         }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)

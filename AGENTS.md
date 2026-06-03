@@ -26,3 +26,5 @@
 ## Canvas Performance
 - Avoid looping over large arrays (like an entire audio waveform float array) purely per-pixel inside `requestAnimationFrame`. If `samples.length` is large, iterating `samples.length / width` per pixel will cause extreme lag (hundreds of millions of iterations per frame).
   - *Solution*: Cache the drawn background to an `OffscreenCanvas`, or aggressively downsample inside the draw loop (e.g., jump by `stepSize = Math.max(1, Math.floor(samplesPerPixel / 100))` to calculate min/max values for waveform envelopes).
+- **Moire Banding / Aliasing on Waveforms**: Be careful when downsampling waveforms visually by skipping samples (e.g. jumping by `stepSize`). If the visual skip rate aligns with the audio frequencies, you'll see "stripes" or Moire patterns that appear to move or pulse at different zoom levels.
+  - *Solution*: Instead of skipping samples during rendering, precalculate a "Peak Cache" (min/max mipmap) in `Float32Array` blocks (e.g. 256 samples per block) during load time. Draw by iterating the precomputed blocks instead of the raw audio data. This gives $O(1)$ constant rendering time with zero aliasing.

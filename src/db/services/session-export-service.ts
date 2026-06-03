@@ -1,8 +1,12 @@
 import * as fflate from 'fflate'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
+import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
+import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
 import { getOriginalFileBlob, getStemBlob, saveStemBlob, } from '@/db/services/uvr-service'
+import { loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
+import type { WhisperSegment } from '@/lib/whisper-service'
 import type { UvrSession } from '@/stores/app-store'
 import { getAllUvrSessions, getUvrSession, importUvrSession, } from '@/stores/app-store'
 
@@ -11,6 +15,8 @@ interface ExportPayload {
   version: 1
   session: Omit<UvrSession, 'outputs'>
   lyrics: LyricsData | null
+  transcription: WhisperSegment[] | null
+  pitchAnalysis?: SessionPitchData | null
 }
 
 /** Backward-compatible import type (old exports may include `outputs`) */
@@ -18,6 +24,8 @@ interface ImportPayload {
   version: 1
   session: UvrSession
   lyrics: LyricsData | null
+  transcription?: WhisperSegment[] | null
+  pitchAnalysis?: SessionPitchData | null
 }
 
 /**
@@ -40,36 +48,53 @@ async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
 async function prepareSessionFilesForZip(
   sessionId: string,
   prefix = '',
+  onProgress?: (pct: number) => void,
 ): Promise<fflate.Zippable> {
   const session = getUvrSession(sessionId)
   if (!session) throw new Error(`Session ${sessionId} not found`)
 
   const zippable: fflate.Zippable = {}
 
+  // Progress steps: lyrics(10%) -> transcription(20%) -> original(50%) -> stems(90%) -> done(100%)
+  onProgress?.(5)
+
   // 1. Gather Lyrics
   const lyrics = await loadLyricsFromDb(sessionId)
+  onProgress?.(10)
 
-  // 2. Prepare payload — deliberately omit `outputs` (domain/blob-specific URLs)
+  // 2. Gather Whisper Transcription
+  const transcription = await loadTranscriptionFromDb(sessionId)
+  onProgress?.(15)
+
+  // 3. Gather Pitch Analysis
+  const pitchAnalysis = await loadPitchAnalysisFromDb(sessionId)
+  onProgress?.(20)
+
+  // 3. Prepare payload -- deliberately omit `outputs` (domain/blob-specific URLs)
   const { outputs: _outputs, ...sessionWithoutOutputs } = session
   const payload: ExportPayload = {
     version: 1,
     session: sessionWithoutOutputs,
     lyrics,
+    transcription,
+    pitchAnalysis,
   }
   const payloadStr = JSON.stringify(payload, null, 2)
   zippable[`${prefix}session.json`] = fflate.strToU8(payloadStr)
 
-  // 3. Gather Audio Files
+  // 4. Gather Audio Files
   // Original
   const origBlob = await getOriginalFileBlob(sessionId)
   if (origBlob) {
     zippable[`${prefix}original_${session.originalFile?.name ?? 'audio.wav'}`] =
       await blobToUint8Array(origBlob)
   }
+  onProgress?.(50)
 
-  // Stems — read directly from IndexedDB (domain-agnostic, survives page reloads)
+  // Stems -- read directly from IndexedDB (domain-agnostic, survives page reloads)
   const stemTypes = ['vocal', 'instrumental'] as const
-  for (const stemType of stemTypes) {
+  for (let si = 0; si < stemTypes.length; si++) {
+    const stemType = stemTypes[si]
     try {
       const blob = await getStemBlob(sessionId, stemType)
       if (!blob) continue
@@ -81,20 +106,26 @@ async function prepareSessionFilesForZip(
       if (IS_DEV)
         console.warn(`[Export] Failed to read stem ${stemType} from DB:`, err)
     }
+    onProgress?.(50 + ((si + 1) / stemTypes.length) * 40)
   }
 
+  onProgress?.(95)
   return zippable
 }
 
 /**
  * Export a single session as a ZIP file.
  */
-export async function exportSession(sessionId: string): Promise<void> {
+export async function exportSession(
+  sessionId: string,
+  onProgress?: (pct: number) => void,
+): Promise<void> {
   try {
     const session = getUvrSession(sessionId)
     if (!session) return
 
-    const zippable = await prepareSessionFilesForZip(sessionId)
+    onProgress?.(0)
+    const zippable = await prepareSessionFilesForZip(sessionId, '', onProgress)
     const zipped = fflate.zipSync(zippable, { level: 6 })
 
     // Download
@@ -110,6 +141,7 @@ export async function exportSession(sessionId: string): Promise<void> {
     a.download = `MercuryPitch_Session_${safeName}.zip`
     a.click()
     URL.revokeObjectURL(url)
+    onProgress?.(100)
   } catch (err) {
     console.error('[Export] Failed to export session:', err)
     throw err
@@ -133,13 +165,22 @@ export async function exportAllSessions(
         session.originalFile?.name ?? session.sessionId
       ).replace(/[^a-z0-9_-]/gi, '_')
       const prefix = `${safeName}_${session.sessionId.substring(0, 8)}/`
-      const files = await prepareSessionFilesForZip(session.sessionId, prefix)
-      allZippable = { ...allZippable, ...files }
 
-      if (onProgress) {
-        // Dedicate 90% of the progress to fetching files from DB
-        onProgress(Math.floor(((i + 1) / sessions.length) * 90))
-      }
+      // Report sub-progress within each session (0-90% range)
+      const sessionBase = (i / sessions.length) * 90
+      const sessionRange = 90 / sessions.length
+      const files = await prepareSessionFilesForZip(
+        session.sessionId,
+        prefix,
+        onProgress
+          ? (subPct) => {
+              onProgress(
+                Math.floor(sessionBase + (subPct / 100) * sessionRange),
+              )
+            }
+          : undefined,
+      )
+      allZippable = { ...allZippable, ...files }
     }
 
     // Zip and download
@@ -267,7 +308,17 @@ export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
           await saveLyricsToDb(newSessionId, payload.lyrics)
         }
 
-        // 4. Save session to app-store
+        // 4. Process Whisper Transcription
+        if (payload.transcription != null && payload.transcription.length > 0) {
+          await saveTranscriptionToDb(newSessionId, payload.transcription)
+        }
+
+        // 5. Process Pitch Analysis
+        if (payload.pitchAnalysis != null) {
+          await savePitchAnalysisToDb(newSessionId, payload.pitchAnalysis)
+        }
+
+        // 6. Save session to app-store
         importUvrSession(newSession)
         importedCount++
       } catch (err) {

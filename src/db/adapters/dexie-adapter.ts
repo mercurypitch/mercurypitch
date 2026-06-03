@@ -29,6 +29,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrStemFingerprints: 'id, sessionId, createdAt',
   uvrSessionLyrics: 'id, sessionId',
   offlinePitchAnalysis: 'id, fileHash',
+  whisperTranscriptions: 'id, sessionId',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────
@@ -62,6 +63,7 @@ class DexieDatabase extends DexieDB {
       // v2 added offlinePitchAnalysis (uvrSessionLyrics not yet present)
     })
     this.version(3).stores(STORE_SCHEMAS)
+    this.version(4).stores(STORE_SCHEMAS)
   }
 
   /** Add a new table at the next schema version. */
