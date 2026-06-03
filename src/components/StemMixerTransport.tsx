@@ -6,7 +6,15 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
-import { Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
+import {
+  Loop,
+  Mic,
+  Minimize2,
+  Pause,
+  Play,
+  SkipBack,
+  SlidersHorizontal,
+} from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
@@ -49,11 +57,22 @@ export interface StemMixerTransportProps {
   setShowPitch: Setter<boolean>
   showLyrics: Accessor<boolean>
   setShowLyrics: Setter<boolean>
+
+  // Loop
+  loopEnabled: Accessor<boolean>
+  loopStart: Accessor<number>
+  loopEnd: Accessor<number>
+  onSetLoopA: () => void
+  onSetLoopB: () => void
+  onClearLoop: () => void
+  onToggleLoop: () => void
 }
 
 export const StemMixerTransport: Component<StemMixerTransportProps> = (
   props,
 ) => {
+  const hasLoop = () => props.loopEnd() > 0
+
   return (
     <div class="sm-transport">
       <div class="sm-transport-controls">
@@ -73,6 +92,59 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         >
           <SkipBack />
         </button>
+
+        {/* Loop A / B / Toggle */}
+        <button
+          class="sm-transport-btn"
+          classList={{ 'sm-loop-btn--a-set': props.loopStart() > 0 }}
+          onClick={() => props.onSetLoopA()}
+          title="Set loop start (A)"
+        >
+          A
+        </button>
+        <button
+          class="sm-transport-btn"
+          classList={{ 'sm-loop-btn--b-set': props.loopEnd() > 0 }}
+          onClick={() => props.onSetLoopB()}
+          title="Set loop end (B)"
+        >
+          B
+        </button>
+        <Show when={hasLoop()}>
+          <button
+            class="sm-transport-btn"
+            classList={{ 'sm-loop-toggle--active': props.loopEnabled() }}
+            onClick={() => props.onToggleLoop()}
+            title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
+          >
+            <Loop />
+          </button>
+          <button
+            class="sm-transport-btn"
+            onClick={() => props.onClearLoop()}
+            title="Clear loop points"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg>
+          </button>
+        </Show>
+
         <button
           class="sm-transport-btn sm-transport-play"
           onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
@@ -328,6 +400,15 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               width: `${props.duration() > 0 ? (props.elapsed() / props.duration()) * 100 : 0}%`,
             }}
           />
+          <Show when={props.loopEnd() > 0}>
+            <div
+              class="sm-progress-loop"
+              style={{
+                left: `${(props.loopStart() / props.duration()) * 100}%`,
+                width: `${((props.loopEnd() - props.loopStart()) / props.duration()) * 100}%`,
+              }}
+            />
+          </Show>
         </div>
         <span class="sm-time">{props.formatTime(props.duration())}</span>
       </div>

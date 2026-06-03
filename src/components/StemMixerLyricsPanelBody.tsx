@@ -300,6 +300,11 @@ export interface StemMixerLyricsPanelBodyProps {
   // Note labels on words
   showLyricNoteLabels: Accessor<boolean>
   alignmentResult: Accessor<AlignmentResult>
+
+  // Loop lyric marking
+  loopStartLyricIdx: Accessor<number | null>
+  loopEndLyricIdx: Accessor<number | null>
+  onSetLoopLyric: (idx: number) => void
 }
 
 export const StemMixerLyricsPanelBody: Component<
@@ -976,6 +981,14 @@ export const StemMixerLyricsPanelBody: Component<
                   idx >= props.markStartLine()! &&
                   idx < props.markEndLine()!
 
+                const isLoopA = () => props.loopStartLyricIdx() === idx
+                const isLoopB = () => props.loopEndLyricIdx() === idx
+                const isLoopRange = () => {
+                  const a = props.loopStartLyricIdx()
+                  const b = props.loopEndLyricIdx()
+                  return a !== null && b !== null && idx > a && idx < b
+                }
+
                 const isActive = () => idx === props.currentLineIdx()
                 const activeWordInfo = () =>
                   isActive()
@@ -1029,7 +1042,7 @@ export const StemMixerLyricsPanelBody: Component<
                       </div>
                     )}
                     <span
-                      class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine() ? ' sm-lyrics-line--blocked' : ''}${blockForLine() && !blockForLine()!.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${props.blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected() ? ' sm-lyrics-line-mark-selected' : ''}`}
+                      class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine() ? ' sm-lyrics-line--blocked' : ''}${blockForLine() && !blockForLine()!.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${props.blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected() ? ' sm-lyrics-line-mark-selected' : ''}${isLoopA() ? ' sm-lyrics-line--loop-a' : ''}${isLoopB() ? ' sm-lyrics-line--loop-b' : ''}${isLoopRange() ? ' sm-lyrics-line--loop-range' : ''}`}
                       style={
                         blockColor() !== undefined
                           ? { '--block-color': blockColor() }
@@ -1058,7 +1071,23 @@ export const StemMixerLyricsPanelBody: Component<
                           props.handleLyricLineClick(idx)
                         }
                       }}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        if (!props.blockMarkMode()) {
+                          props.onSetLoopLyric(idx)
+                        }
+                      }}
                     >
+                      {isLoopA() && (
+                        <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--a">
+                          A
+                        </span>
+                      )}
+                      {isLoopB() && (
+                        <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--b">
+                          B
+                        </span>
+                      )}
                       {blockForLine() && !blockForLine()!.isTemplate && (
                         <span
                           class="sm-lyrics-block-unlink"

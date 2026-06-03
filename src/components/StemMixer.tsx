@@ -371,6 +371,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getBlockById,
     getBlockForLine,
 
+    // Loop lyrics
+    loopStartLyricIdx,
+    loopEndLyricIdx,
+    handleSetLoopLyric,
+
     // Helpers
     hasMultipleSections,
   } = useStemMixerLyricsController({
@@ -389,6 +394,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Backfill holder refs that audio controller needs
   setUserScrolledForAudio = setUserScrolled
+
+  // ── Loop lyric → audio time sync ──────────────────────────────────
+  const onSetLoopLyric = (idx: number) => {
+    handleSetLoopLyric(idx)
+    const a = loopStartLyricIdx()
+    const b = loopEndLyricIdx()
+    const parsed = stableParsedLyrics()
+    if (a !== null) {
+      const entryA = parsed.get(a)
+      if (entryA) audio.setLoopStart(entryA.time)
+    }
+    if (b !== null) {
+      const entryB = parsed.get(b)
+      if (entryB) {
+        audio.setLoopEnd(entryB.endTime)
+        audio.setLoopEnabled(true)
+      }
+    } else {
+      audio.setLoopEnd(0)
+      audio.setLoopEnabled(false)
+    }
+  }
 
   // ── Pitch Analysis controller ──────────────────────────────────
   const pitchAnalysis = useStemMixerPitchAnalysisController({
@@ -704,6 +731,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       })()
     },
+    loopStartLyricIdx,
+    loopEndLyricIdx,
+    onSetLoopLyric,
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -1061,6 +1091,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowPitch={setShowPitch}
           showLyrics={showLyrics}
           setShowLyrics={setShowLyrics}
+          loopEnabled={audio.loopEnabled}
+          loopStart={audio.loopStart}
+          loopEnd={audio.loopEnd}
+          onSetLoopA={() => audio.setLoopStart(audio.elapsed())}
+          onSetLoopB={() => {
+            audio.setLoopEnd(audio.elapsed())
+            audio.setLoopEnabled(true)
+          }}
+          onClearLoop={() => audio.clearLoop()}
+          onToggleLoop={() => audio.setLoopEnabled(!audio.loopEnabled())}
         />
 
         <StemMixerGridWorkspace
@@ -2540,6 +2580,47 @@ export const StemMixerStyles: string = `
   border-left-style: dashed;
 }
 
+/* ── Loop A/B markers on lyric lines ───────────────────────── */
+
+.sm-lyrics-line--loop-a {
+  border-left-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-line--loop-b {
+  border-left-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.12);
+}
+
+.sm-lyrics-line--loop-range {
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.sm-lyrics-loop-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 3px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-loop-badge--a {
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+
+.sm-lyrics-loop-badge--b {
+  border: 1.5px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
 /* ── Block unlink ──────────────────────────────────────────── */
 
 .sm-lyrics-block-unlink {
@@ -3135,6 +3216,58 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
   border-radius: 0.2rem;
   transition: width 0.1s linear;
+}
+
+/* Loop range highlight on progress bar */
+.sm-progress-loop {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(88, 166, 255, 0.25);
+  border-left: 1px solid rgba(88, 166, 255, 0.5);
+  border-right: 1px solid rgba(88, 166, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Loop A/B buttons */
+.sm-loop-btn--a-set {
+  color: var(--accent, #58a6ff) !important;
+  border-color: var(--accent, #58a6ff) !important;
+  background: rgba(88, 166, 255, 0.12) !important;
+}
+
+.sm-loop-btn--b-set {
+  color: #d2a8ff !important;
+  border-color: #d2a8ff !important;
+  background: rgba(210, 168, 255, 0.12) !important;
+}
+
+/* Loop toggle active state */
+.sm-loop-toggle--active {
+  color: var(--accent, #58a6ff) !important;
+  border-color: var(--accent, #58a6ff) !important;
+  background: rgba(88, 166, 255, 0.15) !important;
+}
+
+/* Loop metrics bar (appears above transport when loop is active) */
+.sm-loop-metrics {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 1.25rem;
+  background: rgba(88, 166, 255, 0.06);
+  border-top: 1px solid var(--border, #30363d);
+  font-size: 0.72rem;
+  color: var(--text-secondary, #8b949e);
+  flex-shrink: 0;
+}
+
+.sm-loop-metrics span {
+  white-space: nowrap;
+}
+
+.sm-loop-metrics strong {
+  color: var(--accent, #58a6ff);
 }
 
 /* Mic toggle button */
