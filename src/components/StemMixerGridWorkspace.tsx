@@ -129,11 +129,13 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <canvas
               ref={props.setCanvasRef('overview')}
               class="sm-canvas sm-canvas-overview"
+              data-canvas-id="overview"
               onClick={(e) => props.handleWaveformClick(e)}
             />
             <div
               class="sm-resize-handle"
               onPointerDown={(e) => props.handleResizeStart('overview', e)}
+              onContextMenu={(e) => e.preventDefault()}
             />
           </div>
         </Show>
@@ -171,10 +173,12 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <canvas
               ref={props.setCanvasRef('live')}
               class="sm-canvas sm-canvas-live"
+              data-canvas-id="live"
             />
             <div
               class="sm-resize-handle"
               onPointerDown={(e) => props.handleResizeStart('live', e)}
+              onContextMenu={(e) => e.preventDefault()}
             />
           </div>
         </Show>
@@ -270,10 +274,12 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <canvas
               ref={props.setCanvasRef('pitch')}
               class="sm-canvas sm-canvas-pitch"
+              data-canvas-id="pitch"
             />
             <div
               class="sm-resize-handle"
               onPointerDown={(e) => props.handleResizeStart('pitch', e)}
+              onContextMenu={(e) => e.preventDefault()}
             />
           </div>
         </Show>
@@ -311,11 +317,13 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <canvas
               ref={props.setCanvasRef('midi')}
               class="sm-canvas sm-canvas-midi"
+              data-canvas-id="midi"
               onWheel={(e) => props.handleCanvasWheel(e)}
             />
             <div
               class="sm-resize-handle"
               onPointerDown={(e) => props.handleResizeStart('midi', e)}
+              onContextMenu={(e) => e.preventDefault()}
             />
           </div>
         </Show>

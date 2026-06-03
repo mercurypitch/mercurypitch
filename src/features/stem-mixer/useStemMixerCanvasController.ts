@@ -42,6 +42,8 @@ export interface StemMixerCanvasDeps {
   loopEnabled: Accessor<boolean>
   loopStart: Accessor<number>
   loopEnd: Accessor<number>
+  // Touch callbacks
+  onCanvasVerticalPinch?: (canvasId: string, deltaY: number) => void
 }
 
 export interface StemMixerCanvasController {
@@ -56,6 +58,9 @@ export interface StemMixerCanvasController {
   queueCanvasRedraw: () => void
   handleWaveformClick: (e: MouseEvent) => void
   handleCanvasWheel: (e: WheelEvent) => void
+  handleCanvasTouchStart: (e: TouchEvent) => void
+  handleCanvasTouchMove: (e: TouchEvent) => void
+  handleCanvasTouchEnd: (e: TouchEvent) => void
   initObserver: () => ResizeObserver
   reconnectObserver: () => void
   disconnectObserver: () => void
@@ -80,12 +85,20 @@ export const useStemMixerCanvasController = (
     // Clean up previous listener when SolidJS calls ref(null) on unmount/change
     if (el === null) {
       const prev = canvasRefs[id]
-      if (prev) prev.removeEventListener('wheel', handleCanvasWheel)
+      if (prev) {
+        prev.removeEventListener('wheel', handleCanvasWheel)
+        prev.removeEventListener('touchstart', handleCanvasTouchStart)
+        prev.removeEventListener('touchmove', handleCanvasTouchMove)
+        prev.removeEventListener('touchend', handleCanvasTouchEnd)
+      }
       canvasRefs[id] = undefined
       return
     }
     canvasRefs[id] = el
     el.addEventListener('wheel', handleCanvasWheel, { passive: false })
+    el.addEventListener('touchstart', handleCanvasTouchStart, { passive: false })
+    el.addEventListener('touchmove', handleCanvasTouchMove, { passive: false })
+    el.addEventListener('touchend', handleCanvasTouchEnd)
   }
 
   // ── Sizing ───────────────────────────────────────────────────
@@ -780,6 +793,148 @@ export const useStemMixerCanvasController = (
     redrawAll()
   }
 
+  // ── Touch state (not signals — not rendered) ──────────────────
+
+  interface ActiveTouch {
+    id: number
+    startX: number
+    startY: number
+    clientX: number
+    clientY: number
+  }
+
+  let activeTouches: ActiveTouch[] = []
+  let pinchStartDistance = 0
+  let pinchStartWindowStart = 0
+  let pinchStartWindowDuration = 0
+
+  const getTouchDistance = (t1: ActiveTouch, t2: ActiveTouch): number =>
+    Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+
+  const handleCanvasTouchStart = (e: TouchEvent) => {
+    const touches = Array.from(e.changedTouches)
+    for (const t of touches) {
+      const existing = activeTouches.find((at) => at.id === t.identifier)
+      if (!existing) {
+        activeTouches.push({
+          id: t.identifier,
+          startX: t.clientX,
+          startY: t.clientY,
+          clientX: t.clientX,
+          clientY: t.clientY,
+        })
+      }
+    }
+    // Capture initial pinch state
+    if (activeTouches.length >= 2) {
+      pinchStartDistance = getTouchDistance(activeTouches[0], activeTouches[1])
+      pinchStartWindowStart = deps.windowStart()
+      pinchStartWindowDuration = deps.windowDuration()
+    }
+  }
+
+  const handleCanvasTouchMove = (e: TouchEvent) => {
+    e.preventDefault()
+
+    // Update tracked touch positions
+    for (const t of Array.from(e.changedTouches)) {
+      const at = activeTouches.find((a) => a.id === t.identifier)
+      if (at) {
+        at.clientX = t.clientX
+        at.clientY = t.clientY
+      }
+    }
+
+    if (activeTouches.length === 1) {
+      // One-finger pan: scroll horizontally without changing playback
+      const touch = activeTouches[0]
+      const canvas = e.currentTarget as HTMLCanvasElement
+      const rect = canvas.getBoundingClientRect()
+      const deltaX = touch.startX - touch.clientX
+      const pxPerSec = rect.width / deps.windowDuration()
+      const deltaTime = deltaX / pxPerSec
+      const newStart = Math.max(
+        0,
+        Math.min(
+          deps.duration() - deps.windowDuration(),
+          deps.windowStart() + deltaTime,
+        ),
+      )
+      deps.setWindowStart(newStart)
+      redrawAll()
+    } else if (activeTouches.length >= 2) {
+      const curDist = getTouchDistance(activeTouches[0], activeTouches[1])
+      const dx =
+        activeTouches[0].clientX -
+        activeTouches[0].startX +
+        (activeTouches[1].clientX - activeTouches[1].startX)
+      const dy =
+        activeTouches[0].clientY -
+        activeTouches[0].startY +
+        (activeTouches[1].clientY - activeTouches[1].startY)
+      const absDx = Math.abs(dx)
+      const absDy = Math.abs(dy)
+
+      if (absDy > absDx * 1.5 && deps.onCanvasVerticalPinch) {
+        // Primarily vertical pinch — delegate to layout resize
+        deps.onCanvasVerticalPinch(
+          (e.currentTarget as HTMLCanvasElement).dataset.canvasId ?? '',
+          dy / 2,
+        )
+      } else if (pinchStartDistance > 0) {
+        // Horizontal pinch — zoom
+        const ratio = curDist / pinchStartDistance
+        const newDuration = Math.max(
+          10,
+          Math.min(150, pinchStartWindowDuration / ratio),
+        )
+        if (newDuration !== deps.windowDuration()) {
+          // Keep midpoint stable
+          const canvas = e.currentTarget as HTMLCanvasElement
+          const rect = canvas.getBoundingClientRect()
+          const midX =
+            (activeTouches[0].clientX +
+              activeTouches[1].clientX) /
+              2 -
+            rect.left
+          const midRatio = midX / rect.width
+          const midTime =
+            pinchStartWindowStart + midRatio * pinchStartWindowDuration
+          const newStart = Math.max(
+            0,
+            Math.min(deps.duration() - newDuration, midTime - midRatio * newDuration),
+          )
+          deps.setWindowDuration(newDuration)
+          deps.setWindowStart(newStart)
+          redrawAll()
+        }
+      }
+    }
+  }
+
+  const handleCanvasTouchEnd = (e: TouchEvent) => {
+    const endedIds = new Set(
+      Array.from(e.changedTouches).map((t) => t.identifier),
+    )
+    activeTouches = activeTouches.filter((at) => !endedIds.has(at.id))
+
+    // Re-baseline for remaining touches
+    if (activeTouches.length === 1) {
+      activeTouches[0].startX = activeTouches[0].clientX
+      activeTouches[0].startY = activeTouches[0].clientY
+    } else if (activeTouches.length >= 2) {
+      for (const at of activeTouches) {
+        at.startX = at.clientX
+        at.startY = at.clientY
+      }
+      pinchStartDistance = getTouchDistance(activeTouches[0], activeTouches[1])
+      pinchStartWindowStart = deps.windowStart()
+      pinchStartWindowDuration = deps.windowDuration()
+    } else {
+      pinchStartDistance = 0
+    }
+  }
+
   // ── Formatting ────────────────────────────────────────────────
 
   const formatTime = (secs: number) => {
@@ -833,6 +988,9 @@ export const useStemMixerCanvasController = (
     queueCanvasRedraw,
     handleWaveformClick,
     handleCanvasWheel,
+    handleCanvasTouchStart,
+    handleCanvasTouchMove,
+    handleCanvasTouchEnd,
     initObserver,
     reconnectObserver,
     disconnectObserver,

@@ -596,6 +596,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     loopEnabled: audio.loopEnabled,
     loopStart: audio.loopStart,
     loopEnd: audio.loopEnd,
+    onCanvasVerticalPinch: (canvasId: string, deltaY: number) => {
+      if (layout.workspaceLayout() !== 'fixed-2col') return
+      const cur = layout.fixedPanelHeights()
+      const current = (cur as Record<string, number>)[canvasId] ?? 180
+      layout.setFixedPanelHeights({
+        ...cur,
+        [canvasId]: Math.max(40, current + deltaY),
+      })
+    },
   })
 
   // Backfill mutable holders so audio controller can reach canvas + lyrics
@@ -1482,6 +1491,7 @@ export const StemMixerStyles: string = `
   flex-shrink: 0;
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .sm-panel-header:active {
@@ -1563,6 +1573,7 @@ export const StemMixerStyles: string = `
   min-height: 0;
   min-width: 0;
   width: 100%;
+  touch-action: none;
 }
 
 .sm-resize-handle {
@@ -1575,6 +1586,7 @@ export const StemMixerStyles: string = `
   background: transparent;
   z-index: 5;
   transition: background 0.15s;
+  touch-action: none;
 }
 .sm-resize-handle:hover {
   background: var(--accent, #58a6ff);
