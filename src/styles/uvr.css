@@ -1068,6 +1068,25 @@
   color: var(--fg-primary);
 }
 
+.process-filename-pill {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  max-width: 35ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  color: var(--fg-primary);
+  font-weight: 600;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  font-size: 0.9em;
+  margin: 0 0.3rem;
+  line-height: 1;
+}
+
 .process-info p {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;

@@ -44,21 +44,6 @@ const IconWaveform = () => (
   </svg>
 )
 
-const IconInfo = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="16" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12.01" y2="8" />
-  </svg>
-)
-
 // ============================================================
 // Component
 // ============================================================
@@ -134,10 +119,8 @@ export const UvrSettings: Component<{
   return (
     <div class="uvr-settings">
       <div class="uvr-header">
-        <h3>Vocal Separation (UVR)</h3>
         <p class="uvr-description">
-          Control how vocals and instrumental tracks are processed during
-          playback
+          Adjust how vocals and instrumental tracks are processed
         </p>
       </div>
 
@@ -264,64 +247,6 @@ export const UvrSettings: Component<{
           </label>
         </div>
       </Show>
-
-      {/* Info Box */}
-      <div class="uvr-info">
-        <div class="info-header">
-          <span class="info-icon">
-            <IconInfo />
-          </span>
-          <span>Pro Tips</span>
-        </div>
-        <ul class="info-list">
-          <li>
-            <strong>Separate Mode:</strong> Best for practice - hear both vocals
-            and instrumental
-          </li>
-          <li>
-            <strong>Instrumental Mode:</strong> Learn the melody without
-            distracting vocals
-          </li>
-          <li>
-            <strong>Vocal Only:</strong> Practice singing along to isolated
-            vocals
-          </li>
-          <li>
-            <strong>Smoothing:</strong> Higher values create smoother
-            transitions between modes
-          </li>
-        </ul>
-      </div>
-
-      {/* Keyboard Shortcuts */}
-      <div class="uvr-info uvr-shortcuts">
-        <div class="info-header">
-          <span class="info-icon">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h.01M10 16h.01M14 16h.01" />
-            </svg>
-          </span>
-          <span>Stem Mixer Shortcuts</span>
-        </div>
-        <div class="shortcuts-grid">
-          <div class="shortcut-item">
-            <kbd>Space</kbd>
-            <span>Play / Pause</span>
-          </div>
-          <div class="shortcut-item">
-            <kbd>H</kbd>
-            <span>Toggle sidebar</span>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

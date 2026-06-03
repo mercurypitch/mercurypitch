@@ -3043,15 +3043,15 @@
    ============================================================ */
 
 .uvr-settings {
-  margin-top: 16px;
+  margin-top: 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
 }
 
 .uvr-header {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .uvr-header h3 {
@@ -3074,17 +3074,18 @@
 }
 
 .mode-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 .mode-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex: 1;
+  justify-content: center;
   align-items: center;
   gap: 8px;
-  padding: 16px;
+  padding: 8px 12px;
   background: var(--bg-tertiary);
   border: 2px solid var(--border);
   border-radius: 8px;
@@ -3103,8 +3104,8 @@
 }
 
 .mode-icon {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   color: var(--text-primary);
 }
 
@@ -3114,7 +3115,7 @@
 }
 
 .uvr-intensity-controls {
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .intensity-group {
@@ -3124,7 +3125,7 @@
 .intensity-divider {
   height: 1px;
   background: var(--border);
-  margin: 16px 0;
+  margin: 8px 0;
 }
 
 .intensity-header {
@@ -3140,6 +3141,12 @@
   gap: 6px;
   color: var(--text-primary);
   font-size: 0.875rem;
+}
+
+.intensity-label svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .intensity-value {
@@ -3196,7 +3203,7 @@
 }
 
 .uvr-smoothing {
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .smoothing-header {
@@ -3212,6 +3219,12 @@
   gap: 6px;
   color: var(--text-primary);
   font-size: 0.875rem;
+}
+
+.smoothing-label svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .smoothing-value {
