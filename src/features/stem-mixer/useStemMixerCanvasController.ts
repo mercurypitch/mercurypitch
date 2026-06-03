@@ -96,7 +96,9 @@ export const useStemMixerCanvasController = (
     }
     canvasRefs[id] = el
     el.addEventListener('wheel', handleCanvasWheel, { passive: false })
-    el.addEventListener('touchstart', handleCanvasTouchStart, { passive: false })
+    el.addEventListener('touchstart', handleCanvasTouchStart, {
+      passive: false,
+    })
     el.addEventListener('touchmove', handleCanvasTouchMove, { passive: false })
     el.addEventListener('touchend', handleCanvasTouchEnd)
   }
@@ -901,16 +903,17 @@ export const useStemMixerCanvasController = (
           const canvas = e.currentTarget as HTMLCanvasElement
           const rect = canvas.getBoundingClientRect()
           const midX =
-            (activeTouches[0].clientX +
-              activeTouches[1].clientX) /
-              2 -
+            (activeTouches[0].clientX + activeTouches[1].clientX) / 2 -
             rect.left
           const midRatio = midX / rect.width
           const midTime =
             pinchStartWindowStart + midRatio * pinchStartWindowDuration
           const newStart = Math.max(
             0,
-            Math.min(deps.duration() - newDuration, midTime - midRatio * newDuration),
+            Math.min(
+              deps.duration() - newDuration,
+              midTime - midRatio * newDuration,
+            ),
           )
           deps.setWindowDuration(newDuration)
           deps.setWindowStart(newStart)
