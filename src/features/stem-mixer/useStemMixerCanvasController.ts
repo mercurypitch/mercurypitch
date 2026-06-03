@@ -38,6 +38,10 @@ export interface StemMixerCanvasDeps {
   setWindowStart: Setter<number>
   setWindowDuration: Setter<number>
   PITCH_WINDOW_FILL_RATIO: number
+  // Loop
+  loopEnabled: Accessor<boolean>
+  loopStart: Accessor<number>
+  loopEnd: Accessor<number>
 }
 
 export interface StemMixerCanvasController {
@@ -224,6 +228,44 @@ export const useStemMixerCanvasController = (
         ctx.moveTo(px, yOff)
         ctx.lineTo(px, yOff + trackHeight)
         ctx.stroke()
+      }
+
+      // Loop region overlay (only draw on first track to avoid double-rendering)
+      if (ti === 0 && deps.loopEnd() > 0) {
+        const ls = deps.loopStart()
+        const le = deps.loopEnd()
+        const lx1 = ((ls - winStart) / deps.windowDuration()) * w
+        const lx2 = ((le - winStart) / deps.windowDuration()) * w
+        if (lx2 > 0 && lx1 < w) {
+          const clipX1 = Math.max(0, lx1)
+          const clipX2 = Math.min(w, lx2)
+          ctx.fillStyle = 'rgba(88, 166, 255, 0.08)'
+          ctx.fillRect(clipX1, 0, clipX2 - clipX1, h)
+          if (deps.loopEnabled()) {
+            // A boundary
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)'
+            ctx.lineWidth = 1.5
+            if (lx1 >= -2 && lx1 <= w + 2) {
+              ctx.beginPath()
+              ctx.moveTo(clipX1, 0)
+              ctx.lineTo(clipX1, h)
+              ctx.stroke()
+              ctx.fillStyle = 'rgba(88, 166, 255, 0.9)'
+              ctx.font = 'bold 10px monospace'
+              ctx.fillText('A', clipX1 + 3, 12)
+            }
+            // B boundary
+            if (lx2 >= -2 && lx2 <= w + 2) {
+              ctx.beginPath()
+              ctx.moveTo(clipX2, 0)
+              ctx.lineTo(clipX2, h)
+              ctx.stroke()
+              ctx.fillStyle = 'rgba(88, 166, 255, 0.9)'
+              ctx.font = 'bold 10px monospace'
+              ctx.fillText('B', clipX2 - 16, 12)
+            }
+          }
+        }
       }
 
       // Label
