@@ -335,7 +335,10 @@ export const StemMixerLyricsPanelBody: Component<
     )
     const ratio = curDist / lyricsPinchDist
     const dampenedRatio = 1 + (ratio - 1) * 0.3
-    const newSize = Math.min(3, Math.max(0.45, lyricsPinchStartSize * dampenedRatio))
+    const newSize = Math.min(
+      3,
+      Math.max(0.45, lyricsPinchStartSize * dampenedRatio),
+    )
     props.setLyricsFontSize(newSize)
   }
 
