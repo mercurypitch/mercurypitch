@@ -391,16 +391,21 @@ export const useStemMixerCanvasController = (
           ctx.stroke()
           ctx.setLineDash([])
         }
-        if (deps.showNoteLabels() && pillW > 24) {
-          ctx.fillStyle = '#fff'
-          ctx.font = 'bold 9px monospace'
-          ctx.textAlign = 'center'
-          const labelY = y + pillH / 2 + 3
-          ctx.fillText(n.noteName, x1 + pillW / 2, labelY)
-          ctx.textAlign = 'start'
+        if (pillW > 24) {
+          const showNotes = deps.showNoteLabels()
+          const showLyrics = deps.showLyricLabels()
+          const baseY = y + pillH / 2 + 3
 
-          // Draw aligned word below note name
-          if (deps.showLyricLabels()) {
+          if (showNotes) {
+            ctx.fillStyle = '#fff'
+            ctx.font = 'bold 9px monospace'
+            ctx.textAlign = 'center'
+            ctx.fillText(n.noteName, x1 + pillW / 2, baseY)
+            ctx.textAlign = 'start'
+          }
+
+          // Draw aligned word
+          if (showLyrics) {
             const words = deps
               .alignedWords()
               .filter(
@@ -417,7 +422,8 @@ export const useStemMixerCanvasController = (
               ctx.font = '7px monospace'
               ctx.fillStyle = 'rgba(255,255,255,0.7)'
               ctx.textAlign = 'center'
-              ctx.fillText(wordText, x1 + pillW / 2, labelY + 10)
+              const finalY = showNotes ? baseY + 10 : baseY
+              ctx.fillText(wordText, x1 + pillW / 2, finalY)
               ctx.textAlign = 'start'
             }
           }

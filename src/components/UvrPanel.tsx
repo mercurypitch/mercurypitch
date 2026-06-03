@@ -309,7 +309,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         return session
       }
 
-      if (session.outputs?.vocal?.startsWith('blob:')) {
+      if (session.outputs?.vocal?.startsWith('blob:') === true) {
         try {
           const res = await fetch(session.outputs.vocal, { method: 'HEAD' })
           if (res.ok) {

@@ -575,12 +575,26 @@ export function useStemMixerLyricsController(
 
   const handleLyricLineClick = (idx: number) => {
     let targetTime: number | null = null
-    const canonical = canonicalLrcLines()
-    if (canonical.length > 0 && idx < canonical.length) {
-      targetTime = canonical[idx].time
-    } else if (lyricsLines().length > 0 && deps.duration() > 0) {
-      targetTime = (idx / lyricsLines().length) * deps.duration()
+
+    // If in LRC Gen mode, prioritize the newly mapped time for this line if available
+    if (lrcGenMode()) {
+      const timings = lrcGenWordTimings()[idx]
+      if (timings !== undefined && Object.keys(timings).length > 0) {
+        const firstMappedWordIdx = Math.min(...Object.keys(timings).map(Number))
+        targetTime = timings[firstMappedWordIdx]
+      }
     }
+
+    // Fall back to previous canonical LRC time, or proportional time
+    if (targetTime === null) {
+      const canonical = canonicalLrcLines()
+      if (canonical.length > 0 && idx < canonical.length) {
+        targetTime = canonical[idx].time
+      } else if (lyricsLines().length > 0 && deps.duration() > 0) {
+        targetTime = (idx / lyricsLines().length) * deps.duration()
+      }
+    }
+
     if (targetTime === null) return
     deps.seekToWithWindow(targetTime)
 
