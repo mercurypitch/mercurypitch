@@ -1764,6 +1764,7 @@
   display: flex;
   gap: 0.35rem;
   margin-top: auto;
+  flex-wrap: wrap;
 }
 
 .session-result-btn {
