@@ -15,7 +15,7 @@ import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, Cpu, ExportFile, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
@@ -292,17 +292,38 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   let lastLoadedSessionId: string | null = null
   createEffect(() => {
     const sid = props.initialSessionId
+    if (!isSessionStoreReady()) return
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
       handleSessionView(sid)
     }
   })
 
+  // Cache to avoid pulling 30MB+ blobs from IndexedDB multiple times per page load
+  const locallyHydratedSessions = new Set<string>()
+
   // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
   const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
     if (session.processingMode === 'local' && session.status === 'completed') {
+      if (locallyHydratedSessions.has(session.sessionId)) {
+        return session
+      }
+
+      if (session.outputs?.vocal?.startsWith('blob:')) {
+        try {
+          const res = await fetch(session.outputs.vocal, { method: 'HEAD' })
+          if (res.ok) {
+            locallyHydratedSessions.add(session.sessionId)
+            return session
+          }
+        } catch {
+          // fetch failed, blob is dead
+        }
+      }
+
       const urls = await hydrateStemUrls(session.sessionId)
       if (urls) {
+        locallyHydratedSessions.add(session.sessionId)
         return { ...session, outputs: { ...session.outputs, ...urls } }
       }
     }
@@ -1067,13 +1088,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="view-section results-section">
               <div class="section-header">
                 <h4>
-                  Processing Results for{' '}
                   <span
                     class="process-filename-pill"
                     title={session()?.originalFile?.name ?? 'audio'}
                   >
                     {session()?.originalFile?.name ?? 'audio'}
-                  </span>
+                  </span>{' '}
+                  results
                 </h4>
                 <button
                   class="back-btn"

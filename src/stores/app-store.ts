@@ -350,6 +350,9 @@ function upsertSessionInCache(session: UvrSession): void {
   persistSessionToDb(session)
 }
 
+const [sessionStoreReady, setSessionStoreReady] = createSignal(false)
+export const isSessionStoreReady = sessionStoreReady
+
 // ── Initialization (must be called at app boot) ─────────────────────
 
 let _sessionStoreReady = false
@@ -388,6 +391,7 @@ export async function initSessionStore(): Promise<void> {
   }
 
   _sessionStoreReady = true
+  setSessionStoreReady(true)
 
   // Run stale-session cleanup on the loaded cache
   cleanupStaleUvrSessions()

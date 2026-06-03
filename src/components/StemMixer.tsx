@@ -415,6 +415,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           currentSegmented,
           segments,
         )
+
+        // Show warnings if transcription was poor or failed
+        if (segments.length === 0) {
+          showNotification(
+            'Transcription timed out or failed. You may need to provide better lyrics or sync manually.',
+            'error',
+          )
+        } else if (r.totalWords > 0 && r.accuracy < 0.25) {
+          showNotification(
+            `Alignment accuracy is very low (${(r.accuracy * 100).toFixed(0)}%). The lyrics might be incorrect.`,
+            'error',
+          )
+        }
       }, 0)
     },
   })
@@ -638,6 +651,40 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     songTitle: props.songTitle,
     lrclibSearchUrl,
     triggerChangeFile: () => lyricsFileInputRef?.click(),
+    handlePasteLyricsHeader: () => {
+      void (async () => {
+        try {
+          const text = await navigator.clipboard.readText()
+          if (!text || text.trim().length === 0) return
+          if (
+            !window.confirm(
+              'Are you sure you want to overwrite current lyrics and word timings with clipboard content? This action cannot be undone.',
+            )
+          )
+            return
+
+          const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+          const baseName = props.songTitle
+            ? props.songTitle.replace(/[^a-zA-Z0-9_-]/g, '_')
+            : 'clipboard'
+          handleLyricsUpload({
+            text,
+            format: isLrc ? 'lrc' : 'txt',
+            filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
+          })
+        } catch (err) {
+          console.warn('Clipboard paste failed', err)
+          import('@/stores/notifications-store').then(
+            ({ showNotification }) => {
+              showNotification(
+                'Browser blocked clipboard access. Cannot paste from header.',
+                'warning',
+              )
+            },
+          )
+        }
+      })()
+    },
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -995,6 +1042,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           }}
           handleLyricsChange={handleLyricsChange}
           triggerChangeFile={() => lyricsFileInputRef?.click()}
+          handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
@@ -1031,6 +1079,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           }}
           handleLyricsChange={handleLyricsChange}
           triggerChangeFile={() => lyricsFileInputRef?.click()}
+          handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
           showMidi={showMidi}
           showNoteLabels={showNoteLabels}
           setShowNoteLabels={setShowNoteLabels}
@@ -1755,7 +1804,8 @@ export const StemMixerStyles: string = `
   background: rgba(88, 166, 255, 0.15);
 }
 
-.sm-lyrics-change-btn {
+.sm-lyrics-change-btn,
+.sm-lyrics-paste-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1772,7 +1822,8 @@ export const StemMixerStyles: string = `
   margin-left: 0.15rem;
 }
 
-.sm-lyrics-change-btn:hover {
+.sm-lyrics-change-btn:hover,
+.sm-lyrics-paste-btn:hover {
   color: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.08);
