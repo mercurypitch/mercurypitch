@@ -628,9 +628,18 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   }
                 >
                   <svg viewBox="0 0 24 24" width="10" height="10">
+                    <ellipse cx="7" cy="19" rx="4" ry="3" fill="currentColor" />
+                    <rect
+                      x="10"
+                      y="4"
+                      width="2.5"
+                      height="15"
+                      rx="1"
+                      fill="currentColor"
+                    />
                     <path
                       fill="currentColor"
-                      d="M12 3l6 4H6zm0 18l-6-4h12zm-6-4V7l6 4-6 4zm12 0l-6-4-6 4h12z"
+                      d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z"
                     />
                   </svg>
                 </button>
