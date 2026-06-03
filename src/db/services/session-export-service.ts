@@ -1,13 +1,20 @@
 import * as fflate from 'fflate'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
-import { getOriginalFileBlob, saveStemBlob } from '@/db/services/uvr-service'
+import { getOriginalFileBlob, getStemBlob, saveStemBlob, } from '@/db/services/uvr-service'
 import { IS_DEV } from '@/lib/defaults'
 import type { UvrSession } from '@/stores/app-store'
 import { getAllUvrSessions, getUvrSession, importUvrSession, } from '@/stores/app-store'
 
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
+  version: 1
+  session: Omit<UvrSession, 'outputs'>
+  lyrics: LyricsData | null
+}
+
+/** Backward-compatible import type (old exports may include `outputs`) */
+interface ImportPayload {
   version: 1
   session: UvrSession
   lyrics: LyricsData | null
@@ -24,6 +31,11 @@ async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
 /**
  * Prepare a single session's data for ZIP export.
  * Returns an object suitable for fflate.
+ *
+ * Stem audio is always loaded from IndexedDB rather than from session.outputs
+ * URLs, which may be stale blob: URLs or domain-specific paths.  The session
+ * JSON is serialised *without* outputs so the exported ZIP is fully
+ * domain-agnostic.
  */
 async function prepareSessionFilesForZip(
   sessionId: string,
@@ -37,10 +49,11 @@ async function prepareSessionFilesForZip(
   // 1. Gather Lyrics
   const lyrics = await loadLyricsFromDb(sessionId)
 
-  // 2. Prepare payload
+  // 2. Prepare payload — deliberately omit `outputs` (domain/blob-specific URLs)
+  const { outputs: _outputs, ...sessionWithoutOutputs } = session
   const payload: ExportPayload = {
     version: 1,
-    session,
+    session: sessionWithoutOutputs,
     lyrics,
   }
   const payloadStr = JSON.stringify(payload, null, 2)
@@ -54,25 +67,19 @@ async function prepareSessionFilesForZip(
       await blobToUint8Array(origBlob)
   }
 
-  // Stems
-  if (session.outputs) {
-    for (const [stemName, url] of Object.entries(session.outputs)) {
-      if (!url) continue
-      try {
-        const res = await fetch(url)
-        if (!res.ok) continue
-        const blob = await res.blob()
-        // Determine extension (usually .wav or .mp3, fallback to .wav)
-        const ext =
-          blob.type.includes('mpeg') || blob.type.includes('mp3')
-            ? 'mp3'
-            : 'wav'
-        zippable[`${prefix}stem_${stemName}.${ext}`] =
-          await blobToUint8Array(blob)
-      } catch (err) {
-        if (IS_DEV)
-          console.warn(`[Export] Failed to fetch stem ${stemName}:`, err)
-      }
+  // Stems — read directly from IndexedDB (domain-agnostic, survives page reloads)
+  const stemTypes = ['vocal', 'instrumental'] as const
+  for (const stemType of stemTypes) {
+    try {
+      const blob = await getStemBlob(sessionId, stemType)
+      if (!blob) continue
+      const ext =
+        blob.type.includes('mpeg') || blob.type.includes('mp3') ? 'mp3' : 'wav'
+      zippable[`${prefix}stem_${stemType}.${ext}`] =
+        await blobToUint8Array(blob)
+    } catch (err) {
+      if (IS_DEV)
+        console.warn(`[Export] Failed to read stem ${stemType} from DB:`, err)
     }
   }
 
@@ -183,7 +190,7 @@ export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
           jsonPath.length - 'session.json'.length,
         )
         const jsonContent = fflate.strFromU8(unzipped[jsonPath])
-        const payload: ExportPayload = JSON.parse(jsonContent)
+        const payload: ImportPayload = JSON.parse(jsonContent)
 
         if (
           payload.version !== 1 ||
@@ -198,8 +205,11 @@ export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
         // Generate a new UUID for the imported session to avoid collisions
         const newSessionId = globalThis.crypto.randomUUID()
 
+        // Strip stale `outputs` from old-format exports that may contain
+        // domain-specific or blob: URLs from the source environment
+        const { outputs: _importedOutputs, ...sessionData } = payload.session
         const newSession: UvrSession = {
-          ...payload.session,
+          ...sessionData,
           sessionId: newSessionId,
           createdAt: Date.now(), // update timestamp to now
         }
