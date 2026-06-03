@@ -81,8 +81,8 @@ export class WhisperService {
       const timeout = setTimeout(() => {
         this.resolves.delete(id)
         this.rejects.delete(id)
-        reject(new Error('Whisper transcription timed out (180s)'))
-      }, 180_000)
+        reject(new Error('Whisper transcription timed out (300s)'))
+      }, 300_000)
 
       this.resolves.set(id, (val) => {
         clearTimeout(timeout)

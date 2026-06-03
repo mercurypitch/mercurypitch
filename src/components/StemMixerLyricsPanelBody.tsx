@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component, JSX, Setter } from 'solid-js'
-import { createEffect, For, on, Show } from 'solid-js'
+import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
@@ -33,6 +33,7 @@ interface SongPickerProps {
   onPick: (match: LyricsSearchMatch) => void
   onRefine: () => void
   onUploadFile: () => void
+  onPasteText?: (text: string, isLrc: boolean) => void
   onCancel: () => void
 }
 
@@ -44,6 +45,28 @@ const SongPicker = (p: SongPickerProps) => {
     if (!q) return 'https://lrclib.net'
     return `https://lrclib.net/search/${encodeURIComponent(q)}`
   }
+
+  onMount(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      // Don't intercept if user is typing in an input box
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return
+      }
+
+      const text = e.clipboardData?.getData('text')
+      if (text !== undefined && text !== '' && text.trim().length > 0) {
+        e.preventDefault()
+        const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+        p.onPasteText?.(text, isLrc)
+      }
+    }
+
+    document.addEventListener('paste', handleGlobalPaste)
+    onCleanup(() => document.removeEventListener('paste', handleGlobalPaste))
+  })
 
   return (
     <div class="sm-song-picker">
@@ -67,6 +90,36 @@ const SongPicker = (p: SongPickerProps) => {
         >
           Search
         </button>
+        <Show when={p.onPasteText}>
+          <button
+            class="sm-song-picker-paste-btn sm-btn sm-btn-secondary"
+            onClick={() => {
+              void (async () => {
+                try {
+                  const text = await navigator.clipboard.readText()
+                  if (text && text.trim().length > 0) {
+                    const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+                    p.onPasteText?.(text, isLrc)
+                  }
+                } catch (err) {
+                  console.warn('Clipboard paste failed', err)
+                  // If browser blocks the API, prompt them to use Ctrl+V
+                  import('@/stores/notifications-store').then(
+                    ({ showNotification }) => {
+                      showNotification(
+                        'Browser blocked clipboard access. Please press Ctrl+V to paste instead.',
+                        'warning',
+                      )
+                    },
+                  )
+                }
+              })()
+            }}
+            title="Paste lyrics from clipboard"
+          >
+            Paste
+          </button>
+        </Show>
       </div>
 
       <Show
@@ -146,6 +199,7 @@ const SongPicker = (p: SongPickerProps) => {
 }
 
 export interface StemMixerLyricsPanelBodyProps {
+  songTitle?: string
   // State signals
   lyricsSource: Accessor<string>
   lyricsLoading: Accessor<boolean>
@@ -1110,6 +1164,16 @@ export const StemMixerLyricsPanelBody: Component<
             }}
             onUploadFile={() => {
               props.triggerChangeFile?.()
+            }}
+            onPasteText={(text, isLrc) => {
+              const baseName = props.songTitle
+                ? props.songTitle.replace(/[^a-zA-Z0-9_-]/g, '_')
+                : 'clipboard'
+              props.handleLyricsUpload({
+                text,
+                format: isLrc ? 'lrc' : 'txt',
+                filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
+              })
             }}
             onCancel={() => props.setShowSongPicker(false)}
           />

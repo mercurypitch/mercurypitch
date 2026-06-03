@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Whisper Transcription**: Fixed a crash (`serviceRef is null`) during transcription caused by component unmounting or HMR during a transcription loop.
 - **Session Data**: Fixed a bug where identical sessions were duplicated in the "Recent Sessions" list upon page reload, and deleting one deleted both (fixed state duplication during IndexedDB load/save).
 - **LRC Lyrics Sync**: Fixed actual word timings matching in LRC files ensuring that only the specific user-mapped lines are modified and correctly synchronized.
+- **Deep Linking**: Fixed an issue where hard-reloading on a specific session URL (`#/karaoke/session/...`) would fail to load the session data.
+- **Session Loading Performance**: Optimized `ensureHydrated` to cache loaded IndexedDB Blobs per page session, significantly speeding up "View Results" and "Play" navigation.
+- **Whisper Transcription**: Increased processing timeout from 180s to 300s to prevent valid large files from failing. Added toast notifications to warn users of poor transcription accuracy (<25%).
+- **Clipboard Access**: Added a dedicated "Paste" button to the lyrics headers and a global `Ctrl+V` listener to seamlessly load lyrics directly from the clipboard.
 ## [0.3.9] - 2026-05-30
 
 ### Added
