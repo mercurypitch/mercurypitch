@@ -1,5 +1,6 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
 import type { MergedNote } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
 import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
@@ -10,6 +11,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import type { PitchNote } from './types'
 
 export interface StemMixerPitchAnalysisDeps {
+  sessionId?: string
   vocalBuffer: Accessor<AudioBuffer | null>
   sampleRate: Accessor<number>
   setPitchHistory: (history: PitchNote[]) => void
@@ -49,6 +51,8 @@ export interface StemMixerPitchAnalysisController {
   progress: Accessor<number>
 
   runAnalysis: () => Promise<void>
+  /** Load cached pitch analysis from IndexedDB. Returns true if data was found. */
+  loadCachedAnalysis: () => Promise<boolean>
 }
 
 export const useStemMixerPitchAnalysisController = (
@@ -194,6 +198,15 @@ export const useStemMixerPitchAnalysisController = (
       setPitchSourceMode('offline')
       deps.setPitchHistory(newHistory)
       deps.showNotification('Pitch analysis complete', 'success')
+
+      // Persist to IndexedDB
+      if (deps.sessionId != null && deps.sessionId !== '') {
+        void savePitchAnalysisToDb(deps.sessionId, {
+          mergedNotes: merged,
+          segmentedNotes: segmentedMerged,
+          pitchHistory: newHistory,
+        })
+      }
     } catch (e) {
       console.error(e)
       deps.showNotification(
@@ -203,6 +216,24 @@ export const useStemMixerPitchAnalysisController = (
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const loadCachedAnalysis = async (): Promise<boolean> => {
+    if (deps.sessionId == null || deps.sessionId === '') return false
+
+    const data = await loadPitchAnalysisFromDb(deps.sessionId)
+    if (!data) return false
+    if (data.mergedNotes.length === 0 && data.segmentedNotes.length === 0) {
+      return false
+    }
+
+    setOfflineMergedNotes(data.mergedNotes)
+    setOfflineSegmentedNotes(data.segmentedNotes)
+    setOfflinePitchHistory(data.pitchHistory)
+    setPitchSourceMode('offline')
+    deps.setPitchHistory(data.pitchHistory)
+
+    return true
   }
 
   return {
@@ -226,5 +257,6 @@ export const useStemMixerPitchAnalysisController = (
     isAnalyzing,
     progress,
     runAnalysis,
+    loadCachedAnalysis,
   }
 }

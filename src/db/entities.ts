@@ -288,3 +288,11 @@ export interface OfflinePitchAnalysisRecord extends DbEntity {
   lrcLinesJson: string
   segmentedNotesJson: string
 }
+
+export interface WhisperTranscriptionRecord extends DbEntity {
+  sessionId: string
+  /** JSON-serialized WhisperSegment[] */
+  segmentsJson: string
+  /** Number of segments for quick stats */
+  segmentCount: number
+}

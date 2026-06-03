@@ -375,6 +375,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Pitch Analysis controller ──────────────────────────────────
   const pitchAnalysis = useStemMixerPitchAnalysisController({
+    // eslint-disable-next-line solid/reactivity
+    sessionId: props.sessionId,
     vocalBuffer: () => vocal().buffer,
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
     setPitchHistory: (h) => {
@@ -398,6 +400,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const whisper = useWhisperTranscription({
     getAudioBuffer: () => vocal().buffer,
     logTag: 'StemMixer',
+    // eslint-disable-next-line solid/reactivity
+    sessionId: props.sessionId,
     onTranscriptionComplete: (segments) => {
       // Log alignment comparison after transcription
       setTimeout(() => {
@@ -725,7 +729,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     audio.loadStems()
     loadLyrics()
 
-    // Initialize whisper transcription service
+    // Load cached data from IndexedDB in parallel:
+    // 1. Whisper transcription (words + timestamps)
+    // 2. Pitch analysis (denoised notes)
+    // 3. Initialize whisper service (so re-transcription is possible)
+    void whisper.loadCachedTranscription()
+    void pitchAnalysis.loadCachedAnalysis()
     whisper.initWhisper()
 
     canvas.initObserver()
@@ -813,6 +822,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
 
   const startWhisperTranscription = () => {
+    // If pitch analysis hasn't been run yet, run it first with default
+    // settings so the alignment has notes to work with.
+    const hasPitchData =
+      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
+      pitchAnalysis.offlineMergedNotes().length > 0
+    if (!hasPitchData && !pitchAnalysis.isAnalyzing()) {
+      showNotification('Running pitch denoising first...', 'info')
+      void pitchAnalysis.runAnalysis().then(() => {
+        whisper.startTranscription()
+      })
+      return
+    }
     whisper.startTranscription()
   }
 
@@ -1050,7 +1071,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             pitchAnalysis.setPitchSourceMode(mode)
             canvas.queueCanvasRedraw()
           }}
-          runAnalysis={() => void pitchAnalysis.runAnalysis()}
+          runAnalysis={() => {
+            void pitchAnalysis.runAnalysis().then(() => {
+              // After re-analysis with new settings, auto re-run whisper
+              // transcription so alignment stays in sync
+              if (whisper.segments().length > 0) {
+                showNotification(
+                  'Re-running transcription with updated pitch...',
+                  'info',
+                )
+                whisper.startTranscription()
+              }
+            })
+          }}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
@@ -1439,13 +1472,24 @@ export const StemMixerStyles: string = `
   writing-mode: vertical-lr;
   direction: rtl;
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   width: 4px;
   height: 100px;
-  background: var(--bg-tertiary, #21262d);
+  background: transparent;
   border-radius: 2px;
   outline: none;
+  border: none;
   cursor: pointer;
+}
+
+/* WebKit track */
+.sm-volume-slider::-webkit-slider-runnable-track {
+  width: 4px;
+  height: 100%;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 2px;
+  border: none;
 }
 
 .sm-volume-slider::-webkit-slider-thumb {
@@ -1457,6 +1501,17 @@ export const StemMixerStyles: string = `
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--bg-primary, #0d1117);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  margin-left: -5px;
+}
+
+/* Firefox track */
+.sm-volume-slider::-moz-range-track {
+  width: 4px;
+  height: 100%;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 2px;
+  border: none;
 }
 
 .sm-volume-slider::-moz-range-thumb {
@@ -1466,6 +1521,7 @@ export const StemMixerStyles: string = `
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--bg-primary, #0d1117);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 

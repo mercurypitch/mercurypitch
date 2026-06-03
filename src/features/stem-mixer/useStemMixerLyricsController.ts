@@ -10,6 +10,7 @@ import { buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -1330,58 +1331,28 @@ export function useStemMixerLyricsController(
       finalTimes = lineTimes.slice()
       mergedWordTimesCanon = wordTimes
     } else {
-      // Partial merge: only update explicitly touched lines
-      finalTimes = lines.map((_line, i) => {
-        if (touchedLines.has(i)) return lineTimes[i]
-        if (origWtCanon?.[i] !== undefined) return origWtCanon[i][0]
-        return undefined
-      })
+      // Partial merge: only update explicitly touched lines, preserve
+      // original timings for untouched lines (from word timings or canonical
+      // entries).  The canonical fallback is critical for line-level LRC that
+      // has no word timings -- without it those lines become undefined and get
+      // re-estimated, destroying the user's original timestamps.
+      finalTimes = mergePartialLineTimes(
+        lines,
+        lineTimes,
+        touchedLines,
+        origWtCanon,
+        canonical,
+      )
 
       // Merge word timings: touched lines get new, rest keep original
-      mergedWordTimesCanon = {}
-      if (origWtCanon) {
-        for (const k of Object.keys(origWtCanon)) {
-          const ki = +k
-          if (!touchedLines.has(ki))
-            mergedWordTimesCanon[ki] = [...origWtCanon[ki]]
-        }
-      }
-      for (const k of Object.keys(wordTimes)) {
-        if (touchedLines.has(+k)) mergedWordTimesCanon[+k] = [...wordTimes[+k]]
-      }
+      mergedWordTimesCanon = mergePartialWordTimings(
+        touchedLines,
+        origWtCanon,
+        wordTimes,
+      )
 
-      // Fill gaps: interpolate between mapped lines
-      const lastTouched = Math.max(-1, ...Array.from(touchedLines))
-      const songEnd = deps.duration()
-      let prevMappedIdx = -1
-      let prevMappedTime = 0
-      for (let i = 0; i <= lastTouched; i++) {
-        if (touchedLines.has(i)) {
-          if (finalTimes[i] !== undefined) {
-            prevMappedIdx = i
-            prevMappedTime = finalTimes[i]!
-          }
-        } else if (finalTimes[i] === undefined) {
-          let nextMappedTime = songEnd
-          for (let j = i + 1; j <= lastTouched; j++) {
-            if (touchedLines.has(j) && finalTimes[j] !== undefined) {
-              nextMappedTime = finalTimes[j]!
-              break
-            }
-          }
-          const gap = nextMappedTime - prevMappedTime
-          const posInGap = i - prevMappedIdx
-          const gapLen =
-            (() => {
-              let n = prevMappedIdx + 1
-              while (n <= lastTouched && !touchedLines.has(n)) n++
-              return n
-            })() - prevMappedIdx
-          finalTimes[i] =
-            Math.round((prevMappedTime + gap * (posInGap / gapLen)) * 1000) /
-            1000
-        }
-      }
+      // Fill gaps: interpolate between touched lines
+      finalTimes = interpolateGaps(finalTimes, touchedLines, deps.duration())
     }
 
     // Estimate times for completely unmapped lines beyond the last touched line
@@ -1393,20 +1364,7 @@ export function useStemMixerLyricsController(
     }
 
     // Enforce monotonic non-decreasing time order.
-    // If a user mapped line 5 at 1:00 then line 20 at 0:30, interpolated
-    // lines between them could go backwards.  Clamp each line to be >= the
-    // previous so timestamps always flow forward.
-    {
-      let prev = 0
-      for (let i = 0; i < finalTimes.length; i++) {
-        if (finalTimes[i] !== undefined) {
-          if (finalTimes[i]! < prev) {
-            finalTimes[i] = prev
-          }
-          prev = finalTimes[i]!
-        }
-      }
-    }
+    finalTimes = enforceMonotonicTimes(finalTimes)
 
     // Determine original text to preserve for future re-gen.
     // Use the pre-gen snapshot's raw text if available, otherwise fall back

@@ -338,11 +338,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </div>
 
       {/* Outputs — compact multi-select stem pills */}
-      <Show when={session()?.outputs}>
+      <Show when={session()?.outputs || session()?.stemMeta}>
         <div class="outputs-section">
           <h4>Available Stems</h4>
           <div class="stem-pills">
-            <Show when={session()?.outputs?.vocal}>
+            <Show
+              when={
+                session()?.outputs?.vocal != null ||
+                session()?.stemMeta?.vocal != null
+              }
+            >
               <button
                 class={`stem-pill stem-pill-vocal ${selectedStems().has('vocal') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('vocal')}
@@ -400,7 +405,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 </Show>
               </button>
             </Show>
-            <Show when={session()?.outputs?.instrumental}>
+            <Show
+              when={
+                session()?.outputs?.instrumental != null ||
+                session()?.stemMeta?.instrumental != null
+              }
+            >
               <button
                 class={`stem-pill stem-pill-instrumental ${selectedStems().has('instrumental') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('instrumental')}
@@ -425,7 +435,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 </Show>
               </button>
             </Show>
-            <Show when={session()?.outputs?.vocal}>
+            <Show
+              when={
+                session()?.outputs?.vocal != null ||
+                session()?.stemMeta?.vocal != null
+              }
+            >
               <button
                 class={`stem-pill stem-pill-midi ${selectedStems().has('vocal-midi') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('vocal-midi')}

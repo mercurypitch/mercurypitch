@@ -8,6 +8,7 @@
 
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/whisper-transcription-db-service'
 import { chunkAudioForWhisper, deduplicateWhisperSegments, WHISPER_CHUNK_SEC, WHISPER_OVERLAP_SEC, WHISPER_SAMPLE_RATE, } from '@/lib/transcription-alignment-utils'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { resampleTo16kHz, WhisperService } from '@/lib/whisper-service'
@@ -27,6 +28,8 @@ export interface WhisperTranscriptionDeps {
   getAudioBuffer: () => AudioBuffer | null | undefined
   /** Tag for console log messages (e.g. "StemMixer", "PitchTestingTab") */
   logTag: string
+  /** Session ID for persisting transcription to IndexedDB */
+  sessionId?: string
   /** Optional callback fired after transcription completes with deduped segments */
   onTranscriptionComplete?: (segments: WhisperSegment[]) => void
 }
@@ -43,6 +46,8 @@ export interface WhisperTranscriptionController {
   // Actions
   initWhisper: () => void
   startTranscription: () => void
+  /** Load previously cached transcription from IndexedDB */
+  loadCachedTranscription: () => Promise<boolean>
 
   // Cleanup
   destroy: () => void
@@ -172,6 +177,11 @@ export function useWhisperTranscription(
         setSegments(deduped)
         setStatus('done')
 
+        // Persist to IndexedDB
+        if (deps.sessionId != null && deps.sessionId !== '') {
+          void saveTranscriptionToDb(deps.sessionId, deduped)
+        }
+
         const wordCount = deduped.reduce(
           (c, s) => c + s.text.split(/\s+/).filter(Boolean).length,
           0,
@@ -197,6 +207,27 @@ export function useWhisperTranscription(
       })
   }
 
+  // ── Load cached transcription from IndexedDB ─────────────
+
+  const loadCachedTranscription = async (): Promise<boolean> => {
+    if (deps.sessionId == null || deps.sessionId === '') return false
+    try {
+      const cached = await loadTranscriptionFromDb(deps.sessionId)
+      if (cached != null && cached.length > 0) {
+        setSegments(cached)
+        setStatus('done')
+        console.log(
+          `[${tag}] Loaded cached transcription: ${String(cached.length)} segments`,
+        )
+        deps.onTranscriptionComplete?.(cached)
+        return true
+      }
+    } catch (err) {
+      console.warn(`[${tag}] Failed to load cached transcription:`, err)
+    }
+    return false
+  }
+
   // ── Cleanup ────────────────────────────────────────────────
 
   const destroy = () => {
@@ -217,6 +248,7 @@ export function useWhisperTranscription(
     elapsed,
     initWhisper,
     startTranscription,
+    loadCachedTranscription,
     destroy,
   }
 }
