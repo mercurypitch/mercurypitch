@@ -102,6 +102,26 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
   let dragMoved = false
   let lastX = 0
 
+  // Multi-touch pinch-to-zoom tracking
+  const activePointers = new Map<number, { x: number; y: number }>()
+  let lastPinchDist = 0
+  let lastPinchMidX = 0
+  let isPinching = false
+
+  const getPointerDist = (): number => {
+    const pts = [...activePointers.values()]
+    if (pts.length < 2) return 0
+    const dx = pts[1].x - pts[0].x
+    const dy = pts[1].y - pts[0].y
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  const getPointerMidX = (): number => {
+    const pts = [...activePointers.values()]
+    if (pts.length < 2) return 0
+    return (pts[0].x + pts[1].x) / 2
+  }
+
   let audio: HTMLAudioElement | null = null
   let audioCtx: AudioContext | null = null
   let mediaSource: MediaElementAudioSourceNode | null = null
@@ -184,14 +204,64 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
   })
 
   const handlePointerDown = (e: PointerEvent) => {
-    isDragging = true
-    dragMoved = false
-    lastX = e.clientX
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     canvasRef?.setPointerCapture(e.pointerId)
+
+    if (activePointers.size === 2) {
+      // Start pinch gesture
+      isPinching = true
+      isDragging = false
+      lastPinchDist = getPointerDist()
+      lastPinchMidX = getPointerMidX()
+    } else if (activePointers.size === 1) {
+      isDragging = true
+      dragMoved = false
+      lastX = e.clientX
+    }
   }
 
   const handlePointerMove = (e: PointerEvent) => {
-    if (!isDragging || !canvasRef) return
+    if (!canvasRef) return
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (isPinching && activePointers.size >= 2) {
+      // Pinch zoom + two-finger pan
+      const newDist = getPointerDist()
+      const newMidX = getPointerMidX()
+
+      if (lastPinchDist > 0 && newDist > 0) {
+        const scale = newDist / lastPinchDist
+        const rect = canvasRef.getBoundingClientRect()
+        const midOffset = newMidX - rect.left
+
+        setZoom((prev) => {
+          const nextZoom = Math.max(1, Math.min(prev * scale, 100))
+          const newScrollX =
+            ((scrollX() + midOffset) / prev) * nextZoom - midOffset
+          const maxScroll =
+            canvasRef!.clientWidth * nextZoom - canvasRef!.clientWidth
+          setScrollX(Math.max(0, Math.min(newScrollX, maxScroll)))
+          return nextZoom
+        })
+      }
+
+      // Two-finger pan (midpoint shift)
+      const panDelta = lastPinchMidX - newMidX
+      if (Math.abs(panDelta) > 1) {
+        setScrollX((prev) => {
+          const maxScroll =
+            canvasRef!.clientWidth * zoom() - canvasRef!.clientWidth
+          return Math.max(0, Math.min(prev + panDelta, maxScroll))
+        })
+      }
+
+      lastPinchDist = newDist
+      lastPinchMidX = newMidX
+      dragMoved = true
+      return
+    }
+
+    if (!isDragging) return
     const currentX = e.clientX
     const deltaX = lastX - currentX
     if (Math.abs(deltaX) > 3) dragMoved = true
@@ -203,18 +273,38 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
   }
 
   const handlePointerUp = (e: PointerEvent) => {
-    isDragging = false
+    const wasPinching = isPinching
+    activePointers.delete(e.pointerId)
     canvasRef?.releasePointerCapture(e.pointerId)
 
-    // If it was just a click (no drag), scrub to that position
-    if (!dragMoved && audio && props.durationSec > 0 && canvasRef) {
+    if (activePointers.size < 2) {
+      isPinching = false
+      lastPinchDist = 0
+    }
+
+    // Transition from pinch back to single-finger drag
+    if (wasPinching && activePointers.size === 1) {
+      const remaining = [...activePointers.values()][0]
+      isDragging = true
+      lastX = remaining.x
+      return
+    }
+
+    isDragging = false
+
+    // If it was just a click (no drag/pinch), scrub to that position
+    if (
+      !dragMoved &&
+      !wasPinching &&
+      audio &&
+      props.durationSec > 0 &&
+      canvasRef
+    ) {
       const rect = canvasRef.getBoundingClientRect()
       const x = e.clientX - rect.left
       const vw = canvasRef.clientWidth * zoom()
       const time = ((x + scrollX()) / vw) * props.durationSec
       audio.currentTime = Math.max(0, Math.min(time, props.durationSec))
-      // optional: auto play on scrub?
-      // if (audio.paused) audio.play()
     }
   }
 

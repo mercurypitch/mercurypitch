@@ -27,17 +27,23 @@
 }
 
 .lyricsBtn {
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 4px 10px;
+  gap: 3px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2px 7px;
   border: none;
   cursor: pointer;
   transition: opacity 0.2s;
   color: white;
+}
+
+.lyricsBtn svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
 }
 
 .lyricsBtn:hover {
