@@ -506,7 +506,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 disabled={props.disabled}
                 onClick={handleMixSelected}
               >
-                <SlidersHorizontal /> Mix Selected
+                <SlidersHorizontal /> Mix
               </button>
             </Show>
           </Show>

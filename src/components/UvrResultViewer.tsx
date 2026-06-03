@@ -418,7 +418,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               <SlidersHorizontal />
             </div>
             <div class="rv-stem-info">
-              <span class="rv-stem-name">Mix Selected</span>
+              <span class="rv-stem-name">Mix</span>
               <span class="rv-stem-format">{selectedLabel()}</span>
             </div>
           </div>
