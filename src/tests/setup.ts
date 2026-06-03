@@ -162,3 +162,23 @@ global.requestAnimationFrame = (_cb: FrameRequestCallback) => {
   return ++rafId
 }
 global.cancelAnimationFrame = () => {}
+
+// Mock Web Worker to prevent node's worker_threads from throwing file URL errors
+class MockWorker {
+  onmessage: ((e: MessageEvent) => void) | null = null
+  onerror: ((e: ErrorEvent) => void) | null = null
+  postMessage() {}
+  terminate() {}
+  addEventListener() {}
+  removeEventListener() {}
+  dispatchEvent() {}
+}
+global.Worker = MockWorker as unknown as typeof Worker
+
+import { vi } from 'vitest'
+vi.mock('worker_threads', () => {
+  return {
+    Worker: MockWorker,
+  }
+})
+

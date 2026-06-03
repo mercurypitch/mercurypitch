@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  plugins: [solidPlugin() as any],
+  plugins: [solidPlugin({ hot: false }) as any],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

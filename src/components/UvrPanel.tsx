@@ -1154,14 +1154,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <Show when={currentView() === 'results'}>
             <div class="view-section results-section">
               <div class="section-header">
-                <h4>
+                <h4 style={{ display: 'flex', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
                   <span
                     class="process-filename-pill"
                     title={session()?.originalFile?.name ?? 'audio'}
                   >
                     {session()?.originalFile?.name ?? 'audio'}
-                  </span>{' '}
-                  results
+                  </span>
+                  <span>results</span>
                 </h4>
                 <button
                   class="back-btn"
