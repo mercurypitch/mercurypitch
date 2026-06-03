@@ -1154,7 +1154,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <Show when={currentView() === 'results'}>
             <div class="view-section results-section">
               <div class="section-header">
-                <h4 style={{ display: 'flex', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
+                <h4
+                  style={{
+                    display: 'flex',
+                    'align-items': 'center',
+                    'flex-wrap': 'wrap',
+                  }}
+                >
                   <span
                     class="process-filename-pill"
                     title={session()?.originalFile?.name ?? 'audio'}

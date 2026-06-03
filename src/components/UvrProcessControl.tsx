@@ -104,7 +104,13 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         return {
           icon: <Loader2 />,
           title: (
-            <span style={{ display: 'flex', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
+            <span
+              style={{
+                display: 'flex',
+                'align-items': 'center',
+                'flex-wrap': 'wrap',
+              }}
+            >
               <span>Separating</span>
               <span
                 class="process-filename-pill"
