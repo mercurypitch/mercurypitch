@@ -290,7 +290,13 @@ function persistAllSessionsToDb(sessions: UvrSession[]): void {
 
       // Get all existing records
       const existing = await repo.findAll({})
-      const existingMap = new Map(existing.map((r) => [r.appSessionId, r]))
+      const existingByAppId = new Map<string, UvrSessionRecord[]>()
+
+      for (const rec of existing) {
+        const arr = existingByAppId.get(rec.appSessionId) || []
+        arr.push(rec)
+        existingByAppId.set(rec.appSessionId, arr)
+      }
 
       const activeIds = new Set(sessions.map((s) => s.sessionId))
 
@@ -303,9 +309,14 @@ function persistAllSessionsToDb(sessions: UvrSession[]): void {
 
       // Upsert each session
       for (const session of sessions) {
-        const rec = existingMap.get(session.sessionId)
-        if (rec) {
-          await repo.update(rec.id, sessionToDbRecord(session))
+        const recs = existingByAppId.get(session.sessionId)
+        if (recs && recs.length > 0) {
+          // Update the first one
+          await repo.update(recs[0].id, sessionToDbRecord(session))
+          // Delete any duplicates
+          for (let i = 1; i < recs.length; i++) {
+            await repo.delete(recs[i].id)
+          }
         } else {
           await repo.create(sessionToDbRecord(session))
         }
@@ -359,7 +370,17 @@ export async function initSessionStore(): Promise<void> {
 
     // Load all sessions from DB into cache
     const allRecords = await repo.findAll({})
-    const sessions = allRecords.map(dbRecordToSession)
+
+    // Deduplicate records by appSessionId (keep latest by id if duplicates exist)
+    const dedupedMap = new Map<string, UvrSessionRecord>()
+    for (const rec of allRecords) {
+      const existing = dedupedMap.get(rec.appSessionId)
+      if (!existing || rec.id > existing.id) {
+        dedupedMap.set(rec.appSessionId, rec)
+      }
+    }
+
+    const sessions = Array.from(dedupedMap.values()).map(dbRecordToSession)
     _setSessionsCache(sessions)
   } catch (err) {
     if (IS_DEV) console.warn('[SessionStore] initSessionStore failed:', err)

@@ -65,20 +65,25 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'jam-room', roomId: jamMatch[1] }
   }
 
-  // Match: /uvr/session/:sessionId/mixer
-  const uvrMixerMatch = hash.match(/^\/uvr\/session\/(.+)\/mixer$/)
+  // Match: /karaoke/session/:sessionId/mixer or /uvr/...
+  const uvrMixerMatch = hash.match(/^\/(?:karaoke|uvr)\/session\/(.+)\/mixer$/)
   if (uvrMixerMatch) {
     return { type: 'uvr-session-mixer', sessionId: uvrMixerMatch[1] }
   }
 
-  // Match: /uvr/session/:sessionId
-  const uvrMatch = hash.match(/^\/uvr\/session\/(.+)$/)
+  // Match: /karaoke/session/:sessionId or /uvr/...
+  const uvrMatch = hash.match(/^\/(?:karaoke|uvr)\/session\/(.+)$/)
   if (uvrMatch) {
     return { type: 'uvr-session', sessionId: uvrMatch[1] }
   }
 
-  // Match: /uvr/upload or bare /uvr
-  if (hash === '/uvr/upload' || hash === '/uvr') {
+  // Match: /karaoke/upload or bare /karaoke (or /uvr/...)
+  if (
+    hash === '/karaoke/upload' ||
+    hash === '/karaoke' ||
+    hash === '/uvr/upload' ||
+    hash === '/uvr'
+  ) {
     return { type: 'uvr-upload' }
   }
 
@@ -134,11 +139,11 @@ export function buildHash(route: HashRoute): string {
     case 'jam-room':
       return `/jam:${route.roomId}`
     case 'uvr-upload':
-      return '/uvr'
+      return '/karaoke'
     case 'uvr-session':
-      return `/uvr/session/${route.sessionId}`
+      return `/karaoke/session/${route.sessionId}`
     case 'uvr-session-mixer':
-      return `/uvr/session/${route.sessionId}/mixer`
+      return `/karaoke/session/${route.sessionId}/mixer`
     case 'share':
       return `/share?type=${route.shareType}&id=${route.shareId}`
     case 'learn':

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import { createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -132,6 +132,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showSettings, setShowSettings] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
+
+  // Close modals on Escape key
+  createEffect(() => {
+    if (showSettings() || showGuide() || showClearStorageConfirm()) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          if (showSettings()) setShowSettings(false)
+          if (showGuide()) setShowGuide(false)
+          if (showClearStorageConfirm()) setShowClearStorageConfirm(false)
+        }
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      onCleanup(() => window.removeEventListener('keydown', handleKeyDown))
+    }
+  })
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
@@ -842,7 +857,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="guide-modal" onClick={() => setShowSettings(false)}>
               <div class="guide-container" onClick={(e) => e.stopPropagation()}>
                 <div class="guide-header">
-                  <h3>UVR Settings</h3>
+                  <h3>Karaoke Settings</h3>
                   <button
                     class="guide-close"
                     onClick={() => setShowSettings(false)}
@@ -1053,7 +1068,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="section-header">
                 <h4>
                   Processing Results for{' '}
-                  {session()?.originalFile?.name ?? 'audio'}
+                  <span
+                    class="process-filename-pill"
+                    title={session()?.originalFile?.name ?? 'audio'}
+                  >
+                    {session()?.originalFile?.name ?? 'audio'}
+                  </span>
                 </h4>
                 <button
                   class="back-btn"

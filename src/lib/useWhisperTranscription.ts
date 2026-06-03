@@ -148,9 +148,16 @@ export function useWhisperTranscription(
         let successes = 0
         let failures = 0
         for (let ci = 0; ci < audioChunks.length; ci++) {
+          if (serviceRef == null || !transcribing) {
+            console.log(
+              `[${tag}] Transcription aborted (service destroyed or stopped)`,
+            )
+            break
+          }
+
           const timeBase = ci * (WHISPER_CHUNK_SEC - WHISPER_OVERLAP_SEC)
           try {
-            const result = await serviceRef!.transcribe(audioChunks[ci])
+            const result = await serviceRef.transcribe(audioChunks[ci])
             successes++
             for (const seg of result.chunks) {
               merged.push({
