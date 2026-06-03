@@ -49,6 +49,10 @@ export interface WhisperTranscriptionController {
   /** Load previously cached transcription from IndexedDB */
   loadCachedTranscription: () => Promise<boolean>
 
+  /** Language selection for Whisper transcription */
+  language: Accessor<string>
+  setLanguage: Setter<string>
+
   // Cleanup
   destroy: () => void
 }
@@ -62,6 +66,7 @@ export function useWhisperTranscription(
   const [progress, setProgress] = createSignal(0)
   const [segments, setSegments] = createSignal<WhisperSegment[]>([])
   const [elapsed, setElapsed] = createSignal(-1)
+  const [language, setLanguage] = createSignal('en')
 
   let serviceRef: WhisperService | null = null
   let transcribing = false
@@ -155,9 +160,17 @@ export function useWhisperTranscription(
             break
           }
 
+          console.log(
+            `[${tag}] Transcribing chunk ${ci + 1}/${audioChunks.length}...`,
+          )
+          setProgress(Math.round((ci / audioChunks.length) * 100))
+
           const timeBase = ci * (WHISPER_CHUNK_SEC - WHISPER_OVERLAP_SEC)
           try {
-            const result = await serviceRef.transcribe(audioChunks[ci])
+            const result = await serviceRef.transcribe(
+              audioChunks[ci],
+              language(),
+            )
             successes++
             for (const seg of result.chunks) {
               merged.push({
@@ -179,6 +192,7 @@ export function useWhisperTranscription(
         console.log(
           `[${tag}] Chunk transcription: ${String(successes)}/${String(audioChunks.length)} chunks succeeded, ${String(failures)} failed`,
         )
+        setProgress(100)
 
         const deduped = deduplicateWhisperSegments(merged)
         setSegments(deduped)
@@ -253,6 +267,8 @@ export function useWhisperTranscription(
     segments,
     setSegments,
     elapsed,
+    language,
+    setLanguage,
     initWhisper,
     startTranscription,
     loadCachedTranscription,

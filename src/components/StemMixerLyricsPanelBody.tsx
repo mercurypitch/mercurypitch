@@ -2,7 +2,7 @@
 // StemMixerLyricsPanelBody — shared lyrics body content (used by both layouts)
 // ============================================================
 
-import type { Accessor, Component, JSX, Setter } from 'solid-js'
+import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
@@ -18,12 +18,6 @@ interface ParsedLyric {
   endTime: number
   words: string[]
   wordTimes?: number[]
-}
-
-interface Block {
-  id: string
-  label: string
-  repeatCount: number
 }
 
 interface SongPickerProps {
@@ -273,7 +267,7 @@ export interface StemMixerLyricsPanelBodyProps {
   ) => void
   handleEditBlock: (blockId: string, label: string, repeat: number) => void
   getBlockColor: (blockId: string) => string
-  getBlockById: (blockId: string) => Block | undefined
+  getBlockById: (blockId: string) => LyricsBlock | undefined
   getBlockForLine: (lineIdx: number) => BlockInfo | null
   computeActiveWord: (
     words: string[],
@@ -521,48 +515,65 @@ export const StemMixerLyricsPanelBody: Component<
               }
             }}
           >
-            {(() => {
-              const items = props.genViewData()
-              const result: JSX.Element[] = []
-              let skipUntil = -1
-              for (let i = 0; i < items.length; i++) {
-                if (i < skipUntil) continue
-                const item = items[i]
-
-                if (item.isPlaceholder) {
-                  if (item.isPlaceholderStart) {
-                    const bi = item.blockInfo!
-                    const block = props.getBlockById(bi.blockId)
-                    const total =
-                      props.blockInstances()[bi.blockId]?.length ?? 1
-                    const instance =
-                      props.blockInstances()[bi.blockId]?.[bi.instanceIdx]
-                    skipUntil = instance?.[1] ?? i + 1
-                    result.push(
-                      <div
-                        class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
-                        style={{
-                          '--block-color': props.getBlockColor(bi.blockId),
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => props.handleLyricLineClick(item.index)}
-                      >
-                        <span class="sm-lyrics-gen-line-time">
-                          {item.lineTime !== undefined
-                            ? props.formatTimeMs(item.lineTime)
-                            : '--:--'}
-                        </span>
-                        <span class="sm-lyrics-gen-placeholder-text">
-                          {block?.label ?? 'Block'} (repeat {bi.instanceIdx + 1}
-                          /{total}) — timings copied from template
-                        </span>
-                      </div>,
-                    )
+            <For
+              each={(() => {
+                const items = props.genViewData()
+                const out: {
+                  type: 'line' | 'placeholder'
+                  item: GenViewLine
+                  bi?: BlockInfo
+                  block?: LyricsBlock
+                  total?: number
+                }[] = []
+                let skipUntil = -1
+                for (let i = 0; i < items.length; i++) {
+                  if (i < skipUntil) continue
+                  const item = items[i]
+                  if (item.isPlaceholder) {
+                    if (item.isPlaceholderStart) {
+                      const bi = item.blockInfo!
+                      const block = props.getBlockById(bi.blockId)
+                      const total =
+                        props.blockInstances()[bi.blockId]?.length ?? 1
+                      const instance =
+                        props.blockInstances()[bi.blockId]?.[bi.instanceIdx]
+                      skipUntil = instance?.[1] ?? i + 1
+                      out.push({ type: 'placeholder', item, bi, block, total })
+                    }
+                  } else {
+                    out.push({ type: 'line', item })
                   }
-                  continue
+                }
+                return out
+              })()}
+            >
+              {(row) => {
+                if (row.type === 'placeholder') {
+                  const { item, bi, block, total } = row
+                  return (
+                    <div
+                      class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
+                      style={{
+                        '--block-color': props.getBlockColor(bi!.blockId),
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => props.handleLyricLineClick(item.index)}
+                    >
+                      <span class="sm-lyrics-gen-line-time">
+                        {item.lineTime !== undefined
+                          ? props.formatTimeMs(item.lineTime)
+                          : '--:--'}
+                      </span>
+                      <span class="sm-lyrics-gen-placeholder-text">
+                        {block?.label ?? 'Block'} (repeat {bi!.instanceIdx + 1}/
+                        {total}) — timings copied from template
+                      </span>
+                    </div>
+                  )
                 }
 
-                result.push(
+                const item = row.item
+                return (
                   <div
                     class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`}
                     style={
@@ -585,7 +596,7 @@ export const StemMixerLyricsPanelBody: Component<
                     <span class="sm-lyrics-gen-line-text">
                       {item.words.length === 0
                         ? item.line
-                        : item.words.map((word, wi) => (
+                        : item.words.map((word: string, wi: number) => (
                             <span
                               class={`sm-lyrics-gen-word${
                                 item.activeWordIdx === wi
@@ -609,11 +620,10 @@ export const StemMixerLyricsPanelBody: Component<
                             </span>
                           ))}
                     </span>
-                  </div>,
+                  </div>
                 )
-              }
-              return result
-            })()}
+              }}
+            </For>
           </div>
         </Show>
 
@@ -953,12 +963,13 @@ export const StemMixerLyricsPanelBody: Component<
                 const parsedLyric = props.stableParsedLyrics().get(idx)
                 if (!parsedLyric) return null
 
-                const blockInfo = props.blockStarts().get(idx)
-                const blockForLine = props.getBlockForLine(idx)
-                const blockColor = blockForLine
-                  ? props.getBlockColor(blockForLine.blockId)
-                  : undefined
-                const isMarkSelected =
+                const blockInfo = () => props.blockStarts().get(idx)
+                const blockForLine = () => props.getBlockForLine(idx)
+                const blockColor = () =>
+                  blockForLine()
+                    ? props.getBlockColor(blockForLine()!.blockId)
+                    : undefined
+                const isMarkSelected = () =>
                   props.blockMarkMode() &&
                   props.markStartLine() !== null &&
                   props.markEndLine() !== null &&
@@ -979,34 +990,35 @@ export const StemMixerLyricsPanelBody: Component<
 
                 return (
                   <>
-                    {blockInfo && (
+                    {blockInfo() && (
                       <div
-                        class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`}
+                        class={`sm-lyrics-block-badge ${blockInfo()!.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`}
                         style={{
-                          '--block-color': blockInfo.color,
+                          '--block-color': blockInfo()!.color,
                           'margin-top': '0.4rem',
                         }}
                         onClick={(e) => {
                           e.stopPropagation()
                           if (!props.blockMarkMode()) {
-                            props.setBlockEditTarget(blockInfo.blockId)
+                            props.setBlockEditTarget(blockInfo()!.blockId)
                           }
                         }}
                       >
-                        {blockInfo.label}
-                        {blockInfo.isTemplate && blockInfo.repeatCount > 1 && (
-                          <span class="sm-lyrics-block-repeat">
-                            x{blockInfo.repeatCount}
-                          </span>
-                        )}
-                        {!blockInfo.isTemplate && (
+                        {blockInfo()!.label}
+                        {blockInfo()!.isTemplate &&
+                          blockInfo()!.repeatCount > 1 && (
+                            <span class="sm-lyrics-block-repeat">
+                              x{blockInfo()!.repeatCount}
+                            </span>
+                          )}
+                        {!blockInfo()!.isTemplate && (
                           <span
                             class="sm-lyrics-block-unlink"
                             onClick={(e) => {
                               e.stopPropagation()
                               props.handleUnlinkInstance(
-                                blockInfo.blockId,
-                                blockInfo.instanceIdx,
+                                blockInfo()!.blockId,
+                                blockInfo()!.instanceIdx,
                               )
                             }}
                             title="Unlink this instance"
@@ -1017,10 +1029,10 @@ export const StemMixerLyricsPanelBody: Component<
                       </div>
                     )}
                     <span
-                      class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${props.blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                      class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine() ? ' sm-lyrics-line--blocked' : ''}${blockForLine() && !blockForLine()!.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${props.blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected() ? ' sm-lyrics-line-mark-selected' : ''}`}
                       style={
-                        blockColor !== undefined
-                          ? { '--block-color': blockColor }
+                        blockColor() !== undefined
+                          ? { '--block-color': blockColor() }
                           : {}
                       }
                       onClick={() => {
@@ -1047,14 +1059,14 @@ export const StemMixerLyricsPanelBody: Component<
                         }
                       }}
                     >
-                      {blockForLine && !blockForLine.isTemplate && (
+                      {blockForLine() && !blockForLine()!.isTemplate && (
                         <span
                           class="sm-lyrics-block-unlink"
                           onClick={(e) => {
                             e.stopPropagation()
                             props.handleUnlinkInstance(
-                              blockForLine.blockId,
-                              blockForLine.instanceIdx,
+                              blockForLine()!.blockId,
+                              blockForLine()!.instanceIdx,
                             )
                           }}
                           title="Unlink this instance"

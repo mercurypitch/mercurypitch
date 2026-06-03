@@ -582,6 +582,8 @@ export function useStemMixerLyricsController(
       if (timings !== undefined && Object.keys(timings).length > 0) {
         const firstMappedWordIdx = Math.min(...Object.keys(timings).map(Number))
         targetTime = timings[firstMappedWordIdx]
+      } else if (lrcGenLineTimes()[idx] !== undefined) {
+        targetTime = lrcGenLineTimes()[idx] ?? null
       }
     }
 
@@ -1493,22 +1495,13 @@ export function useStemMixerLyricsController(
   const handleDownloadLrc = () => {
     let lrcText = ''
     const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
+    const wt = wordTimings()
 
-    const persisted = loadPersistedLyrics()
-    const savedWt = persisted?.wordTimings
-    const hasWordTimings = savedWt && Object.keys(savedWt).length > 0
-    const originalText = persisted?.originalText
-
-    if (hasWordTimings === true && originalText !== undefined) {
-      lrcText = buildWordLevelLrc(originalText.split('\n'), savedWt)
-    } else if (lrcLines().length > 0) {
-      lrcText = buildLrcTextFromCanonical(
-        canonicalLrcLines(),
-        undefined,
-        wordTimings(),
-      )
+    if (lrcLines().length > 0) {
+      lrcText = buildLrcTextFromCanonical(canonicalLrcLines(), undefined, wt)
+    } else if (rawLyricsText()) {
+      lrcText = buildWordLevelLrc(rawLyricsText().split('\n'), wt)
     } else if (lyricsLines().length > 0) {
-      const wt = wordTimings()
       lrcText = buildWordLevelLrc(lyricsLines(), wt)
     }
 

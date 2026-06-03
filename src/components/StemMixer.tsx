@@ -435,6 +435,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const whisperStatus = whisper.status
   const whisperProgress = whisper.progress
   const transcribeElapsed = whisper.elapsed
+  const whisperLanguage = whisper.language
+  const setWhisperLanguage = whisper.setLanguage
 
   // ── Alignment note source toggle ────────────────────────────────
   const [useDenoised, setUseDenoised] = createSignal(true)
@@ -1055,6 +1057,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           transcribeElapsed={transcribeElapsed}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
+          whisperLanguage={whisperLanguage}
+          setWhisperLanguage={setWhisperLanguage}
           workspaceRef={(el) => {
             workspaceRef = el
           }}
@@ -1092,6 +1096,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           transcribeElapsed={transcribeElapsed}
           alignmentResult={alignmentResult}
           startWhisperTranscription={startWhisperTranscription}
+          whisperLanguage={whisperLanguage}
+          setWhisperLanguage={setWhisperLanguage}
         />
       </Show>
 
@@ -2291,6 +2297,37 @@ export const StemMixerStyles: string = `
 .sm-transcribe-btn:hover {
   background: var(--accent, #58a6ff);
   color: var(--bg-primary, #0d1117);
+}
+
+.sm-whisper-lang-select {
+  height: 1.15rem;
+  padding: 0 0.2rem;
+  font-size: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+}
+
+.sm-whisper-lang-select:hover,
+.sm-whisper-lang-select:focus {
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.sm-whisper-lang-select option {
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-primary, #c9d1d9);
 }
 
 .sm-lyrics-markmode-btn--active {

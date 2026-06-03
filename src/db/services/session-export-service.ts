@@ -126,10 +126,18 @@ export async function exportSession(
 
     onProgress?.(0)
     const zippable = await prepareSessionFilesForZip(sessionId, '', onProgress)
-    const zipped = fflate.zipSync(zippable, { level: 6 })
+
+    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
+      fflate.zip(zippable, { level: 6 }, (err, data) => {
+        if (err) reject(err)
+        else resolve(data)
+      })
+    })
 
     // Download
-    const blob = new Blob([zipped], { type: 'application/zip' })
+    const blob = new Blob([zipped.buffer as ArrayBuffer], {
+      type: 'application/zip',
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -184,14 +192,21 @@ export async function exportAllSessions(
     }
 
     // Zip and download
-    const zipped = fflate.zipSync(allZippable, { level: 6 })
+    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
+      fflate.zip(allZippable, { level: 6 }, (err, data) => {
+        if (err) reject(err)
+        else resolve(data)
+      })
+    })
 
     if (onProgress) {
       onProgress(100)
     }
 
     // Download
-    const blob = new Blob([zipped], { type: 'application/zip' })
+    const blob = new Blob([zipped.buffer as ArrayBuffer], {
+      type: 'application/zip',
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

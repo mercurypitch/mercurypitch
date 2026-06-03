@@ -163,6 +163,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setExportProgress(0)
     try {
       await exportAllSessions((pct) => setExportProgress(pct))
+      setExportProgress(100)
+      await new Promise((r) => setTimeout(r, 1500))
       showNotification('All sessions successfully exported.', 'success')
     } finally {
       setIsExporting(false)
@@ -1249,7 +1251,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* Delete All Toast */}
         <Show when={deleteAllToast()}>
-          <div class="history-toast">
+          <div class="history-toast history-toast-auto">
             <span class="history-toast-icon">
               <CheckCircle />
             </span>
