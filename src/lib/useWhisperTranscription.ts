@@ -142,6 +142,8 @@ export function useWhisperTranscription(
       setElapsed((n) => n + 1)
     }, 1000)
 
+    const selectedLanguage = language()
+
     resampleTo16kHz(buffer)
       .then(async (audioData) => {
         const audioChunks = chunkAudioForWhisper(audioData)
@@ -169,7 +171,7 @@ export function useWhisperTranscription(
           try {
             const result = await serviceRef.transcribe(
               audioChunks[ci],
-              language(),
+              selectedLanguage,
             )
             successes++
             for (const seg of result.chunks) {

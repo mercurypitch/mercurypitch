@@ -67,8 +67,11 @@ interface UvrPanelProps {
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
+  // Note: 'mixer' is excluded from the initial value because it requires stems
+  // to be populated first (async hydration). handleSessionView sets 'mixer'
+  // after the stems are ready.
   const [currentView, setCurrentView] = createSignal<UvrView>(
-    props.initialView || 'upload',
+    props.initialView === 'mixer' ? 'upload' : props.initialView || 'upload',
   )
   const [matchCandidates, setMatchCandidates] = createSignal<MatchCandidate[]>(
     [],
@@ -267,11 +270,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   // React to initialView prop changes (from hash navigation)
+  // Note: 'mixer' is excluded here because the mixer view requires stems
+  // to be populated first (async hydration). handleSessionView handles
+  // setting both the stems AND the view together.
   let lastInitialView: UvrView | null = null
   createEffect(() => {
     const v = props.initialView
-    if (v && v !== lastInitialView) {
+    console.log('[UvrPanel] initialView effect:', v, 'last:', lastInitialView)
+    if (v && v !== lastInitialView && v !== 'mixer') {
       lastInitialView = v
+      console.log('[UvrPanel] initialView -> setCurrentView:', v)
       setCurrentView(v)
     }
   })
@@ -294,9 +302,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   let lastLoadedSessionId: string | null = null
   createEffect(() => {
     const sid = props.initialSessionId
-    if (!isSessionStoreReady()) return
+    const ready = isSessionStoreReady()
+    console.log(
+      '[UvrPanel] session deep-link effect: sid=',
+      sid,
+      'ready=',
+      ready,
+      'last=',
+      lastLoadedSessionId,
+    )
+    if (!ready) return
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
+      console.log('[UvrPanel] calling handleSessionView for:', sid)
       handleSessionView(sid)
     }
   })
@@ -507,11 +525,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleSessionView = async (sessionId: string) => {
+    console.log(
+      '[UvrPanel] handleSessionView called for:',
+      sessionId,
+      'initialView:',
+      props.initialView,
+    )
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
     const session = getUvrSession(sessionId)
+    console.log(
+      '[UvrPanel] getUvrSession result:',
+      session ? 'found' : 'NOT FOUND',
+      'status:',
+      session?.status,
+      'outputs:',
+      session?.outputs ? Object.keys(session.outputs) : 'none',
+    )
     if (!session) {
+      console.log('[UvrPanel] session not found, falling back to results')
       setCurrentView('results')
       return
     }
@@ -522,6 +555,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // Hydrate blob URLs from IndexedDB before showing results
     // (blob: URLs from localStorage are dead after page reload)
     const hydrated = await ensureHydrated(session)
+    console.log(
+      '[UvrPanel] hydrated outputs:',
+      hydrated.outputs ? Object.keys(hydrated.outputs) : 'none',
+      'vocal:',
+      hydrated.outputs?.vocal?.substring(0, 40),
+      'inst:',
+      hydrated.outputs?.instrumental?.substring(0, 40),
+    )
     setCurrentUvrSession(hydrated)
     // Persist the hydrated URLs to localStorage
     if (hydrated !== session) {
@@ -539,7 +580,31 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (hydrated.status === 'processing') {
       setCurrentView('processing')
     } else {
-      setCurrentView('results')
+      // Respect the initial view from the URL hash (e.g. /mixer deep link)
+      const targetView = props.initialView === 'mixer' ? 'mixer' : 'results'
+      console.log(
+        '[UvrPanel] targetView:',
+        targetView,
+        'outputs != null:',
+        hydrated.outputs != null,
+      )
+
+      // When deep-linking directly to mixer, populate the mixer state
+      // just like handlePracticeStart does for 'full' mode
+      if (targetView === 'mixer' && hydrated.outputs != null) {
+        console.log('[UvrPanel] populating mixer stems for deep-link')
+        setPrevView('results')
+        setMixerPracticeMode('full')
+        setMixerSessionId(hydrated.sessionId)
+        setMixerStems({
+          vocal: hydrated.outputs.vocal,
+          instrumental: hydrated.outputs.instrumental,
+        })
+        setMixerRequestedStems({ vocal: true, instrumental: true })
+      }
+
+      console.log('[UvrPanel] setCurrentView:', targetView)
+      setCurrentView(targetView)
     }
   }
 

@@ -186,6 +186,7 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
           class="lu-paste-btn"
           onClick={() => {
             const suggestion = props.suggestion
+            const onUpload = props.onUpload
             navigator.clipboard
               .readText()
               .then((text) => {
@@ -195,7 +196,7 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
                   suggestion != null && suggestion.length > 0
                     ? suggestion.replace(/[^a-zA-Z0-9_-]/g, '_')
                     : 'pasted'
-                props.onUpload({
+                onUpload({
                   text,
                   format: isLrc ? 'lrc' : 'txt',
                   filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
