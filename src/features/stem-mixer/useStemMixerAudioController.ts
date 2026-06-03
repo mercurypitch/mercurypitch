@@ -138,6 +138,15 @@ export interface StemMixerAudioController {
   speed: Accessor<number>
   setSpeed: (speed: number) => void
 
+  // Loop
+  loopEnabled: Accessor<boolean>
+  setLoopEnabled: Setter<boolean>
+  loopStart: Accessor<number>
+  setLoopStart: Setter<number>
+  loopEnd: Accessor<number>
+  setLoopEnd: Setter<number>
+  clearLoop: () => void
+
   // Download
   handleDownload: (track: StemTrack) => Promise<void>
 
@@ -179,6 +188,11 @@ export const useStemMixerAudioController = (
   const [windowStart, setWindowStart] = createSignal(0)
   const [windowDuration, setWindowDuration] = createSignal(30)
   const [speed, setSpeedLocal] = createSignal(1.0)
+
+  // ── Loop signals ────────────────────────────────────────────
+  const [loopEnabled, setLoopEnabled] = createSignal(false)
+  const [loopStart, setLoopStart] = createSignal(0)
+  const [loopEnd, setLoopEnd] = createSignal(0)
 
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -660,7 +674,12 @@ export const useStemMixerAudioController = (
       canvas.drawLiveWaveform()
       deps.updateCurrentLine()
 
-      if (elapsedTime >= duration()) {
+      const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
+      if (elapsedTime >= endTime) {
+        if (loopEnabled()) {
+          seekTo(loopStart())
+          return
+        }
         handleStop()
         return
       }
@@ -714,6 +733,11 @@ export const useStemMixerAudioController = (
     }
   }
 
+  const clearLoop = () => {
+    setLoopEnabled(false)
+    setLoopStart(0)
+    setLoopEnd(0)
+  }
   return {
     loading,
     loadError,
@@ -740,6 +764,14 @@ export const useStemMixerAudioController = (
     handleDownload,
     speed,
     setSpeed,
+    // Loop
+    loopEnabled,
+    setLoopEnabled,
+    loopStart,
+    setLoopStart,
+    loopEnd,
+    setLoopEnd,
+    clearLoop,
     getPitchHistory: () => pitchHistory,
     setPitchHistory: (h: PitchNote[]) => {
       pitchHistory = h

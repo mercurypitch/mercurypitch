@@ -78,6 +78,13 @@ export interface StemMixerLyricsController {
   setBlockEditTarget: Setter<string | null>
   userScrolled: () => boolean
   setUserScrolled: Setter<boolean>
+  loopStartLyricIdx: () => number | null
+  setLoopStartLyricIdx: Setter<number | null>
+  loopEndLyricIdx: () => number | null
+  setLoopEndLyricIdx: Setter<number | null>
+
+  // Loop lyric handler
+  handleSetLoopLyric: (idx: number) => void
 
   // Memos
   canonicalLrcLines: () => CanonicalLrcEntry[]
@@ -270,6 +277,33 @@ export function useStemMixerLyricsController(
     null,
   )
   const [userScrolled, setUserScrolled] = createSignal(false)
+  const [loopStartLyricIdx, setLoopStartLyricIdx] = createSignal<number | null>(
+    null,
+  )
+  const [loopEndLyricIdx, setLoopEndLyricIdx] = createSignal<number | null>(
+    null,
+  )
+
+  const handleSetLoopLyric = (idx: number) => {
+    const a = loopStartLyricIdx()
+    const b = loopEndLyricIdx()
+    if (a === null) {
+      setLoopStartLyricIdx(idx)
+      setLoopEndLyricIdx(null)
+    } else if (b === null) {
+      if (idx > a) {
+        setLoopEndLyricIdx(idx)
+      } else if (idx < a) {
+        setLoopStartLyricIdx(idx)
+        setLoopEndLyricIdx(a)
+      } else {
+        setLoopStartLyricIdx(null)
+      }
+    } else {
+      setLoopStartLyricIdx(idx)
+      setLoopEndLyricIdx(null)
+    }
+  }
 
   // Snapshot of pre-gen LRC state so Cancel can restore
   let preGenSnapshot: {
@@ -1895,6 +1929,11 @@ export function useStemMixerLyricsController(
     setBlockEditTarget,
     userScrolled,
     setUserScrolled,
+    loopStartLyricIdx,
+    setLoopStartLyricIdx,
+    loopEndLyricIdx,
+    setLoopEndLyricIdx,
+    handleSetLoopLyric,
 
     // Memos
     canonicalLrcLines,
