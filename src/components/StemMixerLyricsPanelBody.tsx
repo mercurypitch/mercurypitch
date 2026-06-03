@@ -199,7 +199,6 @@ const SongPicker = (p: SongPickerProps) => {
 }
 
 export interface StemMixerLyricsPanelBodyProps {
-  songTitle?: string
   // State signals
   lyricsSource: Accessor<string>
   lyricsLoading: Accessor<boolean>
