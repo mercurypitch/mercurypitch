@@ -104,16 +104,16 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         return {
           icon: <Loader2 />,
           title: (
-            <>
-              Separating{' '}
+            <span style={{ display: 'flex', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
+              <span>Separating</span>
               <span
                 class="process-filename-pill"
                 title={props.originalFileName ?? 'audio'}
               >
                 {props.originalFileName ?? 'audio'}
-              </span>{' '}
-              into stems
-            </>
+              </span>
+              <span>into stems</span>
+            </span>
           ),
           description: '',
           color: 'var(--accent)',

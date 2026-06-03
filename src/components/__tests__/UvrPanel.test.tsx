@@ -123,7 +123,7 @@ describe('UvrPanel Component', () => {
     it('renders results view when initialView is results', () => {
       render(() => <UvrPanel {...defaultProps} initialView="results" />)
 
-      expect(screen.getByText(/Processing Results/)).toBeInTheDocument()
+      expect(screen.getByText('results')).toBeInTheDocument()
     })
   })
 

@@ -5,7 +5,7 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { appError } from '@/stores'
 
 const ThrowError: Component = () => {
-  throw new Error('Test crash')
+  throw 'Test crash'
   return <div>Not rendered</div>
 }
 
