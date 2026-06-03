@@ -1112,7 +1112,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         >
           <LoopMetricsBar
             comparisonData={mic.comparisonData}
-            loopCount={audio.getLoopCount}
+            loopCount={audio.loopCount}
           />
         </Show>
 
