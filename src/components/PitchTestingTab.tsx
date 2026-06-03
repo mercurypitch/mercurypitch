@@ -10,6 +10,7 @@ import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { getDb } from '@/db'
 import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
+import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import { deleteOfflineAnalysis, getOfflineAnalysis, saveOfflineAnalysis, } from '@/db/services/pitch-analysis-service'
 import { saveUvrSession } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
@@ -56,6 +57,7 @@ export interface AnalyzedTrack {
   isVocalStem?: boolean
   fileHash?: string
   audioBuffer?: AudioBuffer
+  uvrSessionId?: string
 }
 
 interface TestNoteResult {
@@ -369,17 +371,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             })
 
             let lrcLines: LrcLine[] | undefined = undefined
-            const storageKey = `lyrics_v1_${sessionId}`
-            const raw = localStorage.getItem(storageKey)
-            if (raw !== undefined && raw !== null && raw !== '') {
-              try {
-                const data = JSON.parse(raw)
-                if (data.format === 'lrc' && typeof data.text === 'string') {
-                  lrcLines = parseLrcFile(data.text)
-                }
-              } catch (e) {
-                console.error(e)
-              }
+            const dbLyrics = await loadLyricsFromDb(sessionId)
+            if (dbLyrics !== null && dbLyrics.format === 'lrc') {
+              lrcLines = parseLrcFile(dbLyrics.text)
             }
 
             const newId = Math.random().toString(36).substring(2, 9)
@@ -409,6 +403,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 undefined,
               isVocalStem: true,
               fileHash,
+              uvrSessionId: sessionId,
             }
 
             setAnalyzedTracks((prev) => [...prev, newTrack])
@@ -528,6 +523,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             const updated = { ...t, lrcLines }
             if (updated.segmentedNotes) {
               mapLyricsToMelody(updated.segmentedNotes, lrcLines)
+            }
+            // Persist to IndexedDB if this is a UVR session track
+            if (t.uvrSessionId !== undefined && t.uvrSessionId !== '') {
+              void saveLyricsToDb(t.uvrSessionId, {
+                text,
+                format: 'lrc',
+                filename: file.name,
+              })
             }
             return updated
           }
