@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.11] - 2026-06-03
+
+### Added
+
+- **Whisper Language Selection**: Added an EN/HR language dropdown next to the Transcribe button in StemMixer (both Grid and Fixed workspaces) and PitchTestingTab. Language selection is threaded through the worker, service, and hook.
+- **Whisper Warm-up (opt-in)**: Added a `ENABLE_WARMUP` flag in the whisper worker to optionally run a silent warm-up inference after model load, pre-compiling WebGPU/WASM shaders. Disabled by default to avoid unnecessary CPU/GPU usage.
+- **Mixer Deep-Link**: Reloading the page at `#/karaoke/session/{id}/mixer` now correctly loads the mixer view with stems populated, instead of showing empty panels or falling back to the results page.
+
+### Changed
+
+- **Whisper Chunk Timeout**: Increased per-chunk transcription timeout from 120s to 200s to accommodate Firefox's slower WebGPU/WASM inference.
+- **Export All Progress**: Refactored toast styling to keep progress notifications visible until completion, preventing premature auto-dismissal at 50%.
+
+### Fixed
+
+- **SolidJS Reactivity Warnings**: Fixed two `solid/reactivity` lint warnings by extracting reactive values (`props.onUpload`, `language()`) synchronously before async `.then()` callbacks, per SolidJS best practices.
+- **Mixer Deep-Link Race Condition**: Fixed a race where `handleSessionView` unconditionally set the view to 'results', overwriting the 'mixer' view from the URL hash. Also fixed the `createSignal` initial value starting as 'mixer' before stems were hydrated, causing StemMixer to mount with empty stems.
+- **Whisper Progress Bar Jumping**: Fixed erratic progress bar behavior during model download by implementing per-file progress tracking with monotonic aggregate reporting.
+
 ## [0.3.10] - 2026-06-02
 
 ### Added
