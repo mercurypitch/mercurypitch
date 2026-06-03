@@ -684,6 +684,7 @@ export const useStemMixerAudioController = (
         if (loopEnabled()) {
           loopCount++
           seekTo(loopStart())
+          rafId = requestAnimationFrame(tick)
           return
         }
         handleStop()
