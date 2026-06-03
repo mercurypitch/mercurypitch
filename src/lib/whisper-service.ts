@@ -51,29 +51,47 @@ export class WhisperService {
   }
 
   async init(): Promise<void> {
-    if (this.status !== 'idle') return
-
-    this.worker.postMessage({ type: 'load' })
+    if (this.status === 'ready' || this.status === 'processing') return
+    if (this.status === 'idle') {
+      this.status = 'loading'
+      this.worker.postMessage({ type: 'load' })
+    }
 
     return new Promise((resolve, reject) => {
       const startedAt = Date.now()
-      const check = setInterval(() => {
-        if (this.status === 'ready') {
-          clearInterval(check)
-          resolve()
-        } else if (this.status === 'error') {
-          clearInterval(check)
-          reject(new Error('Whisper model failed to load'))
-        } else if (Date.now() - startedAt > 300_000) {
-          clearInterval(check)
+
+      const onMessage = (e: MessageEvent) => {
+        const { type, status } = e.data
+        if (type === 'status') {
+          if (status === 'ready' || status === 'processing') {
+            cleanup()
+            resolve()
+          } else if (status === 'error') {
+            cleanup()
+            reject(new Error('Whisper model failed to load'))
+          }
+        }
+      }
+
+      const checkTimeout = setInterval(() => {
+        if (Date.now() - startedAt > 300_000) {
+          cleanup()
           reject(new Error('Whisper model load timed out (300s)'))
         }
-      }, 200)
+      }, 1000)
+
+      const cleanup = () => {
+        clearInterval(checkTimeout)
+        this.worker.removeEventListener('message', onMessage)
+      }
+
+      this.worker.addEventListener('message', onMessage)
     })
   }
 
   async transcribe(
     audioData: Float32Array,
+    language: string = 'en',
   ): Promise<{ text: string; chunks: WhisperSegment[] }> {
     const id = this.messageId++
 
@@ -97,6 +115,7 @@ export class WhisperService {
         type: 'transcribe',
         id,
         audioData,
+        language,
       })
     })
   }

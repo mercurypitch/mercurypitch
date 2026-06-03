@@ -89,10 +89,14 @@
       "@parcel/watcher",
       "esbuild",
       "midi-writer-js",
+      "onnxruntime-node",
       "protobufjs",
       "sharp",
       "unrs-resolver",
       "workerd"
+    ],
+    "ignoredBuiltDependencies": [
+      "onnxruntime-node"
     ]
   }
 }

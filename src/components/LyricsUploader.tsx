@@ -65,10 +65,14 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
       return
     }
     const isLrc = /^\[\d{1,3}:\d{2}/.test(text)
+    const baseName =
+      props.suggestion != null && props.suggestion.trim() !== ''
+        ? props.suggestion.replace(/[^a-zA-Z0-9_-]/g, '_')
+        : 'pasted'
     props.onUpload({
       text,
       format: isLrc ? 'lrc' : 'txt',
-      filename: isLrc ? 'pasted.lrc' : 'pasted.txt',
+      filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
     })
   }
 
@@ -180,7 +184,28 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
       >
         <button
           class="lu-paste-btn"
-          onClick={() => setShowPasteArea(true)}
+          onClick={() => {
+            const suggestion = props.suggestion
+            navigator.clipboard
+              .readText()
+              .then((text) => {
+                if (text.length === 0 || text.trim().length === 0) return
+                const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+                const baseName =
+                  suggestion != null && suggestion.length > 0
+                    ? suggestion.replace(/[^a-zA-Z0-9_-]/g, '_')
+                    : 'pasted'
+                props.onUpload({
+                  text,
+                  format: isLrc ? 'lrc' : 'txt',
+                  filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
+                })
+              })
+              .catch(() => {
+                // Fallback to text area if clipboard API fails
+                setShowPasteArea(true)
+              })
+          }}
           title="Paste lyrics text"
         >
           <svg

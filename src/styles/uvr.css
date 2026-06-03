@@ -681,6 +681,11 @@
   font-size: 0.85rem;
   color: var(--fg-primary);
   z-index: 1001;
+  animation: toast-in 0.25s ease;
+}
+
+/* Auto-dismiss variant for one-shot success/error toasts (not progress) */
+.history-toast-auto {
   animation:
     toast-in 0.25s ease,
     toast-out 0.25s ease 2s forwards;

@@ -61,6 +61,8 @@ interface StemMixerFixedWorkspaceProps {
   transcribeElapsed: Accessor<number>
   alignmentResult: Accessor<AlignmentResult>
   startWhisperTranscription: () => void
+  whisperLanguage: Accessor<string>
+  setWhisperLanguage: Setter<string>
 }
 
 export const StemMixerFixedWorkspace: Component<
@@ -429,6 +431,17 @@ export const StemMixerFixedWorkspace: Component<
                   </span>
                 </Show>
                 <Show when={props.whisperStatus() === 'ready'}>
+                  <select
+                    class="sm-whisper-lang-select"
+                    value={props.whisperLanguage()}
+                    onChange={(e) =>
+                      props.setWhisperLanguage(e.currentTarget.value)
+                    }
+                    title="Whisper transcription language"
+                  >
+                    <option value="en">EN</option>
+                    <option value="hr">HR</option>
+                  </select>
                   <button
                     class="sm-transcribe-btn"
                     onClick={(e) => {

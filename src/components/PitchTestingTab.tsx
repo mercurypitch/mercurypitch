@@ -2130,6 +2130,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         </span>
                       </Show>
                       <Show when={whisperStatus() === 'ready'}>
+                        <select
+                          class="sm-whisper-lang-select"
+                          value={whisper.language()}
+                          onChange={(e) =>
+                            whisper.setLanguage(e.currentTarget.value)
+                          }
+                          title="Whisper transcription language"
+                        >
+                          <option value="en">EN</option>
+                          <option value="hr">HR</option>
+                        </select>
                         <button
                           class="sm-transcribe-btn"
                           style={{ 'margin-left': 'auto' }}
