@@ -312,6 +312,37 @@ export const StemMixerLyricsPanelBody: Component<
 > = (props) => {
   const sfx = () => props.idSuffix ?? ''
 
+  // Pinch-to-zoom font size state
+  let lyricsPinchDist = 0
+  let lyricsPinchStartSize = 0
+
+  const handleLyricsTouchStart = (e: TouchEvent) => {
+    if (e.touches.length === 2) {
+      lyricsPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY,
+      )
+      lyricsPinchStartSize = props.lyricsFontSize()
+    }
+  }
+
+  const handleLyricsTouchMove = (e: TouchEvent) => {
+    if (e.touches.length !== 2 || lyricsPinchDist === 0) return
+    e.preventDefault()
+    const curDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY,
+    )
+    const ratio = curDist / lyricsPinchDist
+    const dampenedRatio = 1 + (ratio - 1) * 0.3
+    const newSize = Math.min(3, Math.max(0.45, lyricsPinchStartSize * dampenedRatio))
+    props.setLyricsFontSize(newSize)
+  }
+
+  const handleLyricsTouchEnd = () => {
+    lyricsPinchDist = 0
+  }
+
   // Auto-scroll LRC generator view to the currently active line
   createEffect(
     on(
@@ -513,7 +544,7 @@ export const StemMixerLyricsPanelBody: Component<
                 e.preventDefault()
                 props.setLyricsFontSize((prev) =>
                   Math.min(
-                    1.5,
+                    3,
                     Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
                   ),
                 )
@@ -664,7 +695,7 @@ export const StemMixerLyricsPanelBody: Component<
                 e.preventDefault()
                 props.setLyricsFontSize((prev) =>
                   Math.min(
-                    1.5,
+                    3,
                     Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
                   ),
                 )
@@ -934,12 +965,15 @@ export const StemMixerLyricsPanelBody: Component<
                 e.preventDefault()
                 props.setLyricsFontSize((prev) =>
                   Math.min(
-                    1.5,
+                    3,
                     Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
                   ),
                 )
               }
             }}
+            onTouchStart={handleLyricsTouchStart}
+            onTouchMove={handleLyricsTouchMove}
+            onTouchEnd={handleLyricsTouchEnd}
           >
             <For each={props.displayLines()}>
               {(dl: DisplayLine) => {
