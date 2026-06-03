@@ -176,6 +176,7 @@ class MockWorker {
 global.Worker = MockWorker as unknown as typeof Worker
 
 import { vi } from 'vitest'
+
 vi.mock('worker_threads', () => {
   return {
     Worker: MockWorker,
