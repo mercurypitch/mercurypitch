@@ -346,7 +346,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             >
               −
             </button>
-            <span class="sm-zoom-value">{props.windowDuration()}s</span>
+            <span class="sm-zoom-value">{Math.round(props.windowDuration())}s</span>
             <button
               class="sm-zoom-btn"
               onClick={() => {
