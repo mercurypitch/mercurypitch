@@ -592,6 +592,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
     PITCH_WINDOW_FILL_RATIO,
+    loopEnabled: audio.loopEnabled,
+    loopStart: audio.loopStart,
+    loopEnd: audio.loopEnd,
   })
 
   // Backfill mutable holders so audio controller can reach canvas + lyrics
