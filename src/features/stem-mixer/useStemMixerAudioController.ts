@@ -146,6 +146,8 @@ export interface StemMixerAudioController {
   loopEnd: Accessor<number>
   setLoopEnd: Setter<number>
   clearLoop: () => void
+  getLoopCount: () => number
+  resetLoopCount: () => void
 
   // Download
   handleDownload: (track: StemTrack) => Promise<void>
@@ -193,6 +195,7 @@ export const useStemMixerAudioController = (
   const [loopEnabled, setLoopEnabled] = createSignal(false)
   const [loopStart, setLoopStart] = createSignal(0)
   const [loopEnd, setLoopEnd] = createSignal(0)
+  let loopCount = 0
 
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -530,6 +533,7 @@ export const useStemMixerAudioController = (
       deps.setScore(s)
       deps.setShowScore(true)
     }
+    loopCount = 0
     pauseOffset = 0
     disconnectSources()
     setPlayingLocal(false)
@@ -551,6 +555,7 @@ export const useStemMixerAudioController = (
 
   const handleRestart = () => {
     deps.resetScore()
+    loopCount = 0
     pauseOffset = 0
     disconnectSources()
     setPlayingLocal(false)
@@ -677,6 +682,7 @@ export const useStemMixerAudioController = (
       const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
       if (elapsedTime >= endTime) {
         if (loopEnabled()) {
+          loopCount++
           seekTo(loopStart())
           return
         }
@@ -737,6 +743,7 @@ export const useStemMixerAudioController = (
     setLoopEnabled(false)
     setLoopStart(0)
     setLoopEnd(0)
+    loopCount = 0
   }
   return {
     loading,
@@ -772,6 +779,10 @@ export const useStemMixerAudioController = (
     loopEnd,
     setLoopEnd,
     clearLoop,
+    getLoopCount: () => loopCount,
+    resetLoopCount: () => {
+      loopCount = 0
+    },
     getPitchHistory: () => pitchHistory,
     setPitchHistory: (h: PitchNote[]) => {
       pitchHistory = h

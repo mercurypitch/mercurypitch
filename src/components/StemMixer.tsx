@@ -2,7 +2,7 @@
 // StemMixer — Play separated stems with volume control & pitch viz
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
@@ -11,6 +11,7 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { extractTitle } from '@/lib/lyrics-service'
+import type { ComparisonPoint } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes } from '@/lib/midi-generator'
@@ -1106,6 +1107,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onToggleLoop={() => audio.setLoopEnabled(!audio.loopEnabled())}
         />
 
+        <Show
+          when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+        >
+          <LoopMetricsBar
+            comparisonData={mic.comparisonData}
+            loopCount={audio.getLoopCount}
+          />
+        </Show>
+
         <StemMixerGridWorkspace
           workspaceLayout={layout.workspaceLayout}
           panelStyle={layout.panelStyle}
@@ -1233,6 +1243,42 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
+    </div>
+  )
+}
+
+// ============================================================
+// LoopMetricsBar
+// ============================================================
+
+const LoopMetricsBar: Component<{
+  comparisonData: Accessor<ComparisonPoint[]>
+  loopCount: () => number
+}> = (props) => {
+  const accuracy = () => {
+    const data = props.comparisonData()
+    if (data.length === 0) return 0
+    const inTol = data.filter((d) => d.inTolerance).length
+    return Math.round((inTol / data.length) * 100)
+  }
+  const avgCents = () => {
+    const data = props.comparisonData()
+    if (data.length === 0) return 0
+    const sum = data.reduce((a, d) => a + Math.abs(d.centsOff), 0)
+    return Math.round(sum / data.length)
+  }
+
+  return (
+    <div class="sm-loop-metrics">
+      <span class="sm-loop-metrics-item">
+        Accuracy:&nbsp;<strong>{accuracy()}%</strong>
+      </span>
+      <span class="sm-loop-metrics-item">
+        Avg&nbsp;offset:&nbsp;<strong>{avgCents()}&cent;</strong>
+      </span>
+      <span class="sm-loop-metrics-item">
+        Loop:&nbsp;<strong>{props.loopCount()}x</strong>
+      </span>
     </div>
   )
 }
