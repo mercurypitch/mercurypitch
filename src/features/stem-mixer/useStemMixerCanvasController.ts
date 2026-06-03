@@ -850,9 +850,9 @@ export const useStemMixerCanvasController = (
       const touch = activeTouches[0]
       const canvas = e.currentTarget as HTMLCanvasElement
       const rect = canvas.getBoundingClientRect()
-      const deltaX = touch.startX - touch.clientX
+      const deltaX = touch.clientX - touch.startX
       const pxPerSec = rect.width / deps.windowDuration()
-      const deltaTime = deltaX / pxPerSec
+      const deltaTime = (deltaX / pxPerSec) * 0.3
       const newStart = Math.max(
         0,
         Math.min(
@@ -861,6 +861,8 @@ export const useStemMixerCanvasController = (
         ),
       )
       deps.setWindowStart(newStart)
+      // Incremental tracking: re-baseline so sensitivity stays consistent
+      touch.startX = touch.clientX
       redrawAll()
     } else if (activeTouches.length >= 2) {
       const curDist = getTouchDistance(activeTouches[0], activeTouches[1])
@@ -879,14 +881,20 @@ export const useStemMixerCanvasController = (
         // Primarily vertical pinch — delegate to layout resize
         deps.onCanvasVerticalPinch(
           (e.currentTarget as HTMLCanvasElement).dataset.canvasId ?? '',
-          dy / 2,
+          dy * 0.15,
         )
+        // Re-baseline for incremental resize
+        for (const at of activeTouches) {
+          at.startX = at.clientX
+          at.startY = at.clientY
+        }
       } else if (pinchStartDistance > 0) {
-        // Horizontal pinch — zoom
+        // Horizontal pinch — zoom (dampened for smooth scaling)
         const ratio = curDist / pinchStartDistance
+        const dampenedRatio = 1 + (ratio - 1) * 0.15
         const newDuration = Math.max(
           10,
-          Math.min(150, pinchStartWindowDuration / ratio),
+          Math.min(150, pinchStartWindowDuration / dampenedRatio),
         )
         if (newDuration !== deps.windowDuration()) {
           // Keep midpoint stable
