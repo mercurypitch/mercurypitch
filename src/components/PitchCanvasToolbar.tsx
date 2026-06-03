@@ -25,15 +25,13 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
           width="12"
           height="12"
           viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          fill="currentColor"
+          stroke="none"
         >
-          <polyline points="4 7 4 4 20 4 20 7" />
-          <line x1="9" y1="20" x2="15" y2="20" />
-          <line x1="12" y1="4" x2="12" y2="20" />
+          {/* Eighth note (quaver) */}
+          <ellipse cx="7" cy="19" rx="4" ry="3" />
+          <rect x="10" y="4" width="2.5" height="15" rx="1" />
+          <path d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z" />
         </svg>
         <span>Note Labels</span>
       </button>
