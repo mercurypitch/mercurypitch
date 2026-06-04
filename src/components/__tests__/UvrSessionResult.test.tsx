@@ -32,6 +32,7 @@ vi.mock('../icons', () => ({
   Server: () => <span data-testid="server-icon">Server</span>,
   Zap: () => <span data-testid="zap-icon">Zap</span>,
   X: () => <span data-testid="x-icon">X</span>,
+  ChevronDown: () => <span data-testid="chevron-icon">ChevronDown</span>,
 }))
 
 // Helper to seed a session into the store so getUvrSession can find it

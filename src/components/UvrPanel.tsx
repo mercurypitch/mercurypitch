@@ -15,10 +15,10 @@ import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, Cpu, ExportFile, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -165,6 +165,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [importTargetGroupId, setImportTargetGroupId] = createSignal<
     string | null
   >(null)
+  const [newImportGroupName, setNewImportGroupName] = createSignal('')
+  const [importGroupCreating, setImportGroupCreating] = createSignal(false)
 
   const handleExportAll = async () => {
     if (isExporting()) return
@@ -212,6 +214,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setImportFile(null)
     }
   }
+
+  const handleCreateImportGroup = async () => {
+    const name = newImportGroupName().trim()
+    if (name === '') return
+    setImportGroupCreating(true)
+    try {
+      const group = await createGroup(name)
+      setImportTargetGroupId(group.id)
+      setNewImportGroupName('')
+    } finally {
+      setImportGroupCreating(false)
+    }
+  }
+
   const [mixerStems, setMixerStems] = createSignal<{
     vocal?: string
     vocalMidi?: string
@@ -1039,7 +1055,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         disabled={isExporting()}
                         title="Export this group's sessions to a ZIP file"
                       >
-                        <ExportFile />
+                        <ExportGroup />
                       </button>
                     </Show>
                     <button
@@ -1386,6 +1402,25 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     </button>
                   )}
                 </For>
+              </div>
+              <div class="session-group-assign-new">
+                <input
+                  type="text"
+                  class="session-group-assign-new-input"
+                  placeholder="Or create a new group..."
+                  value={newImportGroupName()}
+                  onInput={(e) => setNewImportGroupName(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleCreateImportGroup()
+                  }}
+                />
+                <button
+                  class="session-group-assign-new-btn"
+                  onClick={() => void handleCreateImportGroup()}
+                  disabled={importGroupCreating()}
+                >
+                  {importGroupCreating() ? 'Creating...' : 'Create & import'}
+                </button>
               </div>
               <div class="delete-all-actions">
                 <button

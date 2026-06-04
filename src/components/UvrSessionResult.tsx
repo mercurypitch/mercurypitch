@@ -8,7 +8,7 @@ import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { addSessionToGroup, createGroup, deleteUvrSession, getGroupsReactive, getUvrSession, removeSessionFromGroup, } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Cpu, Download, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -381,18 +381,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               class="session-group-assign-chevron"
               classList={{ open: showGroupSelect() }}
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <ChevronDown size={12} />
             </span>
           </button>
           <Show when={showGroupSelect()}>

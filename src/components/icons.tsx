@@ -256,7 +256,7 @@ export const History: Component = () => (
 )
 
 // Chevron Down Icon
-export const ChevronDown: Component = () => (
+export const ChevronDown: Component<{ size?: number }> = (p) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -264,8 +264,8 @@ export const ChevronDown: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
   >
     <polyline points="6 9 12 15 18 9" />
   </svg>
@@ -722,6 +722,24 @@ export const ExportFile: Component = () => (
   </svg>
 )
 
+// Export Group Icon (folder with download arrow)
+export const ExportGroup: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    <line x1="12" y1="11" x2="12" y2="17" />
+    <polyline points="9 14 12 17 15 14" />
+  </svg>
+)
+
 // Import File Icon (upload arrow into tray)
 export const ImportFile: Component = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
@@ -815,5 +833,56 @@ export const MidiDin: Component = () => (
     <circle cx="16.2" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
     <circle cx="7.8" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
     <circle cx="5.3" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+// DeleteGroup Icon (folder with X — delete group and its sessions)
+export const DeleteGroup: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    <line x1="9" y1="12" x2="15" y2="18" />
+    <line x1="15" y1="12" x2="9" y2="18" />
+  </svg>
+)
+
+// CheckSmall Icon (simple checkmark — confirm/save)
+export const CheckSmall: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 14}
+    height={p.size ?? 14}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+// Pencil Icon (edit/rename)
+export const Pencil: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 14}
+    height={p.size ?? 14}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <path d="m15 5 4 4" />
   </svg>
 )
