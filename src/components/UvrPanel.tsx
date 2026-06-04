@@ -774,12 +774,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleClearStorage = async () => {
+  const handleClearStorage = () => {
     deleteAllUvrSessions()
-    await deleteAllUvrSessionsFromDb()
     setShowClearStorageConfirm(false)
     setDeleteAllToast('Storage cleared (all sessions and stems deleted)')
     setTimeout(() => setDeleteAllToast(''), 2500)
+    void deleteAllUvrSessionsFromDb()
   }
 
   // Refresh session outputs from API
@@ -1474,10 +1474,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Cancel
                 </button>
-                <button
-                  class="delete-all-confirm"
-                  onClick={() => void handleClearStorage()}
-                >
+                <button class="delete-all-confirm" onClick={handleClearStorage}>
                   <Trash2 /> Clear All
                 </button>
               </div>

@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { SessionGroupRecord } from '@/db'
 import { createGroup, deleteGroupWithSessions, getGroupsReactive, renameGroup, } from '@/stores/app-store'
-import { CheckSmall, DeleteGroup, FilePlus, MoreVertical, Pencil, X, } from './icons'
+import { CheckSmall, DeleteGroup, FilePlus, Pencil, X } from './icons'
 
 interface SessionGroupTabsProps {
   activeGroupId: string | null
@@ -101,17 +101,15 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                     </span>
                   </button>
                   <button
-                    class="session-group-tab-menu-btn"
+                    class="session-group-tab-delete-btn"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setContextGroupId((prev) =>
-                        prev === group.id ? null : group.id,
-                      )
+                      handleDelete(group.id)
                     }}
-                    title="Group options"
-                    data-testid={`group-tab-menu-${group.id}`}
+                    title="Delete group"
+                    data-testid={`group-tab-delete-${group.id}`}
                   >
-                    <MoreVertical size={14} />
+                    <X />
                   </button>
                 </div>
               }
