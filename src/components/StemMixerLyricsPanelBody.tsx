@@ -313,6 +313,7 @@ export const StemMixerLyricsPanelBody: Component<
   const sfx = () => props.idSuffix ?? ''
 
   // Pinch-to-zoom font size state
+  let lyricsLinesRef: HTMLDivElement | undefined
   let lyricsPinchDist = 0
   let lyricsPinchStartSize = 0
 
@@ -345,6 +346,24 @@ export const StemMixerLyricsPanelBody: Component<
   const handleLyricsTouchEnd = () => {
     lyricsPinchDist = 0
   }
+
+  onMount(() => {
+    const el = lyricsLinesRef
+    if (!el) return
+    el.addEventListener('touchstart', handleLyricsTouchStart, {
+      passive: false,
+    })
+    el.addEventListener('touchmove', handleLyricsTouchMove, { passive: false })
+    el.addEventListener('touchend', handleLyricsTouchEnd)
+  })
+
+  onCleanup(() => {
+    const el = lyricsLinesRef
+    if (!el) return
+    el.removeEventListener('touchstart', handleLyricsTouchStart)
+    el.removeEventListener('touchmove', handleLyricsTouchMove)
+    el.removeEventListener('touchend', handleLyricsTouchEnd)
+  })
 
   // Auto-scroll LRC generator view to the currently active line
   createEffect(
@@ -962,6 +981,7 @@ export const StemMixerLyricsPanelBody: Component<
               'sm-lyrics-lines--marking': props.blockMarkMode(),
             }}
             style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
+            onContextMenu={(e) => e.preventDefault()}
             onWheel={(e) => {
               e.stopPropagation()
               if (e.ctrlKey || e.metaKey) {
@@ -974,9 +994,7 @@ export const StemMixerLyricsPanelBody: Component<
                 )
               }
             }}
-            onTouchStart={handleLyricsTouchStart}
-            onTouchMove={handleLyricsTouchMove}
-            onTouchEnd={handleLyricsTouchEnd}
+            ref={lyricsLinesRef}
           >
             <For each={props.displayLines()}>
               {(dl: DisplayLine) => {
