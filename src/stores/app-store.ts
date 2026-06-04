@@ -1,6 +1,8 @@
 import { createSignal } from 'solid-js'
-import type { FeatureFlag } from '@/db'
+import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
+import { getUserId } from '@/db/seed'
+import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -177,6 +179,7 @@ export interface UvrSession {
   provider?: string
   numChunks?: number
   createdAt: number
+  groupId?: string
 }
 
 /** Current UVR session state */
@@ -194,11 +197,153 @@ function bumpSessions() {
   setSessionsVersion((v) => v + 1)
 }
 
-// ── DB helpers ──────────────────────────────────────────────────────
+// ── Group state ─────────────────────────────────────────────────────
 
-import type { UvrSessionRecord } from '@/db/entities'
-import { getUserId } from '@/db/seed'
-import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
+const [_groupsCache, _setGroupsCache] = createSignal<SessionGroupRecord[]>([])
+
+const [groupsVersion, setGroupsVersion] = createSignal(0)
+
+function bumpGroups() {
+  setGroupsVersion((v) => v + 1)
+}
+
+/** Create a new session group. Returns the persisted record (async -- DB generates the ID). */
+export async function createGroup(name: string): Promise<SessionGroupRecord> {
+  const db = await getDb()
+  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const group = await repo.create({ name, sessionIds: [] } as any)
+  _setGroupsCache((prev) => [...prev, group])
+  bumpGroups()
+  return group
+}
+
+/** Delete a group. Sessions that belonged to it become ungrouped. */
+export async function deleteGroup(groupId: string): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+  await repo.delete(groupId)
+
+  // Clear groupId from sessions that belonged to this group
+  const cache = _groupsCache()
+  const group = cache.find((g) => g.id === groupId)
+  if (group) {
+    for (const sid of group.sessionIds) {
+      const session = getUvrSession(sid)
+      if (session) {
+        upsertSessionInCache({ ...session, groupId: undefined })
+      }
+    }
+  }
+
+  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
+  bumpGroups()
+}
+
+/** Rename a group. */
+export async function renameGroup(
+  groupId: string,
+  name: string,
+): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+  const updated = await repo.update(groupId, {
+    name,
+  } as Partial<SessionGroupRecord>)
+  _setGroupsCache((prev) => prev.map((g) => (g.id === groupId ? updated : g)))
+  bumpGroups()
+}
+
+/** Add a session to a group. Updates both the group and the session's groupId. */
+export async function addSessionToGroup(
+  sessionId: string,
+  groupId: string,
+): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+  const group = await repo.findById(groupId)
+  if (!group || group.sessionIds.includes(sessionId)) return
+
+  const updated = await repo.update(groupId, {
+    sessionIds: [...group.sessionIds, sessionId],
+  } as Partial<SessionGroupRecord>)
+  _setGroupsCache((prev) => prev.map((g) => (g.id === groupId ? updated : g)))
+  bumpGroups()
+
+  const session = getUvrSession(sessionId)
+  if (session) {
+    upsertSessionInCache({ ...session, groupId })
+  }
+}
+
+/** Remove a session from whichever group it belongs to. */
+export function removeSessionFromGroup(sessionId: string): void {
+  const groups = _groupsCache()
+  let changed = false
+  const updated = groups.map((g) => {
+    if (g.sessionIds.includes(sessionId)) {
+      changed = true
+      return {
+        ...g,
+        sessionIds: g.sessionIds.filter((id) => id !== sessionId),
+        updatedAt: new Date().toISOString(),
+      }
+    }
+    return g
+  })
+  if (!changed) return
+
+  _setGroupsCache(updated)
+  bumpGroups()
+
+  // Fire-and-forget persist each changed group
+  void (async () => {
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    for (const g of updated) {
+      if (groups.find((og) => og.id === g.id)?.sessionIds !== g.sessionIds) {
+        await repo.update(g.id, {
+          sessionIds: g.sessionIds,
+        } as Partial<SessionGroupRecord>)
+      }
+    }
+  })()
+
+  const session = getUvrSession(sessionId)
+  if (session?.groupId != null) {
+    upsertSessionInCache({ ...session, groupId: undefined })
+  }
+}
+
+/** Get all groups (non-reactive). */
+export function getGroups(): SessionGroupRecord[] {
+  return _groupsCache()
+}
+
+/** Get all groups reactively (tracks groupsVersion). */
+export function getGroupsReactive(): SessionGroupRecord[] {
+  groupsVersion()
+  return _groupsCache()
+}
+
+let _groupStoreReady = false
+
+/** Load groups from IndexedDB into the in-memory cache. Call once at startup. */
+export async function initGroupStore(): Promise<void> {
+  if (_groupStoreReady) return
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    const all = await repo.findAll({})
+    _setGroupsCache(all)
+  } catch (err) {
+    if (IS_DEV) console.warn('[SessionStore] initGroupStore failed:', err)
+    _setGroupsCache([])
+  }
+  _groupStoreReady = true
+}
+
+// ── DB helpers ──────────────────────────────────────────────────────
 
 /** Convert a UvrSession (in-memory) to a DB record shape for persistence. */
 function sessionToDbRecord(
@@ -224,6 +369,7 @@ function sessionToDbRecord(
         ? JSON.stringify(session.stemMeta)
         : undefined,
     appCreatedAt: session.createdAt,
+    groupId: session.groupId,
   }
 }
 
@@ -255,10 +401,10 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
     processingTime: rec.processingTime,
     error: rec.error,
     createdAt: rec.appCreatedAt ?? Date.parse(rec.createdAt),
+    groupId: rec.groupId,
   }
 }
 
-/** Persist a single session to the DB (fire-and-forget). */
 function persistSessionToDb(session: UvrSession): void {
   void (async () => {
     try {
@@ -567,6 +713,8 @@ export function deleteUvrSession(sessionId: string): void {
   updateCacheAndPersist(sessions)
   // Clean up associated lyrics from DB
   void deleteLyricsFromDb(sessionId)
+  // Remove from any group
+  removeSessionFromGroup(sessionId)
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
   }

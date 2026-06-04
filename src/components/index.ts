@@ -43,6 +43,7 @@ export {
   ExportFile,
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
+export { SessionGroupTabs } from './SessionGroupTabs'
 
 export { UvrPanel } from './UvrPanel'
 

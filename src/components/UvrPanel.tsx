@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
-import { exportAllSessions, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
+import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -15,9 +15,9 @@ import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
-import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
+import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, Cpu, ExportFile, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
@@ -159,6 +159,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [isExporting, setIsExporting] = createSignal(false)
   const [exportProgress, setExportProgress] = createSignal(0)
   const [isImporting, setIsImporting] = createSignal(false)
+  const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
+  const [importFile, setImportFile] = createSignal<File | null>(null)
+  const [showImportGroupSelect, setShowImportGroupSelect] = createSignal(false)
+  const [importTargetGroupId, setImportTargetGroupId] = createSignal<
+    string | null
+  >(null)
 
   const handleExportAll = async () => {
     if (isExporting()) return
@@ -179,16 +185,31 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const file = input.files?.[0]
     if (!file) return
 
+    // Store file and show group selection dialog
+    setImportFile(file)
+    setImportTargetGroupId(null)
+    setShowImportGroupSelect(true)
+    input.value = ''
+  }
+
+  const handleConfirmImport = async () => {
+    const file = importFile()
+    if (!file) return
+
+    setShowImportGroupSelect(false)
     setIsImporting(true)
     showNotification('Extracting sessions from ZIP...', 'info')
     try {
-      const count = await importSessionsFromZip(file)
+      const count = await importSessionsFromZip(
+        file,
+        importTargetGroupId() ?? undefined,
+      )
       showNotification(`Successfully imported ${count} session(s).`, 'success')
     } catch (_err) {
       showNotification('Failed to import sessions.', 'error')
     } finally {
       setIsImporting(false)
-      input.value = ''
+      setImportFile(null)
     }
   }
   const [mixerStems, setMixerStems] = createSignal<{
@@ -213,6 +234,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Computed session state
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
+  const filteredSessions = () => {
+    const sessions = allSessions()
+    const groupId = activeGroupId()
+    if (groupId == null) return sessions
+    return sessions.filter((s) => s.groupId === groupId)
+  }
 
   const handleForceWebGpuToggle = (force: boolean) => {
     setUvrForceWebGpu(force)
@@ -997,6 +1024,24 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </Show>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Show when={allSessions().length > 0}>
+                    <Show when={activeGroupId()}>
+                      <button
+                        class="section-action-btn icon-only"
+                        onClick={() => {
+                          const gid = activeGroupId()
+                          if (gid == null) return
+                          setIsExporting(true)
+                          setExportProgress(0)
+                          void exportGroup(gid, (pct) =>
+                            setExportProgress(pct),
+                          ).finally(() => setIsExporting(false))
+                        }}
+                        disabled={isExporting()}
+                        title="Export this group's sessions to a ZIP file"
+                      >
+                        <ExportFile />
+                      </button>
+                    </Show>
                     <button
                       class="section-action-btn icon-only"
                       onClick={() => void handleExportAll()}
@@ -1033,9 +1078,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
 
               <Show when={allSessions().length > 0}>
+                <SessionGroupTabs
+                  activeGroupId={activeGroupId()}
+                  onSelectGroup={setActiveGroupId}
+                />
                 <div class="history-list history-list-inline">
                   <For
-                    each={allSessions().sort(
+                    each={filteredSessions().sort(
                       (a, b) => b.createdAt - a.createdAt,
                     )}
                   >
@@ -1290,6 +1339,75 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </Suspense>
           </Show>
         </div>
+
+        {/* Import Group Selection Modal */}
+        <Show when={showImportGroupSelect()}>
+          <div
+            class="delete-all-overlay"
+            onClick={() => {
+              setShowImportGroupSelect(false)
+              setImportFile(null)
+            }}
+          >
+            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+              <h4>Import to Group</h4>
+              <p>
+                Choose a target group for the imported sessions, or leave
+                ungrouped.
+              </p>
+              <div
+                class="session-group-assign-menu"
+                style="position: static; box-shadow: none; margin-bottom: 0.75rem;"
+              >
+                <button
+                  class="session-group-assign-item"
+                  classList={{
+                    'session-group-assign-item--active':
+                      importTargetGroupId() === null,
+                  }}
+                  onClick={() => setImportTargetGroupId(null)}
+                >
+                  No group
+                </button>
+                <For each={getGroupsReactive()}>
+                  {(group) => (
+                    <button
+                      class="session-group-assign-item"
+                      classList={{
+                        'session-group-assign-item--active':
+                          importTargetGroupId() === group.id,
+                      }}
+                      onClick={() => setImportTargetGroupId(group.id)}
+                    >
+                      {group.name}
+                      <span class="session-group-assign-item-count">
+                        {group.sessionIds.length}
+                      </span>
+                    </button>
+                  )}
+                </For>
+              </div>
+              <div class="delete-all-actions">
+                <button
+                  class="delete-all-cancel"
+                  onClick={() => {
+                    setShowImportGroupSelect(false)
+                    setImportFile(null)
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  class="delete-all-confirm"
+                  onClick={() => void handleConfirmImport()}
+                >
+                  <ImportFile /> Import
+                  {importTargetGroupId() != null ? ' to group' : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Show>
 
         {/* Clear Storage Confirmation Modal */}
         <Show when={showClearStorageConfirm()}>

@@ -251,6 +251,8 @@ export interface UvrSessionRecord extends DbEntity {
   stemMetaJson?: string
   /** Timestamp from the original UvrSession.createdAt (epoch ms) */
   appCreatedAt?: number
+  /** Optional group assignment */
+  groupId?: string
 }
 
 export interface UvrStemBlob extends DbEntity {
@@ -265,6 +267,11 @@ export interface UvrStemBlob extends DbEntity {
 export interface UvrStemFingerprint extends DbEntity {
   sessionId: string // matches UvrSession.sessionId
   fingerprintJson: string // JSON-serialized MelodyFingerprint
+}
+
+export interface SessionGroupRecord extends DbEntity {
+  name: string
+  sessionIds: string[] // ordered list of UvrSession.sessionId values
 }
 
 export interface UvrSessionLyrics extends DbEntity {

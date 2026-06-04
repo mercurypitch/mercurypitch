@@ -2702,6 +2702,407 @@
 }
 
 /* ============================================================
+// Session Group Tabs (SessionGroupTabs)
+// ============================================================ */
+
+.session-group-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.session-group-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.session-group-tab-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.session-group-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  color: var(--fg-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.session-group-tab:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+  border-color: var(--fg-tertiary);
+}
+
+.session-group-tab--active {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--fg-primary);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
+}
+
+.session-group-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+}
+
+.session-group-tab--active .session-group-tab-count {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--accent);
+}
+
+.session-group-tab--add {
+  padding: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.session-group-tab--add svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.session-group-tab-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 2rem;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
+}
+
+.session-group-tab-edit-input {
+  width: 100px;
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.session-group-tab-edit-input::placeholder {
+  color: var(--fg-tertiary);
+}
+
+.session-group-tab-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.session-group-tab-edit-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
+.session-group-tab-edit-btn svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/* Context menu */
+.session-group-context-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 120px;
+  animation: context-in 0.12s ease;
+}
+
+@keyframes context-in {
+  from {
+    transform: translateX(-50%) translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.session-group-context-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.session-group-context-item:hover {
+  background: var(--bg-hover);
+}
+
+.session-group-context-item svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.session-group-context-item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.session-group-context-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ============================================================
+// Session Group Assignment Dropdown (UvrSessionResult)
+// ============================================================ */
+
+.session-group-assign {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-primary);
+  border-radius: 0.4rem;
+}
+
+.session-group-assign-label {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+}
+
+.session-group-assign-dropdown {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.session-group-assign-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  gap: 0.25rem;
+}
+
+.session-group-assign-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--fg-tertiary);
+}
+
+.session-group-assign-current {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-group-assign-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--fg-tertiary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.session-group-assign-chevron.open {
+  transform: rotate(180deg);
+}
+
+.session-group-assign-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: assign-menu-in 0.12s ease;
+}
+
+@keyframes assign-menu-in {
+  from {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.session-group-assign-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+}
+
+.session-group-assign-item:hover {
+  background: var(--bg-hover);
+}
+
+.session-group-assign-item--active {
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--accent);
+}
+
+.session-group-assign-item-count {
+  font-size: 0.62rem;
+  color: var(--fg-tertiary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.session-group-assign-item--active .session-group-assign-item-count {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent);
+}
+
+.session-group-assign-item--remove {
+  color: var(--error);
+  font-size: 0.72rem;
+}
+
+.session-group-assign-item--remove:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.session-group-assign-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+  flex-shrink: 0;
+}
+
+.session-group-assign-new {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.session-group-assign-new-input {
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  color: var(--fg-primary);
+  font-size: 0.72rem;
+  outline: none;
+}
+
+.session-group-assign-new-input:focus {
+  border-color: var(--accent);
+}
+
+.session-group-assign-new-input::placeholder {
+  color: var(--fg-tertiary);
+}
+
+.session-group-assign-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--bg-primary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.session-group-assign-new-btn:hover {
+  opacity: 0.85;
+}
+
+.session-group-assign-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+/* ============================================================
 // Mobile Layout Overrides
 // ============================================================ */
 @media (max-width: 600px) {

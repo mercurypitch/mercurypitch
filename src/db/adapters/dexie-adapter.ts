@@ -30,6 +30,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrSessionLyrics: 'id, sessionId',
   offlinePitchAnalysis: 'id, fileHash',
   whisperTranscriptions: 'id, sessionId',
+  sessionGroups: 'id',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────
@@ -64,6 +65,7 @@ class DexieDatabase extends DexieDB {
     })
     this.version(3).stores(STORE_SCHEMAS)
     this.version(4).stores(STORE_SCHEMAS)
+    this.version(5).stores(STORE_SCHEMAS)
   }
 
   /** Add a new table at the next schema version. */

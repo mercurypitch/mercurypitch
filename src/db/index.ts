@@ -60,6 +60,7 @@ export type {
   MelodyRecord,
   SessionTemplate,
   PlaylistRecord,
+  SessionGroupRecord,
   UvrSessionRecord,
   UvrStemBlob,
   UvrStemFingerprint,
