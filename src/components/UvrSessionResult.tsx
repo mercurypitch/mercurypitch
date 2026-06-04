@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
-import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, deleteUvrSession, getGroupsReactive, getUvrSession, removeSessionFromGroup, } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, Cpu, Download, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 
@@ -33,6 +33,34 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const [toastMessage, setToastMessage] = createSignal('')
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
   const [reindexing, setReindexing] = createSignal(false)
+  const [showGroupSelect, setShowGroupSelect] = createSignal(false)
+  const [newGroupName, setNewGroupName] = createSignal('')
+
+  const groups = () => getGroupsReactive()
+  const currentGroup = () => {
+    const gid = session()?.groupId
+    if (gid == null) return null
+    return groups().find((g) => g.id === gid) ?? null
+  }
+
+  const handleGroupChange = async (groupId: string) => {
+    setShowGroupSelect(false)
+    await addSessionToGroup(props.sessionId, groupId)
+  }
+
+  const handleCreateAndAssign = async () => {
+    const name = newGroupName().trim()
+    if (!name) return
+    const group = await createGroup(name)
+    await addSessionToGroup(props.sessionId, group.id)
+    setNewGroupName('')
+    setShowGroupSelect(false)
+  }
+
+  const handleRemoveFromGroup = async () => {
+    setShowGroupSelect(false)
+    removeSessionFromGroup(props.sessionId)
+  }
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
@@ -335,6 +363,93 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </div>
           </div>
         </Show>
+      </div>
+
+      {/* Group Assignment */}
+      <div class="session-group-assign">
+        <span class="session-group-assign-label">Group</span>
+        <div class="session-group-assign-dropdown">
+          <button
+            class="session-group-assign-btn"
+            onClick={() => setShowGroupSelect(!showGroupSelect())}
+            title="Assign to group"
+          >
+            <span class="session-group-assign-current">
+              {currentGroup()?.name ?? 'No group'}
+            </span>
+            <span
+              class="session-group-assign-chevron"
+              classList={{ open: showGroupSelect() }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </button>
+          <Show when={showGroupSelect()}>
+            <div class="session-group-assign-menu">
+              <For each={groups()}>
+                {(group) => (
+                  <button
+                    class="session-group-assign-item"
+                    classList={{
+                      'session-group-assign-item--active':
+                        session()?.groupId === group.id,
+                    }}
+                    onClick={() => void handleGroupChange(group.id)}
+                  >
+                    {group.name}
+                    <span class="session-group-assign-item-count">
+                      {group.sessionIds.length}
+                    </span>
+                  </button>
+                )}
+              </For>
+              <Show when={session()?.groupId}>
+                <button
+                  class="session-group-assign-item session-group-assign-item--remove"
+                  onClick={() => void handleRemoveFromGroup()}
+                >
+                  Remove from group
+                </button>
+              </Show>
+              <div class="session-group-assign-divider" />
+              <div class="session-group-assign-new">
+                <input
+                  type="text"
+                  class="session-group-assign-new-input"
+                  placeholder="New group name"
+                  value={newGroupName()}
+                  onInput={(e) => setNewGroupName(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleCreateAndAssign()
+                    if (e.key === 'Escape') setShowGroupSelect(false)
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <button
+                  class="session-group-assign-new-btn"
+                  onClick={() => void handleCreateAndAssign()}
+                >
+                  Create & assign
+                </button>
+              </div>
+            </div>
+            <div
+              class="session-group-assign-backdrop"
+              onClick={() => setShowGroupSelect(false)}
+            />
+          </Show>
+        </div>
       </div>
 
       {/* Outputs — compact multi-select stem pills */}
