@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
+import type { SessionGroupRecord, UvrSessionRecord, UvrStemBlob, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -340,6 +340,15 @@ export async function deleteAllUvrSessionsFromDb(): Promise<void> {
     const existing = await repo.findAll({})
     for (const rec of existing) {
       await repo.delete(rec.id)
+    }
+
+    // Clear sessionIds from all groups
+    const groupRepo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    const groups = await groupRepo.findAll({})
+    for (const g of groups) {
+      await groupRepo.update(g.id, {
+        sessionIds: [],
+      } as Partial<SessionGroupRecord>)
     }
   } catch (err) {
     if (IS_DEV)

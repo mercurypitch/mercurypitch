@@ -223,6 +223,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const group = await createGroup(name)
       setImportTargetGroupId(group.id)
       setNewImportGroupName('')
+      // Trigger the import immediately after creating the group
+      await handleConfirmImport()
     } finally {
       setImportGroupCreating(false)
     }
@@ -772,9 +774,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleClearStorage = () => {
+  const handleClearStorage = async () => {
     deleteAllUvrSessions()
-    void deleteAllUvrSessionsFromDb()
+    await deleteAllUvrSessionsFromDb()
     setShowClearStorageConfirm(false)
     setDeleteAllToast('Storage cleared (all sessions and stems deleted)')
     setTimeout(() => setDeleteAllToast(''), 2500)
@@ -1040,7 +1042,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </Show>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Show when={allSessions().length > 0}>
-                    <Show when={activeGroupId()}>
+                    <Show
+                      when={
+                        activeGroupId() != null && filteredSessions().length > 0
+                      }
+                    >
                       <button
                         class="section-action-btn icon-only"
                         onClick={() => {
@@ -1093,7 +1099,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </div>
               </div>
 
-              <Show when={allSessions().length > 0}>
+              <Show
+                when={
+                  allSessions().length > 0 || getGroupsReactive().length > 0
+                }
+              >
                 <SessionGroupTabs
                   activeGroupId={activeGroupId()}
                   onSelectGroup={setActiveGroupId}
@@ -1436,8 +1446,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="delete-all-confirm"
                   onClick={() => void handleConfirmImport()}
                 >
-                  <ImportFile /> Import
-                  {importTargetGroupId() != null ? ' to group' : ''}
+                  Import{importTargetGroupId() != null ? ' to group' : ''}
                 </button>
               </div>
             </div>
@@ -1465,7 +1474,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Cancel
                 </button>
-                <button class="delete-all-confirm" onClick={handleClearStorage}>
+                <button
+                  class="delete-all-confirm"
+                  onClick={() => void handleClearStorage()}
+                >
                   <Trash2 /> Clear All
                 </button>
               </div>

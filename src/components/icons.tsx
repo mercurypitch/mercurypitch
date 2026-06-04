@@ -870,6 +870,24 @@ export const CheckSmall: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// MoreVertical Icon (kebab menu trigger)
+export const MoreVertical: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 16}
+    height={p.size ?? 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 // Pencil Icon (edit/rename)
 export const Pencil: Component<{ size?: number }> = (p) => (
   <svg

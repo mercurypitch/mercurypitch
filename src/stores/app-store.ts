@@ -740,23 +740,15 @@ export function deleteUvrSession(sessionId: string): void {
   }
 }
 
-/** Delete all UVR sessions */
+/** Delete all UVR sessions (cache only — caller should await deleteAllUvrSessionsFromDb for DB cleanup) */
 export function deleteAllUvrSessions(): void {
-  updateCacheAndPersist([])
-  // Clean up all lyrics from DB
+  _setSessionsCache([])
+  bumpSessions()
   void deleteAllLyricsFromDb()
   setCurrentUvrSession(null)
-  // Clear sessionIds from all groups (cache + DB)
+  // Clear sessionIds from all groups (cache)
   _setGroupsCache((prev) => prev.map((g) => ({ ...g, sessionIds: [] })))
   bumpGroups()
-  void (async () => {
-    const db = await getDb()
-    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-    const groups = _groupsCache()
-    for (const g of groups) {
-      await repo.update(g.id, { sessionIds: [] } as Partial<SessionGroupRecord>)
-    }
-  })()
 }
 
 /** Get UVR session stats */

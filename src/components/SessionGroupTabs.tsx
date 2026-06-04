@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { SessionGroupRecord } from '@/db'
 import { createGroup, deleteGroupWithSessions, getGroupsReactive, renameGroup, } from '@/stores/app-store'
-import { CheckSmall, DeleteGroup, FilePlus, Pencil, X } from './icons'
+import { CheckSmall, DeleteGroup, FilePlus, MoreVertical, Pencil, X, } from './icons'
 
 interface SessionGroupTabsProps {
   activeGroupId: string | null
@@ -79,24 +79,41 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
             <Show
               when={editingId() === group.id}
               fallback={
-                <button
+                <div
                   class="session-group-tab"
                   classList={{
                     'session-group-tab--active':
                       props.activeGroupId === group.id,
                   }}
-                  onClick={() => props.onSelectGroup(group.id)}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    setContextGroupId(group.id)
-                  }}
-                  data-testid={`group-tab-${group.id}`}
                 >
-                  {group.name}
-                  <span class="session-group-tab-count">
-                    {group.sessionIds.length}
-                  </span>
-                </button>
+                  <button
+                    class="session-group-tab-label"
+                    onClick={() => props.onSelectGroup(group.id)}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setContextGroupId(group.id)
+                    }}
+                    data-testid={`group-tab-${group.id}`}
+                  >
+                    {group.name}
+                    <span class="session-group-tab-count">
+                      {group.sessionIds.length}
+                    </span>
+                  </button>
+                  <button
+                    class="session-group-tab-menu-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setContextGroupId((prev) =>
+                        prev === group.id ? null : group.id,
+                      )
+                    }}
+                    title="Group options"
+                    data-testid={`group-tab-menu-${group.id}`}
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                </div>
               }
             >
               <div class="session-group-tab-edit">
