@@ -21,7 +21,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { showNotification } from '@/stores/notifications-store'
-import { ChevronLeft, Settings, Share } from './icons'
+import { ChevronLeft, Maximize2, Minimize2, Settings, Share } from './icons'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
@@ -118,6 +118,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
   const [anySoloed, setAnySoloed] = createSignal(false)
   const [shareToast, setShareToast] = createSignal('')
+
+  // ── Karaoke Focus Mode ────────────────────────────────────────
+  const [karaokeFocus, setKaraokeFocus] = createSignal(false)
+  const [showWaveform, setShowWaveform] = createSignal(true)
+  const [showPitch, setShowPitch] = createSignal(true)
+  const [showLyrics, setShowLyrics] = createSignal(true)
+
+  // Esc key to exit focus mode
+  createEffect(() => {
+    if (!karaokeFocus()) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setKaraokeFocus(false)
+    }
+    document.addEventListener('keydown', handler)
+    onCleanup(() => document.removeEventListener('keydown', handler))
+  })
+
   const PITCH_WINDOW_FILL_RATIO = 0.75
 
   const lrclibSearchUrl = () => {
@@ -914,52 +931,69 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div class="stem-mixer">
+    <div class="stem-mixer" classList={{ 'stem-mixer--focus': karaokeFocus() }}>
       {/* Header */}
-      <div class="sm-header">
-        <div class="sm-header-left">
-          <Show when={props.onBack}>
+      <Show when={!karaokeFocus()}>
+        <div class="sm-header">
+          <div class="sm-header-left">
+            <Show when={props.onBack}>
+              <button
+                class="sm-back-btn"
+                onClick={() => props.onBack?.()}
+                title="Back"
+              >
+                <ChevronLeft />
+              </button>
+            </Show>
+            <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
+            <span class="sm-session-id">
+              karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
+            </span>
+          </div>
+          <div
+            class="sm-header-actions"
+            style={{ display: 'flex', gap: '0.5rem' }}
+          >
             <button
-              class="sm-back-btn"
-              onClick={() => props.onBack?.()}
-              title="Back"
+              class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
+              onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+              title="Pitch Analysis & Settings"
+              style={{ gap: '0.4rem' }}
             >
-              <ChevronLeft />
+              <Settings /> Pitch
             </button>
-          </Show>
-          <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
-          <span class="sm-session-id">
-            karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
-          </span>
+            <button
+              class="sm-share-btn"
+              classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
+              onClick={() => {
+                const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+                void navigator.clipboard.writeText(url).then(() => {
+                  setShareToast('Link copied to clipboard!')
+                  setTimeout(() => setShareToast(''), 2500)
+                })
+              }}
+              title="Copy share link"
+            >
+              <Share /> {shareToast() || 'Share'}
+            </button>
+            <button
+              class="sm-btn sm-btn-secondary"
+              onClick={() => setKaraokeFocus((prev) => !prev)}
+              title={
+                karaokeFocus()
+                  ? 'Exit karaoke mode (Esc)'
+                  : 'Karaoke focus mode'
+              }
+            >
+              {karaokeFocus() ? (
+                <Minimize2 size={14} />
+              ) : (
+                <Maximize2 size={14} />
+              )}
+            </button>
+          </div>
         </div>
-        <div
-          class="sm-header-actions"
-          style={{ display: 'flex', gap: '0.5rem' }}
-        >
-          <button
-            class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-            onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
-            title="Pitch Analysis & Settings"
-            style={{ gap: '0.4rem' }}
-          >
-            <Settings /> Pitch
-          </button>
-          <button
-            class="sm-share-btn"
-            classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-            onClick={() => {
-              const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-              void navigator.clipboard.writeText(url).then(() => {
-                setShareToast('Link copied to clipboard!')
-                setTimeout(() => setShareToast(''), 2500)
-              })
-            }}
-            title="Copy share link"
-          >
-            <Share /> {shareToast() || 'Share'}
-          </button>
-        </div>
-      </div>
+      </Show>
 
       {/* Loading / Error */}
       <Show when={audio.loading() || audio.midiGenerating()}>
@@ -997,6 +1031,79 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       </Show>
 
       <Show when={!audio.loading() && !audio.loadError()}>
+        {/* Karaoke focus mode floating toolbar */}
+        <Show when={karaokeFocus()}>
+          <div class="sm-focus-toolbar">
+            <button
+              class="sm-focus-toggle-btn"
+              classList={{ 'sm-focus-toggle-btn--active': showWaveform() }}
+              onClick={() => setShowWaveform((p) => !p)}
+              title="Toggle waveform"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <polyline points="2 12 6 6 10 18 14 8 18 14 22 10" />
+              </svg>
+            </button>
+            <button
+              class="sm-focus-toggle-btn"
+              classList={{ 'sm-focus-toggle-btn--active': showPitch() }}
+              onClick={() => setShowPitch((p) => !p)}
+              title="Toggle pitch"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </button>
+            <button
+              class="sm-focus-toggle-btn"
+              classList={{ 'sm-focus-toggle-btn--active': showLyrics() }}
+              onClick={() => setShowLyrics((p) => !p)}
+              title="Toggle lyrics"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                <line x1="8" y1="7" x2="16" y2="7" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </button>
+            <button
+              class="sm-focus-toggle-btn sm-focus-exit-btn"
+              onClick={() => setKaraokeFocus(false)}
+              title="Exit karaoke mode (Esc)"
+            >
+              <Minimize2 size={14} />
+            </button>
+          </div>
+        </Show>
+
         <StemMixerTransport
           playing={audio.playing}
           elapsed={audio.elapsed}
