@@ -2782,29 +2782,34 @@
   white-space: nowrap;
 }
 
-.session-group-tab-menu-btn {
+.session-group-tab-delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: 50%;
   color: var(--fg-tertiary);
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0;
   transition:
     opacity 0.15s,
-    background 0.15s;
+    background 0.15s,
+    color 0.15s;
   flex-shrink: 0;
 }
 
-.session-group-tab:hover .session-group-tab-menu-btn,
-.session-group-tab-menu-btn:hover {
+.session-group-tab:hover .session-group-tab-delete-btn {
+  opacity: 0.6;
+}
+
+.session-group-tab-delete-btn:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .session-group-tab--active .session-group-tab-count {
