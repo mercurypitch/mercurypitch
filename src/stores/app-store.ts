@@ -240,6 +240,26 @@ export async function deleteGroup(groupId: string): Promise<void> {
   bumpGroups()
 }
 
+/** Delete a group and all sessions within it. */
+export async function deleteGroupWithSessions(groupId: string): Promise<void> {
+  const cache = _groupsCache()
+  const group = cache.find((g) => g.id === groupId)
+  const sessionIds = group?.sessionIds ?? []
+
+  // Delete each session in the group
+  for (const sid of sessionIds) {
+    deleteUvrSession(sid)
+  }
+
+  // Delete the group itself
+  const db = await getDb()
+  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+  await repo.delete(groupId)
+
+  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
+  bumpGroups()
+}
+
 /** Rename a group. */
 export async function renameGroup(
   groupId: string,
@@ -726,6 +746,17 @@ export function deleteAllUvrSessions(): void {
   // Clean up all lyrics from DB
   void deleteAllLyricsFromDb()
   setCurrentUvrSession(null)
+  // Clear sessionIds from all groups (cache + DB)
+  _setGroupsCache((prev) => prev.map((g) => ({ ...g, sessionIds: [] })))
+  bumpGroups()
+  void (async () => {
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    const groups = _groupsCache()
+    for (const g of groups) {
+      await repo.update(g.id, { sessionIds: [] } as Partial<SessionGroupRecord>)
+    }
+  })()
 }
 
 /** Get UVR session stats */

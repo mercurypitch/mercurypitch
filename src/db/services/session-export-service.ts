@@ -8,28 +8,24 @@ import { loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/w
 import { IS_DEV } from '@/lib/defaults'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import type { UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSession, } from '@/stores/app-store'
+import { addSessionToGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSession, } from '@/stores/app-store'
 
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
-  version: 2
+  version: 1
   session: Omit<UvrSession, 'outputs'>
   lyrics: LyricsData | null
   transcription: WhisperSegment[] | null
   pitchAnalysis?: SessionPitchData | null
-  /** Group membership info (v2+) */
-  group?: { id: string; name: string } | null
 }
 
 /** Backward-compatible import type */
 interface ImportPayload {
-  version: 1 | 2
+  version: 1
   session: UvrSession
   lyrics: LyricsData | null
   transcription?: WhisperSegment[] | null
   pitchAnalysis?: SessionPitchData | null
-  /** Group membership info (v2+) */
-  group?: { id: string; name: string } | null
 }
 
 /**
@@ -76,21 +72,12 @@ async function prepareSessionFilesForZip(
 
   // 3. Prepare payload -- deliberately omit `outputs` (domain/blob-specific URLs)
   const { outputs: _outputs, ...sessionWithoutOutputs } = session
-  let groupInfo: ExportPayload['group'] = null
-  if (session.groupId != null) {
-    const groups = getGroups()
-    const g = groups.find((gr) => gr.id === session.groupId)
-    if (g) {
-      groupInfo = { id: g.id, name: g.name }
-    }
-  }
   const payload: ExportPayload = {
-    version: 2,
+    version: 1,
     session: sessionWithoutOutputs,
     lyrics,
     transcription,
     pitchAnalysis,
-    group: groupInfo,
   }
   const payloadStr = JSON.stringify(payload, null, 2)
   zippable[`${prefix}session.json`] = fflate.strToU8(payloadStr)
@@ -425,14 +412,6 @@ export async function importSessionsFromZip(
         if (targetGroupId != null) {
           // User explicitly chose a target group — use it
           await addSessionToGroup(newSessionId, targetGroupId)
-        } else if (payload.group?.name != null) {
-          // Auto-create or merge group from ZIP payload
-          const existingGroups = getGroups()
-          let group = existingGroups.find((g) => g.name === payload.group!.name)
-          if (!group) {
-            group = await createGroup(payload.group.name)
-          }
-          await addSessionToGroup(newSessionId, group.id)
         }
         importedCount++
       } catch (err) {

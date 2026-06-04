@@ -2,47 +2,15 @@
 // SessionGroupTabs — Horizontal pill tab bar for session groups
 // ============================================================
 
-import type { Component, Setter } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { SessionGroupRecord } from '@/db'
-import { createGroup, deleteGroup, getGroupsReactive, renameGroup, } from '@/stores/app-store'
-import { FilePlus, Trash2, X } from './icons'
-
-// Inline SVGs for icons not in the shared icon set
-const CheckIcon: Component<{ size?: number }> = (p) => (
-  <svg
-    width={p.size ?? 14}
-    height={p.size ?? 14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2.5"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-)
-
-const PencilIcon: Component<{ size?: number }> = (p) => (
-  <svg
-    width={p.size ?? 14}
-    height={p.size ?? 14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-    <path d="m15 5 4 4" />
-  </svg>
-)
+import { createGroup, deleteGroupWithSessions, getGroupsReactive, renameGroup, } from '@/stores/app-store'
+import { CheckSmall, DeleteGroup, FilePlus, Pencil, X } from './icons'
 
 interface SessionGroupTabsProps {
   activeGroupId: string | null
-  onSelectGroup: Setter<string | null>
+  onSelectGroup: (value: string | null) => void
 }
 
 export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
@@ -75,7 +43,7 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
   }
 
   const handleDelete = (groupId: string) => {
-    void deleteGroup(groupId)
+    void deleteGroupWithSessions(groupId)
     setContextGroupId(null)
     if (props.activeGroupId === groupId) {
       props.onSelectGroup(null)
@@ -147,7 +115,7 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                   class="session-group-tab-edit-btn"
                   onClick={() => handleRename(group.id)}
                 >
-                  <CheckIcon />
+                  <CheckSmall />
                 </button>
                 <button
                   class="session-group-tab-edit-btn"
@@ -171,13 +139,13 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                     startRename(group)
                   }}
                 >
-                  <PencilIcon /> Rename
+                  <Pencil /> Rename
                 </button>
                 <button
                   class="session-group-context-item session-group-context-item--danger"
                   onClick={() => handleDelete(group.id)}
                 >
-                  <Trash2 /> Delete
+                  <DeleteGroup /> Delete group & sessions
                 </button>
               </div>
               <div
@@ -228,7 +196,7 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
             }}
           />
           <button class="session-group-tab-edit-btn" onClick={handleCreate}>
-            <CheckIcon />
+            <CheckSmall />
           </button>
           <button
             class="session-group-tab-edit-btn"
