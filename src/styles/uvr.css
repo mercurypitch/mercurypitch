@@ -2769,6 +2769,44 @@
   color: var(--fg-tertiary);
 }
 
+.session-group-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.session-group-tab-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+}
+
+.session-group-tab:hover .session-group-tab-menu-btn,
+.session-group-tab-menu-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .session-group-tab--active .session-group-tab-count {
   background: rgba(139, 92, 246, 0.2);
   color: var(--accent);
