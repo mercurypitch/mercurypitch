@@ -2191,48 +2191,38 @@ input[type='range'] {
   padding: 0;
 }
 
-/* ── Focus mode: pill toggle buttons ──────────────────────────── */
+/* ── Focus mode: toggle buttons ──────────────────────────────── */
 
-.sm-focus-pill {
+.sm-focus-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 20px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
+  background: var(--bg-secondary);
+  color: var(--fg-secondary);
   cursor: pointer;
-  font-size: 0.65rem;
-  font-weight: 500;
-  font-family: inherit;
-  white-space: nowrap;
+  opacity: 0.8;
   transition:
+    opacity 0.15s,
     background 0.15s,
     color 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color 0.15s;
 }
 
-.sm-focus-pill:hover {
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-  background: var(--bg-secondary);
-}
-
-.sm-focus-pill--active {
+.sm-focus-toggle-btn:hover,
+.sm-focus-toggle-btn--active {
+  opacity: 1;
   color: var(--accent);
   border-color: var(--accent);
-  background: var(--accent-dim, rgba(139, 92, 246, 0.12));
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.15);
+  background: var(--accent-dim);
 }
 
-.sm-focus-pill--active:hover {
-  background: rgba(139, 92, 246, 0.18);
-}
-
-.sm-focus-pill svg {
-  flex-shrink: 0;
+.sm-focus-toggle-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .sm-focus-divider {
@@ -2247,23 +2237,23 @@ input[type='range'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
+  background: var(--bg-secondary);
+  color: var(--fg-tertiary);
   cursor: pointer;
   transition:
+    opacity 0.15s,
     background 0.15s,
     color 0.15s,
     border-color 0.15s;
 }
 
 .sm-focus-exit-btn:hover {
-  color: var(--error, #f85149);
-  border-color: var(--error, #f85149);
-  background: rgba(248, 81, 73, 0.1);
+  color: var(--error);
+  border-color: var(--error);
 }
 
 /* Transport at bottom center in focus mode */
