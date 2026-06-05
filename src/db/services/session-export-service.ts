@@ -220,10 +220,72 @@ export async function exportAllSessions(
 }
 
 /**
+ * Export all sessions belonging to a specific group as a ZIP file.
+ */
+export async function exportGroup(
+  groupId: string,
+  onProgress?: (pct: number) => void,
+): Promise<void> {
+  try {
+    const allSessions = getAllUvrSessions()
+    const sessions = allSessions.filter((s) => s.groupId === groupId)
+    if (sessions.length === 0) return
+
+    onProgress?.(0)
+    const prefix = `${groupId.substring(0, 8)}/`
+
+    let allZippable: fflate.Zippable = {}
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i]
+      const safeName = (
+        session.originalFile?.name ?? session.sessionId
+      ).replace(/[^a-z0-9_-]/gi, '_')
+      const dirPrefix = `${prefix}${safeName}_${session.sessionId.substring(0, 8)}/`
+      const sessionBase = (i / sessions.length) * 90
+      const sessionRange = 90 / sessions.length
+      const files = await prepareSessionFilesForZip(
+        session.sessionId,
+        dirPrefix,
+        onProgress
+          ? (subPct) => onProgress(sessionBase + (subPct / 100) * sessionRange)
+          : undefined,
+      )
+      allZippable = { ...allZippable, ...files }
+    }
+
+    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
+      fflate.zip(allZippable, { level: 6 }, (err, data) => {
+        if (err) reject(err)
+        else resolve(data)
+      })
+    })
+
+    onProgress?.(100)
+
+    const blob = new Blob([zipped.buffer as ArrayBuffer], {
+      type: 'application/zip',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `MercuryPitch_Group_${groupId.substring(0, 8)}.zip`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('[Export] Failed to export group:', err)
+    throw err
+  }
+}
+
+/**
  * Import sessions from a ZIP Blob.
+ * Optionally assign imported sessions to a group.
  * Returns the number of successfully imported sessions.
  */
-export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
+export async function importSessionsFromZip(
+  zipBlob: Blob,
+  targetGroupId?: string,
+): Promise<number> {
   try {
     const buffer = await zipBlob.arrayBuffer()
     const uint8 = new Uint8Array(buffer)
@@ -268,6 +330,7 @@ export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
           ...sessionData,
           sessionId: newSessionId,
           createdAt: Date.now(), // update timestamp to now
+          ...(targetGroupId !== undefined ? { groupId: targetGroupId } : {}),
         }
 
         // 1. Process original file

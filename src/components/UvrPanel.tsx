@@ -1057,7 +1057,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           if (gid == null) return
                           setIsExporting(true)
                           setExportProgress(0)
-                          void exportGroup(gid, (pct) =>
+                          void exportGroup(gid, (pct: number) =>
                             setExportProgress(pct),
                           ).finally(() => setIsExporting(false))
                         }}
