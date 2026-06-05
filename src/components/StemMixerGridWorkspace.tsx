@@ -28,6 +28,9 @@ interface StemMixerGridWorkspaceProps {
   setCanvasRef: (id: string) => (el: HTMLCanvasElement) => void
   handleWaveformClick: (e: MouseEvent) => void
   handleCanvasWheel: (e: WheelEvent) => void
+  handleOverviewPointerDown: (e: PointerEvent) => void
+  handleOverviewPointerMove: (e: PointerEvent) => void
+  handleOverviewPointerUp: (e: PointerEvent) => void
 
   // Audio
   setWindowDuration: Setter<number>
@@ -131,6 +134,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               class="sm-canvas sm-canvas-overview"
               data-canvas-id="overview"
               onClick={(e) => props.handleWaveformClick(e)}
+              onPointerDown={(e) => props.handleOverviewPointerDown(e)}
+              onPointerMove={(e) => props.handleOverviewPointerMove(e)}
+              onPointerUp={(e) => props.handleOverviewPointerUp(e)}
             />
             <div
               class="sm-resize-handle"

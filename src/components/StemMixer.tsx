@@ -374,7 +374,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Loop lyrics
     loopStartLyricIdx,
+    setLoopStartLyricIdx,
     loopEndLyricIdx,
+    setLoopEndLyricIdx,
     handleSetLoopLyric,
 
     // Helpers
@@ -596,6 +598,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     loopEnabled: audio.loopEnabled,
     loopStart: audio.loopStart,
     loopEnd: audio.loopEnd,
+    setLoopStart: audio.setLoopStart,
+    setLoopEnd: audio.setLoopEnd,
     onCanvasVerticalPinch: (canvasId: string, deltaY: number) => {
       if (layout.workspaceLayout() !== 'fixed-2col') return
       const cur = layout.fixedPanelHeights()
@@ -614,6 +618,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawLiveWaveform: canvas.drawLiveWaveform,
     drawPitchCanvas: canvas.drawPitchCanvas,
     drawMidiCanvas: canvas.drawMidiCanvas,
+    isUserPanning: canvas.isUserPanning,
   })
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
@@ -1100,8 +1105,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           playing={audio.playing}
           elapsed={audio.elapsed}
           duration={audio.duration}
-          windowDuration={audio.windowDuration}
-          setWindowDuration={audio.setWindowDuration}
           onStop={audio.handleStop}
           onRestart={audio.handleRestart}
           onPlay={audio.handlePlay}
@@ -1134,7 +1137,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             audio.setLoopEnd(audio.elapsed())
             audio.setLoopEnabled(true)
           }}
-          onClearLoop={() => audio.clearLoop()}
+          onClearLoop={() => {
+            audio.clearLoop()
+            setLoopStartLyricIdx(null)
+            setLoopEndLyricIdx(null)
+          }}
           onToggleLoop={() => audio.setLoopEnabled(!audio.loopEnabled())}
         />
 
@@ -1158,6 +1165,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setCanvasRef={canvas.setCanvasRef}
           handleWaveformClick={canvas.handleWaveformClick}
           handleCanvasWheel={canvas.handleCanvasWheel}
+          handleOverviewPointerDown={canvas.handleOverviewPointerDown}
+          handleOverviewPointerMove={canvas.handleOverviewPointerMove}
+          handleOverviewPointerUp={canvas.handleOverviewPointerUp}
           setWindowDuration={audio.setWindowDuration}
           stemControls={stemControls}
           lyricsPanel={lyricsPanel}
@@ -1201,6 +1211,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setCanvasRef={canvas.setCanvasRef}
           handleWaveformClick={canvas.handleWaveformClick}
           handleCanvasWheel={canvas.handleCanvasWheel}
+          handleOverviewPointerDown={canvas.handleOverviewPointerDown}
+          handleOverviewPointerMove={canvas.handleOverviewPointerMove}
+          handleOverviewPointerUp={canvas.handleOverviewPointerUp}
           stemControls={stemControls}
           lyricsPanel={lyricsPanel}
           handleForceSearch={() => void handleForceSearch()}

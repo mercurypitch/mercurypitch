@@ -6,23 +6,13 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
-import {
-  Loop,
-  Mic,
-  Minimize2,
-  Pause,
-  Play,
-  SkipBack,
-  SlidersHorizontal,
-} from './icons'
+import { Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
   playing: Accessor<boolean>
   elapsed: Accessor<number>
   duration: Accessor<number>
-  windowDuration: Accessor<number>
-  setWindowDuration: Setter<number>
   onStop: () => void
   onRestart: () => void
   onPlay: () => void
@@ -334,31 +324,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           <option value="2">2x</option>
         </select>
 
-        <Show when={!props.karaokeFocus()}>
-          <div class="sm-zoom-control">
-            <button
-              class="sm-zoom-btn"
-              onClick={() => {
-                props.setWindowDuration((prev) => Math.max(10, prev - 5))
-                props.onQueueRedraw()
-              }}
-              title="Zoom in (shorter window)"
-            >
-              −
-            </button>
-            <span class="sm-zoom-value">{Math.round(props.windowDuration())}s</span>
-            <button
-              class="sm-zoom-btn"
-              onClick={() => {
-                props.setWindowDuration((prev) => Math.min(150, prev + 5))
-                props.onQueueRedraw()
-              }}
-              title="Zoom out (longer window)"
-            >
-              +
-            </button>
-          </div>
-        </Show>
+
 
         {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}
         <Show when={props.workspaceLayout() === 'fixed-2col'}>
