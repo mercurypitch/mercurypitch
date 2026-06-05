@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
-import { FileText, Mic, Minimize2, MusicBoard, Pause, Play, SkipBack, SlidersHorizontal, WaveformBars, } from './icons'
+import { Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
@@ -164,28 +164,64 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         <Show when={props.karaokeFocus()}>
           <div class="sm-focus-divider" />
           <button
-            class={`sm-focus-pill${props.showWaveform() ? ' sm-focus-pill--active' : ''}`}
+            class="sm-focus-toggle-btn"
+            classList={{ 'sm-focus-toggle-btn--active': props.showWaveform() }}
             onClick={() => props.setShowWaveform((p) => !p)}
             title={props.showWaveform() ? 'Hide waveform' : 'Show waveform'}
           >
-            <WaveformBars size={13} />
-            <span>Wave</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 9h2v6H3zM7 6h2v12H7zM11 12h2v3h-2zM15 9h2v6h-2zM19 7h2v10h-2z" />
+            </svg>
           </button>
           <button
-            class={`sm-focus-pill${props.showPitch() ? ' sm-focus-pill--active' : ''}`}
+            class="sm-focus-toggle-btn"
+            classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
             onClick={() => props.setShowPitch((p) => !p)}
             title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
           >
-            <MusicBoard size={13} />
-            <span>Pitch</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
+            </svg>
           </button>
           <button
-            class={`sm-focus-pill${props.showLyrics() ? ' sm-focus-pill--active' : ''}`}
+            class="sm-focus-toggle-btn"
+            classList={{ 'sm-focus-toggle-btn--active': props.showLyrics() }}
             onClick={() => props.setShowLyrics((p) => !p)}
             title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
           >
-            <FileText size={13} />
-            <span>Lyrics</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
           </button>
         </Show>
 
