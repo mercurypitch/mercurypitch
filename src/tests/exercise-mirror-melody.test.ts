@@ -52,10 +52,14 @@ describe('useMirrorMelodyController', () => {
   })
 
   it('setMelody initializes melody state', () => {
-    const targetCalls: number[] = []
+    const targetCalls: Array<number | null> = []
     const metricsCalls: Array<Record<string, number>> = []
     const base = createMockBase({
-      _setTargetPitch: (midi) => targetCalls.push(midi),
+      _setTargetPitch: (midi) => {
+        const val = typeof midi === 'function' ? midi(null) : midi
+        targetCalls.push(val)
+        return val
+      },
       _updateMetrics: (m) => metricsCalls.push(m),
     })
     const audioEngine = { playTone: async () => {} }

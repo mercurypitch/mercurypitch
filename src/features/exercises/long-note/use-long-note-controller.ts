@@ -130,7 +130,9 @@ export function useLongNoteController(base: BaseExerciseController) {
     ).length
     const steadyPct = (steadyCount / deviations.length) * 100
 
-    // Volume consistency requires RMS data from the audio engine
+    // TODO: Volume consistency requires RMS/amplitude data from the audio engine.
+    // Currently the pitch detection pipeline doesn't expose per-sample volume.
+    // Once audioEngine.pitchHistory includes amplitude, compute std-dev of RMS here.
     const volumeConsistency = 0
 
     // Scoring

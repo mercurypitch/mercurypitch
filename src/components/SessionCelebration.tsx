@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 
 export interface CelebrationData {
   score: number

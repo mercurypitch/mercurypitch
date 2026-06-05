@@ -80,6 +80,27 @@ export async function getStemBlob(
   }
 }
 
+export async function getStemBlob(
+  sessionId: string,
+  stemType: 'vocal' | 'instrumental' | 'original',
+): Promise<Blob | null> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const results = await repo.findAll({
+      where: { sessionId, stemType },
+      orderBy: 'createdAt',
+      orderDir: 'desc',
+      limit: 1,
+    })
+    if (results.length === 0) return null
+    const entry = results[0]
+    return new Blob([entry.data], { type: entry.mimeType })
+  } catch {
+    return null
+  }
+}
+
 export async function getOriginalFileBlob(
   sessionId: string,
 ): Promise<File | null> {

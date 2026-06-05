@@ -585,6 +585,15 @@ export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
   )
 }
 
+/** Import a UVR session from JSON export without duplicating */
+export function importUvrSession(session: UvrSession): void {
+  const currentSessions = getAllUvrSessions()
+  const exists = currentSessions.some((s) => s.sessionId === session.sessionId)
+  if (!exists) {
+    saveAllUvrSessions([session, ...currentSessions])
+  }
+}
+
 /** Get all sessions (synchronous read from in-memory cache) */
 export function getAllUvrSessions(): UvrSession[] {
   return _sessionsCache()

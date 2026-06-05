@@ -229,6 +229,15 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   onCleanup(() => {
     running = false
     cancelAnimationFrame(animId)
+    // Dispose controller timers (setInterval, rAF loops) to prevent leaks
+    for (const fn of disposeFns) {
+      try {
+        fn()
+      } catch {
+        /* ignore */
+      }
+    }
+    disposeFns = []
     practiceEngine.stopMic()
   })
 

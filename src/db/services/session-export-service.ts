@@ -8,7 +8,7 @@ import { loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/w
 import { IS_DEV } from '@/lib/defaults'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import type { UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, getAllUvrSessions, getGroups, getUvrSession, importUvrSession, } from '@/stores/app-store'
+import { getAllUvrSessions, getUvrSession, importUvrSession, } from '@/stores/app-store'
 
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
@@ -19,7 +19,7 @@ interface ExportPayload {
   pitchAnalysis?: SessionPitchData | null
 }
 
-/** Backward-compatible import type */
+/** Backward-compatible import type (old exports may include `outputs`) */
 interface ImportPayload {
   version: 1
   session: UvrSession
@@ -220,82 +220,10 @@ export async function exportAllSessions(
 }
 
 /**
- * Export all sessions belonging to a specific group as a single ZIP file.
- */
-export async function exportGroup(
-  groupId: string,
-  onProgress?: (progress: number) => void,
-): Promise<void> {
-  try {
-    const groups = getGroups()
-    const group = groups.find((g) => g.id === groupId)
-    if (!group || group.sessionIds.length === 0) return
-
-    const sessions = getAllUvrSessions().filter((s) =>
-      group.sessionIds.includes(s.sessionId),
-    )
-    if (sessions.length === 0) return
-
-    let allZippable: fflate.Zippable = {}
-    for (let i = 0; i < sessions.length; i++) {
-      const session = sessions[i]
-      const safeName = (
-        session.originalFile?.name ?? session.sessionId
-      ).replace(/[^a-z0-9_-]/gi, '_')
-      const prefix = `${safeName}_${session.sessionId.substring(0, 8)}/`
-
-      const sessionBase = (i / sessions.length) * 90
-      const sessionRange = 90 / sessions.length
-      const files = await prepareSessionFilesForZip(
-        session.sessionId,
-        prefix,
-        onProgress
-          ? (subPct) => {
-              onProgress(
-                Math.floor(sessionBase + (subPct / 100) * sessionRange),
-              )
-            }
-          : undefined,
-      )
-      allZippable = { ...allZippable, ...files }
-    }
-
-    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
-      fflate.zip(allZippable, { level: 6 }, (err, data) => {
-        if (err) reject(err)
-        else resolve(data)
-      })
-    })
-
-    if (onProgress) onProgress(100)
-
-    const safeGroupName = group.name.replace(/[^a-z0-9_-]/gi, '_')
-    const blob = new Blob([zipped.buffer as ArrayBuffer], {
-      type: 'application/zip',
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `MercuryPitch_Group_${safeGroupName}.zip`
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error('[Export] Failed to export group:', err)
-    throw err
-  }
-}
-
-/**
  * Import sessions from a ZIP Blob.
- *
- * @param zipBlob - The ZIP file to import.
- * @param targetGroupId - Optional group ID to assign all imported sessions to.
- * @returns The number of successfully imported sessions.
+ * Returns the number of successfully imported sessions.
  */
-export async function importSessionsFromZip(
-  zipBlob: Blob,
-  targetGroupId?: string,
-): Promise<number> {
+export async function importSessionsFromZip(zipBlob: Blob): Promise<number> {
   try {
     const buffer = await zipBlob.arrayBuffer()
     const uint8 = new Uint8Array(buffer)
@@ -407,12 +335,6 @@ export async function importSessionsFromZip(
 
         // 6. Save session to app-store
         importUvrSession(newSession)
-
-        // 7. Handle group assignment
-        if (targetGroupId != null) {
-          // User explicitly chose a target group — use it
-          await addSessionToGroup(newSessionId, targetGroupId)
-        }
         importedCount++
       } catch (err) {
         if (IS_DEV)

@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createMemo } from 'solid-js'
+import { createMemo, For } from 'solid-js'
 import { sessionResults } from '@/stores'
 
 interface StreakCalendarProps {
