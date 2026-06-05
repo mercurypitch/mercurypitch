@@ -160,43 +160,70 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           </div>
         </Show>
 
-        <Show when={!props.karaokeFocus()}>
+        {/* ── Focus mode: panel visibility toggles ───────── */}
+        <Show when={props.karaokeFocus()}>
+          <div class="sm-focus-divider" />
           <button
-            class={`sm-mic-toggle-btn${props.micActive() ? ' sm-mic-toggle-btn--active' : ''}${props.micError() ? ' sm-mic-toggle-btn--error' : ''}`}
-            onClick={() => {
-              void props.onToggleMic()
-            }}
-            title={
-              props.micError()
-                ? props.micError()
-                : props.micActive()
-                  ? 'Disable microphone'
-                  : 'Enable microphone pitch comparison'
-            }
-            disabled={!!props.micError()}
+            class={`sm-focus-pill${props.showWaveform() ? ' sm-focus-pill--active' : ''}`}
+            onClick={() => props.setShowWaveform((p) => !p)}
+            title={props.showWaveform() ? 'Hide waveform' : 'Show waveform'}
           >
-            <Mic />
+            <WaveformBars size={13} />
+            <span>Wave</span>
+          </button>
+          <button
+            class={`sm-focus-pill${props.showPitch() ? ' sm-focus-pill--active' : ''}`}
+            onClick={() => props.setShowPitch((p) => !p)}
+            title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
+          >
+            <MusicBoard size={13} />
+            <span>Pitch</span>
+          </button>
+          <button
+            class={`sm-focus-pill${props.showLyrics() ? ' sm-focus-pill--active' : ''}`}
+            onClick={() => props.setShowLyrics((p) => !p)}
+            title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
+          >
+            <FileText size={13} />
+            <span>Lyrics</span>
           </button>
         </Show>
 
-        <Show when={!props.karaokeFocus()}>
-          <select
-            class="sm-speed-select"
-            value={props.speed().toString()}
-            onChange={(e) => {
-              props.onSpeedChange(parseFloat(e.currentTarget.value))
-            }}
-            title="Playback speed"
-          >
-            <option value="0.5">0.5x</option>
-            <option value="0.75">0.75x</option>
-            <option value="1">1x</option>
-            <option value="1.2">1.2x</option>
-            <option value="1.5">1.5x</option>
-            <option value="1.75">1.75x</option>
-            <option value="2">2x</option>
-          </select>
-        </Show>
+        {/* ── Mic toggle (always visible) ────────────────── */}
+        <button
+          class={`sm-mic-toggle-btn${props.micActive() ? ' sm-mic-toggle-btn--active' : ''}${props.micError() ? ' sm-mic-toggle-btn--error' : ''}`}
+          onClick={() => {
+            void props.onToggleMic()
+          }}
+          title={
+            props.micError()
+              ? props.micError()
+              : props.micActive()
+                ? 'Disable microphone'
+                : 'Enable microphone pitch comparison'
+          }
+          disabled={!!props.micError()}
+        >
+          <Mic />
+        </button>
+
+        {/* ── Speed selector (always visible) ──────────── */}
+        <select
+          class="sm-speed-select"
+          value={props.speed().toString()}
+          onChange={(e) => {
+            props.onSpeedChange(parseFloat(e.currentTarget.value))
+          }}
+          title="Playback speed"
+        >
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1">1x</option>
+          <option value="1.2">1.2x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+        </select>
 
         <Show when={!props.karaokeFocus()}>
           <div class="sm-zoom-control">
@@ -224,11 +251,8 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           </div>
         </Show>
 
-        <Show
-          when={
-            !props.karaokeFocus() && props.workspaceLayout() === 'fixed-2col'
-          }
-        >
+        {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}
+        <Show when={props.workspaceLayout() === 'fixed-2col'}>
           <button
             class="sm-sidebar-toggle"
             classList={{
@@ -245,28 +269,9 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           </button>
         </Show>
 
+        {/* ── Focus mode: exit button ───────────────────── */}
         <Show when={props.karaokeFocus()}>
-          <button
-            class={`sm-focus-toggle-btn${props.showWaveform() ? ' sm-focus-toggle-btn--active' : ''}`}
-            onClick={() => props.setShowWaveform((p) => !p)}
-            title={props.showWaveform() ? 'Hide waveform' : 'Show waveform'}
-          >
-            <WaveformBars size={14} />
-          </button>
-          <button
-            class={`sm-focus-toggle-btn${props.showPitch() ? ' sm-focus-toggle-btn--active' : ''}`}
-            onClick={() => props.setShowPitch((p) => !p)}
-            title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
-          >
-            <MusicBoard size={14} />
-          </button>
-          <button
-            class={`sm-focus-toggle-btn${props.showLyrics() ? ' sm-focus-toggle-btn--active' : ''}`}
-            onClick={() => props.setShowLyrics((p) => !p)}
-            title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
-          >
-            <FileText size={14} />
-          </button>
+          <div class="sm-focus-divider" />
           <button
             class="sm-focus-exit-btn"
             onClick={() => props.setKaraokeFocus(false)}
@@ -278,9 +283,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       </div>
 
       <div class="sm-progress-area">
-        <Show when={!props.karaokeFocus()}>
-          <span class="sm-time">{props.formatTime(props.elapsed())}</span>
-        </Show>
+        <span class="sm-time">{props.formatTime(props.elapsed())}</span>
         <div class="sm-progress-bar" onClick={(e) => props.onSeek(e)}>
           <div
             class="sm-progress-fill"
@@ -289,9 +292,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             }}
           />
         </div>
-        <Show when={!props.karaokeFocus()}>
-          <span class="sm-time">{props.formatTime(props.duration())}</span>
-        </Show>
+        <span class="sm-time">{props.formatTime(props.duration())}</span>
       </div>
     </div>
   )

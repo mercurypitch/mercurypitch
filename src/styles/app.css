@@ -2191,53 +2191,79 @@ input[type='range'] {
   padding: 0;
 }
 
-.sm-focus-toggle-btn {
+/* ── Focus mode: pill toggle buttons ──────────────────────────── */
+
+.sm-focus-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
   border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--fg-secondary);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
   cursor: pointer;
-  opacity: 0.8;
+  font-size: 0.65rem;
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
   transition:
-    opacity 0.15s,
     background 0.15s,
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
-.sm-focus-toggle-btn:hover,
-.sm-focus-toggle-btn--active {
-  opacity: 1;
+
+.sm-focus-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+
+.sm-focus-pill--active {
   color: var(--accent);
   border-color: var(--accent);
-  background: var(--accent-dim);
+  background: var(--accent-dim, rgba(139, 92, 246, 0.12));
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.15);
+}
+
+.sm-focus-pill--active:hover {
+  background: rgba(139, 92, 246, 0.18);
+}
+
+.sm-focus-pill svg {
+  flex-shrink: 0;
+}
+
+.sm-focus-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .sm-focus-exit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--fg-tertiary);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
   cursor: pointer;
-  margin-left: 4px;
   transition:
-    opacity 0.15s,
     background 0.15s,
     color 0.15s,
     border-color 0.15s;
 }
+
 .sm-focus-exit-btn:hover {
-  color: var(--error);
-  border-color: var(--error);
+  color: var(--error, #f85149);
+  border-color: var(--error, #f85149);
+  background: rgba(248, 81, 73, 0.1);
 }
 
 /* Transport at bottom center in focus mode */
@@ -2246,12 +2272,17 @@ input[type='range'] {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-secondary);
+  background: rgba(22, 27, 34, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 24px;
   padding: 8px 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   z-index: 401;
+  max-width: calc(100vw - 40px);
 }
 
 /* ========================================================================= */
