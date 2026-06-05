@@ -2233,6 +2233,12 @@ input[type='range'] {
   flex-shrink: 0;
 }
 
+.sm-transport--vertical .sm-focus-divider {
+  width: 20px;
+  height: 1px;
+  margin: 4px 0;
+}
+
 .sm-focus-exit-btn {
   display: inline-flex;
   align-items: center;
@@ -2256,23 +2262,60 @@ input[type='range'] {
   border-color: var(--error);
 }
 
-/* Transport at bottom center in focus mode */
+/* Transport floating pill styles in focus mode */
 .stem-mixer--focus .sm-transport {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  zoom: 0.82;
   background: rgba(22, 27, 34, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 8px 16px;
   box-shadow:
     0 4px 24px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   z-index: 401;
+}
+
+/* Bottom Center Dock (Default) */
+.stem-mixer--focus-docked-bottom .sm-transport {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 24px;
+  padding: 8px 16px;
   max-width: calc(100vw - 40px);
+}
+
+/* Left Center Dock */
+.stem-mixer--focus-docked-left .sm-transport {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 24px;
+  padding: 16px 8px;
+  max-height: calc(100vh - 40px);
+}
+
+/* Right Center Dock */
+.stem-mixer--focus-docked-right .sm-transport {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 24px;
+  padding: 16px 8px;
+  max-height: calc(100vh - 40px);
+}
+
+/* Top Header Dock */
+.stem-mixer--focus-docked-top .sm-transport {
+  position: relative; /* Not absolute, pushes content down */
+  width: 100%;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  padding: 12px 24px;
 }
 
 /* ========================================================================= */
