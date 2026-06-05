@@ -177,9 +177,12 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              stroke-linejoin="round"
             >
-              <path d="M3 9h2v6H3zM7 6h2v12H7zM11 12h2v3h-2zM15 9h2v6h-2zM19 7h2v10h-2z" />
+              <line x1="4" y1="8" x2="4" y2="16" />
+              <line x1="8" y1="4" x2="8" y2="20" />
+              <line x1="12" y1="10" x2="12" y2="14" />
+              <line x1="16" y1="6" x2="16" y2="18" />
+              <line x1="20" y1="9" x2="20" y2="15" />
             </svg>
           </button>
           <button
