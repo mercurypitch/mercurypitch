@@ -1105,6 +1105,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             workspaceRef = el
           }}
           onWorkspaceWheel={onWorkspaceWheel}
+          showWaveform={showWaveform}
+          showPitch={showPitch}
+          showLyrics={showLyrics}
         />
         <StemMixerFixedWorkspace
           workspaceLayout={layout.workspaceLayout}
@@ -1140,6 +1143,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           startWhisperTranscription={startWhisperTranscription}
           whisperLanguage={whisperLanguage}
           setWhisperLanguage={setWhisperLanguage}
+          showWaveform={showWaveform}
+          showPitch={showPitch}
+          showLyrics={showLyrics}
         />
       </Show>
 
