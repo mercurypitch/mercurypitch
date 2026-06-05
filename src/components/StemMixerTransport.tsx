@@ -80,8 +80,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           {props.playing() ? <Pause /> : <Play />}
         </button>
 
-        <Show when={!props.karaokeFocus()}>
-          <div class="sm-col-toggle">
+        <div class="sm-col-toggle">
             <button
               class={`sm-col-btn${props.workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
               onClick={() => {
@@ -157,8 +156,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 />
               </svg>
             </button>
-          </div>
-        </Show>
+        </div>
 
         {/* ── Focus mode: panel visibility toggles ───────── */}
         <Show when={props.karaokeFocus()}>
