@@ -81,81 +81,81 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         </button>
 
         <div class="sm-col-toggle">
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('auto-1col')
-                props.onQueueRedraw()
-              }}
-              title="Single column"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('auto-2col')
-                props.onQueueRedraw()
-              }}
-              title="Two columns auto"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="3"
-                  y="4"
-                  width="8"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="13"
-                  y="4"
-                  width="8"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('fixed-2col')
-                props.onQueueRedraw()
-              }}
-              title="Two columns fixed"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="2"
-                  y="3"
-                  width="8"
-                  height="18"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="12"
-                  y="3"
-                  width="10"
-                  height="18"
-                  rx="1"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-            </button>
+          <button
+            class={`sm-col-btn${props.workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
+            onClick={() => {
+              props.setWorkspaceLayout('auto-1col')
+              props.onQueueRedraw()
+            }}
+            title="Single column"
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12">
+              <rect
+                x="4"
+                y="4"
+                width="16"
+                height="16"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <button
+            class={`sm-col-btn${props.workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
+            onClick={() => {
+              props.setWorkspaceLayout('auto-2col')
+              props.onQueueRedraw()
+            }}
+            title="Two columns auto"
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12">
+              <rect
+                x="3"
+                y="4"
+                width="8"
+                height="16"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="13"
+                y="4"
+                width="8"
+                height="16"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <button
+            class={`sm-col-btn${props.workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
+            onClick={() => {
+              props.setWorkspaceLayout('fixed-2col')
+              props.onQueueRedraw()
+            }}
+            title="Two columns fixed"
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12">
+              <rect
+                x="2"
+                y="3"
+                width="8"
+                height="18"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="12"
+                y="3"
+                width="10"
+                height="18"
+                rx="1"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         {/* ── Focus mode: panel visibility toggles ───────── */}
