@@ -42,6 +42,8 @@ export interface StemMixerCanvasDeps {
   loopEnabled: Accessor<boolean>
   loopStart: Accessor<number>
   loopEnd: Accessor<number>
+  setLoopStart: Setter<number>
+  setLoopEnd: Setter<number>
   // Touch callbacks
   onCanvasVerticalPinch?: (canvasId: string, deltaY: number) => void
 }
@@ -61,6 +63,10 @@ export interface StemMixerCanvasController {
   handleCanvasTouchStart: (e: TouchEvent) => void
   handleCanvasTouchMove: (e: TouchEvent) => void
   handleCanvasTouchEnd: (e: TouchEvent) => void
+  handleOverviewPointerDown: (e: PointerEvent) => void
+  handleOverviewPointerMove: (e: PointerEvent) => void
+  handleOverviewPointerUp: (e: PointerEvent) => void
+  isUserPanning: () => boolean
   initObserver: () => ResizeObserver
   reconnectObserver: () => void
   disconnectObserver: () => void
@@ -237,12 +243,27 @@ export const useStemMixerCanvasController = (
       const elapsed = deps.elapsed()
       if (elapsed >= winStart && elapsed <= winEnd) {
         const px = ((elapsed - winStart) / deps.windowDuration()) * w
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-        ctx.lineWidth = 1
+        // Glow effect
+        ctx.save()
+        ctx.shadowColor = 'rgba(56, 189, 248, 0.6)'
+        ctx.shadowBlur = 6
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)'
+        ctx.lineWidth = 1.5
         ctx.beginPath()
         ctx.moveTo(px, yOff)
         ctx.lineTo(px, yOff + trackHeight)
         ctx.stroke()
+        ctx.restore()
+        // Triangle head (drawn once on first track)
+        if (ti === 0) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.95)'
+          ctx.beginPath()
+          ctx.moveTo(px - 4, 0)
+          ctx.lineTo(px + 4, 0)
+          ctx.lineTo(px, 7)
+          ctx.closePath()
+          ctx.fill()
+        }
       }
 
       // Loop region overlay (only draw on first track to avoid double-rendering)
@@ -277,7 +298,7 @@ export const useStemMixerCanvasController = (
               ctx.stroke()
               ctx.fillStyle = 'rgba(88, 166, 255, 0.9)'
               ctx.font = 'bold 10px monospace'
-              ctx.fillText('B', clipX2 - 16, 12)
+              ctx.fillText('B', clipX2 - 10, 12)
             }
           }
         }
@@ -756,22 +777,117 @@ export const useStemMixerCanvasController = (
     requestAnimationFrame(redrawAll)
   }
 
+  // ── Loop marker drag state (mutable refs — no rendering) ─────
+
+  const LOOP_HIT_PX = 8 // pixel tolerance for hit-testing markers
+  const LOOP_MIN_GAP = 0.5 // minimum seconds between A and B
+  let loopDragTarget: 'A' | 'B' | null = null
+  let loopDragDidMove = false
+
+  /** Convert clientX on the overview canvas to a time value. */
+  const clientXToTime = (
+    clientX: number,
+    canvas: HTMLCanvasElement,
+  ): number => {
+    const rect = canvas.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return deps.windowStart() + ratio * deps.windowDuration()
+  }
+
+  /** Hit-test: is clientX within LOOP_HIT_PX of the A or B marker? */
+  const getLoopMarkerAtX = (
+    clientX: number,
+    canvas: HTMLCanvasElement,
+  ): 'A' | 'B' | null => {
+    if (deps.loopEnd() <= 0) return null
+    const rect = canvas.getBoundingClientRect()
+    const winStart = deps.windowStart()
+    const winDur = deps.windowDuration()
+    const w = rect.width
+
+    const axPx = ((deps.loopStart() - winStart) / winDur) * w + rect.left
+    const bxPx = ((deps.loopEnd() - winStart) / winDur) * w + rect.left
+
+    // Prefer whichever is closer if both are within tolerance
+    const distA = Math.abs(clientX - axPx)
+    const distB = Math.abs(clientX - bxPx)
+
+    if (distA <= LOOP_HIT_PX && distA <= distB) return 'A'
+    if (distB <= LOOP_HIT_PX) return 'B'
+    return null
+  }
+
+  const handleOverviewPointerDown = (e: PointerEvent) => {
+    const canvas = canvasRefs.overview
+    if (!canvas || !deps.duration() || !deps.loopEnabled()) return
+    const hit = getLoopMarkerAtX(e.clientX, canvas)
+    if (!hit) return
+    e.preventDefault()
+    e.stopPropagation()
+    loopDragTarget = hit
+    loopDragDidMove = false
+    canvas.setPointerCapture(e.pointerId)
+  }
+
+  const handleOverviewPointerMove = (e: PointerEvent) => {
+    const canvas = canvasRefs.overview
+    if (!canvas) return
+
+    if (loopDragTarget) {
+      // Active drag — update loop boundary
+      e.preventDefault()
+      loopDragDidMove = true
+      const time = clientXToTime(e.clientX, canvas)
+      const clamped = Math.max(0, Math.min(deps.duration(), time))
+
+      if (loopDragTarget === 'A') {
+        deps.setLoopStart(Math.min(clamped, deps.loopEnd() - LOOP_MIN_GAP))
+      } else {
+        deps.setLoopEnd(Math.max(clamped, deps.loopStart() + LOOP_MIN_GAP))
+      }
+      redrawAll()
+    } else {
+      // Hover — update cursor
+      if (deps.loopEnabled() && deps.loopEnd() > 0) {
+        const hit = getLoopMarkerAtX(e.clientX, canvas)
+        canvas.style.cursor = hit ? 'ew-resize' : 'pointer'
+      }
+    }
+  }
+
+  const handleOverviewPointerUp = (e: PointerEvent) => {
+    const canvas = canvasRefs.overview
+    if (loopDragTarget && canvas) {
+      canvas.releasePointerCapture(e.pointerId)
+    }
+    loopDragTarget = null
+  }
+
   // ── Interaction handlers ──────────────────────────────────────
 
   const handleWaveformClick = (e: MouseEvent) => {
+    // Skip seek if we just finished a loop marker drag
+    if (loopDragDidMove) {
+      loopDragDidMove = false
+      return
+    }
     const canvas = canvasRefs.overview
     if (!canvas || !deps.duration()) return
     const rect = canvas.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     const winStart = deps.windowStart()
+    const winEnd = winStart + deps.windowDuration()
     const newTime = winStart + ratio * deps.windowDuration()
     deps.seekTo(newTime)
-    deps.setWindowStart(
-      Math.max(
-        0,
-        newTime - deps.windowDuration() * deps.PITCH_WINDOW_FILL_RATIO,
-      ),
-    )
+    // Only re-center the view if the click landed outside the visible window
+    if (newTime < winStart || newTime > winEnd) {
+      deps.setWindowStart(
+        Math.max(
+          0,
+          newTime - deps.windowDuration() * deps.PITCH_WINDOW_FILL_RATIO,
+        ),
+      )
+    }
   }
 
   const handleCanvasWheel = (e: WheelEvent) => {
@@ -809,6 +925,7 @@ export const useStemMixerCanvasController = (
   let pinchStartDistance = 0
   let pinchStartWindowStart = 0
   let pinchStartWindowDuration = 0
+  let userPanning = false
 
   const getTouchDistance = (t1: ActiveTouch, t2: ActiveTouch): number =>
     Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
@@ -827,6 +944,7 @@ export const useStemMixerCanvasController = (
         })
       }
     }
+    userPanning = true
     // Capture initial pinch state
     if (activeTouches.length >= 2) {
       pinchStartDistance = getTouchDistance(activeTouches[0], activeTouches[1])
@@ -854,7 +972,7 @@ export const useStemMixerCanvasController = (
       const rect = canvas.getBoundingClientRect()
       const deltaX = touch.startX - touch.clientX
       const pxPerSec = rect.width / deps.windowDuration()
-      const deltaTime = (deltaX / pxPerSec) * 0.3
+      const deltaTime = (deltaX / pxPerSec) * 0.6
       const newStart = Math.max(
         0,
         Math.min(
@@ -893,7 +1011,7 @@ export const useStemMixerCanvasController = (
       } else if (pinchStartDistance > 0) {
         // Horizontal pinch — zoom (dampened for smooth scaling)
         const ratio = curDist / pinchStartDistance
-        const dampenedRatio = 1 + (ratio - 1) * 0.15
+        const dampenedRatio = 1 + (ratio - 1) * 0.35
         const newDuration = Math.max(
           10,
           Math.min(150, pinchStartWindowDuration / dampenedRatio),
@@ -943,6 +1061,7 @@ export const useStemMixerCanvasController = (
       pinchStartWindowDuration = deps.windowDuration()
     } else {
       pinchStartDistance = 0
+      userPanning = false
     }
   }
 
@@ -1002,6 +1121,10 @@ export const useStemMixerCanvasController = (
     handleCanvasTouchStart,
     handleCanvasTouchMove,
     handleCanvasTouchEnd,
+    handleOverviewPointerDown,
+    handleOverviewPointerMove,
+    handleOverviewPointerUp,
+    isUserPanning: () => userPanning,
     initObserver,
     reconnectObserver,
     disconnectObserver,

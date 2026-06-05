@@ -48,6 +48,7 @@ interface CanvasView {
   drawLiveWaveform: () => void
   drawPitchCanvas: () => void
   drawMidiCanvas: () => void
+  isUserPanning?: () => boolean
 }
 
 export interface StemMixerAudioDeps {
@@ -196,6 +197,10 @@ export const useStemMixerAudioController = (
   const [loopStart, setLoopStart] = createSignal(0)
   const [loopEnd, setLoopEnd] = createSignal(0)
   const [loopCount, setLoopCount] = createSignal(0)
+
+  // When the user manually seeks outside the loop region, we stop
+  // enforcing the loop boundary until playback re-enters A–B.
+  let seekedOutsideLoop = false
 
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -578,6 +583,16 @@ export const useStemMixerAudioController = (
   const seekTo = (time: number) => {
     pauseOffset = Math.min(time, duration())
     setElapsed(pauseOffset)
+
+    // Track whether this seek lands outside the active loop region
+    if (
+      loopEnabled() &&
+      loopEnd() > 0 &&
+      (pauseOffset < loopStart() || pauseOffset > loopEnd())
+    ) {
+      seekedOutsideLoop = true
+    }
+
     if (playing()) {
       disconnectSources()
       createSources(pauseOffset)
@@ -666,10 +681,12 @@ export const useStemMixerAudioController = (
         }
       }
 
-      // Continuous-scroll time window
-      const newStart =
-        elapsedTime - deps.PITCH_WINDOW_FILL_RATIO * windowDuration()
-      setWindowStart(Math.max(0, newStart))
+      // Continuous-scroll time window (skip while user is touch-panning)
+      if (!deps.canvas.isUserPanning?.()) {
+        const newStart =
+          elapsedTime - deps.PITCH_WINDOW_FILL_RATIO * windowDuration()
+        setWindowStart(Math.max(0, newStart))
+      }
 
       const { canvas } = deps
       canvas.syncCanvasSizes()
@@ -680,15 +697,29 @@ export const useStemMixerAudioController = (
       deps.updateCurrentLine()
 
       const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
+
+      // If playback re-entered the loop region, clear the escape flag
+      if (
+        seekedOutsideLoop &&
+        loopEnabled() &&
+        elapsedTime >= loopStart() &&
+        elapsedTime < loopEnd()
+      ) {
+        seekedOutsideLoop = false
+      }
+
       if (elapsedTime >= endTime) {
-        if (loopEnabled()) {
+        if (loopEnabled() && !seekedOutsideLoop) {
           setLoopCount(loopCount() + 1)
           seekTo(loopStart())
           rafId = requestAnimationFrame(tick)
           return
         }
-        handleStop()
-        return
+        // Outside loop or loop disabled — stop at end of track
+        if (elapsedTime >= duration()) {
+          handleStop()
+          return
+        }
       }
 
       rafId = requestAnimationFrame(tick)
