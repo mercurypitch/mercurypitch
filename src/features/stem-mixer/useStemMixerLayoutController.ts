@@ -75,7 +75,7 @@ const WORKSPACE_STORE_KEY = 'pitchperfect_workspace_prefs'
 const defaultPanels: WorkspacePanel[] = [
   { id: 'overview', label: 'Waveform Overview', order: 0, height: 180 },
   { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
-  { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
+  { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 450 },
   { id: 'midi', label: 'MIDI Melody', order: 3, height: 200 },
   { id: 'controls', label: 'Stem Controls', order: 4, height: null },
   { id: 'lyrics', label: 'Lyrics', order: 5, height: null },
@@ -109,7 +109,7 @@ export const useStemMixerLayoutController = (
   >({
     overview: savedPrefs?.heights?.overview ?? 180,
     live: savedPrefs?.heights?.live ?? 180,
-    pitch: savedPrefs?.heights?.pitch ?? 260,
+    pitch: savedPrefs?.heights?.pitch ?? 450,
     midi: savedPrefs?.heights?.midi ?? 200,
   })
   const [panels, setPanels] = createSignal<WorkspacePanel[]>(defaultPanels)
