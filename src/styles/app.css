@@ -2191,16 +2191,6 @@ input[type='range'] {
   padding: 0;
 }
 
-/* Floating toggle toolbar */
-.sm-focus-toolbar {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  display: flex;
-  gap: 8px;
-  z-index: 401;
-}
-
 .sm-focus-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -2228,11 +2218,26 @@ input[type='range'] {
 }
 
 .sm-focus-exit-btn {
-  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
   color: var(--fg-tertiary);
+  cursor: pointer;
+  margin-left: 4px;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 .sm-focus-exit-btn:hover {
   color: var(--error);
+  border-color: var(--error);
 }
 
 /* Transport at bottom center in focus mode */

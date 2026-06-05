@@ -17,6 +17,7 @@ import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, ru
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
+import { karaokeFocus } from '@/stores/ui-store'
 import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
@@ -833,139 +834,141 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
       >
         {/* Header */}
-        <div class="panel-header">
-          <div class="header-left">
-            <div
-              class="header-title-group"
-              style="display: flex; align-items: center; gap: 0.5rem;"
-            >
-              <h3>Shazam Sing</h3>
+        <Show when={!karaokeFocus()}>
+          <div class="panel-header">
+            <div class="header-left">
+              <div
+                class="header-title-group"
+                style="display: flex; align-items: center; gap: 0.5rem;"
+              >
+                <h3>Shazam Sing</h3>
+              </div>
+              <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
+                <button
+                  class="view-tab view-tab-sing"
+                  classList={{
+                    active: currentView() === 'shazam-listen',
+                  }}
+                  onClick={() => {
+                    setCurrentView('shazam-listen')
+                    props.onViewChange?.('shazam-listen')
+                    props.onSessionChange?.(null)
+                  }}
+                  data-testid="uvr-tab-sing"
+                >
+                  <SingMic />
+                  <span>Sing</span>
+                </button>
+                <button
+                  class="view-tab"
+                  classList={{
+                    active: currentView() === 'upload',
+                  }}
+                  onClick={() => {
+                    setCurrentView('upload')
+                    props.onViewChange?.('upload')
+                    props.onSessionChange?.(null)
+                  }}
+                  data-testid="uvr-tab-upload"
+                >
+                  <ImportFile />
+                  <span>Upload</span>
+                </button>
+              </div>
             </div>
-            <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
-              <button
-                class="view-tab view-tab-sing"
-                classList={{
-                  active: currentView() === 'shazam-listen',
-                }}
-                onClick={() => {
-                  setCurrentView('shazam-listen')
-                  props.onViewChange?.('shazam-listen')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-sing"
-              >
-                <SingMic />
-                <span>Sing</span>
-              </button>
-              <button
-                class="view-tab"
-                classList={{
-                  active: currentView() === 'upload',
-                }}
-                onClick={() => {
-                  setCurrentView('upload')
-                  props.onViewChange?.('upload')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-upload"
-              >
-                <ImportFile />
-                <span>Upload</span>
-              </button>
-            </div>
-          </div>
-          <div class="header-actions">
-            <div class="uvr-mode-toggle">
-              <button
-                class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                title="Processing: Server"
-                onClick={() =>
-                  showNotification(
-                    'Server-side processing not yet available.',
-                    'info',
-                  )
-                }
-              >
-                Server
-              </button>
-              <button
-                class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
-                title="Processing: Browser"
-                onClick={() => setUvrProcessingMode('local')}
-              >
-                Browser
-              </button>
-              <Show when={uvrProcessingMode() === 'local'}>
-                <div class="uvr-device-toggle">
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: !uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(false)}
-                    title="Use CPU (WASM) for vocal separation"
-                    data-testid="uvr-device-cpu"
-                  >
-                    <Cpu />
-                    <span>CPU</span>
-                  </button>
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(true)}
-                    title="Use GPU (WebGPU) for vocal separation"
-                    data-testid="uvr-device-gpu"
-                  >
-                    <Zap />
-                    <span>GPU</span>
-                  </button>
-                </div>
-              </Show>
-              <Show
-                when={
-                  uvrProcessingMode() === 'local' &&
-                  uvrModelStatus() !== 'ready'
-                }
-              >
-                <span
-                  class={`model-status-badge model-status-${uvrModelStatus()}`}
-                  title={
-                    uvrModelStatus() === 'error'
-                      ? uvrModelError()
-                      : uvrModelStatus() === 'loading'
-                        ? 'Loading ONNX model...'
-                        : ''
+            <div class="header-actions">
+              <div class="uvr-mode-toggle">
+                <button
+                  class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                  title="Processing: Server"
+                  onClick={() =>
+                    showNotification(
+                      'Server-side processing not yet available.',
+                      'info',
+                    )
                   }
                 >
-                  <Show when={uvrModelStatus() === 'loading'}>
-                    <span class="model-loading-dot" />
-                  </Show>
-                  <Show when={uvrModelStatus() === 'error'}>
-                    <span class="model-error-icon">!</span>
-                  </Show>
-                </span>
-              </Show>
-            </div>
-            <div class="uvr-view-tabs">
-              <button
-                class="view-tab"
-                classList={{ active: showGuide() }}
-                onClick={() => setShowGuide(!showGuide())}
-              >
-                <Music />
-                <span>Guide</span>
-              </button>
-              <button
-                class="view-tab"
-                classList={{ active: showSettings() }}
-                onClick={() => setShowSettings(!showSettings())}
-              >
-                <Settings />
-                <span>Settings</span>
-              </button>
+                  Server
+                </button>
+                <button
+                  class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+                  title="Processing: Browser"
+                  onClick={() => setUvrProcessingMode('local')}
+                >
+                  Browser
+                </button>
+                <Show when={uvrProcessingMode() === 'local'}>
+                  <div class="uvr-device-toggle">
+                    <button
+                      class="device-toggle-btn"
+                      classList={{ active: !uvrForceWebGpu() }}
+                      onClick={() => handleForceWebGpuToggle(false)}
+                      title="Use CPU (WASM) for vocal separation"
+                      data-testid="uvr-device-cpu"
+                    >
+                      <Cpu />
+                      <span>CPU</span>
+                    </button>
+                    <button
+                      class="device-toggle-btn"
+                      classList={{ active: uvrForceWebGpu() }}
+                      onClick={() => handleForceWebGpuToggle(true)}
+                      title="Use GPU (WebGPU) for vocal separation"
+                      data-testid="uvr-device-gpu"
+                    >
+                      <Zap />
+                      <span>GPU</span>
+                    </button>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    uvrProcessingMode() === 'local' &&
+                    uvrModelStatus() !== 'ready'
+                  }
+                >
+                  <span
+                    class={`model-status-badge model-status-${uvrModelStatus()}`}
+                    title={
+                      uvrModelStatus() === 'error'
+                        ? uvrModelError()
+                        : uvrModelStatus() === 'loading'
+                          ? 'Loading ONNX model...'
+                          : ''
+                    }
+                  >
+                    <Show when={uvrModelStatus() === 'loading'}>
+                      <span class="model-loading-dot" />
+                    </Show>
+                    <Show when={uvrModelStatus() === 'error'}>
+                      <span class="model-error-icon">!</span>
+                    </Show>
+                  </span>
+                </Show>
+              </div>
+              <div class="uvr-view-tabs">
+                <button
+                  class="view-tab"
+                  classList={{ active: showGuide() }}
+                  onClick={() => setShowGuide(!showGuide())}
+                >
+                  <Music />
+                  <span>Guide</span>
+                </button>
+                <button
+                  class="view-tab"
+                  classList={{ active: showSettings() }}
+                  onClick={() => setShowSettings(!showSettings())}
+                >
+                  <Settings />
+                  <span>Settings</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <FancyDivider class="uvr-header-divider" />
+          <FancyDivider class="uvr-header-divider" />
+        </Show>
 
         {/* Main Content */}
         <div class="panel-content">

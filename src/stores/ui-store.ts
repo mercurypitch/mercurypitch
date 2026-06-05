@@ -61,6 +61,11 @@ export function exitFocusMode(): void {
 }
 exposeForE2E('__exitFocusMode', exitFocusMode)
 
+// ── Karaoke Focus Mode (StemMixer fullscreen) ────────────────────
+
+export const [karaokeFocus, setKaraokeFocus] = createSignal<boolean>(false)
+exposeForE2E('__exitKaraokeFocus', () => setKaraokeFocus(false))
+
 // ── Welcome Screen (GH #131) ────────────────────────────────────
 const PITCH_PERFECT_WELCOME_VERSION_KEY = 'pitchperfect_welcome_version'
 
