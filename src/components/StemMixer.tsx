@@ -125,6 +125,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [showWaveform, setShowWaveform] = createSignal(true)
   const [showPitch, setShowPitch] = createSignal(true)
   const [showLyrics, setShowLyrics] = createSignal(true)
+  const [karaokeToolbarPosition, setKaraokeToolbarPosition] =
+    createPersistedSignal<'top' | 'bottom' | 'left' | 'right'>(
+      'karaoke_toolbar_position',
+      'bottom',
+    )
 
   // Esc key to exit focus mode
   createEffect(() => {
@@ -1001,7 +1006,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div class="stem-mixer" classList={{ 'stem-mixer--focus': karaokeFocus() }}>
+    <div
+      class="stem-mixer"
+      classList={{
+        'stem-mixer--focus': karaokeFocus(),
+        [`stem-mixer--focus-docked-${karaokeToolbarPosition()}`]:
+          karaokeFocus(),
+      }}
+    >
       {/* Header */}
       <Show when={!karaokeFocus()}>
         <div class="sm-header">
@@ -1123,6 +1135,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onSpeedChange={audio.setSpeed}
           karaokeFocus={karaokeFocus}
           setKaraokeFocus={setKaraokeFocus}
+          toolbarPosition={karaokeToolbarPosition}
+          setToolbarPosition={setKaraokeToolbarPosition}
           showWaveform={showWaveform}
           setShowWaveform={setShowWaveform}
           showPitch={showPitch}
@@ -3184,6 +3198,9 @@ export const StemMixerStyles: string = `
   background: var(--bg-primary, #0d1117);
   border-top: 1px solid var(--border, #30363d);
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .sm-transport-controls {
@@ -3191,6 +3208,86 @@ export const StemMixerStyles: string = `
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
+}
+
+/* Docked Toolbar Styles */
+
+.sm-transport--docked-top {
+  order: -1;
+}
+
+.sm-transport--docked-bottom {
+  order: 999;
+}
+
+.sm-transport--docked-left {
+  order: -1;
+}
+
+.sm-transport--docked-right {
+  order: 999;
+}
+
+.sm-transport--vertical {
+  flex-direction: column;
+  padding: 1.25rem 0.5rem;
+  border-top: none;
+  border-right: 1px solid var(--border, #30363d);
+}
+
+.sm-transport--vertical.sm-transport--docked-right {
+  border-right: none;
+  border-left: 1px solid var(--border, #30363d);
+}
+
+.sm-transport--vertical .sm-transport-controls {
+  flex-direction: column;
+}
+
+.sm-transport-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -0.375rem; /* Increase hit area without changing layout size */
+  cursor: grab;
+  color: var(--fg-muted, #8b949e);
+  border-radius: 0.25rem;
+  transition: all 0.15s;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.sm-transport-drag-handle:hover {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-transport-drag-handle:active {
+  cursor: grabbing;
+}
+
+.sm-drag-overlay {
+  position: absolute;
+  background: var(--accent, #58a6ff);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 1000;
+  transition: all 0.15s;
+}
+
+.sm-drag-overlay--top {
+  top: 0; left: 0; right: 0; height: 100px;
+}
+.sm-drag-overlay--bottom {
+  bottom: 0; left: 0; right: 0; height: 100px;
+}
+.sm-drag-overlay--left {
+  top: 0; bottom: 0; left: 0; width: 100px;
+}
+.sm-drag-overlay--right {
+  top: 0; bottom: 0; right: 0; width: 100px;
 }
 
 .sm-transport-btn {
