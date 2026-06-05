@@ -58,14 +58,13 @@ export interface StemMixerCanvasController {
   drawMidiCanvas: () => void
   redrawAll: () => void
   queueCanvasRedraw: () => void
-  handleWaveformClick: (e: MouseEvent) => void
   handleCanvasWheel: (e: WheelEvent) => void
   handleCanvasTouchStart: (e: TouchEvent) => void
   handleCanvasTouchMove: (e: TouchEvent) => void
   handleCanvasTouchEnd: (e: TouchEvent) => void
-  handleOverviewPointerDown: (e: PointerEvent) => void
-  handleOverviewPointerMove: (e: PointerEvent) => void
-  handleOverviewPointerUp: (e: PointerEvent) => void
+  handleCanvasPointerDown: (e: PointerEvent) => void
+  handleCanvasPointerMove: (e: PointerEvent) => void
+  handleCanvasPointerUp: (e: PointerEvent) => void
   isUserPanning: () => boolean
   initObserver: () => ResizeObserver
   reconnectObserver: () => void
@@ -295,8 +294,9 @@ export const useStemMixerCanvasController = (
               ctx.beginPath()
               ctx.moveTo(clipX2, 0)
               ctx.lineTo(clipX2, h)
+              ctx.strokeStyle = 'rgba(255, 123, 114, 0.6)'
               ctx.stroke()
-              ctx.fillStyle = 'rgba(88, 166, 255, 0.9)'
+              ctx.fillStyle = 'rgba(255, 123, 114, 0.9)'
               ctx.font = 'bold 10px monospace'
               ctx.fillText('B', clipX2 - 10, 12)
             }
@@ -780,9 +780,14 @@ export const useStemMixerCanvasController = (
   // ── Loop marker drag state (mutable refs — no rendering) ─────
 
   const LOOP_HIT_PX = 8 // pixel tolerance for hit-testing markers
-  const LOOP_MIN_GAP = 0.5 // minimum seconds between A and B
+  const LOOP_MIN_GAP = 0.1 // minimum seconds between A and B
   let loopDragTarget: 'A' | 'B' | null = null
-  let loopDragDidMove = false
+
+  let mousePanActive = false
+  let mouseDidPan = false
+  let mousePanStartX = 0
+  let mousePanStartWin = 0
+  let activePanCanvas: HTMLCanvasElement | null = null
 
   /** Convert clientX on the overview canvas to a time value. */
   const clientXToTime = (
@@ -817,78 +822,117 @@ export const useStemMixerCanvasController = (
     return null
   }
 
-  const handleOverviewPointerDown = (e: PointerEvent) => {
-    const canvas = canvasRefs.overview
-    if (!canvas || !deps.duration() || !deps.loopEnabled()) return
-    const hit = getLoopMarkerAtX(e.clientX, canvas)
-    if (!hit) return
-    e.preventDefault()
-    e.stopPropagation()
-    loopDragTarget = hit
-    loopDragDidMove = false
+  const handleCanvasPointerDown = (e: PointerEvent) => {
+    const canvas = e.currentTarget as HTMLCanvasElement
+    if (!deps.duration()) return
+    const isOverview = canvas === canvasRefs.overview
+    const hit = isOverview ? getLoopMarkerAtX(e.clientX, canvas) : null
+
+    if (hit && deps.loopEnabled()) {
+      e.preventDefault()
+      e.stopPropagation()
+      loopDragTarget = hit
+      canvas.setPointerCapture(e.pointerId)
+      return
+    }
+
+    // Initiate mouse pan
+    mousePanActive = true
+    mouseDidPan = false
+    mousePanStartX = e.clientX
+    mousePanStartWin = deps.windowStart()
+    userPanning = true
+    activePanCanvas = canvas
     canvas.setPointerCapture(e.pointerId)
   }
 
-  const handleOverviewPointerMove = (e: PointerEvent) => {
-    const canvas = canvasRefs.overview
-    if (!canvas) return
+  const handleCanvasPointerMove = (e: PointerEvent) => {
+    const canvas = e.currentTarget as HTMLCanvasElement
 
-    if (loopDragTarget) {
+    if (loopDragTarget && canvas === canvasRefs.overview) {
       // Active drag — update loop boundary
       e.preventDefault()
-      loopDragDidMove = true
       const time = clientXToTime(e.clientX, canvas)
       const clamped = Math.max(0, Math.min(deps.duration(), time))
 
       if (loopDragTarget === 'A') {
-        deps.setLoopStart(Math.min(clamped, deps.loopEnd() - LOOP_MIN_GAP))
+        if (clamped > deps.loopEnd() - LOOP_MIN_GAP) {
+          // Cross over: old B becomes A, and we are now dragging B
+          deps.setLoopStart(deps.loopEnd() - LOOP_MIN_GAP)
+          deps.setLoopEnd(clamped + LOOP_MIN_GAP)
+          loopDragTarget = 'B'
+        } else {
+          deps.setLoopStart(clamped)
+        }
       } else {
-        deps.setLoopEnd(Math.max(clamped, deps.loopStart() + LOOP_MIN_GAP))
+        if (clamped < deps.loopStart() + LOOP_MIN_GAP) {
+          // Cross over: old A becomes B, and we are now dragging A
+          deps.setLoopEnd(deps.loopStart() + LOOP_MIN_GAP)
+          deps.setLoopStart(Math.max(0, clamped - LOOP_MIN_GAP))
+          loopDragTarget = 'A'
+        } else {
+          deps.setLoopEnd(clamped)
+        }
       }
       redrawAll()
+    } else if (mousePanActive && activePanCanvas === canvas) {
+      e.preventDefault()
+      const deltaX = e.clientX - mousePanStartX
+      if (Math.abs(deltaX) > 3) {
+        mouseDidPan = true
+      }
+      if (mouseDidPan) {
+        const rect = canvas.getBoundingClientRect()
+        const pxPerSec = rect.width / deps.windowDuration()
+        const deltaTime = deltaX / pxPerSec
+        const newStart = Math.max(
+          0,
+          Math.min(
+            deps.duration() - deps.windowDuration(),
+            mousePanStartWin - deltaTime,
+          ),
+        )
+        deps.setWindowStart(newStart)
+        redrawAll()
+      }
     } else {
       // Hover — update cursor
-      if (deps.loopEnabled() && deps.loopEnd() > 0) {
+      const isOverview = canvas === canvasRefs.overview
+      if (isOverview && deps.loopEnabled() && deps.loopEnd() > 0) {
         const hit = getLoopMarkerAtX(e.clientX, canvas)
         canvas.style.cursor = hit ? 'ew-resize' : 'pointer'
+      } else {
+        canvas.style.cursor = 'pointer'
       }
     }
   }
 
-  const handleOverviewPointerUp = (e: PointerEvent) => {
-    const canvas = canvasRefs.overview
-    if (loopDragTarget && canvas) {
+  const handleCanvasPointerUp = (e: PointerEvent) => {
+    const canvas = e.currentTarget as HTMLCanvasElement
+
+    if (loopDragTarget && canvas === canvasRefs.overview) {
       canvas.releasePointerCapture(e.pointerId)
+      loopDragTarget = null
+    } else if (mousePanActive && activePanCanvas === canvas) {
+      canvas.releasePointerCapture(e.pointerId)
+      mousePanActive = false
+      userPanning = false
+      activePanCanvas = null
+
+      if (!mouseDidPan) {
+        // It was a click, not a drag. Seek!
+        const rect = canvas.getBoundingClientRect()
+        const ratio = Math.max(
+          0,
+          Math.min(1, (e.clientX - rect.left) / rect.width),
+        )
+        const newTime = deps.windowStart() + ratio * deps.windowDuration()
+        deps.seekTo(newTime)
+      }
     }
-    loopDragTarget = null
   }
 
   // ── Interaction handlers ──────────────────────────────────────
-
-  const handleWaveformClick = (e: MouseEvent) => {
-    // Skip seek if we just finished a loop marker drag
-    if (loopDragDidMove) {
-      loopDragDidMove = false
-      return
-    }
-    const canvas = canvasRefs.overview
-    if (!canvas || !deps.duration()) return
-    const rect = canvas.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const winStart = deps.windowStart()
-    const winEnd = winStart + deps.windowDuration()
-    const newTime = winStart + ratio * deps.windowDuration()
-    deps.seekTo(newTime)
-    // Only re-center the view if the click landed outside the visible window
-    if (newTime < winStart || newTime > winEnd) {
-      deps.setWindowStart(
-        Math.max(
-          0,
-          newTime - deps.windowDuration() * deps.PITCH_WINDOW_FILL_RATIO,
-        ),
-      )
-    }
-  }
 
   const handleCanvasWheel = (e: WheelEvent) => {
     e.preventDefault()
@@ -1116,14 +1160,13 @@ export const useStemMixerCanvasController = (
     drawMidiCanvas,
     redrawAll,
     queueCanvasRedraw,
-    handleWaveformClick,
     handleCanvasWheel,
     handleCanvasTouchStart,
     handleCanvasTouchMove,
     handleCanvasTouchEnd,
-    handleOverviewPointerDown,
-    handleOverviewPointerMove,
-    handleOverviewPointerUp,
+    handleCanvasPointerDown,
+    handleCanvasPointerMove,
+    handleCanvasPointerUp,
     isUserPanning: () => userPanning,
     initObserver,
     reconnectObserver,

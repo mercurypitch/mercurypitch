@@ -67,6 +67,12 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     <div class="sm-transport">
       <div class="sm-transport-controls">
         <button
+          class="sm-transport-btn sm-transport-play"
+          onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
+        >
+          {props.playing() ? <Pause /> : <Play />}
+        </button>
+        <button
           class="sm-transport-btn"
           onClick={() => props.onStop()}
           title="Stop"
@@ -83,38 +89,65 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           <SkipBack />
         </button>
 
+        <div class="sm-focus-divider" />
+
         {/* Loop A / B / Toggle */}
         <button
-          class="sm-transport-btn"
+          class="sm-icon-btn sm-loop-icon-a"
           classList={{ 'sm-loop-btn--a-set': props.loopStart() > 0 }}
           onClick={() => props.onSetLoopA()}
           title="Set loop start (A)"
         >
-          A
+          <svg class="sm-loop-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="11" />
+            <text
+              x="12"
+              y="16.5"
+              font-size="12"
+              font-family="sans-serif"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              A
+            </text>
+          </svg>
         </button>
         <button
-          class="sm-transport-btn"
+          class="sm-icon-btn sm-loop-icon-b"
           classList={{ 'sm-loop-btn--b-set': props.loopEnd() > 0 }}
           onClick={() => props.onSetLoopB()}
           title="Set loop end (B)"
         >
-          B
+          <svg class="sm-loop-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="11" />
+            <text
+              x="12"
+              y="16.5"
+              font-size="12"
+              font-family="sans-serif"
+              text-anchor="middle"
+              font-weight="bold"
+            >
+              B
+            </text>
+          </svg>
         </button>
         <Show when={hasLoop()}>
           <button
-            class="sm-transport-btn"
+            class="sm-icon-btn"
             classList={{ 'sm-loop-toggle--active': props.loopEnabled() }}
             onClick={() => props.onToggleLoop()}
             title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
+            style={{ 'margin-left': '0.5rem' }}
           >
             <Loop />
           </button>
           <button
-            class="sm-transport-btn"
+            class="sm-icon-btn"
             onClick={() => props.onClearLoop()}
             title="Clear loop points"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14">
+            <svg viewBox="0 0 24 24" width="18" height="18">
               <line
                 x1="18"
                 y1="6"
@@ -134,13 +167,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             </svg>
           </button>
         </Show>
-
-        <button
-          class="sm-transport-btn sm-transport-play"
-          onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
-        >
-          {props.playing() ? <Pause /> : <Play />}
-        </button>
 
         <div class="sm-col-toggle">
           <button
@@ -288,6 +314,8 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           </button>
         </Show>
 
+        <div class="sm-focus-divider" />
+
         {/* ── Mic toggle (always visible) ────────────────── */}
         <button
           class={`sm-mic-toggle-btn${props.micActive() ? ' sm-mic-toggle-btn--active' : ''}${props.micError() ? ' sm-mic-toggle-btn--error' : ''}`}
@@ -323,8 +351,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           <option value="1.75">1.75x</option>
           <option value="2">2x</option>
         </select>
-
-
 
         {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}
         <Show when={props.workspaceLayout() === 'fixed-2col'}>
