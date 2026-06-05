@@ -1132,17 +1132,39 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           loopEnabled={audio.loopEnabled}
           loopStart={audio.loopStart}
           loopEnd={audio.loopEnd}
-          onSetLoopA={() => audio.setLoopStart(audio.elapsed())}
+          onSetLoopA={() => {
+            const newTime = audio.elapsed()
+            const currentB = audio.loopEnd()
+            if (currentB > 0 && newTime > currentB) {
+              audio.setLoopEnd(newTime)
+              audio.setLoopStart(currentB)
+            } else {
+              audio.setLoopStart(newTime)
+            }
+            canvas.queueCanvasRedraw()
+          }}
           onSetLoopB={() => {
-            audio.setLoopEnd(audio.elapsed())
+            const newTime = audio.elapsed()
+            const currentA = audio.loopStart()
+            if (newTime < currentA) {
+              audio.setLoopStart(newTime)
+              audio.setLoopEnd(currentA)
+            } else {
+              audio.setLoopEnd(newTime)
+            }
             audio.setLoopEnabled(true)
+            canvas.queueCanvasRedraw()
           }}
           onClearLoop={() => {
             audio.clearLoop()
             setLoopStartLyricIdx(null)
             setLoopEndLyricIdx(null)
+            canvas.queueCanvasRedraw()
           }}
-          onToggleLoop={() => audio.setLoopEnabled(!audio.loopEnabled())}
+          onToggleLoop={() => {
+            audio.setLoopEnabled(!audio.loopEnabled())
+            canvas.queueCanvasRedraw()
+          }}
         />
 
         <Show
@@ -1163,11 +1185,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handlePanelDragEnd={layout.handlePanelDragEnd}
           handleResizeStart={layout.handleResizeStart}
           setCanvasRef={canvas.setCanvasRef}
-          handleWaveformClick={canvas.handleWaveformClick}
           handleCanvasWheel={canvas.handleCanvasWheel}
-          handleOverviewPointerDown={canvas.handleOverviewPointerDown}
-          handleOverviewPointerMove={canvas.handleOverviewPointerMove}
-          handleOverviewPointerUp={canvas.handleOverviewPointerUp}
+          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
           setWindowDuration={audio.setWindowDuration}
           stemControls={stemControls}
           lyricsPanel={lyricsPanel}
@@ -1209,11 +1230,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handleFixedResizeStart={layout.handleFixedResizeStart}
           sidebarHidden={layout.sidebarHidden}
           setCanvasRef={canvas.setCanvasRef}
-          handleWaveformClick={canvas.handleWaveformClick}
           handleCanvasWheel={canvas.handleCanvasWheel}
-          handleOverviewPointerDown={canvas.handleOverviewPointerDown}
-          handleOverviewPointerMove={canvas.handleOverviewPointerMove}
-          handleOverviewPointerUp={canvas.handleOverviewPointerUp}
+          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
           stemControls={stemControls}
           lyricsPanel={lyricsPanel}
           handleForceSearch={() => void handleForceSearch()}
@@ -3193,8 +3213,88 @@ export const StemMixerStyles: string = `
   height: 0.85rem;
 }
 
+/* Base loop icon styles */
+.sm-loop-icon circle {
+  fill: var(--bg-tertiary, #21262d);
+  stroke: var(--border, #30363d);
+  stroke-width: 1.5px;
+  transition: all 0.2s ease;
+}
+
+/* Hover effects */
+.sm-loop-icon-a:hover circle {
+  stroke: var(--accent, #58a6ff);
+  fill: rgba(88, 166, 255, 0.1);
+}
+.sm-loop-icon-a:hover text {
+  fill: var(--accent, #58a6ff);
+}
+.sm-icon-btn.sm-loop-icon-a text {
+  fill: var(--fg-secondary, #8b949e);
+  transition: all 0.2s ease;
+}
+
+.sm-loop-icon-b:hover circle {
+  stroke: #ff7b72;
+  fill: rgba(255, 123, 114, 0.1);
+}
+.sm-loop-icon-b:hover text {
+  fill: #ff7b72;
+}
+.sm-icon-btn.sm-loop-icon-b text {
+  fill: var(--fg-secondary, #8b949e);
+  transition: all 0.2s ease;
+}
+
+/* Active effects */
+.sm-loop-btn--a-set.sm-loop-icon-a text {
+  fill: #0d1117 !important;
+}
+.sm-loop-btn--a-set.sm-loop-icon-a circle {
+  fill: var(--accent, #58a6ff);
+  stroke: var(--accent, #58a6ff);
+}
+
+.sm-loop-btn--b-set.sm-loop-icon-b text {
+  fill: #0d1117 !important;
+}
+.sm-loop-btn--b-set.sm-loop-icon-b circle {
+  fill: #ff7b72;
+  stroke: #ff7b72;
+}
+
+.sm-icon-btn svg.sm-loop-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.sm-icon-btn svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 .sm-transport-btn:hover:not(:disabled) {
   background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-icon-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--fg-secondary, #8b949e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.sm-icon-btn:hover:not(:disabled) {
   color: var(--fg-primary, #c9d1d9);
 }
 
@@ -3255,13 +3355,17 @@ export const StemMixerStyles: string = `
 }
 
 .sm-speed-select {
+  appearance: none;
+  -webkit-appearance: none;
   background: var(--bg-tertiary, #21262d);
   border: 1px solid var(--border, #30363d);
   border-radius: 0.3rem;
   color: var(--fg-secondary, #8b949e);
   font-size: 0.65rem;
   font-family: monospace;
-  padding: 0.2rem 0.3rem;
+  padding: 0 0.4rem;
+  text-align: center;
+  text-align-last: center;
   cursor: pointer;
   margin: 0 0.3rem;
   height: 1.75rem;
@@ -3328,21 +3432,15 @@ export const StemMixerStyles: string = `
 /* Loop A/B buttons */
 .sm-loop-btn--a-set {
   color: var(--accent, #58a6ff) !important;
-  border-color: var(--accent, #58a6ff) !important;
-  background: rgba(88, 166, 255, 0.12) !important;
 }
 
 .sm-loop-btn--b-set {
   color: #d2a8ff !important;
-  border-color: #d2a8ff !important;
-  background: rgba(210, 168, 255, 0.12) !important;
 }
 
 /* Loop toggle active state */
 .sm-loop-toggle--active {
   color: var(--accent, #58a6ff) !important;
-  border-color: var(--accent, #58a6ff) !important;
-  background: rgba(88, 166, 255, 0.15) !important;
 }
 
 /* Loop metrics bar (appears above transport when loop is active) */

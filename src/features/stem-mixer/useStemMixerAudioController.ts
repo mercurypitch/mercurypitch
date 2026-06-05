@@ -611,6 +611,9 @@ export const useStemMixerAudioController = (
       deps.updateCurrentLine()
     })
   }
+  // ── Scroll State ─────────────────────────────────────────────
+  let activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
+  let isRecentering = false
 
   // ── RAF Loop ─────────────────────────────────────────────────
   const startRafLoop = () => {
@@ -682,9 +685,27 @@ export const useStemMixerAudioController = (
       }
 
       // Continuous-scroll time window (skip while user is touch-panning)
-      if (!deps.canvas.isUserPanning?.()) {
-        const newStart =
-          elapsedTime - deps.PITCH_WINDOW_FILL_RATIO * windowDuration()
+      if (deps.canvas.isUserPanning?.() === true) {
+        activeAnchor = (elapsedTime - windowStart()) / windowDuration()
+        isRecentering = false
+      } else {
+        // Detect external changes to windowStart (like click-to-seek)
+        const expectedStart = elapsedTime - activeAnchor * windowDuration()
+        if (Math.abs(windowStart() - expectedStart) > 0.05) {
+          activeAnchor = (elapsedTime - windowStart()) / windowDuration()
+          isRecentering = activeAnchor > 0.85 || activeAnchor < 0.15
+        }
+
+        // Gently pull the playhead back to 30% if we entered the danger zone
+        if (isRecentering) {
+          activeAnchor += (deps.PITCH_WINDOW_FILL_RATIO - activeAnchor) * 0.05
+          if (Math.abs(activeAnchor - deps.PITCH_WINDOW_FILL_RATIO) < 0.01) {
+            activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
+            isRecentering = false
+          }
+        }
+
+        const newStart = elapsedTime - activeAnchor * windowDuration()
         setWindowStart(Math.max(0, newStart))
       }
 

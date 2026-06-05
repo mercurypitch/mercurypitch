@@ -23,11 +23,10 @@ interface StemMixerFixedWorkspaceProps {
 
   // Canvas
   setCanvasRef: (id: string) => (el: HTMLCanvasElement) => void
-  handleWaveformClick: (e: MouseEvent) => void
   handleCanvasWheel: (e: WheelEvent) => void
-  handleOverviewPointerDown: (e: PointerEvent) => void
-  handleOverviewPointerMove: (e: PointerEvent) => void
-  handleOverviewPointerUp: (e: PointerEvent) => void
+  handleCanvasPointerDown: (e: PointerEvent) => void
+  handleCanvasPointerMove: (e: PointerEvent) => void
+  handleCanvasPointerUp: (e: PointerEvent) => void
 
   // Stem controls
   stemControls: Omit<StemMixerStemControlsProps, 'direction'>
@@ -95,10 +94,9 @@ export const StemMixerFixedWorkspace: Component<
                   ref={props.setCanvasRef('overview')}
                   class="sm-canvas sm-canvas-overview"
                   data-canvas-id="overview"
-                  onClick={(e) => props.handleWaveformClick(e)}
-                  onPointerDown={(e) => props.handleOverviewPointerDown(e)}
-                  onPointerMove={(e) => props.handleOverviewPointerMove(e)}
-                  onPointerUp={(e) => props.handleOverviewPointerUp(e)}
+                  onPointerDown={(e) => props.handleCanvasPointerDown(e)}
+                  onPointerMove={(e) => props.handleCanvasPointerMove(e)}
+                  onPointerUp={(e) => props.handleCanvasPointerUp(e)}
                 />
                 <div
                   class="sm-resize-handle"
@@ -505,6 +503,9 @@ export const StemMixerFixedWorkspace: Component<
                   ref={props.setCanvasRef('pitch')}
                   class="sm-canvas sm-canvas-pitch"
                   data-canvas-id="pitch"
+                  onPointerDown={(e) => props.handleCanvasPointerDown(e)}
+                  onPointerMove={(e) => props.handleCanvasPointerMove(e)}
+                  onPointerUp={(e) => props.handleCanvasPointerUp(e)}
                 />
                 <div
                   class="sm-resize-handle"
@@ -526,6 +527,9 @@ export const StemMixerFixedWorkspace: Component<
                   ref={props.setCanvasRef('midi')}
                   class="sm-canvas sm-canvas-midi"
                   data-canvas-id="midi"
+                  onPointerDown={(e) => props.handleCanvasPointerDown(e)}
+                  onPointerMove={(e) => props.handleCanvasPointerMove(e)}
+                  onPointerUp={(e) => props.handleCanvasPointerUp(e)}
                   onWheel={(e) => props.handleCanvasWheel(e)}
                 />
                 <div
