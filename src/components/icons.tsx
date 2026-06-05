@@ -177,16 +177,16 @@ export const Download: Component = () => (
 )
 
 // File Text Icon
-export const FileText: Component = () => (
+export const FileText: Component<{ size?: number }> = (p) => (
   <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
   >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
@@ -360,16 +360,16 @@ export const Midi: Component = () => (
 )
 
 // Music Board Icon (for full mix)
-export const MusicBoard: Component = () => (
+export const MusicBoard: Component<{ size?: number }> = (p) => (
   <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
   >
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
     <line x1="9" y1="3" x2="9" y2="21" />
@@ -765,16 +765,16 @@ export const Metronome: Component = () => (
 )
 
 // Waveform Bars Icon (audio visualization)
-export const WaveformBars: Component = () => (
+export const WaveformBars: Component<{ size?: number }> = (p) => (
   <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="24"
-    height="24"
   >
     <path d="M3 9h2v6H3zM7 6h2v12H7zM11 12h2v3h-2zM15 9h2v6h-2zM19 7h2v10h-2z" />
   </svg>
