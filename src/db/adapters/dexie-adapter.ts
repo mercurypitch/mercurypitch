@@ -59,10 +59,7 @@ class DexieDatabase extends DexieDB {
       uvrStemBlobs: 'id, sessionId, stemType, createdAt',
       uvrStemFingerprints: 'id, sessionId, createdAt',
     })
-    this.version(2).stores({
-      ...STORE_SCHEMAS,
-      // v2 added offlinePitchAnalysis (uvrSessionLyrics not yet present)
-    })
+    this.version(2).stores(STORE_SCHEMAS)
     this.version(3).stores(STORE_SCHEMAS)
     this.version(4).stores(STORE_SCHEMAS)
     this.version(5).stores(STORE_SCHEMAS)
@@ -92,11 +89,14 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async findAll(opts?: QueryOptions<T>): Promise<T[]> {
+    try {
     // 1. Determine if we can use an index for the WHERE clause
     let collection: DexieDB.Collection<T, string> | null = null
     let usedWhereIndex = false
     const whereEntries = opts?.where
-      ? Object.entries(opts.where).filter(([_, v]) => v !== undefined)
+      ? Object.entries(opts.where).filter(
+          ([_, v]) => v !== undefined && v !== null,
+        )
       : []
 
     if (whereEntries.length > 0) {
@@ -179,6 +179,13 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     }
 
     return result
+    } catch (err) {
+      console.warn(
+        `[DexieAdapter] findAll failed for "${this.table.name}":`,
+        err,
+      )
+      return []
+    }
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
