@@ -133,22 +133,60 @@ describe('parseHash', () => {
   })
 
   // REQ-RT-003: Share routes
-  it('parses share route with type and id', () => {
+  it('parses legacy share query route as fallback', () => {
     const result = parseHash('#/share?type=melody&id=abc123')
     expect(result).toEqual({
-      type: 'share',
+      type: 'share-fallback',
       shareType: 'melody',
       shareId: 'abc123',
     })
   })
 
-  it('parses share route with different types', () => {
+  it('parses legacy share route with different types as fallback', () => {
     const result = parseHash('#/share?type=session&id=session-456')
     expect(result).toEqual({
-      type: 'share',
+      type: 'share-fallback',
       shareType: 'session',
       shareId: 'session-456',
     })
+  })
+
+  it('parses share-load route from base64url payload', () => {
+    const payload =
+      'eyJ2IjoxLCJ0IjoibWVsb2R5IiwiZCI6eyJuIjoiVGVzdCIsImIiOjEyMCwiaSI6W119fQ'
+    const result = parseHash(`#/share/${payload}`)
+    expect(result.type).toBe('share-load')
+    if (result.type === 'share-load') {
+      expect(result.shareType).toBe('melody')
+    }
+  })
+
+  // REQ-RT-013: Share-short routes
+  it('parses share-short route with alphanumeric ID', () => {
+    expect(parseHash('#/s/abc123XYZ0')).toEqual({
+      type: 'share-short',
+      shortId: 'abc123XYZ0',
+    })
+  })
+
+  it('parses share-short route with mixed case ID', () => {
+    expect(parseHash('#/s/AbC1dEf2Gh')).toEqual({
+      type: 'share-short',
+      shortId: 'AbC1dEf2Gh',
+    })
+  })
+
+  it('returns unknown for share-short with hyphen in ID', () => {
+    expect(parseHash('#/s/abc-123')).toEqual({ type: 'unknown' })
+  })
+
+  it('returns unknown for share-short with underscore in ID', () => {
+    expect(parseHash('#/s/abc_123')).toEqual({ type: 'unknown' })
+  })
+
+  it('returns unknown for invalid base64 share payload', () => {
+    const result = parseHash('#/share/!!!not-valid-base64!!!')
+    expect(result.type).toBe('unknown')
   })
 
   // REQ-RT-004: Unknown / empty routes
@@ -227,10 +265,20 @@ describe('buildHash', () => {
     )
   })
 
-  it('builds share hash', () => {
+  it('builds share-fallback hash', () => {
     expect(
-      buildHash({ type: 'share', shareType: 'melody', shareId: 'id1' }),
+      buildHash({
+        type: 'share-fallback',
+        shareType: 'melody',
+        shareId: 'id1',
+      }),
     ).toBe('/share?type=melody&id=id1')
+  })
+
+  it('builds share-short hash', () => {
+    expect(buildHash({ type: 'share-short', shortId: 'abc123' })).toBe(
+      '/s/abc123',
+    )
   })
 
   it('builds unknown as root slash', () => {
@@ -280,6 +328,7 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/guide/all',
     '#/guide/practice',
     '#/guide/editor',
+    '#/s/abc123XYZ0',
   ]
 
   for (const hash of routes) {

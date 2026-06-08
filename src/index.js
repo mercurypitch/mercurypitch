@@ -1,9 +1,11 @@
 import { ContainerProxy } from '@cloudflare/containers'
+import { handleShareRequest } from './share-handler.js'
 export { ContainerProxy }
 export { UvrContainer } from './uvr-container.js'
 
 // Cloudflare Worker entry point for MercuryPitch
 // Proxies /api/uvr/* to the UVR Docker container.
+// Handles /api/share/* for share link shortening (KV-backed).
 // Static assets are served by Cloudflare's assets feature.
 
 export default {
@@ -37,6 +39,12 @@ export default {
           { status: 502, headers: { 'Content-Type': 'application/json' } },
         )
       }
+    }
+
+    // Share link shortener — /api/share/*  →  KV-backed
+    if (url.pathname.startsWith('/api/share/')) {
+      const shareResp = await handleShareRequest(request, env)
+      if (shareResp) return shareResp
     }
 
     // All other requests (static assets, SPA routes) are served by the assets binding.

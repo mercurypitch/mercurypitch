@@ -32,12 +32,18 @@
       "name": "mercurypitch",
       "routes": [
         { "pattern": "mercurypitch.com", "custom_domain": true }
+      ],
+      "kv_namespaces": [
+        { "binding": "SHARE_STORE", "id": "<PRODUCTION_KV_ID>" }
       ]
     },
     "dev": {
       "name": "mercurypitch-dev",
       "routes": [
         { "pattern": "dev.mercurypitch.com", "custom_domain": true }
+      ],
+      "kv_namespaces": [
+        { "binding": "SHARE_STORE", "id": "<DEV_KV_ID>" }
       ],
       "build": {
         "command": "pnpm run build:dev"
