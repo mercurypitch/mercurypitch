@@ -50,7 +50,7 @@ export async function loadChallengeDefinitions(): Promise<
     const db = await getDb()
     const repo = db.getRepository<ChallengeDefinition>('challengeDefinitions')
     return repo.findAll({
-      where: { isActive: true } as Record<string, unknown>,
+      where: { isActive: true },
       orderBy: 'sortOrder',
     })
   } catch {
@@ -63,7 +63,7 @@ export async function loadChallengeProgress(): Promise<ChallengeProgress[]> {
     const db = await getDb()
     const repo = db.getRepository<ChallengeProgress>('challengeProgress')
     return repo.findAll({
-      where: { userId: getUserId() } as Record<string, unknown>,
+      where: { userId: getUserId() },
     })
   } catch {
     return []
@@ -85,7 +85,7 @@ export async function loadUserBadges(): Promise<UserBadge[]> {
     const db = await getDb()
     const repo = db.getRepository<UserBadge>('userBadges')
     return repo.findAll({
-      where: { userId: getUserId() } as Record<string, unknown>,
+      where: { userId: getUserId() },
     })
   } catch {
     return []
@@ -107,7 +107,7 @@ export async function loadUserAchievements(): Promise<UserAchievement[]> {
     const db = await getDb()
     const repo = db.getRepository<UserAchievement>('userAchievements')
     return repo.findAll({
-      where: { userId: getUserId() } as Record<string, unknown>,
+      where: { userId: getUserId() },
     })
   } catch {
     return []
@@ -125,7 +125,7 @@ export async function saveChallengeProgress(
       where: {
         userId: progress.userId,
         challengeId: progress.challengeId,
-      } as Record<string, unknown>,
+      },
     })
     if (existing.length > 0) {
       return repo.update(existing[0].id, progress)

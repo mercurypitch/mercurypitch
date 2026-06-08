@@ -274,38 +274,30 @@ export class PracticeEngine {
         this.currentSamples.push({
           freq: pitch.frequency,
 
-          time: (performance as unknown as { now: () => number }).now(),
+          time: performance.now(),
           cents,
         })
       }
     }
 
-    if (pitch && this.currentTargetNote) {
-      this.callbacks.onPitchDetected?.({
+    if (pitch) {
+      const result: PitchResult = {
         freq: pitch.frequency,
         midi: 0,
         note: pitch.noteName + pitch.octave,
         noteName: pitch.noteName,
-        targetMidi: this.currentTargetNote.midi,
-        targetNote: this.currentTargetNote.name + this.currentTargetNote.octave,
-        frequency: pitch.frequency,
-        clarity: pitch.clarity,
-        cents: pitch.cents ?? 0,
-        octave: pitch.octave,
-      })
-
-      return {
-        freq: pitch.frequency,
-        midi: 0,
-        note: pitch.noteName + pitch.octave,
-        noteName: pitch.noteName,
-        targetMidi: this.currentTargetNote.midi,
-        targetNote: this.currentTargetNote.name + this.currentTargetNote.octave,
+        targetMidi: this.currentTargetNote?.midi ?? 0,
+        targetNote: this.currentTargetNote
+          ? this.currentTargetNote.name + this.currentTargetNote.octave
+          : '',
         frequency: pitch.frequency,
         clarity: pitch.clarity,
         cents: pitch.cents ?? 0,
         octave: pitch.octave,
       }
+
+      this.callbacks.onPitchDetected?.(result)
+      return result
     } else {
       this.callbacks.onPitchDetected?.(null)
       return null

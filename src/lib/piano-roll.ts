@@ -3463,15 +3463,11 @@ export class PianoRollEditor {
       // branch. Without this, dragging the playhead while stopped then
       // hitting play would jump back to beat 0.
       this.editorBeat = beat
-      this.playStartTime =
-        (performance as unknown as { now: () => number }).now() -
-        (beat / this.bpm) * 60000
+      this.playStartTime = performance.now() - (beat / this.bpm) * 60000
     } else if (this.playbackState === 'paused') {
       // Local clock rebase (legacy field used by piano-roll's own playback
       // path; harmless when external playback owns the timer).
-      this.playStartTime =
-        (performance as unknown as { now: () => number }).now() -
-        (beat / this.bpm) * 60000
+      this.playStartTime = performance.now() - (beat / this.bpm) * 60000
     }
 
     // Notify the global PlaybackRuntime so its currentBeat / playStartTime

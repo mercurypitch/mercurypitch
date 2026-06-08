@@ -1,0 +1,287 @@
+import type { Component } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { IconSlide } from '@/components/exercise-icons'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { NotePillSelector } from '@/components/NotePillSelector'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import type { PracticeEngine } from '@/lib/practice-engine'
+import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { vocalRangePreset } from '@/stores/settings-store'
+import { showCelebration } from '@/stores/ui-store'
+import { useBaseExercise } from '../use-base-exercise'
+import { useSlideController } from './use-slide-controller'
+
+interface SlideExerciseProps {
+  audioEngine: AudioEngine
+  practiceEngine: PracticeEngine
+  onBack: () => void
+  autoStart?: boolean
+}
+
+const CLASSIFICATION_LABELS: Record<number, string> = {
+  '-1': 'No slide detected',
+  0: 'Wobble',
+  1: 'Scoop',
+  2: 'Overshoot',
+  3: 'Clean',
+}
+
+const SlideExercise: Component<SlideExerciseProps> = (props) => {
+  const [fromNote, setFromNote] = createSignal(
+    getDefaultNote(vocalRangePreset()),
+  )
+  const [toNote, setToNote] = createSignal(
+    untrack(() => getDefaultNote(vocalRangePreset())),
+  )
+  const audioEngine = untrack(() => props.audioEngine)
+
+  const practiceEngine = untrack(() => props.practiceEngine)
+  const base = useBaseExercise({
+    audioEngine,
+    practiceEngine,
+    config: {
+      type: 'slide',
+      targetNotes: [untrack(() => fromNote()), untrack(() => toNote())],
+    },
+  })
+
+  const controller = useSlideController(base)
+
+  const handleStart = async () => {
+    controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
+    await base.start()
+    controller.startLoop()
+  }
+
+  const handleStop = () => {
+    controller.stopAndCompute()
+  }
+
+  onCleanup(() => base.reset())
+
+  onMount(() => {
+    if (props.autoStart === true && base.state().status === 'idle') {
+      void handleStart()
+    }
+  })
+
+  createEffect(() => {
+    const r = base.result()
+    if (r && r.type === 'slide') {
+      showCelebration({
+        score: r.score,
+        exerciseType: r.type,
+        metrics: r.metrics,
+      })
+      untrack(() =>
+        recordExerciseResult({
+          type: r.type,
+          score: r.score,
+          metrics: r.metrics,
+          completedAt: r.completedAt,
+        }),
+      )
+    }
+  })
+
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
+
+  const currentMidi = () => {
+    const p = base.currentPitch()
+    if (!p || p.freq <= 0) return 0
+    return 12 * Math.log2(p.freq / 440) + 69
+  }
+
+  const pitchPosPct = () => {
+    const midi = currentMidi()
+    if (midi === 0) return 50
+    const from = noteToMidi(fromNote())
+    const to = noteToMidi(toNote())
+    const range = to - from
+    if (range === 0) return 50
+    return Math.max(5, Math.min(95, ((midi - from) / range) * 90 + 5))
+  }
+
+  return (
+    <div class="exercise-runner">
+      <div class="exercise-runner-header">
+        <button class="back-btn" onClick={() => props.onBack?.()}>
+          ← Back
+        </button>
+        <h2 class="exercise-title">Slide Practice</h2>
+        <span class="exercise-score-display">
+          {base.state().status === 'idle'
+            ? '—'
+            : `${Math.round(base.state().currentScore)}%`}
+        </span>
+      </div>
+
+      <div class="exercise-canvas-area">
+        {base.state().status === 'idle' && (
+          <div class="exercise-idle-placeholder">
+            <IconSlide size={48} />
+            <p>
+              Slide cleanly from one note to another. No scooping, no overshoot.
+            </p>
+          </div>
+        )}
+
+        {isActive() && (
+          <>
+            <ExercisePitchTracker
+              pitchHistory={base.pitchHistory}
+              isActive={isActive}
+            />
+            <div class="slide-note-display">
+              <span>{fromNote()}</span>
+              <span style="color:var(--text-secondary)">→</span>
+              <span>{toNote()}</span>
+            </div>
+            <div class="slide-viz">
+              <div class="slide-target-start" style="left:10%;top:50%" />
+              <div class="slide-target-end" style="left:90%;top:50%" />
+              <div class="slide-pitch-trace">
+                <div class="slide-pitch-dot" style={`left:${pitchPosPct()}%`} />
+                {currentMidi() > 0 && (
+                  <div
+                    class="slide-pitch-label"
+                    style={`left:${pitchPosPct()}%`}
+                  >
+                    {midiToNoteName(Math.round(currentMidi()))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div class="slide-metrics">
+              <div class="slide-metric">
+                <span class="slide-metric-label">Smoothness</span>
+                <span class="slide-metric-value">
+                  {base.state().metrics.smoothness != null
+                    ? `${base.state().metrics.smoothness}%`
+                    : '—'}
+                </span>
+              </div>
+              <div class="slide-metric">
+                <span class="slide-metric-label">Accuracy</span>
+                <span class="slide-metric-value">
+                  {base.state().metrics.arrivalAccuracy != null
+                    ? `${base.state().metrics.arrivalAccuracy}%`
+                    : '—'}
+                </span>
+              </div>
+              <div class="slide-metric">
+                <span class="slide-metric-label">Time</span>
+                <span class="slide-metric-value">
+                  {base.state().metrics.slideTimeMs != null
+                    ? `${base.state().metrics.slideTimeMs}ms`
+                    : '—'}
+                </span>
+              </div>
+              <div class="slide-metric">
+                <span class="slide-metric-label">Rating</span>
+                <span class="slide-metric-value" style="font-size:0.78rem">
+                  {base.state().metrics.classification != null
+                    ? CLASSIFICATION_LABELS[
+                        base.state().metrics.classification
+                      ] || '...'
+                    : '—'}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {isComplete() && base.result() && (
+          <div class="exercise-result-overlay">
+            <div
+              class="exercise-result-score"
+              classList={{
+                'exercise-result-score-good': base.result()!.score >= 80,
+                'exercise-result-score-ok':
+                  base.result()!.score >= 50 && base.result()!.score < 80,
+                'exercise-result-score-poor': base.result()!.score < 50,
+              }}
+            >
+              {base.result()!.score}%
+            </div>
+            <div class="exercise-result-label">
+              Smoothness: {base.result()!.metrics.smoothness}% · Accuracy:{' '}
+              {base.result()!.metrics.arrivalAccuracy}%
+            </div>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div class="exercise-controls">
+        {base.state().status === 'idle' && (
+          <>
+            <NotePillSelector
+              label="From"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={fromNote()}
+              onChange={setFromNote}
+            />
+            <NotePillSelector
+              label="To"
+              notes={getNoteOptions(vocalRangePreset())}
+              selected={toNote()}
+              onChange={setToNote}
+            />
+            {base.error() != null && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => void handleStart()}
+            >
+              Start
+            </button>
+          </>
+        )}
+        {isActive() && (
+          <button
+            class="exercise-btn exercise-btn-secondary"
+            onClick={handleStop}
+          >
+            Stop & Score
+          </button>
+        )}
+        {isComplete() && (
+          <>
+            <button
+              class="exercise-btn exercise-btn-primary"
+              onClick={() => {
+                base.reset()
+                void handleStart()
+              }}
+            >
+              Try Again
+            </button>
+            <button
+              class="exercise-btn exercise-btn-secondary"
+              onClick={() => {
+                base.reset()
+              }}
+            >
+              Change Notes
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default SlideExercise

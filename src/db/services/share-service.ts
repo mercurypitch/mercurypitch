@@ -62,7 +62,7 @@ export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
     const db = await getDb()
     const repo = db.getRepository<SharedMelody>('sharedMelodies')
     const items = await repo.findAll({
-      where: { isPublic: true } as Record<string, unknown>,
+      where: { isPublic: true },
       orderBy: 'createdAt',
       orderDir: 'desc',
     })
@@ -84,7 +84,7 @@ export async function loadSharedSessions(): Promise<SharedSessionView[]> {
     const db = await getDb()
     const repo = db.getRepository<SharedSession>('sharedSessions')
     const items = await repo.findAll({
-      where: { isPublic: true } as Record<string, unknown>,
+      where: { isPublic: true },
       orderBy: 'createdAt',
       orderDir: 'desc',
     })

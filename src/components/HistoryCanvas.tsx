@@ -143,10 +143,13 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       }
 
       // "Live" indicator
+      ctx.beginPath()
+      ctx.arc(9, 10, 4, 0, Math.PI * 2)
       ctx.fillStyle = '#00c878'
+      ctx.fill()
       ctx.font = '9px sans-serif'
       ctx.textAlign = 'left'
-      ctx.fillText('● LIVE', 6, 12)
+      ctx.fillText('LIVE', 16, 13)
     } else if (freqData && freqData.length > 0) {
       // Fallback: frequency bars only
       const barCount = Math.min(freqData.length, 128)

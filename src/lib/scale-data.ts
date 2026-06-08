@@ -360,6 +360,19 @@ export function melodyIndexAtBeat(melody: MelodyItem[], beat: number): number {
   return -1
 }
 
+/** Get scale degrees for a simplified scale type name */
+export function getScaleDegrees(
+  type: 'major' | 'minor' | 'pentatonic' | 'chromatic',
+): number[] {
+  const map: Record<string, string> = {
+    major: 'major',
+    minor: 'natural-minor',
+    pentatonic: 'pentatonic-major',
+    chromatic: 'chromatic',
+  }
+  return SCALE_DEFINITIONS[map[type]]?.degrees ?? MAJOR_SCALE_INTERVALS
+}
+
 /** Get ALL melody item indices active at a given beat position.
  *  Unlike melodyIndexAtBeat which returns only the first match,
  *  this returns every overlapping note so the playback runtime

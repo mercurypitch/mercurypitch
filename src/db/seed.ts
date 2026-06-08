@@ -22,7 +22,7 @@ async function isSeeded(db: DatabaseAdapter): Promise<boolean> {
       }
     >('featureFlags')
     const flags = await repo.findAll({
-      where: { key: SEEDED_FLAG } as Record<string, unknown>,
+      where: { key: SEEDED_FLAG },
     })
     return flags.length > 0 && flags[0].value === true
   } catch {

@@ -13,6 +13,7 @@ export const TAB_CHALLENGES = 'challenges' as const
 export const TAB_KARAOKE = 'karaoke' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
+export const TAB_EXERCISES = 'exercises' as const
 export const TAB_JAM = 'jam' as const
 
 export type ActiveTab =
@@ -27,6 +28,7 @@ export type ActiveTab =
   | typeof TAB_KARAOKE
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
+  | typeof TAB_EXERCISES
   | typeof TAB_JAM
 
 /** Default tab when the app loads. */
@@ -66,6 +68,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_KARAOKE]: 'karaoke',
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
+  [TAB_EXERCISES]: 'exercises',
   [TAB_JAM]: 'jam',
 }
 
@@ -93,6 +96,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_KARAOKE]: 'Karaoke',
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
+    [TAB_EXERCISES]: 'Exercises',
     [TAB_JAM]: 'Jam',
   }
   return labels[tab]

@@ -14,6 +14,9 @@ interface PitchOverTimeCanvasProps {
   zoomLevel?: () => number
   onZoomChange?: (level: number) => void
   scaleNotes?: () => ScaleDegree[]
+  autoZoom?: boolean
+  onAutoZoomChange?: (enabled: boolean) => void
+  targetNoteMidi?: () => number | undefined
 }
 
 const Y_AXIS_NOTES = [
@@ -31,6 +34,7 @@ const LOG_MIN = Math.log2(MIN_FREQ)
 const LOG_MAX = Math.log2(MAX_FREQ)
 const LOG_RANGE = LOG_MAX - LOG_MIN
 
+const AUTO_ZOOM_WINDOW_SEC = 6
 const MARGIN = 32
 
 const DOT_RADIUS = 3
@@ -47,8 +51,16 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   let resizeObserver: ResizeObserver | null = null
 
   const [internalZoomLevel, setInternalZoomLevel] = createSignal(1)
+  const [internalAutoZoom, setInternalAutoZoom] = createSignal(true)
 
   const currentZoom = () => props.zoomLevel?.() ?? internalZoomLevel()
+  const isAutoZoom = () => props.autoZoom ?? internalAutoZoom()
+
+  const toggleAutoZoom = () => {
+    const next = !isAutoZoom()
+    setInternalAutoZoom(next)
+    props.onAutoZoomChange?.(next)
+  }
 
   const visibleWindow = () => props.visibleWindowSeconds ?? 10
 
@@ -58,6 +70,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   }
 
   const handleWheel = (e: WheelEvent) => {
+    if (isAutoZoom()) return
     e.preventDefault()
     const current = currentZoom()
     const idx = ZOOM_STEPS.indexOf(current)
@@ -131,24 +144,52 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       const w = canvasRef.clientWidth
       const h = canvasRef.clientHeight
 
-      // Compute dynamic log range for zoom
-      const zoom = currentZoom()
+      // Compute dynamic log range for zoom / auto-zoom
+      const samples = props.samples()
       let effLogMin = LOG_MIN
       let effLogMax = LOG_MAX
-      if (zoom > 1) {
-        const samples = props.samples()
-        let centerFreq = 440
+
+      if (isAutoZoom()) {
+        const now = samples.length > 0 ? samples[samples.length - 1]!.time : 0
+        const windowStart = now - AUTO_ZOOM_WINDOW_SEC
+        const recentFreqs: number[] = []
         for (let i = samples.length - 1; i >= 0; i--) {
-          const f = samples[i]!.freq
-          if (f !== null && f > 0) {
-            centerFreq = f
-            break
-          }
+          const s = samples[i]!
+          if (s.time < windowStart) break
+          if (s.freq !== null && s.freq > 0) recentFreqs.push(s.freq)
         }
-        const centerLog = Math.log2(centerFreq)
-        const halfRange = LOG_RANGE / (2 * zoom)
-        effLogMin = Math.max(LOG_MIN, centerLog - halfRange)
-        effLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+        if (recentFreqs.length >= 3) {
+          const minF = Math.min(...recentFreqs)
+          const maxF = Math.max(...recentFreqs)
+          const rangeSemitones = 12 * Math.log2(maxF / minF)
+          const centerLog = (Math.log2(minF) + Math.log2(maxF)) / 2
+          let halfRange: number
+          if (rangeSemitones < 12) {
+            halfRange = 1.0 // 2 octaves total (1 octave each side)
+          } else if (rangeSemitones < 24) {
+            halfRange = rangeSemitones / 12 + 0.5 // range + 1 octave padding
+          } else {
+            halfRange = rangeSemitones / 12 + 0.5
+          }
+          effLogMin = Math.max(LOG_MIN, centerLog - halfRange)
+          effLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+        }
+      } else {
+        const zoom = currentZoom()
+        if (zoom > 1) {
+          let centerFreq = 440
+          for (let i = samples.length - 1; i >= 0; i--) {
+            const f = samples[i]!.freq
+            if (f !== null && f > 0) {
+              centerFreq = f
+              break
+            }
+          }
+          const centerLog = Math.log2(centerFreq)
+          const halfRange = LOG_RANGE / (2 * zoom)
+          effLogMin = Math.max(LOG_MIN, centerLog - halfRange)
+          effLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+        }
       }
       const effLogRange = effLogMax - effLogMin
 
@@ -158,6 +199,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawScaleGridLines(w, h, effLogMin, effLogRange)
+      drawTargetLine(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
       drawSamples(w, h, effLogMin, effLogRange)
 
@@ -252,6 +294,73 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     }
   }
 
+  const drawTargetLine = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
+    if (!ctx) return
+    const targetMidi = props.targetNoteMidi?.()
+    if (targetMidi == null || targetMidi <= 0) return
+
+    const freq = 440 * 2 ** ((targetMidi - 69) / 12)
+    const y = freqToY(freq, h, logMin, logRange)
+    if (y < 4 || y > h - 4) return
+
+    const label = (() => {
+      const names = [
+        'C',
+        'C#',
+        'D',
+        'D#',
+        'E',
+        'F',
+        'F#',
+        'G',
+        'G#',
+        'A',
+        'A#',
+        'B',
+      ]
+      const octave = Math.floor((targetMidi - 12) / 12)
+      return `${names[((Math.round(targetMidi) % 12) + 12) % 12]}${octave}`
+    })()
+
+    ctx.strokeStyle = 'rgba(63,185,80,0.55)'
+    ctx.lineWidth = 1.2
+    ctx.setLineDash([8, 6])
+    ctx.beginPath()
+    ctx.moveTo(MARGIN, y)
+    ctx.lineTo(w - MARGIN, y)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Label pill on the right side
+    ctx.font = 'bold 10px sans-serif'
+    const textWidth = ctx.measureText(label).width
+    const pillW = textWidth + 12
+    const pillH = 16
+    const pillX = w - MARGIN - pillW
+    const pillY = y - pillH / 2
+
+    ctx.fillStyle = 'rgba(13,17,23,0.85)'
+    ctx.beginPath()
+    ctx.roundRect(pillX - 2, pillY, pillW, pillH, 4)
+    ctx.fill()
+
+    ctx.strokeStyle = 'rgba(63,185,80,0.5)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.roundRect(pillX - 2, pillY, pillW, pillH, 4)
+    ctx.stroke()
+
+    ctx.fillStyle = 'rgba(63,185,80,0.9)'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, pillX + pillW / 2, y)
+  }
+
   const drawTimeLabels = (w: number, h: number) => {
     if (!ctx) return
 
@@ -328,7 +437,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
         validPoints.push({ x, y })
 
         // Opacity from clarity
-        const alpha = 0.15 + Math.min(1, s.clarity) * 0.7
+        const alpha = 0.15 + Math.min(1, s.clarity ?? 0) * 0.7
 
         ctx.fillStyle = `rgba(88,166,255,${alpha})`
         ctx.beginPath()
@@ -345,8 +454,8 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     // Draw polyline connecting valid points
     if (validPoints.length > 1) {
-      ctx.strokeStyle = 'rgba(88,166,255,0.4)'
-      ctx.lineWidth = 1.5
+      ctx.strokeStyle = 'rgba(88,166,255,0.28)'
+      ctx.lineWidth = 0.8
       ctx.lineJoin = 'round'
       ctx.beginPath()
       ctx.moveTo(validPoints[0]!.x, validPoints[0]!.y)
@@ -428,5 +537,21 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     }
   }
 
-  return <canvas ref={canvasRef} />
+  return (
+    <div class="pitch-canvas-wrapper">
+      <canvas ref={canvasRef} />
+      <button
+        type="button"
+        class={`pitch-canvas-auto-toggle${isAutoZoom() ? ' pitch-canvas-auto-on' : ''}`}
+        onClick={toggleAutoZoom}
+        title={
+          isAutoZoom()
+            ? 'Auto-zoom ON — click for manual'
+            : 'Manual zoom — click for auto'
+        }
+      >
+        {isAutoZoom() ? 'AUTO' : 'MAN'}
+      </button>
+    </div>
+  )
 }

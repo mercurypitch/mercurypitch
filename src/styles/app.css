@@ -819,6 +819,14 @@ input:checked + .settings-slider:before {
   min-height: 0;
 }
 
+#exercises-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 #practice-panel #canvas-container {
   flex: 1 1 auto;
   min-height: 0;

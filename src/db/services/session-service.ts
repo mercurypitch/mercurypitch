@@ -41,7 +41,7 @@ export async function loadSessionRecords(limit = 50): Promise<SessionRecord[]> {
     const db = await getDb()
     const repo = db.getRepository<SessionRecord>('sessionRecords')
     return repo.findAll({
-      where: { userId: getUserId() } as Record<string, unknown>,
+      where: { userId: getUserId() },
       orderBy: 'endedAt',
       orderDir: 'desc',
       limit,

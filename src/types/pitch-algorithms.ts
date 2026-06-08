@@ -107,6 +107,6 @@ export interface DetectorMetricsDisplay {
 export interface TimeStampedPitchSample {
   time: number
   freq: number | null
-  noteName: string | null
-  clarity: number
+  noteName?: string | null
+  clarity?: number
 }

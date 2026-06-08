@@ -58,6 +58,7 @@ const SessionEditor = lazy(async () =>
     default: m.SessionEditor,
   })),
 )
+import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -75,6 +76,24 @@ import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
+import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
+import CallResponseExercise from '@/features/exercises/call-response/CallResponseExercise'
+import ChordStackerExercise from '@/features/exercises/chord-stacker/ChordStackerExercise'
+import DroneIntonationExercise from '@/features/exercises/drone-intonation/DroneIntonationExercise'
+import DynamicSwellExercise from '@/features/exercises/dynamic-swell/DynamicSwellExercise'
+import ExerciseMenu from '@/features/exercises/ExerciseMenu'
+import IntervalTrainerExercise from '@/features/exercises/interval-trainer/IntervalTrainerExercise'
+import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
+import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
+import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
+import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
+import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
+import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
+import SirenExercise from '@/features/exercises/siren/SirenExercise'
+import SlideExercise from '@/features/exercises/slide/SlideExercise'
+import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
+import type { ExerciseType } from '@/features/exercises/types'
+import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
@@ -82,7 +101,7 @@ import { usePracticeController } from '@/features/practice/usePracticeController
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -92,7 +111,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
-import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -241,6 +260,28 @@ const AppShell: Component<AppProps> = (props) => {
   >(null)
   const [activeUvrView, setActiveUvrView] =
     createSignal<UvrView>('shazam-listen')
+
+  // ── Exercises ────────────────────────────────────────────────
+  const [selectedExercise, setSelectedExercise] =
+    createSignal<ExerciseType | null>(null)
+  const [autoStartExercise, setAutoStartExercise] = createSignal(false)
+  const clearExercise = () => {
+    setSelectedExercise(null)
+    setPendingDrill(null)
+    setAutoStartExercise(false)
+  }
+  const handleQuickStart = (type: ExerciseType) => {
+    setSelectedExercise(type)
+    setAutoStartExercise(true)
+  }
+
+  // Auto-launch exercise drill from challenge "Practice" button
+  createEffect(() => {
+    const drill = pendingDrill()
+    if (drill && activeTab() === TAB_EXERCISES) {
+      setSelectedExercise(drill.exercise)
+    }
+  })
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -1460,6 +1501,151 @@ const AppShell: Component<AppProps> = (props) => {
                 </TabErrorBoundary>
               </Show>
 
+              <Show when={activeTab() === TAB_EXERCISES}>
+                <TabErrorBoundary tabName={tabLabel(TAB_EXERCISES)}>
+                  <div id="exercises-panel">
+                    <Show
+                      when={selectedExercise()}
+                      fallback={
+                        <ExerciseMenu
+                          onSelect={(type) => setSelectedExercise(type)}
+                          onQuickStart={handleQuickStart}
+                        />
+                      }
+                    >
+                      <Show when={selectedExercise() === 'long-note'}>
+                        <LongNoteExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'vibrato'}>
+                        <VibratoExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'slide'}>
+                        <SlideExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'pitch-hold'}>
+                        <PitchHoldExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'mirror-melody'}>
+                        <MirrorMelodyExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'pitch-pursuit'}>
+                        <PitchPursuitExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'interval-trainer'}>
+                        <IntervalTrainerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'scale-runner'}>
+                        <ScaleRunnerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'arpeggio-jumper'}>
+                        <ArpeggioJumperExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'drone-intonation'}>
+                        <DroneIntonationExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'siren'}>
+                        <SirenExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'call-response'}>
+                        <CallResponseExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'dynamic-swell'}>
+                        <DynamicSwellExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'chord-stacker'}>
+                        <ChordStackerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'staccato-precision'}>
+                        <StaccatoPrecisionExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'routine-runner'}>
+                        <RoutineRunnerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                    </Show>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+
               <Show when={activeTab() === TAB_SETTINGS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
                   <div id="settings-panel">
@@ -1858,6 +2044,11 @@ const AppShell: Component<AppProps> = (props) => {
             />
           </Suspense>
         </Show>
+
+        <SessionCelebration
+          data={celebrationData()}
+          onClose={dismissCelebration}
+        />
       </div>
     </PlaybackProvider>
   )

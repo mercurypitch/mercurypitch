@@ -11,7 +11,7 @@ export interface DbEntity {
 
 /** Query options for findAll and count. */
 export interface QueryOptions<T> {
-  where?: Partial<T>
+  where?: Partial<T> & { [key: string]: unknown }
   orderBy?: keyof T
   orderDir?: 'asc' | 'desc'
   limit?: number
