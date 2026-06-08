@@ -13,15 +13,15 @@ import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/
 const STORE_SCHEMAS: Record<string, string> = {
   userProfiles: 'id',
   sessionRecords: 'id, userId, endedAt',
-  challengeDefinitions: 'id, category, isActive, sortOrder',
+  challengeDefinitions: 'id, category, sortOrder',
   challengeProgress: 'id, userId, challengeId',
   badgeDefinitions: 'id, category, tier, sortOrder',
   userBadges: 'id, userId, badgeId',
   achievements: 'id, sortOrder',
   userAchievements: 'id, userId, achievementId',
   leaderboardEntries: 'id, userId, category, period',
-  sharedMelodies: 'id, userId, melodyId, isPublic',
-  sharedSessions: 'id, userId, sessionId, isPublic',
+  sharedMelodies: 'id, userId, melodyId',
+  sharedSessions: 'id, userId, sessionId',
   featureFlags: 'id, &key',
   userSettings: 'id, userId, key',
   uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
@@ -41,28 +41,7 @@ class DexieDatabase extends DexieDB {
 
   constructor() {
     super('MercuryPitchDB')
-    this.version(1).stores({
-      userProfiles: 'id',
-      sessionRecords: 'id, userId, endedAt',
-      challengeDefinitions: 'id, category, isActive, sortOrder',
-      challengeProgress: 'id, userId, challengeId',
-      badgeDefinitions: 'id, category, tier, sortOrder',
-      userBadges: 'id, userId, badgeId',
-      achievements: 'id, sortOrder',
-      userAchievements: 'id, userId, achievementId',
-      leaderboardEntries: 'id, userId, category, period',
-      sharedMelodies: 'id, userId, melodyId, isPublic',
-      sharedSessions: 'id, userId, sessionId, isPublic',
-      featureFlags: 'id, &key',
-      userSettings: 'id, userId, key',
-      uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
-      uvrStemBlobs: 'id, sessionId, stemType, createdAt',
-      uvrStemFingerprints: 'id, sessionId, createdAt',
-    })
-    this.version(2).stores(STORE_SCHEMAS)
-    this.version(3).stores(STORE_SCHEMAS)
-    this.version(4).stores(STORE_SCHEMAS)
-    this.version(5).stores(STORE_SCHEMAS)
+    this.version(1).stores(STORE_SCHEMAS)
   }
 
   /** Add a new table at the next schema version. */
@@ -127,12 +106,19 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
 
       // 2. If no indexed WHERE clause, try to use orderBy index, or fallback to full table
       if (!collection) {
-        if (opts?.orderBy !== undefined) {
+        const orderField = opts?.orderBy as string | undefined
+        const indexes = this.table.schema.indexes.map((idx) => idx.name)
+        const primKey = this.table.schema.primKey.name
+        const orderByIsIndexed =
+          orderField !== undefined &&
+          (indexes.includes(orderField) || orderField === primKey)
+
+        if (orderByIsIndexed) {
           // Use orderBy index to avoid in-memory sorting later
-          const orderCol = this.table.orderBy(opts.orderBy as string)
+          const orderCol = this.table.orderBy(orderField)
           collection = opts?.orderDir === 'desc' ? orderCol.reverse() : orderCol
 
-          // Apply all filters in-memory (full table scan if no WHERE index used!)
+          // Apply all filters in-memory
           if (whereEntries.length > 0) {
             collection = collection.filter((item: T) => {
               return whereEntries.every(
@@ -141,7 +127,7 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
             })
           }
         } else {
-          // Complete full table scan fallback
+          // Full table scan — sort in-memory later (step 4)
           collection = this.table.toCollection()
           if (whereEntries.length > 0) {
             collection = collection.filter((item: T) => {
@@ -156,9 +142,29 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
       // 3. Fetch results
       let result = await collection.toArray()
 
-      // 4. In-memory sorting (needed if we used an indexed WHERE clause but also requested orderBy)
+      // 4. In-memory sorting (needed when orderBy field is not indexed,
+      //    or when we used a WHERE index so results aren't ordered yet)
+      if (opts?.orderBy !== undefined && !usedWhereIndex) {
+        // Check if orderBy was handled by Dexie (indexed orderBy without WHERE index)
+        const orderField = opts.orderBy as string
+        const indexes = this.table.schema.indexes.map((idx) => idx.name)
+        const primKey = this.table.schema.primKey.name
+        const wasHandledByIndex =
+          indexes.includes(orderField) || orderField === primKey
+        if (!wasHandledByIndex) {
+          const orderCol = opts.orderBy as keyof T
+          const dir = opts.orderDir === 'desc' ? -1 : 1
+          result.sort((a, b) => {
+            const valA = a[orderCol]
+            const valB = b[orderCol]
+            if (valA < valB) return -1 * dir
+            if (valA > valB) return 1 * dir
+            return 0
+          })
+        }
+      }
       if (opts?.orderBy !== undefined && usedWhereIndex) {
-        // We used a WHERE index, so the results are NOT ordered by opts.orderBy yet. Sort them manually.
+        // We used a WHERE index, so results are NOT ordered by opts.orderBy yet.
         const orderCol = opts.orderBy as keyof T
         const dir = opts.orderDir === 'desc' ? -1 : 1
         result.sort((a, b) => {
