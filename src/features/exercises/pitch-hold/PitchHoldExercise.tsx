@@ -24,17 +24,19 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'pitch-hold', targetNote: targetNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'pitch-hold', targetNote: untrack(() => targetNote()) },
   })
 
   const controller = usePitchHoldController(base)
 
   const handleStart = async () => {
-    controller.setTarget(noteToMidi(targetNote()))
+    controller.setTarget(noteToMidi(untrack(() => targetNote())))
     await base.start()
     controller.startLoop()
   }
@@ -92,7 +94,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Pitch Hold</h2>

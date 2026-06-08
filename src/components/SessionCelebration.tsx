@@ -39,9 +39,9 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
 ) => {
   return (
     <Show when={props.data}>
-      <div class="celebration-backdrop" onClick={props.onClose}>
+      <div class="celebration-backdrop" onClick={() => props.onClose?.()}>
         <div class="celebration-modal" onClick={(e) => e.stopPropagation()}>
-          <button class="celebration-close" onClick={props.onClose}>
+          <button class="celebration-close" onClick={() => props.onClose?.()}>
             <svg viewBox="0 0 24 24" width="18" height="18">
               <path
                 fill="currentColor"
@@ -71,19 +71,21 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
             </Show>
 
             <div class="celebration-metrics">
-              <For each={Object.entries(props.data!.metrics)}>{([key, val]) => (
-                <div class="celebration-metric">
-                  <span class="celebration-metric-label">
-                    {metricLabel(key)}
-                  </span>
-                  <span class="celebration-metric-value">
-                    {typeof val === 'number' ? Math.round(val) : val}
-                  </span>
-                </div>
-              )}</For>
+              <For each={Object.entries(props.data!.metrics)}>
+                {([key, val]) => (
+                  <div class="celebration-metric">
+                    <span class="celebration-metric-label">
+                      {metricLabel(key)}
+                    </span>
+                    <span class="celebration-metric-value">
+                      {typeof val === 'number' ? Math.round(val) : val}
+                    </span>
+                  </div>
+                )}
+              </For>
             </div>
 
-            <button class="celebration-btn" onClick={props.onClose}>
+            <button class="celebration-btn" onClick={() => props.onClose?.()}>
               Continue
             </button>
           </div>

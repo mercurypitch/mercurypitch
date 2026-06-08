@@ -32,12 +32,14 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const [fromNote, setFromNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
-  const [toNote, setToNote] = createSignal(getDefaultNote(vocalRangePreset()))
+  const [toNote, setToNote] = createSignal(untrack(() => getDefaultNote(vocalRangePreset())))
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'slide', targetNotes: [fromNote(), toNote()] },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'slide', targetNotes: [untrack(() => fromNote()), untrack(() => toNote())] },
   })
 
   const controller = useSlideController(base)
@@ -101,7 +103,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Slide Practice</h2>

@@ -9,8 +9,6 @@ interface StreakCalendarProps {
 const DAY_MS = 86400000
 
 export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
-  const totalDays = props.days ?? 91 // 13 weeks
-
   const activityMap = createMemo(() => {
     const map = new Map<string, number>()
     for (const entry of sessionResults()) {
@@ -21,6 +19,7 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   })
 
   const weeks = createMemo(() => {
+    const totalDays = props.days ?? 91 // 13 weeks
     const today = new Date()
     const result: Array<Array<{ date: string; count: number }>> = []
     let currentWeek: Array<{ date: string; count: number }> = []
@@ -60,7 +59,7 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   }
 
   function formatDate(dateStr: string): string {
-    const d = new Date(`${dateStr  }T00:00:00`)
+    const d = new Date(`${dateStr}T00:00:00`)
     return d.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -71,16 +70,20 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   return (
     <div class="streak-calendar">
       <div class="sc-grid">
-        <For each={weeks()}>{(week) => (
-          <div class="sc-week">
-            <For each={week}>{(day) => (
-              <div
-                class={cellClass(day.count)}
-                title={`${formatDate(day.date)}: ${day.count} session${day.count !== 1 ? 's' : ''}`}
-              />
-            )}</For>
-          </div>
-        )}</For>
+        <For each={weeks()}>
+          {(week) => (
+            <div class="sc-week">
+              <For each={week}>
+                {(day) => (
+                  <div
+                    class={cellClass(day.count)}
+                    title={`${formatDate(day.date)}: ${day.count} session${day.count !== 1 ? 's' : ''}`}
+                  />
+                )}
+              </For>
+            </div>
+          )}
+        </For>
       </div>
       <div class="sc-legend">
         <span class="sc-legend-label">Less</span>

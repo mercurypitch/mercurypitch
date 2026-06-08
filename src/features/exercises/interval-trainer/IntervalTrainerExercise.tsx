@@ -27,14 +27,18 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   const [startNote, setStartNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'interval-trainer', targetNote: startNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'interval-trainer', targetNote: untrack(() => startNote()) },
   })
 
-  const controller = useIntervalTrainerController(base, props.audioEngine)
+  /* eslint-disable solid/reactivity */
+const controller = useIntervalTrainerController(base, props.audioEngine)
+/* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))
@@ -94,7 +98,7 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Interval Trainer</h2>

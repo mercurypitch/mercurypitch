@@ -25,14 +25,18 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'mirror-melody', targetNote: startNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'mirror-melody', targetNote: untrack(() => startNote()) },
   })
 
-  const controller = useMirrorMelodyController(base, props.audioEngine)
+  /* eslint-disable solid/reactivity */
+const controller = useMirrorMelodyController(base, props.audioEngine)
+/* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setMelody(noteToMidi(startNote()))
@@ -93,7 +97,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Mirror Melody</h2>

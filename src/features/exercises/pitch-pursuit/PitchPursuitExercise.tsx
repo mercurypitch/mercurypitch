@@ -26,10 +26,12 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     Array<{ id: number; x: number; y: number; text: string; color: string }>
   >([])
   let popId = 0
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
+    audioEngine,
+    practiceEngine,
     config: { type: 'pitch-pursuit' },
   })
 
@@ -161,7 +163,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Pitch Pursuit</h2>

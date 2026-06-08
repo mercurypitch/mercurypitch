@@ -90,95 +90,95 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
 
   async findAll(opts?: QueryOptions<T>): Promise<T[]> {
     try {
-    // 1. Determine if we can use an index for the WHERE clause
-    let collection: DexieDB.Collection<T, string> | null = null
-    let usedWhereIndex = false
-    const whereEntries = opts?.where
-      ? Object.entries(opts.where).filter(
-          ([_, v]) => v !== undefined && v !== null,
+      // 1. Determine if we can use an index for the WHERE clause
+      let collection: DexieDB.Collection<T, string> | null = null
+      let usedWhereIndex = false
+      const whereEntries = opts?.where
+        ? Object.entries(opts.where).filter(
+            ([_, v]) => v !== undefined && v !== null,
+          )
+        : []
+
+      if (whereEntries.length > 0) {
+        // Find an indexed key to use for the initial query
+        const indexes = this.table.schema.indexes.map((idx) => idx.name)
+        const primKey = this.table.schema.primKey.name
+        const bestEntry = whereEntries.find(
+          ([k]) => indexes.includes(k) || k === primKey,
         )
-      : []
 
-    if (whereEntries.length > 0) {
-      // Find an indexed key to use for the initial query
-      const indexes = this.table.schema.indexes.map((idx) => idx.name)
-      const primKey = this.table.schema.primKey.name
-      const bestEntry = whereEntries.find(
-        ([k]) => indexes.includes(k) || k === primKey,
-      )
+        if (bestEntry) {
+          usedWhereIndex = true
+          const [indexedKey, indexedValue] = bestEntry
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          collection = this.table.where(indexedKey).equals(indexedValue as any)
 
-      if (bestEntry) {
-        usedWhereIndex = true
-        const [indexedKey, indexedValue] = bestEntry
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        collection = this.table.where(indexedKey).equals(indexedValue as any)
-
-        // Apply remaining filters in-memory (JS filter)
-        const remaining = whereEntries.filter(([k]) => k !== indexedKey)
-        if (remaining.length > 0) {
-          collection = collection.filter((item: T) => {
-            return remaining.every(
-              ([k, v]) => (item as Record<string, unknown>)[k] === v,
-            )
-          })
+          // Apply remaining filters in-memory (JS filter)
+          const remaining = whereEntries.filter(([k]) => k !== indexedKey)
+          if (remaining.length > 0) {
+            collection = collection.filter((item: T) => {
+              return remaining.every(
+                ([k, v]) => (item as Record<string, unknown>)[k] === v,
+              )
+            })
+          }
         }
       }
-    }
 
-    // 2. If no indexed WHERE clause, try to use orderBy index, or fallback to full table
-    if (!collection) {
-      if (opts?.orderBy !== undefined) {
-        // Use orderBy index to avoid in-memory sorting later
-        const orderCol = this.table.orderBy(opts.orderBy as string)
-        collection = opts?.orderDir === 'desc' ? orderCol.reverse() : orderCol
+      // 2. If no indexed WHERE clause, try to use orderBy index, or fallback to full table
+      if (!collection) {
+        if (opts?.orderBy !== undefined) {
+          // Use orderBy index to avoid in-memory sorting later
+          const orderCol = this.table.orderBy(opts.orderBy as string)
+          collection = opts?.orderDir === 'desc' ? orderCol.reverse() : orderCol
 
-        // Apply all filters in-memory (full table scan if no WHERE index used!)
-        if (whereEntries.length > 0) {
-          collection = collection.filter((item: T) => {
-            return whereEntries.every(
-              ([k, v]) => (item as Record<string, unknown>)[k] === v,
-            )
-          })
-        }
-      } else {
-        // Complete full table scan fallback
-        collection = this.table.toCollection()
-        if (whereEntries.length > 0) {
-          collection = collection.filter((item: T) => {
-            return whereEntries.every(
-              ([k, v]) => (item as Record<string, unknown>)[k] === v,
-            )
-          })
+          // Apply all filters in-memory (full table scan if no WHERE index used!)
+          if (whereEntries.length > 0) {
+            collection = collection.filter((item: T) => {
+              return whereEntries.every(
+                ([k, v]) => (item as Record<string, unknown>)[k] === v,
+              )
+            })
+          }
+        } else {
+          // Complete full table scan fallback
+          collection = this.table.toCollection()
+          if (whereEntries.length > 0) {
+            collection = collection.filter((item: T) => {
+              return whereEntries.every(
+                ([k, v]) => (item as Record<string, unknown>)[k] === v,
+              )
+            })
+          }
         }
       }
-    }
 
-    // 3. Fetch results
-    let result = await collection.toArray()
+      // 3. Fetch results
+      let result = await collection.toArray()
 
-    // 4. In-memory sorting (needed if we used an indexed WHERE clause but also requested orderBy)
-    if (opts?.orderBy !== undefined && usedWhereIndex) {
-      // We used a WHERE index, so the results are NOT ordered by opts.orderBy yet. Sort them manually.
-      const orderCol = opts.orderBy as keyof T
-      const dir = opts.orderDir === 'desc' ? -1 : 1
-      result.sort((a, b) => {
-        const valA = a[orderCol]
-        const valB = b[orderCol]
-        if (valA < valB) return -1 * dir
-        if (valA > valB) return 1 * dir
-        return 0
-      })
-    }
+      // 4. In-memory sorting (needed if we used an indexed WHERE clause but also requested orderBy)
+      if (opts?.orderBy !== undefined && usedWhereIndex) {
+        // We used a WHERE index, so the results are NOT ordered by opts.orderBy yet. Sort them manually.
+        const orderCol = opts.orderBy as keyof T
+        const dir = opts.orderDir === 'desc' ? -1 : 1
+        result.sort((a, b) => {
+          const valA = a[orderCol]
+          const valB = b[orderCol]
+          if (valA < valB) return -1 * dir
+          if (valA > valB) return 1 * dir
+          return 0
+        })
+      }
 
-    // 5. Apply offset and limit in-memory
-    if (opts?.offset !== undefined) {
-      result = result.slice(opts.offset)
-    }
-    if (opts?.limit !== undefined) {
-      result = result.slice(0, opts.limit)
-    }
+      // 5. Apply offset and limit in-memory
+      if (opts?.offset !== undefined) {
+        result = result.slice(opts.offset)
+      }
+      if (opts?.limit !== undefined) {
+        result = result.slice(0, opts.limit)
+      }
 
-    return result
+      return result
     } catch (err) {
       console.warn(
         `[DexieAdapter] findAll failed for "${this.table.name}":`,

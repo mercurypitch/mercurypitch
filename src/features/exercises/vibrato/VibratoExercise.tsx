@@ -31,11 +31,13 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'vibrato', targetNote: targetNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'vibrato', targetNote: untrack(() => targetNote()) },
   })
 
   const controller = useVibratoController(base)
@@ -87,7 +89,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Vibrato Practice</h2>

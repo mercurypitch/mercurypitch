@@ -22,13 +22,16 @@ interface LongNoteExerciseProps {
 
 const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
+    untrack(() => getDefaultNote(vocalRangePreset())),
   )
 
+  const audioEngine = untrack(() => props.audioEngine)
+  const practiceEngine = untrack(() => props.practiceEngine)
+
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'long-note', targetNote: targetNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'long-note', targetNote: untrack(() => untrack(() => targetNote())) },
   })
 
   const controller = useLongNoteController(base)
@@ -36,7 +39,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const targetMidi = () => noteToMidi(targetNote())
 
   const handleStart = async () => {
-    controller.setTarget(targetMidi())
+    controller.setTarget(untrack(() => targetMidi()))
     await base.start()
     controller.startLoop()
   }
@@ -84,7 +87,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Long Note Practice</h2>

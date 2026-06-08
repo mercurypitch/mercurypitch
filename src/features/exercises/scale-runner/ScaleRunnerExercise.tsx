@@ -36,14 +36,18 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   )
   const [scaleType, setScaleType] = createSignal<ScaleType>('major')
   const [direction, setDirection] = createSignal<'up' | 'down'>('up')
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'scale-runner', targetNote: startNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'scale-runner', targetNote: untrack(() => startNote()) },
   })
 
-  const controller = useScaleRunnerController(base, props.audioEngine)
+  /* eslint-disable solid/reactivity */
+const controller = useScaleRunnerController(base, props.audioEngine)
+/* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setScale(noteToMidi(startNote()), scaleType(), direction())
@@ -104,7 +108,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Scale Runner</h2>

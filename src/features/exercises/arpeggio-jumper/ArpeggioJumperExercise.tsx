@@ -38,14 +38,18 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   )
   const [arpeggioType, setArpeggioType] = createSignal<ArpeggioType>('major')
   const [direction, setDirection] = createSignal<'up' | 'down'>('up')
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'arpeggio-jumper', targetNote: startNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'arpeggio-jumper', targetNote: untrack(() => startNote()) },
   })
 
-  const controller = useArpeggioJumperController(base, props.audioEngine)
+  /* eslint-disable solid/reactivity */
+const controller = useArpeggioJumperController(base, props.audioEngine)
+/* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setArpeggio(noteToMidi(startNote()), arpeggioType(), direction())
@@ -106,7 +110,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Arpeggio Jumper</h2>

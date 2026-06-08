@@ -25,14 +25,18 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const audioEngine = untrack(() => props.audioEngine)
 
+  const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
-    audioEngine: props.audioEngine,
-    practiceEngine: props.practiceEngine,
-    config: { type: 'dynamic-swell', targetNote: startNote() },
+    audioEngine,
+    practiceEngine,
+    config: { type: 'dynamic-swell', targetNote: untrack(() => startNote()) },
   })
 
-  const controller = useDynamicSwellController(base, props.audioEngine)
+  /* eslint-disable solid/reactivity */
+const controller = useDynamicSwellController(base, props.audioEngine)
+/* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))
@@ -92,7 +96,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   return (
     <div class="exercise-runner">
       <div class="exercise-runner-header">
-        <button class="back-btn" onClick={props.onBack}>
+        <button class="back-btn" onClick={() => props.onBack?.()}>
           ← Back
         </button>
         <h2 class="exercise-title">Dynamic Swell</h2>
