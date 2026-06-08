@@ -647,8 +647,8 @@ export const Cpu: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="100%"
-    height="100%"
+    width="24"
+    height="24"
   >
     <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
     <rect x="9" y="9" width="6" height="6" />
@@ -672,8 +672,8 @@ export const Zap: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="100%"
-    height="100%"
+    width="24"
+    height="24"
   >
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
@@ -688,8 +688,8 @@ export const Server: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="100%"
-    height="100%"
+    width="24"
+    height="24"
   >
     <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
     <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
@@ -707,8 +707,8 @@ export const Clock: Component = () => (
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    width="100%"
-    height="100%"
+    width="24"
+    height="24"
   >
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
