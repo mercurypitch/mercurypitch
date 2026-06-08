@@ -110,7 +110,9 @@ describe('UvrPanel Component', () => {
     it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
       expect(screen.getByRole('button', { name: 'Guide' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Settings' }),
+      ).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Upload' })).toBeInTheDocument()
     })
 
@@ -121,9 +123,11 @@ describe('UvrPanel Component', () => {
     })
 
     it('renders results view when initialView is results', () => {
-      render(() => <UvrPanel {...defaultProps} initialView="results" />)
+      const { container } = render(() => (
+        <UvrPanel {...defaultProps} initialView="results" />
+      ))
 
-      expect(screen.getByText('results')).toBeInTheDocument()
+      expect(container.querySelector('.results-section')).toBeInTheDocument()
     })
   })
 
