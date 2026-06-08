@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
+import { CHORD_INTERVALS } from '@/types'
 import { UvrProcessor } from './uvr-processor'
 
 export interface AudioEngineCallbacks {
@@ -734,6 +735,12 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    tremoloRate?: number,
+    tremoloDepth?: number,
+    trillInterval?: number,
+    trillRate?: number,
+    staccatoRatio?: number,
+    chordIntervals?: number[],
   ): Promise<void> {
     await this.init()
     await this.resume()
@@ -768,6 +775,12 @@ export class AudioEngine {
       effectType,
       targetFreq,
       vibratoAmplitude,
+      tremoloRate,
+      tremoloDepth,
+      trillInterval,
+      trillRate,
+      staccatoRatio,
+      chordIntervals,
     )
     const masterGain = voice.gain
 
@@ -946,6 +959,12 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    tremoloRate?: number,
+    tremoloDepth?: number,
+    trillInterval?: number,
+    trillRate?: number,
+    staccatoRatio?: number,
+    chordIntervals?: number[],
   ): Promise<number | undefined> {
     await this.init()
     await this.resume()
@@ -967,6 +986,12 @@ export class AudioEngine {
       effectType,
       targetFreq,
       vibratoAmplitude,
+      tremoloRate,
+      tremoloDepth,
+      trillInterval,
+      trillRate,
+      staccatoRatio,
+      chordIntervals,
     )
 
     if (!hasCustomEnvelope) {
@@ -1010,6 +1035,12 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    tremoloRate?: number,
+    tremoloDepth?: number,
+    trillInterval?: number,
+    trillRate?: number,
+    staccatoRatio?: number,
+    chordIntervals?: number[],
   ): {
     oscillators: OscillatorNode[]
     gain: GainNode
@@ -1142,6 +1173,23 @@ export class AudioEngine {
       }
     }
 
+    // Chord: create additional oscillators for each chord member pitch.
+    // Chord member oscillators are simple sines sharing the mainGain envelope.
+    if (chordIntervals && chordIntervals.length > 0) {
+      for (const interval of chordIntervals) {
+        if (interval === 0) continue // root already created
+        const memberFreq = freq * Math.pow(2, interval / 12)
+        const osc = ctx.createOscillator()
+        osc.type = 'sine'
+        osc.frequency.value = memberFreq
+        const memberGain = ctx.createGain()
+        memberGain.gain.value = 0.12
+        osc.connect(memberGain)
+        memberGain.connect(mainGain)
+        oscillators.push(osc)
+      }
+    }
+
     // Apply effect modulation to the primary oscillator (index 0)
     let lfos: OscillatorNode[] = []
     let lfoGains: GainNode[] = []
@@ -1154,6 +1202,8 @@ export class AudioEngine {
         now,
         targetFreq,
         vibratoAmplitude,
+        trillInterval,
+        trillRate,
       )
       if (result) {
         lfos = result.lfos
@@ -1161,12 +1211,52 @@ export class AudioEngine {
       }
     }
 
+    // Tremolo: LFO modulates amplitude via a gain node inserted after mainGain
+    let tremoloGain: GainNode | null = null
+    if (effectType === 'tremolo') {
+      const rate = tremoloRate ?? 8
+      const depth = tremoloDepth ?? 0.5
+      const lfo = ctx.createOscillator()
+      const lfoGain = ctx.createGain()
+      tremoloGain = ctx.createGain()
+      lfo.type = 'sine'
+      lfo.frequency.value = rate
+      // LFO ranges 0..1, we want gain from (1-depth) to 1
+      lfoGain.gain.value = depth / 2
+      tremoloGain.gain.value = 1 - depth / 2
+      lfo.connect(lfoGain)
+      lfoGain.connect(tremoloGain.gain)
+      lfo.start(now)
+      lfo.stop(now + dur)
+      lfos.push(lfo)
+      lfoGains.push(lfoGain)
+    }
+
+    // Staccato: shorten the effective envelope to staccatoRatio * duration
+    if (effectType === 'staccato') {
+      const ratio = staccatoRatio ?? 0.4
+      const shortDur = dur * ratio
+      // Overwrite the envelope: quick attack, sustain at full for shortDur, quick release
+      mainGain.gain.cancelScheduledValues(now)
+      mainGain.gain.setValueAtTime(0, now)
+      mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005)
+      mainGain.gain.setValueAtTime(0.7, now + shortDur)
+      mainGain.gain.linearRampToValueAtTime(0, now + shortDur + 0.03)
+      hasCustomEnvelope = true
+    }
+
     // Apply configurable ADSR envelope only for instruments without a custom envelope
     if (!hasCustomEnvelope) {
       this._applyADSREnvelope(mainGain, now, dur)
     }
 
-    return { oscillators, gain: mainGain, lfos, lfoGains, hasCustomEnvelope }
+    // Chain tremoloGain after mainGain so tremolo modulates the final output
+    const finalGain = tremoloGain ?? mainGain
+    if (tremoloGain) {
+      mainGain.connect(tremoloGain)
+    }
+
+    return { oscillators, gain: finalGain, lfos, lfoGains, hasCustomEnvelope }
   }
 
   /**
@@ -1207,6 +1297,8 @@ export class AudioEngine {
     now: number,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    trillInterval?: number,
+    trillRate?: number,
   ): { lfos: OscillatorNode[]; lfoGains: GainNode[] } | null {
     if (!effectType) return null
 
@@ -1257,6 +1349,28 @@ export class AudioEngine {
         osc.frequency.exponentialRampToValueAtTime(dest, now + dur)
         break
       }
+      case 'trill': {
+        // Trill: square-wave LFO alternates pitch between source and target
+        const interval = trillInterval ?? 2
+        const rate = trillRate ?? 10
+        const deviationFactor = Math.pow(2, interval / 12) - 1
+        const lfo = this.audioCtx!.createOscillator()
+        const lfoGain = this.audioCtx!.createGain()
+        lfo.type = 'square'
+        lfo.frequency.value = rate
+        lfoGain.gain.value = freq * deviationFactor
+        lfo.connect(lfoGain)
+        lfoGain.connect(osc.frequency)
+        lfo.start(now)
+        lfo.stop(now + dur)
+        lfos.push(lfo)
+        lfoGains.push(lfoGain)
+        break
+      }
+      case 'tremolo':
+      case 'staccato':
+        // Handled at the gain/envelope level in _createVoice, not on the oscillator
+        break
     }
 
     return { lfos, lfoGains }
@@ -1469,7 +1583,17 @@ export class AudioEngine {
       let targetFreq: number | undefined
       if (item.effectType && item.slideInterval !== undefined) {
         targetFreq = item.note.freq * Math.pow(2, item.slideInterval / 12)
+      } else if (
+        item.effectType === 'trill' &&
+        item.trillInterval !== undefined
+      ) {
+        targetFreq = item.note.freq * Math.pow(2, item.trillInterval / 12)
       }
+
+      const chordIntervals =
+        item.effectType === 'chord' && item.chordType
+          ? CHORD_INTERVALS[item.chordType]
+          : undefined
 
       // Render each note using the same voice creation logic
       await this._renderNoteToContext(
@@ -1481,6 +1605,12 @@ export class AudioEngine {
         item.effectType,
         targetFreq,
         item.vibratoAmplitude,
+        item.tremoloRate,
+        item.tremoloDepth,
+        item.trillInterval,
+        item.trillRate,
+        item.staccatoRatio,
+        chordIntervals,
       )
     }
 
@@ -1529,6 +1659,12 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    tremoloRate?: number,
+    tremoloDepth?: number,
+    trillInterval?: number,
+    trillRate?: number,
+    staccatoRatio?: number,
+    chordIntervals?: number[],
   ): Promise<void> {
     const dur = durationMs / 1000
     const now = startTime
@@ -1540,6 +1676,12 @@ export class AudioEngine {
       effectType,
       targetFreq,
       vibratoAmplitude,
+      tremoloRate,
+      tremoloDepth,
+      trillInterval,
+      trillRate,
+      staccatoRatio,
+      chordIntervals,
     )
 
     mainGain.connect(destination)
@@ -1560,6 +1702,12 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    tremoloRate?: number,
+    tremoloDepth?: number,
+    trillInterval?: number,
+    trillRate?: number,
+    staccatoRatio?: number,
+    chordIntervals?: number[],
   ): { oscillators: OscillatorNode[]; gain: GainNode } {
     const now = ctx.currentTime
     // const dur = _durationMs / 1000
@@ -1668,7 +1816,24 @@ export class AudioEngine {
       }
     }
 
+    // Chord: additional sine oscillators for chord member pitches
+    if (chordIntervals && chordIntervals.length > 0) {
+      for (const interval of chordIntervals) {
+        if (interval === 0) continue
+        const memberFreq = freq * Math.pow(2, interval / 12)
+        const osc = ctx.createOscillator()
+        osc.type = 'sine'
+        osc.frequency.value = memberFreq
+        const memberGain = ctx.createGain()
+        memberGain.gain.value = 0.12
+        osc.connect(memberGain)
+        memberGain.connect(mainGain)
+        oscillators.push(osc)
+      }
+    }
+
     // Apply effect modulation for offline rendering
+    let finalGain = mainGain
     if (effectType && oscillators.length > 0) {
       const dur = _durationMs / 1000
       if (effectType === 'vibrato') {
@@ -1696,10 +1861,47 @@ export class AudioEngine {
         const dest = targetFreq ?? freq * 1.25
         oscillators[0].frequency.setValueAtTime(freq, now)
         oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
+      } else if (effectType === 'trill') {
+        const interval = trillInterval ?? 2
+        const rate = trillRate ?? 10
+        const deviationFactor = Math.pow(2, interval / 12) - 1
+        const lfo = ctx.createOscillator()
+        const lfoGain = ctx.createGain()
+        lfo.type = 'square'
+        lfo.frequency.value = rate
+        lfoGain.gain.value = freq * deviationFactor
+        lfo.connect(lfoGain)
+        lfoGain.connect(oscillators[0].frequency)
+        lfo.start(now)
+        lfo.stop(now + dur + 0.1)
+      } else if (effectType === 'tremolo') {
+        const rate = tremoloRate ?? 8
+        const depth = tremoloDepth ?? 0.5
+        const lfo = ctx.createOscillator()
+        const lfoGain = ctx.createGain()
+        const tremoGain = ctx.createGain()
+        lfo.type = 'sine'
+        lfo.frequency.value = rate
+        lfoGain.gain.value = depth / 2
+        tremoGain.gain.value = 1 - depth / 2
+        lfo.connect(lfoGain)
+        lfoGain.connect(tremoGain.gain)
+        lfo.start(now)
+        lfo.stop(now + dur + 0.1)
+        mainGain.connect(tremoGain)
+        finalGain = tremoGain
+      } else if (effectType === 'staccato') {
+        const ratio = staccatoRatio ?? 0.4
+        const shortDur = dur * ratio
+        mainGain.gain.cancelScheduledValues(now)
+        mainGain.gain.setValueAtTime(0, now)
+        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005)
+        mainGain.gain.setValueAtTime(0.7, now + shortDur)
+        mainGain.gain.linearRampToValueAtTime(0, now + shortDur + 0.03)
       }
     }
 
-    return { oscillators, gain: mainGain }
+    return { oscillators, gain: finalGain }
   }
 
   /**

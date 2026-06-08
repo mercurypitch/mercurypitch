@@ -106,7 +106,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
+import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
@@ -120,6 +120,7 @@ import { getSession, setSelectedMelodyIds, templateToSession, userSession, } fro
 import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
+import { CHORD_INTERVALS } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import styles from './components/App.module.css'
@@ -433,6 +434,7 @@ const AppShell: Component<AppProps> = (props) => {
     isPaused,
     currentBeat,
     currentNoteIndex,
+    activeNoteIndices,
     activePlaybackItems,
     totalBeats,
     handlePlay,
@@ -478,6 +480,29 @@ const AppShell: Component<AppProps> = (props) => {
     countInBeat,
     isCountingIn,
   } = practice
+
+  // Track playNote IDs by melody index so noteEnd can stop individual notes
+  const activeNoteIds = new Map<number, number>()
+
+  // Chord member target frequencies (polyphonic playback). Excludes the
+  // primary note (first in activeNoteIndices) which is covered by targetPitch.
+  const targetPitches = createMemo(() => {
+    const active = activeNoteIndices()
+    const items = activePlaybackItems()
+    const freqs: number[] = []
+    let first = true
+    for (const idx of active) {
+      if (first) {
+        first = false
+        continue
+      }
+      const item = items[idx]
+      if (item != null && item.isRest !== true && item.note.freq > 0) {
+        freqs.push(item.note.freq)
+      }
+    }
+    return freqs
+  })
 
   // ── Session sequencer ───────────────────────────────────────
   // Wire the sequencer to the SAME playback display setters the
@@ -804,7 +829,7 @@ const AppShell: Component<AppProps> = (props) => {
       // play at full volume during what's supposed to be silent.
       // Spaced-rest items take the same path and benefit from the same
       // guard. We also avoid passing rests to the practiceEngine.
-      const isRestItem = (item as { isRest?: boolean }).isRest === true
+      const isRestItem = item.isRest === true
 
       if (!isRestItem) {
         setTargetPitch(item.note.freq)
@@ -825,24 +850,61 @@ const AppShell: Component<AppProps> = (props) => {
         const noteDurationMs = item.duration * beatDurationMs
 
         let targetFreq: number | undefined
-        if (item.effectType && item.slideInterval !== undefined) {
-          targetFreq = item.note.freq * Math.pow(2, item.slideInterval / 12)
+        if (item.effectType) {
+          if (item.slideInterval !== undefined) {
+            targetFreq = item.note.freq * Math.pow(2, item.slideInterval / 12)
+          } else if (
+            item.effectType === 'trill' &&
+            item.trillInterval !== undefined
+          ) {
+            targetFreq = item.note.freq * Math.pow(2, item.trillInterval / 12)
+          }
         }
 
-        void audioEngine.playTone(
-          item.note.freq,
-          noteDurationMs,
-          item.effectType,
-          targetFreq,
-          item.vibratoAmplitude,
-        )
+        const chordIntervals =
+          item.effectType === 'chord' && item.chordType
+            ? CHORD_INTERVALS[item.chordType]
+            : undefined
+
+        audioEngine
+          .playNote(
+            item.note.freq,
+            noteDurationMs,
+            item.effectType,
+            targetFreq,
+            item.vibratoAmplitude,
+            item.tremoloRate,
+            item.tremoloDepth,
+            item.trillInterval,
+            item.trillRate,
+            item.staccatoRatio,
+            chordIntervals,
+          )
+          .then((noteId) => {
+            if (noteId !== undefined) {
+              activeNoteIds.set(index, noteId)
+            }
+          })
+      }
+    })
+
+    playbackRuntime.on('noteEnd', (e) => {
+      const { index } = e
+      const noteId = activeNoteIds.get(index)
+      if (noteId !== undefined) {
+        audioEngine.stopNote(noteId)
+        activeNoteIds.delete(index)
+      }
+      // If this was the last active note, clear target pitch
+      if (activeNoteIndices().size === 0) {
+        setTargetPitch(null)
       }
     })
 
     playbackRuntime.on('beat', (e: { beat?: number }) => {
       const beat = e.beat ?? 0
-      const noteIndex = melodyIndexAtBeat(activePlaybackItems(), beat)
-      melodyStore.setCurrentNoteIndex(noteIndex)
+      const indices = melodyIndicesAtBeat(activePlaybackItems(), beat)
+      melodyStore.setCurrentNoteIndex(indices.length > 0 ? indices[0] : -1)
     })
 
     playbackRuntime.setMetronomeEnabled(metronomeEnabled)
@@ -1181,10 +1243,12 @@ const AppShell: Component<AppProps> = (props) => {
                         currentBeat={currentBeat}
                         pitchHistory={pitchHistory}
                         currentNoteIndex={currentNoteIndex}
+                        activeNoteIndices={activeNoteIndices}
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         isScrolling={() => true}
                         targetPitch={targetPitch}
+                        targetPitches={targetPitches}
                         noteAccuracyMap={noteAccuracyMap}
                         isRecording={recording.isRecording}
                         getWaveform={() =>

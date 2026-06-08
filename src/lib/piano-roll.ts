@@ -5,11 +5,12 @@
 import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
-import { drawEffectBadge, drawSlideProgress, slideShapePath, vibratoShapePath, } from '@/lib/effect-renderer'
+import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlideProgress, drawStaccatoShape, drawTrillProgress, SLIDE_FILL, SLIDE_STROKE, slideShapePath, STACCATO_FILL, STACCATO_STROKE, TREMOLO_FILL, TREMOLO_STROKE, TRILL_FILL, TRILL_STROKE, trillShapePath, VIBRATO_FILL, VIBRATO_STROKE, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
-import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
+import type { ChordType, MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
+import { CHORD_INTERVALS } from '@/types'
 
 const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -443,6 +444,10 @@ export type EffectType =
   | 'ease-in'
   | 'ease-out'
   | 'vibrato'
+  | 'tremolo'
+  | 'trill'
+  | 'staccato'
+  | 'chord'
 
 export class PianoRollEditor {
   private container: HTMLElement
@@ -528,6 +533,7 @@ export class PianoRollEditor {
   private dragOffsets: { beat: number; row: number }[] = []
   private selectedDuration = 1
   private nextNoteId = 1
+  private clipboard: MelodyItem[] = []
   private isBoxSelecting = false
   private boxStartX = 0
   private boxStartY = 0
@@ -556,6 +562,12 @@ export class PianoRollEditor {
   // Effect state
   private selectedEffect: EffectType | null = null
   private vibratoAmplitude = 0.5
+  private tremoloRate = 8
+  private tremoloDepth = 0.5
+  private trillRate = 10
+  private trillInterval = 2
+  private staccatoRatio = 0.4
+  private chordType: ChordType = 'major'
   private _intervalModalEl: HTMLElement | null = null
   private _intervalResolve: ((value: number | null) => void) | null = null
   private _intervalBtns: Map<number, HTMLButtonElement> = new Map()
@@ -1022,7 +1034,7 @@ export class PianoRollEditor {
 
   private _updateHint(): void {
     if (!this.hintEl) return
-    this._updateVibratoSlider()
+    this._updateEffectSliders()
     this.hintEl.parentElement?.classList.remove('has-warning')
     if (this.selectedNoteIds.size > 0) {
       if (this.selectedNoteIds.size === 1) {
@@ -1038,7 +1050,11 @@ export class PianoRollEditor {
           this.hintEl.textContent = `Selected: ${name} | Duration: ${note.duration}b | Bar ${startBar}/${startBeat} — Right-click or Del to delete`
         }
       } else {
-        this.hintEl.textContent = `${this.selectedNoteIds.size} notes selected | Shift+click to toggle | Drag to multi-move | Del to delete | Action buttons create slides`
+        const copyHint =
+          this.clipboard.length > 0
+            ? ' | Ctrl+C to copy, Ctrl+V to paste'
+            : ' | Ctrl+C to copy'
+        this.hintEl.textContent = `${this.selectedNoteIds.size} notes selected | Shift+click to toggle | Drag to multi-move | Del to delete${copyHint}`
       }
     } else if (this.activeTool === 'place') {
       let msg = `Click to place a ${this.selectedDuration}b note`
@@ -1046,31 +1062,47 @@ export class PianoRollEditor {
         msg += ` [Effect: ${this.selectedEffect}]`
       }
       msg += ' | Right-click to delete'
+      if (this.clipboard.length > 0) {
+        msg += ` | Ctrl+V to paste ${this.clipboard.length} note${this.clipboard.length > 1 ? 's' : ''}`
+      }
       this.hintEl.textContent = msg
     } else if (this.activeTool === 'erase') {
-      this.hintEl.textContent = 'Click on a note to erase it'
+      let msg = 'Click on a note to erase it'
+      if (this.clipboard.length > 0) {
+        msg += ` | Ctrl+V to paste ${this.clipboard.length} note${this.clipboard.length > 1 ? 's' : ''}`
+      }
+      this.hintEl.textContent = msg
     } else if (this.activeTool === 'browse') {
-      this.hintEl.textContent =
+      let msg =
         'Click notes to select and edit effects | Shift+click to multi-select'
+      if (this.clipboard.length > 0) {
+        msg += ` | Ctrl+V to paste ${this.clipboard.length} note${this.clipboard.length > 1 ? 's' : ''}`
+      }
+      this.hintEl.textContent = msg
     } else {
-      this.hintEl.textContent =
-        'Click and drag note edges to resize | Del to delete selected'
+      let msg = 'Click and drag note edges to resize | Del to delete selected'
+      if (this.clipboard.length > 0) {
+        msg += ` | Ctrl+V to paste ${this.clipboard.length} note${this.clipboard.length > 1 ? 's' : ''}`
+      }
+      this.hintEl.textContent = msg
     }
   }
 
   private _showEffectHoverHint(effect: EffectType): void {
     if (!this.hintEl) return
     const n = this.selectedNoteIds.size
-    if (effect === 'vibrato' && n === 0) {
-      this.hintEl.textContent = 'Select a note first, then press V for vibrato'
-    } else if (
-      (effect === 'slide-up' ||
-        effect === 'slide-down' ||
-        effect === 'ease-in' ||
-        effect === 'ease-out') &&
-      n === 0
-    ) {
-      this.hintEl.textContent = 'Select a note first to apply slide/ease'
+    if (n === 0) {
+      const hints: Record<string, string> = {
+        vibrato: 'Select a note first, then press V for vibrato',
+        tremolo: 'Select a note first, then press T for tremolo',
+        trill: 'Select a note first, then press Shift+T for trill',
+        staccato: 'Select a note first, then press Shift+K for staccato',
+        'slide-up': 'Select a note first to apply slide/ease',
+        'slide-down': 'Select a note first to apply slide/ease',
+        'ease-in': 'Select a note first to apply slide/ease',
+        'ease-out': 'Select a note first to apply slide/ease',
+      }
+      if (hints[effect]) this.hintEl.textContent = hints[effect]
     }
   }
 
@@ -1458,11 +1490,9 @@ export class PianoRollEditor {
   <!-- EFFECTS -->
   <div class="roll-group roll-group-2col" data-name="Effects">
     <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes (S)">
-      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>
       <span>↑Slide</span>
     </button>
     <button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes (Shift+S)">
-      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>
       <span>↓Slide</span>
     </button>
     <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down) (E)">
@@ -1477,24 +1507,23 @@ export class PianoRollEditor {
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>
       <span>Vibrato</span>
     </button>
-    <div class="roll-vibrato-amp" id="roll-vibrato-amp-group" style="display:none">
-      <label for="roll-vibrato-amp-slider" title="Vibrato depth in semitones">Amp:</label>
-      <input type="range" id="roll-vibrato-amp-slider" min="0.1" max="3" step="0.1" value="0.5">
-      <span id="roll-vibrato-amp-value">0.5</span>
-    </div>
+    <button id="roll-action-tremolo" class="roll-action-btn tremolo" title="Apply tremolo amplitude modulation (T)">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 8h2v8H3zm4-4h2v16H7zm4 2h2v12h-2zm4-2h2v16h-2zm4 4h2v8h-2z"/></svg>
+      <span>Tremolo</span>
+    </button>
+    <button id="roll-action-trill" class="roll-action-btn trill" title="Apply trill pitch alternation (Shift+T)">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 4l4 8-4 8h6l4-8-4-8zm7 0l4 8-4 8h6l4-8-4-8z"/></svg>
+      <span>Trill</span>
+    </button>
+    <button id="roll-action-staccato" class="roll-action-btn staccato" title="Apply staccato shortened note (Shift+K)">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+      <span>Staccato</span>
+    </button>
+    <button id="roll-action-chord" class="roll-action-btn chord" title="Apply chord to note (C)">
+      <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="6" cy="18" r="2" fill="currentColor"/><circle cx="12" cy="10" r="2" fill="currentColor"/><circle cx="18" cy="6" r="2" fill="currentColor"/></svg>
+      <span>Chord</span>
+    </button>
           </div>
-
-  <!-- INTERVAL MODAL -->
-  <div class="roll-interval-modal" id="roll-interval-modal" style="display:none">
-    <div class="roll-interval-content">
-      <h3 id="roll-interval-title">Slide Interval</h3>
-      <div class="roll-interval-grid" id="roll-interval-grid"></div>
-      <div class="roll-interval-actions">
-        <button class="roll-interval-cancel" id="roll-interval-cancel">Cancel</button>
-        <button class="roll-interval-remove" id="roll-interval-remove" style="display:none">Remove effect</button>
-      </div>
-    </div>
-  </div>
 
   <!-- IO -->
   <div class="roll-group roll-group-2col" data-name="I/O">
@@ -1513,6 +1542,59 @@ export class PianoRollEditor {
     </button>
         </div>
 </div>
+
+  <!-- EFFECT POPOVER (floats below toolbar) -->
+  <div class="roll-effect-popover" id="roll-effect-popover" style="display:none">
+    <div class="roll-effect-popover-inner" id="roll-popover-vibrato" style="display:none">
+      <label for="roll-vibrato-amp-slider" title="Vibrato depth in semitones">Amp:</label>
+      <input type="range" id="roll-vibrato-amp-slider" min="0.1" max="3" step="0.1" value="0.5">
+      <span class="roll-popover-val" id="roll-vibrato-amp-value">0.5</span>
+    </div>
+    <div class="roll-effect-popover-inner" id="roll-popover-tremolo" style="display:none">
+      <label for="roll-tremolo-rate-slider" title="Tremolo rate in Hz">Rate:</label>
+      <input type="range" id="roll-tremolo-rate-slider" min="2" max="20" step="0.5" value="8">
+      <span class="roll-popover-val" id="roll-tremolo-rate-value">8</span>
+      <label for="roll-tremolo-depth-slider" title="Tremolo depth (0.1-1.0)">Depth:</label>
+      <input type="range" id="roll-tremolo-depth-slider" min="0.1" max="1" step="0.05" value="0.5">
+      <span class="roll-popover-val" id="roll-tremolo-depth-value">0.5</span>
+    </div>
+    <div class="roll-effect-popover-inner" id="roll-popover-trill" style="display:none">
+      <label for="roll-trill-rate-slider" title="Trill rate in Hz">Rate:</label>
+      <input type="range" id="roll-trill-rate-slider" min="4" max="20" step="0.5" value="10">
+      <span class="roll-popover-val" id="roll-trill-rate-value">10</span>
+    </div>
+    <div class="roll-effect-popover-inner" id="roll-popover-staccato" style="display:none">
+      <label for="roll-staccato-ratio-slider" title="Staccato duration ratio (0.1-0.8)">Ratio:</label>
+      <input type="range" id="roll-staccato-ratio-slider" min="0.1" max="0.8" step="0.05" value="0.4">
+      <span class="roll-popover-val" id="roll-staccato-ratio-value">0.4</span>
+    </div>
+    <div class="roll-effect-popover-inner" id="roll-popover-chord" style="display:none">
+      <label for="roll-chord-type-select" title="Chord type">Type:</label>
+      <select id="roll-chord-type-select">
+        <option value="power">Power (5)</option>
+        <option value="major" selected>Major (Maj)</option>
+        <option value="minor">Minor (min)</option>
+        <option value="diminished">Diminished (dim)</option>
+        <option value="augmented">Augmented (aug)</option>
+        <option value="sus2">Sus2</option>
+        <option value="sus4">Sus4</option>
+        <option value="octave">Octave (8va)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- INTERVAL MODAL -->
+  <div class="roll-interval-modal" id="roll-interval-modal" style="display:none">
+    <div class="roll-interval-content">
+      <h3 id="roll-interval-title">Slide Interval</h3>
+      <div class="roll-interval-grid" id="roll-interval-grid"></div>
+      <div class="roll-interval-actions">
+        <button class="roll-interval-cancel" id="roll-interval-cancel">Cancel</button>
+        <button class="roll-interval-remove" id="roll-interval-remove" style="display:none">Remove effect</button>
+      </div>
+    </div>
+  </div>
+
       <div class="roll-main-area">
         <div class="roll-grid-wrapper">
           <div class="roll-ruler-container">
@@ -1708,17 +1790,77 @@ export class PianoRollEditor {
     setupEffectBtn('#roll-action-ease-in', 'ease-in')
     setupEffectBtn('#roll-action-ease-out', 'ease-out')
     setupEffectBtn('#roll-action-vibrato', 'vibrato')
+    setupEffectBtn('#roll-action-tremolo', 'tremolo')
+    setupEffectBtn('#roll-action-trill', 'trill')
+    setupEffectBtn('#roll-action-staccato', 'staccato')
+    setupEffectBtn('#roll-action-chord', 'chord')
 
-    // Vibrato amplitude slider
-    const vibratoAmpSlider = container.querySelector(
-      '#roll-vibrato-amp-slider',
-    ) as HTMLInputElement
-    const vibratoAmpValue = container.querySelector(
-      '#roll-vibrato-amp-value',
-    ) as HTMLSpanElement
-    vibratoAmpSlider?.addEventListener('input', () => {
-      vibratoAmpValue.textContent = vibratoAmpSlider.value
-      this.vibratoAmplitude = parseFloat(vibratoAmpSlider.value)
+    // Effect parameter sliders — DRY helper avoids repeating the
+    // query → parse → iterate → mutate → emit/draw pipeline.
+    this._bindEffectSlider(
+      'roll-vibrato-amp-slider',
+      'roll-vibrato-amp-value',
+      'vibrato',
+      (n, v) => {
+        this.vibratoAmplitude = v
+        n.vibratoAmplitude = v
+      },
+    )
+    this._bindEffectSlider(
+      'roll-tremolo-rate-slider',
+      'roll-tremolo-rate-value',
+      'tremolo',
+      (n, v) => {
+        this.tremoloRate = v
+        n.tremoloRate = v
+      },
+    )
+    this._bindEffectSlider(
+      'roll-tremolo-depth-slider',
+      'roll-tremolo-depth-value',
+      'tremolo',
+      (n, v) => {
+        this.tremoloDepth = v
+        n.tremoloDepth = v
+      },
+    )
+    this._bindEffectSlider(
+      'roll-trill-rate-slider',
+      'roll-trill-rate-value',
+      'trill',
+      (n, v) => {
+        this.trillRate = v
+        n.trillRate = v
+      },
+    )
+    this._bindEffectSlider(
+      'roll-staccato-ratio-slider',
+      'roll-staccato-ratio-value',
+      'staccato',
+      (n, v) => {
+        this.staccatoRatio = v
+        n.staccatoRatio = v
+      },
+    )
+
+    // Chord type select (not a slider — kept inline)
+    const chordTypeSelect = container.querySelector(
+      '#roll-chord-type-select',
+    ) as HTMLSelectElement
+    chordTypeSelect?.addEventListener('change', () => {
+      this.chordType = chordTypeSelect.value as ChordType
+      const sel = this._getSelectedNotes()
+      let changed = false
+      for (const n of sel) {
+        if (n.effectType === 'chord') {
+          n.chordType = this.chordType
+          changed = true
+        }
+      }
+      if (changed) {
+        this.emitMelodyChange()
+        this.draw()
+      }
     })
 
     // Interval modal — build preset grid and wire close events
@@ -1776,6 +1918,30 @@ export class PianoRollEditor {
         intervalModal.style.display = 'none'
       }
     })
+
+    // Reposition effect popover on scroll
+    const repositionPopover = () => {
+      const popover = container.querySelector(
+        '#roll-effect-popover',
+      ) as HTMLElement | null
+      if (!popover || popover.style.display === 'none') return
+      const effectsGroup = container.querySelector(
+        '.roll-group[data-name="Effects"]',
+      )
+      if (effectsGroup instanceof HTMLElement) {
+        const groupRect = effectsGroup.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+        popover.style.top = `${groupRect.bottom - containerRect.top + 2}px`
+        popover.style.left = `${groupRect.left - containerRect.left}px`
+      }
+    }
+    container.addEventListener('scroll', repositionPopover, { passive: true })
+    // Toolbar has overflow-x: auto — listen on it too
+    const toolbarEl = container.querySelector('.roll-toolbar')
+    toolbarEl?.addEventListener('scroll', repositionPopover, { passive: true })
+    window.addEventListener('scroll', repositionPopover, { passive: true })
+    // Also reposition on resize
+    window.addEventListener('resize', repositionPopover, { passive: true })
 
     // Clear
     container
@@ -2238,6 +2404,15 @@ export class PianoRollEditor {
     const beat = x / this.beatWidth
     const row = Math.floor(y / this.rowHeight)
 
+    // Playhead seeking: if the click is near the blue playhead line, enter
+    // seeking mode so the user can drag the playhead to scrub audio.
+    const playheadX = this.getCurrentBeat() * this.beatWidth
+    if (Math.abs(x - playheadX) < 10) {
+      this.isSeeking = true
+      this.seekToRulerPosition(e)
+      return
+    }
+
     // In preview mode, only allow selecting existing notes — no editing.
     if (this.previewMode) {
       const note = this.findNoteAt(beat, row)
@@ -2659,6 +2834,75 @@ export class PianoRollEditor {
     )
     if (isTyping) return
 
+    // Copy: Ctrl+C — store selected notes in clipboard
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if (this.selectedNoteIds.size === 0) return
+      e.preventDefault()
+      const selected = this._getSelectedNotes()
+      // Deep-clone and strip IDs — fresh IDs are assigned on paste
+      this.clipboard = selected.map((n) => {
+        const { id: _id, ...rest } = n
+        return JSON.parse(JSON.stringify(rest)) as MelodyItem
+      })
+      this._updateHint()
+      return
+    }
+
+    // Paste: Ctrl+V — insert clipboard notes at melody end
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      if (this.clipboard.length === 0) return
+      e.preventDefault()
+      this.pushHistory()
+
+      // Calculate the offset so notes paste after the current melody
+      const minBeat = Math.min(...this.clipboard.map((n) => n.startBeat))
+      const melodyEnd =
+        this.melody.length > 0
+          ? Math.max(...this.melody.map((n) => n.startBeat + n.duration))
+          : 0
+      const offset = melodyEnd - minBeat
+
+      const pastedIds: number[] = []
+      for (const item of this.clipboard) {
+        let id = this.nextNoteId++
+        while (this.melody.some((n) => n.id === id)) {
+          id = this.nextNoteId++
+        }
+        const clone: MelodyItem = {
+          ...item,
+          id,
+          startBeat: item.startBeat + offset,
+        }
+        this.melody.push(clone)
+        pastedIds.push(id)
+      }
+
+      // Select the newly pasted notes
+      this.selectedNoteIds.clear()
+      for (const pid of pastedIds) {
+        this.selectedNoteIds.add(pid)
+      }
+      this.onNoteSelect?.(
+        this.melody.find((n) => n.id === pastedIds[0]) ?? null,
+      )
+
+      // Auto-expand canvas if needed
+      const pasteEnd = Math.max(
+        ...this.clipboard.map((n) => n.startBeat + offset + n.duration),
+      )
+      if (pasteEnd > this.totalBeats) {
+        const barBeats = this.config.beatsPerBar
+        this.totalBeats = Math.ceil(pasteEnd / barBeats) * barBeats
+        this.buildCanvases()
+      }
+
+      this.emitMelodyChange()
+      this.draw()
+      this._updateHint()
+      this.updateUndoRedoButtons()
+      return
+    }
+
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (this.selectedNoteIds.size > 0) {
         this.pushHistory()
@@ -2698,6 +2942,18 @@ export class PianoRollEditor {
     } else if (e.key === 'v' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()
       this._keyboardEffect('vibrato')
+    } else if (e.key === 't' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('tremolo')
+    } else if (e.key === 'T' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('trill')
+    } else if (e.key === 'c' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('chord')
+    } else if (e.key === 'K' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('staccato')
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault()
       const sortedNotes = [...this.melody].sort(
@@ -2783,10 +3039,22 @@ export class PianoRollEditor {
       startBeat: snappedBeat,
     }
 
-    // Apply effect if one is selected (vibrato is self-contained;
-    // slide/ease effects will need an interval picked later via S/E key)
+    // Apply effect if one is selected
     if (this.selectedEffect) {
       item.effectType = this.selectedEffect
+      if (this.selectedEffect === 'vibrato') {
+        item.vibratoAmplitude = this.vibratoAmplitude
+      } else if (this.selectedEffect === 'tremolo') {
+        item.tremoloRate = this.tremoloRate
+        item.tremoloDepth = this.tremoloDepth
+      } else if (this.selectedEffect === 'trill') {
+        item.trillRate = this.trillRate
+        item.trillInterval = this.trillInterval
+      } else if (this.selectedEffect === 'staccato') {
+        item.staccatoRatio = this.staccatoRatio
+      } else if (this.selectedEffect === 'chord') {
+        item.chordType = this.chordType
+      }
     }
 
     this.melody.push(item)
@@ -2858,11 +3126,18 @@ export class PianoRollEditor {
     const note = this.findNoteAt(beat, row)
     if (note) return note
     for (const n of this.melody) {
-      if (!n.effectType || n.slideInterval === undefined) continue
+      if (!n.effectType) continue
+      const interval =
+        n.slideInterval !== undefined
+          ? n.slideInterval
+          : n.trillInterval !== undefined
+            ? n.trillInterval
+            : undefined
+      if (interval === undefined) continue
       if (beat < n.startBeat || beat >= n.startBeat + n.duration) continue
       // Check whether the click row lies between source and target rows (inclusive)
       const srcRow = this.midiToRow(n.note.midi)
-      const targetMidi = n.note.midi + n.slideInterval
+      const targetMidi = n.note.midi + interval
       const targetY = this.midiToY(targetMidi)
       const targetRow = Math.floor(targetY / this.rowHeight)
       const rMin = Math.min(srcRow, targetRow)
@@ -3239,10 +3514,12 @@ export class PianoRollEditor {
     }
 
     if (note && note.note?.freq) {
-      const targetFreq =
-        note.slideInterval !== undefined
-          ? note.note.freq * Math.pow(2, note.slideInterval / 12)
-          : undefined
+      let targetFreq: number | undefined
+      if (note.slideInterval !== undefined) {
+        targetFreq = note.note.freq * Math.pow(2, note.slideInterval / 12)
+      } else if (note.trillInterval !== undefined) {
+        targetFreq = note.note.freq * Math.pow(2, note.trillInterval / 12)
+      }
 
       // 250 ms gives the attack envelope time to settle so the ear can
       // recognize the pitch.  At 120 ms most instruments are still in
@@ -3710,22 +3987,43 @@ export class PianoRollEditor {
         this.getCurrentBeat() < note.startBeat + note.duration
       const cornerRadius = 4
 
-      // S-shape ribbon rendering for slide/ease notes with a slideInterval
-      let drawSlideShape = false
-      let drawVibratoShapeFlag = false
+      // Shape rendering flags for effect notes
+      let drawSlide = false
+      let drawVibrato = false
+      let drawTremolo = false
+      let drawTrill = false
+      let drawStaccato = false
+      let drawChord = false
       let tgtCY = 0
       let srcCY = 0
       let halfH = 0
-      if (!offScale && note.effectType && note.slideInterval !== undefined) {
-        const targetMidi = note.note.midi + note.slideInterval
-        tgtCY = this.midiToY(targetMidi)
+      if (!offScale && note.effectType) {
         srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
         halfH = h / 2
-        drawSlideShape = true
-      } else if (!offScale && note.effectType === 'vibrato') {
-        srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
-        halfH = h / 2
-        drawVibratoShapeFlag = true
+        if (
+          note.slideInterval !== undefined &&
+          (note.effectType === 'slide-up' ||
+            note.effectType === 'slide-down' ||
+            note.effectType === 'ease-in' ||
+            note.effectType === 'ease-out')
+        ) {
+          const targetMidi = note.note.midi + note.slideInterval
+          tgtCY = this.midiToY(targetMidi)
+          drawSlide = true
+        } else if (note.effectType === 'vibrato') {
+          drawVibrato = true
+        } else if (note.effectType === 'tremolo') {
+          drawTremolo = true
+        } else if (note.effectType === 'trill') {
+          const trillIv = note.trillInterval ?? 2
+          const targetMidi = note.note.midi + trillIv
+          tgtCY = this.midiToY(targetMidi)
+          drawTrill = true
+        } else if (note.effectType === 'staccato') {
+          drawStaccato = true
+        } else if (note.effectType === 'chord') {
+          drawChord = true
+        }
       }
 
       // Shadow for active vs normal notes
@@ -3741,24 +4039,7 @@ export class PianoRollEditor {
         ctx.shadowOffsetY = 1
       }
 
-      // Draw note block — S-shape for slides, sine-wave ribbon for vibrato, rounded rect for normal
-      ctx.beginPath()
-      if (drawSlideShape) {
-        slideShapePath(ctx, x, w, srcCY, tgtCY, halfH)
-      } else if (drawVibratoShapeFlag) {
-        vibratoShapePath(ctx, x, srcCY, w, halfH)
-      } else if (w < 2 * cornerRadius) {
-        ctx.roundRect(x, ry, 2 * cornerRadius, h, [
-          cornerRadius,
-          cornerRadius,
-          cornerRadius,
-          cornerRadius,
-        ])
-      } else {
-        ctx.roundRect(x, ry, w, h, cornerRadius)
-      }
-
-      // Fill and stroke
+      // Determine colors before path drawing (needed by staccato inline call)
       let fillColor = this.config.noteColors.normal
       let strokeColor = 'rgba(88,166,255,0.5)'
       let strokeWidth = 1
@@ -3767,13 +4048,29 @@ export class PianoRollEditor {
         fillColor = this.config.noteColors.active
         strokeColor = 'rgba(63,185,80,0.9)'
         strokeWidth = 1.5
-      } else if (drawSlideShape) {
-        fillColor = 'rgba(255, 170, 40, 0.88)'
-        strokeColor = 'rgba(255, 200, 80, 0.75)'
+      } else if (drawSlide) {
+        fillColor = SLIDE_FILL
+        strokeColor = SLIDE_STROKE
         strokeWidth = 1.25
-      } else if (drawVibratoShapeFlag) {
-        fillColor = 'rgba(255, 107, 107, 0.72)'
-        strokeColor = 'rgba(255, 140, 140, 0.8)'
+      } else if (drawVibrato) {
+        fillColor = VIBRATO_FILL
+        strokeColor = VIBRATO_STROKE
+        strokeWidth = 1.25
+      } else if (drawTremolo) {
+        fillColor = TREMOLO_FILL
+        strokeColor = TREMOLO_STROKE
+        strokeWidth = 1.25
+      } else if (drawTrill) {
+        fillColor = TRILL_FILL
+        strokeColor = TRILL_STROKE
+        strokeWidth = 1.25
+      } else if (drawStaccato) {
+        fillColor = STACCATO_FILL
+        strokeColor = STACCATO_STROKE
+        strokeWidth = 1.25
+      } else if (drawChord) {
+        fillColor = CHORD_FILL
+        strokeColor = CHORD_STROKE
         strokeWidth = 1.25
       } else if (isSelected) {
         fillColor = this.config.noteColors.selected
@@ -3781,8 +4078,6 @@ export class PianoRollEditor {
         strokeWidth = 1.5
       }
 
-      // Off-scale notes get reduced opacity + hatch overlay so the user can
-      // see they're outside the current scale and still select/erase them.
       if (offScale) {
         fillColor = fillColor.replace('0.85', '0.4').replace('1)', '0.4)')
         if (fillColor === this.config.noteColors.normal) {
@@ -3790,28 +4085,112 @@ export class PianoRollEditor {
         }
       }
 
-      ctx.fillStyle = fillColor
-      ctx.strokeStyle = strokeColor
-      ctx.lineWidth = strokeWidth
-      ctx.fill()
-      ctx.stroke()
+      // Draw note block path + fill/stroke
+      if (drawStaccato && !offScale) {
+        // Staccato draws its own shortened path with fill/stroke inline
+        drawStaccatoShape({
+          ctx,
+          x,
+          y: srcCY,
+          w,
+          halfH,
+          ratio: note.staccatoRatio ?? 0.4,
+          fillColor,
+          strokeColor,
+          strokeWidth,
+        })
+      } else {
+        // Transparent bounding box behind zigzag/vibrato for easier grab/hover
+        if (drawTrill) {
+          const minY = Math.min(srcCY, tgtCY) - halfH - 2
+          const maxY = Math.max(srcCY, tgtCY) + halfH + 2
+          ctx.fillStyle = 'rgba(0,0,0,0)'
+          ctx.fillRect(x, minY, w, maxY - minY)
+        }
 
-      // Progress fill overlay for active slide notes — fills left→right
-      if (isActive && drawSlideShape) {
+        ctx.beginPath()
+        if (drawSlide) {
+          slideShapePath(ctx, x, w, srcCY, tgtCY, halfH)
+        } else if (drawVibrato) {
+          const vibAmp = (note.vibratoAmplitude ?? 0.5) * 1.3 // scale to visible range
+          vibratoShapePath(ctx, x, srcCY, w, halfH, vibAmp)
+        } else if (drawTrill) {
+          trillShapePath(ctx, x, w, srcCY, tgtCY, halfH)
+        } else if (w < 2 * cornerRadius) {
+          ctx.roundRect(x, ry, 2 * cornerRadius, h, [
+            cornerRadius,
+            cornerRadius,
+            cornerRadius,
+            cornerRadius,
+          ])
+        } else {
+          ctx.roundRect(x, ry, w, h, cornerRadius)
+        }
+
+        ctx.fillStyle = fillColor
+        ctx.strokeStyle = strokeColor
+        ctx.lineWidth = strokeWidth
+        ctx.fill()
+        ctx.stroke()
+
+        // Tremolo: draw horizontal opacity bands reflecting rate & depth
+        if (drawTremolo) {
+          const rate = note.tremoloRate ?? 8
+          const depth = note.tremoloDepth ?? 0.5
+          // More bands at higher rates, fewer at lower rates
+          const bandCount = Math.max(2, Math.round((w * rate) / 60))
+          const bandW = w / bandCount
+          const alpha = Math.max(0.05, Math.min(0.45, depth * 0.6))
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
+          for (let i = 0; i < bandCount; i += 2) {
+            ctx.fillRect(x + i * bandW, srcCY - halfH + 2, bandW, halfH * 2 - 4)
+          }
+        }
+
+        // Chord: draw small circles for chord member pitches above the note
+        if (drawChord) {
+          drawChordShape({
+            ctx,
+            x: x + w / 2,
+            y: srcCY,
+            w,
+            halfH,
+            intervals: CHORD_INTERVALS[note.chordType ?? 'major'],
+            rootMidi: note.note.midi,
+            midiToY: (m: number) => this.midiToY(m),
+          })
+        }
+      }
+
+      // Progress fill overlay for active slide/trill notes
+      if (isActive && (drawSlide || drawTrill)) {
         const progress = Math.max(
           0,
           Math.min(1, (this.getCurrentBeat() - note.startBeat) / note.duration),
         )
-        drawSlideProgress({
-          ctx,
-          x,
-          srcCY,
-          tgtCY,
-          w,
-          halfH,
-          progress,
-          clipHeight: this.totalRows * this.rowHeight,
-        })
+        if (drawSlide) {
+          drawSlideProgress({
+            ctx,
+            x,
+            srcCY,
+            tgtCY,
+            w,
+            halfH,
+            progress,
+            clipHeight: this.totalRows * this.rowHeight,
+          })
+        } else if (drawTrill) {
+          drawTrillProgress({
+            ctx,
+            x,
+            srcCY,
+            tgtCY,
+            w,
+            halfH,
+            progress,
+            clipHeight: this.totalRows * this.rowHeight,
+          })
+        }
       }
 
       // Hatch pattern for off-scale notes
@@ -3836,8 +4215,15 @@ export class PianoRollEditor {
       ctx.shadowBlur = 0
       ctx.shadowOffsetY = 0
 
-      // Effect badge on top-right of vibrato notes only (slide notes use edge labels instead)
-      if (note.effectType === 'vibrato' && w > 18) {
+      // Effect badge on top-right
+      if (
+        w > 18 &&
+        note.effectType &&
+        !offScale &&
+        (note.effectType === 'vibrato' ||
+          note.effectType === 'tremolo' ||
+          note.effectType === 'staccato')
+      ) {
         drawEffectBadge({
           ctx,
           x: x + w,
@@ -3846,20 +4232,25 @@ export class PianoRollEditor {
         })
       }
 
-      // Note name text — for slide notes show source at left edge, target at right edge
-      if (drawSlideShape && w > 28) {
-        const targetMidi = note.note.midi + note.slideInterval!
-        const { name: tgtName } = midiToNote(targetMidi)
+      // Note name text — for slide/trill notes show source/target at edges
+      if ((drawSlide || drawTrill) && w > 28) {
+        let tgtName: string
+        if (drawSlide) {
+          const targetMidi = note.note.midi + note.slideInterval!
+          tgtName = midiToNote(targetMidi).name
+        } else {
+          const targetMidi = note.note.midi + (note.trillInterval ?? 2)
+          tgtName = midiToNote(targetMidi).name
+        }
         ctx.fillStyle = 'rgba(255,255,255,0.85)'
         ctx.font = 'bold 9px sans-serif'
         ctx.textAlign = 'left'
         ctx.textBaseline = 'middle'
-        ctx.fillText(note.note.name, x + 5, srcCY)
+        ctx.fillText(note.note.name, x + 10, srcCY)
         ctx.textAlign = 'right'
-        ctx.fillText(tgtName, x + w - 5, tgtCY)
+        ctx.fillText(tgtName, x + w - 10, tgtCY)
         ctx.textBaseline = 'alphabetic'
-      } else if (!drawSlideShape && w > 18) {
-        // Normal / vibrato notes: centered note name
+      } else if (!drawSlide && !drawTrill && w > 18) {
         ctx.fillStyle = 'rgba(255,255,255,0.85)'
         ctx.font = 'bold 9px sans-serif'
         ctx.textAlign = 'center'
@@ -3872,10 +4263,8 @@ export class PianoRollEditor {
       if (isSelected && w > 12) {
         const handleW = 6
         ctx.fillStyle = 'rgba(255,255,255,0.5)'
-        // Left handle — always at source row Y
         ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8)
-        // Right handle — at target pitch Y for slide notes, source Y otherwise
-        const rightHandleY = drawSlideShape ? tgtCY - 4 : ry + h / 2 - 4
+        const rightHandleY = drawSlide || drawTrill ? tgtCY - 4 : ry + h / 2 - 4
         ctx.fillRect(x + w - handleW - 1, rightHandleY, handleW, 8)
       }
     }
@@ -3992,12 +4381,19 @@ export class PianoRollEditor {
         'slide-down': 'Slide Down Interval',
         'ease-in': 'Ease In Interval',
         'ease-out': 'Ease Out Interval',
+        trill: 'Trill Interval',
       }
       title.textContent = effectLabels[effect] ?? 'Interval'
 
-      // Re-label buttons with target note names when a source note is known
+      // Trim interval presets for trill (only ±1, ±2 are musically relevant)
+      const trillRelevant = effect === 'trill' ? new Set([1, 2, -1, -2]) : null
       for (const [iv, btn] of this._intervalBtns) {
         btn.classList.remove('current')
+        if (trillRelevant) {
+          btn.style.display = trillRelevant.has(iv) ? '' : 'none'
+        } else {
+          btn.style.display = ''
+        }
         if (sourceMidi !== undefined) {
           const { name, octave } = midiToNote(sourceMidi + iv)
           btn.innerHTML = `${name}${octave}&nbsp;<small>(${iv > 0 ? '+' : ''}${iv})</small>`
@@ -4036,6 +4432,113 @@ export class PianoRollEditor {
       }
       this.emitMelodyChange()
       this.draw()
+      return
+    }
+
+    // Tremolo: toggle if same, apply immediately otherwise (no modal)
+    if (type === 'tremolo') {
+      this.pushHistory()
+      if (selected.length === 1 && selected[0].effectType === 'tremolo') {
+        selected[0].effectType = undefined
+        selected[0].tremoloRate = undefined
+        selected[0].tremoloDepth = undefined
+      } else {
+        selected.forEach((n: MelodyItem) => {
+          n.effectType = 'tremolo'
+          n.slideInterval = undefined
+          n.vibratoAmplitude = undefined
+          n.tremoloRate = this.tremoloRate
+          n.tremoloDepth = this.tremoloDepth
+        })
+      }
+      this.emitMelodyChange()
+      this.draw()
+      return
+    }
+
+    // Chord: toggle if same, apply immediately otherwise (no modal)
+    if (type === 'chord') {
+      this.pushHistory()
+      if (selected.length === 1 && selected[0].effectType === 'chord') {
+        selected[0].effectType = undefined
+        selected[0].chordType = undefined
+      } else {
+        selected.forEach((n: MelodyItem) => {
+          n.effectType = 'chord'
+          n.slideInterval = undefined
+          n.vibratoAmplitude = undefined
+          n.tremoloRate = undefined
+          n.tremoloDepth = undefined
+          n.trillRate = undefined
+          n.trillInterval = undefined
+          n.staccatoRatio = undefined
+          n.chordType = this.chordType
+        })
+      }
+      this.emitMelodyChange()
+      this.draw()
+      return
+    }
+
+    // Staccato: toggle if same, apply immediately otherwise (no modal)
+    if (type === 'staccato') {
+      this.pushHistory()
+      if (selected.length === 1 && selected[0].effectType === 'staccato') {
+        selected[0].effectType = undefined
+        selected[0].staccatoRatio = undefined
+      } else {
+        selected.forEach((n: MelodyItem) => {
+          n.effectType = 'staccato'
+          n.slideInterval = undefined
+          n.vibratoAmplitude = undefined
+          n.staccatoRatio = this.staccatoRatio
+        })
+      }
+      this.emitMelodyChange()
+      this.draw()
+      return
+    }
+
+    // Trill: works on first selected note, needs interval modal
+    if (type === 'trill') {
+      const target = selected[0]
+      const isSameTrill = target.effectType === 'trill'
+
+      if (isSameTrill) {
+        void this._showIntervalModal(
+          type,
+          target.note.midi,
+          target.trillInterval,
+        ).then((iv) => {
+          if (iv === null) return
+          this.pushHistory()
+          if (Number.isNaN(iv)) {
+            target.effectType = undefined
+            target.trillInterval = undefined
+            target.trillRate = undefined
+          } else {
+            target.trillInterval = iv
+            target.trillRate = this.trillRate
+          }
+          this._updateEffectBtnStates()
+          this.emitMelodyChange()
+          this.draw()
+        })
+        return
+      }
+
+      void this._showIntervalModal(type, target.note.midi).then((iv) => {
+        if (iv === null) return
+        this.pushHistory()
+        target.effectType = type
+        target.trillInterval = iv
+        target.trillRate = this.trillRate
+        target.vibratoAmplitude = undefined
+        target.slideInterval = undefined
+        this._updateEffectBtnStates()
+        this.emitMelodyChange()
+        this.draw()
+      })
       return
     }
 
@@ -4089,6 +4592,10 @@ export class PianoRollEditor {
       'roll-action-ease-in',
       'roll-action-ease-out',
       'roll-action-vibrato',
+      'roll-action-tremolo',
+      'roll-action-trill',
+      'roll-action-staccato',
+      'roll-action-chord',
     ]
     for (const id of ids) {
       container.querySelector(`#${id}`)?.classList.remove('active')
@@ -4112,25 +4619,160 @@ export class PianoRollEditor {
         'ease-in': 'roll-action-ease-in',
         'ease-out': 'roll-action-ease-out',
         vibrato: 'roll-action-vibrato',
+        tremolo: 'roll-action-tremolo',
+        trill: 'roll-action-trill',
+        staccato: 'roll-action-staccato',
+        chord: 'roll-action-chord',
       }
       const activeId = map[highlight]
       if (activeId)
         container.querySelector(`#${activeId}`)?.classList.add('active')
     }
-    this._updateVibratoSlider(container)
+    this._updateEffectSliders(container)
   }
 
-  /** Show/hide vibrato amplitude slider based on context. */
-  private _updateVibratoSlider(container: HTMLElement = this.container): void {
-    const group = container.querySelector('#roll-vibrato-amp-group')
-    if (!(group instanceof HTMLElement)) return
-    const hasSelectedVibrato =
-      this.selectedEffect === 'vibrato' ||
+  /**
+   * Bind a single effect parameter slider with the standard pipeline:
+   * read → update label → set instance state → propagate to selected notes
+   * of the given effect type → emit change + redraw.
+   *
+   * @param sliderId   DOM id of the `<input type="range">`
+   * @param valueId    DOM id of the display `<span>`
+   * @param effectType Only notes with this effect are updated
+   * @param apply      Called with (note, parsedValue) — should set both
+   *                   the instance-level default AND the note-level field
+   */
+  private _bindEffectSlider(
+    sliderId: string,
+    valueId: string,
+    effectType: EffectType,
+    apply: (note: MelodyItem, value: number) => void,
+  ): void {
+    const slider = this.container.querySelector(
+      `#${sliderId}`,
+    ) as HTMLInputElement | null
+    const valueEl = this.container.querySelector(
+      `#${valueId}`,
+    ) as HTMLSpanElement | null
+    if (!slider) return
+
+    slider.addEventListener('input', () => {
+      if (valueEl) valueEl.textContent = slider.value
+      const parsed = parseFloat(slider.value)
+
+      const sel = this._getSelectedNotes()
+      let changed = false
+      for (const n of sel) {
+        if (n.effectType === effectType) {
+          apply(n, parsed)
+          changed = true
+        }
+      }
+      if (changed) {
+        this.emitMelodyChange()
+        this.draw()
+      }
+    })
+  }
+
+  /** Show/hide effect parameter sliders based on selected effect context. */
+  private _updateEffectSliders(container: HTMLElement = this.container): void {
+    const hasEffectType = (type: EffectType): boolean =>
+      this.selectedEffect === type ||
       [...this.selectedNoteIds].some((id) => {
         const note = this.melody.find((n) => n.id === id)
-        return note?.effectType === 'vibrato'
+        return note?.effectType === type
       })
-    group.style.display = hasSelectedVibrato ? 'flex' : 'none'
+
+    const popover = container.querySelector(
+      '#roll-effect-popover',
+    ) as HTMLElement | null
+    const types: [EffectType, string][] = [
+      ['vibrato', 'roll-popover-vibrato'],
+      ['tremolo', 'roll-popover-tremolo'],
+      ['trill', 'roll-popover-trill'],
+      ['staccato', 'roll-popover-staccato'],
+      ['chord', 'roll-popover-chord'],
+    ]
+
+    let activeType: EffectType | null = null
+    for (const [type, innerId] of types) {
+      const show = hasEffectType(type)
+      const el = container.querySelector(`#${innerId}`)
+      if (el instanceof HTMLElement) el.style.display = show ? 'flex' : 'none'
+      if (show) activeType = type
+    }
+
+    // Sync slider values to first selected note with the active effect
+    if (activeType && this.selectedNoteIds.size > 0) {
+      const firstId = [...this.selectedNoteIds][0]
+      const note = this.melody.find((n) => n.id === firstId)
+      if (note?.effectType === activeType) {
+        const setSlider = (
+          id: string,
+          val: number | undefined,
+          fallback: number,
+        ) => {
+          const input = container.querySelector(
+            `#${id}`,
+          ) as HTMLInputElement | null
+          if (input) input.value = String(val ?? fallback)
+        }
+        const setSpan = (
+          id: string,
+          val: number | undefined,
+          fallback: number,
+        ) => {
+          const span = container.querySelector(
+            `#${id}`,
+          ) as HTMLSpanElement | null
+          if (span) span.textContent = String(val ?? fallback)
+        }
+        if (activeType === 'vibrato') {
+          setSlider('roll-vibrato-amp-slider', note.vibratoAmplitude, 0.5)
+          setSpan('roll-vibrato-amp-value', note.vibratoAmplitude, 0.5)
+          this.vibratoAmplitude = note.vibratoAmplitude ?? 0.5
+        } else if (activeType === 'tremolo') {
+          setSlider('roll-tremolo-rate-slider', note.tremoloRate, 8)
+          setSpan('roll-tremolo-rate-value', note.tremoloRate, 8)
+          setSlider('roll-tremolo-depth-slider', note.tremoloDepth, 0.5)
+          setSpan('roll-tremolo-depth-value', note.tremoloDepth, 0.5)
+          this.tremoloRate = note.tremoloRate ?? 8
+          this.tremoloDepth = note.tremoloDepth ?? 0.5
+        } else if (activeType === 'trill') {
+          setSlider('roll-trill-rate-slider', note.trillRate, 10)
+          setSpan('roll-trill-rate-value', note.trillRate, 10)
+          this.trillRate = note.trillRate ?? 10
+        } else if (activeType === 'staccato') {
+          setSlider('roll-staccato-ratio-slider', note.staccatoRatio, 0.4)
+          setSpan('roll-staccato-ratio-value', note.staccatoRatio, 0.4)
+          this.staccatoRatio = note.staccatoRatio ?? 0.4
+        } else if (activeType === 'chord') {
+          const chordType = note.chordType ?? 'major'
+          const select = container.querySelector(
+            '#roll-chord-type-select',
+          ) as HTMLSelectElement | null
+          if (select) select.value = chordType
+          this.chordType = chordType
+        }
+      }
+    }
+
+    if (popover) {
+      popover.style.display = activeType ? 'flex' : 'none'
+      // Position below the Effects toolbar group
+      if (activeType) {
+        const effectsGroup = container.querySelector(
+          '.roll-group[data-name="Effects"]',
+        )
+        if (effectsGroup instanceof HTMLElement) {
+          const groupRect = effectsGroup.getBoundingClientRect()
+          const containerRect = container.getBoundingClientRect()
+          popover.style.top = `${groupRect.bottom - containerRect.top + 2}px`
+          popover.style.left = `${groupRect.left - containerRect.left}px`
+        }
+      }
+    }
   }
 
   /** Apply an effect via keyboard shortcut. Mirrors button-click logic. */
