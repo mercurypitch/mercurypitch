@@ -12,7 +12,7 @@ interface NotePillSelectorProps {
 export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
   return (
     <div class={`note-pill-selector ${props.class ?? ''}`}>
-      {props.label && (
+      {props.label != null && (
         <span class="note-pill-selector-label">{props.label}</span>
       )}
       <div class="note-pill-row">

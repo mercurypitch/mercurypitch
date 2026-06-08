@@ -17,7 +17,7 @@ let dbPromise: Promise<DatabaseAdapter> | null = null
  *   pnpm dev                                              → DexieAdapter (local)
  */
 function resolveAdapter(): DatabaseAdapter {
-  if (API_BASE_URL) {
+  if (API_BASE_URL != null && API_BASE_URL !== '') {
     console.info('[db] using ServerAdapter →', API_BASE_URL)
     return new ServerAdapter({ baseUrl: API_BASE_URL })
   }
