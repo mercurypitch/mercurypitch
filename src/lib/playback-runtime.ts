@@ -6,7 +6,7 @@
 import type { MelodyItem } from '@/types'
 import type { InstrumentType } from './audio-engine'
 import { AudioEngine } from './audio-engine'
-import { melodyIndexAtBeat } from './scale-data'
+import { melodyIndicesAtBeat } from './scale-data'
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
 export interface PlaybackEvent {
@@ -55,7 +55,7 @@ export class PlaybackRuntime {
   private isPlaying = false
   private isPaused = false
   private currentBeat = 0
-  private currentNoteIndex = -1
+  private currentNoteIndices: Set<number> = new Set()
   private onEventCallbacks = new Map<string, Set<(e: unknown) => void>>()
   private animationFrameId: number | null = null
   private playStartTime = 0
@@ -139,7 +139,8 @@ export class PlaybackRuntime {
   }
 
   getCurrentNoteIndex(): number {
-    return this.currentNoteIndex
+    for (const idx of this.currentNoteIndices) return idx
+    return -1
   }
 
   getPlaybackState(): PlaybackState {
@@ -171,11 +172,10 @@ export class PlaybackRuntime {
       // For resuming, continue from paused position
       // Don't reset countInBeat - preserve where we left off
       this.currentBeat = Math.max(0, this.currentBeat)
-      this.currentNoteIndex = Math.max(-1, this.currentNoteIndex)
     } else {
       // Fresh start - initialize count-in from top
       this.currentBeat = 0
-      this.currentNoteIndex = -1
+      this.currentNoteIndices.clear()
       this._countInBeats = countInBeats
       this.countInBeat = countInBeats
       this.countInCompleteEmitted = false
@@ -217,13 +217,20 @@ export class PlaybackRuntime {
     this.pauseStartTime = 0
     this.isPaused = false
     this.isPlaying = true
+
+    // Clear active note tracking so the animation loop re-triggers
+    // noteStart events for notes that are still in-range after the
+    // pause. Without this, notes active before the pause stay silent
+    // because the set-diff sees them as "already playing".
+    this.currentNoteIndices.clear()
+
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
 
   stop(): void {
     this._stopAnimationLoop()
-    this.audioEngine.stopTone()
+    this.audioEngine.stopAllNotes()
     this.isPlaying = false
     this.isPaused = false
 
@@ -235,14 +242,14 @@ export class PlaybackRuntime {
     if (this._countInBeats > 0) {
       // Preserve countInBeat so precount doesn't reset to 0
       this.currentBeat = 0
-      this.currentNoteIndex = -1
+      this.currentNoteIndices.clear()
       this.playStartTime = 0
       this.metronomeLastBeat = -1
       this.metronomeLastCountInBeat = -1
     } else {
       // Fresh stop - reset everything
       this.currentBeat = 0
-      this.currentNoteIndex = -1
+      this.currentNoteIndices.clear()
       this.playStartTime = 0
       this.countInBeat = 0
       this._countInBeats = 0
@@ -273,9 +280,9 @@ export class PlaybackRuntime {
       // loop without the fresh-start branch in start() (which would
       // zero everything out).
       this._stopAnimationLoop()
-      this.audioEngine.stopTone()
+      this.audioEngine.stopAllNotes()
       this.currentBeat = target
-      this.currentNoteIndex = -1
+      this.currentNoteIndices.clear()
       // Pretend playback started in the past so `now - playStartTime
       // - pauseOffset === target*beatDuration + countInMs`.
       this.playStartTime =
@@ -295,7 +302,7 @@ export class PlaybackRuntime {
       // this rebase the playhead jumped back to the pre-seek position
       // on resume — exact bug the user reported.
       this.currentBeat = target
-      this.currentNoteIndex = -1
+      this.currentNoteIndices.clear()
       const now = performance.now()
       // Effective elapsed when paused = pauseStartTime - playStartTime
       //                                  - pauseOffset
@@ -488,27 +495,39 @@ export class PlaybackRuntime {
         this.metronomeLastBeat = intBeat
 
         const melody = this._melody ?? []
-        const newIndex = melodyIndexAtBeat(melody, beat)
+        const newIndices = new Set(melodyIndicesAtBeat(melody, beat))
 
-        if (newIndex !== this.currentNoteIndex) {
-          if (this.currentNoteIndex >= 0) {
-            this._emit({
-              type: 'noteEnd',
-              note: melody[this.currentNoteIndex],
-              index: this.currentNoteIndex,
-            })
-            this._playNoteEnd()
-          }
-          this.currentNoteIndex = newIndex
-          if (newIndex >= 0) {
-            this._emit({
-              type: 'noteStart',
-              note: melody[newIndex],
-              index: newIndex,
-            })
-            this._playNoteStart()
+        // Emit noteEnd for notes that are no longer active
+        for (const idx of this.currentNoteIndices) {
+          if (!newIndices.has(idx)) {
+            const item = melody[idx]
+            if (item != null && item.isRest !== true) {
+              this._emit({
+                type: 'noteEnd',
+                note: item,
+                index: idx,
+              })
+              this._playNoteEnd()
+            }
           }
         }
+
+        // Emit noteStart for newly active notes
+        for (const idx of newIndices) {
+          if (!this.currentNoteIndices.has(idx)) {
+            const item = melody[idx]
+            if (item != null && item.isRest !== true) {
+              this._emit({
+                type: 'noteStart',
+                note: item,
+                index: idx,
+              })
+              this._playNoteStart()
+            }
+          }
+        }
+
+        this.currentNoteIndices = newIndices
 
         this.currentBeat = beat
         this._emit({ type: 'beat', beat })

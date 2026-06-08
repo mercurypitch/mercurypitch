@@ -8,13 +8,26 @@ import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
-import { drawEffectBadge, drawSlideProgress, drawSlideShape, drawVibratoShape, } from '@/lib/effect-renderer'
+import { drawChordShape, drawEffectBadge, drawSlideProgress, drawSlideShape, drawStaccatoShape, drawTremoloShape, drawTrillProgress, drawTrillShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { freqToNote, melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
-import type { EffectType, MelodyItem, NoteResult, PitchSample, ScaleDegree, } from '@/types'
+import type { ChordType, EffectType, MelodyItem, NoteResult, PitchSample, ScaleDegree, } from '@/types'
+import { CHORD_INTERVALS } from '@/types'
+
+/** Short display label for each chord type (shown after the root note name). */
+const CHORD_LABEL: Record<ChordType, string> = {
+  power: '5',
+  major: 'Maj',
+  minor: 'min',
+  diminished: 'dim',
+  augmented: 'aug',
+  sus2: 'sus2',
+  sus4: 'sus4',
+  octave: '8va',
+}
 
 // Click-to-play settings (GH #230)
 const DOUBLE_CLICK_DELAY = 300 // ms — max gap for double-click detection
@@ -28,10 +41,14 @@ interface PitchCanvasProps {
   currentBeat: () => number
   pitchHistory: () => PitchSample[]
   currentNoteIndex: () => number
+  /** All currently active note indices during polyphonic playback. */
+  activeNoteIndices?: () => Set<number>
   isPlaying: () => boolean
   isPaused: () => boolean
   isScrolling: () => boolean
   targetPitch?: () => number | null
+  /** Additional target pitches for chord members (polyphonic playback). */
+  targetPitches?: () => number[]
   noteAccuracyMap?: () => Map<number, number>
   isRecording?: () => boolean
   getWaveform?: () => Float32Array | null
@@ -638,6 +655,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ) {
         nextIdx++
       }
+      // Skip notes whose end beat has already completely passed relative
+      // to the arc we're leaving. Compare against arcState.endBeat (the
+      // departing note's end), not the current sample beat, so notes that
+      // end at the same beat aren't skipped when floating-point precision
+      // causes the advance to fire a sample late.
+      while (
+        nextIdx < playable.length &&
+        playable[nextIdx].item.startBeat + playable[nextIdx].item.duration <
+          arcState.endBeat - 0.001
+      ) {
+        nextIdx++
+      }
 
       if (nextIdx < playable.length) {
         const nextItem = playable[nextIdx].item
@@ -817,9 +846,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
   }
 
-  const drawTargetPitch = (h: number) => {
-    const target = props.targetPitch?.()
-    if (target == null || target <= 0) return
+  const drawOneTargetLine = (target: number, h: number, isPrimary: boolean) => {
     const ty = freqToY(target, h)
 
     const centsBand = 0.1
@@ -828,24 +855,46 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const yLow = freqToY(freqLow, h)
     const yHigh = freqToY(freqHigh, h)
 
-    ctx!.fillStyle = 'rgba(88,166,255,0.08)'
+    ctx!.fillStyle = isPrimary
+      ? 'rgba(88,166,255,0.08)'
+      : 'rgba(88,166,255,0.04)'
     ctx!.fillRect(0, yHigh, ctx!.canvas.clientWidth, yLow - yHigh)
 
-    ctx!.strokeStyle = 'rgba(88,166,255,0.5)'
-    ctx!.lineWidth = 2
-    ctx!.setLineDash([6, 4])
+    ctx!.strokeStyle = isPrimary
+      ? 'rgba(88,166,255,0.5)'
+      : 'rgba(88,166,255,0.25)'
+    ctx!.lineWidth = isPrimary ? 2 : 1
+    ctx!.setLineDash(isPrimary ? [6, 4] : [3, 6])
     ctx!.beginPath()
     ctx!.moveTo(0, ty)
     ctx!.lineTo(ctx!.canvas.clientWidth, ty)
     ctx!.stroke()
     ctx!.setLineDash([])
 
-    ctx!.fillStyle = '#58a6ff'
-    ctx!.font = 'bold 10px sans-serif'
-    ctx!.textAlign = 'left'
-    ctx!.textBaseline = 'middle'
-    const label = `♪ ${Math.round(target)} Hz`
-    ctx!.fillText(label, 8, ty)
+    if (isPrimary) {
+      ctx!.fillStyle = '#58a6ff'
+      ctx!.font = 'bold 10px sans-serif'
+      ctx!.textAlign = 'left'
+      ctx!.textBaseline = 'middle'
+      const label = `♪ ${Math.round(target)} Hz`
+      ctx!.fillText(label, 8, ty)
+    }
+  }
+
+  const drawTargetPitch = (h: number) => {
+    const target = props.targetPitch?.()
+    if (target != null && target > 0) {
+      drawOneTargetLine(target, h, true)
+    }
+
+    const extraPitches = props.targetPitches?.()
+    if (extraPitches) {
+      for (const freq of extraPitches) {
+        if (freq > 0 && freq !== target) {
+          drawOneTargetLine(freq, h, false)
+        }
+      }
+    }
   }
 
   const draw = () => {
@@ -957,8 +1006,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         continue
       }
       const resultIndex = playableResultIndex++
+      const activeSet = props.activeNoteIndices?.()
       const isActive =
-        props.isPlaying() && j === props.currentNoteIndex() && !props.isPaused()
+        props.isPlaying() &&
+        (activeSet ? activeSet.has(j) : j === props.currentNoteIndex()) &&
+        !props.isPaused()
 
       // Whether this note has already been played in the current run.
       //
@@ -1058,6 +1110,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             item.effectType === 'ease-in' ||
             item.effectType === 'ease-out')
         const hasVibratoEffect = item.effectType === 'vibrato'
+        const hasChordEffect =
+          item.effectType === 'chord' && item.chordType !== undefined
+        const hasTremoloEffect = item.effectType === 'tremolo'
+        const hasTrillEffect =
+          item.effectType === 'trill' && item.trillInterval !== undefined
+        const hasStaccatoEffect = item.effectType === 'staccato'
         // Played-note rating lookup. noteResults accumulates in
         // playback order, so the j-th played note's rating is at
         // noteResults[j]. Only used when colorCodeNotes is on.
@@ -1080,6 +1138,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             stroke: 'rgba(120,190,255,1)',
             text: '#ffffff',
             badgeBg: 'rgba(88,166,255,0.5)',
+          }
+        } else if (hasChordEffect) {
+          palette = {
+            fillTop: 'rgba(34,197,94,0.78)',
+            fillBottom: 'rgba(20,130,60,0.65)',
+            stroke: 'rgba(74,222,128,0.7)',
+            text: 'rgba(200,255,220,0.95)',
+            badgeBg: 'rgba(34,197,94,0.3)',
           }
         } else if (isPlayed && playedPalette) {
           palette = playedPalette
@@ -1132,6 +1198,57 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             y,
             w: bw,
             halfH: boxHalf,
+          })
+        } else if (hasTremoloEffect) {
+          drawTremoloShape({
+            ctx,
+            x: x1,
+            y,
+            w: bw,
+            halfH: boxHalf,
+            rate: item.tremoloRate,
+            depth: item.tremoloDepth,
+          })
+        } else if (hasTrillEffect) {
+          const tgtCY = freqToY(
+            item.note.freq * Math.pow(2, item.trillInterval! / 12),
+            h,
+          )
+          drawTrillShape({
+            ctx,
+            x: x1,
+            srcCY: y,
+            tgtCY,
+            w: bw,
+            halfH: boxHalf,
+          })
+          if (isActive) {
+            const progress = Math.max(
+              0,
+              Math.min(
+                1,
+                (props.currentBeat() - item.startBeat) / item.duration,
+              ),
+            )
+            drawTrillProgress({
+              ctx,
+              x: x1,
+              srcCY: y,
+              tgtCY,
+              w: bw,
+              halfH: boxHalf,
+              progress,
+              clipHeight: h,
+            })
+          }
+        } else if (hasStaccatoEffect) {
+          drawStaccatoShape({
+            ctx,
+            x: x1,
+            y,
+            w: bw,
+            halfH: boxHalf,
+            ratio: item.staccatoRatio,
           })
         } else {
           // Normal rounded rectangle
@@ -1277,8 +1394,31 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           }
         }
 
-        // Effect badge on top-right of vibrato notes only (slide notes use edge labels instead)
-        if (hasVibratoEffect && bw > 22) {
+        // Chord member dots overlaid on the note block
+        if (hasChordEffect) {
+          const midiToY = (midi: number) =>
+            freqToY(440 * Math.pow(2, (midi - 69) / 12), h)
+          drawChordShape({
+            ctx,
+            x: x1,
+            y,
+            w: bw,
+            halfH: boxHalf,
+            intervals: CHORD_INTERVALS[item.chordType!],
+            rootMidi: item.note.midi,
+            midiToY,
+          })
+        }
+
+        // Effect badge on top-right of effect notes (slide notes use edge labels instead)
+        if (
+          (hasVibratoEffect ||
+            hasTremoloEffect ||
+            hasTrillEffect ||
+            hasStaccatoEffect ||
+            hasChordEffect) &&
+          bw > 22
+        ) {
           drawEffectBadge({
             ctx,
             x: x1 + bw,
@@ -1288,6 +1428,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
 
         // Text and badges
+        const labelText = hasChordEffect
+          ? `${item.note.name} ${CHORD_LABEL[item.chordType!]}`
+          : item.note.name
         const hasBadge =
           showAccuracyPercent() && isPlayed && playedRecord !== null && bw > 65
         const centerName = bw >= 12 && !hasBadge
@@ -1302,7 +1445,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           ctx.font = 'bold 11px sans-serif'
           ctx.textAlign = 'left'
           ctx.textBaseline = 'middle'
-          ctx.fillText(item.note.name, x1 + 8, y)
+          ctx.fillText(labelText, x1 + 8, y)
           ctx.textAlign = 'right'
           ctx.fillText(tgtName, x1 + bw - 8, tgtCY)
           ctx.textBaseline = 'alphabetic'
@@ -1311,7 +1454,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
           ctx.textAlign = 'left'
           ctx.textBaseline = 'middle'
-          ctx.fillText(item.note.name, x1 + 10, y + 0.5)
+          ctx.fillText(labelText, x1 + 10, y + 0.5)
 
           let pct = 0
           if (playedRecord.rating !== 'off') {
@@ -1345,7 +1488,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.fillText(item.note.name, x1 + bw / 2, y + 0.5)
+          ctx.fillText(labelText, x1 + bw / 2, y + 0.5)
           ctx.textBaseline = 'alphabetic'
         }
       }

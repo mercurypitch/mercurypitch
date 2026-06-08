@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq, melodyIndexAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS, } from '@/lib/scale-data'
+import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq, melodyIndexAtBeat, melodyIndicesAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS, } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
 describe('MIDI/Frequency Conversion', () => {
@@ -231,6 +231,122 @@ describe('Melody Utilities', () => {
     expect(melodyIndexAtBeat(melody, 1)).toBe(0)
     expect(melodyIndexAtBeat(melody, 4)).toBe(1)
     expect(melodyIndexAtBeat(melody, 10)).toBe(-1)
+  })
+
+  it('finds all note indices at a beat (polyphonic)', () => {
+    const melody: MelodyItem[] = [
+      {
+        id: 0,
+        note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
+        startBeat: 0,
+        duration: 4,
+      },
+      {
+        id: 1,
+        note: { name: 'E', octave: 4, midi: 64, freq: 329.63 },
+        startBeat: 2,
+        duration: 2,
+      },
+      {
+        id: 2,
+        note: { name: 'G', octave: 4, midi: 67, freq: 392.0 },
+        startBeat: 2,
+        duration: 2,
+      },
+    ]
+
+    // Beat 1: only the long C note is active
+    expect(melodyIndicesAtBeat(melody, 1)).toEqual([0])
+
+    // Beat 2.5: C, E, and G are all active (chord overlap)
+    expect(melodyIndicesAtBeat(melody, 2.5)).toEqual([0, 1, 2])
+
+    // Beat 4: all notes ended (half-open interval)
+    expect(melodyIndicesAtBeat(melody, 4)).toEqual([])
+
+    // Beat 10: beyond melody
+    expect(melodyIndicesAtBeat(melody, 10)).toEqual([])
+  })
+
+  it('returns empty array for empty melody', () => {
+    expect(melodyIndicesAtBeat([], 0)).toEqual([])
+    expect(melodyIndicesAtBeat([], 5)).toEqual([])
+  })
+
+  it('handles notes with rests at same beat', () => {
+    const melody: MelodyItem[] = [
+      {
+        id: 0,
+        note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
+        startBeat: 0,
+        duration: 2,
+      },
+      {
+        id: 1,
+        note: { name: 'E', octave: 4, midi: 64, freq: 329.63 },
+        startBeat: 0,
+        duration: 2,
+        isRest: true,
+      },
+    ]
+
+    // Rests are included in the index results (filtered at emission level)
+    expect(melodyIndicesAtBeat(melody, 1)).toEqual([0, 1])
+  })
+
+  it('handles consecutive chords at different beat positions', () => {
+    const melody: MelodyItem[] = [
+      // Chord 1 at beat 0-2
+      {
+        id: 0,
+        note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
+        startBeat: 0,
+        duration: 2,
+      },
+      {
+        id: 1,
+        note: { name: 'E', octave: 4, midi: 64, freq: 329.63 },
+        startBeat: 0,
+        duration: 2,
+      },
+      {
+        id: 2,
+        note: { name: 'G', octave: 4, midi: 67, freq: 392.0 },
+        startBeat: 0,
+        duration: 2,
+      },
+      // Chord 2 at beat 2-4
+      {
+        id: 3,
+        note: { name: 'D', octave: 4, midi: 62, freq: 293.66 },
+        startBeat: 2,
+        duration: 2,
+      },
+      {
+        id: 4,
+        note: { name: 'F', octave: 4, midi: 65, freq: 349.23 },
+        startBeat: 2,
+        duration: 2,
+      },
+      {
+        id: 5,
+        note: { name: 'A', octave: 4, midi: 69, freq: 440.0 },
+        startBeat: 2,
+        duration: 2,
+      },
+    ]
+
+    // Beat 1: first chord (C-E-G)
+    expect(melodyIndicesAtBeat(melody, 1)).toEqual([0, 1, 2])
+
+    // Beat 3: second chord (D-F-A)
+    expect(melodyIndicesAtBeat(melody, 3)).toEqual([3, 4, 5])
+
+    // Beat 1.999: still first chord (half-open)
+    expect(melodyIndicesAtBeat(melody, 1.999)).toEqual([0, 1, 2])
+
+    // Beat 2.0: second chord begins
+    expect(melodyIndicesAtBeat(melody, 2.0)).toEqual([3, 4, 5])
   })
 
   it('identifies black keys correctly', () => {

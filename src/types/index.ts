@@ -61,6 +61,33 @@ export type EffectType =
   | 'ease-in'
   | 'ease-out'
   | 'vibrato'
+  | 'tremolo'
+  | 'trill'
+  | 'staccato'
+  | 'chord'
+
+/** Chord type determines the intervals added above the root note */
+export type ChordType =
+  | 'power'
+  | 'major'
+  | 'minor'
+  | 'diminished'
+  | 'augmented'
+  | 'sus2'
+  | 'sus4'
+  | 'octave'
+
+/** Semitone intervals above root for each chord type */
+export const CHORD_INTERVALS: Record<ChordType, number[]> = {
+  power: [0, 7],
+  major: [0, 4, 7],
+  minor: [0, 3, 7],
+  diminished: [0, 3, 6],
+  augmented: [0, 4, 8],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7],
+  octave: [0, 12],
+}
 
 /** A melody item used by the audio engine and piano roll */
 export interface MelodyItem {
@@ -80,6 +107,18 @@ export interface MelodyItem {
   slideInterval?: number
   /** Vibrato amplitude in semitones (0.1–3.0). Default 0.5 when absent. */
   vibratoAmplitude?: number
+  /** Tremolo LFO rate in Hz (2–20). Default 8. */
+  tremoloRate?: number
+  /** Tremolo amplitude modulation depth (0.1–1.0). Default 0.5. */
+  tremoloDepth?: number
+  /** Trill semitone offset for pitch alternation. Default 2. */
+  trillInterval?: number
+  /** Trill alternation rate in Hz (4–20). Default 10. */
+  trillRate?: number
+  /** Staccato note duration ratio (0.1–0.8). Default 0.4. */
+  staccatoRatio?: number
+  /** Chord type when effectType is 'chord'. Determines added harmonic intervals. */
+  chordType?: ChordType
   /** Visual/playback rest inserted for practice spacing. Not persisted as a real melody note. */
   isRest?: boolean
   /** Lyric text attached to this note from LRC alignment */
