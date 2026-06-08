@@ -5,8 +5,8 @@
 /* ── Daily Routine Panel ──────────────────────────────────── */
 
 .daily-routine-panel {
-  background: var(--surface-2, #1e1e2e);
-  border: 1px solid var(--border, #333);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -22,33 +22,36 @@
   user-select: none;
   transition: background 0.15s;
 }
+
 .daily-routine-header:hover {
-  background: var(--surface-3, #2a2a3a);
+  background: var(--bg-tertiary);
 }
 
 .daily-routine-title {
   font-weight: 600;
-  color: var(--text, #eee);
+  color: var(--text-primary);
   flex: 1;
 }
 
 .daily-routine-badge {
-  background: var(--accent, #7c4dff);
+  background: var(--accent);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 10px;
 }
+
 .daily-routine-badge.complete {
-  background: var(--success, #4caf50);
+  background: var(--green);
 }
 
 .daily-routine-chevron {
   transition: transform 0.2s;
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
+
 .daily-routine-chevron.open {
   transform: rotate(180deg);
 }
@@ -61,13 +64,14 @@
   text-align: center;
   padding: 12px 0;
 }
+
 .daily-routine-empty p {
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   margin: 0 0 8px;
 }
 
 .daily-routine-btn {
-  background: var(--accent, #7c4dff);
+  background: var(--accent);
   color: #fff;
   border: none;
   padding: 6px 14px;
@@ -77,12 +81,23 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
+
 .daily-routine-btn:hover {
   opacity: 0.85;
 }
+
 .daily-routine-btn.secondary {
-  background: var(--surface-3, #333);
-  color: var(--text-muted, #aaa);
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  border: 1px solid var(--border, #30363d);
+  padding: 5px 13px;
+  transition: all 0.2s ease;
+}
+
+.daily-routine-btn.secondary:hover {
+  background: var(--border, #30363d);
+  color: #fff;
+  opacity: 1;
 }
 
 .daily-routine-meta {
@@ -95,20 +110,20 @@
 .daily-routine-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text, #eee);
+  color: var(--text-primary);
 }
 
 .daily-routine-time {
   font-size: 11px;
-  color: var(--text-muted, #888);
-  background: var(--surface-3, #333);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
   padding: 1px 6px;
   border-radius: 4px;
 }
 
 .daily-routine-progress-bar {
   height: 4px;
-  background: var(--surface-3, #333);
+  background: var(--bg-tertiary);
   border-radius: 2px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -116,7 +131,7 @@
 
 .daily-routine-progress-fill {
   height: 100%;
-  background: var(--accent, #7c4dff);
+  background: var(--accent);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -134,15 +149,17 @@
   padding: 5px 6px;
   border-radius: 4px;
   font-size: 12px;
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   transition: background 0.15s;
 }
+
 .daily-routine-segment.current {
-  background: var(--surface-3, #2a2a3a);
-  color: var(--text, #ddd);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
+
 .daily-routine-segment.done {
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   text-decoration: line-through;
 }
 
@@ -159,13 +176,13 @@
 
 .daily-routine-segment-dur {
   font-size: 11px;
-  color: var(--text-muted, #777);
+  color: var(--text-muted);
 }
 
 .daily-routine-segment-done-btn {
-  background: var(--surface-3, #444);
-  color: var(--success, #4caf50);
-  border: 1px solid var(--border, #555);
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -177,16 +194,17 @@
   padding: 0;
   transition: background 0.15s;
 }
+
 .daily-routine-segment-done-btn:hover {
-  background: var(--success, #4caf50);
+  background: var(--green);
   color: #fff;
-  border-color: var(--success, #4caf50);
+  border-color: var(--green);
 }
 
 .daily-routine-segment-start-btn {
-  background: var(--accent, #7c4dff);
+  background: var(--accent);
   color: #fff;
-  border: 1px solid var(--accent, #7c4dff);
+  border: 1px solid var(--accent);
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -198,14 +216,15 @@
   padding: 0;
   transition: background 0.15s;
 }
+
 .daily-routine-segment-start-btn:hover {
   background: #fff;
-  color: var(--accent, #7c4dff);
+  color: var(--accent);
 }
 
 .daily-routine-complete-msg {
   text-align: center;
-  color: var(--success, #4caf50);
+  color: var(--green);
   font-size: 13px;
   font-weight: 600;
   padding: 10px 0 6px;
@@ -214,6 +233,7 @@
 .daily-routine-actions {
   display: flex;
   justify-content: center;
+  gap: 8px;
   margin-top: 8px;
 }
 
@@ -244,24 +264,29 @@
   border-radius: 2px;
   transition: transform 0.1s;
 }
+
 .sc-cell:hover {
   transform: scale(1.4);
 }
 
 .sc-empty {
-  background: var(--surface-3, #2a2a3a);
+  background: var(--bg-tertiary);
 }
+
 .sc-low {
-  background: rgba(124, 77, 255, 0.2);
+  background: rgba(63, 185, 80, 0.2);
 }
+
 .sc-mid {
-  background: rgba(124, 77, 255, 0.45);
+  background: rgba(63, 185, 80, 0.45);
 }
+
 .sc-high {
-  background: rgba(124, 77, 255, 0.7);
+  background: rgba(63, 185, 80, 0.7);
 }
+
 .sc-max {
-  background: rgba(124, 77, 255, 1);
+  background: var(--green);
 }
 
 .sc-legend {
@@ -274,7 +299,7 @@
 
 .sc-legend-label {
   font-size: 10px;
-  color: var(--text-muted, #777);
+  color: var(--text-muted);
   margin: 0 2px;
 }
 
@@ -295,14 +320,15 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
 .celebration-modal {
-  background: var(--surface-1, #1a1a2e);
-  border: 1px solid var(--border, #333);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 32px;
   max-width: 380px;
@@ -317,6 +343,7 @@
     transform: scale(0.85);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -329,15 +356,16 @@
   right: 12px;
   background: transparent;
   border: none;
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
   transition: background 0.15s;
 }
+
 .celebration-close:hover {
-  background: var(--surface-3, #333);
-  color: var(--text, #eee);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .celebration-content {
@@ -360,33 +388,33 @@
 }
 
 .celebration-score-high .celebration-score-value {
-  color: var(--success, #4caf50);
+  color: var(--green);
 }
 
 .celebration-score-mid .celebration-score-value {
-  color: var(--warning, #ff9800);
+  color: var(--yellow);
 }
 
 .celebration-score-low .celebration-score-value {
-  color: var(--danger, #f44336);
+  color: var(--red);
 }
 
 .celebration-score-unit {
   font-size: 20px;
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .celebration-label {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text, #eee);
+  color: var(--text-primary);
 }
 
 .celebration-new-best {
   background: linear-gradient(
     135deg,
-    rgba(124, 77, 255, 0.2),
+    rgba(63, 185, 80, 0.2),
     rgba(255, 215, 0, 0.2)
   );
   border: 1px solid rgba(255, 215, 0, 0.3);
@@ -403,6 +431,7 @@
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -414,8 +443,8 @@
 
 .celebration-best-moment {
   font-size: 12px;
-  color: var(--text-muted, #888);
-  background: var(--surface-2, #1e1e2e);
+  color: var(--text-secondary);
+  background: var(--bg-card);
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -429,8 +458,8 @@
 }
 
 .celebration-metric {
-  background: var(--surface-2, #1e1e2e);
-  border: 1px solid var(--border, #333);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 12px;
   display: flex;
@@ -443,20 +472,20 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text-muted, #777);
+  color: var(--text-muted);
   margin-bottom: 2px;
 }
 
 .celebration-metric-value {
   font-size: 16px;
   font-weight: 700;
-  color: var(--text, #eee);
+  color: var(--text-primary);
 }
 
 .celebration-btn {
   margin-top: 12px;
   padding: 10px 32px;
-  background: var(--accent, #7c4dff);
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -465,6 +494,7 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
+
 .celebration-btn:hover {
   opacity: 0.85;
 }

@@ -1947,15 +1947,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               >
                 Session Gallery
               </h4>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  'overflow-x': 'auto',
-                  'padding-bottom': '12px',
-                  'margin-bottom': '12px',
-                }}
-              >
+              <div class={styles.galleryContainer}>
                 <For each={analyzedTracks()}>
                   {(track) => (
                     <div

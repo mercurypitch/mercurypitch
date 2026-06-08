@@ -26,6 +26,8 @@ const segmentIcons: Record<SegmentKind, () => JSX.Element> = {
 export const DailyRoutinePanel: Component = () => {
   const routine = useDailyRoutine()
   const [expanded, setExpanded] = createSignal(false)
+  const [isSharing, setIsSharing] = createSignal(false)
+  const [shareProgress, setShareProgress] = createSignal(0)
 
   return (
     <div class="daily-routine-panel">
@@ -190,9 +192,18 @@ export const DailyRoutinePanel: Component = () => {
               </button>
               <button
                 class="daily-routine-btn secondary"
+                disabled={isSharing()}
                 onClick={() => {
+                  if (isSharing()) return
                   const t = routine.template()
                   if (!t) return
+                  setIsSharing(true)
+                  setShareProgress(10)
+
+                  const interval = setInterval(() => {
+                    setShareProgress((p) => Math.min(p + 15, 90))
+                  }, 150)
+
                   const encoded = encodeRoutineForShare({
                     id: t.id,
                     name: t.name,
@@ -204,9 +215,13 @@ export const DailyRoutinePanel: Component = () => {
                     })),
                   })
                   void copyShareUrl(encoded).then((ok) => {
-                    if (ok)
-                      showNotification('Routine share link copied!', 'info')
-                    else showNotification('Failed to copy link', 'error')
+                    clearInterval(interval)
+                    setShareProgress(100)
+                    setTimeout(() => {
+                      setIsSharing(false)
+                      setShareProgress(0)
+                      if (!ok) showNotification('Failed to copy link', 'error')
+                    }, 1000)
                   })
                 }}
                 title="Copy shareable routine link"
@@ -214,6 +229,55 @@ export const DailyRoutinePanel: Component = () => {
                 Share
               </button>
             </div>
+
+            <Show when={isSharing()}>
+              <div
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  gap: '8px',
+                  'margin-top': '12px',
+                  'margin-bottom': '4px',
+                  'font-size': '12px',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  style={{ transform: 'rotate(-90deg)' }}
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="var(--border)"
+                    stroke-width="3"
+                    fill="none"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="var(--green)"
+                    stroke-width="3"
+                    fill="none"
+                    stroke-dasharray="62.83"
+                    stroke-dashoffset={
+                      2 * Math.PI * 10 * (1 - shareProgress() / 100)
+                    }
+                    style={{ transition: 'stroke-dashoffset 0.2s ease' }}
+                  />
+                </svg>
+                <span>
+                  {shareProgress() === 100
+                    ? 'Copied to clipboard!'
+                    : 'Generating Link...'}
+                </span>
+              </div>
+            </Show>
           </Show>
         </div>
       </Show>

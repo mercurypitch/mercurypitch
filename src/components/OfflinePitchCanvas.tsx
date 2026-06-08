@@ -174,7 +174,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       const url = URL.createObjectURL(props.audioFile)
       if (audio) {
         audio.pause()
-        audio.src = ''
+        audio.removeAttribute('src')
+        audio.load()
         mediaSource?.disconnect()
         mediaSource = null
       }
@@ -194,7 +195,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
           audio.removeEventListener('play', onPlay)
           audio.removeEventListener('pause', onPause)
           audio.pause()
-          audio.src = ''
+          audio.removeAttribute('src')
+          audio.load()
         }
         mediaSource?.disconnect()
         mediaSource = null

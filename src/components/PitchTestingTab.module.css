@@ -5,12 +5,37 @@
   border-radius: 6px;
   cursor: pointer;
   min-width: 180px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
+}
+
+.galleryContainer {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+/* Custom scrollbar for gallery */
+.galleryContainer::-webkit-scrollbar {
+  height: 6px;
+}
+.galleryContainer::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 3px;
+}
+.galleryContainer::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.galleryContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .galleryItem:hover {
