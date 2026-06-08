@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import { createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, saveUvrSession, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
@@ -15,10 +15,11 @@ import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
-import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, Cpu, ExportGroup, ImportFile, Music, Server, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { karaokeFocus } from '@/stores/ui-store'
+import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
+import { CheckCircle, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -67,8 +68,11 @@ interface UvrPanelProps {
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
+  // Note: 'mixer' is excluded from the initial value because it requires stems
+  // to be populated first (async hydration). handleSessionView sets 'mixer'
+  // after the stems are ready.
   const [currentView, setCurrentView] = createSignal<UvrView>(
-    props.initialView || 'upload',
+    props.initialView === 'mixer' ? 'upload' : props.initialView || 'upload',
   )
   const [matchCandidates, setMatchCandidates] = createSignal<MatchCandidate[]>(
     [],
@@ -130,15 +134,103 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
-  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
+
+  // Close modals on Escape key
+  createEffect(() => {
+    if (showSettings() || showGuide() || showClearStorageConfirm()) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          if (showSettings()) setShowSettings(false)
+          if (showGuide()) setShowGuide(false)
+          if (showClearStorageConfirm()) setShowClearStorageConfirm(false)
+        }
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      onCleanup(() => window.removeEventListener('keydown', handleKeyDown))
+    }
+  })
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
   const [midiExportProgress, setMidiExportProgress] = createSignal(0)
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
+  const [isExporting, setIsExporting] = createSignal(false)
+  const [exportProgress, setExportProgress] = createSignal(0)
+  const [isImporting, setIsImporting] = createSignal(false)
+  const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
+  const [importFile, setImportFile] = createSignal<File | null>(null)
+  const [showImportGroupSelect, setShowImportGroupSelect] = createSignal(false)
+  const [importTargetGroupId, setImportTargetGroupId] = createSignal<
+    string | null
+  >(null)
+  const [newImportGroupName, setNewImportGroupName] = createSignal('')
+  const [importGroupCreating, setImportGroupCreating] = createSignal(false)
+
+  const handleExportAll = async () => {
+    if (isExporting()) return
+    setIsExporting(true)
+    setExportProgress(0)
+    try {
+      await exportAllSessions((pct) => setExportProgress(pct))
+      setExportProgress(100)
+      await new Promise((r) => setTimeout(r, 1500))
+      showNotification('All sessions successfully exported.', 'success')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleImportZip = async (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    // Store file and show group selection dialog
+    setImportFile(file)
+    setImportTargetGroupId(null)
+    setShowImportGroupSelect(true)
+    input.value = ''
+  }
+
+  const handleConfirmImport = async () => {
+    const file = importFile()
+    if (!file) return
+
+    setShowImportGroupSelect(false)
+    setIsImporting(true)
+    showNotification('Extracting sessions from ZIP...', 'info')
+    try {
+      const count = await importSessionsFromZip(
+        file,
+        importTargetGroupId() ?? undefined,
+      )
+      showNotification(`Successfully imported ${count} session(s).`, 'success')
+    } catch (_err) {
+      showNotification('Failed to import sessions.', 'error')
+    } finally {
+      setIsImporting(false)
+      setImportFile(null)
+    }
+  }
+
+  const handleCreateImportGroup = async () => {
+    const name = newImportGroupName().trim()
+    if (name === '') return
+    setImportGroupCreating(true)
+    try {
+      const group = await createGroup(name)
+      setImportTargetGroupId(group.id)
+      setNewImportGroupName('')
+      // Trigger the import immediately after creating the group
+      await handleConfirmImport()
+    } finally {
+      setImportGroupCreating(false)
+    }
+  }
+
   const [mixerStems, setMixerStems] = createSignal<{
     vocal?: string
     vocalMidi?: string
@@ -161,6 +253,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Computed session state
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
+  const filteredSessions = () => {
+    const sessions = allSessions()
+    const groupId = activeGroupId()
+    if (groupId == null) return sessions
+    return sessions.filter((s) => s.groupId === groupId)
+  }
 
   const handleForceWebGpuToggle = (force: boolean) => {
     setUvrForceWebGpu(force)
@@ -218,11 +316,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   // React to initialView prop changes (from hash navigation)
+  // Note: 'mixer' is excluded here because the mixer view requires stems
+  // to be populated first (async hydration). handleSessionView handles
+  // setting both the stems AND the view together.
   let lastInitialView: UvrView | null = null
   createEffect(() => {
     const v = props.initialView
-    if (v && v !== lastInitialView) {
+    console.log('[UvrPanel] initialView effect:', v, 'last:', lastInitialView)
+    if (v && v !== lastInitialView && v !== 'mixer') {
       lastInitialView = v
+      console.log('[UvrPanel] initialView -> setCurrentView:', v)
       setCurrentView(v)
     }
   })
@@ -245,17 +348,48 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   let lastLoadedSessionId: string | null = null
   createEffect(() => {
     const sid = props.initialSessionId
+    const ready = isSessionStoreReady()
+    console.log(
+      '[UvrPanel] session deep-link effect: sid=',
+      sid,
+      'ready=',
+      ready,
+      'last=',
+      lastLoadedSessionId,
+    )
+    if (!ready) return
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
+      console.log('[UvrPanel] calling handleSessionView for:', sid)
       handleSessionView(sid)
     }
   })
 
+  // Cache to avoid pulling 30MB+ blobs from IndexedDB multiple times per page load
+  const locallyHydratedSessions = new Set<string>()
+
   // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
   const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
     if (session.processingMode === 'local' && session.status === 'completed') {
+      if (locallyHydratedSessions.has(session.sessionId)) {
+        return session
+      }
+
+      if (session.outputs?.vocal?.startsWith('blob:') === true) {
+        try {
+          const res = await fetch(session.outputs.vocal, { method: 'HEAD' })
+          if (res.ok) {
+            locallyHydratedSessions.add(session.sessionId)
+            return session
+          }
+        } catch {
+          // fetch failed, blob is dead
+        }
+      }
+
       const urls = await hydrateStemUrls(session.sessionId)
       if (urls) {
+        locallyHydratedSessions.add(session.sessionId)
         return { ...session, outputs: { ...session.outputs, ...urls } }
       }
     }
@@ -333,13 +467,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     const processingMode = mode ?? getUvrProcessingMode()
 
-    // Set session to processing status
-    const sessions = getAllUvrSessions()
-    const session = sessions.find((s) => s.sessionId === sessionId)
+    // Set session to processing status (immutable update via store API)
+    const session = getUvrSession(sessionId)
     if (session) {
-      session.status = 'processing'
-      saveAllUvrSessions(sessions)
-      setCurrentUvrSession({ ...session })
+      const updated = { ...session, status: 'processing' as const }
+      saveAllUvrSessions(
+        getAllUvrSessions().map((s) =>
+          s.sessionId === sessionId ? updated : s,
+        ),
+      )
+      setCurrentUvrSession(updated)
     }
 
     try {
@@ -349,21 +486,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         },
         onComplete: (result) => {
           completeUvrSession(sessionId, result.outputs, result.stemMeta)
-          // Persist session to IndexedDB for hash-based dedup
-          const s = getUvrSession(sessionId)
-          if (s) {
-            void saveUvrSession({
-              sessionId,
-              status: 'completed',
-              progress: 100,
-              fileHash: s.fileHash,
-              originalFileName: s.originalFile?.name ?? file.name,
-              originalFileSize: s.originalFile?.size ?? file.size,
-              originalFileType: s.originalFile?.mimeType ?? file.type,
-              processingMode: processingMode,
-              processingTime: s.processingTime,
-            })
-          }
           // Auto-extract stem fingerprint for Shazam matching
           // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
           setTimeout(() => {
@@ -449,11 +571,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleSessionView = async (sessionId: string) => {
+    console.log(
+      '[UvrPanel] handleSessionView called for:',
+      sessionId,
+      'initialView:',
+      props.initialView,
+    )
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
     const session = getUvrSession(sessionId)
+    console.log(
+      '[UvrPanel] getUvrSession result:',
+      session ? 'found' : 'NOT FOUND',
+      'status:',
+      session?.status,
+      'outputs:',
+      session?.outputs ? Object.keys(session.outputs) : 'none',
+    )
     if (!session) {
+      console.log('[UvrPanel] session not found, falling back to results')
       setCurrentView('results')
       return
     }
@@ -464,6 +601,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // Hydrate blob URLs from IndexedDB before showing results
     // (blob: URLs from localStorage are dead after page reload)
     const hydrated = await ensureHydrated(session)
+    console.log(
+      '[UvrPanel] hydrated outputs:',
+      hydrated.outputs ? Object.keys(hydrated.outputs) : 'none',
+      'vocal:',
+      hydrated.outputs?.vocal?.substring(0, 40),
+      'inst:',
+      hydrated.outputs?.instrumental?.substring(0, 40),
+    )
     setCurrentUvrSession(hydrated)
     // Persist the hydrated URLs to localStorage
     if (hydrated !== session) {
@@ -481,7 +626,31 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (hydrated.status === 'processing') {
       setCurrentView('processing')
     } else {
-      setCurrentView('results')
+      // Respect the initial view from the URL hash (e.g. /mixer deep link)
+      const targetView = props.initialView === 'mixer' ? 'mixer' : 'results'
+      console.log(
+        '[UvrPanel] targetView:',
+        targetView,
+        'outputs != null:',
+        hydrated.outputs != null,
+      )
+
+      // When deep-linking directly to mixer, populate the mixer state
+      // just like handlePracticeStart does for 'full' mode
+      if (targetView === 'mixer' && hydrated.outputs != null) {
+        console.log('[UvrPanel] populating mixer stems for deep-link')
+        setPrevView('results')
+        setMixerPracticeMode('full')
+        setMixerSessionId(hydrated.sessionId)
+        setMixerStems({
+          vocal: hydrated.outputs.vocal,
+          instrumental: hydrated.outputs.instrumental,
+        })
+        setMixerRequestedStems({ vocal: true, instrumental: true })
+      }
+
+      console.log('[UvrPanel] setCurrentView:', targetView)
+      setCurrentView(targetView)
     }
   }
 
@@ -489,7 +658,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
     const current = currentUvrSession()
-    if (!current?.outputs) return
+    if (!current?.outputs && !current?.stemMeta) return
     const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
@@ -525,7 +694,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   const handleMixStart = async (selectedStems: string[]) => {
     const current = currentUvrSession()
-    if (!current?.outputs) return
+    if (!current?.outputs && !current?.stemMeta) return
     const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
@@ -564,7 +733,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
     const raw = getUvrSession(sessionId)
-    if (!raw?.outputs) return
+    if (!raw?.outputs && !raw?.stemMeta) return
     const s = await ensureHydrated(raw)
     if (!s.outputs) return
     setCurrentUvrSession(s)
@@ -606,79 +775,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleExportSession = async (
-    sessionId: string,
-    type: 'vocal' | 'instrumental' | 'vocal-midi',
-  ) => {
-    const s = getUvrSession(sessionId)
-    if (!s?.outputs) return
-
-    const url =
-      type === 'vocal'
-        ? s.outputs.vocal
-        : type === 'instrumental'
-          ? s.outputs.instrumental
-          : s.outputs.vocalMidi
-
-    if (url === undefined) return
-
-    try {
-      let blob: Blob
-      const ext = type === 'vocal-midi' ? '.mid' : '.wav'
-
-      if (
-        type === 'vocal-midi' &&
-        (url === '' || url === undefined) &&
-        s.outputs.vocal !== undefined
-      ) {
-        setMidiExporting(true)
-        setMidiExportProgress(0)
-        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) =>
-          setMidiExportProgress(pct),
-        )
-        setMidiExporting(false)
-        if (!midiBlob) {
-          console.error('MIDI generation produced no notes')
-          return
-        }
-        blob = midiBlob
-      } else {
-        const resp = await fetch(url)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        blob = await resp.blob()
-      }
-
-      const blobUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      const base = (s.originalFile?.name ?? 'audio')
-        .replace(/\.[^.]+$/, '')
-        .replace(/\s+/g, '_')
-        .replace(/[^a-zA-Z0-9_-]/g, '')
-      a.href = blobUrl
-      a.download = `${base}_${type.replace('-', '_')}${ext}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
-    } catch (err) {
-      setMidiExporting(false)
-      console.error('Download failed:', err)
-    }
-  }
-
-  const handleDeleteAll = () => {
-    deleteAllUvrSessions()
-    setShowDeleteAllConfirm(false)
-    setDeleteAllToast('All sessions deleted')
-    setTimeout(() => setDeleteAllToast(''), 2500)
-  }
-
   const handleClearStorage = () => {
     deleteAllUvrSessions()
-    void deleteAllUvrSessionsFromDb()
     setShowClearStorageConfirm(false)
     setDeleteAllToast('Storage cleared (all sessions and stems deleted)')
     setTimeout(() => setDeleteAllToast(''), 2500)
+    void deleteAllUvrSessionsFromDb()
   }
 
   // Refresh session outputs from API
@@ -732,141 +834,141 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
       >
         {/* Header */}
-        <div class="panel-header">
-          <div class="header-left">
-            <div
-              class="header-title-group"
-              style="display: flex; align-items: center; gap: 0.5rem;"
-            >
-              <h3>Shazam Sing</h3>
+        <Show when={!karaokeFocus()}>
+          <div class="panel-header">
+            <div class="header-left">
+              <div
+                class="header-title-group"
+                style="display: flex; align-items: center; gap: 0.5rem;"
+              >
+                <h3>Shazam Sing</h3>
+              </div>
+              <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
+                <button
+                  class="view-tab view-tab-sing"
+                  classList={{
+                    active: currentView() === 'shazam-listen',
+                  }}
+                  onClick={() => {
+                    setCurrentView('shazam-listen')
+                    props.onViewChange?.('shazam-listen')
+                    props.onSessionChange?.(null)
+                  }}
+                  data-testid="uvr-tab-sing"
+                >
+                  <SingMic />
+                  <span>Sing</span>
+                </button>
+                <button
+                  class="view-tab"
+                  classList={{
+                    active: currentView() === 'upload',
+                  }}
+                  onClick={() => {
+                    setCurrentView('upload')
+                    props.onViewChange?.('upload')
+                    props.onSessionChange?.(null)
+                  }}
+                  data-testid="uvr-tab-upload"
+                >
+                  <ImportFile />
+                  <span>Upload</span>
+                </button>
+              </div>
             </div>
-            <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
-              <button
-                class="view-tab view-tab-sing"
-                classList={{
-                  active: currentView() === 'shazam-listen',
-                }}
-                onClick={() => {
-                  setCurrentView('shazam-listen')
-                  props.onViewChange?.('shazam-listen')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-sing"
-                aria-label="Sing"
-              >
-                <SingMic />
-              </button>
-              <button
-                class="view-tab"
-                classList={{
-                  active: currentView() === 'upload',
-                }}
-                onClick={() => {
-                  setCurrentView('upload')
-                  props.onViewChange?.('upload')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-upload"
-                aria-label="Upload"
-              >
-                <ImportFile />
-              </button>
-            </div>
-          </div>
-          <div class="header-actions">
-            <div class="uvr-mode-toggle">
-              <button
-                class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                title="Processing: Server"
-                aria-label="Processing: Server"
-                onClick={() =>
-                  showNotification(
-                    'Server-side processing not yet available.',
-                    'info',
-                  )
-                }
-              >
-                <Server /> Server
-              </button>
-              <button
-                class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
-                title="Processing: Browser"
-                aria-label="Processing: Browser"
-                onClick={() => setUvrProcessingMode('local')}
-              >
-                <Cpu /> Browser
-              </button>
-              <Show when={uvrProcessingMode() === 'local'}>
-                <div class="uvr-device-toggle">
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: !uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(false)}
-                    title="Use CPU (WASM) for vocal separation"
-                    data-testid="uvr-device-cpu"
-                    aria-label="Use CPU (WASM) for vocal separation"
-                  >
-                    <Cpu />
-                  </button>
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(true)}
-                    title="Use GPU (WebGPU) for vocal separation"
-                    data-testid="uvr-device-gpu"
-                    aria-label="Use GPU (WebGPU) for vocal separation"
-                  >
-                    <Zap />
-                  </button>
-                </div>
-              </Show>
-              <Show
-                when={
-                  uvrProcessingMode() === 'local' &&
-                  uvrModelStatus() !== 'ready'
-                }
-              >
-                <span
-                  class={`model-status-badge model-status-${uvrModelStatus()}`}
-                  title={
-                    uvrModelStatus() === 'error'
-                      ? uvrModelError()
-                      : uvrModelStatus() === 'loading'
-                        ? 'Loading ONNX model...'
-                        : ''
+            <div class="header-actions">
+              <div class="uvr-mode-toggle">
+                <button
+                  class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                  title="Processing: Server"
+                  onClick={() =>
+                    showNotification(
+                      'Server-side processing not yet available.',
+                      'info',
+                    )
                   }
                 >
-                  <Show when={uvrModelStatus() === 'loading'}>
-                    <span class="model-loading-dot" />
-                  </Show>
-                  <Show when={uvrModelStatus() === 'error'}>
-                    <span class="model-error-icon">!</span>
-                  </Show>
-                </span>
-              </Show>
-            </div>
-            <div class="uvr-view-tabs">
-              <button
-                class="view-tab"
-                classList={{ active: showGuide() }}
-                onClick={() => setShowGuide(!showGuide())}
-                aria-label="Guide"
-              >
-                <Music />
-              </button>
-              <button
-                class="view-tab"
-                classList={{ active: showSettings() }}
-                onClick={() => setShowSettings(!showSettings())}
-                aria-label="Settings"
-              >
-                <Settings />
-              </button>
+                  Server
+                </button>
+                <button
+                  class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+                  title="Processing: Browser"
+                  onClick={() => setUvrProcessingMode('local')}
+                >
+                  Browser
+                </button>
+                <Show when={uvrProcessingMode() === 'local'}>
+                  <div class="uvr-device-toggle">
+                    <button
+                      class="device-toggle-btn"
+                      classList={{ active: !uvrForceWebGpu() }}
+                      onClick={() => handleForceWebGpuToggle(false)}
+                      title="Use CPU (WASM) for vocal separation"
+                      data-testid="uvr-device-cpu"
+                    >
+                      <Cpu />
+                      <span>CPU</span>
+                    </button>
+                    <button
+                      class="device-toggle-btn"
+                      classList={{ active: uvrForceWebGpu() }}
+                      onClick={() => handleForceWebGpuToggle(true)}
+                      title="Use GPU (WebGPU) for vocal separation"
+                      data-testid="uvr-device-gpu"
+                    >
+                      <Zap />
+                      <span>GPU</span>
+                    </button>
+                  </div>
+                </Show>
+                <Show
+                  when={
+                    uvrProcessingMode() === 'local' &&
+                    uvrModelStatus() !== 'ready'
+                  }
+                >
+                  <span
+                    class={`model-status-badge model-status-${uvrModelStatus()}`}
+                    title={
+                      uvrModelStatus() === 'error'
+                        ? uvrModelError()
+                        : uvrModelStatus() === 'loading'
+                          ? 'Loading ONNX model...'
+                          : ''
+                    }
+                  >
+                    <Show when={uvrModelStatus() === 'loading'}>
+                      <span class="model-loading-dot" />
+                    </Show>
+                    <Show when={uvrModelStatus() === 'error'}>
+                      <span class="model-error-icon">!</span>
+                    </Show>
+                  </span>
+                </Show>
+              </div>
+              <div class="uvr-view-tabs">
+                <button
+                  class="view-tab"
+                  classList={{ active: showGuide() }}
+                  onClick={() => setShowGuide(!showGuide())}
+                >
+                  <Music />
+                  <span>Guide</span>
+                </button>
+                <button
+                  class="view-tab"
+                  classList={{ active: showSettings() }}
+                  onClick={() => setShowSettings(!showSettings())}
+                >
+                  <Settings />
+                  <span>Settings</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <FancyDivider class="uvr-header-divider" />
+          <FancyDivider class="uvr-header-divider" />
+        </Show>
 
         {/* Main Content */}
         <div class="panel-content">
@@ -891,7 +993,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="guide-modal" onClick={() => setShowSettings(false)}>
               <div class="guide-container" onClick={(e) => e.stopPropagation()}>
                 <div class="guide-header">
-                  <h3>UVR Settings</h3>
+                  <h3>Karaoke Settings</h3>
                   <button
                     class="guide-close"
                     onClick={() => setShowSettings(false)}
@@ -924,13 +1026,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
               />
-              <Show when={allSessions().length > 0}>
-                <div class="upload-divider">
-                  <span class="upload-divider-text">
+              <div class="upload-divider">
+                <span class="upload-divider-text">
+                  <Show
+                    when={allSessions().length > 0}
+                    fallback="or import existing sessions"
+                  >
                     or continue from existing session
-                  </span>
-                </div>
-                <div class="section-header">
+                  </Show>
+                </span>
+              </div>
+              <div class="section-header">
+                <Show
+                  when={allSessions().length > 0}
+                  fallback={<h4>Session Library</h4>}
+                >
                   <h4>Recent Sessions</h4>
                 </Show>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -958,26 +1068,52 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       </button>
                     </Show>
                     <button
-                      class="delete-all-btn"
-                      onClick={() => setShowClearStorageConfirm(true)}
-                      title="Delete all sessions, stems, and uploaded files from database"
-                      aria-label="Delete all sessions, stems, and uploaded files from database"
+                      class="section-action-btn icon-only"
+                      onClick={() => void handleExportAll()}
+                      disabled={isExporting()}
+                      title="Export all sessions to a ZIP file"
                     >
-                      <Trash2 />
+                      <ExportFile />
                     </button>
+                  </Show>
+                  <label
+                    class="section-action-btn icon-only"
+                    title="Import sessions from a ZIP file"
+                    style={{ cursor: isImporting() ? 'default' : 'pointer' }}
+                  >
+                    <ImportFile />
+                    <input
+                      type="file"
+                      accept=".zip"
+                      style={{ display: 'none' }}
+                      onChange={(e) => void handleImportZip(e)}
+                      disabled={isImporting()}
+                    />
+                  </label>
+                  <Show when={allSessions().length > 0}>
                     <button
-                      class="delete-all-btn"
-                      onClick={() => setShowDeleteAllConfirm(true)}
-                      title="Delete all sessions"
-                      aria-label="Delete all sessions"
+                      class="section-action-btn section-action-btn-danger icon-only"
+                      onClick={() => setShowClearStorageConfirm(true)}
+                      title="Clear All Sessions & Cache"
                     >
                       <Trash2 />
                     </button>
-                  </div>
+                  </Show>
                 </div>
+              </div>
+
+              <Show
+                when={
+                  allSessions().length > 0 || getGroupsReactive().length > 0
+                }
+              >
+                <SessionGroupTabs
+                  activeGroupId={activeGroupId()}
+                  onSelectGroup={setActiveGroupId}
+                />
                 <div class="history-list history-list-inline">
                   <For
-                    each={allSessions().sort(
+                    each={filteredSessions().sort(
                       (a, b) => b.createdAt - a.createdAt,
                     )}
                   >
@@ -990,11 +1126,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         onView={() => {
                           void handleSessionView(s.sessionId)
                         }}
-                        onExport={(type) => {
-                          void handleExportSession(
-                            s.sessionId,
-                            type as 'vocal' | 'instrumental' | 'vocal-midi',
-                          )
+                        onExport={(sessionId) => {
+                          if (isExporting()) return
+                          setIsExporting(true)
+                          setExportProgress(0)
+                          void exportSession(sessionId, (pct) =>
+                            setExportProgress(pct),
+                          ).finally(() => setIsExporting(false))
                         }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
@@ -1094,17 +1232,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <Show when={currentView() === 'results'}>
             <div class="view-section results-section">
               <div class="section-header">
-                <h4>
-                  Processing Results for{' '}
-                  {session()?.originalFile?.name ?? 'audio'}
+                <h4
+                  style={{
+                    display: 'flex',
+                    'align-items': 'center',
+                    'flex-wrap': 'wrap',
+                  }}
+                >
+                  <span
+                    class="process-filename-pill"
+                    title={session()?.originalFile?.name ?? 'audio'}
+                  >
+                    {session()?.originalFile?.name ?? 'audio'}
+                  </span>
+                  <span>results</span>
                 </h4>
                 <button
                   class="back-btn"
                   onClick={() => setCurrentView('upload')}
-                  aria-label="Back to Upload"
-                  title="Back to Upload"
                 >
-                  <ImportFile />
+                  <ImportFile /> Back to Upload
                 </button>
               </div>
               {session() && (
@@ -1222,31 +1369,87 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </Show>
         </div>
 
-        {/* Delete All Confirmation Modal */}
-        <Show when={showDeleteAllConfirm()}>
+        {/* Import Group Selection Modal */}
+        <Show when={showImportGroupSelect()}>
           <div
             class="delete-all-overlay"
-            onClick={() => setShowDeleteAllConfirm(false)}
+            onClick={() => {
+              setShowImportGroupSelect(false)
+              setImportFile(null)
+            }}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-              <h4>Delete All Sessions</h4>
+              <h4>Import to Group</h4>
               <p>
-                This will remove all {allSessions().length} session
-                {allSessions().length !== 1 ? 's' : ''} from your history.
+                Choose a target group for the imported sessions, or leave
+                ungrouped.
               </p>
+              <div
+                class="session-group-assign-menu"
+                style="position: static; box-shadow: none; margin-bottom: 0.75rem;"
+              >
+                <button
+                  class="session-group-assign-item"
+                  classList={{
+                    'session-group-assign-item--active':
+                      importTargetGroupId() === null,
+                  }}
+                  onClick={() => setImportTargetGroupId(null)}
+                >
+                  No group
+                </button>
+                <For each={getGroupsReactive()}>
+                  {(group) => (
+                    <button
+                      class="session-group-assign-item"
+                      classList={{
+                        'session-group-assign-item--active':
+                          importTargetGroupId() === group.id,
+                      }}
+                      onClick={() => setImportTargetGroupId(group.id)}
+                    >
+                      {group.name}
+                      <span class="session-group-assign-item-count">
+                        {group.sessionIds.length}
+                      </span>
+                    </button>
+                  )}
+                </For>
+              </div>
+              <div class="session-group-assign-new">
+                <input
+                  type="text"
+                  class="session-group-assign-new-input"
+                  placeholder="Or create a new group..."
+                  value={newImportGroupName()}
+                  onInput={(e) => setNewImportGroupName(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void handleCreateImportGroup()
+                  }}
+                />
+                <button
+                  class="session-group-assign-new-btn"
+                  onClick={() => void handleCreateImportGroup()}
+                  disabled={importGroupCreating()}
+                >
+                  {importGroupCreating() ? 'Creating...' : 'Create & import'}
+                </button>
+              </div>
               <div class="delete-all-actions">
                 <button
                   class="delete-all-cancel"
-                  onClick={() => setShowDeleteAllConfirm(false)}
+                  onClick={() => {
+                    setShowImportGroupSelect(false)
+                    setImportFile(null)
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   class="delete-all-confirm"
-                  onClick={handleDeleteAll}
-                  aria-label="Delete All"
+                  onClick={() => void handleConfirmImport()}
                 >
-                  <Trash2 />
+                  Import{importTargetGroupId() != null ? ' to group' : ''}
                 </button>
               </div>
             </div>
@@ -1260,7 +1463,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             onClick={() => setShowClearStorageConfirm(false)}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-              <h4>Clear Cached Songs</h4>
+              <h4>Clear All Data</h4>
               <p>
                 This will permanently remove all {allSessions().length} session
                 {allSessions().length !== 1 ? 's' : ''}, generated stems, and
@@ -1274,12 +1477,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Cancel
                 </button>
-                <button
-                  class="delete-all-confirm"
-                  onClick={handleClearStorage}
-                  aria-label="Clear Cached Songs"
-                >
-                  <Trash2 />
+                <button class="delete-all-confirm" onClick={handleClearStorage}>
+                  <Trash2 /> Clear All
                 </button>
               </div>
             </div>
@@ -1288,11 +1487,44 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* Delete All Toast */}
         <Show when={deleteAllToast()}>
-          <div class="history-toast">
+          <div class="history-toast history-toast-auto">
             <span class="history-toast-icon">
               <CheckCircle />
             </span>
             {deleteAllToast()}
+          </div>
+        </Show>
+
+        {/* Export All Progress Toast */}
+        <Show when={isExporting()}>
+          <div class="history-toast">
+            <span class="history-toast-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--border, #30363d)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="var(--accent, #8b5cf6)"
+                  stroke-width="2"
+                  stroke-dasharray={String(2 * Math.PI * 10)}
+                  stroke-dashoffset={String(
+                    2 * Math.PI * 10 * (1 - exportProgress() / 100),
+                  )}
+                  stroke-linecap="round"
+                  transform="rotate(-90 12 12)"
+                />
+              </svg>
+            </span>
+            Preparing ZIP... {exportProgress()}%
           </div>
         </Show>
 
