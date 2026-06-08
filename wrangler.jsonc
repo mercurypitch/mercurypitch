@@ -17,7 +17,7 @@
       "head_sampling_rate": 1
     }
   },
-  "main": "src/index.js",
+  "main": "src/worker.ts",
   "build": {
     "command": "pnpm run build"
   },

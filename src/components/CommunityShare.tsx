@@ -7,10 +7,11 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
+import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
-import { getSessionHistory, melodyStore, bpm, keyName, scaleType, } from '@/stores'
+import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
+import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem, PlaybackSession } from '@/types'
-import { encodeMelodyForShare, copyShareUrl } from '@/lib/share-codec'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -268,9 +269,6 @@ export const CommunityShare: Component = () => {
   const [activeTab, setActiveTab] = createSignal<
     'melodies' | 'sessions' | 'profile'
   >('melodies')
-  const [userProfile, _setUserProfile] = createSignal<SharedProfile | null>(
-    null,
-  )
   const [searchQuery, setSearchQuery] = createSignal('')
   const [sortBy, setSortBy] = createSignal<'recent' | 'popular' | 'highest'>(
     'recent',
@@ -395,7 +393,7 @@ export const CommunityShare: Component = () => {
   const exportMelody = () => {
     const current = melodyStore.currentMelody()
     if (!current || current.items.length === 0) {
-      alert('No melody to share!')
+      showNotification('No melody to share!', 'warning')
       return
     }
 
@@ -434,8 +432,12 @@ export const CommunityShare: Component = () => {
       tags: shareable.tags,
     })
     void copyShareUrl(encoded).then((ok) => {
-      if (ok) alert('Share link copied to clipboard!')
-      else alert('Failed to copy link. URL: ' + window.location.href)
+      if (ok) showNotification('Share link copied to clipboard!', 'info')
+      else
+        showNotification(
+          `Failed to copy link. URL: ${window.location.href}`,
+          'error',
+        )
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -444,7 +446,7 @@ export const CommunityShare: Component = () => {
   const exportSession = () => {
     const sessions = getSessionHistory()
     if (sessions.length === 0) {
-      alert('No session to share!')
+      showNotification('No session to share!', 'warning')
       return
     }
 
@@ -466,7 +468,7 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       results: shareable.results,
     })
-    alert('Session shared successfully!')
+    showNotification('Session shared successfully!', 'info')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -484,8 +486,8 @@ export const CommunityShare: Component = () => {
           melody.name,
         )
         void copyShareUrl(encoded).then((ok) => {
-          if (ok) alert('Share link copied to clipboard!')
-          else alert('Failed to copy link')
+          if (ok) showNotification('Share link copied to clipboard!', 'info')
+          else showNotification('Failed to copy link', 'error')
         })
         return
       }
@@ -493,8 +495,8 @@ export const CommunityShare: Component = () => {
     // Session shares use the legacy fallback format
     const link = `${window.location.origin}${window.location.pathname}#/share?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`
     void navigator.clipboard.writeText(link).then(
-      () => alert('Share link copied to clipboard!'),
-      () => alert('Failed to copy link: ' + link),
+      () => showNotification('Share link copied to clipboard!', 'info'),
+      () => showNotification(`Failed to copy link: ${link}`, 'error'),
     )
   }
 
@@ -760,9 +762,7 @@ export const CommunityShare: Component = () => {
           <div class="profile-container">
             {/* Profile Header */}
             <div class="profile-header">
-              <div class="profile-avatar">
-                {userProfile()?.avatar ?? IconUser()}
-              </div>
+              <div class="profile-avatar">{IconUser()}</div>
               <div class="profile-info">
                 <h2 class="profile-name">{currentProfile()?.displayName}</h2>
                 <p class="profile-bio">{currentProfile()?.bio}</p>

@@ -7,7 +7,9 @@ const CORS = {
   'Access-Control-Allow-Headers': '*',
 }
 
-function respond(body, init) {
+import type { Env } from './worker'
+
+function respond(body: unknown, init?: ResponseInit): Response {
   const headers = { ...CORS, ...(init?.headers ?? {}) }
   const status = init?.status ?? 200
   if (body === null) return new Response(null, { ...init, headers, status })
@@ -22,8 +24,9 @@ const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const ID_LENGTH = 10
 const SIXTY_DAYS = 60 * 24 * 60 * 60
 
-function generateShortId() {
+function generateShortId(): string {
   const bytes = new Uint8Array(ID_LENGTH)
+  // eslint-disable-next-line no-restricted-globals
   crypto.getRandomValues(bytes)
   let id = ''
   for (let i = 0; i < ID_LENGTH; i++) {
@@ -34,11 +37,11 @@ function generateShortId() {
 
 /**
  * Handle /api/share/* requests.
- * @param {Request} request
- * @param {{ SHARE_STORE: KVNamespace }} env
- * @returns {Promise<Response | null>} Response if handled, null otherwise.
  */
-export async function handleShareRequest(request, env) {
+export async function handleShareRequest(
+  request: Request,
+  env: Env,
+): Promise<Response | null> {
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: CORS })
   }
@@ -48,9 +51,9 @@ export async function handleShareRequest(request, env) {
   // POST /api/share/shorten
   if (url.pathname === '/api/share/shorten' && request.method === 'POST') {
     try {
-      const body = await request.json()
+      const body = (await request.json()) as Record<string, unknown>
       if (
-        !body ||
+        body == null ||
         typeof body.payload !== 'string' ||
         body.payload.length === 0
       ) {

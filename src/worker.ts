@@ -1,15 +1,23 @@
 import { ContainerProxy } from '@cloudflare/containers'
-import { handleShareRequest } from './share-handler.js'
+import type { KVNamespace } from '@cloudflare/workers-types'
+import { handleShareRequest } from './share-handler'
+
 export { ContainerProxy }
-export { UvrContainer } from './uvr-container.js'
+export { UvrContainer } from './uvr-container'
 
 // Cloudflare Worker entry point for MercuryPitch
 // Proxies /api/uvr/* to the UVR Docker container.
 // Handles /api/share/* for share link shortening (KV-backed).
 // Static assets are served by Cloudflare's assets feature.
 
+export interface Env {
+  UVR_SERVICE: { getByName(name: string): unknown }
+  ASSETS: { fetch(req: Request): Promise<Response> }
+  SHARE_STORE: KVNamespace
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
     const method = request.method
 
@@ -21,7 +29,8 @@ export default {
       console.log(`[worker] proxying /api/uvr${stripped} → container`)
 
       try {
-        const container = env.UVR_SERVICE.getByName('uvr-instance')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const container = env.UVR_SERVICE.getByName('uvr-instance') as any
         await container.start()
         const containerUrl = new URL(request.url)
         containerUrl.pathname = stripped
