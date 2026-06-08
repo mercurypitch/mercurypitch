@@ -360,6 +360,24 @@ export function melodyIndexAtBeat(melody: MelodyItem[], beat: number): number {
   return -1
 }
 
+/** Get ALL melody item indices active at a given beat position.
+ *  Unlike melodyIndexAtBeat which returns only the first match,
+ *  this returns every overlapping note so the playback runtime
+ *  can trigger polyphonic noteStart/noteEnd events. */
+export function melodyIndicesAtBeat(
+  melody: MelodyItem[],
+  beat: number,
+): number[] {
+  const indices: number[] = []
+  for (let i = 0; i < melody.length; i++) {
+    const item = melody[i]
+    if (beat >= item.startBeat && beat < item.startBeat + item.duration) {
+      indices.push(i)
+    }
+  }
+  return indices
+}
+
 /** Check if a note name is a black key */
 export function isBlackKey(name: string): boolean {
   return name.includes('#')

@@ -378,6 +378,16 @@ describe('Arc state transitions (integration)', () => {
         ) {
           nextIdx++
         }
+        // Skip notes whose end beat has already passed relative to the
+        // departing arc's endBeat (not the current sample beat), so notes
+        // ending at the same beat aren't skipped by floating-point timing.
+        while (
+          nextIdx < notes.length &&
+          notes[nextIdx].startBeat + notes[nextIdx].duration <
+            state.endBeat - 0.001
+        ) {
+          nextIdx++
+        }
         if (nextIdx < notes.length) {
           const next = notes[nextIdx]
           const src = computeBallPos(beat, state)
@@ -810,6 +820,16 @@ describe('Ball trajectory and continuity', () => {
         while (
           nextIdx < notes.length &&
           Math.abs(notes[nextIdx].startBeat - prevNoteStart) < SKIP_EPSILON
+        ) {
+          nextIdx++
+        }
+        // Skip notes whose end beat has already passed relative to the
+        // departing arc's endBeat (not the current sample beat), so notes
+        // ending at the same beat aren't skipped by floating-point timing.
+        while (
+          nextIdx < notes.length &&
+          notes[nextIdx].startBeat + notes[nextIdx].duration <
+            state.endBeat - 0.001
         ) {
           nextIdx++
         }
@@ -1268,5 +1288,171 @@ describe('Ball trajectory and continuity', () => {
     // After seek, ball X must equal beat (no backward teleport)
     const posAfterSeek = computeBallPos(5, state)
     expect(Math.abs(posAfterSeek.beatX - 5)).toBeLessThan(0.01)
+  })
+
+  // -------------------------------------------------------------------------
+  // Overlapping note scenarios — ball must never jump back to ended notes
+  // -------------------------------------------------------------------------
+
+  it('long note covering nested short notes: skips already-ended notes', () => {
+    // Long G (0-4), nested E (1-2), E2 (2-3), C (2-3), D (3-4)
+    // When G ends at beat 4, E/E2/C have already ended at beats 2/3.
+    // Ball should skip them and land on D (or reset if D also ended).
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 4 }, // G  → endBeat 4
+      { startBeat: 1, duration: 1 }, // E  → endBeat 2
+      { startBeat: 2, duration: 1 }, // E2 → endBeat 3
+      { startBeat: 2, duration: 1 }, // C  → endBeat 3
+      { startBeat: 3, duration: 1 }, // D  → endBeat 4
+    ]
+    const noteYs = [300, 200, 180, 150, 250]
+
+    const sampleBeats: number[] = []
+    for (let b = -0.5; b <= 4.1; b += 0.05) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // Ball should stay on G (noteIndex 0) until beat 4
+    const atBeat3 = positions.find((p) => Math.abs(p.beat - 3) < 0.01)
+    expect(atBeat3).toBeDefined()
+    expect(atBeat3!.noteIndex).toBe(0) // still on G
+
+    // After beat 4, ball must NOT visit E, E2, or C (indices 1,2,3).
+    // It should jump directly to D (index 4) since its endBeat=4 is not
+    // strictly before beat=4 (degenerate arc, min 0.5 beat added).
+    const afterBeat4 = positions.filter((p) => p.beat > 4)
+    for (const p of afterBeat4) {
+      expect(p.noteIndex).not.toBe(1) // E  — ended at beat 2
+      expect(p.noteIndex).not.toBe(2) // E2 — ended at beat 3
+      expect(p.noteIndex).not.toBe(3) // C  — ended at beat 3
+    }
+
+    // D should be visited (index 4)
+    const atD = positions.find((p) => p.noteIndex === 4)
+    expect(atD).toBeDefined()
+    expect(atD!.beat).toBeGreaterThanOrEqual(4 - 0.01)
+  })
+
+  it('all nested notes ended — ball resets when no future notes exist', () => {
+    // Long A (0-3), short B (1-2). At beat 3, B ended at 2 < 3.
+    // No more notes after A, so ball should reset (initialized=false).
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 3 }, // A → endBeat 3
+      { startBeat: 1, duration: 1 }, // B → endBeat 2 (ended way before A ends)
+    ]
+    const noteYs = [300, 200]
+
+    const sampleBeats: number[] = []
+    for (let b = -0.5; b <= 3.5; b += 0.05) sampleBeats.push(b)
+
+    const { state, positions } = simulateWithPositions(
+      notes,
+      120,
+      sampleBeats,
+      noteYs,
+    )
+
+    // Ball stays on A (index 0) until beat 3
+    const atBeat2 = positions.find((p) => Math.abs(p.beat - 2) < 0.01)
+    expect(atBeat2).toBeDefined()
+    expect(atBeat2!.noteIndex).toBe(0)
+
+    // After A ends, ball should never visit B (already ended)
+    const afterBeat3 = positions.filter((p) => p.beat >= 3.01)
+    for (const p of afterBeat3) {
+      expect(p.noteIndex).not.toBe(1)
+    }
+
+    // State should indicate there are no more notes
+    // (noteIndex stayed at 0, no advance happened)
+    expect(state.noteIndex).toBe(0)
+  })
+
+  it('long note spanning two short notes — skips both ended notes to reach third active note', () => {
+    // Long F (0-5), short G (1-2), short A (3-4), active B (4.5-6)
+    // At beat 5, G ended at 2, A ended at 4 — both skipped. B (4.5-6) is active.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 5 }, // F → endBeat 5
+      { startBeat: 1, duration: 1 }, // G → endBeat 2 (skip)
+      { startBeat: 3, duration: 1 }, // A → endBeat 4 (skip)
+      { startBeat: 4.5, duration: 1.5 }, // B → endBeat 6 (active, visit)
+    ]
+    const noteYs = [300, 250, 200, 150]
+
+    const sampleBeats: number[] = []
+    for (let b = -0.5; b <= 6.2; b += 0.05) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // Ball stays on F until beat 5
+    const atBeat4 = positions.find((p) => Math.abs(p.beat - 4) < 0.01)
+    expect(atBeat4).toBeDefined()
+    expect(atBeat4!.noteIndex).toBe(0)
+
+    // Ball must never visit G (index 1) or A (index 2)
+    for (const p of positions) {
+      expect(p.noteIndex).not.toBe(1)
+      expect(p.noteIndex).not.toBe(2)
+    }
+
+    // Ball must visit B (index 3)
+    const atB = positions.find((p) => p.noteIndex === 3)
+    expect(atB).toBeDefined()
+    expect(atB!.beat).toBeGreaterThanOrEqual(5 - 0.01)
+  })
+
+  it('chord notes at same beat skip correctly, then advance past ended notes', () => {
+    // Chord C-E-G at beat 0 (duration 1), then F at beat 2
+    // After the chord note's arc ends, the same-startBeat skip handles
+    // the other two chord members. Then F should be visited normally.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 1 }, // C → endBeat 1
+      { startBeat: 0, duration: 1 }, // E → same beat, skip
+      { startBeat: 0, duration: 1 }, // G → same beat, skip
+      { startBeat: 2, duration: 1 }, // F → endBeat 3
+    ]
+    const noteYs = [300, 250, 200, 150]
+
+    const sampleBeats: number[] = []
+    for (let b = -0.5; b <= 3.2; b += 0.02) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // Ball should be on chord note (index 0) until beat 1
+    const atBeat05 = positions.find((p) => Math.abs(p.beat - 0.5) < 0.01)
+    expect(atBeat05).toBeDefined()
+    expect(atBeat05!.noteIndex).toBe(0)
+
+    // Ball should never visit E or G (indices 1, 2)
+    for (const p of positions) {
+      expect(p.noteIndex).not.toBe(1)
+      expect(p.noteIndex).not.toBe(2)
+    }
+
+    // After beat 1, ball advances to F (index 3)
+    const afterBeat2 = positions.find((p) => Math.abs(p.beat - 2.5) < 0.01)
+    expect(afterBeat2).toBeDefined()
+    expect(afterBeat2!.noteIndex).toBe(3)
+  })
+
+  it('noteIndex is monotonically non-decreasing (never goes backward)', () => {
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 4 },
+      { startBeat: 1, duration: 0.5 },
+      { startBeat: 2, duration: 0.5 },
+      { startBeat: 3, duration: 1 },
+    ]
+    const noteYs = [300, 250, 200, 150]
+
+    const sampleBeats: number[] = []
+    for (let b = -0.5; b <= 4.2; b += 0.02) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    let lastIdx = -1
+    for (const p of positions) {
+      expect(p.noteIndex).toBeGreaterThanOrEqual(lastIdx)
+      lastIdx = p.noteIndex
+    }
   })
 })

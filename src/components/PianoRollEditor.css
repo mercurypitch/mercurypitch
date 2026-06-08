@@ -22,6 +22,7 @@
   min-height: 0;
   overflow: hidden;
   user-select: none;
+  position: relative;
 }
 
 /* Piano roll wrapper — fills its flex parent */
@@ -286,6 +287,18 @@ Keeps your existing styles, only adjusts layout
 .roll-effect-btn.vibrato {
   border-left: 2px solid #ff6b6b;
 }
+.roll-effect-btn.tremolo {
+  border-left: 2px solid #9370db;
+}
+.roll-effect-btn.trill {
+  border-left: 2px solid #ff8c00;
+}
+.roll-effect-btn.staccato {
+  border-left: 2px solid #4682b4;
+}
+.roll-effect-btn.chord {
+  border-left: 2px solid #22c55e;
+}
 
 .roll-octave-btn {
   padding: 4px 8px;
@@ -532,6 +545,64 @@ Keeps your existing styles, only adjusts layout
   border-color: var(--purple);
   color: var(--purple);
   background: rgba(188, 140, 255, 0.08);
+}
+
+.roll-action-btn.tremolo:hover {
+  border-color: #9370db;
+  color: #9370db;
+  background: rgba(147, 112, 219, 0.08);
+}
+
+.roll-action-btn.trill:hover {
+  border-color: #ff8c00;
+  color: #ff8c00;
+  background: rgba(255, 140, 0, 0.08);
+}
+
+.roll-action-btn.staccato:hover {
+  border-color: #4682b4;
+  color: #4682b4;
+  background: rgba(70, 130, 200, 0.08);
+}
+
+/* Effect popover — anchored below the Effects toolbar group */
+.roll-effect-popover {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  z-index: 50;
+}
+
+.roll-effect-popover-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roll-effect-popover-inner label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.roll-effect-popover-inner input[type='range'] {
+  width: 80px;
+  height: 4px;
+  accent-color: var(--accent);
+}
+
+.roll-popover-val {
+  font-size: 0.65rem;
+  color: var(--accent);
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
 }
 
 /* Instrument label */

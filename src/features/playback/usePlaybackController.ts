@@ -6,7 +6,7 @@ import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
+import { keyTonicFreq, melodyIndicesAtBeat, melodyTotalBeats, } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -18,6 +18,7 @@ export interface PlaybackController {
   isPaused: Accessor<boolean>
   currentBeat: Accessor<number>
   currentNoteIndex: Accessor<number>
+  activeNoteIndices: Accessor<Set<number>>
   playbackDisplayMelody: Accessor<MelodyItem[] | null>
   playbackDisplayBeats: Accessor<number | null>
 
@@ -113,6 +114,9 @@ export function usePlaybackController(
   const [isPaused, setIsPaused] = createSignal(false)
   const [currentBeat, setCurrentBeat] = createSignal(0)
   const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
+  const [activeNoteIndices, setActiveNoteIndices] = createSignal<Set<number>>(
+    new Set(),
+  )
   const [playbackDisplayMelody, setPlaybackDisplayMelody] = createSignal<
     MelodyItem[] | null
   >(null)
@@ -147,8 +151,16 @@ export function usePlaybackController(
   // Subscribe to PlaybackRuntime beat events so currentBeat (and the
   // playhead position) actually advance during playback. Without this,
   // the playhead stays at 0% the entire time.
+  // eslint-disable-next-line solid/reactivity -- external event emitter callback
   playbackRuntime.on('beat', (e: { beat: number }) => {
     setCurrentBeat(e.beat)
+    if (e.beat >= 0) {
+      setActiveNoteIndices(
+        new Set<number>(melodyIndicesAtBeat(activePlaybackItems(), e.beat)),
+      )
+    } else {
+      setActiveNoteIndices(new Set<number>())
+    }
   })
 
   playbackRuntime.on('noteStart', (e: { note: unknown; index: number }) => {
@@ -193,6 +205,7 @@ export function usePlaybackController(
     setEditorPlaybackState('stopped')
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
+    setActiveNoteIndices(new Set<number>())
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     setNoteResults([])
@@ -221,6 +234,7 @@ export function usePlaybackController(
     setLiveScore(null)
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
+    setActiveNoteIndices(new Set<number>())
     melodyStore.setCurrentNoteIndex(-1)
 
     audioEngine.resume()
@@ -362,7 +376,7 @@ export function usePlaybackController(
   const handlePause = () => {
     if (!isPlaying()) return
     playbackRuntime.pause()
-    audioEngine.stopTone()
+    audioEngine.stopAllNotes()
     setIsPlaying(false)
     setIsPaused(true)
     playback.pausePlayback()
@@ -394,6 +408,14 @@ export function usePlaybackController(
     // Play feels clean. resetPlaybackState (called on tab switch) does
     // a hard reset of everything, which is intentional for tab switches.
     playbackRuntime.stop()
+    // Reset the Solid beat signal so the canvas scroll-window snaps
+    // back to the beginning. (The runtime's internal currentBeat is
+    // already 0 after stop().)  Visual review state — noteResults,
+    // pitchHistory, playbackDisplayMelody — is preserved separately
+    // and does not depend on currentBeat.
+    setCurrentBeat(0)
+    setCurrentNoteIndex(-1)
+    setActiveNoteIndices(new Set<number>())
     const noteResults = practiceEngine.endSession()
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
@@ -445,6 +467,7 @@ export function usePlaybackController(
     setPitchHistory([])
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
+    setActiveNoteIndices(new Set<number>())
 
     if (!audioEngine.getIsInitialized()) await audioEngine.init()
     await audioEngine.resume()
@@ -468,7 +491,7 @@ export function usePlaybackController(
 
   const handleEditorPause = () => {
     playbackRuntime.pause()
-    audioEngine.stopTone()
+    audioEngine.stopAllNotes()
     setEditorPlaybackState('paused')
   }
 
@@ -575,6 +598,7 @@ export function usePlaybackController(
     isPaused,
     currentBeat,
     currentNoteIndex,
+    activeNoteIndices,
     playbackDisplayMelody,
     playbackDisplayBeats,
     activePlaybackItems,

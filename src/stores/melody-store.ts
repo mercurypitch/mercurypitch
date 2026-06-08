@@ -773,6 +773,12 @@ export function addMelodyNote(
     effectType: undefined,
     slideInterval: undefined,
     vibratoAmplitude: undefined,
+    tremoloRate: undefined,
+    tremoloDepth: undefined,
+    trillInterval: undefined,
+    trillRate: undefined,
+    staccatoRatio: undefined,
+    chordType: undefined,
   }
 
   setMelodyLibrary((prev) => ({
@@ -826,6 +832,12 @@ export function updateMelodyNote(
       | 'effectType'
       | 'slideInterval'
       | 'vibratoAmplitude'
+      | 'tremoloRate'
+      | 'tremoloDepth'
+      | 'trillInterval'
+      | 'trillRate'
+      | 'staccatoRatio'
+      | 'chordType'
     >
   >,
 ): void {
