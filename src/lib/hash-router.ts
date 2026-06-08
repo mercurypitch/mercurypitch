@@ -2,8 +2,8 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { decodeSharePayload } from '@/lib/share-codec'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 
 export type HashRoute =

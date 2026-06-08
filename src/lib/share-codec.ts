@@ -121,7 +121,7 @@ export function encodeMelodyForShare(
 ): string {
   const compact: CompactMelodyItem[] = items.map((item) => {
     // Rest notes use midi=-1 sentinel (valid MIDI range is 21-108)
-    if (item.isRest) {
+    if (item.isRest === true) {
       return [-1, r1(item.startBeat), r1(item.duration)] as CompactMelodyItem
     }
     const tuple = [
@@ -134,7 +134,9 @@ export function encodeMelodyForShare(
       item.effectType || undefined,
       item.slideInterval ?? undefined,
       item.vibratoAmplitude ?? undefined,
-      item.lyricText || undefined,
+      item.lyricText != null && item.lyricText !== ''
+        ? item.lyricText
+        : undefined,
     ]
     while (tuple.length > 3 && tuple[tuple.length - 1] === undefined)
       tuple.pop()
@@ -148,9 +150,12 @@ export function encodeMelodyForShare(
     d: {
       n: name ?? 'Shared Melody',
       b: bpm,
-      k: key || undefined,
-      s: scaleType || undefined,
-      tb: totalBeats || undefined,
+      k: key != null && key !== '' ? key : undefined,
+      s: scaleType != null && scaleType !== '' ? scaleType : undefined,
+      tb:
+        totalBeats != null && totalBeats !== 0 && !Number.isNaN(totalBeats)
+          ? totalBeats
+          : undefined,
       i: compact,
     },
   }
@@ -244,7 +249,7 @@ function validateShareData(t: string, d: unknown): boolean {
 
 export function decodeSharePayload(encoded: string): SharePayload | null {
   const raw = fromBase64url(encoded)
-  if (!raw) return null
+  if (raw == null || raw === '') return null
 
   try {
     const obj = JSON.parse(raw)

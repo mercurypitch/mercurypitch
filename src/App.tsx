@@ -100,6 +100,8 @@ import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
+import type { RoutineTemplate } from '@/features/routines/types'
+import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
@@ -109,8 +111,8 @@ import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
-import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
+import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
 import { celebrationData, dismissCelebration, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
@@ -132,8 +134,6 @@ import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
-import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
-import type { RoutineTemplate } from '@/features/routines/types'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -386,8 +386,8 @@ const AppShell: Component<AppProps> = (props) => {
     }
     melodyStore.setMelody(items)
     if (bpmVal > 0) setBpm(bpmVal)
-    if (keyVal) setKeyName(keyVal)
-    if (scaleVal) setScaleType(scaleVal)
+    if (keyVal != null && keyVal !== '') setKeyName(keyVal)
+    if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
     setActiveTab(TAB_COMPOSE)
     showNotification(`Loaded shared melody: ${name}`, 'info')
   }
@@ -455,27 +455,32 @@ const AppShell: Component<AppProps> = (props) => {
     )
   }
 
-  const handleShareShort = async (shortId: string) => {
-    const raw = await fetchShortPayload(shortId)
-    if (!raw) {
-      showNotification('This shared link has expired or is invalid.', 'warning')
-      return
-    }
-    const decoded = decodeSharePayload(raw)
-    if (!decoded) {
-      showNotification(
-        'Shared content is corrupted or in an older format.',
-        'warning',
-      )
-      return
-    }
-    if (decoded.t === 'melody') {
-      handleShareMelody(raw)
-    } else if (decoded.t === 'exercise') {
-      handleShareExercise(raw)
-    } else if (decoded.t === 'routine') {
-      handleShareRoutine(raw)
-    }
+  const handleShareShort = (shortId: string) => {
+    void (async () => {
+      const raw = await fetchShortPayload(shortId)
+      if (raw == null || raw === '') {
+        showNotification(
+          'This shared link has expired or is invalid.',
+          'warning',
+        )
+        return
+      }
+      const decoded = decodeSharePayload(raw)
+      if (!decoded) {
+        showNotification(
+          'Shared content is corrupted or in an older format.',
+          'warning',
+        )
+        return
+      }
+      if (decoded.t === 'melody') {
+        handleShareMelody(raw)
+      } else if (decoded.t === 'exercise') {
+        handleShareExercise(raw)
+      } else if (decoded.t === 'routine') {
+        handleShareRoutine(raw)
+      }
+    })()
   }
 
   const handleCopyShareLink = () => {

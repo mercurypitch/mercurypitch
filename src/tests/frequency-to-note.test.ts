@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frequenciesToNoteName, frequencyToMidi, midiToFrequency, midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { frequenciesToNoteName, frequencyToMidi, midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
 
 describe('midiToNoteName', () => {
   it('converts MIDI 60 to C4', () => {
