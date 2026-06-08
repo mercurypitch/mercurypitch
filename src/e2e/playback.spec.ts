@@ -34,17 +34,17 @@ test.describe('Playback', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
-    await expect(page.locator('button:has-text("Play")')).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
 
     // Click Play
-    await page.locator('button:has-text("Play")').click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(800)
 
     // Pause button confirms playback started (playhead drawn on canvas)
-    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
+    await expect(page.locator('[data-testid="pause-btn"]')).toBeVisible()
 
     // Stop via pause button
-    await page.locator('button:has-text("Pause")').click()
+    await page.locator('[data-testid="pause-btn"]').click()
     await page.waitForTimeout(500)
   })
 
@@ -55,18 +55,18 @@ test.describe('Playback', () => {
     await page.waitForTimeout(500)
 
     // Click Play
-    await page.locator('button:has-text("Play")').click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(500)
 
     // Pause button confirms playback started
-    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
+    await expect(page.locator('[data-testid="pause-btn"]')).toBeVisible()
 
     // Click Pause
-    await page.locator('button:has-text("Pause")').click()
+    await page.locator('[data-testid="pause-btn"]').click()
     await page.waitForTimeout(500)
 
     // Continue button should appear
-    await expect(page.locator('button:has-text("Continue")')).toBeVisible()
+    await expect(page.locator('[data-testid="resume-btn"]')).toBeVisible()
   })
 
   test('Playback state resets on tab switch', async ({ page }) => {
@@ -74,11 +74,11 @@ test.describe('Playback', () => {
     await page.waitForTimeout(500)
 
     // Click Play
-    await page.locator('button:has-text("Play")').click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(500)
 
     // Pause button confirms playback started
-    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
+    await expect(page.locator('[data-testid="pause-btn"]')).toBeVisible()
 
     // Switch tabs
     await switchTab(page, 'compose')
@@ -103,10 +103,10 @@ test.describe('Playback', () => {
     await page.waitForTimeout(500)
 
     // Pause button confirms playback started
-    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
+    await expect(page.locator('[data-testid="pause-btn"]')).toBeVisible()
 
     // Pause/stop
-    await page.locator('button:has-text("Pause")').click()
+    await page.locator('[data-testid="pause-btn"]').click()
     await page.waitForTimeout(500)
   })
 })
