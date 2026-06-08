@@ -18,6 +18,11 @@ export interface UseHashRouterDeps {
   setShowGuideSelection: Setter<boolean>
   setJamRoomToJoin: Setter<string | null>
   dismissWelcome: () => void
+  handleShareMelody: (payload: string) => void
+  handleShareExercise: (payload: string) => void
+  handleShareRoutine: (payload: string) => void
+  handleShareFallback: (shareType: string, shareId: string) => void
+  handleShareShort: (shortId: string) => void
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -51,6 +56,16 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.setInitialUvrSessionId(route.sessionId)
       deps.setInitialUvrView('mixer')
       deps.setActiveUvrSessionId(route.sessionId)
+    } else if (route.type === 'share-load') {
+      if (route.shareType === 'melody') deps.handleShareMelody(route.payload)
+      else if (route.shareType === 'exercise')
+        deps.handleShareExercise(route.payload)
+      else if (route.shareType === 'routine')
+        deps.handleShareRoutine(route.payload)
+    } else if (route.type === 'share-short') {
+      deps.handleShareShort(route.shortId)
+    } else if (route.type === 'share-fallback') {
+      deps.handleShareFallback(route.shareType, route.shareId)
     } else if (route.type === 'learn') {
       deps.openLearningWalkthrough()
     } else if (route.type === 'learn-chapter') {

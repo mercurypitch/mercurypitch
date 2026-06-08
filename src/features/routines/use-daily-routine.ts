@@ -1,4 +1,4 @@
-import { createMemo } from 'solid-js'
+import { createMemo, createSignal } from 'solid-js'
 import { dailyRoutines, getRandomRoutine } from '@/data/routine-templates'
 import type { ExerciseType } from '@/features/exercises/types'
 import { createPersistedSignal } from '@/lib/storage'
@@ -19,6 +19,28 @@ function todayStr(): string {
 // Shared persisted signal so auto-advance can update it from outside the hook
 const [routineData, setRoutineData] =
   createPersistedSignal<PersistedRoutine | null>(STORAGE_KEY, null)
+
+// Shared routine loaded from URL (may not be in dailyRoutines registry)
+const [_sharedRoutine, _setSharedRoutine] =
+  createSignal<RoutineTemplate | null>(null)
+export const sharedRoutine = _sharedRoutine
+
+/** Loads a shared routine, overwriting any current routine.
+ *  Returns true if an in-progress routine was overwritten. */
+export function loadSharedRoutine(routine: RoutineTemplate): boolean {
+  const previous = routineData()
+  const hadProgress =
+    previous != null &&
+    previous.date === todayStr() &&
+    previous.completedSegments.length > 0
+  _setSharedRoutine(routine)
+  setRoutineData({
+    templateId: routine.id,
+    date: todayStr(),
+    completedSegments: [],
+  })
+  return hadProgress
+}
 
 /**
  * Auto-advance the daily routine if the completed exercise matches the
@@ -57,7 +79,10 @@ export function useDailyRoutine() {
   const template = createMemo<RoutineTemplate | null>(() => {
     const p = persisted()
     if (p && p.date === today) {
-      return dailyRoutines.find((r) => r.id === p.templateId) ?? null
+      return (
+        dailyRoutines.find((r) => r.id === p.templateId) ??
+        (_sharedRoutine()?.id === p.templateId ? _sharedRoutine() : null)
+      )
     }
     return null
   })

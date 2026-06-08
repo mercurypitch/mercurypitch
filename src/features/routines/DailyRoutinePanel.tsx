@@ -4,6 +4,8 @@ import type { JSX } from 'solid-js/jsx-runtime'
 import { IconCheck, IconFire, IconTarget, IconTrophy, IconWater, } from '@/components/exercise-icons'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
+import { encodeRoutineForShare, copyShareUrl } from '@/lib/share-codec'
+import { showNotification } from '@/stores/notifications-store'
 import type { SegmentKind } from './types'
 import { useDailyRoutine } from './use-daily-routine'
 
@@ -185,6 +187,31 @@ export const DailyRoutinePanel: Component = () => {
                 onClick={() => routine.reset()}
               >
                 New Routine
+              </button>
+              <button
+                class="daily-routine-btn secondary"
+                onClick={() => {
+                  const t = routine.template()
+                  if (!t) return
+                  const encoded = encodeRoutineForShare({
+                    id: t.id,
+                    name: t.name,
+                    description: t.description,
+                    segments: t.segments.map((s) => ({
+                      type: s.type,
+                      durationSec: s.durationSec,
+                      config: s.config as Record<string, unknown>,
+                    })),
+                  })
+                  void copyShareUrl(encoded).then((ok) => {
+                    if (ok)
+                      showNotification('Routine share link copied!', 'info')
+                    else showNotification('Failed to copy link', 'error')
+                  })
+                }}
+                title="Copy shareable routine link"
+              >
+                Share
               </button>
             </div>
           </Show>

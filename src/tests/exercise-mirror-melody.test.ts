@@ -8,7 +8,9 @@ function createMockBase(
 ): BaseExerciseController {
   const mock: BaseExerciseController = {
     pitchHistory: () => [],
-    _setTargetPitch: () => {},
+    _setTargetPitch: ((
+      _v: number | null,
+    ) => {}) as BaseExerciseController['_setTargetPitch'],
     _getElapsed: () => 0,
     _isRunning: () => true,
     _setRunning: () => {},

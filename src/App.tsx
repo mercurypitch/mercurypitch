@@ -110,6 +110,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
 import { celebrationData, dismissCelebration, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
@@ -131,6 +132,8 @@ import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
+import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
+import type { RoutineTemplate } from '@/features/routines/types'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -363,6 +366,138 @@ const AppShell: Component<AppProps> = (props) => {
     touchStartY = 0
   }
 
+  // ── Share handlers ─────────────────────────────────────────
+  const handleShareMelody = (payload: string) => {
+    const decoded = decodeSharePayload(payload)
+    if (!decoded || decoded.t !== 'melody') return
+    const data = decoded.d as unknown as Record<string, unknown>
+    const name = typeof data.n === 'string' ? data.n : 'Shared Melody'
+    const bpmVal = typeof data.b === 'number' ? data.b : 120
+    const keyVal = typeof data.k === 'string' ? data.k : undefined
+    const scaleVal = typeof data.s === 'string' ? data.s : undefined
+    const items = Array.isArray(data.i)
+      ? generateMelodyItemsFromCompact(
+          data.i as Parameters<typeof generateMelodyItemsFromCompact>[0],
+        )
+      : []
+    if (items.length === 0) {
+      showNotification('Shared melody is empty or invalid', 'warning')
+      return
+    }
+    melodyStore.setMelody(items)
+    if (bpmVal > 0) setBpm(bpmVal)
+    if (keyVal) setKeyName(keyVal)
+    if (scaleVal) setScaleType(scaleVal)
+    setActiveTab(TAB_COMPOSE)
+    showNotification(`Loaded shared melody: ${name}`, 'info')
+  }
+
+  const handleShareExercise = (payload: string) => {
+    const decoded = decodeSharePayload(payload)
+    if (!decoded || decoded.t !== 'exercise') return
+    const data = decoded.d as unknown as Record<string, unknown>
+    if (typeof data.e !== 'string') {
+      showNotification('Shared exercise is invalid', 'warning')
+      return
+    }
+    setActiveTab(TAB_EXERCISES)
+    setSelectedExercise(data.e as ExerciseType)
+    setAutoStartExercise(true)
+    showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
+  }
+
+  const handleShareRoutine = (payload: string) => {
+    const decoded = decodeSharePayload(payload)
+    if (!decoded || decoded.t !== 'routine') return
+    const data = decoded.d as unknown as Record<string, unknown>
+    const id = typeof data.id === 'string' ? data.id : ''
+    const name = typeof data.n === 'string' ? data.n : 'Shared Routine'
+    const description = typeof data.desc === 'string' ? data.desc : ''
+    const segs = Array.isArray(data.seg) ? data.seg : []
+    if (segs.length === 0) {
+      showNotification('Shared routine has no segments', 'warning')
+      return
+    }
+    const routine: RoutineTemplate = {
+      id,
+      name,
+      description,
+      segments: segs.map((s: unknown) => {
+        const seg = s as Record<string, unknown>
+        return {
+          type: (typeof seg.k === 'string'
+            ? seg.k
+            : 'exercise') as RoutineTemplate['segments'][0]['type'],
+          durationSec: typeof seg.d === 'number' ? seg.d : 60,
+          config: (typeof seg.c === 'object' && seg.c !== null
+            ? seg.c
+            : {}) as RoutineTemplate['segments'][0]['config'],
+        }
+      }),
+    }
+    const hadProgress = loadSharedRoutine(routine)
+    setActiveTab(TAB_EXERCISES)
+    setAutoStartExercise(true)
+    if (hadProgress) {
+      showNotification(
+        `Loaded shared routine. Your previous progress was replaced.`,
+        'warning',
+      )
+    } else {
+      showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
+    }
+  }
+
+  const handleShareFallback = (_shareType: string, _shareId: string) => {
+    showNotification(
+      'This shared link may have expired or was created in an older version.',
+      'warning',
+    )
+  }
+
+  const handleShareShort = async (shortId: string) => {
+    const raw = await fetchShortPayload(shortId)
+    if (!raw) {
+      showNotification('This shared link has expired or is invalid.', 'warning')
+      return
+    }
+    const decoded = decodeSharePayload(raw)
+    if (!decoded) {
+      showNotification(
+        'Shared content is corrupted or in an older format.',
+        'warning',
+      )
+      return
+    }
+    if (decoded.t === 'melody') {
+      handleShareMelody(raw)
+    } else if (decoded.t === 'exercise') {
+      handleShareExercise(raw)
+    } else if (decoded.t === 'routine') {
+      handleShareRoutine(raw)
+    }
+  }
+
+  const handleCopyShareLink = () => {
+    const items = melodyStore.items()
+    if (items.length === 0) {
+      showNotification('No melody to share', 'warning')
+      return
+    }
+    const encoded = encodeMelodyForShare(
+      items,
+      bpm(),
+      keyNameSignal(),
+      scaleTypeSignal(),
+      melodyTotalBeats(items),
+      melodyStore.currentMelody()?.name,
+    )
+    void copyShareUrl(encoded).then((ok) => {
+      if (ok) showNotification('Share link copied!', 'info')
+      else showNotification('Failed to copy link', 'error')
+    })
+  }
+
   // ── Hash routing ────────────────────────────────────────────
   useHashRouter({
     setActiveTab,
@@ -375,6 +510,11 @@ const AppShell: Component<AppProps> = (props) => {
     setShowGuideSelection,
     setJamRoomToJoin,
     dismissWelcome,
+    handleShareMelody,
+    handleShareExercise,
+    handleShareRoutine,
+    handleShareFallback,
+    handleShareShort,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -1305,6 +1445,7 @@ const AppShell: Component<AppProps> = (props) => {
                     countInBeats={() => countIn()}
                     isRecording={() => recording.isRecording()}
                     onRecordToggle={recording.handleRecordToggle}
+                    onShareMelody={handleCopyShareLink}
                     onMicToggle={() => {
                       void handleMicToggle()
                     }}

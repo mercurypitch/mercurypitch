@@ -2,6 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
+import { decodeSharePayload } from '@/lib/share-codec'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { ActiveTab } from '@/stores'
 
@@ -11,7 +12,13 @@ export type HashRoute =
   | { type: 'uvr-upload' }
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
-  | { type: 'share'; shareType: string; shareId: string }
+  | { type: 'share-short'; shortId: string }
+  | {
+      type: 'share-load'
+      shareType: 'melody' | 'exercise' | 'routine'
+      payload: string
+    }
+  | { type: 'share-fallback'; shareType: string; shareId: string }
   | { type: 'learn' }
   | { type: 'learn-chapter'; chapterId: string }
   | { type: 'guide' }
@@ -49,7 +56,7 @@ function isValidTab(tab: string): tab is ActiveTab {
  * Examples:
  *   #/singing               → { type: 'tab', tab: 'singing' }
  *   #/uvr/session/abc123    → { type: 'uvr-session', sessionId: 'abc123' }
- *   #/share?type=melody&id=xyz → { type: 'share', shareType: 'melody', shareId: 'xyz' }
+ *   #/share?type=melody&id=xyz → { type: 'share-fallback', shareType: 'melody', shareId: 'xyz' }
  *   '' / #/unknown          → { type: 'unknown' }
  */
 export function parseHash(rawHash: string): HashRoute {
@@ -87,10 +94,38 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'uvr-upload' }
   }
 
-  // Match: /share?type=...&id=...
-  const shareMatch = hash.match(/^\/share\?type=([^&]+)&id=(.+)$/)
-  if (shareMatch) {
-    return { type: 'share', shareType: shareMatch[1], shareId: shareMatch[2] }
+  // Match: /s/:shortId — shortened share URL
+  const shareShortMatch = hash.match(/^\/s\/([A-Za-z0-9]+)$/)
+  if (shareShortMatch) {
+    return { type: 'share-short', shortId: shareShortMatch[1] }
+  }
+
+  // Match: /share/{base64url-encoded payload} — self-contained shared content
+  const shareLoadMatch = hash.match(/^\/share\/([A-Za-z0-9_-]+)$/)
+  if (shareLoadMatch) {
+    const decoded = decodeSharePayload(shareLoadMatch[1])
+    if (
+      decoded &&
+      (decoded.t === 'melody' ||
+        decoded.t === 'exercise' ||
+        decoded.t === 'routine')
+    ) {
+      return {
+        type: 'share-load',
+        shareType: decoded.t,
+        payload: shareLoadMatch[1],
+      }
+    }
+  }
+
+  // Match: /share?type=...&id=... — legacy community share fallback
+  const shareFallbackMatch = hash.match(/^\/share\?type=([^&]+)&id=(.+)$/)
+  if (shareFallbackMatch) {
+    return {
+      type: 'share-fallback',
+      shareType: decodeURIComponent(shareFallbackMatch[1]),
+      shareId: decodeURIComponent(shareFallbackMatch[2]),
+    }
   }
 
   // Match: /learn/:chapterId
@@ -144,8 +179,12 @@ export function buildHash(route: HashRoute): string {
       return `/karaoke/session/${route.sessionId}`
     case 'uvr-session-mixer':
       return `/karaoke/session/${route.sessionId}/mixer`
-    case 'share':
-      return `/share?type=${route.shareType}&id=${route.shareId}`
+    case 'share-short':
+      return `/s/${route.shortId}`
+    case 'share-load':
+      return `/share/${route.payload}`
+    case 'share-fallback':
+      return `/share?type=${encodeURIComponent(route.shareType)}&id=${encodeURIComponent(route.shareId)}`
     case 'learn':
       return '/learn'
     case 'learn-chapter':

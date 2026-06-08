@@ -8,8 +8,9 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
 import { storageGet, storageSet } from '@/lib/storage'
-import { getSessionHistory, melodyStore } from '@/stores'
+import { getSessionHistory, melodyStore, bpm, keyName, scaleType, } from '@/stores'
 import type { MelodyItem, PlaybackSession } from '@/types'
+import { encodeMelodyForShare, copyShareUrl } from '@/lib/share-codec'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -225,6 +226,9 @@ export interface SharedMelody {
   author: string
   tags?: string[]
   date: number
+  bpm?: number
+  key?: string
+  scale?: string
 }
 
 export interface SharedSession {
@@ -389,19 +393,35 @@ export const CommunityShare: Component = () => {
 
   // Export current melody as shareable
   const exportMelody = () => {
-    const items = melodyStore.currentMelody()?.items || []
-    if (items.length === 0) {
+    const current = melodyStore.currentMelody()
+    if (!current || current.items.length === 0) {
       alert('No melody to share!')
       return
     }
 
+    const items = current.items
+    const bpmVal = bpm()
+    const keyVal = keyName()
+    const scaleVal = scaleType()
+    const encoded = encodeMelodyForShare(
+      items,
+      bpmVal,
+      keyVal,
+      scaleVal,
+      undefined,
+      current.name,
+    )
+
     const shareable: SharedMelody = {
       id: generateId(),
-      name: 'My Melody',
+      name: current.name || 'My Melody',
       items,
       author: currentProfile().displayName,
       tags: ['my-melody', 'practice'],
       date: Date.now(),
+      bpm: bpmVal,
+      key: keyVal || undefined,
+      scale: scaleVal || undefined,
     }
 
     const updated = [...sharedMelodies(), shareable]
@@ -413,7 +433,10 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       tags: shareable.tags,
     })
-    alert('Melody shared successfully!')
+    void copyShareUrl(encoded).then((ok) => {
+      if (ok) alert('Share link copied to clipboard!')
+      else alert('Failed to copy link. URL: ' + window.location.href)
+    })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -449,10 +472,30 @@ export const CommunityShare: Component = () => {
 
   // Copy shareable link to clipboard
   const copyShareLink = (type: 'melody' | 'session', id: string) => {
-    const baseUrl = window.location.origin
-    const link = `${baseUrl}/#/share?type=${type}&id=${id}`
-    navigator.clipboard.writeText(link)
-    alert('Share link copied to clipboard!')
+    if (type === 'melody') {
+      const melody = sharedMelodies().find((m) => m.id === id)
+      if (melody && melody.items.length > 0) {
+        const encoded = encodeMelodyForShare(
+          melody.items,
+          melody.bpm ?? 120,
+          melody.key,
+          melody.scale,
+          undefined,
+          melody.name,
+        )
+        void copyShareUrl(encoded).then((ok) => {
+          if (ok) alert('Share link copied to clipboard!')
+          else alert('Failed to copy link')
+        })
+        return
+      }
+    }
+    // Session shares use the legacy fallback format
+    const link = `${window.location.origin}${window.location.pathname}#/share?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`
+    void navigator.clipboard.writeText(link).then(
+      () => alert('Share link copied to clipboard!'),
+      () => alert('Failed to copy link: ' + link),
+    )
   }
 
   // Tabs
