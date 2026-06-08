@@ -220,14 +220,14 @@ test.describe('MercuryPitch App', () => {
     await page.locator('#tab-compose').click()
     const recordBtn = page.locator('#record-btn')
     await expect(recordBtn).toBeVisible()
-    await expect(recordBtn).toContainText('RECORD')
+    await expect(recordBtn).toHaveAttribute('title', /Record/i)
     // Clicking should attempt to start recording (mic permission may block, but button state changes)
     await recordBtn.click()
     await page.waitForTimeout(500)
     // Button should now show Stop or have recording class
-    const hasStop = await recordBtn.textContent()
+    const title = await recordBtn.getAttribute('title')
     // After clicking (mic start may fail in test env), click again to reset
-    if (hasStop != null && hasStop.includes('Stop')) {
+    if (title != null && title.includes('Stop')) {
       await recordBtn.click()
     }
   })

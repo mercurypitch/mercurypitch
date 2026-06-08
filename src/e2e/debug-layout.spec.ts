@@ -2,7 +2,7 @@ import { test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 import fs from 'fs'
 
-test('debug layout - find off-screen culprit', async ({ page }) => {
+test('debug layout - find off-screen culprit', async ({ page }, testInfo) => {
   const output: string[] = []
   const log = (msg: string) => {
     output.push(msg)
@@ -100,5 +100,6 @@ test('debug layout - find off-screen culprit', async ({ page }) => {
   })
   log(`#APP DIRECT CHILDREN: ${JSON.stringify(appChildren, null, 2)}`)
 
-  fs.writeFileSync('/tmp/debug-layout-output.txt', output.join('\n'))
+  const outPath = testInfo.outputPath('debug-layout-output.txt')
+  fs.writeFileSync(outPath, output.join('\n'))
 })
