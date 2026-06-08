@@ -1499,7 +1499,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         <Show when={isExporting()}>
           <div class="history-toast">
             <span class="history-toast-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24">
+              <svg width="16" height="16" viewBox="0 0 24 24">
                 <circle
                   cx="12"
                   cy="12"
@@ -1532,7 +1532,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         <Show when={midiExporting()}>
           <div class="history-toast">
             <span class="history-toast-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24">
+              <svg width="16" height="16" viewBox="0 0 24 24">
                 <circle
                   cx="12"
                   cy="12"
