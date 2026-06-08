@@ -25,7 +25,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     metrics: {},
   })
 
-  const pitchHistory = createSignal<
+  const [getPitchHistory, setPitchHistory] = createSignal<
     Array<{
       freq: number
       time: number
@@ -34,7 +34,6 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       noteName?: string
     }>
   >([])
-  const [getPitchHistory, setPitchHistory] = pitchHistory
   const [getCurrentPitch, setCurrentPitch] = createSignal<{
     freq: number
     clarity: number
@@ -43,8 +42,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   const [getFrequencyData, setFrequencyData] =
     createSignal<Float32Array | null>(null)
   const [getTargetPitch, setTargetPitch] = createSignal<number | null>(null)
-  const result = createSignal<ExerciseResult | null>(null)
-  const [getResult, setResult] = result
+  const [getResult, setResult] = createSignal<ExerciseResult | null>(null)
   const [getError, setError] = createSignal<string | null>(null)
 
   let animId = 0

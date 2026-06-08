@@ -33,12 +33,15 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'interval-trainer', targetNote: untrack(() => startNote()) },
+    config: {
+      type: 'interval-trainer',
+      targetNote: untrack(() => startNote()),
+    },
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useIntervalTrainerController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useIntervalTrainerController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

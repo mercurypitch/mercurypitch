@@ -42,12 +42,15 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'drone-intonation', targetNote: untrack(() => startNote()) },
+    config: {
+      type: 'drone-intonation',
+      targetNote: untrack(() => startNote()),
+    },
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useDroneIntonationController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useDroneIntonationController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

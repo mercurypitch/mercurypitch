@@ -31,7 +31,10 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'long-note', targetNote: untrack(() => untrack(() => targetNote())) },
+    config: {
+      type: 'long-note',
+      targetNote: untrack(() => untrack(() => targetNote())),
+    },
   })
 
   const controller = useLongNoteController(base)

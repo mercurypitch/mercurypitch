@@ -35,8 +35,8 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useSirenController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useSirenController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

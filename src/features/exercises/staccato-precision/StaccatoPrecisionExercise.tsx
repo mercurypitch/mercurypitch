@@ -33,12 +33,15 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'staccato-precision', targetNote: untrack(() => startNote()) },
+    config: {
+      type: 'staccato-precision',
+      targetNote: untrack(() => startNote()),
+    },
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useStaccatoPrecisionController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useStaccatoPrecisionController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

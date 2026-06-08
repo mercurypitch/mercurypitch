@@ -46,8 +46,8 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useScaleRunnerController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useScaleRunnerController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setScale(noteToMidi(startNote()), scaleType(), direction())

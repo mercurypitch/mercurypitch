@@ -35,8 +35,8 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useMirrorMelodyController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useMirrorMelodyController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setMelody(noteToMidi(startNote()))

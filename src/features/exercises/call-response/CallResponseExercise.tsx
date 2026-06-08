@@ -35,8 +35,8 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useCallResponseController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useCallResponseController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

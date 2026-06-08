@@ -35,8 +35,8 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useDynamicSwellController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useDynamicSwellController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))

@@ -32,14 +32,19 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const [fromNote, setFromNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
-  const [toNote, setToNote] = createSignal(untrack(() => getDefaultNote(vocalRangePreset())))
+  const [toNote, setToNote] = createSignal(
+    untrack(() => getDefaultNote(vocalRangePreset())),
+  )
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'slide', targetNotes: [untrack(() => fromNote()), untrack(() => toNote())] },
+    config: {
+      type: 'slide',
+      targetNotes: [untrack(() => fromNote()), untrack(() => toNote())],
+    },
   })
 
   const controller = useSlideController(base)

@@ -48,8 +48,8 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   })
 
   /* eslint-disable solid/reactivity */
-const controller = useArpeggioJumperController(base, props.audioEngine)
-/* eslint-enable solid/reactivity */
+  const controller = useArpeggioJumperController(base, props.audioEngine)
+  /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
     controller.setArpeggio(noteToMidi(startNote()), arpeggioType(), direction())
