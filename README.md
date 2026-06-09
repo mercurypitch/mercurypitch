@@ -110,46 +110,52 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 
 ## Development
 
+**Requirements:** Node.js 22+, pnpm
+
 ```bash
-# Install dependencies
+# Clone and install
+git clone <repo-url>
+cd mercurypitch
 pnpm install
 
-# Run dev server
+# Install git hooks (auto-format on commit, blocks direct pushes to main)
+git config core.hooksPath .githooks
+
+# Start dev server (https://localhost:3000)
 pnpm run dev
-
-# Run type checking
-pnpm run typecheck
-
-# Run all checks (typecheck + lint + format)
-pnpm run check:syntax
-
-# Run tests (watch mode)
-pnpm test
-
-# Run tests once (CI mode)
-pnpm run test:run
-
-# Build for production
-pnpm run build
-
-# Preview production build
-pnpm run serve
-
-# Run E2E tests
-pnpm run test:e2e
 ```
+
+### Commands
+
+| Command              | Description                              |
+| -------------------- | ---------------------------------------- |
+| `pnpm run dev`       | Start Vite dev server with HMR           |
+| `pnpm run build`     | Production build to `dist/`              |
+| `pnpm run check`     | Typecheck + auto-fix lint + auto-format  |
+| `pnpm test`          | Run Vitest in watch mode                 |
+| `pnpm run test:run`  | Run Vitest once (CI mode)                |
+| `pnpm run test:e2e`  | Run Playwright E2E tests                 |
+| `pnpm run typecheck` | TypeScript check (`tsc --noEmit`)        |
+| `pnpm run lint`      | ESLint check                             |
+| `pnpm run fmt`       | Prettier check                           |
+
+### Git Workflow
+
+- Create feature branches, target `main` for PRs
+- Never push directly to `main`, never force push
+- Run `pnpm run check` before committing
 
 ### Jam Service (P2P)
 
 The Jam feature requires a **local signaling server** in addition to the Vite dev server.
 Open two terminals:
 
-**Terminal 1 — Vite dev server:**
+**Terminal 1 -- Vite dev server:**
 ```bash
 pnpm run dev
 ```
 
-**Terminal 2 — Signaling worker (Cloudflare Workers dev):**
+**Terminal 2 -- Signaling worker (Cloudflare Workers dev):**
 ```bash
 cd workers/jam-worker && npx wrangler dev --port 8787
 ```
@@ -157,20 +163,14 @@ cd workers/jam-worker && npx wrangler dev --port 8787
 The Vite dev server proxies `/api/jam` WebSocket traffic to `localhost:8787`.
 Both must be running for Create/Join Room to work.
 
-To deploy the signaling worker to production:
-```bash
-cd workers/jam-worker && npx wrangler deploy
-```
-Then set `VITE_JAM_SIGNALING_URL` to your deployed worker URL in production.
-
 ## Architecture
 
 - **SolidJS** for reactive UI components (signals, no VDOM)
 - **TypeScript** in strict mode throughout
 - **Web Audio API** for synthesized note playback, microphone input, and real-time analysis
 - **Canvas 2D** for piano roll, pitch visualization, and waveform rendering
-- **localStorage** for settings, session persistence, and UI state
-- **Vitest** for unit tests (679 tests)
+- **Dexie.js** for IndexedDB persistence (sessions, groups, lyrics)
+- **Vitest** for unit tests
 - **Playwright** for E2E browser tests
 - **Vite** for bundling, dev server, and HMR
 
@@ -179,7 +179,7 @@ Then set `VITE_JAM_SIGNALING_URL` to your deployed worker URL in production.
 The `AudioEngine` class manages all Web Audio nodes:
 
 - `OscillatorNode` per voice (polyphonic)
-- `GainNode` chain with ADSR envelope (Attack → Decay → Sustain → Release)
+- `GainNode` chain with ADSR envelope (Attack -> Decay -> Sustain -> Release)
 - `ConvolverNode` + dry/wet `GainNode` split for reverb
 - `AnalyserNode` for waveform data during playback
 - Programmatic impulse responses for Room / Hall / Cathedral reverb
@@ -188,7 +188,7 @@ The `AudioEngine` class manages all Web Audio nodes:
 
 Uses the YIN autocorrelation algorithm (via `pitchfinder`):
 
-- Microphone stream → `AnalyserNode` → YIN detection at ~60fps
+- Microphone stream -> `AnalyserNode` -> YIN detection at ~60fps
 - Configurable sensitivity and minimum confidence threshold
 - Cents deviation calculated from detected vs target frequency
 
@@ -196,24 +196,53 @@ Uses the YIN autocorrelation algorithm (via `pitchfinder`):
 
 The UVR panel communicates with a local Python API server (`audio-separator`):
 
-- Upload audio → API processes with UVR-MDX-NET model
-- Poll for completion → retrieve separated stems
+- Upload audio -> API processes with UVR-MDX-NET model
+- Poll for completion -> retrieve separated stems
 - Mixer provides synchronized stem playback with per-stem volume
 
 ## Deployment
 
+The app runs on **Cloudflare Workers**. There are multiple workers that need to be deployed:
+
+| Worker | Purpose | Route | Deploy Script |
+| ------ | ------- | ----- | ------------- |
+| `mercurypitch` | Main app (static assets + share link shortener + UVR proxy) | `mercurypitch.com` | `pnpm run deploy:prod` |
+| `mercury-pitch-jam` | P2P Jam signaling server (Durable Objects + WebSocket) | `mercurypitch.com/api/jam*` | `pnpm run deploy:jam:prod` |
+
+### Deploy commands
+
 ```bash
-./deploy.sh              # Full deploy (pull + syntax checks)
-./deploy.sh --check-only # Syntax checks only, no pull
+# Deploy everything (main app + all workers)
+pnpm run deploy:all:prod    # Production
+pnpm run deploy:all:dev     # Dev (dev.mercurypitch.com)
+
+# Deploy individually
+pnpm run deploy:prod        # Main app only
+pnpm run deploy:jam:prod    # Jam signaling worker only
+
+# Self-hosted deploy (Apache -- pull + build + verify)
+./deploy.sh
 ```
 
-The root dir builds to `dist/`, which is served as a static site. Apache serves `public/` as DocumentRoot.
+### Worker details
+
+- **Main worker** (`wrangler.jsonc`): Serves the static SPA from `dist/`, handles `/api/share/*` for URL shortening (KV-backed), and proxies `/api/uvr/*` to the UVR Docker container.
+- **Jam worker** (`workers/jam-worker/wrangler.jsonc`): WebRTC signaling server using Durable Objects (`JamRoom`) for real-time P2P music sessions.
+
+## Code Style
+
+- ESLint + Prettier enforce consistent style (`pnpm run check` fixes both)
+- Strict TypeScript with `noUnusedLocals` and `noImplicitReturns`
+- Component names: PascalCase, `.tsx` extension
+- CSS: scoped via CSS Modules (`.module.css`)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, git workflow, and code conventions.
+This repository does not accept external pull requests. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for details.
+Bug reports and feature requests are welcome as GitHub issues.
 
 ## Requirements
 
 - Modern browser with Web Audio API and `getUserMedia`
 - Microphone access for pitch detection
+

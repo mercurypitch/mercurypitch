@@ -15,7 +15,7 @@
   - Responses to the user.
 
 ## Code Quality
-- Always run `pnpm check:fix:all` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
+- Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
 
 ## SolidJS Reactivity Rules & Gotchas
 - **"computations created outside component root" warning**: This happens when a reactive accessor (like a `createMemo` or `createSignal` getter, e.g., `activeTrack()`) is invoked inside an asynchronous callback (like a `setTimeout`, `setInterval`, or an `async` function execution context).

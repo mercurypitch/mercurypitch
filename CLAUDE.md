@@ -1,12 +1,4 @@
-# CLAUDE.md — mercurypitch-clod-second
-
-## CRITICAL: Workspace Identity
-
-**This is clod-second.** The active workspace is `/root/mercurypitch-clod-second`.
-
-**NEVER** operate in `/root/mercurypitch-clod-first` — that is a separate, off-limits repository.
-
-If you ever find yourself in a directory other than `/root/mercurypitch-clod-second`, switch back immediately.
+# CLAUDE.md
 
 ## Git Workflow
 
@@ -14,6 +6,10 @@ If you ever find yourself in a directory other than `/root/mercurypitch-clod-sec
 - Commit and push after every task
 - Use `gh` CLI for issues and PRs (not WebFetch)
 - Never force push
+
+## Code Quality
+
+- Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
 
 ## Tech Stack
 

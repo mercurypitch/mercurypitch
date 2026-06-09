@@ -46,7 +46,7 @@ Create a generic, reusable list component that supports:
 ## Verification Plan
 
 ### Automated Tests
-- Run `pnpm test` and `pnpm check:fix:all` to ensure no typing regressions and that the new component passes linting.
+- Run `pnpm test` and `pnpm check` to ensure no typing regressions and that the new component passes linting.
 
 ### Manual Verification
 - Verify that adding a melody/session to a playlist still works and looks identical.

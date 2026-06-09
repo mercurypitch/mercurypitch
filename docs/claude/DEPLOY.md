@@ -1,4 +1,4 @@
-# MercuryPitch SolidJS App — Deployment Guide
+# MercuryPitch -- Deployment Guide
 
 ## Build Commands
 
@@ -6,22 +6,22 @@
 # Install dependencies (first time only)
 pnpm install
 
-# Development server (runs at localhost:3000)
+# Development server (runs at https://localhost:3000)
 pnpm run dev
 
-# Production build (outputs to App/dist/)
+# Production build (outputs to dist/)
 pnpm run build
 
-# Type check (CI uses this)
-pnpm run typecheck
+# All checks (typecheck + auto-fix lint + auto-format)
+pnpm run check
 
 # Run tests
-pnpm run test
+pnpm run test:run
 ```
 
 ## What the Build Produces
 
-`pnpm run build` generates static files in `dist/` with base path `/solid/`:
+`pnpm run build` generates static files in `dist/`:
 
 ```
 dist/
@@ -31,43 +31,32 @@ dist/
     └── index-XXXXX.js
 ```
 
-## Server Deployment
+## Deployment
 
-The main repo has a deploy script that handles everything:
+### Cloudflare Workers (primary)
 
 ```bash
-# Run from repo root (not App/)
-cd /var/www/mercurypitch.com/mercury-pitch-repo
-./deploy.sh
+pnpm run deploy:prod      # Deploy to production (mercurypitch.com)
+pnpm run deploy:dev       # Deploy to dev (dev.mercurypitch.com)
 ```
 
-The deploy script:
+Both use `wrangler.jsonc` -- a lightweight static-asset Worker.
 
-1. Pulls latest `main` branch from GitHub
-2. Runs syntax checks on JS files
-3. Rebuilds the SolidJS app (`pnpm run build` in App/)
-4. Verifies required files exist in `public/`
-5. Apache serves from `mercury-pitch-repo/public/` (DocumentRoot)
+### Self-hosted (Apache)
 
-## Vite Config Notes
+The deploy script handles pull + build + copy to `public/`:
 
-- `base: '/solid/'` — all assets load from this path
-- Alias `@` → `src/` for imports
-- Build target: `esnext`
-- Entry point: `index.html`
+```bash
+./deploy.sh               # Full deploy (pull + build + verify)
+./deploy.sh --check-only  # Syntax checks only, no pull
+```
 
-## For NodeDeploy UI
-
-If you need to configure NodeDeploy or similar service:
-
-- **Build command**: `pnpm run build`
-- **Output directory**: `dist/` (or leave blank — most deploy UIs detect it)
-- **Node version**: 18+ recommended
+Apache DocumentRoot: `mercury-pitch-repo/public/`
 
 ## Local Development
 
 ```bash
 pnpm install
-pnpm run dev    # dev server at localhost:3000
-pnpm run test   # run tests
+pnpm run dev    # dev server at https://localhost:3000
+pnpm run check  # typecheck + lint + format
 ```

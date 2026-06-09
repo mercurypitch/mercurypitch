@@ -7,7 +7,7 @@ Adopted from chaos-master monorepo analysis (Komediruzecki/chaos-master)
 ```
 src/
 ├── components/    # Reusable UI components
-├── contexts/      # React Context providers
+├── contexts/      # SolidJS Context providers
 ├── lib/           # Core business logic and utilities
 ├── styles/        # Modular CSS (preflight, design-system, index.css)
 ├── utils/         # Helper functions and custom hooks

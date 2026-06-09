@@ -15,7 +15,7 @@ pnpm install
 pnpm dev
 ```
 
-The app is served at `http://localhost:5173` with hot module replacement.
+The app is served at `https://localhost:3000` with hot module replacement.
 
 ## Production Build
 
@@ -81,7 +81,8 @@ This provisions:
 pnpm run typecheck        # TypeScript type checking
 pnpm run lint             # ESLint
 pnpm run fmt              # Prettier format check
-pnpm run check:syntax     # All three in sequence
+pnpm run check:syntax     # All three in sequence (read-only)
+pnpm run check            # Typecheck + auto-fix lint + auto-format
 ```
 
 ## Testing
