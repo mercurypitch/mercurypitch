@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -175,7 +175,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <span class="idle-icon">
               <IconGame size={56} />
@@ -184,9 +184,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             <p>Sing the matching pitch before they reach the target line.</p>
             <span class="idle-hint">12 notes · Hit within ±50 cents</span>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -262,9 +262,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               {met().totalNotes ?? 0} / 12 notes
             </div>
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -293,15 +293,15 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               Play Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -309,16 +309,16 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               Start Game
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -338,7 +338,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
               Back
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

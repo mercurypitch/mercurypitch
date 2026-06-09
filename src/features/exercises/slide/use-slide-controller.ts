@@ -1,5 +1,6 @@
 import { batch } from 'solid-js'
 import { detectSlides } from '@/lib/vocal-analyzer'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SLIDE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -36,7 +37,7 @@ export function useSlideController(base: BaseExerciseController) {
         .filter((p) => p.freq > 0)
         .map((p) => ({
           time: p.time,
-          midi: 12 * Math.log2(p.freq / 440) + 69,
+          midi: freqToExactMidi(p.freq),
         }))
       if (validSamples.length < 2) return
 
@@ -84,9 +85,13 @@ export function useSlideController(base: BaseExerciseController) {
           departureAccuracy,
           slideTimeMs: elapsedMs,
         })
+        // Live weights match final weights (SMOOTHNESS/ARRIVAL/DEPARTURE)
+        // proportionally re-scaled without the SPEED component
         base._updateScore(
           Math.round(
-            smoothness * 0.4 + arrivalAccuracy * 0.4 + departureAccuracy * 0.2,
+            smoothness * 0.38 +
+              arrivalAccuracy * 0.38 +
+              departureAccuracy * 0.24,
           ),
         )
       })
@@ -113,7 +118,7 @@ export function useSlideController(base: BaseExerciseController) {
 
     const samples = history.map((p) => ({
       time: p.time,
-      midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
+      midi: freqToExactMidi(p.freq),
       freq: p.freq,
     }))
 

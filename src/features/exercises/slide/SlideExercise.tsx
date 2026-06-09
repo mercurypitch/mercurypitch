@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconSlide } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
@@ -10,6 +10,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import { useBaseExercise } from '../use-base-exercise'
 import { useSlideController } from './use-slide-controller'
 
@@ -92,7 +93,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const currentMidi = () => {
     const p = base.currentPitch()
     if (!p || p.freq <= 0) return 0
-    return 12 * Math.log2(p.freq / 440) + 69
+    return freqToExactMidi(p.freq)
   }
 
   const pitchPosPct = () => {
@@ -120,16 +121,16 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconSlide size={48} />
             <p>
               Slide cleanly from one note to another. No scooping, no overshoot.
             </p>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -145,14 +146,14 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               <div class="slide-target-end" style="left:90%;top:50%" />
               <div class="slide-pitch-trace">
                 <div class="slide-pitch-dot" style={`left:${pitchPosPct()}%`} />
-                {currentMidi() > 0 && (
+                <Show when={currentMidi() > 0}>
                   <div
                     class="slide-pitch-label"
                     style={`left:${pitchPosPct()}%`}
                   >
                     {midiToNoteName(Math.round(currentMidi()))}
                   </div>
-                )}
+                </Show>
               </div>
             </div>
             <div class="slide-metrics">
@@ -192,9 +193,9 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               </div>
             </div>
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -221,11 +222,11 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="From"
@@ -239,9 +240,9 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               selected={toNote()}
               onChange={setToNote}
             />
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -249,16 +250,16 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop & Score
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -278,7 +279,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               Change Notes
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

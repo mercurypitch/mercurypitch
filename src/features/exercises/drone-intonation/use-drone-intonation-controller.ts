@@ -1,6 +1,7 @@
 import { batch } from 'solid-js'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -100,7 +101,7 @@ export function useDroneIntonationController(
       const deviations = recentSamples
         .filter((p) => p.freq > 0)
         .map((p) => {
-          const midi = 12 * Math.log2(p.freq / 440) + 69
+          const midi = freqToExactMidi(p.freq)
           return Math.abs((midi - targetMidi) * 100)
         })
       if (deviations.length > 0) {
@@ -161,7 +162,7 @@ export function useDroneIntonationController(
     const validSamples = history.filter((p) => p.freq > 0)
     const stabilityCents = (() => {
       if (validSamples.length < 2) return 0
-      const midis = validSamples.map((p) => 12 * Math.log2(p.freq / 440) + 69)
+      const midis = validSamples.map((p) => freqToExactMidi(p.freq))
       const mean = midis.reduce((a, b) => a + b, 0) / midis.length
       const variance =
         midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length

@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconExpand, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -108,7 +108,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconExpand size={48} />
             <p>
@@ -119,9 +119,9 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               4 rounds · 8-second holds · Varying pitches
             </span>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -189,9 +189,9 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               </div>
             )}
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -219,11 +219,11 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Starting Note"
@@ -231,9 +231,9 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               selected={startNote()}
               onChange={setStartNote}
             />
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -241,16 +241,16 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -270,7 +270,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
               Change Note
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

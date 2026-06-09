@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
+import { freqToExactMidi, scoreNoteAccuracy } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -113,25 +114,11 @@ export function useRoutineRunnerController(
   function evaluateNote(idx: number): void {
     const phase = PHASES[phaseIndex]
     const targetMidi = baseMidi + phase.notes[idx]
-    const history = base.pitchHistory()
-    const recentSamples = history.slice(
-      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+    const noteScore = scoreNoteAccuracy(
+      base.pitchHistory(),
+      targetMidi,
+      MATCH_WINDOW_MS,
     )
-
-    let noteScore = 0
-    if (recentSamples.length > 0) {
-      const deviations = recentSamples
-        .filter((p) => p.freq > 0)
-        .map((p) => {
-          const midi = 12 * Math.log2(p.freq / 440) + 69
-          return Math.abs((midi - targetMidi) * 100)
-        })
-      if (deviations.length > 0) {
-        const avgDeviation =
-          deviations.reduce((a, b) => a + b, 0) / deviations.length
-        noteScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
-      }
-    }
 
     allScores.push(noteScore)
 
@@ -172,7 +159,7 @@ export function useRoutineRunnerController(
 
     const validMidis = recentSamples
       .filter((p) => p.freq > 0)
-      .map((p) => 12 * Math.log2(p.freq / 440) + 69)
+      .map((p) => freqToExactMidi(p.freq))
     const pitchStability = (() => {
       if (validMidis.length < 2) return 100
       const mean = validMidis.reduce((a, b) => a + b, 0) / validMidis.length

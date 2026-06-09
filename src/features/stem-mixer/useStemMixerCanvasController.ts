@@ -161,7 +161,8 @@ export const useStemMixerCanvasController = (
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, w, h)
@@ -318,7 +319,8 @@ export const useStemMixerCanvasController = (
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, w, h)
@@ -363,7 +365,8 @@ export const useStemMixerCanvasController = (
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, w, h)
@@ -626,7 +629,8 @@ export const useStemMixerCanvasController = (
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, w, h)

@@ -1,5 +1,6 @@
 import { batch } from 'solid-js'
 import { detectVibrato } from '@/lib/vocal-analyzer'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_VIBRATO } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -29,7 +30,7 @@ export function useVibratoController(base: BaseExerciseController) {
       const vibSamples = history.map((p) => ({
         time: p.time,
         freq: p.freq,
-        midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
+        midi: freqToExactMidi(p.freq),
       }))
 
       const lastTime = vibSamples[vibSamples.length - 1]!.time
@@ -108,7 +109,7 @@ export function useVibratoController(base: BaseExerciseController) {
     const vibSamples = history.map((p) => ({
       time: p.time,
       freq: p.freq,
-      midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
+      midi: freqToExactMidi(p.freq),
     }))
 
     const sampleRate = Math.round(

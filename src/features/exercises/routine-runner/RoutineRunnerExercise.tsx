@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconList, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -124,7 +124,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconList size={48} />
             <p>
@@ -133,9 +133,9 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
             </p>
             <span class="idle-hint">5 phases · {PHASE_NAMES.join(' → ')}</span>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -207,9 +207,9 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               </div>
             )}
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -237,11 +237,11 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               Run Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Key"
@@ -249,9 +249,9 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               selected={startNote()}
               onChange={setStartNote}
             />
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -259,16 +259,16 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               Start Routine
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -288,7 +288,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               Change Key
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

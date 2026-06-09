@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconLayers, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -122,7 +122,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconLayers size={48} />
             <p>
@@ -133,9 +133,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               4 notes · {arpeggioType()} · {direction()}
             </span>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -208,9 +208,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               </div>
             )}
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -238,11 +238,11 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Root Note"
@@ -275,9 +275,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
                 <option value="down">Descending</option>
               </select>
             </div>
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -285,16 +285,16 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -314,7 +314,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               Change Settings
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

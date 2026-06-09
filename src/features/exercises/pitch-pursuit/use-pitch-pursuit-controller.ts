@@ -1,4 +1,5 @@
 import { batch } from 'solid-js'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -20,6 +21,8 @@ interface FallingNote {
   active: boolean
   scored: boolean
   hit: boolean
+  /** Timestamp (performance.now()) when the note should be deactivated. 0 = not scheduled. */
+  deactivateAt: number
 }
 
 export function usePitchPursuitController(base: BaseExerciseController) {
@@ -44,6 +47,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
       active: true,
       scored: false,
       hit: false,
+      deactivateAt: 0,
     })
   }
 
@@ -66,6 +70,14 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
     const now = performance.now()
 
+    // Deactivate notes whose deactivation time has passed
+    for (const note of notes) {
+      if (note.deactivateAt > 0 && now >= note.deactivateAt) {
+        note.active = false
+        note.deactivateAt = 0
+      }
+    }
+
     // Spawn new notes
     if (
       now - lastSpawnTime > SPAWN_INTERVAL_MS &&
@@ -78,7 +90,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     const pitch = base.currentPitch()
     let currentMidi = 0
     if (pitch && pitch.freq > 0) {
-      currentMidi = 12 * Math.log2(pitch.freq / 440) + 69
+      currentMidi = freqToExactMidi(pitch.freq)
     }
 
     // Check hits for active notes near the target zone
@@ -110,10 +122,8 @@ export function usePitchPursuitController(base: BaseExerciseController) {
           combo = 0
         }
 
-        // Deactivate note shortly after scoring
-        setTimeout(() => {
-          note.active = false
-        }, 400)
+        // Schedule deactivation via timestamp (no untracked setTimeout)
+        note.deactivateAt = now + 400
       }
 
       // Note fell off screen without being scored
@@ -121,9 +131,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         note.scored = true
         misses++
         combo = 0
-        setTimeout(() => {
-          note.active = false
-        }, 200)
+        note.deactivateAt = now + 200
       }
     }
 

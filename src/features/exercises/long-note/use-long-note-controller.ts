@@ -1,4 +1,5 @@
 import { batch } from 'solid-js'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_LONG_NOTE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -39,7 +40,7 @@ export function useLongNoteController(base: BaseExerciseController) {
         const p = history[i]!
         if (p.time < windowStart) break
         if (p.freq > 0) {
-          const midi = 12 * Math.log2(p.freq / 440) + 69
+          const midi = freqToExactMidi(p.freq)
           deviations.push((midi - targetMidi) * 100)
         }
       }
@@ -93,7 +94,7 @@ export function useLongNoteController(base: BaseExerciseController) {
     const deviations: number[] = []
     for (const p of history) {
       if (p.freq > 0) {
-        const midi = 12 * Math.log2(p.freq / 440) + 69
+        const midi = freqToExactMidi(p.freq)
         deviations.push((midi - targetMidi) * 100)
       }
     }

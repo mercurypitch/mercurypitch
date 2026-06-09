@@ -73,12 +73,11 @@ export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
 export function useDailyRoutine() {
   const [persisted, setPersisted] = [routineData, setRoutineData] as const
 
-  const today = todayStr()
-  const isToday = () => persisted()?.date === today
+  const isToday = () => persisted()?.date === todayStr()
 
   const template = createMemo<RoutineTemplate | null>(() => {
     const p = persisted()
-    if (p && p.date === today) {
+    if (p && p.date === todayStr()) {
       return (
         dailyRoutines.find((r) => r.id === p.templateId) ??
         (_sharedRoutine()?.id === p.templateId ? _sharedRoutine() : null)
@@ -116,7 +115,7 @@ export function useDailyRoutine() {
     const routine = getRandomRoutine()
     setPersisted({
       templateId: routine.id,
-      date: today,
+      date: todayStr(),
       completedSegments: [],
     })
     return routine

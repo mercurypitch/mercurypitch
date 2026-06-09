@@ -5,24 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.11] - 2026-06-03
+## [0.3.11] - 2026-06-09
 
 ### Added
 
-- **Whisper Language Selection**: Added an EN/HR language dropdown next to the Transcribe button in StemMixer (both Grid and Fixed workspaces) and PitchTestingTab. Language selection is threaded through the worker, service, and hook.
-- **Whisper Warm-up (opt-in)**: Added a `ENABLE_WARMUP` flag in the whisper worker to optionally run a silent warm-up inference after model load, pre-compiling WebGPU/WASM shaders. Disabled by default to avoid unnecessary CPU/GPU usage.
-- **Mixer Deep-Link**: Reloading the page at `#/karaoke/session/{id}/mixer` now correctly loads the mixer view with stems populated, instead of showing empty panels or falling back to the results page.
+- **Singing Exercises (16 new)**: Full exercise system with base exercise framework (`use-base-exercise.ts`), reusable pitch tracker, and note selector components. Exercises include: Long Note, Vibrato, Slide, Pitch Pursuit, Mirror Melody, Pitch Hold, Interval Trainer, Scale Runner, Arpeggio Jumper, Drone Intonation, Siren, Call & Response, Dynamic Swell, Chord Stacker, Staccato Precision, and Routine Runner.
+- **Exercise Menu**: Card-based exercise browser with per-exercise stats (best score, play count, grade badges), tag categorization, and quick-start buttons.
+- **Exercise History Store**: Persistent localStorage-backed history of completed exercises (last 100), with per-type stats (best/avg score, total plays) and automatic leaderboard and streak updates.
+- **Session Celebration Modal**: Post-exercise score overlay with grade coloring and best-window highlights.
+- **Daily Practice Routines**: Collapsible routine panel with segment-by-segment progress tracking, auto-advance on exercise completion, shareable routine links, and random routine generation from curated templates.
+- **Routine Templates**: Library of predefined warm-up routines with configurable segments (warmup, exercise, challenge-prep, cooldown).
+- **Karaoke Looping (A/B Loop)**: Audio loop state machine, transport controls for loop toggle, waveform loop region visualization on overview canvas with draggable A/B markers, loop count tracking, loop metrics bar, and keyboard shortcuts.
+- **Karaoke Focus Mode**: Full-screen stem mixer mode with transport bar toggles, hidden headers, and compact controls.
+- **Touch Pan/Zoom**: One-finger horizontal pan, two-finger pinch-to-zoom on all canvases, vertical pinch for panel resize, dampened sensitivity, and natural scrolling direction.
+- **Pinch-to-Zoom Lyrics**: Font size scaling on lyrics panel via pinch gesture (max 3rem), context menu disabled on lyrics.
+- **Session Grouping**: Group tabs with context menu, assignment dropdown, CSS styling, and group CRUD operations backed by IndexedDB. Sessions can be assigned/removed from groups.
+- **Self-Contained Shareable URLs**: Base64url encoding for melodies, exercises, and routines. Compact tuple format for melody items. URL shortener backed by Cloudflare KV with 60-day TTL. Copy-to-clipboard with fallback.
+- **Responsive Walkthrough Tooltips**: Mobile-responsive tooltip positioning with media queries for the guided tour.
+- **SVG Icon Migration**: New exercise-specific icon set (`exercise-icons.tsx`), SVG icons added to text-only buttons (Shazam, ScaleBuilder, App, CommunityShare, CommunityLeaderboard), and enhanced toggle/mode button icons (Metronome, UvrPanel).
+- **Streak Calendar Component**: Visual practice streak tracking.
+- **Vocal Range Utilities**: `vocal-range.ts` for note option generation and default note selection based on voice type presets.
+- **Frequency-to-Note Utilities**: Bidirectional MIDI/frequency/note-name conversion (`frequency-to-note.ts`).
+- **New Note Effects**: Tremolo, Trill, and Staccato effects for the piano roll and practice sessions.
+- **Whisper Language Selection**: EN/HR language dropdown in StemMixer and PitchTestingTab, threaded through worker/service/hook.
+- **Whisper Warm-up (opt-in)**: Optional silent warm-up inference after model load to pre-compile shaders.
+- **Mixer Deep-Link Fix**: Reloading `#/karaoke/session/{id}/mixer` correctly loads the mixer view with populated stems.
+- **Keyboard Loop Shortcuts**: Keyboard shortcuts for loop toggle and loop boundary controls.
+- **Challenge Drill Generator**: Auto-generates exercise drills from challenge definitions.
 
 ### Changed
 
-- **Whisper Chunk Timeout**: Increased per-chunk transcription timeout from 120s to 200s to accommodate Firefox's slower WebGPU/WASM inference.
-- **Export All Progress**: Refactored toast styling to keep progress notifications visible until completion, preventing premature auto-dismissal at 50%.
+- **Toolbar Icon Standardization**: All toolbar icons normalized to 16px (down from 18px).
+- **Waveform Icon**: Replaced mushy waveform icon with clean stroke-based vertical lines.
+- **Note Labels Icon**: Replaced note labels icon with music eighth note SVG across lyrics panel and mixer.
+- **Panel Heights**: Updated default panel heights for better layout balance.
+- **Whisper Chunk Timeout**: Increased per-chunk timeout from 120s to 200s for Firefox compatibility.
+- **Export All Progress**: Toast styling keeps progress notifications visible until completion.
+- **Hash Router**: Extended to support `#/share/{payload}`, `#/s/{shortId}`, exercise, and routine share routes.
+- **Dexie Adapter**: Improved error handling, group cleanup on delete-all, and session deduplication.
+- **Piano Roll**: Major enhancements — 900+ lines of changes for new note effects rendering, arc physics, and improved seek behavior.
+- **Effect Renderer**: Extended with tremolo, trill, and staccato effect rendering logic.
+- **Audio Engine**: Added tone playback API for exercises (`playTone`, `stopTone`).
 
 ### Fixed
 
-- **SolidJS Reactivity Warnings**: Fixed two `solid/reactivity` lint warnings by extracting reactive values (`props.onUpload`, `language()`) synchronously before async `.then()` callbacks, per SolidJS best practices.
-- **Mixer Deep-Link Race Condition**: Fixed a race where `handleSessionView` unconditionally set the view to 'results', overwriting the 'mixer' view from the URL hash. Also fixed the `createSignal` initial value starting as 'mixer' before stems were hydrated, causing StemMixer to mount with empty stems.
-- **Whisper Progress Bar Jumping**: Fixed erratic progress bar behavior during model download by implementing per-file progress tracking with monotonic aggregate reporting.
+- **SolidJS Reactivity Warnings**: Extracted reactive values synchronously before async `.then()` callbacks per SolidJS best practices (multiple locations).
+- **Karaoke Looping**: Fixed RAF tick dying after first loop iteration; converted `loopCount` to reactive signal.
+- **Focus Mode Panel Toggles**: Wired up all focus mode panel toggles; show all controls in focus toolbar; restored original icon-only toggle buttons.
+- **Kebab Menu**: Replaced broken kebab menu with hover X button; fixed clear-all modal not closing.
+- **Cache Persistence**: Fixed cache persistence on delete-all; cleaned up group DB records properly.
+- **Prop Type / Test Mocks**: Fixed prop type issue, `deleteAll` group cleanup, test mock, and `CheckSmall` icon typo.
+- **UvrPanel Merge Conflicts**: Resolved UvrPanel.tsx conflict to use main's version with export group support.
+- **Page Zoom Prevention**: Prevented page zoom on lyrics pinch and disabled context menu on lyrics panel.
+- **Touch Pan Direction**: Flipped touch pan direction to match natural scrolling convention.
+- **Touch Sensitivity**: Dampened touch pan/zoom sensitivity and rounded `windowDuration` display.
+- **E2E Tests**: Fixed e2e test selectors after icon migration and CSS module changes.
+- **Lint/Formatting**: Various lint error boundary fixes, spacing, and reformatting.
+- **Mixer Deep-Link Race Condition**: Fixed `handleSessionView` unconditionally overwriting the mixer view from URL hash.
+- **Whisper Progress Bar**: Fixed erratic progress bar behavior with per-file monotonic aggregate reporting.
+
+
 
 ## [0.3.10] - 2026-06-02
 

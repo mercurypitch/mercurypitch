@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconTarget } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
@@ -102,7 +102,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
@@ -110,9 +110,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               Target: <strong>{targetNote()}</strong>
             </p>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <div class="long-note-target-display">
               Target: <strong>{targetNote()}</strong>
@@ -154,9 +154,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               </div>
             </div>
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -183,11 +183,11 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Target"
@@ -195,9 +195,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -205,16 +205,16 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop & Score
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -234,7 +234,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               Change Target
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

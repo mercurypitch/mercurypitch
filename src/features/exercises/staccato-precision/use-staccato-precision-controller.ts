@@ -1,5 +1,6 @@
 import { batch } from 'solid-js'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_STACCATO } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -97,7 +98,7 @@ export function useStaccatoPrecisionController(
       const validSamples = recentSamples.filter((p) => p.freq > 0)
       if (validSamples.length > 0) {
         const deviations = validSamples.map((p) => {
-          const midi = 12 * Math.log2(p.freq / 440) + 69
+          const midi = freqToExactMidi(p.freq)
           return Math.abs((midi - targetMidi) * 100)
         })
         const avgDeviation =

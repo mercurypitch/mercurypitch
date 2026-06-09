@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconLock } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
@@ -106,7 +106,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconLock size={48} />
             <p>
@@ -114,9 +114,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               time.
             </p>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -162,9 +162,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               </div>
             </div>
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -191,11 +191,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Target"
@@ -203,9 +203,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               selected={targetNote()}
               onChange={setTargetNote}
             />
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -213,16 +213,16 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop & Score
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -242,7 +242,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               Change Note
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )

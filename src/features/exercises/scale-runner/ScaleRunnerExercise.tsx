@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -120,7 +120,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-canvas-area">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <div class="exercise-idle-placeholder">
             <IconArrowUpDown size={48} />
             <p>
@@ -131,9 +131,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               {scaleLength() || 8} notes · {scaleType()} · {direction()}
             </span>
           </div>
-        )}
+        </Show>
 
-        {isActive() && (
+        <Show when={isActive()}>
           <>
             <ExercisePitchTracker
               pitchHistory={base.pitchHistory}
@@ -206,9 +206,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               </div>
             )}
           </>
-        )}
+        </Show>
 
-        {isComplete() && base.result() && (
+        <Show when={isComplete() && base.result()}>
           <div class="exercise-result-overlay">
             <div
               class="exercise-result-score"
@@ -236,11 +236,11 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               Try Again
             </button>
           </div>
-        )}
+        </Show>
       </div>
 
       <div class="exercise-controls">
-        {base.state().status === 'idle' && (
+        <Show when={base.state().status === 'idle'}>
           <>
             <NotePillSelector
               label="Starting Note"
@@ -273,9 +273,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                 <option value="down">Descending</option>
               </select>
             </div>
-            {base.error() != null && (
+            <Show when={base.error() != null}>
               <div class="exercise-error">{base.error()}</div>
-            )}
+            </Show>
             <button
               class="exercise-btn exercise-btn-primary"
               onClick={() => void handleStart()}
@@ -283,16 +283,16 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               Start
             </button>
           </>
-        )}
-        {isActive() && (
+        </Show>
+        <Show when={isActive()}>
           <button
             class="exercise-btn exercise-btn-secondary"
             onClick={handleStop}
           >
             Stop
           </button>
-        )}
-        {isComplete() && (
+        </Show>
+        <Show when={isComplete()}>
           <>
             <button
               class="exercise-btn exercise-btn-primary"
@@ -312,7 +312,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               Change Settings
             </button>
           </>
-        )}
+        </Show>
       </div>
     </div>
   )
