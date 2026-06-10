@@ -237,6 +237,11 @@ export function deleteSession(id: string): void {
   deleteSessionStore(id)
 }
 
+/** Restore a previously deleted session (undo support). */
+export function restoreSession(session: PlaybackSession): void {
+  saveSessionStore(session)
+}
+
 export function updateUserSession(session: PlaybackSession): void {
   saveSessionStore(session)
 }
@@ -972,6 +977,16 @@ export function deleteMelody(key: string): void {
   }
 }
 
+/** Restore a previously deleted melody (undo support). */
+export function restoreMelody(melody: MelodyData): void {
+  setMelodyLibrary((prev) => ({
+    ...prev,
+    melodies: { ...prev.melodies, [melody.id]: melody },
+    meta: { ...prev.meta, lastUpdated: Date.now() },
+  }))
+  _saveLibraryToStorage()
+}
+
 export function saveCurrentMelody(name?: string): MelodyData {
   const melody = currentMelody()
   if (melody === null) {
@@ -1251,6 +1266,24 @@ export function deletePlaylist(playlistId: string): void {
   }
 }
 
+/** Restore a previously deleted playlist (undo support). */
+export function restorePlaylist(
+  playlistId: string,
+  playlist: {
+    name: string
+    melodyKeys: string[]
+    sessionKeys: string[]
+    created: number
+  },
+): void {
+  setMelodyLibrary((prev) => ({
+    ...prev,
+    playlists: { ...prev.playlists, [playlistId]: playlist },
+    meta: { ...prev.meta, lastUpdated: Date.now() },
+  }))
+  _saveLibraryToStorage()
+}
+
 // ============================================================
 // Library Accessors
 // ============================================================
@@ -1443,6 +1476,7 @@ export const melodyStore = {
   saveCurrentMelody,
   updateMelody,
   deleteMelody,
+  restoreMelody,
   getAllMelodies,
   getMelodyCount,
   getMelody,
@@ -1470,6 +1504,7 @@ export const melodyStore = {
   removeSessionFromPlaylist,
   updatePlaylist,
   deletePlaylist,
+  restorePlaylist,
   getPlaylists,
   getPlaylist,
   getPlaylistCount,
@@ -1488,6 +1523,7 @@ export const melodyStore = {
   saveSession,
   updateSession,
   deleteSession,
+  restoreSession,
   getSession,
   updateUserSession,
   getSessionCount,

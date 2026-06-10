@@ -13,7 +13,7 @@ import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
-import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
+import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showActionNotification, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
 import styles from './LibraryModal.module.css'
@@ -272,12 +272,22 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handleDelete = (key: string) => {
-    if (confirm('Delete this melody?')) {
+    const melody = melodyStore.getMelody(key)
+    if (!melody) return
+    const melodyName = melody.name || 'Untitled'
+    if (confirm(`Delete "${melodyName}"?`)) {
       melodyStore.deleteMelody(key)
       setSelectedMelodyKey(null)
       if (editingMelodyKey() === key) {
         cancelEdit()
       }
+      showActionNotification(`Deleted "${melodyName}"`, 'warning', {
+        label: 'Undo',
+        onClick: () => {
+          melodyStore.restoreMelody(melody)
+          showNotification(`Restored "${melodyName}"`, 'success')
+        },
+      })
     }
   }
 
@@ -428,14 +438,31 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const playlistEdit = playlistEditing()
     if (!playlistEdit || playlistEdit.mode !== 'delete') return
 
+    const playlistId = playlistEdit.playlistId
     if (
-      playlistEdit.playlistId !== null &&
-      playlistEdit.playlistId !== undefined &&
+      playlistId !== null &&
+      playlistId !== undefined &&
       confirm('Delete this playlist?')
     ) {
-      melodyStore.deletePlaylist(playlistEdit.playlistId)
+      const playlist = melodyStore.getPlaylist(playlistId)
+      melodyStore.deletePlaylist(playlistId)
       setPlaylistEditing(null)
-      showNotification('Playlist deleted', 'success')
+      if (playlist) {
+        const playlistName = playlist.name || 'Unnamed'
+        showActionNotification(
+          `Deleted playlist "${playlistName}"`,
+          'warning',
+          {
+            label: 'Undo',
+            onClick: () => {
+              melodyStore.restorePlaylist(playlistId, playlist)
+              showNotification(`Restored "${playlistName}"`, 'success')
+            },
+          },
+        )
+      } else {
+        showNotification('Playlist deleted', 'success')
+      }
     }
   }
 

@@ -333,6 +333,11 @@ export function deleteCustomScale(name: string): void {
   })
 }
 
+/** Restore a previously deleted custom scale (undo support). */
+export function restoreCustomScale(name: string, notes: string[]): void {
+  setCustomScales((prev) => ({ ...prev, [name]: notes }))
+}
+
 /** Encode a custom scale as the scale-type string used by the dropdown. */
 export function customScaleTypeId(name: string, notes: string[]): string {
   return `custom:${name}:${notes.join(',')}`

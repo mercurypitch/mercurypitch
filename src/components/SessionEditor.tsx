@@ -9,7 +9,7 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
+import { melodyStore, setActiveUserSession, showActionNotification, showNotification, userSession, } from '@/stores'
 import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 import styles from './SessionEditor.module.css'
@@ -118,10 +118,28 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       return
     }
 
+    const deletedItem = session.items.find((i) => i.id === itemId)
     // Remove the item from the session using session-store
     const updatedSession = deleteSessionItem(session.id, itemId)
     if (updatedSession !== undefined) {
       setActiveUserSession(updatedSession)
+      if (deletedItem) {
+        const itemLabel =
+          deletedItem.type === 'rest'
+            ? 'Rest'
+            : (deletedItem.melodyId ?? 'Item')
+        showActionNotification(`Removed "${itemLabel}"`, 'warning', {
+          label: 'Undo',
+          onClick: () => {
+            // Re-add the item (appends to end — close enough for undo)
+
+            const { id: _id, ...itemWithoutId } = deletedItem
+            const restored = addItemToSession(session.id, itemWithoutId)
+            if (restored) setActiveUserSession(restored)
+            showNotification(`Restored "${itemLabel}"`, 'success')
+          },
+        })
+      }
     }
   }
 
