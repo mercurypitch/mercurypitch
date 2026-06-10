@@ -8,7 +8,7 @@ import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
-import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showNotification, } from '@/stores'
+import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showActionNotification, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
@@ -68,8 +68,18 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this session?')) {
+    const session = melodyStore.getSession(id)
+    if (session === undefined) return
+    const sessionName = session.name || 'Unnamed'
+    if (confirm(`Delete session "${sessionName}"?`)) {
       melodyStore.deleteSession(id)
+      showActionNotification(`Deleted "${sessionName}"`, 'warning', {
+        label: 'Undo',
+        onClick: () => {
+          melodyStore.restoreSession(session)
+          showNotification(`Restored "${sessionName}"`, 'success')
+        },
+      })
     }
   }
 

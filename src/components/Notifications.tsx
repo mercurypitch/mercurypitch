@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { notifications } from '@/stores'
+import { notifications, removeNotification } from '@/stores'
 import styles from '@/styles/Notifications.module.css'
 
 export const Notifications: Component = () => {
@@ -16,7 +16,18 @@ export const Notifications: Component = () => {
             class={`${styles.notification} ${styles[notif.type]}`}
             role="alert"
           >
-            {notif.message}
+            <span class={styles.notificationText}>{notif.message}</span>
+            {notif.action && (
+              <button
+                class={styles.actionBtn}
+                onClick={() => {
+                  notif.action!.onClick()
+                  removeNotification(notif.id)
+                }}
+              >
+                {notif.action.label}
+              </button>
+            )}
           </div>
         )}
       </For>

@@ -7,9 +7,9 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { CheckCircle, MusicNote, Play, X } from '@/components/icons'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { storageGet, storageRemove, storageSet } from '@/lib/storage'
-import { keyName, setScaleType, showNotification } from '@/stores'
+import { keyName, setScaleType, showActionNotification, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { customScales, customScaleTypeId, deleteCustomScale, saveCustomScale, } from '@/stores/settings-store'
+import { customScales, customScaleTypeId, deleteCustomScale, restoreCustomScale, saveCustomScale, } from '@/stores/settings-store'
 import type { NoteName } from '@/types'
 import styles from './ScaleBuilder.module.css'
 
@@ -79,6 +79,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
   // Delete a saved scale; if it's the active one, revert to major
   const handleDeleteScale = (name: string) => {
+    const scaleNotes = customScales()[name]
     deleteCustomScale(name)
 
     // If the deleted scale was the active custom scale, revert to major
@@ -92,6 +93,16 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
         'major',
       )
       showNotification('Reverted to Major scale', 'info')
+    }
+
+    if (scaleNotes !== undefined) {
+      showActionNotification(`Deleted "${name}" scale`, 'warning', {
+        label: 'Undo',
+        onClick: () => {
+          restoreCustomScale(name, scaleNotes)
+          showNotification(`Restored "${name}" scale`, 'success')
+        },
+      })
     }
   }
 
