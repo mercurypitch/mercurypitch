@@ -118,12 +118,13 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       return
     }
 
-    const deletedItem = session.items.find((i) => i.id === itemId)
+    const itemIndex = session.items.findIndex((i) => i.id === itemId)
+    const deletedItem = itemIndex !== -1 ? session.items[itemIndex] : undefined
     // Remove the item from the session using session-store
     const updatedSession = deleteSessionItem(session.id, itemId)
     if (updatedSession !== undefined) {
       setActiveUserSession(updatedSession)
-      if (deletedItem) {
+      if (deletedItem !== undefined) {
         const itemLabel =
           deletedItem.type === 'rest'
             ? 'Rest'
@@ -131,11 +132,13 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
         showActionNotification(`Removed "${itemLabel}"`, 'warning', {
           label: 'Undo',
           onClick: () => {
-            // Re-add the item (appends to end — close enough for undo)
-
             const { id: _id, ...itemWithoutId } = deletedItem
-            const restored = addItemToSession(session.id, itemWithoutId)
-            if (restored) setActiveUserSession(restored)
+            const restored = insertItemInSession(
+              session.id,
+              itemWithoutId,
+              itemIndex,
+            )
+            if (restored !== undefined) setActiveUserSession(restored)
             showNotification(`Restored "${itemLabel}"`, 'success')
           },
         })
