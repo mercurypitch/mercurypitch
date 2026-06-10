@@ -58,6 +58,7 @@ export function initGlobalErrorHandlers(): void {
       type: 'warn',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     addConsoleLog('warn', args)
     oldWarn(...args)
   }
@@ -68,6 +69,7 @@ export function initGlobalErrorHandlers(): void {
       type: 'info',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     addConsoleLog('info', args)
     oldInfo(...args)
   }
