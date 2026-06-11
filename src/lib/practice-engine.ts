@@ -3,6 +3,7 @@
 // ============================================================
 
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
+import { showNotification } from '@/stores/notifications-store'
 import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
 import type { PitchAlgorithm } from './pitch-detector'
@@ -52,6 +53,8 @@ export class PracticeEngine {
   // Check every ~10 frames (~167ms at 60fps) — aggressive enough to catch suspensions fast
   private micHealthCounter = 0
   private static readonly MIC_HEALTH_INTERVAL = 10
+  private _resumeFailedNotified = false
+  private _micMismatchWarned = false
   // Last detected pitch to detect mic silence (vs suspension)
 
   constructor(
@@ -131,6 +134,7 @@ export class PracticeEngine {
     try {
       await this.audioEngine.init()
       await this.audioEngine.resume()
+      this._resumeFailedNotified = false
 
       // Reinitialize PitchDetector with the actual AudioContext sample rate
       // This is critical for Android where the sample rate may differ from the default 44100
@@ -185,13 +189,20 @@ export class PracticeEngine {
     // Also check audioEngine state for consistency
     const engineActive = this.audioEngine.isMicActive()
     if (engineActive !== this.micActive) {
-      console.warn(
-        '[PracticeEngine] Mic state mismatch: practiceEngine=',
-        this.micActive,
-        'audioEngine=',
-        engineActive,
-      )
+      if (!this._micMismatchWarned) {
+        this._micMismatchWarned = true
+        console.warn(
+          '[PracticeEngine] Mic state mismatch: practiceEngine=',
+          this.micActive,
+          'audioEngine=',
+          engineActive,
+          '— syncing',
+        )
+      }
       this.micActive = engineActive
+    } else if (this._micMismatchWarned) {
+      // Reset throttle once states are back in agreement
+      this._micMismatchWarned = false
     }
     return this.micActive
   }
@@ -252,14 +263,16 @@ export class PracticeEngine {
     this.micHealthCounter++
     if (this.micHealthCounter >= PracticeEngine.MIC_HEALTH_INTERVAL) {
       this.micHealthCounter = 0
-      this.audioEngine
-        .resume()
-        .catch((err) =>
-          console.warn(
-            'AudioContext resume failed during mic health check:',
-            err,
-          ),
-        )
+      this.audioEngine.resume().catch((err) => {
+        console.warn('AudioContext resume failed during mic health check:', err)
+        if (!this._resumeFailedNotified) {
+          this._resumeFailedNotified = true
+          showNotification(
+            'Audio interrupted — tap or click anywhere to resume',
+            'warning',
+          )
+        }
+      })
     }
 
     const pitch = this.detectPitch()

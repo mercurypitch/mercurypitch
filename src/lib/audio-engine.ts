@@ -2,6 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
+import { showNotification } from '@/stores/notifications-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 import { UvrProcessor } from './uvr-processor'
@@ -84,6 +85,9 @@ export class AudioEngine {
   private uvrEnabled = false
   private uvrMainGain: GainNode | null = null
 
+  // Throttle AudioContext resume-failure notifications (once per init cycle)
+  private _resumeFailedNotified = false
+
   // ============================================================
   // Lifecycle
   // ============================================================
@@ -92,6 +96,7 @@ export class AudioEngine {
     if (this.audioCtx) return
 
     this.audioCtx = new AudioContext({ latencyHint: 'interactive' })
+    this._resumeFailedNotified = false
     // Playback analyser for pitch track visualization (mirrors old JS)
     this.playbackAnalyser = this.audioCtx.createAnalyser()
     this.playbackAnalyser.fftSize = this.bufferSize
@@ -544,9 +549,16 @@ export class AudioEngine {
   playClick(): void {
     if (!this.audioCtx || this.metronomeGain === null) return
     // Ensure AudioContext is ready
-    this.resume().catch((err) =>
-      console.warn('AudioContext resume failed:', err),
-    )
+    this.resume().catch((err) => {
+      console.warn('AudioContext resume failed:', err)
+      if (!this._resumeFailedNotified) {
+        this._resumeFailedNotified = true
+        showNotification(
+          'Audio playback blocked — tap or click anywhere to enable sound',
+          'warning',
+        )
+      }
+    })
 
     const osc = this.audioCtx.createOscillator()
     const gain = this.audioCtx.createGain()
@@ -574,9 +586,16 @@ export class AudioEngine {
    */
   playMetronomeClick(isDownbeat: boolean): void {
     if (!this.audioCtx || this.metronomeGain === null) return
-    this.resume().catch((err) =>
-      console.warn('AudioContext resume failed:', err),
-    )
+    this.resume().catch((err) => {
+      console.warn('AudioContext resume failed:', err)
+      if (!this._resumeFailedNotified) {
+        this._resumeFailedNotified = true
+        showNotification(
+          'Audio playback blocked — tap or click anywhere to enable sound',
+          'warning',
+        )
+      }
+    })
 
     const osc = this.audioCtx.createOscillator()
     const gain = this.audioCtx.createGain()
