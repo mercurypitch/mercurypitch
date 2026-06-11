@@ -39,7 +39,7 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 
 ## UX & Quality of Life
 
-- [x] **Keyboard shortcut system** -- Space=play/pause, Esc=close/stop, Home=seek start, R=repeat, P=session, M=mic, Arrows=speed ✅  (1-9=tabs, ?=help still pending)
+- [x] **Keyboard shortcut system** -- Space=play/pause, Esc=close/stop, Home=seek start, R=repeat, P=session, M=mic, Arrows=speed, ?=help overlay ✅  (1-9=tabs still pending)
 - [ ] **Onboarding flow with voice type detection** -- 3-step wizard: mic test -> range detection -> recommended routine
 - [ ] **Practice timer with break reminders** -- Pomodoro-style vocal rest reminders (25min/5min)
 - [ ] **Theme auto-switch & accent colors** -- Follow system dark/light preference, customizable accent palette

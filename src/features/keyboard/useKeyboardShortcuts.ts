@@ -56,6 +56,9 @@ interface KeyboardShortcutHandlers {
 
   /** Mic toggle handler for keyboard shortcut. */
   onMicToggle?: () => void
+
+  /** Toggle shortcut help overlay. */
+  onToggleShortcutHelp?: () => void
 }
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
@@ -113,6 +116,19 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         handlers.stop()
         handlers.seekToStart()
       }
+    }
+
+    // ── ? — toggle shortcut help overlay ──────────────────
+    if (
+      e.code === 'Slash' &&
+      e.shiftKey &&
+      !isTyping &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
+      e.preventDefault()
+      handlers.onToggleShortcutHelp?.()
+      return
     }
 
     // ── M — toggle microphone ──────────────────────────────
