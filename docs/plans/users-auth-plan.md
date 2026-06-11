@@ -19,7 +19,8 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | JWT (HS256, 30-day expiry) + userId enforcement from token | ✅ done, smoke-tested |
 | Google Cloud OAuth client id created + set as `GOOGLE_CLIENT_ID` | ⬜ user action |
 | Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY / GOOGLE_CLIENT_ID` | ⬜ user action |
-| HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ⬜ next |
+| HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ✅ done, unit-tested |
+| Auth client (`src/db/services/auth-service.ts`: ensureAuth/register/login/google/me) | ✅ done |
 | Auth UI (login/register modal, Google button via GIS, account section in settings) | ⬜ next |
 | Cloud seeding of challenge/badge/achievement definitions (admin key) | ⬜ next |
 

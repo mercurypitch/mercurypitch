@@ -1,0 +1,150 @@
+// ============================================================
+// Auth Service — client for the db-worker /api/auth endpoints
+// ============================================================
+//
+// Anonymous-first: ensureAuth() silently exchanges the persisted
+// device id for a JWT at startup. Register/login/Google upgrade the
+// same userId server-side (deviceId is passed along), so local
+// attribution stays valid. See docs/plans/users-auth-plan.md.
+
+import { API_BASE_URL } from '@/lib/defaults'
+import { getAuthToken, getUserId, setAuthToken } from './user-service'
+
+export interface AuthUserInfo {
+  id: string
+  createdAt: string
+  updatedAt: string
+  authProvider: 'anonymous' | 'password' | 'google'
+  email: string | null
+  emailVerified: boolean
+  lastLoginAt: string | null
+}
+
+export interface AuthResponse {
+  token: string
+  userId: string
+  isNew: boolean
+  user: AuthUserInfo
+}
+
+export interface MeResponse {
+  user: AuthUserInfo
+  profile: Record<string, unknown> | null
+}
+
+// ── Token inspection (decode only — verification is server-side) ──
+
+interface TokenPayload {
+  sub: string
+  provider: string
+  exp: number
+}
+
+function decodeToken(token: string): TokenPayload | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const body = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(body)) as TokenPayload
+  } catch {
+    return null
+  }
+}
+
+/** True when the stored token exists and is not (nearly) expired. */
+export function hasValidToken(): boolean {
+  const token = getAuthToken()
+  if (token == null || token === '') return false
+  const payload = decodeToken(token)
+  if (payload == null) return false
+  return payload.exp > Date.now() / 1000 + 60
+}
+
+// ── HTTP helpers ────────────────────────────────────────────────
+
+function requireBaseUrl(): string {
+  if (API_BASE_URL == null || API_BASE_URL === '') {
+    throw new Error('auth-service: VITE_API_BASE_URL is not configured')
+  }
+  return API_BASE_URL
+}
+
+async function postAuth(
+  route: string,
+  body: Record<string, unknown>,
+): Promise<AuthResponse> {
+  const res = await fetch(`${requireBaseUrl()}/api/auth/${route}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(
+      `auth ${route} failed: ${res.status}${detail !== '' ? ` — ${detail}` : ''}`,
+    )
+  }
+  const auth = (await res.json()) as AuthResponse
+  setAuthToken(auth.token)
+  return auth
+}
+
+// ── Public API ──────────────────────────────────────────────────
+
+/**
+ * Make sure a JWT is available, requesting an anonymous one when
+ * needed. Returns false when no API is configured, the network is
+ * down, or the account was upgraded and requires an explicit login.
+ * Never throws — callers must stay usable offline.
+ */
+export async function ensureAuth(): Promise<boolean> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return false
+  if (hasValidToken()) return true
+  try {
+    await postAuth('anonymous', { deviceId: getUserId() })
+    return true
+  } catch (err) {
+    console.warn('[auth] anonymous auth failed:', err)
+    return false
+  }
+}
+
+export async function registerWithPassword(
+  email: string,
+  password: string,
+  displayName?: string,
+): Promise<AuthResponse> {
+  return postAuth('register', {
+    email,
+    password,
+    displayName,
+    deviceId: getUserId(),
+  })
+}
+
+export async function loginWithPassword(
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
+  return postAuth('login', { email, password })
+}
+
+/** `idToken` is the credential from Google Identity Services. */
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  return postAuth('google', { idToken, deviceId: getUserId() })
+}
+
+export function logout(): void {
+  setAuthToken(null)
+}
+
+/** Current user + profile, or null when not authenticated. */
+export async function fetchMe(): Promise<MeResponse | null> {
+  const token = getAuthToken()
+  if (token == null || token === '') return null
+  const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  return (await res.json()) as MeResponse
+}

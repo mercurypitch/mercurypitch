@@ -28,12 +28,11 @@ Zero-dependency fetch handler (same style as jam-worker, no Hono):
 
 ## Next steps
 
-### 1. HybridAdapter (next coding task)
-In `src/db/index.ts`: route the 13 cloud entities to `ServerAdapter` (with `getAuthHeaders()`), everything else to `DexieAdapter`. Details:
-- Static `CLOUD_ENTITIES` set mirroring `workers/db-worker/src/tables.ts`.
-- Only active when `VITE_API_BASE_URL` is set; unset = all-Dexie (current behavior, offline/dev default).
-- On startup with API configured and no stored token: `POST /api/auth/anonymous { deviceId: getUserId() }`, store token; retry once on 401 (expired token).
-- ⚠️ Until this lands, do **not** set `VITE_API_BASE_URL` — it would route UVR/blob repositories to the server too.
+### 1. HybridAdapter — ✅ done
+- `src/db/adapters/hybrid-adapter.ts`: `CLOUD_ENTITIES` set mirroring `workers/db-worker/src/tables.ts`; cloud entities → `ServerAdapter`, everything else → `DexieAdapter`. Unit-tested (`src/tests/hybrid-adapter.test.ts`).
+- `src/db/services/auth-service.ts`: full auth client — `ensureAuth()` (silent anonymous bootstrap at startup, offline-tolerant), `registerWithPassword`, `loginWithPassword`, `loginWithGoogle(idToken)`, `logout`, `fetchMe`, client-side token-expiry check.
+- `ServerAdapter` accepts a headers **getter**, so the Authorization header always reflects the current token.
+- `src/db/index.ts`: `VITE_API_BASE_URL` set → HybridAdapter (with anonymous auth bootstrap); unset → all-Dexie as before. Setting `VITE_API_BASE_URL` is now safe.
 
 ### 2. Auth UI
 Settings → Account section:
