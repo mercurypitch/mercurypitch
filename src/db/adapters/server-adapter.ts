@@ -19,7 +19,8 @@ import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/
 
 export interface ServerAdapterConfig {
   baseUrl: string
-  headers?: Record<string, string>
+  /** Static headers, or a getter re-evaluated per request (e.g. auth token). */
+  headers?: Record<string, string> | (() => Record<string, string>)
 }
 
 // ── ServerRepository ────────────────────────────────────────────
@@ -35,9 +36,13 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   }
 
   private headers(): Record<string, string> {
+    const extra =
+      typeof this.config.headers === 'function'
+        ? this.config.headers()
+        : this.config.headers
     return {
       'Content-Type': 'application/json',
-      ...this.config.headers,
+      ...extra,
     }
   }
 
