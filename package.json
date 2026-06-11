@@ -32,9 +32,11 @@
     "deploy:jam:prod": "cd workers/jam-worker && pnpm exec wrangler deploy --env prod",
     "deploy:all:dev": "run-s deploy:dev deploy:jam:dev",
     "deploy:all:prod": "run-s deploy:prod deploy:jam:prod",
-    "db:init": "./scripts/init-cloudflare-db.sh",
+    "db:init": "./scripts/init-cloudflare-db.sh all prod",
+    "db:init:dev": "./scripts/init-cloudflare-db.sh all dev",
     "db:init:local": "./scripts/init-cloudflare-db.sh --local",
-    "deploy:db": "cd workers/db-worker && pnpm exec wrangler deploy",
+    "deploy:db:dev": "cd workers/db-worker && pnpm exec wrangler deploy --env dev",
+    "deploy:db:prod": "cd workers/db-worker && pnpm exec wrangler deploy --env prod",
     "typecheck:db": "tsc -p workers/db-worker",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },

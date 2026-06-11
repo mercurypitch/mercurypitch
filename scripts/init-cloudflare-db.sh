@@ -12,9 +12,13 @@
 # never synced — see docs/plans/db-migration-plan.md.
 #
 # Usage:
-#   ./scripts/init-cloudflare-db.sh            # local + remote
-#   ./scripts/init-cloudflare-db.sh --local    # local only (no CF account needed)
-#   ./scripts/init-cloudflare-db.sh --remote   # remote only
+#   ./scripts/init-cloudflare-db.sh [mode] [env]
+#     mode: --local | --remote | all   (default: all)
+#     env:  dev | prod                 (default: prod)
+#
+#   pnpm db:init           # prod DB (mercurypitch-db), remote + local
+#   pnpm db:init:dev       # dev DB (mercurypitch-db-dev), remote + local
+#   pnpm db:init:local     # local only (no CF account needed)
 #
 # Requires: wrangler authenticated (`pnpm exec wrangler login`) for remote.
 # =====================================================================
@@ -22,16 +26,28 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DB_NAME="mercurypitch-db"
+MODE="${1:-all}"
+DEPLOY_ENV="${2:-prod}"
+
 CONFIG="workers/db-worker/wrangler.jsonc"
 SCHEMA="workers/db-worker/schema.sql"
 WRANGLER="pnpm exec wrangler"
 
-MODE="${1:-all}"
+if [ "$DEPLOY_ENV" = "dev" ]; then
+  DB_NAME="mercurypitch-db-dev"
+  ID_PLACEHOLDER="REPLACE_WITH_DEV_DATABASE_ID"
+  ENV_FLAG=(--env dev)
+else
+  DB_NAME="mercurypitch-db"
+  ID_PLACEHOLDER="REPLACE_WITH_DATABASE_ID"
+  ENV_FLAG=(--env prod)
+fi
 
 apply_local() {
+  # Local D1 state is shared via the top-level binding (no --env), so
+  # `pnpm dev:db` always finds it.
   echo "→ Applying schema to LOCAL D1 (.wrangler/state)..."
-  $WRANGLER d1 execute "$DB_NAME" --local --file="$SCHEMA" --config "$CONFIG"
+  $WRANGLER d1 execute mercurypitch-db --local --file="$SCHEMA" --config "$CONFIG"
 }
 
 apply_remote() {
@@ -42,7 +58,7 @@ apply_remote() {
     echo "→ Creating D1 database '$DB_NAME'..."
     # --config keeps wrangler from injecting a d1 binding into the
     # root wrangler.jsonc (the main app worker doesn't use D1)
-    $WRANGLER d1 create "$DB_NAME" --config "$CONFIG"
+    $WRANGLER d1 create "$DB_NAME" --config "$CONFIG" "${ENV_FLAG[@]}" || true
   fi
 
   # 2. Resolve database_id and write it into the worker config
@@ -57,14 +73,14 @@ apply_remote() {
   ")
   echo "→ database_id: $DB_ID"
 
-  if grep -q 'REPLACE_WITH_DATABASE_ID' "$CONFIG"; then
-    sed -i "s/REPLACE_WITH_DATABASE_ID/$DB_ID/" "$CONFIG"
+  if grep -q "$ID_PLACEHOLDER" "$CONFIG"; then
+    sed -i "s/$ID_PLACEHOLDER/$DB_ID/" "$CONFIG"
     echo "→ Wrote database_id into $CONFIG"
   fi
 
   # 3. Apply the schema remotely (idempotent: CREATE IF NOT EXISTS)
-  echo "→ Applying schema to REMOTE D1..."
-  $WRANGLER d1 execute "$DB_NAME" --remote --file="$SCHEMA" --config "$CONFIG"
+  echo "→ Applying schema to REMOTE D1 ($DB_NAME)..."
+  $WRANGLER d1 execute "$DB_NAME" --remote --file="$SCHEMA" --config "$CONFIG" "${ENV_FLAG[@]}"
 }
 
 case "$MODE" in
@@ -75,12 +91,14 @@ case "$MODE" in
     apply_local
     ;;
   *)
-    echo "Unknown option: $MODE (use --local, --remote, or no arg for both)" >&2
+    echo "Unknown mode: $MODE (use --local, --remote, or all)" >&2
     exit 1
     ;;
 esac
 
-echo "✓ Done. Next steps:"
-echo "  1. Implement the CRUD worker in workers/db-worker/src/index.ts"
-echo "  2. Seed base data (challenges/badges/achievements) via the worker"
-echo "  3. Point the app at it: VITE_API_BASE_URL=<worker-url> pnpm dev"
+echo "✓ Done ($DEPLOY_ENV). Next steps:"
+echo "  1. Deploy: pnpm deploy:db:$DEPLOY_ENV"
+echo "  2. Set secrets (once per env):"
+echo "       pnpm exec wrangler secret put JWT_SECRET --config $CONFIG --env $DEPLOY_ENV"
+echo "       pnpm exec wrangler secret put ADMIN_KEY  --config $CONFIG --env $DEPLOY_ENV"
+echo "  3. Point the build at the worker URL via VITE_API_BASE_URL"
