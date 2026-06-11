@@ -794,6 +794,9 @@ const AppShell: Component<AppProps> = (props) => {
       pause: handleEditorPause,
       resume: handleEditorResume,
     },
+    onMicToggle: () => {
+      void handleMicToggle()
+    },
   })
 
   usePianoRollEvents({

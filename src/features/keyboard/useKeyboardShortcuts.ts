@@ -53,6 +53,9 @@ interface KeyboardShortcutHandlers {
     pause: () => void
     resume: () => void
   }
+
+  /** Mic toggle handler for keyboard shortcut. */
+  onMicToggle?: () => void
 }
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
@@ -110,6 +113,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         handlers.stop()
         handlers.seekToStart()
       }
+    }
+
+    // ── M — toggle microphone ──────────────────────────────
+    if (e.code === 'KeyM' && !isTyping && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      handlers.onMicToggle?.()
+      return
     }
 
     // ── Space — play/pause toggle ─────────────────────────────
