@@ -63,8 +63,11 @@ See **[users-auth-plan.md](./users-auth-plan.md)**. Summary: anonymous-first use
 - [x] `schema.sql` (cloud tables only + `users` table)
 - [x] `workers/db-worker/wrangler.jsonc` with D1 binding
 - [x] Init script `scripts/init-cloudflare-db.sh` (`pnpm db:init`)
-- [ ] You run `pnpm db:init` (requires wrangler login)
-- [ ] DB worker implementation (Step A)
-- [ ] Auth (Step B — see users-auth-plan.md)
+- [x] `pnpm db:init` run — remote + local D1 initialized (id `35d9bae5…`)
+- [x] DB worker implementation (Step A) — zero-dep fetch handler (no Hono, matching jam-worker style), smoke-tested locally
+- [x] Auth backend (Step B) — anonymous + email/password + Google; see users-auth-plan.md
 - [ ] HybridAdapter (Step C)
-- [ ] Seeding + deploy (Steps D–E)
+- [ ] Auth UI + Google client id + prod secrets (see users-auth-plan.md)
+- [ ] Seeding + deploy (Steps D–E) — `pnpm deploy:db`, seed definitions via `X-Admin-Key`
+
+**Local dev:** no mock needed — `pnpm dev:db` runs the worker on :8788 against the local D1 copy in `workers/db-worker/.wrangler/state` (already schema-initialized). Copy `.dev.vars.example` → `.dev.vars` once. Remote D1 is production-only.

@@ -11,7 +11,7 @@
       "binding": "DB",
       "database_name": "mercurypitch-db",
       // Filled in by scripts/init-cloudflare-db.sh after `wrangler d1 create`
-      "database_id": "REPLACE_WITH_DATABASE_ID"
+      "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949"
     }
   ],
   "observability": {

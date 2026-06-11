@@ -1,51 +1,69 @@
 # Users & Auth Plan
 
-Goal: real user identity for the **cloud** database (challenges, leaderboard, profiles, sharing), while karaoke/UVR data stays local and needs no auth at all. Anonymous-first: nobody should have to sign up to use MercuryPitch.
+Goal: **full user accounts** for the cloud database — Google login + email/password — while karaoke/UVR data stays local and needs no auth at all. Anonymous-first: nobody has to sign up to use MercuryPitch, but signing up upgrades the anonymous identity in place (no data loss).
 
-## Current state (problems to fix)
+## Requirements (confirmed)
 
-- `getUserId()` in `src/db/seed.ts:327` returns `window.crypto.randomUUID()` cached in a **module variable** — a brand-new "user" every page load. Nothing is persisted, so streaks/challenge progress can't even be attributed consistently locally.
-- The worker contract has no auth: any client could write any `userId`'s rows.
+- Google login (Google Identity Services ID token, verified server-side)
+- Email + password login (PBKDF2-SHA256, 100k iterations, WebCrypto — no deps)
+- Anonymous works without signup; upgrading keeps the same `userId` so all rows stay attached
 
-## Phase 1 — Persistent anonymous identity (client-only, do first)
+## Status
 
-1. Move user-id logic out of `seed.ts` into `src/db/services/user-service.ts`.
-2. Persist: `localStorage['mp:userId'] ??= crypto.randomUUID()`. All existing `getUserId()` call sites (session, challenges, leaderboard, share, uvr services) keep working.
-3. This alone fixes local streak/progress attribution and is a prerequisite for everything below. No backend needed.
-
-## Phase 2 — Anonymous users in the cloud (with the db-worker)
-
-The `users` table already exists in `workers/db-worker/schema.sql` (`authProvider = 'anonymous'`).
-
-Flow:
-1. App starts → has local `mp:userId` but no token → `POST /api/auth/anonymous { deviceId: <mp:userId> }`.
-2. Worker creates (or finds) the `users` row + a default `userProfiles` row, returns a **signed JWT** (`sub = userId`, ~30-day expiry, `JWT_SECRET` via `wrangler secret put`).
-3. Client stores the token (`localStorage['mp:authToken']`) and passes it through `ServerAdapter`'s existing `headers` config: `Authorization: Bearer <jwt>`.
-4. Worker middleware (Hono): verify JWT → `c.set('userId', sub)`. Then:
-   - user-scoped tables (`sessionRecords`, `challengeProgress`, `userBadges`, `userAchievements`, `userSettings`, `sharedMelodies`, `sharedSessions`): force `userId = token.sub` on writes, add `WHERE userId = ?` on reads of private data.
-   - public-read tables (`challengeDefinitions`, `badgeDefinitions`, `achievements`, `leaderboardEntries`, `featureFlags`, public shared content): GET without auth OK; writes to definitions/flags require an admin key (header secret) — they're seed/admin data.
-   - `userProfiles` / `users`: user can only read/update own row (`id = token.sub`); leaderboard exposes display names via `leaderboardEntries`, not profiles.
-
-No passwords, no email, no consent UI — an "account" is just a stable ID + token. Leaderboard works day one.
-
-## Phase 3 — Account upgrade (later, optional)
-
-- `POST /api/auth/upgrade` with email+password (hash with `scrypt`/WebCrypto PBKDF2 — no bcrypt dependency in Workers) or OAuth (Google/GitHub via Cloudflare Access or hand-rolled code flow).
-- **Keeps the same `users.id`** — sets `authProvider`, `email`, `passwordHash`/`providerId`. All existing rows (sessions, badges, progress) stay attached. This is why the anonymous id must be the primary key from the start.
-- Enables multi-device: log in elsewhere → same userId → cloud data follows. (Local karaoke/UVR data intentionally does not.)
-
-## Decisions taken
-
-| Question | Decision |
+| Piece | State |
 |---|---|
-| Auth0/Supabase/Clerk? | No — third-party auth is overkill for "leaderboard + challenges". Hand-rolled JWT in the worker, ~100 lines. Revisit if real account features grow. |
-| Anonymous UUID vs accounts? | Both, in sequence: anonymous now (Phase 1–2), upgrade path later (Phase 3). |
-| Where does auth live? | In the db-worker itself (`/api/auth/*` routes) — same Hono app, same D1 binding. |
-| What about UVR/karaoke data? | Never touches auth or cloud. Stays in IndexedDB. |
+| Persistent anonymous id (`src/db/services/user-service.ts`, localStorage `mp:userId`) | ✅ done |
+| `seed.ts` `getUserId()` fixed (was a new UUID per page load) | ✅ done |
+| db-worker CRUD with per-table access rules (`workers/db-worker/src/index.ts`, `tables.ts`) | ✅ done, smoke-tested |
+| Auth endpoints: anonymous / register / login / google / me (`workers/db-worker/src/auth.ts`) | ✅ done (google untested — needs a real client id) |
+| JWT (HS256, 30-day expiry) + userId enforcement from token | ✅ done, smoke-tested |
+| Google Cloud OAuth client id created + set as `GOOGLE_CLIENT_ID` | ⬜ user action |
+| Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY / GOOGLE_CLIENT_ID` | ⬜ user action |
+| HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ⬜ next |
+| Auth UI (login/register modal, Google button via GIS, account section in settings) | ⬜ next |
+| Cloud seeding of challenge/badge/achievement definitions (admin key) | ⬜ next |
 
-## Implementation order
+## How auth works
 
-- [ ] Phase 1: `user-service.ts` with persisted anonymous id (small PR, no backend dependency)
-- [ ] db-worker CRUD + JWT middleware + `/api/auth/anonymous` (with Step A of db-migration-plan)
-- [ ] HybridAdapter passes `Authorization` header (Step C)
-- [ ] Phase 3 upgrade flow — only when there's a product need
+### Endpoints (db-worker)
+
+| Endpoint | Body | Behavior |
+|---|---|---|
+| `POST /api/auth/anonymous` | `{ deviceId? }` | Creates (or re-issues for) an anonymous user. `deviceId` = client's persisted UUID. Refused (403) once the account is upgraded — then you must log in. |
+| `POST /api/auth/register` | `{ email, password, displayName?, deviceId? }` | With `deviceId`: upgrades the anonymous user **in place** (same id, all data kept). Otherwise creates a fresh account. |
+| `POST /api/auth/login` | `{ email, password }` | Standard login. |
+| `POST /api/auth/google` | `{ idToken, deviceId? }` | Verifies the GIS ID token (`aud` must match `GOOGLE_CLIENT_ID`). Order: returning Google user → auto-link to password account with same verified email → upgrade anonymous `deviceId` → create new. |
+| `GET /api/auth/me` | Bearer token | Returns user (never `passwordHash`) + profile. |
+
+All issue `{ token, userId, isNew, user }`. Client stores the token (`mp:authToken`) and sends `Authorization: Bearer <jwt>`; the worker derives `userId` from the token — request-body `userId` is ignored/overridden.
+
+### Per-table access (workers/db-worker/src/tables.ts)
+
+- **admin** (challenge/badge/achievement definitions, featureFlags): public read, writes need `X-Admin-Key`.
+- **user** (sessionRecords, challengeProgress, userBadges, userAchievements, userSettings): auth required, hard-scoped to token userId.
+- **public-user** (leaderboardEntries): public read, own-row writes.
+- **shared** (sharedMelodies, sharedSessions): public sees `isPublic=1`, owners also see their private rows; own-row writes.
+- **owner** (userProfiles): row id == userId; public read, own-row write. Created automatically at signup.
+- **users** table: not exposed via CRUD at all — only through `/api/auth/*`.
+
+### Known tradeoff
+
+An anonymous `deviceId` UUID is a bearer credential: whoever knows it can get a token for it (until upgraded). Acceptable for leaderboard-tier data; upgrading to a real account closes it.
+
+## Client integration (next steps)
+
+1. **HybridAdapter** in `src/db/index.ts`: cloud entities → `ServerAdapter` (with `getAuthHeaders()` from user-service), everything else → Dexie. Only active when `VITE_API_BASE_URL` is set. On app start with API configured: `POST /api/auth/anonymous { deviceId: getUserId() }` if no stored token, store token, retry-on-401 once.
+2. **Auth UI**: settings → Account section: signed-in state (`/me`), register/login forms, "Continue with Google" via [GIS](https://developers.google.com/identity/gsi/web) (`google.accounts.id` → credential = idToken → `POST /api/auth/google`), logout = `setAuthToken(null)`.
+3. **Google setup (user action)**: Google Cloud Console → Credentials → OAuth client ID (Web application); authorized JS origins: `https://mercurypitch.com`, `https://dev.mercurypitch.com`, `http://localhost:3000`. Put the client id in `.dev.vars` and `wrangler secret put GOOGLE_CLIENT_ID`.
+
+## Local dev
+
+No mocking needed — `wrangler dev` serves the **local** D1 copy (`workers/db-worker/.wrangler/state`, already initialized by `pnpm db:init`):
+
+```bash
+cp workers/db-worker/.dev.vars.example workers/db-worker/.dev.vars   # once
+pnpm dev:db                                  # worker on :8788, local D1
+VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # once HybridAdapter exists
+```
+
+Remote D1 is production-only.

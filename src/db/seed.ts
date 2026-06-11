@@ -6,6 +6,7 @@
 // Called once at app init. Idempotent — checks for seed flag.
 
 import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserAchievement, UserBadge, UserProfile, } from './entities'
+import { getUserId as getPersistedUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
 const SEEDED_FLAG = 'db_seeded_v1'
@@ -322,13 +323,9 @@ const achievementDefinitions: Omit<
 
 // ── User Profile ────────────────────────────────────────────────
 
-let defaultUserId = ''
-
 function getDefaultUserId(): string {
-  if (!defaultUserId) {
-    defaultUserId = window.crypto.randomUUID()
-  }
-  return defaultUserId
+  // Persisted per-browser id (was a new UUID per page load before).
+  return getPersistedUserId()
 }
 
 export function getUserId(): string {
