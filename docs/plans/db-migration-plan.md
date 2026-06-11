@@ -1,103 +1,70 @@
 # Cloudflare D1 Database Migration Plan
 
-This plan outlines the steps required to transition MercuryPitch's database from a local, ephemeral IndexedDB (Dexie) to a persistent, server-side Cloudflare D1 (SQLite) database.
+This plan outlines moving MercuryPitch's **cloud-relevant** data to a persistent Cloudflare D1 (SQLite) database, while keeping heavy karaoke/UVR data local on the user's device.
 
-## 1. Current Database Design Validation
+## 0. Architecture Decision (LOCKED IN)
 
-The current database architecture uses a strict Adapter Pattern. All 20 tables are defined in `src/db/entities.ts` and accessed through `Repository<T>`.
+**Hybrid storage split — no full migration, no sync of audio data:**
 
-**Validation Results for Cloudflare D1 (SQLite):**
-- **Architecture**: Excellent. The `ServerAdapter` is already fully implemented to expect standard REST endpoints (`GET /api/:entity`, `POST`, etc.). Once the backend is up, swapping to it is a single environment variable change (`VITE_API_BASE_URL`).
-- **Data Types**: SQLite supports `NULL`, `INTEGER`, `REAL`, `TEXT`, and `BLOB`. All TypeScript interfaces in `entities.ts` map perfectly to these.
-- **Complex Objects**: The schema correctly anticipates relational limits by using serialized JSON strings (e.g., `itemsJson`, `resultsJson`, `segmentsJson`) rather than nested tables for complex internal structures. This is highly performant in SQLite.
-- **Primary Keys**: UUIDs (`id` string) are used uniformly across all entities, which works perfectly as `TEXT PRIMARY KEY` in SQLite and enables easy offline-sync generation in the future.
+| Storage | Entities | Why |
+|---|---|---|
+| **Cloud (D1)** | `users` (new), `userProfiles`, `sessionRecords`, `challengeDefinitions`, `challengeProgress`, `badgeDefinitions`, `userBadges`, `achievements`, `userAchievements`, `leaderboardEntries`, `sharedMelodies`, `sharedSessions`, `featureFlags`, `userSettings` | Small, relational, needed cross-device: leaderboard, challenges, profiles, sharing. |
+| **Local only (Dexie/IndexedDB)** | `uvrSessions`, `uvrStemBlobs`, `uvrStemFingerprints`, `uvrSessionLyrics`, `offlinePitchAnalysis`, `whisperTranscriptions`, `sessionGroups` | Audio blobs and derived analysis are huge (tens–hundreds of MB per song). Never synced; D1's 1 MB/row limit makes it impossible anyway. **No R2 bucket needed for now.** |
+| **Local only (for now)** | `melodyRecords`, `sessionTemplates`, `playlistRecords` | Not yet in Dexie (entity types only). They lack a `userId` column — add one before any future cloud move. |
 
-> [!WARNING]
-> **Blob Storage (UVR Stems)**: Cloudflare D1 has a hard limit of 1MB per row. The `uvrStemBlobs` table contains binary audio `ArrayBuffer` data which will exceed this. These blobs **must** be stored in Cloudflare R2, not D1. The plan below addresses this.
+**Drizzle ORM: not needed.** The db-worker is a *generic* CRUD layer (`/api/:entity`) driven by an entity-name → table allowlist, which is exactly what the frontend `ServerAdapter` expects. Drizzle's value is per-table typed query builders — that would force per-entity route code and a build pipeline for zero gain here. Plain D1 prepared statements + the hand-maintained `schema.sql` (idempotent `CREATE IF NOT EXISTS`) are sufficient. Revisit only if the worker grows complex relational queries (e.g., computed leaderboards with joins).
 
-## 2. Step-by-Step Integration Guide
+**Adapter consequence:** because storage is split per-entity, the current all-or-nothing `resolveAdapter()` in `src/db/index.ts` must become a **HybridAdapter** that routes `getRepository(entityName)` to ServerAdapter (cloud entities) or DexieAdapter (local entities) based on a static map. UVR services keep working unchanged.
 
-### Step 1: Create the D1 Database
-You will need to create the D1 database in your Cloudflare account using Wrangler:
+## 1. Setup — Initialize the D1 Database
+
+Everything is scripted. Run:
+
 ```bash
-npx wrangler d1 create mercurypitch-db
-```
-*(This will output a `database_name` and `database_id` which we will put into `wrangler.jsonc`)*
-
-### Step 2: Apply the SQLite Schema
-I will provide a `schema.sql` file (or a generator script) that maps exactly to `entities.ts`. We will execute it against your new D1 database:
-```bash
-npx wrangler d1 execute mercurypitch-db --local --file=./workers/db-worker/schema.sql
-npx wrangler d1 execute mercurypitch-db --remote --file=./workers/db-worker/schema.sql
+pnpm db:init          # creates DB, patches wrangler.jsonc, applies schema remote + local
+pnpm db:init:local    # local-only (no Cloudflare account needed, for wrangler dev)
 ```
 
-### Step 3: Implement the DB Worker (Backend)
-We will create a new Cloudflare Worker (e.g., in `workers/db-worker/`) using Hono.js. This worker will:
-1. Bind to the D1 database.
-2. Implement the generic CRUD endpoints expected by `ServerAdapter`:
-   - `GET /api/:entity`
-   - `GET /api/:entity/:id`
-   - `POST /api/:entity`
-   - `PATCH /api/:entity/:id`
-   - `DELETE /api/:entity/:id`
-3. Bind to an R2 bucket for handling the `uvrStemBlobs` binary audio data.
+The script (`scripts/init-cloudflare-db.sh`):
+1. Creates `mercurypitch-db` via `wrangler d1 create` if it doesn't exist.
+2. Writes the resulting `database_id` into `workers/db-worker/wrangler.jsonc`.
+3. Applies `workers/db-worker/schema.sql` with `--remote` and `--local`.
 
-### Step 4: Authentication (Crucial for Cloud)
-Currently, `sessionRecords`, `userProfiles`, and `leaderboardEntries` use a generic `userId`. When moving to the cloud, we must ensure users can only modify their own records.
-- We will integrate Cloudflare Access, or a simple JWT-based auth flow.
-- The DB Worker will enforce `WHERE userId = ?` on protected endpoints.
+Prerequisite: `pnpm exec wrangler login` (same account as the existing workers).
 
-### Step 5: Data Migration / Seeding
-- We will write a sync script to read the existing `src/db/seed.ts` (which populates base challenges, badges, and achievements) and POST them to the new DB Worker.
-- *Future consideration*: A button in the app settings to "Sync Local Data to Cloud" that loops through the Dexie tables and pushes the user's history to the server.
+## 2. Remaining Steps
 
-## 3. Proposed Schema Script (`schema.sql`)
+### Step A: Implement the DB Worker (`workers/db-worker/src/index.ts`)
+Hono-based worker binding `DB` (D1), implementing the `ServerAdapter` contract:
+- `GET /api/:entity` (supports `where[field]`, `orderBy`, `orderDir`, `limit`, `offset`)
+- `GET /api/:entity/count`, `GET /api/:entity/:id`
+- `POST /api/:entity`, `PATCH /api/:entity/:id`, `DELETE /api/:entity/:id`
+- Entity names validated against a hard allowlist (the 14 cloud tables) — everything else 404s. This is the SQL-injection guard for table names.
+- No R2 binding (blobs stay local).
 
-Below is a preview of how the `entities.ts` maps to D1 SQLite. I will generate the complete `schema.sql` file as part of the implementation.
+### Step B: Users & Auth
+See **[users-auth-plan.md](./users-auth-plan.md)**. Summary: anonymous-first users (device UUID exchanged for a signed JWT), upgradeable to real accounts later; worker enforces `userId` scoping from the token, not from the request body.
 
-```sql
--- Core user tables
-CREATE TABLE userProfiles (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  displayName TEXT NOT NULL,
-  avatarUrl TEXT,
-  bio TEXT,
-  joinDate TEXT NOT NULL,
-  lastPracticeDate TEXT,
-  currentStreak INTEGER NOT NULL DEFAULT 0
-);
+### Step C: HybridAdapter (frontend)
+- `CLOUD_ENTITIES` set in `src/db/index.ts`; route repositories accordingly.
+- `ServerAdapter` already accepts `headers` in its config — use it for `Authorization: Bearer <jwt>`.
+- Activated only when `VITE_API_BASE_URL` is set; otherwise everything stays Dexie (current behavior, good for offline/dev).
 
-CREATE TABLE sessionRecords (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  userId TEXT NOT NULL,
-  melodyId TEXT,
-  melodyName TEXT NOT NULL,
-  startedAt TEXT NOT NULL,
-  endedAt TEXT NOT NULL,
-  score REAL NOT NULL,
-  accuracy REAL NOT NULL,
-  notesHit INTEGER NOT NULL,
-  notesTotal INTEGER NOT NULL,
-  streak INTEGER NOT NULL,
-  avgCents REAL,
-  rating TEXT,
-  results TEXT NOT NULL -- JSON
-);
+### Step D: Seeding base data
+`src/db/seed.ts` already populates challenges/badges/achievements idempotently via the adapter interface, so seeding the cloud DB = running `seedAll()` against the ServerAdapter once (small admin script or worker endpoint). User-scoped seeds (default profile, challenge progress) move to user-creation time in the worker.
 
--- Indexes for performance (mapped from dexie-adapter.ts STORE_SCHEMAS)
-CREATE INDEX idx_sessionRecords_userId ON sessionRecords(userId);
-CREATE INDEX idx_sessionRecords_endedAt ON sessionRecords(endedAt);
-```
+### Step E: Deployment
+- Add `deploy:db:dev` / `deploy:db:prod` scripts mirroring jam-worker.
+- Start with the `workers.dev` URL as `VITE_API_BASE_URL`; custom-domain route (e.g. `mercurypitch.com/api/*`) later — needs care not to shadow `/api/jam*` (jam-worker) and existing main-worker routes.
 
-## User Review Required
+## 3. Status
 
-Does this overarching backend architecture look good? 
-Specifically:
-1. **Worker placement:** Should the DB REST API be its own worker (`workers/db-worker/`), or merged into an existing one?
-2. **Auth strategy:** Do you want to implement real user accounts (e.g., Auth0 / Supabase / simple JWT), or stick to anonymous UUID-based tracking for now?
-
-Once approved, I will write the complete `schema.sql` generator and outline the exact setup commands.
+- [x] Cloud/local split decided
+- [x] `schema.sql` (cloud tables only + `users` table)
+- [x] `workers/db-worker/wrangler.jsonc` with D1 binding
+- [x] Init script `scripts/init-cloudflare-db.sh` (`pnpm db:init`)
+- [ ] You run `pnpm db:init` (requires wrangler login)
+- [ ] DB worker implementation (Step A)
+- [ ] Auth (Step B — see users-auth-plan.md)
+- [ ] HybridAdapter (Step C)
+- [ ] Seeding + deploy (Steps D–E)
