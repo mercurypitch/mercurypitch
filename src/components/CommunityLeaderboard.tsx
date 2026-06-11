@@ -4,10 +4,11 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { CheckCircle, ChevronDown, Eye, Play } from '@/components/icons'
 import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
 import { loadLeaderboard } from '@/db/services/leaderboard-service'
+import { getUserId } from '@/db/services/user-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
@@ -391,28 +392,28 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     LeaderboardUser[]
   >([])
 
-  onMount(() => {
+  // Reload whenever the category changes (not just on mount)
+  createEffect(() => {
+    const category = activeCategory() as DBLeaderboardCategory
     void (async () => {
       const dbUsers = await loadLeaderboard(
-        activeCategory() as DBLeaderboardCategory,
+        category,
         'all-time' as LeaderboardPeriod,
       )
-      if (dbUsers.length > 0) {
-        setDbLeaderboardUsers(
-          dbUsers.map((u) => ({
-            userId: u.userId,
-            displayName: u.displayName,
-            avatar: IconUser,
-            score: u.score,
-            rank: u.rank,
-            streak: u.streak,
-            totalSessions: u.totalSessions,
-            bestScore: u.bestScore,
-            accuracy: u.accuracy,
-            joinDate: 0,
-          })),
-        )
-      }
+      setDbLeaderboardUsers(
+        dbUsers.map((u) => ({
+          userId: u.userId,
+          displayName: u.displayName,
+          avatar: IconUser,
+          score: u.score,
+          rank: u.rank,
+          streak: u.streak,
+          totalSessions: u.totalSessions,
+          bestScore: u.bestScore,
+          accuracy: u.accuracy,
+          joinDate: 0,
+        })),
+      )
     })()
   })
 
@@ -470,10 +471,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         >
           <IconSearch />
           <span class="tab-name">Global</span>
-          <span class="tab-count">
-            {Math.floor(allLeaderboardUsers().length / 1000)}.$
-            {Math.floor(allLeaderboardUsers().length / 100) % 10}
-          </span>
+          <span class="tab-count">{allLeaderboardUsers().length}</span>
         </button>
         <button
           class={`leaderboard-tab ${activeView() === 'friends' ? 'active' : ''}`}
@@ -661,7 +659,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 <For each={filteredUsers()}>
                   {(user, index) => (
                     <tr
-                      class={`leaderboard-row ${user.userId === 'me' ? 'is-me' : ''}`}
+                      class={`leaderboard-row ${user.userId === getUserId() || user.userId === 'me' ? 'is-me' : ''}`}
                       data-rank={index() + 1}
                       data-user-id={user.userId}
                       onClick={() => setSelectedUser(user)}

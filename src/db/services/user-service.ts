@@ -14,10 +14,11 @@ let cachedUserId = ''
 
 /** Stable per-browser user id, generated once and persisted. */
 export function getUserId(): string {
-  if (cachedUserId !== '') return cachedUserId
   let id = localStorage.getItem(USER_ID_KEY)
   if (id == null || id === '') {
-    id = window.crypto.randomUUID()
+    // Reuse the in-memory id if storage was cleared mid-session,
+    // so attribution stays consistent until the next full reload.
+    id = cachedUserId !== '' ? cachedUserId : window.crypto.randomUUID()
     localStorage.setItem(USER_ID_KEY, id)
   }
   cachedUserId = id

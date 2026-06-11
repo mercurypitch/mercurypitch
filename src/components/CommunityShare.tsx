@@ -6,6 +6,8 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
+import { getCurrentStreak } from '@/db/services/streak-service'
+import { getUserId } from '@/db/services/user-service'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
@@ -286,16 +288,20 @@ export const CommunityShare: Component = () => {
     joinDate: number
   } | null>(null)
 
+  const [streak, setStreak] = createSignal(0)
+
   onMount(() => {
     void (async () => {
-      const [profile, melodies, sessions] = await Promise.all([
+      const [profile, melodies, sessions, currentStreak] = await Promise.all([
         loadUserProfile(),
         loadSharedMelodies(),
         loadSharedSessions(),
+        getCurrentStreak(),
       ])
       if (profile) setDbProfile(profile)
       if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
       if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
+      setStreak(currentStreak)
     })()
   })
 
@@ -315,26 +321,24 @@ export const CommunityShare: Component = () => {
     return [...db, ...stored.filter((s) => !dbIds.has(s.id))]
   })
 
-  // Current user profile (DB-backed with localStorage fallback)
+  // Current user profile (DB-backed, canonical persisted user id)
   const currentProfile = createMemo(() => {
-    const userId = storageGet('pp_user_id') ?? `user_${Date.now()}`
-    storageSet('pp_user_id', userId)
+    const userId = getUserId()
 
     const sessions = getSessionHistory()
     const totalScore = sessions.reduce((sum, s) => sum + (s.score || 0), 0)
     const avgScore = sessions.length > 0 ? totalScore / sessions.length : 0
-    const currentStreak = 2
 
     const dbProf = dbProfile()
 
     return {
       userId,
-      displayName: dbProf?.displayName ?? 'SingerPro',
+      displayName: dbProf?.displayName ?? `Singer-${userId.slice(0, 4)}`,
       avatar: IconMic(),
       bio:
         dbProf?.bio ??
         'MercuryPitch enthusiast • Learning vocals • Member since 2026',
-      streak: currentStreak,
+      streak: streak(),
       totalSessions: sessions.length,
       bestScore:
         sessions.length > 0
@@ -358,12 +362,12 @@ export const CommunityShare: Component = () => {
       )
     }
 
-    if (sortBy() === 'recent') {
+    if (sortBy() === 'popular') {
+      // No play/like counts yet — use melody richness as a stable proxy
+      result = [...result].sort((a, b) => b.items.length - a.items.length)
+    } else {
+      // 'recent' and 'highest' (melodies carry no scores) → newest first
       result = [...result].sort((a, b) => b.date - a.date)
-    } else if (sortBy() === 'popular') {
-      result = [...result].sort(
-        (a, b) => (b.date - a.date) * 0.7 + Math.random() * 0.3,
-      )
     }
 
     return result
@@ -378,11 +382,18 @@ export const CommunityShare: Component = () => {
       result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(query) ||
-          s.results.some((r) => r >= 80), // Show sessions with good scores
+          s.author.toLowerCase().includes(query),
       )
     }
 
-    if (sortBy() === 'recent') {
+    const avg = (rs: number[]): number =>
+      rs.length > 0 ? rs.reduce((a, b) => a + b, 0) / rs.length : 0
+
+    if (sortBy() === 'highest') {
+      result = [...result].sort((a, b) => avg(b.results) - avg(a.results))
+    } else if (sortBy() === 'popular') {
+      result = [...result].sort((a, b) => b.results.length - a.results.length)
+    } else {
       result = [...result].sort((a, b) => b.date - a.date)
     }
 

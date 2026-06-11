@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { AccountSection } from '@/components/account/AccountSection'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -93,6 +94,13 @@ export const SettingsPanel: Component = () => {
         <h2 class={styles.settingsTitle} data-testid="settings-title">
           Settings
         </h2>
+
+        {/* Account Section */}
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Account</h3>
+          <div class={styles.settingsDivider} />
+          <AccountSection />
+        </div>
 
         {/* Sensitivity Presets Section */}
         <div class={styles.settingsSection}>

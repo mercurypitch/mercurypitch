@@ -21,7 +21,7 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY` | ⬜ user action (after first deploy) |
 | HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ✅ done, unit-tested |
 | Auth client (`src/db/services/auth-service.ts`: ensureAuth/register/login/google/me) | ✅ done |
-| Auth UI (login/register modal, Google button via GIS, account section in settings) | ⬜ next |
+| Auth UI (`src/components/account/AccountSection.tsx` in settings: register/login forms, Google button via GIS, sign-out; component-tested) | ✅ done |
 | Cloud seeding of challenge/badge/achievement definitions (admin key) | ⬜ next |
 
 ## How auth works
