@@ -100,7 +100,25 @@ export async function loadLeaderboard(
         accuracy: e.accuracy,
       })
     }
-    return users.sort((a, b) => a.rank - b.rank)
+    // Stored ranks go stale as scores change — recompute from the
+    // category's sort key so positions always reflect current data.
+    const sortKey = (u: LeaderboardUserView): number => {
+      switch (category) {
+        case 'best-score':
+          return u.bestScore
+        case 'accuracy':
+          return u.accuracy
+        case 'streak':
+          return u.streak
+        case 'sessions':
+          return u.totalSessions
+        default:
+          return u.score
+      }
+    }
+    users.sort((a, b) => sortKey(b) - sortKey(a))
+    users.forEach((u, i) => (u.rank = i + 1))
+    return users
   } catch {
     return []
   }

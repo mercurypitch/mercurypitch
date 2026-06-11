@@ -34,11 +34,17 @@ Zero-dependency fetch handler (same style as jam-worker, no Hono):
 - `ServerAdapter` accepts a headers **getter**, so the Authorization header always reflects the current token.
 - `src/db/index.ts`: `VITE_API_BASE_URL` set → HybridAdapter (with anonymous auth bootstrap); unset → all-Dexie as before. Setting `VITE_API_BASE_URL` is now safe.
 
-### 2. Auth UI
-Settings → Account section:
-- Signed-in state from `GET /api/auth/me`; logout = `setAuthToken(null)`.
-- Register/login forms (email + password ≥ 8 chars), passing `deviceId: getUserId()` on register to keep existing data.
-- "Continue with Google" via Google Identity Services (`google.accounts.id` → credential → `POST /api/auth/google { idToken, deviceId }`).
+### 2. Auth UI — ✅ done
+`src/components/account/AccountSection.tsx`, mounted as the first Settings section:
+- Signed-in state from `GET /api/auth/me`, provider badge, sign-out.
+- Register/login forms (email + password ≥ 8 chars) passing `deviceId` so anonymous progress upgrades in place.
+- Google button via GIS (script lazy-loaded, only when `GOOGLE_CLIENT_ID` set); shows a "stored on this device" note when no API is configured.
+- Component tests in `src/components/__tests__/AccountSection.test.tsx`.
+
+### 2b. Community/leaderboard/challenges review — ✅ done
+Fixed: leaderboard ranks now recomputed from category metric on load (stored ranks went stale); leaderboard refetches on category switch (was mount-only); "you" row highlight uses the real persisted userId; broken Global tab count; CommunityShare "popular" sort no longer uses Math.random(), "highest" sort implemented, session search no longer matches unrelated sessions, profile identity unified on `getUserId()` + real streak from streak-service (was separate `pp_user_id` + hardcoded streak).
+Tests: `src/tests/community-services.test.ts` (leaderboard/challenges/share/streak flows against an in-memory adapter), `src/tests/auth-service.test.ts`, `src/tests/utils/in-memory-db.ts` test double.
+Known remaining mocks (intentional placeholders): Friends/Weekly leaderboard tabs, "Load More", follow buttons — need real backend social features first.
 
 ### 3. User actions (manual, one-time)
 - [x] Google OAuth client ID — `144271507987-…ukkuq.apps.googleusercontent.com`, committed as a var in `workers/db-worker/wrangler.jsonc` and as `GOOGLE_CLIENT_ID` in `src/lib/defaults.ts` (public, not a secret). Verify authorized JS origins include `https://mercurypitch.com`, `https://dev.mercurypitch.com`, `http://localhost:3000`.
