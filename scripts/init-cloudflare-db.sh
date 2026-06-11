@@ -40,7 +40,9 @@ apply_remote() {
     echo "→ D1 database '$DB_NAME' already exists."
   else
     echo "→ Creating D1 database '$DB_NAME'..."
-    $WRANGLER d1 create "$DB_NAME"
+    # --config keeps wrangler from injecting a d1 binding into the
+    # root wrangler.jsonc (the main app worker doesn't use D1)
+    $WRANGLER d1 create "$DB_NAME" --config "$CONFIG"
   fi
 
   # 2. Resolve database_id and write it into the worker config

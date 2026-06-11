@@ -7,6 +7,7 @@
     "dev": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite",
     "dev:host": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite --host",
     "dev:jam": "cd workers/jam-worker && npx wrangler dev --port 8787 --live-reload",
+    "dev:db": "cd workers/db-worker && npx wrangler dev --port 8788 --live-reload",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview",
@@ -33,6 +34,8 @@
     "deploy:all:prod": "run-s deploy:prod deploy:jam:prod",
     "db:init": "./scripts/init-cloudflare-db.sh",
     "db:init:local": "./scripts/init-cloudflare-db.sh --local",
+    "deploy:db": "cd workers/db-worker && pnpm exec wrangler deploy",
+    "typecheck:db": "tsc -p workers/db-worker",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },
   "dependencies": {

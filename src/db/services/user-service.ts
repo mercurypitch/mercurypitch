@@ -1,0 +1,45 @@
+// ============================================================
+// User Identity & Auth Token Service
+// ============================================================
+//
+// Canonical source of the current user id and auth token.
+// The user id is a persisted anonymous UUID generated once per
+// browser; logging in (email/password or Google) upgrades the
+// same id server-side, so all local attribution stays valid.
+
+const USER_ID_KEY = 'mp:userId'
+const AUTH_TOKEN_KEY = 'mp:authToken'
+
+let cachedUserId = ''
+
+/** Stable per-browser user id, generated once and persisted. */
+export function getUserId(): string {
+  if (cachedUserId !== '') return cachedUserId
+  let id = localStorage.getItem(USER_ID_KEY)
+  if (id == null || id === '') {
+    id = window.crypto.randomUUID()
+    localStorage.setItem(USER_ID_KEY, id)
+  }
+  cachedUserId = id
+  return id
+}
+
+/** JWT issued by the db-worker, or null when not authenticated. */
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY)
+}
+
+export function setAuthToken(token: string | null): void {
+  if (token === null) {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+  } else {
+    localStorage.setItem(AUTH_TOKEN_KEY, token)
+  }
+}
+
+/** Headers for authenticated ServerAdapter / fetch calls. */
+export function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken()
+  if (token == null || token === '') return {}
+  return { Authorization: `Bearer ${token}` }
+}
