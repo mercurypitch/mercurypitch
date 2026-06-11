@@ -54,11 +54,31 @@ Known remaining mocks (intentional placeholders): Friends/Weekly leaderboard tab
   pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc
   ```
 
-### 4. Seed & deploy
-- `pnpm deploy:db` → workers.dev URL becomes `VITE_API_BASE_URL` (custom-domain route later; must not shadow `/api/jam*` or the main worker's routes).
-- Seed challenge/badge/achievement definitions to remote via the CRUD API with `X-Admin-Key` (small script reusing `src/db/seed.ts` data against `ServerAdapter`).
+### 4. Deploy — dev/prod environments
+Separate workers + separate D1 databases per environment (mirrors app/jam-worker):
 
-### 5. Later / nice-to-have
+| Env | Worker | D1 database | Frontend |
+|---|---|---|---|
+| dev | `mercury-pitch-db-dev` | `mercurypitch-db-dev` | dev.mercurypitch.com via `VITE_API_BASE_URL` in `.env.development` |
+| prod | `mercury-pitch-db` | `mercurypitch-db` (id `35d9bae5…`) | mercurypitch.com via prod env var |
+
+**No custom-domain `/api/*` routes for the db-worker**: the main worker serves `/api/uvr/*` and `/api/share/*` on those domains and Cloudflare routes take precedence over custom domains, so a broad route would shadow them. The frontend talks to the worker's workers.dev URL cross-origin (CORS open, Bearer auth).
+
+Dev rollout (in order):
+```bash
+pnpm db:init:dev          # create + schema mercurypitch-db-dev (remote & local)
+pnpm deploy:db:dev        # prints the workers.dev URL
+pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev
+pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc --env dev
+# put the printed URL into .env.development as VITE_API_BASE_URL, then:
+pnpm deploy:dev           # rebuild + deploy the app to dev.mercurypitch.com
+```
+Prod is the same with `db:init` / `deploy:db:prod` / `--env prod` once dev looks good.
+
+### 5. Seed remote definitions
+Seed challenge/badge/achievement definitions to the remote DB via the CRUD API with `X-Admin-Key` (small script reusing `src/db/seed.ts` data against `ServerAdapter`).
+
+### 6. Later / nice-to-have
 - Leaderboard aggregation server-side (computed from `sessionRecords` instead of client-written `leaderboardEntries`).
 - Token refresh / longer sessions; password reset flow (needs email provider).
 - `melodyRecords` / `sessionTemplates` / `playlistRecords` to cloud — requires adding a `userId` column first.

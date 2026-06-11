@@ -27,5 +27,38 @@
       "persist": true,
       "invocation_logs": true
     }
+  },
+  // Deployed via workers.dev URLs (no custom-domain routes: the main
+  // worker owns /api/uvr/* and /api/share/* on those domains, so a
+  // broad /api/* route here would shadow them). The frontend points
+  // at the right worker via VITE_API_BASE_URL per build.
+  "env": {
+    "dev": {
+      "name": "mercury-pitch-db-dev",
+      "vars": {
+        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "mercurypitch-db-dev",
+          // Filled in by scripts/init-cloudflare-db.sh (run: pnpm db:init:dev)
+          "database_id": "REPLACE_WITH_DEV_DATABASE_ID"
+        }
+      ]
+    },
+    "prod": {
+      "name": "mercury-pitch-db",
+      "vars": {
+        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "mercurypitch-db",
+          "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949"
+        }
+      ]
+    }
   }
 }
