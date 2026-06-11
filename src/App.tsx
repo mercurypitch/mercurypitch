@@ -22,6 +22,7 @@ const CommunityShare = lazy(async () =>
 )
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
@@ -288,6 +289,9 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   // ── Guide Selection dialog ──────────────────────────────────
+  const [showShortcutHelp, setShowShortcutHelp] = createSignal(false)
+  const toggleShortcutHelp = () => setShowShortcutHelp((v) => !v)
+
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
   const openGuideSelection = () => setShowGuideSelection(true)
   const closeGuideSelection = () => setShowGuideSelection(false)
@@ -797,6 +801,7 @@ const AppShell: Component<AppProps> = (props) => {
     onMicToggle: () => {
       void handleMicToggle()
     },
+    onToggleShortcutHelp: toggleShortcutHelp,
   })
 
   usePianoRollEvents({
@@ -2220,6 +2225,10 @@ const AppShell: Component<AppProps> = (props) => {
           data={celebrationData()}
           onClose={dismissCelebration}
         />
+
+        <Show when={showShortcutHelp()}>
+          <KeyboardShortcutOverlay onClose={() => setShowShortcutHelp(false)} />
+        </Show>
       </div>
     </PlaybackProvider>
   )
