@@ -1,0 +1,82 @@
+name: Deploy DB Worker
+
+# Deploys the db-worker (D1-backed CRUD + auth API).
+#
+# - Push to main touching workers/db-worker/** → dev
+#   (mercury-pitch-db-dev + mercurypitch-db-dev)
+# - Manual dispatch → dev or prod
+#
+# The schema step is idempotent (CREATE IF NOT EXISTS) and doubles as
+# a migration runner: new tables/indexes added to schema.sql are
+# applied on the next deploy.
+#
+# One-time prerequisites per environment (NOT done by CI):
+#   pnpm db:init:dev   (creates the DB and commits its id to wrangler.jsonc)
+#   pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev
+#   pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc --env dev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workers/db-worker/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-db-worker:
+    name: Deploy DB Worker
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
+      DB_NAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod') && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck worker
+        run: pnpm typecheck:db
+
+      - name: Apply D1 schema (idempotent migrations)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/db-worker
+          command: d1 execute ${{ env.DB_NAME }} --remote --file=schema.sql --env ${{ env.DEPLOY_ENV }} -y
+          packageManager: 'pnpm'
+
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/db-worker
+          command: deploy --env ${{ env.DEPLOY_ENV }}
+          packageManager: 'pnpm'

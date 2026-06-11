@@ -64,16 +64,22 @@ Separate workers + separate D1 databases per environment (mirrors app/jam-worker
 
 **No custom-domain `/api/*` routes for the db-worker**: the main worker serves `/api/uvr/*` and `/api/share/*` on those domains and Cloudflare routes take precedence over custom domains, so a broad route would shadow them. The frontend talks to the worker's workers.dev URL cross-origin (CORS open, Bearer auth).
 
-Dev rollout (in order):
+**One-time setup (run locally, before merging to main):**
 ```bash
-pnpm db:init:dev          # create + schema mercurypitch-db-dev (remote & local)
-pnpm deploy:db:dev        # prints the workers.dev URL
+pnpm db:init:dev          # create + schema mercurypitch-db-dev; commits its id into wrangler.jsonc
+pnpm deploy:db:dev        # first deploy — prints the workers.dev URL
 pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev
 pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc --env dev
-# put the printed URL into .env.development as VITE_API_BASE_URL, then:
-pnpm deploy:dev           # rebuild + deploy the app to dev.mercurypitch.com
+# put the printed URL into .env.development as VITE_API_BASE_URL and commit it
 ```
-Prod is the same with `db:init` / `deploy:db:prod` / `--env prod` once dev looks good.
+
+**Ongoing (automated):** `.github/workflows/deploy-db.yml` — on every push to main touching `workers/db-worker/**`, CI re-applies `schema.sql` to the remote dev DB (idempotent `CREATE IF NOT EXISTS` = the migration step) and deploys the dev worker. The existing `build.yml` then deploys the app (built with `.env.development`) to dev.mercurypitch.com. Prod: manual `workflow_dispatch` of deploy-db.yml with env=prod (after `pnpm db:init` + prod secrets, also one-time).
+
+**Local testing (no deploy needed):**
+```bash
+pnpm dev:db                                        # worker on :8788 against LOCAL D1 (already initialized)
+VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # app on :3000 with HybridAdapter
+```
 
 ### 5. Seed remote definitions
 Seed challenge/badge/achievement definitions to the remote DB via the CRUD API with `X-Admin-Key` (small script reusing `src/db/seed.ts` data against `ServerAdapter`).
