@@ -1,12 +1,11 @@
 # Copy to .dev.vars (gitignored) for `pnpm dev:db` local development.
-# Production values are set via:
+# Production secrets are set via:
 #   pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc
 #   pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc
-#   pnpm exec wrangler secret put GOOGLE_CLIENT_ID --config workers/db-worker/wrangler.jsonc
+# GOOGLE_CLIENT_ID is public and lives in wrangler.jsonc "vars".
 
 JWT_SECRET=dev-only-secret-change-me
 ADMIN_KEY=dev-admin-key
 
 # OAuth 2.0 Client ID (Web application) from Google Cloud Console.
-# Leave empty to disable Google login locally.
-GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_ID=144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com

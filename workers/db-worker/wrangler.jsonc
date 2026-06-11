@@ -6,6 +6,11 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-04-30",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    // Public OAuth client id (Web application) — not a secret.
+    // JWT_SECRET and ADMIN_KEY are real secrets: `wrangler secret put`.
+    "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+  },
   "d1_databases": [
     {
       "binding": "DB",

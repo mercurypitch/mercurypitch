@@ -17,8 +17,8 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | db-worker CRUD with per-table access rules (`workers/db-worker/src/index.ts`, `tables.ts`) | ✅ done, smoke-tested |
 | Auth endpoints: anonymous / register / login / google / me (`workers/db-worker/src/auth.ts`) | ✅ done (google untested — needs a real client id) |
 | JWT (HS256, 30-day expiry) + userId enforcement from token | ✅ done, smoke-tested |
-| Google Cloud OAuth client id created + set as `GOOGLE_CLIENT_ID` | ⬜ user action |
-| Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY / GOOGLE_CLIENT_ID` | ⬜ user action |
+| Google Cloud OAuth client id created + set as `GOOGLE_CLIENT_ID` | ✅ done (var in wrangler.jsonc + defaults.ts) |
+| Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY` | ⬜ user action (after first deploy) |
 | HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ✅ done, unit-tested |
 | Auth client (`src/db/services/auth-service.ts`: ensureAuth/register/login/google/me) | ✅ done |
 | Auth UI (login/register modal, Google button via GIS, account section in settings) | ⬜ next |
