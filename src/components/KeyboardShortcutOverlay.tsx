@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { For, onCleanup, onMount } from 'solid-js'
+import styles from './KeyboardShortcutOverlay.module.css'
 
 interface ShortcutGroup {
   title: string
@@ -39,7 +40,7 @@ const SHORTCUTS: ShortcutGroup[] = [
 
 const KeyboardShortcutOverlay: Component<{ onClose: () => void }> = (props) => {
   const handleKey = (e: KeyboardEvent) => {
-    if (e.code === 'Escape' || e.code === 'Slash') {
+    if (e.code === 'Escape' || (e.code === 'Slash' && e.shiftKey)) {
       e.preventDefault()
       props.onClose()
     }
@@ -49,16 +50,22 @@ const KeyboardShortcutOverlay: Component<{ onClose: () => void }> = (props) => {
   onCleanup(() => window.removeEventListener('keydown', handleKey))
 
   return (
-    <div class="ks-overlay" onClick={() => props.onClose()}>
-      <div class="ks-card" onClick={(e) => e.stopPropagation()}>
+    <div
+      class={styles.ksOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keyboard shortcuts"
+      onClick={() => props.onClose()}
+    >
+      <div class={styles.ksCard} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div class="ks-header">
-          <h2 class="ks-title">Keyboard Shortcuts</h2>
-          <p class="ks-subtitle">
-            Press <kbd class="ks-kbd-inline">?</kbd> to toggle
+        <div class={styles.ksHeader}>
+          <h2 class={styles.ksTitle}>Keyboard Shortcuts</h2>
+          <p class={styles.ksSubtitle}>
+            Press <kbd class={styles.ksKbdInline}>?</kbd> to toggle
           </p>
           <button
-            class="ks-close"
+            class={styles.ksClose}
             onClick={() => props.onClose()}
             aria-label="Close"
           >
@@ -67,26 +74,26 @@ const KeyboardShortcutOverlay: Component<{ onClose: () => void }> = (props) => {
         </div>
 
         {/* Shortcut groups */}
-        <div class="ks-groups">
+        <div class={styles.ksGroups}>
           <For each={SHORTCUTS}>
             {(group) => (
-              <div class="ks-group">
-                <h3 class="ks-group-title">{group.title}</h3>
-                <div class="ks-rows">
+              <div class={styles.ksGroup}>
+                <h3 class={styles.ksGroupTitle}>{group.title}</h3>
+                <div class={styles.ksRows}>
                   <For each={group.keys}>
                     {(shortcut) => (
-                      <div class="ks-row">
-                        <div class="ks-keys">
+                      <div class={styles.ksRow}>
+                        <div class={styles.ksKeys}>
                           <For each={shortcut.keys}>
                             {(key, i) => (
                               <>
-                                {i() > 0 && <span class="ks-sep">+</span>}
-                                <kbd class="ks-kbd">{key}</kbd>
+                                {i() > 0 && <span class={styles.ksSep}>+</span>}
+                                <kbd class={styles.ksKbd}>{key}</kbd>
                               </>
                             )}
                           </For>
                         </div>
-                        <span class="ks-action">{shortcut.action}</span>
+                        <span class={styles.ksAction}>{shortcut.action}</span>
                       </div>
                     )}
                   </For>
@@ -97,8 +104,8 @@ const KeyboardShortcutOverlay: Component<{ onClose: () => void }> = (props) => {
         </div>
 
         {/* Footer */}
-        <div class="ks-footer">
-          <span class="ks-footer-icon">⌨</span>
+        <div class={styles.ksFooter}>
+          <span class={styles.ksFooterIcon}>⌨</span>
           <span>MercuryPitch</span>
         </div>
       </div>
