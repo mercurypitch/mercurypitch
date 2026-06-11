@@ -41,12 +41,11 @@ Settings → Account section:
 - "Continue with Google" via Google Identity Services (`google.accounts.id` → credential → `POST /api/auth/google { idToken, deviceId }`).
 
 ### 3. User actions (manual, one-time)
-- [ ] Google Cloud Console → Credentials → OAuth client ID (Web application). Authorized JS origins: `https://mercurypitch.com`, `https://dev.mercurypitch.com`, `http://localhost:3000`. Put the id in `workers/db-worker/.dev.vars` and prod secret.
-- [ ] Prod secrets:
+- [x] Google OAuth client ID — `144271507987-…ukkuq.apps.googleusercontent.com`, committed as a var in `workers/db-worker/wrangler.jsonc` and as `GOOGLE_CLIENT_ID` in `src/lib/defaults.ts` (public, not a secret). Verify authorized JS origins include `https://mercurypitch.com`, `https://dev.mercurypitch.com`, `http://localhost:3000`.
+- [ ] Prod secrets (after first `pnpm deploy:db`):
   ```bash
   pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc
   pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jsonc
-  pnpm exec wrangler secret put GOOGLE_CLIENT_ID --config workers/db-worker/wrangler.jsonc
   ```
 
 ### 4. Seed & deploy
