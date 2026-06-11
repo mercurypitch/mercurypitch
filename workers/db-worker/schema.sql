@@ -1,7 +1,33 @@
 -- =====================================================================
--- MercuryPitch Cloudflare D1 (SQLite) Schema
--- Generated to match src/db/entities.ts and dexie-adapter.ts 1:1
+-- MercuryPitch Cloudflare D1 (SQLite) Schema — CLOUD TABLES ONLY
+--
+-- Storage split (see docs/plans/db-migration-plan.md):
+--   CLOUD (this file): users, profiles, session scores, challenges,
+--     badges, achievements, leaderboard, shared content, settings.
+--   LOCAL ONLY (Dexie/IndexedDB, intentionally NOT in this schema):
+--     uvrSessions, uvrStemBlobs, uvrStemFingerprints, uvrSessionLyrics,
+--     offlinePitchAnalysis, whisperTranscriptions, sessionGroups,
+--     melodyRecords, sessionTemplates, playlistRecords.
+--   Karaoke/UVR audio blobs are huge and never sync to the cloud.
 -- =====================================================================
+
+-- ── Users (auth identity — see docs/plans/users-auth-plan.md) ────────
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  -- 'anonymous' users have no email/password; they can be upgraded
+  -- to a real account later while keeping the same id.
+  authProvider TEXT NOT NULL DEFAULT 'anonymous', -- 'anonymous' | 'password' | 'google' | 'github'
+  providerId TEXT,
+  email TEXT UNIQUE,
+  emailVerified BOOLEAN NOT NULL DEFAULT 0,
+  passwordHash TEXT,
+  lastLoginAt TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider
+  ON users(authProvider, providerId) WHERE providerId IS NOT NULL;
 
 -- ── User Profiles ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS userProfiles (
@@ -16,7 +42,7 @@ CREATE TABLE IF NOT EXISTS userProfiles (
   currentStreak INTEGER NOT NULL DEFAULT 0
 );
 
--- ── Sessions & Practice Results ──────────────────────────────────────
+-- ── Sessions & Practice Results (scores only — no audio) ────────────
 CREATE TABLE IF NOT EXISTS sessionRecords (
   id TEXT PRIMARY KEY,
   createdAt TEXT NOT NULL,
@@ -212,154 +238,3 @@ CREATE TABLE IF NOT EXISTS userSettings (
 
 CREATE INDEX IF NOT EXISTS idx_userSettings_userId ON userSettings(userId);
 CREATE INDEX IF NOT EXISTS idx_userSettings_key ON userSettings("key");
-
--- ── Melody Library (Local -> Cloud prep) ─────────────────────────────
-CREATE TABLE IF NOT EXISTS melodyRecords (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  name TEXT NOT NULL,
-  author TEXT,
-  bpm REAL NOT NULL,
-  "key" TEXT NOT NULL,
-  scaleType TEXT NOT NULL,
-  octave INTEGER NOT NULL,
-  playCount INTEGER NOT NULL DEFAULT 0,
-  lastPlayed INTEGER,
-  itemsJson TEXT NOT NULL, -- JSON
-  tags TEXT,
-  notes TEXT,
-  isDeleted BOOLEAN NOT NULL DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS sessionTemplates (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  name TEXT NOT NULL,
-  author TEXT,
-  difficulty TEXT,
-  category TEXT,
-  description TEXT,
-  itemsJson TEXT NOT NULL, -- JSON
-  deletable BOOLEAN NOT NULL DEFAULT 1,
-  lastPlayed INTEGER,
-  isDeleted BOOLEAN NOT NULL DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS playlistRecords (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  name TEXT NOT NULL,
-  description TEXT,
-  melodyIds TEXT NOT NULL -- JSON array
-);
-
--- ── UVR & Pitch Analysis ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS uvrSessions (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  appSessionId TEXT NOT NULL,
-  userId TEXT NOT NULL,
-  status TEXT NOT NULL,
-  progress REAL NOT NULL,
-  indeterminate BOOLEAN,
-  fileHash TEXT,
-  originalFileName TEXT NOT NULL,
-  originalFileSize INTEGER NOT NULL,
-  originalFileType TEXT NOT NULL,
-  processingMode TEXT NOT NULL,
-  provider TEXT,
-  numChunks INTEGER,
-  processingTime REAL,
-  error TEXT,
-  vocalStemId TEXT,
-  instrumentalStemId TEXT,
-  originalFileBlobId TEXT,
-  stemMetaJson TEXT, -- JSON
-  appCreatedAt INTEGER,
-  groupId TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_uvrSessions_appSessionId ON uvrSessions(appSessionId);
-CREATE INDEX IF NOT EXISTS idx_uvrSessions_userId ON uvrSessions(userId);
-CREATE INDEX IF NOT EXISTS idx_uvrSessions_status ON uvrSessions(status);
-CREATE INDEX IF NOT EXISTS idx_uvrSessions_fileHash ON uvrSessions(fileHash);
-CREATE INDEX IF NOT EXISTS idx_uvrSessions_createdAt ON uvrSessions(createdAt);
-
-CREATE TABLE IF NOT EXISTS uvrStemBlobs (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  sessionId TEXT NOT NULL,
-  stemType TEXT NOT NULL,
-  mimeType TEXT NOT NULL,
-  data BLOB NOT NULL, -- NOTE: Avoid exceeding 1MB in D1! R2 is recommended.
-  size INTEGER NOT NULL,
-  fileName TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_uvrStemBlobs_sessionId ON uvrStemBlobs(sessionId);
-CREATE INDEX IF NOT EXISTS idx_uvrStemBlobs_stemType ON uvrStemBlobs(stemType);
-CREATE INDEX IF NOT EXISTS idx_uvrStemBlobs_createdAt ON uvrStemBlobs(createdAt);
-
-CREATE TABLE IF NOT EXISTS uvrStemFingerprints (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  sessionId TEXT NOT NULL,
-  fingerprintJson TEXT NOT NULL -- JSON
-);
-
-CREATE INDEX IF NOT EXISTS idx_uvrStemFp_sessionId ON uvrStemFingerprints(sessionId);
-CREATE INDEX IF NOT EXISTS idx_uvrStemFp_createdAt ON uvrStemFingerprints(createdAt);
-
-CREATE TABLE IF NOT EXISTS sessionGroups (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  name TEXT NOT NULL,
-  sessionIds TEXT NOT NULL -- JSON string array
-);
-
-CREATE TABLE IF NOT EXISTS uvrSessionLyrics (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  sessionId TEXT NOT NULL,
-  text TEXT NOT NULL,
-  format TEXT NOT NULL,
-  filename TEXT NOT NULL,
-  wordTimingsJson TEXT, -- JSON
-  originalText TEXT,
-  blocksJson TEXT, -- JSON
-  blockInstancesJson TEXT, -- JSON
-  fontSize REAL
-);
-
-CREATE INDEX IF NOT EXISTS idx_uvrSessionLyrics_sessionId ON uvrSessionLyrics(sessionId);
-
-CREATE TABLE IF NOT EXISTS offlinePitchAnalysis (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  fileHash TEXT NOT NULL,
-  analysisResultsJson TEXT NOT NULL, -- JSON
-  lrcLinesJson TEXT NOT NULL, -- JSON
-  segmentedNotesJson TEXT NOT NULL -- JSON
-);
-
-CREATE INDEX IF NOT EXISTS idx_offlinePitch_fileHash ON offlinePitchAnalysis(fileHash);
-
-CREATE TABLE IF NOT EXISTS whisperTranscriptions (
-  id TEXT PRIMARY KEY,
-  createdAt TEXT NOT NULL,
-  updatedAt TEXT NOT NULL,
-  sessionId TEXT NOT NULL,
-  segmentsJson TEXT NOT NULL, -- JSON
-  segmentCount INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_whisper_sessionId ON whisperTranscriptions(sessionId);

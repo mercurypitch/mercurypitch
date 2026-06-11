@@ -1,0 +1,26 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mercury-pitch-db",
+  // Worker implementation lands in src/index.ts (Hono CRUD API).
+  // Until then this config exists so `wrangler d1 execute` / migrations work.
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mercurypitch-db",
+      // Filled in by scripts/init-cloudflare-db.sh after `wrangler d1 create`
+      "database_id": "REPLACE_WITH_DATABASE_ID"
+    }
+  ],
+  "observability": {
+    "enabled": false,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    }
+  }
+}
