@@ -92,25 +92,25 @@ VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # app on :3000 with HybridAda
 ### 5. Seed remote definitions — ✅ done
 `pnpm db:seed -- --url <worker-url> --admin-key <key>` (scripts/seed-remote-db.mjs) seeds challenge/badge/achievement definitions from `src/db/seed-data.json` (single source shared with the local Dexie seeder). Idempotent — tables with rows are skipped. Verified against local D1. Definitions only; no per-user mock data goes to the cloud.
 
-### 5b. Google Sign-In — ✅ verified locally (2026-06-12)
-The button flow now uses FedCM (`use_fedcm_for_button: true`), which is browser-mediated and works under our cross-origin-isolation headers (`COOP: same-origin` + `COEP: credentialless`, set in vite dev and `public/_headers`) — the classic GIS popup flow is broken by exactly those headers. Also fixed: the button vanished when the email form was opened/cancelled or after sign-out (host div remount never re-rendered it).
-Manual checks (user):
-- [x] `https://localhost:3000` in the OAuth client's authorized JavaScript origins (vite dev serves **https** via basic-ssl) — confirmed by a successful local sign-in.
-- [x] Sign-in tested in Chrome (FedCM) against the local worker — register, Google sign-in, and display-name editing all work.
-- [ ] Before the dev/prod deploys: verify the origins also include `https://dev.mercurypitch.com` and `https://mercurypitch.com`.
-- Note: Firefox/Safari may fall back to the popup flow, which COOP blocks — if that matters, the fallback is a redirect-based flow (worker `login_uri` endpoint), tracked in §7.
+### 5b. Google Sign-In — ✅ redirect flow (2026-06-12)
+The GIS/FedCM button was replaced entirely: FedCM worked in Chrome, but Firefox fell back to the popup flow, which our cross-origin-isolation headers (`COOP: same-origin`) break (`window.opener is null`). Google sign-in is now a **full-page OAuth redirect through the db-worker** (`GET /api/auth/google/start` → accounts.google.com → `GET /api/auth/google/callback` → code exchange with `GOOGLE_CLIENT_SECRET` → back to the app with `#gauth=<JWT>`). State is HMAC-signed (deviceId + returnTo, 10-min TTL), `returnTo` origins allowlisted, and the app's hash route is stashed/restored around the round-trip. The POST `/api/auth/google` idToken endpoint remains for future native clients.
+Manual checks (user), in Google Cloud Console → the OAuth client's **Authorized redirect URIs** (JS origins no longer matter):
+- [x] `http://localhost:8788/api/auth/google/callback` — local sign-in verified in Firefox.
+- [ ] `https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev/api/auth/google/callback` — needed for dev.mercurypitch.com.
+- [ ] Prod worker callback URL — when prod deploys.
+- [x] `GOOGLE_CLIENT_SECRET` secret set on the dev worker (and in `.dev.vars` locally).
 
 ### 5c. Account display name — ✅ done
 Signed-in view shows the profile display name (gradient pill in the logo palette) with an inline editor — Google sign-in has no name prompt, so this is how Google users pick one. Saving updates the cloud profile and renames existing leaderboard entries; new leaderboard entries prefer the profile name over the generated `Singer-xxxxxx`. Fixed along the way: `getUserId()` now returns the JWT identity while signed in (device id only when signed out) — profile/leaderboard lookups were wrong for accounts that weren't an in-place upgrade of the current device.
 
 ### 6. dev.mercurypitch.com official test — checklist
-One-time, in order (steps 1–3 need Cloudflare access):
-- [ ] 1. `pnpm db:init:dev` — creates `mercurypitch-db-dev` + applies schema; commits its id into `wrangler.jsonc`.
-- [ ] 2. `pnpm deploy:db:dev` — first deploy; prints the workers.dev URL.
-- [ ] 3. Secrets: `pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev` (same for `ADMIN_KEY`).
-- [ ] 4. `pnpm db:seed -- --url <printed-workers.dev-url> --admin-key <ADMIN_KEY>` — seed definitions.
-- [ ] 5. Uncomment + fill `VITE_API_BASE_URL` in `.env.development` with the printed URL; commit.
-- [ ] 6. Verify Google OAuth origins (see 5b), then merge to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
+One-time, in order (steps 1–3 need Cloudflare access). Done 2026-06-12:
+- [x] 1. `pnpm db:init:dev` — created `mercurypitch-db-dev` (id `e00340be…`) + applied schema; id committed into `wrangler.jsonc`.
+- [x] 2. `pnpm deploy:db:dev` — deployed: `https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev`.
+- [x] 3. Secrets set on the dev worker: `JWT_SECRET`, `ADMIN_KEY`, `GOOGLE_CLIENT_SECRET` (values documented in the user's personal notes, not in this repo).
+- [x] 4. Definitions seeded (12 challenges, 8 badges, 7 achievements) via `scripts/seed-remote-db.mjs`.
+- [x] 5. `VITE_API_BASE_URL` set in `.env.development` and committed. ⚠ Local `pnpm build:dev` is overridden by the gitignored `.env.development.local` (localhost) — deploy dev builds via CI, or prefix the env var explicitly.
+- [ ] 6. Add the dev worker callback URL to the Google OAuth client (see 5b), then merge PR #91 to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
 
 Local stack for testing the same wiring without deploying (verified end-to-end 2026-06-12: anonymous bootstrap, register, Google sign-in, display name, signed-out browsing):
 ```bash
@@ -120,8 +120,10 @@ VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # or use .claude/launch.json 
 ```
 
 ### 7. Later / nice-to-have
+- **Prod rollout** (everything is dev-only so far): `pnpm db:init` (schema), `pnpm deploy:db:prod`, prod secrets (`JWT_SECRET`, `ADMIN_KEY` — use a strong unique key, `GOOGLE_CLIENT_SECRET`), seed definitions, add the prod worker callback URL to the Google OAuth client, set the prod build's `VITE_API_BASE_URL`.
 - `userSettings` table is schema-only for now — no consumer. Decide: wire cross-device settings sync (needs a settings-service + write-through from the localStorage-backed stores) or drop the table.
 - Leaderboard aggregation server-side (computed from `sessionRecords` instead of client-written `leaderboardEntries`).
-- Token refresh / longer sessions; password reset flow (needs email provider).
-- Redirect-based Google sign-in fallback for non-FedCM browsers (worker `login_uri` endpoint).
+- Token refresh / longer sessions (current: 30-day JWT, silent sign-out at expiry); password reset flow (needs email provider).
+- ~~Redirect-based Google sign-in fallback~~ — done; the redirect flow is now the only web flow (§5b).
 - `melodyRecords` / `sessionTemplates` / `playlistRecords` to cloud — requires adding a `userId` column first.
+- Friends/Weekly leaderboard tabs, "Load More", follow buttons remain intentional mocks (need real social backend).
