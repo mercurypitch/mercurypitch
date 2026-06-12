@@ -19,7 +19,7 @@ export async function saveSessionRecord(data: {
     const repo = db.getRepository<SessionRecord>('sessionRecords')
     const now = new Date().toISOString()
     const streak = await updatePracticeStreak()
-    return repo.create({
+    return await repo.create({
       userId: getUserId(),
       melodyName: data.melodyName,
       startedAt: now,
@@ -40,7 +40,7 @@ export async function loadSessionRecords(limit = 50): Promise<SessionRecord[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<SessionRecord>('sessionRecords')
-    return repo.findAll({
+    return await repo.findAll({
       where: { userId: getUserId() },
       orderBy: 'endedAt',
       orderDir: 'desc',

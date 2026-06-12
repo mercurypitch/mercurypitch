@@ -49,7 +49,7 @@ export async function loadChallengeDefinitions(): Promise<
   try {
     const db = await getDb()
     const repo = db.getRepository<ChallengeDefinition>('challengeDefinitions')
-    return repo.findAll({
+    return await repo.findAll({
       where: { isActive: true },
       orderBy: 'sortOrder',
     })
@@ -62,7 +62,7 @@ export async function loadChallengeProgress(): Promise<ChallengeProgress[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<ChallengeProgress>('challengeProgress')
-    return repo.findAll({
+    return await repo.findAll({
       where: { userId: getUserId() },
     })
   } catch {
@@ -74,7 +74,7 @@ export async function loadBadgeDefinitions(): Promise<BadgeDefinition[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<BadgeDefinition>('badgeDefinitions')
-    return repo.findAll({ orderBy: 'sortOrder' })
+    return await repo.findAll({ orderBy: 'sortOrder' })
   } catch {
     return []
   }
@@ -84,7 +84,7 @@ export async function loadUserBadges(): Promise<UserBadge[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserBadge>('userBadges')
-    return repo.findAll({
+    return await repo.findAll({
       where: { userId: getUserId() },
     })
   } catch {
@@ -96,7 +96,7 @@ export async function loadAchievementDefinitions(): Promise<Achievement[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<Achievement>('achievements')
-    return repo.findAll({ orderBy: 'sortOrder' })
+    return await repo.findAll({ orderBy: 'sortOrder' })
   } catch {
     return []
   }
@@ -106,7 +106,7 @@ export async function loadUserAchievements(): Promise<UserAchievement[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserAchievement>('userAchievements')
-    return repo.findAll({
+    return await repo.findAll({
       where: { userId: getUserId() },
     })
   } catch {
@@ -128,9 +128,9 @@ export async function saveChallengeProgress(
       },
     })
     if (existing.length > 0) {
-      return repo.update(existing[0].id, progress)
+      return await repo.update(existing[0].id, progress)
     }
-    return repo.create(progress)
+    return await repo.create(progress)
   } catch {
     return null
   }
