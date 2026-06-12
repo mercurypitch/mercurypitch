@@ -114,3 +114,29 @@
   flex: 1;
   min-width: 0;
 }
+
+/* Display name pill — MercuryPitch logo palette: vocal stem
+   (#58a6ff → #bc8cff) into the instrumental teal (#2dd4bf).
+   Gradient ring via the padding-box/border-box two-layer trick. */
+.displayNamePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 14px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(
+        rgba(13, 17, 23, 0.92),
+        rgba(13, 17, 23, 0.92)
+      )
+      padding-box,
+    linear-gradient(120deg, #58a6ff, #bc8cff 55%, #2dd4bf) border-box;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  color: #e6edf3;
+  text-shadow: 0 0 14px rgba(188, 140, 255, 0.45);
+  box-shadow:
+    0 0 10px rgba(88, 166, 255, 0.18),
+    inset 0 0 12px rgba(88, 166, 255, 0.08);
+}

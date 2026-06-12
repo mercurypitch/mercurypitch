@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 const dbMocks = vi.hoisted(() => {
   const profileRepo = {
+    findById: vi.fn(async () => ({ id: 'existing-profile' })),
     update: vi.fn(async () => ({})),
     create: vi.fn(async () => ({})),
   }
