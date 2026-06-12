@@ -19,7 +19,27 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
 }))
 
+const dbMocks = vi.hoisted(() => {
+  const profileRepo = {
+    update: vi.fn(async () => ({})),
+    create: vi.fn(async () => ({})),
+  }
+  const leaderboardRepo = {
+    findAll: vi.fn(async () => [{ id: 'lb1' }]),
+    update: vi.fn(async () => ({})),
+  }
+  return {
+    profileRepo,
+    leaderboardRepo,
+    getDb: vi.fn(async () => ({
+      getRepository: (name: string) =>
+        name === 'userProfiles' ? profileRepo : leaderboardRepo,
+    })),
+  }
+})
+
 vi.mock('@/db/services/auth-service', () => mocks)
+vi.mock('@/db', () => ({ getDb: dbMocks.getDb }))
 
 import { AccountSection } from '../account/AccountSection'
 
@@ -98,11 +118,57 @@ describe('AccountSection', () => {
 
     const email = await screen.findByTestId('account-email')
     expect(email.textContent).toBe('maff@example.com')
+    expect(screen.getByTestId('account-display-name').textContent).toBe('Maff')
 
     fireEvent.click(screen.getByTestId('logout-button'))
     expect(mocks.logout).toHaveBeenCalledOnce()
     // Back to the sign-up call to action
     expect(await screen.findByTestId('show-register')).toBeTruthy()
+  })
+
+  it('lets a signed-in (e.g. Google) user pick a display name', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'google', email: 'maff@gmail.com' },
+      profile: { displayName: 'Matija K' },
+    })
+    render(() => <AccountSection />)
+
+    const input = (await screen.findByTestId(
+      'display-name-input',
+    )) as HTMLInputElement
+    // Prefilled with the current profile name (Google's name by default)
+    expect(input.value).toBe('Matija K')
+
+    fireEvent.input(input, { target: { value: 'MercuryMaff' } })
+    fireEvent.click(screen.getByTestId('display-name-save'))
+
+    await vi.waitFor(() => {
+      expect(dbMocks.profileRepo.update).toHaveBeenCalledWith(
+        expect.any(String),
+        { displayName: 'MercuryMaff' },
+      )
+      // Existing leaderboard rows are renamed to match
+      expect(dbMocks.leaderboardRepo.update).toHaveBeenCalledWith('lb1', {
+        displayName: 'MercuryMaff',
+      })
+    })
+  })
+
+  it('disables saving an unchanged or empty display name', async () => {
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    const save = (await screen.findByTestId(
+      'display-name-save',
+    )) as HTMLButtonElement
+    expect(save.disabled).toBe(true) // unchanged
+
+    const input = screen.getByTestId('display-name-input') as HTMLInputElement
+    fireEvent.input(input, { target: { value: '   ' } })
+    expect(save.disabled).toBe(true) // empty
+
+    fireEvent.input(input, { target: { value: 'New Name' } })
+    expect(save.disabled).toBe(false)
   })
 
   it('surfaces auth errors in the form', async () => {
