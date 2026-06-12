@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app-with-cloud-db",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "cross-env",
+        "VITE_API_BASE_URL=http://localhost:8788",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite"
+      ],
+      "port": 3000
+    }
+  ]
+}

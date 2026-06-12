@@ -25,6 +25,9 @@ interface GoogleAccountsId {
   initialize(config: {
     client_id: string
     callback: (response: GoogleCredentialResponse) => void
+    /** Browser-mediated FedCM sign-in: no popup, so it keeps working
+     *  under our COOP/COEP isolation headers (vite dev + _headers). */
+    use_fedcm_for_button?: boolean
   }): void
   renderButton(
     parent: HTMLElement,
@@ -72,9 +75,19 @@ export const AccountSection: Component = () => {
   const [busy, setBusy] = createSignal(false)
 
   let googleButtonHost: HTMLDivElement | undefined
+  let gis: GoogleAccountsId | null = null
 
   async function refreshMe(): Promise<void> {
     setMe(await fetchMe())
+  }
+
+  // (Re-)render the Google button into a host element. The host div is
+  // recreated whenever the anonymous view remounts (cancelling the
+  // email form, signing out), so this runs from its ref each time.
+  function renderGoogleButton(host: HTMLElement): void {
+    if (gis == null) return
+    host.innerHTML = ''
+    gis.renderButton(host, { theme: 'outline', size: 'large' })
   }
 
   onMount(() => {
@@ -84,10 +97,11 @@ export const AccountSection: Component = () => {
       await refreshMe()
 
       if (GOOGLE_CLIENT_ID === '') return
-      const gis = await loadGisScript()
-      if (gis == null || googleButtonHost == null) return
+      gis = await loadGisScript()
+      if (gis == null) return
       gis.initialize({
         client_id: GOOGLE_CLIENT_ID,
+        use_fedcm_for_button: true,
         callback: (response) => {
           void handleAuthAction(async () => {
             await loginWithGoogle(response.credential)
@@ -95,7 +109,9 @@ export const AccountSection: Component = () => {
           })
         },
       })
-      gis.renderButton(googleButtonHost, { theme: 'outline', size: 'large' })
+      if (googleButtonHost != null && googleButtonHost.isConnected) {
+        renderGoogleButton(googleButtonHost)
+      }
     })()
   })
 
@@ -199,7 +215,13 @@ export const AccountSection: Component = () => {
                 Sign in
               </button>
             </div>
-            <div ref={googleButtonHost} class={styles.googleButtonHost} />
+            <div
+              ref={(el) => {
+                googleButtonHost = el
+                renderGoogleButton(el)
+              }}
+              class={styles.googleButtonHost}
+            />
           </Match>
 
           {/* Login / register form */}

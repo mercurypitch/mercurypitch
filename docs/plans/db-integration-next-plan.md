@@ -1,6 +1,6 @@
 # DB Integration — Status & Next Steps
 
-Follow-up to [db-migration-plan.md](./db-migration-plan.md) and [users-auth-plan.md](./users-auth-plan.md). Snapshot of where the Cloudflare D1 integration stands as of 2026-06-11 and what comes next.
+Follow-up to [db-migration-plan.md](./db-migration-plan.md) and [users-auth-plan.md](./users-auth-plan.md). Snapshot of where the Cloudflare D1 integration stands as of 2026-06-12 and what comes next.
 
 ## What's done
 
@@ -40,6 +40,14 @@ Zero-dependency fetch handler (same style as jam-worker, no Hono):
 - Register/login forms (email + password ≥ 8 chars) passing `deviceId` so anonymous progress upgrades in place.
 - Google button via GIS (script lazy-loaded, only when `GOOGLE_CLIENT_ID` set); shows a "stored on this device" note when no API is configured.
 - Component tests in `src/components/__tests__/AccountSection.test.tsx`.
+
+### 2a. Signed-out behaviour — ✅ done
+Public content stays available without an account; personal data simply isn't tracked:
+- Worker already serves public reads (definitions, leaderboard, profiles, public shares); only private per-user tables 401.
+- `HybridAdapter` now guards user-scoped entities (`sessionRecords`, `challengeProgress`, `userBadges`, `userAchievements`, `userSettings`): signed out, reads resolve empty and writes fail fast — no doomed 401 round-trips.
+- After signing out of an upgraded account, the device's anonymous re-auth is refused by design (403). `ensureAuth()` now remembers that (`mp:requiresLogin`) and stays quietly signed out instead of retrying/erroring at every startup; an explicit login clears it.
+- `authVersion` signal (bumped on every token change) makes CommunityLeaderboard, CommunityShare, VocalChallenges and VocalAnalysis history reload when the signed-in identity changes — no full-page reload needed after login/logout.
+- Fixed: streak-service and share-service resolved "my profile" via unfiltered `findAll()[0]`, which in cloud mode returns *other users'* public profiles. Now resolved by id (cloud profile id == userId) with a local fallback.
 
 ### 2b. Community/leaderboard/challenges review — ✅ done
 Fixed: leaderboard ranks now recomputed from category metric on load (stored ranks went stale); leaderboard refetches on category switch (was mount-only); "you" row highlight uses the real persisted userId; broken Global tab count; CommunityShare "popular" sort no longer uses Math.random(), "highest" sort implemented, session search no longer matches unrelated sessions, profile identity unified on `getUserId()` + real streak from streak-service (was separate `pp_user_id` + hardcoded streak).
@@ -81,10 +89,34 @@ pnpm dev:db                                        # worker on :8788 against LOC
 VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # app on :3000 with HybridAdapter
 ```
 
-### 5. Seed remote definitions
-Seed challenge/badge/achievement definitions to the remote DB via the CRUD API with `X-Admin-Key` (small script reusing `src/db/seed.ts` data against `ServerAdapter`).
+### 5. Seed remote definitions — ✅ done
+`pnpm db:seed -- --url <worker-url> --admin-key <key>` (scripts/seed-remote-db.mjs) seeds challenge/badge/achievement definitions from `src/db/seed-data.json` (single source shared with the local Dexie seeder). Idempotent — tables with rows are skipped. Verified against local D1. Definitions only; no per-user mock data goes to the cloud.
 
-### 6. Later / nice-to-have
+### 5b. Google Sign-In — needs in-browser verification
+The button flow now uses FedCM (`use_fedcm_for_button: true`), which is browser-mediated and works under our cross-origin-isolation headers (`COOP: same-origin` + `COEP: credentialless`, set in vite dev and `public/_headers`) — the classic GIS popup flow is broken by exactly those headers. Also fixed: the button vanished when the email form was opened/cancelled or after sign-out (host div remount never re-rendered it).
+Manual checks (user):
+- [ ] Google Cloud Console → OAuth client → authorized JavaScript origins must include `https://localhost:3000` (vite dev serves **https** via basic-ssl — `http://localhost:3000` alone is not enough), plus `https://mercurypitch.com` and `https://dev.mercurypitch.com`.
+- [ ] Test sign-in in Chrome (FedCM). Firefox/Safari may fall back to the popup flow, which COOP blocks — if that matters, the fallback is a redirect-based flow (worker `login_uri` endpoint) as a follow-up.
+
+### 6. dev.mercurypitch.com official test — checklist
+One-time, in order (needs Cloudflare + Google Console access):
+1. `pnpm db:init:dev` — creates `mercurypitch-db-dev` + applies schema; commits its id into `wrangler.jsonc`.
+2. `pnpm deploy:db:dev` — first deploy; prints the workers.dev URL.
+3. Secrets: `pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev` (same for `ADMIN_KEY`).
+4. `pnpm db:seed -- --url <printed-workers.dev-url> --admin-key <ADMIN_KEY>` — seed definitions.
+5. Uncomment + fill `VITE_API_BASE_URL` in `.env.development` with the printed URL; commit.
+6. Verify Google OAuth origins (see 5b), then merge to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
+
+Local stack for testing the same wiring without deploying:
+```bash
+pnpm dev:db                                        # worker on :8788 (copy .dev.vars.example → .dev.vars once)
+pnpm db:seed -- --url http://localhost:8788 --admin-key dev-admin-key
+VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # or use .claude/launch.json "app-with-cloud-db"
+```
+
+### 7. Later / nice-to-have
+- `userSettings` table is schema-only for now — no consumer. Decide: wire cross-device settings sync (needs a settings-service + write-through from the localStorage-backed stores) or drop the table.
 - Leaderboard aggregation server-side (computed from `sessionRecords` instead of client-written `leaderboardEntries`).
 - Token refresh / longer sessions; password reset flow (needs email provider).
+- Redirect-based Google sign-in fallback for non-FedCM browsers (worker `login_uri` endpoint).
 - `melodyRecords` / `sessionTemplates` / `playlistRecords` to cloud — requires adding a `userId` column first.

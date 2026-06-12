@@ -8,7 +8,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { CheckCircle, ChevronDown, Eye, Play } from '@/components/icons'
 import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
 import { loadLeaderboard } from '@/db/services/leaderboard-service'
-import { getUserId } from '@/db/services/user-service'
+import { authVersion, getUserId } from '@/db/services/user-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
@@ -392,8 +392,9 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     LeaderboardUser[]
   >([])
 
-  // Reload whenever the category changes (not just on mount)
+  // Reload whenever the category or signed-in identity changes
   createEffect(() => {
+    authVersion()
     const category = activeCategory() as DBLeaderboardCategory
     void (async () => {
       const dbUsers = await loadLeaderboard(

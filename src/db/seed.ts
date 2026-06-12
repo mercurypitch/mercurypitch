@@ -6,6 +6,7 @@
 // Called once at app init. Idempotent — checks for seed flag.
 
 import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserAchievement, UserBadge, UserProfile, } from './entities'
+import seedData from './seed-data.json'
 import { getUserId as getPersistedUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
@@ -42,284 +43,22 @@ async function markSeeded(db: DatabaseAdapter): Promise<void> {
   await repo.create({ key: SEEDED_FLAG, value: true })
 }
 
-// ── Challenge Definitions ───────────────────────────────────────
+// ── Definition data (shared with scripts/seed-remote-db.mjs) ────
 
-const challengeDefinitions: Omit<
+const challengeDefinitions = seedData.challengeDefinitions as Omit<
   ChallengeDefinition,
   'id' | 'createdAt' | 'updatedAt'
->[] = [
-  {
-    category: 'high-notes',
-    title: 'High Note Hero',
-    description: 'Achieve 90%+ accuracy on C5 and higher notes',
-    difficulty: 'intermediate',
-    icon: 'mic',
-    targetScore: 90,
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    category: 'high-notes',
-    title: 'Belting Master',
-    description: 'Maintain belting range (D4-C5) for 3 consecutive songs',
-    difficulty: 'advanced',
-    icon: 'fire',
-    targetScore: 100,
-    isActive: true,
-    sortOrder: 2,
-  },
-  {
-    category: 'high-notes',
-    title: 'Above It All',
-    description: 'Reach F5 at least 5 times in practice sessions',
-    difficulty: 'advanced',
-    icon: 'rocket',
-    targetScore: 50,
-    isActive: true,
-    sortOrder: 3,
-  },
-  {
-    category: 'low-notes',
-    title: 'Deep Note King',
-    description: 'Achieve 90%+ accuracy on E3 and lower notes',
-    difficulty: 'intermediate',
-    icon: 'guitar',
-    targetScore: 90,
-    isActive: true,
-    sortOrder: 4,
-  },
-  {
-    category: 'low-notes',
-    title: 'Subwoofer Sound',
-    description: 'Maintain low register (E2-D4) consistently',
-    difficulty: 'advanced',
-    icon: 'volume',
-    targetScore: 100,
-    isActive: true,
-    sortOrder: 5,
-  },
-  {
-    category: 'speed',
-    title: 'Scale Speedster',
-    description: 'Complete a 3-octave scale in under 20 seconds',
-    difficulty: 'beginner',
-    icon: 'bolt',
-    targetScore: 60,
-    isActive: true,
-    sortOrder: 6,
-  },
-  {
-    category: 'speed',
-    title: 'Rapid Fire',
-    description: 'Hit 10 notes in under 3 seconds',
-    difficulty: 'intermediate',
-    icon: 'stopwatch',
-    targetScore: 80,
-    isActive: true,
-    sortOrder: 7,
-  },
-  {
-    category: 'speed',
-    title: 'Climbing Eagle',
-    description: 'Ascend 2 octaves in under 5 seconds',
-    difficulty: 'advanced',
-    icon: 'eagle',
-    targetScore: 50,
-    isActive: true,
-    sortOrder: 8,
-  },
-  {
-    category: 'perfect',
-    title: 'Perfect Pitch Pilot',
-    description: 'Hit 100% accuracy in a 10-note sequence',
-    difficulty: 'intermediate',
-    icon: 'target',
-    targetScore: 100,
-    isActive: true,
-    sortOrder: 9,
-  },
-  {
-    category: 'perfect',
-    title: 'Crystal Clear',
-    description: 'Maintain 95%+ clarity across 3 sessions',
-    difficulty: 'advanced',
-    icon: 'diamond',
-    targetScore: 95,
-    isActive: true,
-    sortOrder: 10,
-  },
-  {
-    category: 'scales',
-    title: 'Major Scale Master',
-    description: 'Practice all 12 major scales this month',
-    difficulty: 'beginner',
-    icon: 'keyboard',
-    targetScore: 12,
-    isActive: true,
-    sortOrder: 11,
-  },
-  {
-    category: 'scales',
-    title: 'Minor Scale Sage',
-    description: 'Complete 8 minor scale practice sessions',
-    difficulty: 'beginner',
-    icon: 'moon',
-    targetScore: 8,
-    isActive: true,
-    sortOrder: 12,
-  },
-]
+>[]
 
-// ── Badge Definitions ───────────────────────────────────────────
-
-const badgeDefinitions: Omit<
+const badgeDefinitions = seedData.badgeDefinitions as Omit<
   BadgeDefinition,
   'id' | 'createdAt' | 'updatedAt'
->[] = [
-  {
-    name: 'First Steps',
-    description: 'Complete your first challenge',
-    icon: 'leaf',
-    tier: 'bronze',
-    category: 'challenges',
-    unlockCondition: 'Complete 1 challenge',
-    sortOrder: 1,
-  },
-  {
-    name: 'On Fire',
-    description: 'Maintain a 7-day practice streak',
-    icon: 'fire',
-    tier: 'bronze',
-    category: 'streak',
-    unlockCondition: 'Maintain a 7-day practice streak',
-    sortOrder: 2,
-  },
-  {
-    name: 'High & Mighty',
-    description: 'Complete a high note challenge',
-    icon: 'mic',
-    tier: 'silver',
-    category: 'high-notes',
-    unlockCondition: 'Complete any high note challenge',
-    sortOrder: 3,
-  },
-  {
-    name: 'Speed Demon',
-    description: 'Complete a speed challenge',
-    icon: 'bolt',
-    tier: 'silver',
-    category: 'speed',
-    unlockCondition: 'Complete any speed challenge',
-    sortOrder: 4,
-  },
-  {
-    name: 'Perfect Start',
-    description: 'Complete a perfect pitch challenge',
-    icon: 'target',
-    tier: 'silver',
-    category: 'perfect',
-    unlockCondition: 'Complete any perfect pitch challenge',
-    sortOrder: 5,
-  },
-  {
-    name: 'Scale Scholar',
-    description: 'Complete a scale challenge',
-    icon: 'music',
-    tier: 'bronze',
-    category: 'scales',
-    unlockCondition: 'Complete any scale challenge',
-    sortOrder: 6,
-  },
-  {
-    name: 'Streak Master',
-    description: 'Reach a 14-day practice streak',
-    icon: 'crown',
-    tier: 'gold',
-    category: 'streak',
-    unlockCondition: 'Reach a 14-day practice streak',
-    sortOrder: 7,
-  },
-  {
-    name: 'All Star',
-    description: 'Complete all bronze badges',
-    icon: 'sparkle',
-    tier: 'gold',
-    category: 'meta',
-    unlockCondition: 'Complete all bronze-tier badges',
-    sortOrder: 8,
-  },
-]
+>[]
 
-// ── Achievement Definitions ─────────────────────────────────────
-
-const achievementDefinitions: Omit<
+const achievementDefinitions = seedData.achievementDefinitions as Omit<
   Achievement,
   'id' | 'createdAt' | 'updatedAt'
->[] = [
-  {
-    name: '10 Notes',
-    description: 'Complete 10 practice sessions',
-    icon: 'paper',
-    points: 10,
-    condition: 'Complete 10 practice sessions',
-    required: 50,
-    sortOrder: 1,
-  },
-  {
-    name: '50 Sessions',
-    description: 'Complete 50 practice sessions',
-    icon: 'chart',
-    points: 25,
-    condition: 'Complete 50 practice sessions',
-    required: 50,
-    sortOrder: 2,
-  },
-  {
-    name: '3 Octaves',
-    description: 'Cover 3 octaves in one run',
-    icon: 'keyboard',
-    points: 15,
-    condition: 'Cover 3 octaves in one session',
-    required: 3,
-    sortOrder: 3,
-  },
-  {
-    name: 'High Note Master',
-    description: 'Hit C5 or higher 100 times',
-    icon: 'mic',
-    points: 30,
-    condition: 'Hit C5 or higher 100 times',
-    required: 100,
-    sortOrder: 4,
-  },
-  {
-    name: 'Perfect Run',
-    description: 'Get 100% accuracy on a run',
-    icon: 'target',
-    points: 50,
-    condition: 'Get 100% accuracy on a session',
-    required: 1,
-    sortOrder: 5,
-  },
-  {
-    name: 'Speed Demon',
-    description: 'Hit 10 notes in 3 seconds',
-    icon: 'bolt',
-    points: 20,
-    condition: 'Hit 10 notes in 3 seconds',
-    required: 10,
-    sortOrder: 6,
-  },
-  {
-    name: 'Scale Explorer',
-    description: 'Practice 20 different scales',
-    icon: 'music',
-    points: 25,
-    condition: 'Practice 20 different scales',
-    required: 20,
-    sortOrder: 7,
-  },
-]
+>[]
 
 // ── User Profile ────────────────────────────────────────────────
 
