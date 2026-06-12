@@ -96,7 +96,7 @@ VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # app on :3000 with HybridAda
 The GIS/FedCM button was replaced entirely: FedCM worked in Chrome, but Firefox fell back to the popup flow, which our cross-origin-isolation headers (`COOP: same-origin`) break (`window.opener is null`). Google sign-in is now a **full-page OAuth redirect through the db-worker** (`GET /api/auth/google/start` → accounts.google.com → `GET /api/auth/google/callback` → code exchange with `GOOGLE_CLIENT_SECRET` → back to the app with `#gauth=<JWT>`). State is HMAC-signed (deviceId + returnTo, 10-min TTL), `returnTo` origins allowlisted, and the app's hash route is stashed/restored around the round-trip. The POST `/api/auth/google` idToken endpoint remains for future native clients.
 Manual checks (user), in Google Cloud Console → the OAuth client's **Authorized redirect URIs** (JS origins no longer matter):
 - [x] `http://localhost:8788/api/auth/google/callback` — local sign-in verified in Firefox.
-- [ ] `https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev/api/auth/google/callback` — needed for dev.mercurypitch.com.
+- [x] `https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev/api/auth/google/callback` — added; verified accepted by Google's auth endpoint (no redirect_uri_mismatch).
 - [ ] Prod worker callback URL — when prod deploys.
 - [x] `GOOGLE_CLIENT_SECRET` secret set on the dev worker (and in `.dev.vars` locally).
 
@@ -110,7 +110,8 @@ One-time, in order (steps 1–3 need Cloudflare access). Done 2026-06-12:
 - [x] 3. Secrets set on the dev worker: `JWT_SECRET`, `ADMIN_KEY`, `GOOGLE_CLIENT_SECRET` (values documented in the user's personal notes, not in this repo).
 - [x] 4. Definitions seeded (12 challenges, 8 badges, 7 achievements) via `scripts/seed-remote-db.mjs`.
 - [x] 5. `VITE_API_BASE_URL` set in `.env.development` and committed. ⚠ Local `pnpm build:dev` is overridden by the gitignored `.env.development.local` (localhost) — deploy dev builds via CI, or prefix the env var explicitly.
-- [ ] 6. Add the dev worker callback URL to the Google OAuth client (see 5b), then merge PR #91 to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
+- [x] 6a. Dev worker callback URL added to the Google OAuth client (see 5b).
+- [ ] 6b. Merge PR #91 to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
 
 Local stack for testing the same wiring without deploying (verified end-to-end 2026-06-12: anonymous bootstrap, register, Google sign-in, display name, signed-out browsing):
 ```bash
