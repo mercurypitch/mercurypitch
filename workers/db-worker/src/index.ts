@@ -91,6 +91,12 @@ interface ListQuery {
   offset?: number
 }
 
+/** Rows returned when no explicit limit is given — a missing `limit`
+ *  must never mean "the whole table" (public tables, anonymous reads). */
+const DEFAULT_LIST_LIMIT = 100
+/** Hard ceiling for explicit limits. */
+const MAX_LIST_LIMIT = 1000
+
 function parseListQuery(url: URL): ListQuery | null {
   const filters: Array<[string, SqlValue]> = []
   for (const [k, v] of url.searchParams) {
@@ -104,11 +110,16 @@ function parseListQuery(url: URL): ListQuery | null {
   if (orderBy !== undefined && !IDENT.test(orderBy)) return null
   const limitRaw = url.searchParams.get('limit')
   const offsetRaw = url.searchParams.get('offset')
+  const requested = limitRaw ? Number(limitRaw) : NaN
+  const limit =
+    Number.isFinite(requested) && requested > 0
+      ? Math.min(requested, MAX_LIST_LIMIT)
+      : DEFAULT_LIST_LIMIT
   return {
     filters,
     orderBy,
     orderDir: url.searchParams.get('orderDir') === 'desc' ? 'DESC' : 'ASC',
-    limit: limitRaw ? Number(limitRaw) : -1, // SQLite: LIMIT -1 = unbounded
+    limit,
     offset: offsetRaw ? Number(offsetRaw) : undefined,
   }
 }

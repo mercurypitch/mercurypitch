@@ -76,6 +76,7 @@ import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
+import { takeGoogleRedirectResult } from '@/db/services/auth-service'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
@@ -1103,6 +1104,21 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+
+    // Surface the outcome of a Google sign-in redirect (token handling
+    // itself ran in index.tsx before render). App-level so the toast
+    // shows no matter which route the user signed in from.
+    const googleRedirect = takeGoogleRedirectResult()
+    if (googleRedirect != null) {
+      if (googleRedirect.ok) {
+        showNotification('Signed in with Google', 'info')
+      } else {
+        showNotification(
+          `Google sign-in failed: ${googleRedirect.error}`,
+          'error',
+        )
+      }
+    }
 
     // Load UVR sessions and groups from IndexedDB into the in-memory cache.
     // Fire-and-forget: the cache starts empty and populates async.

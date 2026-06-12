@@ -6,6 +6,7 @@ import { z } from 'zod/v4'
 import { getDb } from '@/db'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { findOwnProfile } from '@/db/services/user-service'
 
 export interface SharedMelodyView {
   id: string
@@ -43,11 +44,7 @@ export async function loadUserProfile(): Promise<UserProfileView | null> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserProfile>('userProfiles')
-    // Cloud profiles: row id == user id (an unfiltered findAll would
-    // return other users' public profiles). Local: single seeded row.
-    const p =
-      (await repo.findById(getUserId())) ??
-      (await repo.findAll({ limit: 1 }))[0]
+    const p = await findOwnProfile(repo)
     if (p === undefined) return null
     return {
       userId: p.id,

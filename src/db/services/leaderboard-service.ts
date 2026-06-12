@@ -56,10 +56,9 @@ export async function updateLeaderboardEntry(
       const profileName = profile?.displayName.trim() ?? ''
       const displayName =
         profileName !== '' ? profileName : `Singer-${userId.slice(0, 6)}`
-      const allEntries = await repo.findAll({
-        where: { category, period },
-      })
-      const rank = allEntries.length + 1
+      // Stored rank is only a seed value — loadLeaderboard() recomputes
+      // ranks from current scores on every read.
+      const rank = (await repo.count({ where: { category, period } })) + 1
       await repo.create({
         userId,
         displayName,
@@ -135,25 +134,10 @@ export async function loadCurrentUserEntry(
   category: LeaderboardCategory = 'overall',
   period: LeaderboardPeriod = 'all-time',
 ): Promise<LeaderboardUserView | null> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
-    const entries = await repo.findAll({
-      where: { userId: getUserId(), category, period },
-    })
-    if (entries.length === 0) return null
-    const e = entries[0]
-    return {
-      userId: e.userId,
-      displayName: e.displayName,
-      score: e.score,
-      rank: e.rank,
-      streak: e.streak,
-      totalSessions: e.totalSessions,
-      bestScore: e.bestScore,
-      accuracy: e.accuracy,
-    }
-  } catch {
-    return null
-  }
+  // Derive from the recomputed board rather than the stored row — the
+  // persisted rank goes stale as other users' scores change, and this
+  // keeps "your rank" consistent with the rendered leaderboard.
+  const users = await loadLeaderboard(category, period)
+  const userId = getUserId()
+  return users.find((u) => u.userId === userId) ?? null
 }

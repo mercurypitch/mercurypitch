@@ -170,7 +170,12 @@ export async function loginWithPassword(
   return postAuth('login', { email, password })
 }
 
-/** `idToken` is the credential from Google Identity Services. */
+/**
+ * Exchange a Google `idToken` credential for a session. Not used by the
+ * web UI (it goes through the redirect flow below — COOP breaks the GIS
+ * popup); kept deliberately as the API for native/mobile clients, where
+ * the platform sign-in SDK yields an idToken directly.
+ */
 export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   return postAuth('google', { idToken, deviceId: getUserId() })
 }
@@ -189,8 +194,18 @@ export type GoogleRedirectResult = { ok: true } | { ok: false; error: string }
 
 let googleRedirectResult: GoogleRedirectResult | null = null
 
-/** URL that starts the Google sign-in redirect for this device. */
+/**
+ * The app is hash-routed, but the hash can't ride along in `returnTo`:
+ * the worker hands the JWT back as its own fragment (`#gauth=…`), and a
+ * second `#` would corrupt it. So the current route is stashed here and
+ * restored by consumeGoogleRedirect() when the user lands back.
+ */
+const RETURN_HASH_KEY = 'mp:gauthReturnHash'
+
+/** URL that starts the Google sign-in redirect for this device. Also
+ *  stashes the current hash route so the user returns to the same page. */
 export function googleSignInUrl(): string {
+  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
   const returnTo =
     window.location.origin + window.location.pathname + window.location.search
   const params = new URLSearchParams({ deviceId: getUserId(), returnTo })
@@ -199,8 +214,10 @@ export function googleSignInUrl(): string {
 
 /**
  * Pick up the #gauth / #gauth_error fragment after returning from the
- * Google redirect: store the JWT and strip the fragment from the URL.
- * Runs at app startup, before any other auth call.
+ * Google redirect: store the JWT, then swap the fragment for the hash
+ * route stashed by googleSignInUrl() so the user lands back on the page
+ * they started from. Runs at app startup, before the router boots and
+ * before any other auth call.
  */
 export function consumeGoogleRedirect(): void {
   const hash = window.location.hash
@@ -215,10 +232,12 @@ export function consumeGoogleRedirect(): void {
   } else if (error != null && error !== '') {
     googleRedirectResult = { ok: false, error }
   }
+  const returnHash = sessionStorage.getItem(RETURN_HASH_KEY) ?? ''
+  sessionStorage.removeItem(RETURN_HASH_KEY)
   history.replaceState(
     null,
     '',
-    window.location.pathname + window.location.search,
+    window.location.pathname + window.location.search + returnHash,
   )
 }
 
