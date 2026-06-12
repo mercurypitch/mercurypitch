@@ -46,7 +46,7 @@
           "binding": "DB",
           "database_name": "mercurypitch-db-dev",
           // Filled in by scripts/init-cloudflare-db.sh (run: pnpm db:init:dev)
-          "database_id": "REPLACE_WITH_DEV_DATABASE_ID"
+          "database_id": "e00340be-93fd-44ee-b22e-cb1124a1aadc"
         }
       ]
     },

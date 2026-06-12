@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12] - 2026-06-12
+
+### Added
+
+- **Cloud Accounts & Sync**: Anonymous-first cloud accounts — everyone gets a silent anonymous identity, upgradeable to email/password or Google without losing progress. Challenges, scores, badges, streaks and leaderboard entries sync across devices; karaoke/UVR audio stays on-device.
+- **Google Sign-In (redirect flow)**: COOP-safe full-page OAuth redirect through the db-worker, replacing the Google popup flow that failed in Firefox/Safari (`window.opener is null` under cross-origin isolation).
+- **Account Section**: Create account, sign in/out, and an editable display name that propagates to existing leaderboard entries.
+- **Cloud Database Worker**: D1-backed REST API (db-worker) with JWT auth, per-user scoped CRUD, separate dev/prod environments and CI deploy workflow; the app picks cloud vs. local storage per entity via a hybrid adapter.
+- **Undo Toast Notifications**: Destructive operations (e.g. session delete) show an undo toast; undone session items return to their original position.
+
+### Fixed
+
+- **Profile Save Conflict**: Saving a profile no longer 409s — cloud profile ids derive from the JWT identity.
+- **Signed-Out State**: After signing out of an upgraded account the app stays quietly signed out instead of retrying a doomed anonymous handshake; data refetches on auth changes.
+- **Notification Layering**: Toasts render above modals.
+- **Console Log Memory**: Captured warn/info logs capped at 500 entries to prevent unbounded memory growth.
+
 ## [0.3.11] - 2026-06-09
 
 ### Added
