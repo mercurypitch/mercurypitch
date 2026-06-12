@@ -175,6 +175,60 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
   return postAuth('google', { idToken, deviceId: getUserId() })
 }
 
+// ── Google sign-in (redirect flow) ──────────────────────────────
+//
+// The app's COOP: same-origin header (required for SharedArrayBuffer /
+// multithreaded ONNX) severs window.opener for popups, which breaks
+// GIS popup sign-in in non-FedCM browsers (Firefox, Safari). So Google
+// sign-in is a full-page redirect through the db-worker instead:
+// GET /api/auth/google/start bounces via accounts.google.com and lands
+// back on `returnTo` with our JWT in the fragment (#gauth=… on success,
+// #gauth_error=… on failure).
+
+export type GoogleRedirectResult = { ok: true } | { ok: false; error: string }
+
+let googleRedirectResult: GoogleRedirectResult | null = null
+
+/** URL that starts the Google sign-in redirect for this device. */
+export function googleSignInUrl(): string {
+  const returnTo =
+    window.location.origin + window.location.pathname + window.location.search
+  const params = new URLSearchParams({ deviceId: getUserId(), returnTo })
+  return `${requireBaseUrl()}/api/auth/google/start?${params.toString()}`
+}
+
+/**
+ * Pick up the #gauth / #gauth_error fragment after returning from the
+ * Google redirect: store the JWT and strip the fragment from the URL.
+ * Runs at app startup, before any other auth call.
+ */
+export function consumeGoogleRedirect(): void {
+  const hash = window.location.hash
+  if (!hash.startsWith('#gauth')) return
+  const params = new URLSearchParams(hash.slice(1))
+  const token = params.get('gauth')
+  const error = params.get('gauth_error')
+  if (token != null && token !== '') {
+    setAuthToken(token)
+    setRequiresLogin(false)
+    googleRedirectResult = { ok: true }
+  } else if (error != null && error !== '') {
+    googleRedirectResult = { ok: false, error }
+  }
+  history.replaceState(
+    null,
+    '',
+    window.location.pathname + window.location.search,
+  )
+}
+
+/** One-shot result of the redirect sign-in, for UI notifications. */
+export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
+  const result = googleRedirectResult
+  googleRedirectResult = null
+  return result
+}
+
 export function logout(): void {
   const token = getAuthToken()
   const payload = token != null ? decodeToken(token) : null

@@ -12,55 +12,11 @@ import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid
 import { getDb } from '@/db'
 import type { LeaderboardEntry, UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
+import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
-import { API_BASE_URL, GOOGLE_CLIENT_ID } from '@/lib/defaults'
+import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AccountSection.module.css'
-
-// ── Google Identity Services (GIS) ──────────────────────────────
-
-interface GoogleCredentialResponse {
-  credential: string
-}
-
-interface GoogleAccountsId {
-  initialize(config: {
-    client_id: string
-    callback: (response: GoogleCredentialResponse) => void
-    /** Browser-mediated FedCM sign-in: no popup, so it keeps working
-     *  under our COOP/COEP isolation headers (vite dev + _headers). */
-    use_fedcm_for_button?: boolean
-  }): void
-  renderButton(
-    parent: HTMLElement,
-    options: { theme?: string; size?: string; width?: number },
-  ): void
-}
-
-declare global {
-  interface Window {
-    google?: { accounts?: { id?: GoogleAccountsId } }
-  }
-}
-
-const GIS_SRC = 'https://accounts.google.com/gsi/client'
-
-function loadGisScript(): Promise<GoogleAccountsId | null> {
-  return new Promise((resolve) => {
-    const existing = window.google?.accounts?.id
-    if (existing) {
-      resolve(existing)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = GIS_SRC
-    script.async = true
-    script.onload = () => resolve(window.google?.accounts?.id ?? null)
-    script.onerror = () => resolve(null)
-    document.head.appendChild(script)
-  })
-}
 
 // ── Component ───────────────────────────────────────────────────
 
@@ -126,46 +82,33 @@ export const AccountSection: Component = () => {
     }
   }
 
-  let googleButtonHost: HTMLDivElement | undefined
-  let gis: GoogleAccountsId | null = null
-
   async function refreshMe(): Promise<void> {
     setMe(await fetchMe())
   }
 
-  // (Re-)render the Google button into a host element. The host div is
-  // recreated whenever the anonymous view remounts (cancelling the
-  // email form, signing out), so this runs from its ref each time.
-  function renderGoogleButton(host: HTMLElement): void {
-    if (gis == null) return
-    host.innerHTML = ''
-    gis.renderButton(host, { theme: 'outline', size: 'large' })
-  }
-
   onMount(() => {
     if (!cloudConfigured) return
+    // Returning from the Google sign-in redirect? (index.tsx already
+    // stored the token; this is just the user-visible outcome.)
+    const redirect = takeGoogleRedirectResult()
+    if (redirect != null) {
+      if (redirect.ok) {
+        showNotification('Signed in with Google', 'info')
+      } else {
+        setError(`Google sign-in failed: ${redirect.error}`)
+      }
+    }
     void (async () => {
       await ensureAuth()
       await refreshMe()
-
-      if (GOOGLE_CLIENT_ID === '') return
-      gis = await loadGisScript()
-      if (gis == null) return
-      gis.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        use_fedcm_for_button: true,
-        callback: (response) => {
-          void handleAuthAction(async () => {
-            await loginWithGoogle(response.credential)
-            showNotification('Signed in with Google', 'info')
-          })
-        },
-      })
-      if (googleButtonHost != null && googleButtonHost.isConnected) {
-        renderGoogleButton(googleButtonHost)
-      }
     })()
   })
+
+  /** Full-page redirect via the worker: COOP severs window.opener, so
+   *  the GIS popup flow cannot work here (see auth-service). */
+  function startGoogleSignIn(): void {
+    window.location.assign(googleSignInUrl())
+  }
 
   async function handleAuthAction(action: () => Promise<void>): Promise<void> {
     setError('')
@@ -301,13 +244,41 @@ export const AccountSection: Component = () => {
                 Sign in
               </button>
             </div>
-            <div
-              ref={(el) => {
-                googleButtonHost = el
-                renderGoogleButton(el)
-              }}
-              class={styles.googleButtonHost}
-            />
+            <button
+              class={styles.googleButton}
+              onClick={startGoogleSignIn}
+              data-testid="google-signin"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+              </svg>
+              Sign in with Google
+            </button>
+            <Show when={error() !== ''}>
+              <p class={styles.errorNote} data-testid="auth-error">
+                {error()}
+              </p>
+            </Show>
           </Match>
 
           {/* Login / register form */}

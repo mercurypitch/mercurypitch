@@ -37,11 +37,6 @@ export const DEV_DOMAIN =
 export const API_BASE_URL: string | undefined = import.meta.env
   .VITE_API_BASE_URL
 
-/** Google OAuth client id for Sign in with Google (public, not a secret). */
-export const GOOGLE_CLIENT_ID: string =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ??
-  '144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com'
-
 export function getUvrApiBase(): string {
   return IS_DEV
     ? `https://${DEV_DOMAIN}/api/uvr`

@@ -16,9 +16,13 @@ import '@/styles/restored-legacy.css'
 import '@/components/Modal.css'
 import { App } from './App'
 
+import { consumeGoogleRedirect } from '@/db/services/auth-service'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 
 initGlobalErrorHandlers()
+// Store the JWT from a Google sign-in redirect (#gauth=…) before the
+// app boots and ensureAuth() runs.
+consumeGoogleRedirect()
 
 const root = document.getElementById('root')
 if (!root) {

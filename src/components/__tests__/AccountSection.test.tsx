@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'http://api.test',
-  GOOGLE_CLIENT_ID: '', // disables the GIS script in tests
 }))
 
 const mocks = vi.hoisted(() => ({
@@ -17,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   registerWithPassword: vi.fn(),
   loginWithGoogle: vi.fn(),
   logout: vi.fn(),
+  googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
+  takeGoogleRedirectResult: vi.fn(() => null),
 }))
 
 const dbMocks = vi.hoisted(() => {

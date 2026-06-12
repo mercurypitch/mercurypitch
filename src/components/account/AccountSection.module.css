@@ -100,8 +100,12 @@
   text-decoration: underline;
 }
 
-.googleButtonHost {
-  min-height: 40px;
+.googleButton {
+  composes: authButton;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
 }
 
 .nameEditRow {

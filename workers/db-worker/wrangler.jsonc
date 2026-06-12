@@ -8,7 +8,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     // Public OAuth client id (Web application) — not a secret.
-    // JWT_SECRET and ADMIN_KEY are real secrets: `wrangler secret put`.
+    // JWT_SECRET, ADMIN_KEY and GOOGLE_CLIENT_SECRET are real secrets:
+    // `wrangler secret put <NAME>` (per env). GOOGLE_CLIENT_SECRET powers
+    // the redirect sign-in flow; this worker's /api/auth/google/callback
+    // URL must be an Authorized redirect URI on the Google OAuth client.
     "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
   },
   "d1_databases": [
