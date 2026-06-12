@@ -12,7 +12,7 @@ import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid
 import { getDb } from '@/db'
 import type { LeaderboardEntry, UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
@@ -88,16 +88,6 @@ export const AccountSection: Component = () => {
 
   onMount(() => {
     if (!cloudConfigured) return
-    // Returning from the Google sign-in redirect? (index.tsx already
-    // stored the token; this is just the user-visible outcome.)
-    const redirect = takeGoogleRedirectResult()
-    if (redirect != null) {
-      if (redirect.ok) {
-        showNotification('Signed in with Google', 'info')
-      } else {
-        setError(`Google sign-in failed: ${redirect.error}`)
-      }
-    }
     void (async () => {
       await ensureAuth()
       await refreshMe()

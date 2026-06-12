@@ -4,23 +4,7 @@
 
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
-import { getUserId } from '@/db/services/user-service'
-import type { Repository } from '@/db/types'
-
-/**
- * The current user's profile. In cloud mode the row id IS the user id
- * (and profiles are publicly readable, so an unfiltered findAll would
- * return other users' rows); locally the single seeded profile has a
- * generated id, hence the fallback.
- */
-async function findOwnProfile(
-  repo: Repository<UserProfile>,
-): Promise<UserProfile | undefined> {
-  const byId = await repo.findById(getUserId())
-  if (byId !== null) return byId
-  const profiles = await repo.findAll({ limit: 1 })
-  return profiles[0]
-}
+import { findOwnProfile } from '@/db/services/user-service'
 
 function todayDateString(): string {
   return new Date().toISOString().slice(0, 10)

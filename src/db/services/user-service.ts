@@ -8,6 +8,8 @@
 // same id server-side, so all local attribution stays valid.
 
 import { createSignal } from 'solid-js'
+import type { UserProfile } from '@/db/entities'
+import type { Repository } from '@/db/types'
 
 const USER_ID_KEY = 'mp:userId'
 const AUTH_TOKEN_KEY = 'mp:authToken'
@@ -75,6 +77,21 @@ export function setAuthToken(token: string | null): void {
     localStorage.setItem(AUTH_TOKEN_KEY, token)
   }
   setAuthVersion((v) => v + 1)
+}
+
+/**
+ * The current user's profile. In cloud mode the row id IS the user id
+ * (and profiles are publicly readable, so an unfiltered findAll would
+ * return other users' rows); locally the single seeded profile has a
+ * generated id, hence the fallback.
+ */
+export async function findOwnProfile(
+  repo: Repository<UserProfile>,
+): Promise<UserProfile | undefined> {
+  const byId = await repo.findById(getUserId())
+  if (byId !== null) return byId
+  const profiles = await repo.findAll({ limit: 1 })
+  return profiles[0]
 }
 
 /** Headers for authenticated ServerAdapter / fetch calls. */
