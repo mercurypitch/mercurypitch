@@ -575,7 +575,21 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     }),
   })
   if (!tokenRes.ok) {
-    return redirectWithError(state.returnTo, 'Google code exchange failed')
+    // Google's error body ({"error":"invalid_client", …}) names the
+    // misconfiguration (bad secret, redirect_uri mismatch, …) — log it
+    // and surface the code so the failure is diagnosable from the UI.
+    const detail = await tokenRes.text().catch(() => '')
+    console.error('[google-callback] code exchange failed:', tokenRes.status, detail)
+    let code = ''
+    try {
+      code = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
+    return redirectWithError(
+      state.returnTo,
+      `Google code exchange failed${code !== '' ? ` (${code})` : ` (${tokenRes.status})`}`,
+    )
   }
   const tokenData = await tokenRes.json<{ id_token?: string }>()
   if (!tokenData.id_token) {
