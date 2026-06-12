@@ -226,4 +226,15 @@ describe('persistent identity', () => {
     expect(getUserId()).toBe(first)
     expect(localStorage.getItem('mp:userId')).toBe(first)
   })
+
+  it('uses the JWT identity while authenticated', () => {
+    const deviceId = getUserId()
+    // makeToken() encodes sub: 'user-1' — an account created on
+    // another device, so it differs from the local device id
+    setAuthToken(makeToken(3600))
+    expect(getUserId()).toBe('user-1')
+
+    logout()
+    expect(getUserId()).toBe(deviceId)
+  })
 })

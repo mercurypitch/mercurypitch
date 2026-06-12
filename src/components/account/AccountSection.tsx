@@ -98,10 +98,10 @@ export const AccountSection: Component = () => {
       const db = await getDb()
       const profiles = db.getRepository<UserProfile>('userProfiles')
       const userId = getUserId()
-      try {
+      // Cloud row id == userId (the JWT identity)
+      if ((await profiles.findById(userId)) != null) {
         await profiles.update(userId, { displayName: name })
-      } catch {
-        // No profile row yet — create one (cloud row id == userId)
+      } else {
         await profiles.create({
           displayName: name,
           joinDate: new Date().toISOString(),
@@ -224,7 +224,10 @@ export const AccountSection: Component = () => {
           <Match when={me() != null && isUpgraded()}>
             <div class={styles.statusRow}>
               <span class={styles.providerBadge}>{provider()}</span>
-              <span class={styles.userEmail} data-testid="account-display-name">
+              <span
+                class={styles.displayNamePill}
+                data-testid="account-display-name"
+              >
                 {profileName() !== '' ? profileName() : 'Signed in'}
               </span>
               <span class={styles.mutedNote} data-testid="account-email">

@@ -23,8 +23,35 @@ export const authVersion = authVersionSignal
 
 let cachedUserId = ''
 
-/** Stable per-browser user id, generated once and persisted. */
+/** Extract the `sub` claim from a JWT without verifying it. */
+function decodeTokenSub(token: string): string | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const body = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(body)) as { sub?: unknown }
+    return typeof payload.sub === 'string' && payload.sub !== ''
+      ? payload.sub
+      : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The current user id. When authenticated this is the JWT identity —
+ * the server account id and this device's persisted id differ when
+ * the account was not an in-place upgrade of this device (e.g. a
+ * login to an account created elsewhere). Signed out, it's the
+ * stable per-browser id, generated once and persisted.
+ */
 export function getUserId(): string {
+  const token = getAuthToken()
+  if (token != null && token !== '') {
+    const sub = decodeTokenSub(token)
+    if (sub !== null) return sub
+  }
+
   let id = localStorage.getItem(USER_ID_KEY)
   if (id == null || id === '') {
     // Reuse the in-memory id if storage was cleared mid-session,
