@@ -22,7 +22,9 @@ import { TABLES } from './tables'
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': '*',
+  // Spec quirk: a `*` wildcard does NOT cover the Authorization header
+  // (Firefox already warns it will block it) — list everything we use.
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Key',
 }
 
 function respond(body: object | null, init?: ResponseInit): Response {
