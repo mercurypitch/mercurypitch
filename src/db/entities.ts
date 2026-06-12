@@ -184,12 +184,19 @@ export interface FeatureFlag extends DbEntity {
   value: boolean
 }
 
-// ── User Settings (for future migration) ────────────────────────
+// ── User Settings (cloud-synced when signed in) ─────────────────
 
 export interface UserSetting extends DbEntity {
   userId: string
   key: string
   value: string // JSON-serialized
+}
+
+// ── Follows (social graph for the Friends leaderboard) ──────────
+
+export interface Follow extends DbEntity {
+  userId: string
+  followedUserId: string
 }
 
 // ── Melody Library (entity types ready for future migration) ────

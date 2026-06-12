@@ -5,11 +5,15 @@
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
-import { CheckCircle, ChevronDown, Eye, Play } from '@/components/icons'
-import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
-import { loadLeaderboard } from '@/db/services/leaderboard-service'
+import { CheckCircle, ChevronDown, Play } from '@/components/icons'
+import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
+import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
+import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
+import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
-import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
+import { API_BASE_URL } from '@/lib/defaults'
+import { showNotification } from '@/stores/notifications-store'
+import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
 // ============================================================
@@ -319,56 +323,15 @@ const mockLeaderboardUsers: LeaderboardUser[] = [
   },
 ]
 
-const weeklyChallengesData: WeeklyChallengeResult[] = [
-  {
-    challengeId: 'c1',
-    name: 'High Note King',
-    description: 'Achieve 90%+ accuracy on all C5+ notes in 3 sessions',
-    icon: IconChallenge,
-    userRank: 15,
-    globalRank: 127,
-    startDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
-    type: 'high-notes',
-    targetScore: 100,
-    userScore: 0,
-  },
-  {
-    challengeId: 'c2',
-    name: 'Speed Demon',
-    description: 'Complete 10 scales in under 30 seconds each',
-    icon: IconChallenge,
-    userRank: 8,
-    globalRank: 89,
-    startDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
-    type: 'speed',
-    targetScore: 100,
-    userScore: 35,
-  },
-  {
-    challengeId: 'c3',
-    name: 'Perfect Pitch Master',
-    description: 'Get 100% accuracy on 3 consecutive sessions',
-    icon: IconChallenge,
-    userRank: 23,
-    globalRank: 156,
-    startDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
-    type: 'perfect',
-    targetScore: 100,
-    userScore: 0,
-  },
-  {
-    challengeId: 'c4',
-    name: 'Scale Surfer',
-    description: 'Complete 20 different scale types',
-    icon: IconChallenge,
-    userRank: 5,
-    globalRank: 67,
-    startDate: Date.now() - 1000 * 60 * 60 * 24 * 4,
-    type: 'scales',
-    targetScore: 20,
-    userScore: 18,
-  },
-]
+/** A challenge definition joined with the user's own progress. */
+interface WeeklyChallengeCard {
+  challengeId: string
+  name: string
+  description: string
+  targetScore: number
+  userScore: number
+  completed: boolean
+}
 
 // ============================================================
 // Component
@@ -387,40 +350,112 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     null,
   )
 
-  // DB-backed leaderboard data
+  const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
+  const PAGE_SIZE = 25
+
+  // DB-backed leaderboard data (paged)
   const [dbLeaderboardUsers, setDbLeaderboardUsers] = createSignal<
     LeaderboardUser[]
   >([])
+  const [totalEntries, setTotalEntries] = createSignal(0)
+  const [loadingMore, setLoadingMore] = createSignal(false)
 
-  // Reload whenever the category or signed-in identity changes
+  // Who the current user follows (drives the Friends tab + buttons)
+  const [following, setFollowing] = createSignal<string[]>([])
+
+  // Real weekly challenges: definitions + own progress
+  const [weeklyChallenges, setWeeklyChallenges] = createSignal<
+    WeeklyChallengeCard[]
+  >([])
+
+  function toLeaderboardUser(u: {
+    userId: string
+    displayName: string
+    score: number
+    rank: number
+    streak: number
+    totalSessions: number
+    bestScore: number
+    accuracy: number
+  }): LeaderboardUser {
+    return { ...u, avatar: IconUser, joinDate: 0 }
+  }
+
+  async function loadPage(offset: number): Promise<void> {
+    const page = await loadLeaderboardPage({
+      category: activeCategory() as DBLeaderboardCategory,
+      view: activeView() === 'friends' ? 'friends' : 'global',
+      limit: PAGE_SIZE,
+      offset,
+    })
+    setTotalEntries(page.total)
+    const users = page.users.map(toLeaderboardUser)
+    setDbLeaderboardUsers((prev) =>
+      offset === 0 ? users : [...prev, ...users],
+    )
+  }
+
+  // Reload page 0 whenever the tab, category, or identity changes
   createEffect(() => {
     authVersion()
-    const category = activeCategory() as DBLeaderboardCategory
+    activeCategory()
+    activeView()
+    void loadPage(0)
+  })
+
+  createEffect(() => {
+    authVersion()
+    void getFollowing().then(setFollowing)
     void (async () => {
-      const dbUsers = await loadLeaderboard(
-        category,
-        'all-time' as LeaderboardPeriod,
+      const [defs, progress] = await Promise.all([
+        loadChallengeDefinitions(),
+        loadChallengeProgress(),
+      ])
+      const progressById = new Map<string, ChallengeProgress>(
+        progress.map((p) => [p.challengeId, p]),
       )
-      setDbLeaderboardUsers(
-        dbUsers.map((u) => ({
-          userId: u.userId,
-          displayName: u.displayName,
-          avatar: IconUser,
-          score: u.score,
-          rank: u.rank,
-          streak: u.streak,
-          totalSessions: u.totalSessions,
-          bestScore: u.bestScore,
-          accuracy: u.accuracy,
-          joinDate: 0,
-        })),
+      setWeeklyChallenges(
+        defs.map((d: ChallengeDefinition) => {
+          const p = progressById.get(d.id)
+          return {
+            challengeId: d.id,
+            name: d.title,
+            description: d.description,
+            targetScore: d.targetScore,
+            userScore: p?.currentScore ?? 0,
+            completed: p?.completed ?? false,
+          }
+        }),
       )
     })()
   })
 
-  // Unified user list: DB data when available, mock fallback
+  async function loadMore(): Promise<void> {
+    setLoadingMore(true)
+    try {
+      await loadPage(dbLeaderboardUsers().length)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  async function toggleFollow(userId: string): Promise<void> {
+    const isFollowed = following().includes(userId)
+    const ok = isFollowed ? await unfollow(userId) : await follow(userId)
+    if (!ok) {
+      showNotification('Sign in to follow players', 'warning')
+      return
+    }
+    setFollowing(await getFollowing())
+    showNotification(isFollowed ? 'Unfollowed' : 'Following player', 'info')
+    if (activeView() === 'friends') void loadPage(0)
+  }
+
+  // Unified user list: real data when a cloud API is configured (even
+  // if empty); mock demo data only in local-only builds.
   const allLeaderboardUsers = createMemo(() => {
     const db = dbLeaderboardUsers()
+    if (cloudConfigured) return db
     return db.length > 0 ? db : mockLeaderboardUsers
   })
 
@@ -493,7 +528,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
           <span class="tab-name">Friends</span>
-          <span class="tab-count">8</span>
+          <span class="tab-count">{following().length}</span>
         </button>
         <button
           class={`leaderboard-tab ${activeView() === 'weekly' ? 'active' : ''}`}
@@ -501,7 +536,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         >
           <IconStreak />
           <span class="tab-name">Weekly</span>
-          <span class="tab-count">3</span>
+          <span class="tab-count">{weeklyChallenges().length}</span>
         </button>
       </div>
 
@@ -544,75 +579,82 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             Complete challenges to earn special badges and climb the ranks!
           </p>
 
-          <div class="challenges-grid">
-            <For each={weeklyChallengesData}>
-              {(challenge) => (
-                <div
-                  class="challenge-card"
-                  data-challenge={challenge.challengeId}
-                >
-                  <div class="challenge-icon">{renderIcon(challenge.icon)}</div>
-                  <div class="challenge-content">
-                    <h4 class="challenge-name">{challenge.name}</h4>
-                    <p class="challenge-desc">{challenge.description}</p>
-                    <div class="challenge-stats">
-                      <span class="stat-user">
-                        Your Rank: #{challenge.userRank}
-                      </span>
-                      <span class="stat-global">
-                        Global: #{challenge.globalRank}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="challenge-progress">
-                    <div class="progress-bar">
-                      <div
-                        class="progress-fill"
-                        style={{
-                          width: `${(challenge.userScore / challenge.targetScore) * 100}%`,
-                          '--progress-color': getScoreColor(
-                            challenge.userScore,
-                          ),
-                        }}
-                      />
-                    </div>
-                    <span class="progress-text">
-                      {challenge.userScore} / {challenge.targetScore}
-                    </span>
-                  </div>
-                  <button
-                    class="challenge-join-btn"
-                    disabled={challenge.userScore >= challenge.targetScore}
-                    aria-label={
-                      challenge.userScore >= challenge.targetScore
-                        ? 'Completed'
-                        : 'Join challenge'
-                    }
-                    title={
-                      challenge.userScore >= challenge.targetScore
-                        ? 'Completed'
-                        : 'Join challenge'
-                    }
+          <Show
+            when={weeklyChallenges().length > 0}
+            fallback={
+              <p class="weekly-challenges-desc">No challenges available.</p>
+            }
+          >
+            <div class="challenges-grid">
+              <For each={weeklyChallenges()}>
+                {(challenge) => (
+                  <div
+                    class="challenge-card"
+                    data-challenge={challenge.challengeId}
                   >
-                    {challenge.userScore >= challenge.targetScore ? (
-                      <CheckCircle />
-                    ) : (
-                      <Play />
-                    )}
-                    {challenge.userScore >= challenge.targetScore
-                      ? 'Completed'
-                      : 'Join Challenge'}
-                  </button>
-                </div>
-              )}
-            </For>
-          </div>
+                    <div class="challenge-icon">{IconChallenge()}</div>
+                    <div class="challenge-content">
+                      <h4 class="challenge-name">{challenge.name}</h4>
+                      <p class="challenge-desc">{challenge.description}</p>
+                      <div class="challenge-stats">
+                        <span class="stat-user">
+                          {challenge.completed
+                            ? 'Completed'
+                            : `Your progress: ${challenge.userScore} / ${challenge.targetScore}`}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="challenge-progress">
+                      <div class="progress-bar">
+                        <div
+                          class="progress-fill"
+                          style={{
+                            width: `${Math.min((challenge.userScore / Math.max(challenge.targetScore, 1)) * 100, 100)}%`,
+                            '--progress-color': getScoreColor(
+                              challenge.userScore,
+                            ),
+                          }}
+                        />
+                      </div>
+                      <span class="progress-text">
+                        {challenge.userScore} / {challenge.targetScore}
+                      </span>
+                    </div>
+                    <button
+                      class="challenge-join-btn"
+                      disabled={challenge.completed}
+                      onClick={() => props.onOpenChallenges?.()}
+                      aria-label={
+                        challenge.completed ? 'Completed' : 'Practice now'
+                      }
+                      title={challenge.completed ? 'Completed' : 'Practice now'}
+                    >
+                      {challenge.completed ? <CheckCircle /> : <Play />}
+                      {challenge.completed ? 'Completed' : 'Practice Now'}
+                    </button>
+                  </div>
+                )}
+              </For>
+            </div>
+          </Show>
         </div>
       </Show>
 
       {/* Leaderboard Table View */}
       <Show when={activeView() !== 'weekly'}>
         <div class="leaderboard-content">
+          {/* Friends tab: empty-state hint */}
+          <Show
+            when={
+              activeView() === 'friends' && allLeaderboardUsers().length === 0
+            }
+          >
+            <p class="weekly-challenges-desc" data-testid="friends-empty">
+              {cloudConfigured
+                ? 'No friends yet — open a player on the Global tab and hit Follow. Sign in to keep your friends across devices.'
+                : 'Friends leaderboards need a cloud account (not available in this build).'}
+            </p>
+          </Show>
           {/* Top 3 Podium */}
           <div class="podium-section">
             <For each={podiumData()}>
@@ -658,18 +700,17 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               </thead>
               <tbody>
                 <For each={filteredUsers()}>
-                  {(user, index) => (
+                  {(user) => (
                     <tr
                       class={`leaderboard-row ${user.userId === getUserId() || user.userId === 'me' ? 'is-me' : ''}`}
-                      data-rank={index() + 1}
+                      data-rank={user.rank}
                       data-user-id={user.userId}
                       onClick={() => setSelectedUser(user)}
                     >
                       <td class="rank-td">
-                        {index() < 3 && index() === 0 && <TrophyIcon />}
-                        {index() < 3 && index() === 1 && <IconTrophy />}
-                        {index() < 3 && index() === 2 && <IconTrophy />}
-                        {index() >= 3 && index() + 1}
+                        {user.rank === 1 && <TrophyIcon />}
+                        {(user.rank === 2 || user.rank === 3) && <IconTrophy />}
+                        {user.rank > 3 && user.rank}
                       </td>
                       <td class="user-td">
                         <div class="user-cell">
@@ -712,16 +753,27 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             </table>
           </div>
 
-          {/* Load More */}
-          <div class="load-more-container">
-            <button
-              class="load-more-btn"
-              aria-label="Load more players"
-              title="Load more players"
-            >
-              <ChevronDown /> Load More Players
-            </button>
-          </div>
+          {/* Load More (server-side pagination) */}
+          <Show
+            when={
+              cloudConfigured && dbLeaderboardUsers().length < totalEntries()
+            }
+          >
+            <div class="load-more-container">
+              <button
+                class="load-more-btn"
+                aria-label="Load more players"
+                title="Load more players"
+                disabled={loadingMore()}
+                onClick={() => void loadMore()}
+              >
+                <ChevronDown />
+                {loadingMore()
+                  ? 'Loading…'
+                  : `Load More Players (${dbLeaderboardUsers().length} of ${totalEntries()})`}
+              </button>
+            </div>
+          </Show>
         </div>
       </Show>
 
@@ -795,41 +847,33 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               </div>
             </div>
 
-            <div class="profile-charts">
-              <h4>Weekly Performance</h4>
-              <div class="mini-chart">
-                <For each={[75, 82, 68, 90, 85, 92, 78]}>
-                  {(score) => (
-                    <div class="mini-bar-wrapper">
-                      <div
-                        class="mini-bar leaderboard-bar"
-                        style={{
-                          width: `${score}%`,
-                          background: getBarColor(score),
-                        }}
-                      />
-                    </div>
-                  )}
-                </For>
+            <Show when={selectedUser()?.userId !== getUserId()}>
+              <div class="profile-actions">
+                <button
+                  class="profile-follow-btn"
+                  data-testid="follow-button"
+                  aria-label={
+                    following().includes(selectedUser()?.userId ?? '')
+                      ? 'Unfollow player'
+                      : 'Follow player'
+                  }
+                  title={
+                    following().includes(selectedUser()?.userId ?? '')
+                      ? 'Unfollow player'
+                      : 'Follow player'
+                  }
+                  onClick={() => {
+                    const id = selectedUser()?.userId
+                    if (id != null && id !== '') void toggleFollow(id)
+                  }}
+                >
+                  <CheckCircle />
+                  {following().includes(selectedUser()?.userId ?? '')
+                    ? 'Following'
+                    : 'Follow Player'}
+                </button>
               </div>
-            </div>
-
-            <div class="profile-actions">
-              <button
-                class="profile-follow-btn"
-                aria-label="Follow player"
-                title="Follow player"
-              >
-                <CheckCircle /> Follow Player
-              </button>
-              <button
-                class="profile-view-btn"
-                aria-label="View profile"
-                title="View profile"
-              >
-                <Eye /> View Profile
-              </button>
-            </div>
+            </Show>
           </div>
         </div>
       </Show>
@@ -840,6 +884,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 interface LeaderboardProps {
   view?: LeaderboardView
   category?: LeaderboardCategory
+  /** Navigate to the challenges tab (weekly cards' "Practice Now"). */
+  onOpenChallenges?: () => void
 }
 
 function getScoreColor(score: number): string {
@@ -853,12 +899,5 @@ function getStreakColor(streak: number): string {
   if (streak >= 30) return 'var(--green)'
   if (streak >= 15) return 'var(--accent)'
   if (streak >= 7) return 'var(--teal)'
-  return 'var(--yellow)'
-}
-
-function getBarColor(score: number): string {
-  if (score >= 90) return 'var(--green)'
-  if (score >= 75) return 'var(--accent)'
-  if (score >= 60) return 'var(--teal)'
   return 'var(--yellow)'
 }

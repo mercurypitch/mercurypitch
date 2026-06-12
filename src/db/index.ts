@@ -91,6 +91,7 @@ export type {
   SharedSession,
   FeatureFlag,
   UserSetting,
+  Follow,
   MelodyRecord,
   SessionTemplate,
   PlaylistRecord,

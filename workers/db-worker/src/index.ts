@@ -365,6 +365,94 @@ async function handleDelete(
   return respond(null, { status: 204 })
 }
 
+// ── Leaderboard view (server-side ranking) ───────────────────────────
+//
+// GET /api/leaderboard?category=&period=&view=&limit=&offset=
+//   category: overall | best-score | accuracy | streak | sessions
+//   period:   all-time | weekly   (weekly = rows touched this ISO week)
+//   view:     global | friends    (friends needs auth: follows + self)
+//
+// Ranks are computed here from the current metric — the `rank` column
+// on leaderboardEntries is only a write-time seed and goes stale.
+// Returns { entries: [...], total } for pagination ("Load More").
+
+const LEADERBOARD_METRICS: Record<string, string> = {
+  overall: 'score',
+  'best-score': 'bestScore',
+  accuracy: 'accuracy',
+  streak: 'streak',
+  sessions: 'totalSessions',
+}
+
+/** ISO-week start (Monday 00:00 UTC) for "weekly" filtering. */
+function weekStartIso(): string {
+  const now = new Date()
+  const day = now.getUTCDay() // 0 = Sunday
+  const monday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  )
+  monday.setUTCDate(monday.getUTCDate() - ((day + 6) % 7))
+  return monday.toISOString()
+}
+
+async function handleLeaderboard(
+  url: URL,
+  auth: AuthUser | null,
+  env: Env,
+): Promise<Response> {
+  const metric = LEADERBOARD_METRICS[url.searchParams.get('category') ?? 'overall']
+  if (!metric) return respond({ error: 'Unknown category' }, { status: 400 })
+  const period = url.searchParams.get('period') ?? 'all-time'
+  if (period !== 'all-time' && period !== 'weekly') {
+    return respond({ error: 'Unknown period' }, { status: 400 })
+  }
+  const view = url.searchParams.get('view') ?? 'global'
+  if (view !== 'global' && view !== 'friends') {
+    return respond({ error: 'Unknown view' }, { status: 400 })
+  }
+  if (view === 'friends' && !auth) {
+    return respond({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const limitRaw = Number(url.searchParams.get('limit'))
+  const limit =
+    Number.isFinite(limitRaw) && limitRaw > 0
+      ? Math.min(limitRaw, MAX_LIST_LIMIT)
+      : 25
+  const offsetRaw = Number(url.searchParams.get('offset'))
+  const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
+
+  const clauses = ['"period" = ?']
+  const binds: SqlValue[] = [period]
+  if (period === 'weekly') {
+    clauses.push('"updatedAt" >= ?')
+    binds.push(weekStartIso())
+  }
+  if (view === 'friends') {
+    clauses.push(
+      '("userId" = ? OR "userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
+    )
+    binds.push((auth as AuthUser).userId, (auth as AuthUser).userId)
+  }
+  const where = ` WHERE ${clauses.join(' AND ')}`
+
+  const totalRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM "leaderboardEntries"${where}`,
+  )
+    .bind(...binds)
+    .first<{ count: number }>()
+
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM "leaderboardEntries"${where} ORDER BY "${metric}" DESC, "updatedAt" ASC LIMIT ? OFFSET ?`,
+  )
+    .bind(...binds, limit, offset)
+    .all<Row>()
+
+  return respond({
+    total: totalRow?.count ?? 0,
+    entries: results.map((row, i) => ({ ...row, rank: offset + i + 1 })),
+  })
+}
+
 // ── Router ───────────────────────────────────────────────────────────
 
 export default {
@@ -377,6 +465,10 @@ export default {
 
     const authResponse = await handleAuth(request, env, url.pathname, respond)
     if (authResponse) return authResponse
+
+    if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
+      return handleLeaderboard(url, await getAuth(request, env), env)
+    }
 
     const match = url.pathname.match(/^\/api\/([A-Za-z]+)(?:\/([^/]+))?$/)
     if (!match) return respond({ error: 'Not found' }, { status: 404 })

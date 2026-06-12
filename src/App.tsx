@@ -77,6 +77,7 @@ import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { takeGoogleRedirectResult } from '@/db/services/auth-service'
+import { initSettingsSync } from '@/db/services/settings-service'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
@@ -1105,6 +1106,10 @@ const AppShell: Component<AppProps> = (props) => {
   onMount(() => {
     initTheme()
 
+    // Cloud settings sync: pull on startup/auth change, write-through
+    // on preference changes. Inert when no API is configured.
+    initSettingsSync()
+
     // Surface the outcome of a Google sign-in redirect (token handling
     // itself ran in index.tsx before render). App-level so the toast
     // shows no matter which route the user signed in from.
@@ -1666,7 +1671,9 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_LEADERBOARD)}>
                   <div class="leaderboard-panel">
                     <Suspense fallback={<div class="tab-loading" />}>
-                      <CommunityLeaderboard />
+                      <CommunityLeaderboard
+                        onOpenChallenges={() => setActiveTab(TAB_CHALLENGES)}
+                      />
                     </Suspense>
                   </div>
                 </TabErrorBoundary>

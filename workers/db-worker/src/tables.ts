@@ -42,4 +42,5 @@ export const TABLES: Record<string, TableDef> = {
   sharedSessions: { access: 'shared', boolCols: ['isPublic'] },
   featureFlags: { access: 'admin', boolCols: ['value'] },
   userSettings: { access: 'user' },
+  follows: { access: 'user' },
 }

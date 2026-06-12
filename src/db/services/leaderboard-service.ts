@@ -6,6 +6,18 @@ import { getDb } from '@/db'
 import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { getCurrentStreak } from '@/db/services/streak-service'
+import { getAuthHeaders } from '@/db/services/user-service'
+import { API_BASE_URL } from '@/lib/defaults'
+
+/** ISO-week start (Monday 00:00 UTC) — mirrors the worker's weekly cut. */
+function weekStartIso(): string {
+  const now = new Date()
+  const monday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  )
+  monday.setUTCDate(monday.getUTCDate() - ((now.getUTCDay() + 6) % 7))
+  return monday.toISOString()
+}
 
 export interface LeaderboardUserView {
   userId: string
@@ -24,10 +36,15 @@ export interface LeaderboardUpdateInput {
   accuracy: number
 }
 
+/**
+ * Record a result on the leaderboard: upserts BOTH the all-time and the
+ * weekly row. A weekly row last touched before the current ISO week is
+ * stale — its counters restart instead of averaging in old data (the
+ * server filters stale weekly rows out of reads anyway).
+ */
 export async function updateLeaderboardEntry(
   input: LeaderboardUpdateInput,
   category: LeaderboardCategory = 'overall',
-  period: LeaderboardPeriod = 'all-time',
 ): Promise<void> {
   try {
     const db = await getDb()
@@ -35,42 +52,57 @@ export async function updateLeaderboardEntry(
     const userId = getUserId()
     const streak = await getCurrentStreak()
 
-    const existing = await repo.findAll({
-      where: { userId, category, period },
-    })
+    // Prefer the profile display name (cloud row id == userId);
+    // fall back to a generated handle.
+    const profile = await db
+      .getRepository<UserProfile>('userProfiles')
+      .findById(userId)
+    const profileName = profile?.displayName.trim() ?? ''
+    const displayName =
+      profileName !== '' ? profileName : `Singer-${userId.slice(0, 6)}`
 
-    if (existing.length > 0) {
-      const entry = existing[0]
-      entry.score = Math.round((entry.score + input.score) / 2)
-      entry.bestScore = Math.max(entry.bestScore, input.bestScore)
-      entry.accuracy = Math.round((entry.accuracy + input.accuracy) / 2)
-      entry.totalSessions += 1
-      entry.streak = streak
-      await repo.update(entry.id!, entry)
-    } else {
-      // Prefer the profile display name (cloud row id == userId);
-      // fall back to a generated handle.
-      const profile = await db
-        .getRepository<UserProfile>('userProfiles')
-        .findById(userId)
-      const profileName = profile?.displayName.trim() ?? ''
-      const displayName =
-        profileName !== '' ? profileName : `Singer-${userId.slice(0, 6)}`
-      // Stored rank is only a seed value — loadLeaderboard() recomputes
-      // ranks from current scores on every read.
-      const rank = (await repo.count({ where: { category, period } })) + 1
-      await repo.create({
-        userId,
-        displayName,
-        category,
-        period,
-        rank,
-        score: input.score,
-        streak,
-        totalSessions: 1,
-        bestScore: input.bestScore,
-        accuracy: input.accuracy,
+    const weekStart = weekStartIso()
+    for (const period of ['all-time', 'weekly'] as LeaderboardPeriod[]) {
+      const existing = await repo.findAll({
+        where: { userId, category, period },
       })
+      const entry = existing[0]
+      const stale =
+        period === 'weekly' && entry != null && entry.updatedAt < weekStart
+
+      if (entry != null && !stale) {
+        entry.score = Math.round((entry.score + input.score) / 2)
+        entry.bestScore = Math.max(entry.bestScore, input.bestScore)
+        entry.accuracy = Math.round((entry.accuracy + input.accuracy) / 2)
+        entry.totalSessions += 1
+        entry.streak = streak
+        await repo.update(entry.id, entry)
+      } else if (entry != null && stale) {
+        await repo.update(entry.id, {
+          displayName,
+          score: input.score,
+          bestScore: input.bestScore,
+          accuracy: input.accuracy,
+          totalSessions: 1,
+          streak,
+        })
+      } else {
+        // Stored rank is only a seed value — reads recompute ranks
+        // from current scores.
+        const rank = (await repo.count({ where: { category, period } })) + 1
+        await repo.create({
+          userId,
+          displayName,
+          category,
+          period,
+          rank,
+          score: input.score,
+          streak,
+          totalSessions: 1,
+          bestScore: input.bestScore,
+          accuracy: input.accuracy,
+        })
+      }
     }
   } catch {
     // Silently fail — leaderboard is non-critical
@@ -84,10 +116,16 @@ export async function loadLeaderboard(
   try {
     const db = await getDb()
     const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
-    const entries = await repo.findAll({
+    let entries = await repo.findAll({
       where: { category, period },
       orderBy: 'rank',
     })
+    if (period === 'weekly') {
+      // Weekly rows from previous weeks are stale (the server filters
+      // them too) — only this ISO week counts.
+      const weekStart = weekStartIso()
+      entries = entries.filter((e) => e.updatedAt >= weekStart)
+    }
 
     // Group by userId (one entry per user per category)
     const seen = new Set<string>()
@@ -128,6 +166,73 @@ export async function loadLeaderboard(
   } catch {
     return []
   }
+}
+
+export interface LeaderboardPage {
+  users: LeaderboardUserView[]
+  total: number
+}
+
+/**
+ * Paged leaderboard. Cloud mode hits the worker's server-side ranking
+ * endpoint (`GET /api/leaderboard` — supports the Friends view via the
+ * follows table and weekly staleness filtering); local mode computes
+ * the same view from Dexie.
+ */
+export async function loadLeaderboardPage(opts: {
+  category?: LeaderboardCategory
+  period?: LeaderboardPeriod
+  view?: 'global' | 'friends'
+  limit?: number
+  offset?: number
+}): Promise<LeaderboardPage> {
+  const {
+    category = 'overall',
+    period = 'all-time',
+    view = 'global',
+    limit = 25,
+    offset = 0,
+  } = opts
+
+  if (API_BASE_URL != null && API_BASE_URL !== '') {
+    try {
+      const params = new URLSearchParams({
+        category,
+        period,
+        view,
+        limit: String(limit),
+        offset: String(offset),
+      })
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard?${params}`, {
+        headers: getAuthHeaders(),
+      })
+      if (!res.ok) throw new Error(`leaderboard failed: ${res.status}`)
+      const data = (await res.json()) as {
+        total: number
+        entries: Array<LeaderboardEntry & { rank: number }>
+      }
+      return {
+        total: data.total,
+        users: data.entries.map((e) => ({
+          userId: e.userId,
+          displayName: e.displayName,
+          score: e.score,
+          rank: e.rank,
+          streak: e.streak,
+          totalSessions: e.totalSessions,
+          bestScore: e.bestScore,
+          accuracy: e.accuracy,
+        })),
+      }
+    } catch {
+      return { users: [], total: 0 }
+    }
+  }
+
+  // Local mode: friends view has no local social graph — empty.
+  if (view === 'friends') return { users: [], total: 0 }
+  const users = await loadLeaderboard(category, period)
+  return { users: users.slice(offset, offset + limit), total: users.length }
 }
 
 export async function loadCurrentUserEntry(
