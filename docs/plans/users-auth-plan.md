@@ -21,8 +21,10 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY` | ⬜ user action (after first deploy) |
 | HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ✅ done, unit-tested |
 | Auth client (`src/db/services/auth-service.ts`: ensureAuth/register/login/google/me) | ✅ done |
-| Auth UI (`src/components/account/AccountSection.tsx` in settings: register/login forms, Google button via GIS, sign-out; component-tested) | ✅ done |
-| Cloud seeding of challenge/badge/achievement definitions (admin key) | ⬜ next |
+| Auth UI (`src/components/account/AccountSection.tsx` in settings: register/login forms, Google sign-in button, sign-out; component-tested) | ✅ done |
+| Google redirect flow (`/api/auth/google/start` + `/callback`, COOP-safe — replaced the GIS button; see db-integration-next-plan §5b) | ✅ done |
+| Cloud seeding of challenge/badge/achievement definitions (admin key) | ✅ done (dev seeded 2026-06-12) |
+| Dev worker deployed + secrets (`mercury-pitch-db-dev`) | ✅ done |
 
 ## How auth works
 
@@ -33,7 +35,9 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | `POST /api/auth/anonymous` | `{ deviceId? }` | Creates (or re-issues for) an anonymous user. `deviceId` = client's persisted UUID. Refused (403) once the account is upgraded — then you must log in. |
 | `POST /api/auth/register` | `{ email, password, displayName?, deviceId? }` | With `deviceId`: upgrades the anonymous user **in place** (same id, all data kept). Otherwise creates a fresh account. |
 | `POST /api/auth/login` | `{ email, password }` | Standard login. |
-| `POST /api/auth/google` | `{ idToken, deviceId? }` | Verifies the GIS ID token (`aud` must match `GOOGLE_CLIENT_ID`). Order: returning Google user → auto-link to password account with same verified email → upgrade anonymous `deviceId` → create new. |
+| `POST /api/auth/google` | `{ idToken, deviceId? }` | Verifies the GIS ID token (`aud` must match `GOOGLE_CLIENT_ID`). Order: returning Google user → auto-link to password account with same verified email → upgrade anonymous `deviceId` → create new. Not used by the web UI (kept for native clients). |
+| `GET /api/auth/google/start` | `?deviceId=&returnTo=` | Web flow: 302 to accounts.google.com with HMAC-signed state (10-min TTL, `returnTo` origin-allowlisted). |
+| `GET /api/auth/google/callback` | `?code=&state=` | Exchanges the code (`GOOGLE_CLIENT_SECRET`), resolves the user (same order as POST), 302 back to `returnTo#gauth=<JWT>`. |
 | `GET /api/auth/me` | Bearer token | Returns user (never `passwordHash`) + profile. |
 
 All issue `{ token, userId, isNew, user }`. Client stores the token (`mp:authToken`) and sends `Authorization: Bearer <jwt>`; the worker derives `userId` from the token — request-body `userId` is ignored/overridden.
