@@ -92,22 +92,27 @@ VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # app on :3000 with HybridAda
 ### 5. Seed remote definitions — ✅ done
 `pnpm db:seed -- --url <worker-url> --admin-key <key>` (scripts/seed-remote-db.mjs) seeds challenge/badge/achievement definitions from `src/db/seed-data.json` (single source shared with the local Dexie seeder). Idempotent — tables with rows are skipped. Verified against local D1. Definitions only; no per-user mock data goes to the cloud.
 
-### 5b. Google Sign-In — needs in-browser verification
+### 5b. Google Sign-In — ✅ verified locally (2026-06-12)
 The button flow now uses FedCM (`use_fedcm_for_button: true`), which is browser-mediated and works under our cross-origin-isolation headers (`COOP: same-origin` + `COEP: credentialless`, set in vite dev and `public/_headers`) — the classic GIS popup flow is broken by exactly those headers. Also fixed: the button vanished when the email form was opened/cancelled or after sign-out (host div remount never re-rendered it).
 Manual checks (user):
-- [ ] Google Cloud Console → OAuth client → authorized JavaScript origins must include `https://localhost:3000` (vite dev serves **https** via basic-ssl — `http://localhost:3000` alone is not enough), plus `https://mercurypitch.com` and `https://dev.mercurypitch.com`.
-- [ ] Test sign-in in Chrome (FedCM). Firefox/Safari may fall back to the popup flow, which COOP blocks — if that matters, the fallback is a redirect-based flow (worker `login_uri` endpoint) as a follow-up.
+- [x] `https://localhost:3000` in the OAuth client's authorized JavaScript origins (vite dev serves **https** via basic-ssl) — confirmed by a successful local sign-in.
+- [x] Sign-in tested in Chrome (FedCM) against the local worker — register, Google sign-in, and display-name editing all work.
+- [ ] Before the dev/prod deploys: verify the origins also include `https://dev.mercurypitch.com` and `https://mercurypitch.com`.
+- Note: Firefox/Safari may fall back to the popup flow, which COOP blocks — if that matters, the fallback is a redirect-based flow (worker `login_uri` endpoint), tracked in §7.
+
+### 5c. Account display name — ✅ done
+Signed-in view shows the profile display name (gradient pill in the logo palette) with an inline editor — Google sign-in has no name prompt, so this is how Google users pick one. Saving updates the cloud profile and renames existing leaderboard entries; new leaderboard entries prefer the profile name over the generated `Singer-xxxxxx`. Fixed along the way: `getUserId()` now returns the JWT identity while signed in (device id only when signed out) — profile/leaderboard lookups were wrong for accounts that weren't an in-place upgrade of the current device.
 
 ### 6. dev.mercurypitch.com official test — checklist
-One-time, in order (needs Cloudflare + Google Console access):
-1. `pnpm db:init:dev` — creates `mercurypitch-db-dev` + applies schema; commits its id into `wrangler.jsonc`.
-2. `pnpm deploy:db:dev` — first deploy; prints the workers.dev URL.
-3. Secrets: `pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev` (same for `ADMIN_KEY`).
-4. `pnpm db:seed -- --url <printed-workers.dev-url> --admin-key <ADMIN_KEY>` — seed definitions.
-5. Uncomment + fill `VITE_API_BASE_URL` in `.env.development` with the printed URL; commit.
-6. Verify Google OAuth origins (see 5b), then merge to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
+One-time, in order (steps 1–3 need Cloudflare access):
+- [ ] 1. `pnpm db:init:dev` — creates `mercurypitch-db-dev` + applies schema; commits its id into `wrangler.jsonc`.
+- [ ] 2. `pnpm deploy:db:dev` — first deploy; prints the workers.dev URL.
+- [ ] 3. Secrets: `pnpm exec wrangler secret put JWT_SECRET --config workers/db-worker/wrangler.jsonc --env dev` (same for `ADMIN_KEY`).
+- [ ] 4. `pnpm db:seed -- --url <printed-workers.dev-url> --admin-key <ADMIN_KEY>` — seed definitions.
+- [ ] 5. Uncomment + fill `VITE_API_BASE_URL` in `.env.development` with the printed URL; commit.
+- [ ] 6. Verify Google OAuth origins (see 5b), then merge to main — `deploy-db.yml` + `build.yml` take over (schema re-apply, worker deploy, app deploy to dev.mercurypitch.com).
 
-Local stack for testing the same wiring without deploying:
+Local stack for testing the same wiring without deploying (verified end-to-end 2026-06-12: anonymous bootstrap, register, Google sign-in, display name, signed-out browsing):
 ```bash
 pnpm dev:db                                        # worker on :8788 (copy .dev.vars.example → .dev.vars once)
 pnpm db:seed -- --url http://localhost:8788 --admin-key dev-admin-key
