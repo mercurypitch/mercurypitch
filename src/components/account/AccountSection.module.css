@@ -125,11 +125,7 @@
   border-radius: 999px;
   border: 1.5px solid transparent;
   background:
-    linear-gradient(
-        rgba(13, 17, 23, 0.92),
-        rgba(13, 17, 23, 0.92)
-      )
-      padding-box,
+    linear-gradient(rgba(13, 17, 23, 0.92), rgba(13, 17, 23, 0.92)) padding-box,
     linear-gradient(120deg, #58a6ff, #bc8cff 55%, #2dd4bf) border-box;
   font-weight: 700;
   font-size: 14px;
