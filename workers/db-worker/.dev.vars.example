@@ -15,8 +15,8 @@ GOOGLE_CLIENT_ID=144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleuserco
 # OAuth client secret (same Google Cloud OAuth client) — needed for the
 # Google sign-in redirect flow (/api/auth/google/start|callback). The
 # worker's /api/auth/google/callback URL must be registered as an
-# Authorized redirect URI on that client (incl. http://localhost:8787
-# for local dev).
+# Authorized redirect URI on that client (incl. http://localhost:8788
+# for local `pnpm dev:db`).
 GOOGLE_CLIENT_SECRET=
 
 # Optional: extra app origins allowed as returnTo targets (comma-separated).
