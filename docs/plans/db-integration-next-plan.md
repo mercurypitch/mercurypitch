@@ -121,9 +121,9 @@ VITE_API_BASE_URL=http://localhost:8788 pnpm dev   # or use .claude/launch.json 
 
 ### 7. Later / nice-to-have
 - **Prod rollout** (everything is dev-only so far): `pnpm db:init` (schema), `pnpm deploy:db:prod`, prod secrets (`JWT_SECRET`, `ADMIN_KEY` — use a strong unique key, `GOOGLE_CLIENT_SECRET`), seed definitions, add the prod worker callback URL to the Google OAuth client, set the prod build's `VITE_API_BASE_URL`.
-- `userSettings` table is schema-only for now — no consumer. Decide: wire cross-device settings sync (needs a settings-service + write-through from the localStorage-backed stores) or drop the table.
-- Leaderboard aggregation server-side (computed from `sessionRecords` instead of client-written `leaderboardEntries`).
+- ~~`userSettings` consumer~~ — done (2026-06-12): settings-service syncs `pitchperfect_*` preference keys; pull on startup/auth change (cloud wins at sign-in), debounced write-through on change, inert when signed out / no API.
+- ~~Server-side leaderboard ranking~~ — done: worker `GET /api/leaderboard` ranks by category metric with all-time/weekly periods, global/friends views (follows join), and limit/offset pagination. (Aggregating from raw `sessionRecords` instead of client-written `leaderboardEntries` remains a possible future hardening.)
+- ~~Friends/Weekly tabs, Load More, follow buttons~~ — done: `follows` table + follow-service; Friends leaderboard, real weekly challenge cards (definitions + own progress), server pagination, wired follow/unfollow.
 - Token refresh / longer sessions (current: 30-day JWT, silent sign-out at expiry); password reset flow (needs email provider).
 - ~~Redirect-based Google sign-in fallback~~ — done; the redirect flow is now the only web flow (§5b).
 - `melodyRecords` / `sessionTemplates` / `playlistRecords` to cloud — requires adding a `userId` column first.
-- Friends/Weekly leaderboard tabs, "Load More", follow buttons remain intentional mocks (need real social backend).
