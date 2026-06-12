@@ -8,9 +8,12 @@
 // Karaoke/UVR data stays on-device regardless of login state.
 
 import type { Component } from 'solid-js'
-import { createSignal, Match, onMount, Show, Switch } from 'solid-js'
+import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { getDb } from '@/db'
+import type { LeaderboardEntry, UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { ensureAuth, fetchMe, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
+import { getUserId } from '@/db/services/user-service'
 import { API_BASE_URL, GOOGLE_CLIENT_ID } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AccountSection.module.css'
@@ -73,6 +76,55 @@ export const AccountSection: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
+  const [nameDraft, setNameDraft] = createSignal('')
+
+  const profileName = (): string =>
+    String(me()?.profile?.displayName ?? '').trim()
+
+  // Keep the editor in sync with the loaded profile
+  createEffect(() => setNameDraft(profileName()))
+
+  /**
+   * Persist the display name to the cloud profile and rename the
+   * user's existing leaderboard entries to match. Google sign-in has
+   * no name prompt, so this editor is how Google users pick one.
+   */
+  async function saveDisplayName(): Promise<void> {
+    const name = nameDraft().trim()
+    if (name === '' || name === profileName()) return
+    setError('')
+    setBusy(true)
+    try {
+      const db = await getDb()
+      const profiles = db.getRepository<UserProfile>('userProfiles')
+      const userId = getUserId()
+      try {
+        await profiles.update(userId, { displayName: name })
+      } catch {
+        // No profile row yet — create one (cloud row id == userId)
+        await profiles.create({
+          displayName: name,
+          joinDate: new Date().toISOString(),
+          lastPracticeDate: null,
+          currentStreak: 0,
+        })
+      }
+      const leaderboard =
+        db.getRepository<LeaderboardEntry>('leaderboardEntries')
+      const mine = await leaderboard.findAll({ where: { userId } })
+      await Promise.all(
+        mine.map((entry) =>
+          leaderboard.update(entry.id, { displayName: name }),
+        ),
+      )
+      await refreshMe()
+      showNotification('Display name updated', 'info')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   let googleButtonHost: HTMLDivElement | undefined
   let gis: GoogleAccountsId | null = null
@@ -172,15 +224,46 @@ export const AccountSection: Component = () => {
           <Match when={me() != null && isUpgraded()}>
             <div class={styles.statusRow}>
               <span class={styles.providerBadge}>{provider()}</span>
-              <span class={styles.userEmail} data-testid="account-email">
-                {me()?.user.email ??
-                  String(me()?.profile?.displayName ?? 'Signed in')}
+              <span class={styles.userEmail} data-testid="account-display-name">
+                {profileName() !== '' ? profileName() : 'Signed in'}
+              </span>
+              <span class={styles.mutedNote} data-testid="account-email">
+                {me()?.user.email ?? ''}
               </span>
             </div>
+            <div class={styles.nameEditRow}>
+              <input
+                class={styles.authInput}
+                type="text"
+                placeholder="Display name"
+                maxLength={40}
+                value={nameDraft()}
+                onInput={(e) => setNameDraft(e.currentTarget.value)}
+                data-testid="display-name-input"
+              />
+              <button
+                class={styles.authButton}
+                onClick={() => void saveDisplayName()}
+                disabled={
+                  busy() ||
+                  nameDraft().trim() === '' ||
+                  nameDraft().trim() === profileName()
+                }
+                data-testid="display-name-save"
+              >
+                Save
+              </button>
+            </div>
             <p class={styles.mutedNote}>
+              Your display name appears on leaderboards and shared content.
               Challenges, scores and leaderboard entries sync with this account.
               Karaoke audio stays on this device.
             </p>
+            <Show when={error() !== ''}>
+              <p class={styles.errorNote} data-testid="auth-error">
+                {error()}
+              </p>
+            </Show>
             <div class={styles.buttonRow}>
               <button
                 class={styles.authButton}

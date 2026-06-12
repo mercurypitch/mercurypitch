@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, } from '@/db/entities'
+import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { getCurrentStreak } from '@/db/services/streak-service'
 
@@ -48,7 +48,14 @@ export async function updateLeaderboardEntry(
       entry.streak = streak
       await repo.update(entry.id!, entry)
     } else {
-      const displayName = `Singer-${userId.slice(0, 6)}`
+      // Prefer the profile display name (cloud row id == userId);
+      // fall back to a generated handle.
+      const profile = await db
+        .getRepository<UserProfile>('userProfiles')
+        .findById(userId)
+      const profileName = profile?.displayName.trim() ?? ''
+      const displayName =
+        profileName !== '' ? profileName : `Singer-${userId.slice(0, 6)}`
       const allEntries = await repo.findAll({
         where: { category, period },
       })

@@ -103,3 +103,14 @@
 .googleButtonHost {
   min-height: 40px;
 }
+
+.nameEditRow {
+  display: flex;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.nameEditRow input {
+  flex: 1;
+  min-width: 0;
+}
