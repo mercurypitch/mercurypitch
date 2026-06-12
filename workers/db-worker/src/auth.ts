@@ -6,6 +6,8 @@
 //   POST /api/auth/register  { email, password, displayName?, deviceId? }
 //   POST /api/auth/login     { email, password }
 //   POST /api/auth/google    { idToken, deviceId? }
+//   GET  /api/auth/google/start?deviceId=&returnTo=   (redirect flow)
+//   GET  /api/auth/google/callback?code=&state=       (Google redirect URI)
 //   GET  /api/auth/me        (Bearer token)
 //
 // `deviceId` is the client's persisted anonymous UUID. Passing it to
@@ -18,8 +20,12 @@ export interface Env {
   JWT_SECRET?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
   GOOGLE_CLIENT_ID?: string
+  /** OAuth client secret — required for the redirect code flow. */
+  GOOGLE_CLIENT_SECRET?: string
   /** Shared secret for seed/admin writes via X-Admin-Key header. */
   ADMIN_KEY?: string
+  /** Comma-separated extra app origins allowed as Google returnTo targets. */
+  APP_ORIGINS?: string
 }
 
 export interface AuthUser {
@@ -263,13 +269,18 @@ function publicUser(row: UserRow): object {
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
-async function issueSession(env: Env, row: UserRow, respond: Respond, isNew = false): Promise<Response> {
+async function createSession(env: Env, row: UserRow): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
     { sub: row.id, provider: row.authProvider, iat: now, exp: now + TOKEN_TTL_SECONDS },
     env.JWT_SECRET as string,
   )
   await touchLogin(env.DB, row.id)
+  return token
+}
+
+async function issueSession(env: Env, row: UserRow, respond: Respond, isNew = false): Promise<Response> {
+  const token = await createSession(env, row)
   return respond({ token, userId: row.id, isNew, user: publicUser(row) })
 }
 
@@ -358,23 +369,18 @@ async function handleLogin(body: AuthBody, env: Env, respond: Respond): Promise<
   return issueSession(env, row, respond)
 }
 
-async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
-  if (!env.GOOGLE_CLIENT_ID) {
-    return respond({ error: 'Google login not configured' }, { status: 501 })
-  }
-  if (!body.idToken) {
-    return respond({ error: 'idToken required' }, { status: 400 })
-  }
-  const claims = await verifyGoogleIdToken(body.idToken, env.GOOGLE_CLIENT_ID)
-  if (!claims) {
-    return respond({ error: 'Invalid Google token' }, { status: 401 })
-  }
-
+/** Find-or-create the user for verified Google claims (shared by the
+ * POST endpoint and the redirect code flow). */
+async function resolveGoogleUser(
+  claims: GoogleClaims,
+  deviceId: string | undefined,
+  env: Env,
+): Promise<{ row: UserRow; isNew: boolean }> {
   // 1. Returning Google user
   const linked = await env.DB.prepare('SELECT * FROM users WHERE providerId = ?')
     .bind(claims.sub)
     .first<UserRow>()
-  if (linked) return issueSession(env, linked, respond)
+  if (linked) return { row: linked, isNew: false }
 
   const email = claims.email?.toLowerCase()
   const emailVerified = claims.email_verified === 'true'
@@ -388,22 +394,20 @@ async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise
       )
         .bind(claims.sub, nowIso(), byEmail.id)
         .run()
-      const row = (await findUserById(env.DB, byEmail.id)) as UserRow
-      return issueSession(env, row, respond)
+      return { row: (await findUserById(env.DB, byEmail.id)) as UserRow, isNew: false }
     }
   }
 
   // 3. Upgrade the anonymous user in place when a deviceId is given
-  if (body.deviceId && UUID_RE.test(body.deviceId)) {
-    const anon = await findUserById(env.DB, body.deviceId)
+  if (deviceId && UUID_RE.test(deviceId)) {
+    const anon = await findUserById(env.DB, deviceId)
     if (anon && anon.authProvider === 'anonymous') {
       await env.DB.prepare(
         `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?`,
       )
         .bind(claims.sub, email ?? null, emailVerified ? 1 : 0, nowIso(), anon.id)
         .run()
-      const row = (await findUserById(env.DB, anon.id)) as UserRow
-      return issueSession(env, row, respond)
+      return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: false }
     }
   }
 
@@ -417,8 +421,175 @@ async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise
     emailVerified,
   })
   await ensureProfile(env.DB, id, claims.name || defaultDisplayName(id), claims.picture)
-  const row = (await findUserById(env.DB, id)) as UserRow
-  return issueSession(env, row, respond, true)
+  return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
+}
+
+async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+  if (!env.GOOGLE_CLIENT_ID) {
+    return respond({ error: 'Google login not configured' }, { status: 501 })
+  }
+  if (!body.idToken) {
+    return respond({ error: 'idToken required' }, { status: 400 })
+  }
+  const claims = await verifyGoogleIdToken(body.idToken, env.GOOGLE_CLIENT_ID)
+  if (!claims) {
+    return respond({ error: 'Invalid Google token' }, { status: 401 })
+  }
+  const { row, isNew } = await resolveGoogleUser(claims, body.deviceId, env)
+  return issueSession(env, row, respond, isNew)
+}
+
+// ── Google OAuth redirect (code) flow ───────────────────────────
+//
+// The app sets Cross-Origin-Opener-Policy: same-origin (required for
+// SharedArrayBuffer / multithreaded ONNX), which severs window.opener
+// for ALL popups — Google's popup flow throws "Cannot read properties
+// of null (reading 'postMessage')". So Google sign-in is a full-page
+// redirect through this worker instead:
+//
+//   app → GET /api/auth/google/start?deviceId=&returnTo=
+//       → 302 accounts.google.com (state = HMAC-signed {deviceId,returnTo})
+//       → 302 GET /api/auth/google/callback?code=&state=
+//       → code exchange (GOOGLE_CLIENT_SECRET) → id_token → user
+//       → 302 {returnTo}#gauth=<our JWT>   (app stores it on load)
+
+const STATE_TTL_MS = 10 * 60 * 1000
+
+const DEFAULT_APP_ORIGINS = [
+  'https://mercurypitch.com',
+  'https://dev.mercurypitch.com',
+  'https://localhost:3000',
+  'http://localhost:3000',
+]
+
+function isAllowedReturnTo(returnTo: string, env: Env): boolean {
+  let origin: string
+  try {
+    origin = new URL(returnTo).origin
+  } catch {
+    return false
+  }
+  const extra = (env.APP_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+  return [...DEFAULT_APP_ORIGINS, ...extra].includes(origin)
+}
+
+interface OAuthState {
+  deviceId?: string
+  returnTo: string
+  ts: number
+}
+
+async function signState(state: OAuthState, secret: string): Promise<string> {
+  const body = b64urlEncode(encoder.encode(JSON.stringify(state)))
+  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(body))
+  return `${body}.${b64urlEncode(sig)}`
+}
+
+async function verifyState(raw: string, secret: string): Promise<OAuthState | null> {
+  const [body, sig] = raw.split('.')
+  if (!body || !sig) return null
+  const valid = await crypto.subtle.verify(
+    'HMAC',
+    await hmacKey(secret),
+    b64urlDecode(sig),
+    encoder.encode(body),
+  )
+  if (!valid) return null
+  try {
+    const state = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as OAuthState
+    if (typeof state.returnTo !== 'string' || typeof state.ts !== 'number') return null
+    if (Date.now() - state.ts > STATE_TTL_MS) return null
+    return state
+  } catch {
+    return null
+  }
+}
+
+function redirect(location: string): Response {
+  return new Response(null, { status: 302, headers: { Location: location } })
+}
+
+function redirectWithError(returnTo: string, message: string): Response {
+  return redirect(`${returnTo}#gauth_error=${encodeURIComponent(message)}`)
+}
+
+async function handleGoogleStart(request: Request, env: Env, respond: Respond): Promise<Response> {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return respond({ error: 'Google login not configured (client id/secret missing)' }, { status: 501 })
+  }
+  const url = new URL(request.url)
+  const returnTo = url.searchParams.get('returnTo') ?? ''
+  if (!isAllowedReturnTo(returnTo, env)) {
+    return respond({ error: 'returnTo origin not allowed' }, { status: 400 })
+  }
+  const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
+  const deviceId = deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
+
+  const state = await signState(
+    { deviceId, returnTo, ts: Date.now() },
+    env.JWT_SECRET as string,
+  )
+
+  const auth = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+  auth.searchParams.set('client_id', env.GOOGLE_CLIENT_ID)
+  auth.searchParams.set('redirect_uri', `${url.origin}/api/auth/google/callback`)
+  auth.searchParams.set('response_type', 'code')
+  auth.searchParams.set('scope', 'openid email profile')
+  auth.searchParams.set('state', state)
+  auth.searchParams.set('prompt', 'select_account')
+  return redirect(auth.toString())
+}
+
+async function handleGoogleCallback(request: Request, env: Env, respond: Respond): Promise<Response> {
+  const url = new URL(request.url)
+  const state = await verifyState(
+    url.searchParams.get('state') ?? '',
+    env.JWT_SECRET as string,
+  )
+  if (!state || !isAllowedReturnTo(state.returnTo, env)) {
+    return respond({ error: 'Invalid or expired state' }, { status: 400 })
+  }
+
+  const oauthError = url.searchParams.get('error')
+  if (oauthError) {
+    return redirectWithError(state.returnTo, oauthError)
+  }
+  const code = url.searchParams.get('code')
+  if (!code) {
+    return redirectWithError(state.returnTo, 'Missing authorization code')
+  }
+
+  // Exchange the code for an id_token
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: env.GOOGLE_CLIENT_ID as string,
+      client_secret: env.GOOGLE_CLIENT_SECRET as string,
+      redirect_uri: `${url.origin}/api/auth/google/callback`,
+      grant_type: 'authorization_code',
+    }),
+  })
+  if (!tokenRes.ok) {
+    return redirectWithError(state.returnTo, 'Google code exchange failed')
+  }
+  const tokenData = await tokenRes.json<{ id_token?: string }>()
+  if (!tokenData.id_token) {
+    return redirectWithError(state.returnTo, 'No id_token from Google')
+  }
+
+  const claims = await verifyGoogleIdToken(tokenData.id_token, env.GOOGLE_CLIENT_ID as string)
+  if (!claims) {
+    return redirectWithError(state.returnTo, 'Invalid Google token')
+  }
+
+  const { row } = await resolveGoogleUser(claims, state.deviceId, env)
+  const token = await createSession(env, row)
+  return redirect(`${state.returnTo}#gauth=${encodeURIComponent(token)}`)
 }
 
 async function handleMe(request: Request, env: Env, respond: Respond): Promise<Response> {
@@ -448,6 +619,12 @@ export async function handleAuth(
 
   if (route === 'me' && request.method === 'GET') {
     return handleMe(request, env, respond)
+  }
+  if (route === 'google/start' && request.method === 'GET') {
+    return handleGoogleStart(request, env, respond)
+  }
+  if (route === 'google/callback' && request.method === 'GET') {
+    return handleGoogleCallback(request, env, respond)
   }
   if (request.method !== 'POST') {
     return respond({ error: 'Method not allowed' }, { status: 405 })

@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'http://api.test',
-  GOOGLE_CLIENT_ID: 'test-client-id',
 }))
 
 import { ensureAuth, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
