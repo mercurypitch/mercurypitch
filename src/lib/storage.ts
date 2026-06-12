@@ -1,6 +1,40 @@
 import type { Setter, Signal } from 'solid-js'
 import { createSignal } from 'solid-js'
 
+// ── Cloud-sync hooks ─────────────────────────────────────────────
+// Every persisted signal funnels writes through here, which gives the
+// settings sync (src/db/services/settings-service.ts) a single choke
+// point: it observes local writes (write-through to the cloud) and can
+// push cloud values back into live signals on sign-in.
+
+type PersistedWriteListener = (key: string, serialized: string) => void
+
+let persistedWriteListener: PersistedWriteListener | null = null
+
+/** Observe every persisted-signal write (key + serialized value). */
+export function onPersistedWrite(
+  listener: PersistedWriteListener | null,
+): void {
+  persistedWriteListener = listener
+}
+
+/** Live setters by key, so cloud values update mounted signals. */
+const persistedSetters = new Map<string, (serialized: string) => void>()
+
+/**
+ * Apply an externally-sourced (cloud) value: updates localStorage and,
+ * when the signal is alive, the signal itself. Does NOT notify the
+ * write listener (no echo back to the cloud).
+ */
+export function applyPersistedValue(key: string, serialized: string): void {
+  try {
+    localStorage.setItem(key, serialized)
+  } catch (e) {
+    console.warn(`[storage] Failed to apply key "${key}":`, e)
+  }
+  persistedSetters.get(key)?.(serialized)
+}
+
 export function createPersistedSignal<T>(
   key: string,
   defaultValue: T,
@@ -39,6 +73,17 @@ export function createPersistedSignal<T>(
 
   const [value, setValue] = createSignal<T>(initialValue)
 
+  persistedSetters.set(key, (serialized) => {
+    try {
+      const parsed = deserialize(serialized)
+      if (!options?.validator || options.validator(parsed)) {
+        setValue(() => parsed)
+      }
+    } catch (e) {
+      console.warn(`[createPersistedSignal] Bad synced value for "${key}":`, e)
+    }
+  })
+
   // eslint-disable-next-line solid/reactivity
   const setValuePersisted = ((newValue: Parameters<Setter<T>>[0]) => {
     const nextValue =
@@ -48,11 +93,13 @@ export function createPersistedSignal<T>(
 
     setValue(() => nextValue)
 
+    const serialized = serialize(nextValue)
     try {
-      localStorage.setItem(key, serialize(nextValue))
+      localStorage.setItem(key, serialized)
     } catch (e) {
       console.warn(`[createPersistedSignal] Failed to save key "${key}":`, e)
     }
+    persistedWriteListener?.(key, serialized)
 
     return nextValue
   }) as Setter<T>

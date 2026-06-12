@@ -238,3 +238,18 @@ CREATE TABLE IF NOT EXISTS userSettings (
 
 CREATE INDEX IF NOT EXISTS idx_userSettings_userId ON userSettings(userId);
 CREATE INDEX IF NOT EXISTS idx_userSettings_key ON userSettings("key");
+
+-- ── follows ──────────────────────────────────────────────────────────
+-- Social graph: userId follows followedUserId. Private per-user rows
+-- (access 'user'); the leaderboard endpoint joins it server-side for
+-- the Friends view.
+CREATE TABLE IF NOT EXISTS follows (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  followedUserId TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_follows_pair ON follows(userId, followedUserId);
+CREATE INDEX IF NOT EXISTS idx_follows_userId ON follows(userId);

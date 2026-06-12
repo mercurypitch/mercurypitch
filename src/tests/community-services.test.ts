@@ -255,3 +255,73 @@ describe('streak flow', () => {
     expect(streak).toBe(4)
   })
 })
+
+// ── Weekly leaderboard rows ─────────────────────────────────────
+
+describe('weekly leaderboard', () => {
+  it('writes an all-time AND a weekly row per result', async () => {
+    await updateLeaderboardEntry({ score: 80, bestScore: 80, accuracy: 90 })
+
+    const repo = adapter.getRepository('leaderboardEntries')
+    const rows = (await repo.findAll()) as unknown as Array<{
+      period: string
+    }>
+    expect(rows.map((r) => r.period).sort()).toEqual(['all-time', 'weekly'])
+  })
+
+  it('resets a stale weekly row instead of averaging into it', async () => {
+    // Record a result 10 days ago (previous ISO week) — the in-memory
+    // adapter stamps updatedAt itself, so we shift the clock instead.
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.now() - 10 * 24 * 60 * 60 * 1000)
+    await updateLeaderboardEntry({ score: 40, bestScore: 40, accuracy: 40 })
+    vi.useRealTimers()
+
+    await updateLeaderboardEntry({ score: 90, bestScore: 90, accuracy: 90 })
+
+    const repo = adapter.getRepository('leaderboardEntries')
+    const weekly = (await repo.findAll({
+      where: { period: 'weekly' },
+    })) as unknown as Array<{ score: number; totalSessions: number }>
+    expect(weekly).toHaveLength(1)
+    expect(weekly[0].score).toBe(90) // reset, not (40+90)/2
+    expect(weekly[0].totalSessions).toBe(1)
+
+    const allTime = (await repo.findAll({
+      where: { period: 'all-time' },
+    })) as unknown as Array<{ totalSessions: number }>
+    expect(allTime[0].totalSessions).toBe(2) // all-time keeps accumulating
+  })
+
+  it('filters stale weekly rows out of loadLeaderboard', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.now() - 10 * 24 * 60 * 60 * 1000)
+    await updateLeaderboardEntry({ score: 70, bestScore: 70, accuracy: 70 })
+    vi.useRealTimers()
+
+    const board = await loadLeaderboard('overall', 'weekly')
+    expect(board).toHaveLength(0)
+  })
+})
+
+// ── Follows ─────────────────────────────────────────────────────
+
+describe('follow flows', () => {
+  it('follows and unfollows a player', async () => {
+    const { follow, getFollowing, isFollowing, unfollow } =
+      await import('@/db/services/follow-service')
+
+    expect(await follow('player-1')).toBe(true)
+    expect(await follow('player-1')).toBe(true) // idempotent
+    expect(await getFollowing()).toEqual(['player-1'])
+    expect(await isFollowing('player-1')).toBe(true)
+
+    expect(await unfollow('player-1')).toBe(true)
+    expect(await getFollowing()).toEqual([])
+  })
+
+  it('refuses to follow yourself', async () => {
+    const { follow } = await import('@/db/services/follow-service')
+    expect(await follow(getUserId())).toBe(false)
+  })
+})

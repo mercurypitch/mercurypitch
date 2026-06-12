@@ -42,6 +42,9 @@ class DexieDatabase extends DexieDB {
   constructor() {
     super('MercuryPitchDB')
     this.version(1).stores(STORE_SCHEMAS)
+    // v2: follows (Friends leaderboard). Incremental — existing local
+    // DBs upgrade in place.
+    this.version(2).stores({ follows: 'id, userId, followedUserId' })
   }
 
   /** Add a new table at the next schema version. */

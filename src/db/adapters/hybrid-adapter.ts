@@ -29,6 +29,7 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   'sharedSessions',
   'featureFlags',
   'userSettings',
+  'follows',
 ])
 
 /**
@@ -43,6 +44,7 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   'userBadges',
   'userAchievements',
   'userSettings',
+  'follows',
 ])
 
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
