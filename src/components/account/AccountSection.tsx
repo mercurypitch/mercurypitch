@@ -117,14 +117,23 @@ export const AccountSection: Component = () => {
 
   function handleSubmit(e: Event): void {
     e.preventDefault()
+    // Snapshot the form inside the event handler — the async closures
+    // below run outside the tracked scope (and the form could change
+    // mid-request).
+    const credentials = { email: email(), password: password() }
     if (mode() === 'register') {
+      const name = displayName()
       void handleAuthAction(async () => {
-        await registerWithPassword(email(), password(), displayName())
+        await registerWithPassword(
+          credentials.email,
+          credentials.password,
+          name,
+        )
         showNotification('Account created — progress is now synced', 'info')
       })
     } else {
       void handleAuthAction(async () => {
-        await loginWithPassword(email(), password())
+        await loginWithPassword(credentials.email, credentials.password)
         showNotification('Signed in', 'info')
       })
     }
