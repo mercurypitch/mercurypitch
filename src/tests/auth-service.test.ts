@@ -12,10 +12,10 @@ vi.mock('@/lib/defaults', () => ({
 import { ensureAuth, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 
-function makeToken(expiresInSeconds: number): string {
+function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
   const payload = {
     sub: 'user-1',
-    provider: 'anonymous',
+    provider,
     exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
   }
   const body = btoa(JSON.stringify(payload))
@@ -105,6 +105,61 @@ describe('ensureAuth', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(await ensureAuth()).toBe(false)
     warnSpy.mockRestore()
+  })
+
+  it('stops retrying anonymous auth after a 403 (upgraded account)', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = mockFetchOnce(403, { error: 'Account requires login' })
+    expect(await ensureAuth()).toBe(false)
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    // The 403 is remembered — no further network attempts
+    expect(await ensureAuth()).toBe(false)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    infoSpy.mockRestore()
+  })
+
+  it('resumes after an explicit login clears the signed-out state', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    mockFetchOnce(403, { error: 'Account requires login' })
+    await ensureAuth()
+
+    mockFetchOnce(200, {
+      token: makeToken(3600, 'password'),
+      userId: 'u',
+      isNew: false,
+      user: { authProvider: 'password' },
+    })
+    await loginWithPassword('a@b.com', 'secret123')
+    expect(await ensureAuth()).toBe(true)
+    infoSpy.mockRestore()
+  })
+})
+
+describe('logout', () => {
+  it('remembers that an upgraded account needs a real login', async () => {
+    setAuthToken(makeToken(3600, 'password'))
+    logout()
+    expect(getAuthToken()).toBeNull()
+
+    // ensureAuth must not attempt (and fail) an anonymous handshake
+    const fetchMock = mockFetchOnce(200, {})
+    expect(await ensureAuth()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps anonymous re-auth available after an anonymous logout', async () => {
+    setAuthToken(makeToken(3600, 'anonymous'))
+    logout()
+
+    const fetchMock = mockFetchOnce(200, {
+      token: makeToken(3600),
+      userId: 'u',
+      isNew: false,
+      user: { authProvider: 'anonymous' },
+    })
+    expect(await ensureAuth()).toBe(true)
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 })
 

@@ -69,6 +69,16 @@ function requireBaseUrl(): string {
   return API_BASE_URL
 }
 
+class AuthHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+    this.name = 'AuthHttpError'
+  }
+}
+
 async function postAuth(
   route: string,
   body: Record<string, unknown>,
@@ -80,13 +90,37 @@ async function postAuth(
   })
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
-    throw new Error(
+    throw new AuthHttpError(
       `auth ${route} failed: ${res.status}${detail !== '' ? ` — ${detail}` : ''}`,
+      res.status,
     )
   }
   const auth = (await res.json()) as AuthResponse
   setAuthToken(auth.token)
+  setRequiresLogin(false)
   return auth
+}
+
+// ── Signed-out state ────────────────────────────────────────────
+//
+// Once a device's anonymous identity is upgraded to a real account,
+// the server refuses anonymous re-auth for it (403). After a sign-out
+// we remember that, so the app stays quietly signed out — public
+// content keeps working, personal data simply isn't tracked — instead
+// of retrying a doomed anonymous handshake on every startup.
+
+const REQUIRES_LOGIN_KEY = 'mp:requiresLogin'
+
+function requiresLogin(): boolean {
+  return localStorage.getItem(REQUIRES_LOGIN_KEY) === '1'
+}
+
+function setRequiresLogin(value: boolean): void {
+  if (value) {
+    localStorage.setItem(REQUIRES_LOGIN_KEY, '1')
+  } else {
+    localStorage.removeItem(REQUIRES_LOGIN_KEY)
+  }
 }
 
 // ── Public API ──────────────────────────────────────────────────
@@ -100,11 +134,18 @@ async function postAuth(
 export async function ensureAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
   if (hasValidToken()) return true
+  if (requiresLogin()) return false
   try {
     await postAuth('anonymous', { deviceId: getUserId() })
     return true
   } catch (err) {
-    console.warn('[auth] anonymous auth failed:', err)
+    if (err instanceof AuthHttpError && err.status === 403) {
+      // Upgraded account signed out — needs an explicit login.
+      setRequiresLogin(true)
+      console.info('[auth] signed out — log in to sync personal data')
+    } else {
+      console.warn('[auth] anonymous auth failed:', err)
+    }
     return false
   }
 }
@@ -135,6 +176,13 @@ export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
 }
 
 export function logout(): void {
+  const token = getAuthToken()
+  const payload = token != null ? decodeToken(token) : null
+  // An upgraded device can't fall back to anonymous auth — remember
+  // that so ensureAuth() doesn't retry a doomed handshake at startup.
+  if (payload != null && payload.provider !== 'anonymous') {
+    setRequiresLogin(true)
+  }
   setAuthToken(null)
 }
 

@@ -43,9 +43,12 @@ export async function loadUserProfile(): Promise<UserProfileView | null> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserProfile>('userProfiles')
-    const profiles = await repo.findAll({ limit: 1 })
-    if (profiles.length === 0) return null
-    const p = profiles[0]
+    // Cloud profiles: row id == user id (an unfiltered findAll would
+    // return other users' public profiles). Local: single seeded row.
+    const p =
+      (await repo.findById(getUserId())) ??
+      (await repo.findAll({ limit: 1 }))[0]
+    if (p === undefined) return null
     return {
       userId: p.id,
       displayName: p.displayName,

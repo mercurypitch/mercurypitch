@@ -3,11 +3,12 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import { authVersion } from '@/db/services/user-service'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { storageGet, storageRemove, storageSet } from '@/lib/storage'
@@ -277,8 +278,10 @@ export const VocalChallenges: Component = () => {
     return calculateStreak(scores.map((s) => s.completedAt || 0))
   })
 
-  // Load data from DB (with legacy localStorage fallback)
-  onMount(() => {
+  // Load data from DB (with legacy localStorage fallback); reloads
+  // when the signed-in identity changes.
+  createEffect(() => {
+    authVersion()
     void (async () => {
       // Load challenge definitions & progress from DB
       const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] =

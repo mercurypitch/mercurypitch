@@ -3,11 +3,11 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
-import { getUserId } from '@/db/services/user-service'
+import { authVersion, getUserId } from '@/db/services/user-service'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
@@ -290,7 +290,9 @@ export const CommunityShare: Component = () => {
 
   const [streak, setStreak] = createSignal(0)
 
-  onMount(() => {
+  // Load on mount and whenever the signed-in identity changes
+  createEffect(() => {
+    authVersion()
     void (async () => {
       const [profile, melodies, sessions, currentStreak] = await Promise.all([
         loadUserProfile(),
@@ -298,7 +300,7 @@ export const CommunityShare: Component = () => {
         loadSharedSessions(),
         getCurrentStreak(),
       ])
-      if (profile) setDbProfile(profile)
+      setDbProfile(profile)
       if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
       if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
       setStreak(currentStreak)

@@ -60,3 +60,6 @@ uvr-api/__pycache__/
 # ONNX models for client-side UVR (download separately)
 public/models/
 package-lock.json
+
+# Claude Code local settings (launch.json is shared)
+.claude/settings.local.json

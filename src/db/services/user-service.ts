@@ -7,8 +7,19 @@
 // browser; logging in (email/password or Google) upgrades the
 // same id server-side, so all local attribution stays valid.
 
+import { createSignal } from 'solid-js'
+
 const USER_ID_KEY = 'mp:userId'
 const AUTH_TOKEN_KEY = 'mp:authToken'
+
+const [authVersionSignal, setAuthVersion] = createSignal(0)
+
+/**
+ * Bumped whenever the auth token changes (login, logout, anonymous
+ * bootstrap). Read it inside a reactive scope to reload user-scoped
+ * data when the signed-in identity changes.
+ */
+export const authVersion = authVersionSignal
 
 let cachedUserId = ''
 
@@ -36,6 +47,7 @@ export function setAuthToken(token: string | null): void {
   } else {
     localStorage.setItem(AUTH_TOKEN_KEY, token)
   }
+  setAuthVersion((v) => v + 1)
 }
 
 /** Headers for authenticated ServerAdapter / fetch calls. */

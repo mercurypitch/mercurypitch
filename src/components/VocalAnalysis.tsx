@@ -3,10 +3,11 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import { loadSessionRecords } from '@/db/services/session-service'
+import { authVersion } from '@/db/services/user-service'
 import { IS_DEV } from '@/lib/defaults'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { LiveAnalysisSnapshot, LivePitchSample, } from '@/lib/live-pitch-analysis'
@@ -254,7 +255,9 @@ export const VocalAnalysis: Component = () => {
     engines = null
   }
 
-  onMount(() => {
+  // Load on mount and whenever the signed-in identity changes
+  createEffect(() => {
+    authVersion()
     void (async () => {
       try {
         const records = await loadSessionRecords(50)

@@ -35,6 +35,7 @@
     "db:init": "./scripts/init-cloudflare-db.sh all prod",
     "db:init:dev": "./scripts/init-cloudflare-db.sh all dev",
     "db:init:local": "./scripts/init-cloudflare-db.sh --local",
+    "db:seed": "node scripts/seed-remote-db.mjs",
     "deploy:db:dev": "cd workers/db-worker && pnpm exec wrangler deploy --env dev",
     "deploy:db:prod": "cd workers/db-worker && pnpm exec wrangler deploy --env prod",
     "typecheck:db": "tsc -p workers/db-worker",
