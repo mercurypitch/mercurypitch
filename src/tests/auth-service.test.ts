@@ -175,9 +175,11 @@ describe('login and register', () => {
     expect(getAuthToken()).not.toBeNull()
   })
 
-  it('throws with server detail on bad credentials', async () => {
+  it('throws the human-readable server message on bad credentials', async () => {
     mockFetchOnce(401, { error: 'Invalid email or password' })
-    await expect(loginWithPassword('a@b.com', 'wrong')).rejects.toThrow(/401/)
+    await expect(loginWithPassword('a@b.com', 'wrong')).rejects.toThrow(
+      'Invalid email or password',
+    )
     expect(getAuthToken()).toBeNull()
   })
 

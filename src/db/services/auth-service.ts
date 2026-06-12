@@ -89,15 +89,24 @@ async function postAuth(
     body: JSON.stringify(body),
   })
   if (!res.ok) {
+    // Surface the server's human-readable message ({"error": "…"}),
+    // not the raw JSON — this string is shown directly in the UI.
     const detail = await res.text().catch(() => '')
+    let message = ''
+    try {
+      message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
     throw new AuthHttpError(
-      `auth ${route} failed: ${res.status}${detail !== '' ? ` — ${detail}` : ''}`,
+      message !== '' ? message : `Sign-in failed (${res.status})`,
       res.status,
     )
   }
   const auth = (await res.json()) as AuthResponse
   setAuthToken(auth.token)
   setRequiresLogin(false)
+  tokenServerVerified = true // freshly issued by this server
   return auth
 }
 
@@ -125,6 +134,36 @@ function setRequiresLogin(value: boolean): void {
 
 // ── Public API ──────────────────────────────────────────────────
 
+// The client-side check only sees expiry — a token signed by a
+// different worker (localhost vs deployed, or a rotated JWT_SECRET)
+// looks "valid" locally but 401s on every request. Verify it against
+// the server once per session and drop it if the server rejects it.
+let tokenServerVerified = false
+
+async function verifyTokenWithServer(): Promise<boolean> {
+  if (tokenServerVerified) return true
+  try {
+    const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${getAuthToken() ?? ''}` },
+    })
+    if (res.ok) {
+      tokenServerVerified = true
+      return true
+    }
+    if (res.status === 401 || res.status === 404) {
+      // Stale or foreign-signed token — discard and re-auth below.
+      console.info('[auth] stored token rejected by server — re-authenticating')
+      setAuthToken(null)
+      return false
+    }
+    // 5xx etc. — keep the token, assume a server hiccup.
+    return true
+  } catch {
+    // Network down — keep the token, stay offline-tolerant.
+    return true
+  }
+}
+
 /**
  * Make sure a JWT is available, requesting an anonymous one when
  * needed. Returns false when no API is configured, the network is
@@ -133,7 +172,7 @@ function setRequiresLogin(value: boolean): void {
  */
 export async function ensureAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
-  if (hasValidToken()) return true
+  if (hasValidToken() && (await verifyTokenWithServer())) return true
   if (requiresLogin()) return false
   try {
     await postAuth('anonymous', { deviceId: getUserId() })
@@ -228,6 +267,7 @@ export function consumeGoogleRedirect(): void {
   if (token != null && token !== '') {
     setAuthToken(token)
     setRequiresLogin(false)
+    tokenServerVerified = true // freshly issued by the worker
     googleRedirectResult = { ok: true }
   } else if (error != null && error !== '') {
     googleRedirectResult = { ok: false, error }
@@ -257,6 +297,7 @@ export function logout(): void {
     setRequiresLogin(true)
   }
   setAuthToken(null)
+  tokenServerVerified = false
 }
 
 /** Current user + profile, or null when not authenticated. */
