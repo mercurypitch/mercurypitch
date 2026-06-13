@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Harmony: Harmonizing Specialist (Idle) -->
+  <defs>
+    <linearGradient id="harmonyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8a2be2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#da70d6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background/glow or body shapes representing two voices -->
+  <path d="M25 75 C 25 45, 45 40, 45 35 C 45 40, 65 45, 65 75 Z" fill="url(#harmonyGrad)" opacity="0.6" />
+  <path d="M35 80 C 35 50, 55 45, 55 40 C 55 45, 75 50, 75 80 Z" fill="url(#harmonyGrad)" />
+  <!-- Overlapping eyes/details -->
+  <circle cx="48" cy="52" r="3" fill="white" />
+  <circle cx="62" cy="52" r="3" fill="white" />
+  <path d="M50 64 Q55 68 60 64" stroke="white" stroke-width="2" fill="none" />
+</svg>

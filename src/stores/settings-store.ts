@@ -374,6 +374,66 @@ export type CharacterName =
   | 'luna'
   | 'glint'
   | 'echo'
+  | 'harmony'
+
+export interface CharacterInfo {
+  name: CharacterName
+  displayName: string
+  title: string
+  description: string
+}
+
+export const CHARACTER_INFO: Record<CharacterName, CharacterInfo> = {
+  aria: {
+    name: 'aria',
+    displayName: 'Aria',
+    title: 'Loud Guide',
+    description:
+      'Boosted piano guide to help you stay on track and hear notes clearly over your own voice.',
+  },
+  echo: {
+    name: 'echo',
+    displayName: 'Echo',
+    title: 'Quiet Whisper',
+    description:
+      'Low-volume piano backdrop that stays out of your way — perfect if you already know the melody.',
+  },
+  harmony: {
+    name: 'harmony',
+    displayName: 'Harmony',
+    title: 'Harmonic Blend',
+    description:
+      'Plays a matching third on top of your target note, making singing exercises feel like a duet!',
+  },
+  blaze: {
+    name: 'blaze',
+    displayName: 'Blaze',
+    title: 'Playful Synth',
+    description:
+      'A fun, energetic retro synthesizer voice with a lively wobble to keep practice engaging.',
+  },
+  flux: {
+    name: 'flux',
+    displayName: 'Flux',
+    title: 'Retro Organ',
+    description:
+      'A steady, sustained organ tone that provides solid pitch guidance.',
+  },
+  luna: {
+    name: 'luna',
+    displayName: 'Luna',
+    title: 'Lush Strings',
+    description:
+      'A rich, warm ensemble that pads the background with sustained harmony.',
+  },
+  glint: {
+    name: 'glint',
+    displayName: 'Glint',
+    title: 'Pure Tone',
+    description:
+      'A clean, simple sine wave with no harmonics for precise, undistracted pitch matching.',
+  },
+}
 
 export const [selectedCharacter, setSelectedCharacter] =
   createPersistedSignal<CharacterName>('pitchperfect_character', 'aria')
