@@ -3,6 +3,7 @@
 // ============================================================
 
 import { showNotification } from '@/stores/notifications-store'
+import type { CharacterName } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 import { UvrProcessor } from './uvr-processor'
@@ -17,6 +18,49 @@ export interface AudioEngineCallbacks {
 }
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
+
+export const CHARACTER_PROFILES: Record<
+  CharacterName,
+  {
+    instrument: InstrumentType
+    volumeMultiplier: number
+    chordIntervals?: number[]
+    effectType?: EffectType
+    vibratoAmplitude?: number
+  }
+> = {
+  aria: {
+    instrument: 'piano',
+    volumeMultiplier: 1.3,
+  },
+  echo: {
+    instrument: 'piano',
+    volumeMultiplier: 0.3,
+  },
+  harmony: {
+    instrument: 'piano',
+    volumeMultiplier: 1.0,
+    chordIntervals: [0, 4],
+  },
+  blaze: {
+    instrument: 'synth',
+    volumeMultiplier: 0.9,
+    effectType: 'vibrato',
+    vibratoAmplitude: 0.6,
+  },
+  flux: {
+    instrument: 'organ',
+    volumeMultiplier: 0.8,
+  },
+  luna: {
+    instrument: 'strings',
+    volumeMultiplier: 0.9,
+  },
+  glint: {
+    instrument: 'sine',
+    volumeMultiplier: 0.8,
+  },
+}
 
 export class AudioEngine {
   private audioCtx: AudioContext | null = null
@@ -41,6 +85,8 @@ export class AudioEngine {
   private volume = 0.8
   private currentInstrument: InstrumentType = 'sine'
   private bufferSize = 2048
+  private characterSoundsEnabled = false
+  private selectedCharacter: CharacterName = 'aria'
   private _frequencyData = new Float32Array(0)
   private _timeData = new Float32Array(0)
   private _playbackTimeData = new Float32Array(0)
@@ -306,6 +352,14 @@ export class AudioEngine {
     if (this.mainGain) {
       this.mainGain.gain.value = this.volume
     }
+  }
+
+  setCharacterSoundsEnabled(enabled: boolean): void {
+    this.characterSoundsEnabled = enabled
+  }
+
+  setSelectedCharacter(character: CharacterName): void {
+    this.selectedCharacter = character
   }
 
   /** Set metronome/precount click volume (0-1), independent of note volume */
@@ -803,11 +857,17 @@ export class AudioEngine {
     )
     const masterGain = voice.gain
 
+    let activeVolumeMultiplier = 1.0
+    if (this.characterSoundsEnabled) {
+      const profile = CHARACTER_PROFILES[this.selectedCharacter]
+      activeVolumeMultiplier = profile.volumeMultiplier
+    }
+
     // Apply user volume on top of the per-instrument envelope by
     // chaining via an extra gain node. This keeps each instrument's
     // built-in envelope intact while still respecting the global slider.
     const userGain = this.audioCtx.createGain()
-    userGain.gain.value = this.volume
+    userGain.gain.value = this.volume * activeVolumeMultiplier
     masterGain.connect(userGain)
 
     // Apply UVR processing if enabled
@@ -1013,6 +1073,12 @@ export class AudioEngine {
       chordIntervals,
     )
 
+    let activeVolumeMultiplier = 1.0
+    if (this.characterSoundsEnabled) {
+      const profile = CHARACTER_PROFILES[this.selectedCharacter]
+      activeVolumeMultiplier = profile.volumeMultiplier
+    }
+
     if (!hasCustomEnvelope) {
       mainGain.gain.setValueAtTime(0, now)
       mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.015)
@@ -1022,12 +1088,16 @@ export class AudioEngine {
       osc.start(now)
       osc.stop(now + durationMs / 1000 + 0.1)
     }
-    mainGain.connect(this.mainGain)
+
+    const voiceVolumeGain = this.audioCtx.createGain()
+    voiceVolumeGain.gain.setValueAtTime(activeVolumeMultiplier, now)
+    mainGain.connect(voiceVolumeGain)
+    voiceVolumeGain.connect(this.mainGain)
 
     // Store voice reference (with optional LFOs)
     this._activeVoices.set(noteId, {
       oscillators,
-      gains: [mainGain],
+      gains: [mainGain, voiceVolumeGain],
       stopTime: now + durationMs / 1000,
       lfos,
       lfoGains,
@@ -1075,7 +1145,32 @@ export class AudioEngine {
     const oscillators: OscillatorNode[] = []
     let hasCustomEnvelope = false
 
-    switch (this.currentInstrument) {
+    let activeInstrument = this.currentInstrument
+    let activeChordIntervals = chordIntervals
+    let activeEffectType = effectType
+    let activeVibratoAmplitude = vibratoAmplitude
+
+    if (this.characterSoundsEnabled) {
+      const profile = CHARACTER_PROFILES[this.selectedCharacter]
+      activeInstrument = profile.instrument
+      if (
+        profile.chordIntervals &&
+        (!chordIntervals || chordIntervals.length === 0)
+      ) {
+        activeChordIntervals = profile.chordIntervals
+      }
+      if (profile.effectType && !effectType) {
+        activeEffectType = profile.effectType
+        if (
+          profile.vibratoAmplitude !== undefined &&
+          vibratoAmplitude === undefined
+        ) {
+          activeVibratoAmplitude = profile.vibratoAmplitude
+        }
+      }
+    }
+
+    switch (activeInstrument) {
       case 'piano': {
         // Piano: fundamental + harmonics (additive synthesis)
         const harmonics = [1, 2, 3, 4, 5, 6]
@@ -1194,8 +1289,8 @@ export class AudioEngine {
 
     // Chord: create additional oscillators for each chord member pitch.
     // Chord member oscillators are simple sines sharing the mainGain envelope.
-    if (chordIntervals && chordIntervals.length > 0) {
-      for (const interval of chordIntervals) {
+    if (activeChordIntervals && activeChordIntervals.length > 0) {
+      for (const interval of activeChordIntervals) {
         if (interval === 0) continue // root already created
         const memberFreq = freq * Math.pow(2, interval / 12)
         const osc = ctx.createOscillator()
@@ -1212,15 +1307,15 @@ export class AudioEngine {
     // Apply effect modulation to the primary oscillator (index 0)
     let lfos: OscillatorNode[] = []
     let lfoGains: GainNode[] = []
-    if (effectType && oscillators.length > 0) {
+    if (activeEffectType && oscillators.length > 0) {
       const result = this._applyEffectModulation(
         oscillators[0],
-        effectType,
+        activeEffectType,
         freq,
         durationMs,
         now,
         targetFreq,
-        vibratoAmplitude,
+        activeVibratoAmplitude,
         trillInterval,
         trillRate,
       )
@@ -1232,7 +1327,7 @@ export class AudioEngine {
 
     // Tremolo: LFO modulates amplitude via a gain node inserted after mainGain
     let tremoloGain: GainNode | null = null
-    if (effectType === 'tremolo') {
+    if (activeEffectType === 'tremolo') {
       const rate = tremoloRate ?? 8
       const depth = tremoloDepth ?? 0.5
       const lfo = ctx.createOscillator()
@@ -1252,7 +1347,7 @@ export class AudioEngine {
     }
 
     // Staccato: shorten the effective envelope to staccatoRatio * duration
-    if (effectType === 'staccato') {
+    if (activeEffectType === 'staccato') {
       const ratio = staccatoRatio ?? 0.4
       const shortDur = dur * ratio
       // Overwrite the envelope: quick attack, sustain at full for shortDur, quick release
@@ -1481,11 +1576,13 @@ export class AudioEngine {
         }
       })
       // Only disconnect if gains exist (GH #130 fix)
-      if (firstGain != null) {
-        try {
-          firstGain.disconnect()
-        } catch {
-          /* already stopped */
+      for (const g of voice.gains) {
+        if (g != null) {
+          try {
+            g.disconnect()
+          } catch {
+            /* already stopped */
+          }
         }
       }
       this._activeVoices.delete(noteId)

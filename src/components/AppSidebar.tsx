@@ -21,7 +21,7 @@ import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, sessionResults, setActiveTab, showNotification, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { selectedCharacter, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
+import { CHARACTER_INFO, selectedCharacter, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 import appStyles from './App.module.css'
@@ -167,7 +167,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
             </span>
             <span class={appStyles.melodyIndicatorCharacter}>
-              {selectedCharacter()}
+              {CHARACTER_INFO[selectedCharacter()].displayName}
             </span>
           </span>
         </button>

@@ -16,7 +16,7 @@ import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbCo
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
-import { characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import styles from './SettingsPanel.module.css'
@@ -791,8 +791,8 @@ export const SettingsPanel: Component = () => {
             </label>
             <small>
               Play a different timbre per guide character (currently:{' '}
-              <strong>{selectedCharacter()}</strong>). Disable to use the
-              instrument selected manually.
+              <strong>{CHARACTER_INFO[selectedCharacter()].displayName}</strong>
+              ). Disable to use the instrument selected manually.
             </small>
           </div>
         </div>

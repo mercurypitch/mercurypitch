@@ -969,6 +969,33 @@ describe('AudioEngine', () => {
       expect(() => engine.stopNote(noteId2)).not.toThrow()
     })
   })
+
+  describe('character voices', () => {
+    it('can set character sounds status and selected character', () => {
+      engine.setCharacterSoundsEnabled(true)
+      engine.setSelectedCharacter('echo')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((engine as any).characterSoundsEnabled).toBe(true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((engine as any).selectedCharacter).toBe('echo')
+    })
+
+    it('uses character specific properties when enabled', async () => {
+      engine.setCharacterSoundsEnabled(true)
+      engine.setSelectedCharacter('echo')
+      const noteId = await engine.playNote(440, 100)
+      expect(noteId).toBeDefined()
+      engine.stopNote(noteId!)
+    })
+
+    it('uses harmony chord intervals when harmony selected', async () => {
+      engine.setCharacterSoundsEnabled(true)
+      engine.setSelectedCharacter('harmony')
+      const noteId = await engine.playNote(440, 100)
+      expect(noteId).toBeDefined()
+      engine.stopNote(noteId!)
+    })
+  })
 })
 
 describe('AudioEngine without init', () => {

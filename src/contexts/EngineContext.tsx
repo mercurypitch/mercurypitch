@@ -1,7 +1,6 @@
 import type { JSX } from 'solid-js'
 import { createContext, createEffect, createSignal, onCleanup, useContext, } from 'solid-js'
 import { TAB_SINGING } from '@/features/tabs/constants'
-import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
@@ -10,25 +9,6 @@ import * as appStoreCore from '@/stores/app-store'
 import * as settingsStore from '@/stores/settings-store'
 import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
-
-// Use the namespace import so we don't end up with two import lines for
-// `@/stores/settings-store` (one for runtime, one for types). ESLint
-// flags the duplicate as `no-duplicate-imports`.
-type CharacterName = settingsStore.CharacterName
-
-// Map each guide character to a playback instrument so the practice
-// tab "feels" different per persona. Six characters fan out across the
-// five available instruments (sine/piano/organ/strings/synth) — Echo
-// shares Aria's piano because both are mellow, but Aria gets a slight
-// volume boost via the multiplier below to keep them distinguishable.
-const CHARACTER_INSTRUMENT: Record<CharacterName, InstrumentType> = {
-  aria: 'piano', // warm, melodic — default
-  blaze: 'synth', // punchy, bright
-  flux: 'organ', // sustained, retro
-  luna: 'strings', // soft, lush
-  glint: 'sine', // pure, simple
-  echo: 'piano', // mellow piano sibling of aria
-}
 
 interface EngineContextValue {
   audioEngine: AudioEngine
@@ -79,15 +59,17 @@ export function EngineProvider(props: { children: JSX.Element }) {
   // the toggle or switching tabs immediately re-evaluates — no reload
   // required, because this whole effect re-runs reactively.
   createEffect(() => {
-    const userInstrument = appStoreCore.instrument()
     const useCharacter = settingsStore.characterSounds()
     const character = settingsStore.selectedCharacter()
     const tab = uiStore.activeTab()
-    const effective: InstrumentType =
-      useCharacter && tab === TAB_SINGING
-        ? CHARACTER_INSTRUMENT[character]
-        : userInstrument
-    audioEngine.setInstrument(effective)
+
+    audioEngine.setCharacterSoundsEnabled(useCharacter && tab === TAB_SINGING)
+    audioEngine.setSelectedCharacter(character)
+  })
+
+  createEffect(() => {
+    const userInstrument = appStoreCore.instrument()
+    audioEngine.setInstrument(userInstrument)
   })
 
   // Sync ADSR
