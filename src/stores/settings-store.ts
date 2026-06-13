@@ -375,6 +375,8 @@ export type CharacterName =
   | 'glint'
   | 'echo'
   | 'harmony'
+  | 'nova'
+  | 'spark'
 
 export interface CharacterInfo {
   name: CharacterName
@@ -404,6 +406,20 @@ export const CHARACTER_INFO: Record<CharacterName, CharacterInfo> = {
     title: 'Harmonic Blend',
     description:
       'Plays a matching third on top of your target note, making singing exercises feel like a duet!',
+  },
+  nova: {
+    name: 'nova',
+    displayName: 'Nova',
+    title: 'Octave Anchor',
+    description:
+      'Plays a sub-octave double to provide a deep harmonic foundation — ideal for lower registers.',
+  },
+  spark: {
+    name: 'spark',
+    displayName: 'Spark',
+    title: 'Percussive Tap',
+    description:
+      'Plays short, staccato plucked notes to help you practice rhythmic timing and precise pitch onset.',
   },
   blaze: {
     name: 'blaze',

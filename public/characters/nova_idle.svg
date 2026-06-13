@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Nova: Octave Anchor Specialist (Idle) -->
+  <defs>
+    <linearGradient id="novaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Double bodies representing octaves -->
+  <circle cx="50" cy="70" r="22" fill="url(#novaGrad)" opacity="0.6" />
+  <circle cx="50" cy="40" r="14" fill="url(#novaGrad)" />
+  <!-- Eyes on top head -->
+  <circle cx="45" cy="38" r="1.5" fill="white" />
+  <circle cx="55" cy="38" r="1.5" fill="white" />
+  <!-- Mouth -->
+  <path d="M48 44 Q50 46 52 44" stroke="white" stroke-width="1" fill="none" />
+</svg>

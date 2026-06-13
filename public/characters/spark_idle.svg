@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Spark: Percussive Tap Specialist (Idle) -->
+  <defs>
+    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Spark Pointy Shape -->
+  <path d="M50 15 L58 42 L85 50 L58 58 L50 85 L42 58 L15 50 L42 42 Z" fill="url(#sparkGrad)" />
+  <!-- Wide Energetic Eyes -->
+  <circle cx="46" cy="50" r="2" fill="white" />
+  <circle cx="54" cy="50" r="2" fill="white" />
+  <!-- Smile -->
+  <path d="M47 56 L53 56" stroke="white" stroke-width="1.5" />
+</svg>

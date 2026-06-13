@@ -42,6 +42,16 @@ export const CHARACTER_PROFILES: Record<
     volumeMultiplier: 1.0,
     chordIntervals: [0, 4],
   },
+  nova: {
+    instrument: 'strings',
+    volumeMultiplier: 1.0,
+    chordIntervals: [0, -12],
+  },
+  spark: {
+    instrument: 'synth',
+    volumeMultiplier: 1.0,
+    effectType: 'staccato',
+  },
   blaze: {
     instrument: 'synth',
     volumeMultiplier: 0.9,

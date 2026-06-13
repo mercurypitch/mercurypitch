@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.14] - 2026-06-13
+
+### Added
+
+- **New Character Voices**: Added two new guide character voices to support diverse singing practices:
+  - **Nova (Octave Anchor)**: Plays a sub-octave double (-12 semitones) using the strings instrument to ground lower registers.
+  - **Spark (Percussive Tap)**: Plays short, staccato plucked synth notes to assist with rhythmic timing and precise pitch onset.
+- **Visual Assets**: Created custom SVG assets (nova_idle.svg and spark_idle.svg) for the new characters.
+- **Unit Test Coverage**: Added detailed assertions verifying correct instrument selection, oscillator counts, and effects for the new character voices in the test suite.
+
 ## [0.3.13] - 2026-06-13
 
 ### Added

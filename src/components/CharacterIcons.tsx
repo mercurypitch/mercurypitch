@@ -19,6 +19,8 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
     'aria',
     'echo',
     'harmony',
+    'nova',
+    'spark',
     'blaze',
     'luna',
     'flux',
