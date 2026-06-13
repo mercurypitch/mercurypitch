@@ -5,24 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.14] - 2026-06-13
-
-### Added
-
-- **New Character Voices**: Added two new guide character voices to support diverse singing practices:
-  - **Nova (Octave Anchor)**: Plays a sub-octave double (-12 semitones) using the strings instrument to ground lower registers.
-  - **Spark (Percussive Tap)**: Plays short, staccato plucked synth notes to assist with rhythmic timing and precise pitch onset.
-- **Visual Assets**: Created custom SVG assets (nova_idle.svg and spark_idle.svg) for the new characters.
-- **Unit Test Coverage**: Added detailed assertions verifying correct instrument selection, oscillator counts, and effects for the new character voices in the test suite.
-
 ## [0.3.13] - 2026-06-13
 
 ### Added
 
-- **Guide Character Voice Improvements**: Introduced the new **Harmony** character voice option that plays the target note with a major third (+4 semitones) on top. Added the **Echo** quiet voice that plays at `0.3x` volume for advanced practice, and boosted the **Aria** guide volume to `1.3x`. Programmed a lively vibrato character effect for the **Blaze** synth guide.
+- **Guide Character Voice Improvements**: Introduced the new **Harmony** character voice option that plays the target note with a major third (+4 semitones) on top, **Echo** (quiet voice playing at `0.3x` volume), and boosted the **Aria** volume to `1.3x`.
+- **New Character Voices**: Added two new guide character voices to support diverse singing practices:
+  - **Nova (Octave Anchor)**: Plays a sub-octave double (-12 semitones) using the strings instrument to ground lower registers.
+  - **Spark (Percussive Tap)**: Plays short, staccato plucked synth notes to assist with rhythmic timing and precise pitch onset.
 - **Detailed Character Descriptions**: Added rich tooltips to the character selector in the sidebar, providing clear explanations of each guide voice's role and how it helps the user practice.
-- **Display Name Integration**: Integrated character display names (`Aria`, `Harmony`, etc.) into the sidebar indicator pill and SettingsPanel explanation text.
-- **Harmony SVG Icon**: Designed and created a custom SVG asset (`harmony_idle.svg`) representing the blending dual-voice of Harmony.
+- **Display Name Integration**: Integrated character display names (`Aria`, `Harmony`, `Nova`, `Spark`, etc.) into the sidebar indicator pill and SettingsPanel explanation text.
+- **Character SVG Icons**: Designed and created custom SVG assets (`harmony_idle.svg`, `nova_idle.svg`, and `spark_idle.svg`) representing the respective character identities.
+- **Unit Test Coverage**: Added detailed assertions verifying correct instrument selection, oscillator counts, and effects for the new character voices in the test suite.
 
 ## [0.3.12] - 2026-06-12
 
