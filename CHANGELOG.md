@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Guided Playback Flow**: A top "get ready" overlay shows the current song → group/singer → duration with a 4‑3‑2‑1‑Go countdown; the instrumental plays for true karaoke while the vocal stem is kept silent but tapped as the pitch reference for scoring. After each song the score modal appears, then the next song's overlay; a final ranked scoreboard recaps every singer at the end.
 - **Mic Monitoring ("Hear my voice")**: Optional toggle + volume to route the mic to the speakers/headphones so singers hear themselves over the backing track — no second app required (off by default to avoid feedback; best with headphones).
 - **Now-Playing Tab Title & Header**: The browser tab shows `MercuryPitch — <song>` during playback, and the Stem Mixer header gains a dimmed subtitle (Singer · Song · Next) while a playlist is running.
+- **Playlist Gallery**: A collapsible gallery of saved playlists above the session list in the Karaoke upload view, each card showing song/singer counts with quick Play, Export, Rename and Delete actions. The session list is collapsible too.
+- **Quick-start & countdown polish**: Each playlist row (sidebar and gallery) has an immediate Play button, and the countdown overlay greets the singer with an "Are you ready, <singer>?" pill.
+- **Export/Import Karaoke**: Export a playlist to a ZIP containing its songs plus a manifest of the playlist structure, groups and singer assignments; importing a karaoke ZIP recreates the sessions, groups and playlists with remapped ids.
+- **In-playback playlist transport**: Prev / Skip / Stop controls in the Stem Mixer header subtitle so you can skip the current song mid-play (previously the playlist only advanced when a song finished).
+- **Mic monitor mixer**: A "Hear myself" toggle + volume fader in the Stem Mixer right sidebar (next to the stem faders) to set self-monitoring loudness during karaoke.
+- **Playlist builder pill view**: Add songs/groups via click-to-toggle pill badges (or classic dropdowns), with a compact items view, collapsible add list, and bounded/scrollable lists so the editor stays reachable.
+
+### Fixed
+
+- **Playlist song loading**: Fixed a keyed-remount race where the Stem Mixer could show one song but play another, and stopped the URL-hash sync from re-triggering session loads (which made the mixer reload songs) during playlist playback.
+- **Karaoke vocal muting**: The reference vocal is now silenced via the track's mute flag (so the mute button and waveform reflect it) while still driving the pitch reference.
+- **Add-song/group dropdowns**: The placeholder is no longer auto-skipped to the first option, so the only/first item can actually be selected; the dropdown resets after each add.
+- **Quieter karaoke**: The lyrics/transcription alignment-accuracy warning is suppressed during playlist playback (still shown for single sessions).
+
+### Changed
+
+- **Session cards**: Removed the redundant "UVR Session" heading; cards now show the band/group above the song title with hover tooltips for long names, and the action buttons (delete/export/share) sit as smaller, right-aligned controls in the top row so the title spans the full width.
+- **Group singer default**: Adding a group to a playlist pre-fills its singer with the group's name (editable afterwards).
 
 ## [0.3.13] - 2026-06-13
 

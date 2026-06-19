@@ -54,17 +54,22 @@ describe('UvrSessionResult Component', () => {
   })
 
   describe('Rendering', () => {
-    it('renders session header with icon and title', () => {
+    it('renders session header with the song title', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
+        originalFile: {
+          name: 'my-song.mp3',
+          size: 1024 * 50000,
+          mimeType: 'audio/mpeg',
+        },
         createdAt: Date.now() - 3600000,
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('UVR Session')).toBeInTheDocument()
+      expect(screen.getByText('my-song.mp3')).toBeInTheDocument()
     })
 
     it('renders session filename', () => {

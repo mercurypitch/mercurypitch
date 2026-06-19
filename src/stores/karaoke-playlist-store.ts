@@ -145,6 +145,26 @@ export async function createPlaylist(
   return pl
 }
 
+/** Create a playlist with a full set of items at once (used by import). New
+ *  item ids are generated; original singer/shuffle metadata is preserved. */
+export async function createPlaylistWithItems(
+  name: string,
+  items: Omit<KaraokePlaylistItem, 'id'>[],
+  shuffleOrder?: boolean,
+): Promise<KaraokePlaylistRecord> {
+  const db = await getDb()
+  const repo = db.getRepository<KaraokePlaylistRecord>(REPO)
+  const pl = await repo.create({
+    name,
+    items: items.map((it) => ({ ...it, id: globalThis.crypto.randomUUID() })),
+    ...(shuffleOrder !== undefined ? { shuffleOrder } : {}),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any)
+  _setPlaylists((prev) => [...prev, pl])
+  bump()
+  return pl
+}
+
 async function patchPlaylist(
   id: string,
   changes: Partial<KaraokePlaylistRecord>,

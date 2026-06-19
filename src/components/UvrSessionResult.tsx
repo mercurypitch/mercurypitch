@@ -221,65 +221,73 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     >
       {/* Header */}
       <div class="session-header">
-        <div class="session-icon-wrapper">
-          <Music />
+        {/* Top row: icon + band/group on the left, actions on the right */}
+        <div class="session-header-top">
+          <div class="session-icon-wrapper">
+            <Music />
+          </div>
+          <Show when={currentGroup()}>
+            <p class="session-band" title={currentGroup()!.name}>
+              {currentGroup()!.name}
+            </p>
+          </Show>
+          <div class="session-header-actions">
+            <button
+              class="session-delete-btn"
+              onClick={handleDelete}
+              aria-label="Delete session"
+              disabled={props.disabled}
+            >
+              <Trash2 />
+            </button>
+            <button
+              class="session-share-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                props.onExport?.(props.sessionId)
+              }}
+              title="Export session to ZIP"
+              disabled={
+                props.disabled === true || session()?.status !== 'completed'
+              }
+            >
+              <Download />
+            </button>
+            <button
+              class="session-share-btn"
+              onClick={(e) => {
+                void handleCopyLink(e)
+              }}
+              title="Copy share link"
+              disabled={props.disabled}
+            >
+              <Share />
+            </button>
+          </div>
         </div>
-        <div class="session-title-area">
-          <h3>UVR Session</h3>
-          <p class="session-filename">
-            {session()?.originalFile?.name ?? 'Unknown'}
-          </p>
-          <p
-            class="session-id-pill"
-            title={
-              (session()?.apiSessionId as string | undefined) ??
-              session()?.sessionId ??
-              ''
-            }
-          >
-            {(() => {
-              const id =
-                (session()?.apiSessionId as string | undefined) ??
-                session()?.sessionId
-              return id !== undefined
-                ? id.length > 16
-                  ? id.slice(-8)
-                  : id
-                : ''
-            })()}
-          </p>
-        </div>
-        <button
-          class="session-delete-btn"
-          onClick={handleDelete}
-          aria-label="Delete session"
-          disabled={props.disabled}
+
+        {/* Song title — full width across the card */}
+        <p
+          class="session-filename"
+          title={session()?.originalFile?.name ?? 'Unknown'}
         >
-          <Trash2 />
-        </button>
-        <button
-          class="session-share-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            props.onExport?.(props.sessionId)
-          }}
-          title="Export session to ZIP"
-          disabled={
-            props.disabled === true || session()?.status !== 'completed'
+          {session()?.originalFile?.name ?? 'Unknown'}
+        </p>
+        <p
+          class="session-id-pill"
+          title={
+            (session()?.apiSessionId as string | undefined) ??
+            session()?.sessionId ??
+            ''
           }
         >
-          <Download />
-        </button>
-        <button
-          class="session-share-btn"
-          onClick={(e) => {
-            void handleCopyLink(e)
-          }}
-          title="Copy share link"
-          disabled={props.disabled}
-        >
-          <Share />
-        </button>
+          {(() => {
+            const id =
+              (session()?.apiSessionId as string | undefined) ??
+              session()?.sessionId
+            return id !== undefined ? (id.length > 16 ? id.slice(-8) : id) : ''
+          })()}
+        </p>
       </div>
 
       {/* Status */}

@@ -19,9 +19,17 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0;
   font-size: 0.95rem;
   color: var(--text-primary);
+}
+.title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent, #58a6ff);
 }
 
 .body {
@@ -157,6 +165,13 @@
   cursor: default;
 }
 
+.playBtn:not(:disabled) {
+  color: var(--accent, #58a6ff);
+}
+.playBtn:not(:disabled):hover {
+  background: rgba(88, 166, 255, 0.15);
+}
+
 /* Shuffle toggles */
 .shuffleRow,
 .shuffleWithin {
@@ -173,6 +188,28 @@
 }
 
 /* Items */
+.itemsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.itemsHeaderLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
 .itemRow {
   display: flex;
   align-items: flex-start;
@@ -181,6 +218,16 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
+}
+.itemRowCompact {
+  padding: 0.3rem 0.45rem;
+}
+.itemRowCompact .itemMain {
+  gap: 0.25rem;
+}
+.itemRowCompact .singerInput {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.74rem;
 }
 
 .itemReorder {
@@ -236,6 +283,95 @@
   flex-direction: column;
   gap: 0.4rem;
   margin-top: 0.25rem;
+}
+
+.addHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.addHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.addHeaderTitle:hover {
+  color: var(--text-primary);
+}
+.addHeaderTitle svg {
+  width: 14px;
+  height: 14px;
+}
+.viewToggle {
+  font-size: 0.7rem;
+  color: var(--accent, #58a6ff);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+.viewToggle:hover {
+  background: rgba(88, 166, 255, 0.12);
+}
+
+.pillSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.pillSectionLabel {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pill:hover {
+  border-color: var(--accent, #58a6ff);
+}
+.pillActive {
+  color: #fff;
+  background: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+}
+.pillCount {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 0 0.3rem;
 }
 
 .select {

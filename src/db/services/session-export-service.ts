@@ -1,4 +1,5 @@
 import * as fflate from 'fflate'
+import type { KaraokePlaylistItem, KaraokePlaylistRecord, SessionGroupRecord, } from '@/db'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
@@ -8,7 +9,8 @@ import { loadTranscriptionFromDb, saveTranscriptionToDb, } from '@/db/services/w
 import { IS_DEV } from '@/lib/defaults'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import type { UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, getUvrSession, importUvrSession, } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, getUvrSession, importUvrSession, } from '@/stores/app-store'
+import { createPlaylistWithItems, getPlaylist, } from '@/stores/karaoke-playlist-store'
 
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
@@ -26,6 +28,13 @@ interface ImportPayload {
   lyrics: LyricsData | null
   transcription?: WhisperSegment[] | null
   pitchAnalysis?: SessionPitchData | null
+}
+
+/** Karaoke manifest stored at the ZIP root (karaoke.json) for playlist exports. */
+interface KaraokeManifest {
+  version: 1
+  playlists: KaraokePlaylistRecord[]
+  groups: { id: string; name: string; sessionIds: string[] }[]
 }
 
 /**
@@ -278,8 +287,246 @@ export async function exportGroup(
 }
 
 /**
+ * Export one or more karaoke playlists as a ZIP: every referenced session
+ * (audio/stems/lyrics) plus a karaoke.json manifest holding the playlists
+ * (singers, order, shuffle) and the groups they use, so the whole karaoke set
+ * round-trips through import.
+ */
+export async function exportKaraokePlaylists(
+  playlistIds: string[],
+  onProgress?: (pct: number) => void,
+): Promise<void> {
+  try {
+    const playlists = playlistIds
+      .map((id) => getPlaylist(id))
+      .filter((p): p is KaraokePlaylistRecord => p !== undefined)
+    if (playlists.length === 0) return
+
+    const allGroups = getGroupsReactive()
+    const groupIds = new Set<string>()
+    const sessionIds = new Set<string>()
+
+    for (const pl of playlists) {
+      for (const item of pl.items) {
+        if (item.kind === 'group') {
+          groupIds.add(item.refId)
+          const g = allGroups.find((gr) => gr.id === item.refId)
+          g?.sessionIds.forEach((s) => sessionIds.add(s))
+        } else {
+          sessionIds.add(item.refId)
+        }
+      }
+    }
+
+    // Resolve sessions; also pull in the group each one belongs to so the
+    // "band" label is restored on import.
+    const sessionList = [...sessionIds]
+      .map((sid) => getUvrSession(sid))
+      .filter((s): s is UvrSession => s !== undefined)
+    for (const s of sessionList) {
+      if (s.groupId !== undefined) groupIds.add(s.groupId)
+    }
+
+    const groups = [...groupIds]
+      .map((id) => allGroups.find((g) => g.id === id))
+      .filter((g): g is SessionGroupRecord => g !== undefined)
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        sessionIds: g.sessionIds.filter((s) => sessionIds.has(s)),
+      }))
+
+    onProgress?.(0)
+    let allZippable: fflate.Zippable = {}
+    for (let i = 0; i < sessionList.length; i++) {
+      const s = sessionList[i]
+      const safeName = (s.originalFile?.name ?? s.sessionId).replace(
+        /[^a-z0-9_-]/gi,
+        '_',
+      )
+      const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
+      const base = (i / sessionList.length) * 90
+      const range = 90 / Math.max(1, sessionList.length)
+      const files = await prepareSessionFilesForZip(
+        s.sessionId,
+        dirPrefix,
+        onProgress
+          ? (sub) => onProgress(base + (sub / 100) * range)
+          : undefined,
+      )
+      allZippable = { ...allZippable, ...files }
+    }
+
+    const manifest: KaraokeManifest = { version: 1, playlists, groups }
+    allZippable['karaoke.json'] = fflate.strToU8(
+      JSON.stringify(manifest, null, 2),
+    )
+
+    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
+      fflate.zip(allZippable, { level: 6 }, (err, data) => {
+        if (err) reject(err)
+        else resolve(data)
+      })
+    })
+    onProgress?.(100)
+
+    const blob = new Blob([zipped.buffer as ArrayBuffer], {
+      type: 'application/zip',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const nameSlug =
+      playlists.length === 1
+        ? playlists[0].name.replace(/[^a-z0-9_-]/gi, '_')
+        : `${playlists.length}_playlists`
+    a.download = `MercuryPitch_Karaoke_${nameSlug}.zip`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('[Export] Failed to export karaoke playlists:', err)
+    throw err
+  }
+}
+
+/**
+ * Import a single session entry (one session.json + its audio files) from an
+ * already-unzipped archive. Returns the original sessionId and the freshly
+ * generated one so callers can remap references (e.g. karaoke playlists).
+ */
+async function importOneSession(
+  unzipped: fflate.Unzipped,
+  prefix: string,
+  payload: ImportPayload,
+  targetGroupId?: string,
+): Promise<{ oldSessionId: string; newSessionId: string }> {
+  // Generate a new UUID for the imported session to avoid collisions
+  const newSessionId = globalThis.crypto.randomUUID()
+
+  // Strip stale `outputs` from old-format exports that may contain
+  // domain-specific or blob: URLs from the source environment
+  const { outputs: _importedOutputs, ...sessionData } = payload.session
+  const oldSessionId = payload.session.sessionId
+  const newSession: UvrSession = {
+    ...sessionData,
+    sessionId: newSessionId,
+    createdAt: Date.now(), // update timestamp to now
+    // Drop the source groupId — group membership is re-established by the
+    // caller (targetGroupId) or by the karaoke manifest, never the stale id.
+    groupId: undefined,
+    ...(targetGroupId !== undefined ? { groupId: targetGroupId } : {}),
+  }
+
+  // 1. Process original file
+  const origFilePrefix = `${prefix}original_`
+  const origFilePath = Object.keys(unzipped).find((p) =>
+    p.startsWith(origFilePrefix),
+  )
+  if (origFilePath !== undefined) {
+    const origName = origFilePath.substring(origFilePrefix.length)
+    const mimeType = newSession.originalFile?.mimeType ?? 'audio/wav'
+    const origBlob = new Blob([unzipped[origFilePath]], { type: mimeType })
+    await saveStemBlob(newSessionId, 'original', origBlob, origName)
+  }
+
+  // 2. Process stems — reconstruct the outputs object with new URLs
+  const newOutputs: Record<string, string> = {}
+  const stemPrefix = `${prefix}stem_`
+  const stemPaths = Object.keys(unzipped).filter((p) =>
+    p.startsWith(stemPrefix),
+  )
+
+  for (const stemPath of stemPaths) {
+    // extract stem name e.g. "stem_vocal.wav" -> "vocal"
+    const filename = stemPath.substring(stemPrefix.length)
+    const dotIdx = filename.lastIndexOf('.')
+    const stemName = dotIdx !== -1 ? filename.substring(0, dotIdx) : filename
+
+    const ext = dotIdx !== -1 ? filename.substring(dotIdx + 1) : 'wav'
+    const mimeType = ext === 'mp3' ? 'audio/mpeg' : 'audio/wav'
+    const stemBlob = new Blob([unzipped[stemPath]], { type: mimeType })
+
+    await saveStemBlob(
+      newSessionId,
+      stemName as 'vocal' | 'instrumental' | 'original',
+      stemBlob,
+      filename,
+    )
+    newOutputs[stemName] = URL.createObjectURL(stemBlob)
+  }
+
+  if (Object.keys(newOutputs).length > 0) {
+    newSession.outputs = newOutputs
+  }
+
+  // 3. Lyrics
+  if (payload.lyrics) {
+    await saveLyricsToDb(newSessionId, payload.lyrics)
+  }
+  // 4. Whisper transcription
+  if (payload.transcription != null && payload.transcription.length > 0) {
+    await saveTranscriptionToDb(newSessionId, payload.transcription)
+  }
+  // 5. Pitch analysis
+  if (payload.pitchAnalysis != null) {
+    await savePitchAnalysisToDb(newSessionId, payload.pitchAnalysis)
+  }
+  // 6. Save session to app-store
+  importUvrSession(newSession)
+
+  return { oldSessionId, newSessionId }
+}
+
+/**
+ * Recreate exported karaoke groups + playlists, remapping all session and
+ * group references to the freshly imported ids.
+ */
+async function importKaraokeManifest(
+  manifest: KaraokeManifest,
+  sessionIdMap: Map<string, string>,
+): Promise<{ groups: number; playlists: number }> {
+  const groupIdMap = new Map<string, string>()
+  let groupCount = 0
+  for (const g of manifest.groups ?? []) {
+    const newGroup = await createGroup(g.name)
+    groupIdMap.set(g.id, newGroup.id)
+    groupCount++
+    for (const oldSid of g.sessionIds) {
+      const newSid = sessionIdMap.get(oldSid)
+      if (newSid !== undefined) await addSessionToGroup(newSid, newGroup.id)
+    }
+  }
+
+  let playlistCount = 0
+  for (const pl of manifest.playlists ?? []) {
+    const items: Omit<KaraokePlaylistItem, 'id'>[] = []
+    for (const it of pl.items) {
+      const newRef =
+        it.kind === 'group'
+          ? groupIdMap.get(it.refId)
+          : sessionIdMap.get(it.refId)
+      if (newRef === undefined) continue // referenced session/group missing
+      items.push({
+        kind: it.kind,
+        refId: newRef,
+        ...(it.singerName !== undefined ? { singerName: it.singerName } : {}),
+        ...(it.shuffleWithinGroup !== undefined
+          ? { shuffleWithinGroup: it.shuffleWithinGroup }
+          : {}),
+      })
+    }
+    await createPlaylistWithItems(pl.name, items, pl.shuffleOrder)
+    playlistCount++
+  }
+
+  return { groups: groupCount, playlists: playlistCount }
+}
+
+/**
  * Import sessions from a ZIP Blob.
  * Optionally assign imported sessions to a group.
+ * If the archive contains a karaoke manifest (karaoke.json), its groups and
+ * playlists (with singers) are recreated too, remapped to the new session ids.
  * Returns the number of successfully imported sessions.
  */
 export async function importSessionsFromZip(
@@ -299,6 +546,12 @@ export async function importSessionsFromZip(
       throw new Error('No session.json found in ZIP')
     }
 
+    const hasKaraokeManifest = unzipped['karaoke.json'] !== undefined
+    // A karaoke import owns grouping via its manifest; don't also force every
+    // session into a single targetGroupId.
+    const perSessionGroupId = hasKaraokeManifest ? undefined : targetGroupId
+
+    const sessionIdMap = new Map<string, string>()
     let importedCount = 0
 
     for (const jsonPath of sessionJsonPaths) {
@@ -320,88 +573,36 @@ export async function importSessionsFromZip(
           continue
         }
 
-        // Generate a new UUID for the imported session to avoid collisions
-        const newSessionId = globalThis.crypto.randomUUID()
-
-        // Strip stale `outputs` from old-format exports that may contain
-        // domain-specific or blob: URLs from the source environment
-        const { outputs: _importedOutputs, ...sessionData } = payload.session
-        const newSession: UvrSession = {
-          ...sessionData,
-          sessionId: newSessionId,
-          createdAt: Date.now(), // update timestamp to now
-          ...(targetGroupId !== undefined ? { groupId: targetGroupId } : {}),
-        }
-
-        // 1. Process original file
-        const origFilePrefix = `${prefix}original_`
-        const origFilePath = Object.keys(unzipped).find((p) =>
-          p.startsWith(origFilePrefix),
+        const { oldSessionId, newSessionId } = await importOneSession(
+          unzipped,
+          prefix,
+          payload,
+          perSessionGroupId,
         )
-        if (origFilePath !== undefined) {
-          const origName = origFilePath.substring(origFilePrefix.length)
-          const mimeType = newSession.originalFile?.mimeType ?? 'audio/wav'
-          const origBlob = new Blob([unzipped[origFilePath]], {
-            type: mimeType,
-          })
-          await saveStemBlob(newSessionId, 'original', origBlob, origName)
-        }
-
-        // 2. Process stems
-        // To reconstruct the outputs object with new URLs
-        const newOutputs: Record<string, string> = {}
-        const stemPrefix = `${prefix}stem_`
-        const stemPaths = Object.keys(unzipped).filter((p) =>
-          p.startsWith(stemPrefix),
-        )
-
-        for (const stemPath of stemPaths) {
-          // extract stem name e.g. "stem_vocal.wav" -> "vocal"
-          const filename = stemPath.substring(stemPrefix.length)
-          const dotIdx = filename.lastIndexOf('.')
-          const stemName =
-            dotIdx !== -1 ? filename.substring(0, dotIdx) : filename
-
-          const ext = dotIdx !== -1 ? filename.substring(dotIdx + 1) : 'wav'
-          const mimeType = ext === 'mp3' ? 'audio/mpeg' : 'audio/wav'
-          const stemBlob = new Blob([unzipped[stemPath]], { type: mimeType })
-
-          await saveStemBlob(
-            newSessionId,
-            stemName as 'vocal' | 'instrumental' | 'original',
-            stemBlob,
-            filename,
-          )
-          // Just set a placeholder; hydrateStemUrls is used to load them anyway
-          // But we can generate a local blob URL for immediate use
-          newOutputs[stemName] = URL.createObjectURL(stemBlob)
-        }
-
-        if (Object.keys(newOutputs).length > 0) {
-          newSession.outputs = newOutputs
-        }
-
-        // 3. Process Lyrics
-        if (payload.lyrics) {
-          await saveLyricsToDb(newSessionId, payload.lyrics)
-        }
-
-        // 4. Process Whisper Transcription
-        if (payload.transcription != null && payload.transcription.length > 0) {
-          await saveTranscriptionToDb(newSessionId, payload.transcription)
-        }
-
-        // 5. Process Pitch Analysis
-        if (payload.pitchAnalysis != null) {
-          await savePitchAnalysisToDb(newSessionId, payload.pitchAnalysis)
-        }
-
-        // 6. Save session to app-store
-        importUvrSession(newSession)
+        sessionIdMap.set(oldSessionId, newSessionId)
         importedCount++
       } catch (err) {
         if (IS_DEV)
           console.warn(`[Import] Failed to import session at ${jsonPath}:`, err)
+      }
+    }
+
+    // Recreate karaoke groups + playlists if present
+    if (hasKaraokeManifest) {
+      try {
+        const manifest: KaraokeManifest = JSON.parse(
+          fflate.strFromU8(unzipped['karaoke.json']),
+        )
+        const { groups, playlists } = await importKaraokeManifest(
+          manifest,
+          sessionIdMap,
+        )
+        if (IS_DEV)
+          console.info(
+            `[Import] Restored ${playlists} karaoke playlist(s), ${groups} group(s)`,
+          )
+      } catch (err) {
+        console.error('[Import] Failed to restore karaoke manifest:', err)
       }
     }
 

@@ -11,6 +11,8 @@ import { karaokeFocus } from '@/stores/ui-store'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
+import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
+import { StemMixerMicMonitor } from './StemMixerMicMonitor'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
 
@@ -36,6 +38,7 @@ interface StemMixerGridWorkspaceProps {
 
   // Stem controls
   stemControls: Omit<StemMixerStemControlsProps, 'direction'>
+  micMonitor: StemMixerMicMonitorProps
 
   // Lyrics panel body props
   lyricsPanel: Omit<
@@ -369,6 +372,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               Stem Controls
             </div>
             <StemMixerStemControls {...props.stemControls} />
+            <StemMixerMicMonitor {...props.micMonitor} />
             <div
               class="sm-resize-handle"
               onPointerDown={(e) => props.handleResizeStart('controls', e)}

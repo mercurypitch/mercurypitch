@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { perSongScores, phase, queue, restartPlaylist, stopPlaylist, } from '@/stores/karaoke-playlist-store'
+import { Trophy } from './icons'
 import styles from './KaraokePlaylistSummary.module.css'
 
 interface SingerRanking {
@@ -57,7 +58,9 @@ export const KaraokePlaylistSummary: Component = () => {
     <Show when={phase() === 'summary'}>
       <div class={styles.overlay}>
         <div class={styles.card}>
-          <div class={styles.trophy}>🏆</div>
+          <div class={styles.trophy}>
+            <Trophy />
+          </div>
           <h2 class={styles.title}>Playlist Complete</h2>
 
           <Show
