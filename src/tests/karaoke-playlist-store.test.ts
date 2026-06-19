@@ -43,7 +43,7 @@ describe('buildQueue', () => {
     expect(buildQueue(playlist({ items: [] }), deps)).toEqual([])
   })
 
-  it('expands a single session item', () => {
+  it('QUEUE-2: contributes one entry per standalone session item', () => {
     const q = buildQueue(
       playlist({
         items: [
@@ -57,7 +57,7 @@ describe('buildQueue', () => {
     ])
   })
 
-  it('expands a group item into its member sessions in order', () => {
+  it('QUEUE-1: expands a group item into its member sessions in order', () => {
     const q = buildQueue(
       playlist({
         items: [{ id: 'i1', kind: 'group', refId: 'g1', singerName: 'Bob' }],
@@ -69,7 +69,7 @@ describe('buildQueue', () => {
     expect(q.every((e) => e.singerName === 'Bob')).toBe(true)
   })
 
-  it('preserves order across mixed session + group items', () => {
+  it('QUEUE-3: preserves item order across mixed session + group items', () => {
     const q = buildQueue(
       playlist({
         items: [
@@ -83,7 +83,7 @@ describe('buildQueue', () => {
     expect(q.map((e) => e.sessionId)).toEqual(['s5', 's4', 's1'])
   })
 
-  it('falls back to "Unknown" when a session title is missing', () => {
+  it('QUEUE-4: falls back to "Unknown" when a session title is missing', () => {
     const q = buildQueue(
       playlist({
         items: [{ id: 'i1', kind: 'session', refId: 'missing' }],
@@ -93,7 +93,7 @@ describe('buildQueue', () => {
     expect(q[0].songTitle).toBe('Unknown')
   })
 
-  it('keeps the same sessions when shuffling within a group', () => {
+  it('QUEUE-5: keeps the same sessions when shuffling within a group', () => {
     const q = buildQueue(
       playlist({
         items: [
@@ -111,7 +111,7 @@ describe('buildQueue', () => {
     expect(q).toHaveLength(3)
   })
 
-  it('keeps the same songs when shuffling the top-level order', () => {
+  it('QUEUE-6: keeps the same songs when shuffling the top-level order', () => {
     const q = buildQueue(
       playlist({
         shuffleOrder: true,
@@ -128,7 +128,7 @@ describe('buildQueue', () => {
   })
 
   describe('round-robin', () => {
-    it('interleaves one song per group per round', () => {
+    it('QUEUE-7: interleaves one song per group per round', () => {
       // g1 = [s1,s2,s3], g2 = [s4]. Round 1: s1, s4. Round 2: s2. Round 3: s3.
       const q = buildQueue(
         playlist({
@@ -143,7 +143,7 @@ describe('buildQueue', () => {
       expect(q.map((e) => e.sessionId)).toEqual(['s1', 's4', 's2', 's3'])
     })
 
-    it('treats a standalone session as a one-song group', () => {
+    it('QUEUE-8: treats a standalone session as a one-song group', () => {
       // g2 = [s4], session s5. Round 1: s4, s5 (s4 group exhausted after).
       const q = buildQueue(
         playlist({
@@ -158,7 +158,7 @@ describe('buildQueue', () => {
       expect(q.map((e) => e.sessionId)).toEqual(['s4', 's5'])
     })
 
-    it('plays every song exactly once across all groups', () => {
+    it('QUEUE-9: plays every song exactly once across all groups', () => {
       const q = buildQueue(
         playlist({
           playMode: 'roundRobin',
