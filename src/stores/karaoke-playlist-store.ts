@@ -11,7 +11,7 @@ import { createSignal } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { getDb } from '@/db'
 import { IS_DEV } from '@/lib/defaults'
-import { getGroupsReactive, getUvrSession } from '@/stores/app-store'
+import { getAllUvrSessions, getGroupsReactive, getUvrSession, } from '@/stores/app-store'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -59,41 +59,73 @@ function shuffle<T>(arr: readonly T[]): T[] {
 }
 
 /**
- * Expand a playlist into a flat, ordered queue of playable songs:
- * - `group` items expand to their member sessions (optionally shuffled within),
- * - `session` items contribute a single entry,
- * - the top-level order is optionally shuffled.
+ * Expand one playlist item into its ordered list of playable songs (a "player"
+ * in round-robin terms). Groups expand to their members (shuffled within when
+ * flagged); a standalone session is a single-song player.
+ */
+function expandItem(
+  item: KaraokePlaylistItem,
+  deps: BuildQueueDeps,
+): QueueEntry[] {
+  if (item.kind === 'session') {
+    return [
+      {
+        sessionId: item.refId,
+        songTitle: deps.sessionTitle(item.refId) ?? 'Unknown',
+        singerName: item.singerName,
+      },
+    ]
+  }
+  const ids =
+    item.shuffleWithinGroup === true
+      ? shuffle(deps.groupSessionIds(item.refId))
+      : deps.groupSessionIds(item.refId)
+  const groupName = deps.groupName(item.refId)
+  return ids.map((sid) => ({
+    sessionId: sid,
+    songTitle: deps.sessionTitle(sid) ?? 'Unknown',
+    groupName,
+    singerName: item.singerName,
+  }))
+}
+
+/**
+ * Expand a playlist into a flat, ordered queue of playable songs.
+ *
+ * - 'sequential' (default): each group/song plays fully, in (optionally
+ *   shuffled) item order.
+ * - 'roundRobin': turn-based — one song per group per round, looping until
+ *   every song is played (a standalone session is a one-song group). When
+ *   `shuffleOrder` is on, the group turn order is re-shuffled each round; when a
+ *   group's `shuffleWithinGroup` is on, its songs are taken in random order
+ *   (already-played ones are naturally skipped since the order is fixed here).
  */
 export function buildQueue(
   playlist: KaraokePlaylistRecord,
   deps: BuildQueueDeps,
 ): QueueEntry[] {
+  if ((playlist.playMode ?? 'sequential') === 'roundRobin') {
+    const players = playlist.items
+      .map((item) => ({ entries: expandItem(item, deps), idx: 0 }))
+      .filter((p) => p.entries.length > 0)
+    const out: QueueEntry[] = []
+    // Each round: every player with songs left contributes one, in (optionally
+    // re-shuffled) order, until all are exhausted.
+    while (players.some((p) => p.idx < p.entries.length)) {
+      const active = players.filter((p) => p.idx < p.entries.length)
+      const order = playlist.shuffleOrder === true ? shuffle(active) : active
+      for (const p of order) {
+        out.push(p.entries[p.idx])
+        p.idx += 1
+      }
+    }
+    return out
+  }
+
   const items =
     playlist.shuffleOrder === true ? shuffle(playlist.items) : playlist.items
   const out: QueueEntry[] = []
-  for (const item of items) {
-    if (item.kind === 'session') {
-      out.push({
-        sessionId: item.refId,
-        songTitle: deps.sessionTitle(item.refId) ?? 'Unknown',
-        singerName: item.singerName,
-      })
-    } else {
-      const ids =
-        item.shuffleWithinGroup === true
-          ? shuffle(deps.groupSessionIds(item.refId))
-          : deps.groupSessionIds(item.refId)
-      const groupName = deps.groupName(item.refId)
-      for (const sid of ids) {
-        out.push({
-          sessionId: sid,
-          songTitle: deps.sessionTitle(sid) ?? 'Unknown',
-          groupName,
-          singerName: item.singerName,
-        })
-      }
-    }
-  }
+  for (const item of items) out.push(...expandItem(item, deps))
   return out
 }
 
@@ -273,6 +305,13 @@ export async function setPlaylistShuffleOrder(
   await patchPlaylist(playlistId, { shuffleOrder })
 }
 
+export async function setPlaylistPlayMode(
+  playlistId: string,
+  playMode: 'sequential' | 'roundRobin',
+): Promise<void> {
+  await patchPlaylist(playlistId, { playMode })
+}
+
 // ── Playback transport ─────────────────────────────────────────
 
 const [activePlaylistId, setActivePlaylistId] = createSignal<string | null>(
@@ -301,8 +340,21 @@ export function nextSong(): QueueEntry | null {
 }
 
 const runtimeDeps: BuildQueueDeps = {
-  groupSessionIds: (gid) =>
-    getGroupsReactive().find((g) => g.id === gid)?.sessionIds ?? [],
+  // Resolve a group's songs to *existing* sessions only, merging the group's
+  // ordered `sessionIds` with any session assigned via `session.groupId` (the
+  // two can drift). This keeps stale/deleted ids out of the queue so playback
+  // doesn't silently skip straight to the summary.
+  groupSessionIds: (gid) => {
+    const all = getAllUvrSessions()
+    const exists = (sid: string) => all.some((s) => s.sessionId === sid)
+    const ordered =
+      getGroupsReactive().find((g) => g.id === gid)?.sessionIds ?? []
+    const fromGroup = ordered.filter(exists)
+    const extra = all
+      .filter((s) => s.groupId === gid && !ordered.includes(s.sessionId))
+      .map((s) => s.sessionId)
+    return [...fromGroup, ...extra]
+  },
   groupName: (gid) => getGroupsReactive().find((g) => g.id === gid)?.name,
   sessionTitle: (sid) => getUvrSession(sid)?.originalFile?.name,
 }

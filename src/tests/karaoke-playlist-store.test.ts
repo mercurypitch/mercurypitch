@@ -126,4 +126,57 @@ describe('buildQueue', () => {
     expect([...q.map((e) => e.sessionId)].sort()).toEqual(['s1', 's4', 's5'])
     expect(q).toHaveLength(3)
   })
+
+  describe('round-robin', () => {
+    it('interleaves one song per group per round', () => {
+      // g1 = [s1,s2,s3], g2 = [s4]. Round 1: s1, s4. Round 2: s2. Round 3: s3.
+      const q = buildQueue(
+        playlist({
+          playMode: 'roundRobin',
+          items: [
+            { id: 'i1', kind: 'group', refId: 'g1' },
+            { id: 'i2', kind: 'group', refId: 'g2' },
+          ],
+        }),
+        deps,
+      )
+      expect(q.map((e) => e.sessionId)).toEqual(['s1', 's4', 's2', 's3'])
+    })
+
+    it('treats a standalone session as a one-song group', () => {
+      // g2 = [s4], session s5. Round 1: s4, s5 (s4 group exhausted after).
+      const q = buildQueue(
+        playlist({
+          playMode: 'roundRobin',
+          items: [
+            { id: 'i1', kind: 'group', refId: 'g2' },
+            { id: 'i2', kind: 'session', refId: 's5' },
+          ],
+        }),
+        deps,
+      )
+      expect(q.map((e) => e.sessionId)).toEqual(['s4', 's5'])
+    })
+
+    it('plays every song exactly once across all groups', () => {
+      const q = buildQueue(
+        playlist({
+          playMode: 'roundRobin',
+          shuffleOrder: true,
+          items: [
+            { id: 'i1', kind: 'group', refId: 'g1', shuffleWithinGroup: true },
+            { id: 'i2', kind: 'group', refId: 'g2' },
+          ],
+        }),
+        deps,
+      )
+      expect([...q.map((e) => e.sessionId)].sort()).toEqual([
+        's1',
+        's2',
+        's3',
+        's4',
+      ])
+      expect(q).toHaveLength(4)
+    })
+  })
 })

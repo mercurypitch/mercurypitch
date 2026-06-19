@@ -186,6 +186,11 @@
   margin-top: 0.3rem;
   font-size: 0.75rem;
 }
+.shuffleHint {
+  color: var(--text-secondary);
+  opacity: 0.75;
+  font-size: 0.72rem;
+}
 
 /* Items */
 .itemsHeader {
@@ -244,13 +249,36 @@
   gap: 0.35rem;
 }
 
-.itemLabel {
+.itemLabel,
+.itemLabelBtn {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.82rem;
   color: var(--text-primary);
   word-break: break-word;
+}
+/* Group label doubles as the "add songs into this group" selector */
+.itemLabelBtn {
+  width: 100%;
+  text-align: left;
+  padding: 0.15rem 0.3rem;
+  margin: -0.15rem -0.3rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.itemLabelBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.itemLabelBtnActive {
+  border-color: rgba(88, 166, 255, 0.5);
+  background: rgba(88, 166, 255, 0.12);
+}
+.itemRowTarget {
+  border-color: rgba(88, 166, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.3) inset;
 }
 
 .itemKind {
@@ -330,9 +358,26 @@
   flex-direction: column;
   gap: 0.3rem;
 }
+.pillSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
 .pillSectionLabel {
   font-size: 0.68rem;
   color: var(--text-secondary);
+}
+.targetHint {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  font-style: italic;
+}
+.targetHintActive {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent, #58a6ff);
 }
 .pills {
   display: flex;

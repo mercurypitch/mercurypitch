@@ -243,6 +243,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     instrumental?: string
   }>({})
   const [mixerSessionId, setMixerSessionId] = createSignal('')
+  // Bumped once per successful playlist-song load to key the StemMixer remount.
+  const [mixerLoadToken, setMixerLoadToken] = createSignal(0)
   const [mixerPracticeMode, setMixerPracticeMode] = createSignal<
     'vocal' | 'instrumental' | 'full' | 'midi'
   >('full')
@@ -412,8 +414,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   // ── Karaoke playlist runner ──────────────────────────────────
   // When the playlist arms a song ('ready'), hydrate its stems into the mixer
-  // (instrumental audible + vocal kept as a silent scoring reference) and show
-  // the mixer view. The StemMixer is keyed per song so each is a fresh mount.
+  // and show the mixer view. The StemMixer remounts per song via mixerLoadToken,
+  // which is bumped only once the correct stems are in place — so the mixer
+  // never reuses a previous (already-ended) instance or loads stale stems.
   let loadingPlaylistSong: string | null = null
 
   const loadPlaylistSong = async (sessionId: string) => {
@@ -424,10 +427,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       return
     }
     const hydrated = await ensureHydrated(session)
-    // Batch so the keyed StemMixer remounts exactly once with the final stems +
-    // sessionId together. Without this, changing mixerSessionId first would
-    // remount the mixer while it still reads the previous song's stems, so it
-    // would play a different song than the one shown.
+    // A newer skip may have superseded this (async) load — bail if this song is
+    // no longer the current one, so we don't clobber the mixer out of order.
+    if (currentSong()?.sessionId !== sessionId) return
     batch(() => {
       setCurrentUvrSession(hydrated)
       setPrevView('results')
@@ -441,13 +443,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setMixerInitialSeekSec(undefined)
       setMixerAutoPlay(false)
       setCurrentView('mixer')
+      // Bump last so the remount happens with everything already in place.
+      setMixerLoadToken((t) => t + 1)
     })
   }
 
   createEffect(() => {
     const song = currentSong()
     if (!isPlaylistActive() || !song || phase() !== 'ready') return
-    // Track index so the same song appearing twice still reloads.
+    // Re-load whenever the (index, song) changes — revisiting a song replays it.
     const key = `${currentIndex()}:${song.sessionId}`
     if (loadingPlaylistSong === key) return
     loadingPlaylistSong = key
@@ -1353,12 +1357,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           {/* Stem Mixer Inline */}
           <Show when={currentView() === 'mixer'}>
             <div class="view-section mixer-section">
-              {/* Keyed so each song (or playlist position) is a fresh mount —
-                  the StemMixer loads stems on mount only. */}
+              {/* Keyed so each song is a fresh mount — the StemMixer loads
+                  stems on mount only. In playlist mode key on mixerLoadToken,
+                  which flips only after the new song's stems are in place. */}
               <Show
                 when={
                   isPlaylistActive()
-                    ? `${currentIndex()}:${mixerSessionId()}`
+                    ? `pl-${mixerLoadToken()}`
                     : mixerSessionId()
                 }
                 keyed
