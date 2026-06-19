@@ -5,7 +5,7 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import { beginCurrentSong, currentIndex, currentSong, nextSong, phase, prev, queue, stopPlaylist, } from '@/stores/karaoke-playlist-store'
-import { ChevronLeft, SkipForward, X } from './icons'
+import { ChevronLeft, Mic, Play, SkipForward, X } from './icons'
 import styles from './KaraokePlaylistOverlay.module.css'
 
 interface KaraokePlaylistOverlayProps {
@@ -76,6 +76,18 @@ export const KaraokePlaylistOverlay: Component<KaraokePlaylistOverlayProps> = (
             when={phase() === 'ready'}
             fallback={
               <div class={styles.countdown}>
+                <Show
+                  when={currentSong()?.singerName}
+                  fallback={<div class={styles.countReady}>Get ready!</div>}
+                >
+                  <div class={styles.countReady}>
+                    Are you ready,{' '}
+                    <span class={styles.countSinger}>
+                      {currentSong()!.singerName}
+                    </span>
+                    ?
+                  </div>
+                </Show>
                 <div class={styles.countNumber}>
                   {count() > 0 ? count() : 'Go!'}
                 </div>
@@ -89,7 +101,7 @@ export const KaraokePlaylistOverlay: Component<KaraokePlaylistOverlayProps> = (
 
             {/* Thumbnail slot (placeholder for v1) */}
             <div class={styles.thumb} aria-hidden="true">
-              🎤
+              <Mic />
             </div>
 
             <h2 class={styles.songTitle}>
@@ -113,7 +125,9 @@ export const KaraokePlaylistOverlay: Component<KaraokePlaylistOverlayProps> = (
               disabled={props.loading()}
               onClick={() => props.onStart()}
             >
-              {props.loading() ? 'Loading…' : 'Start ▶'}
+              <Show when={!props.loading()} fallback={'Loading…'}>
+                <Play /> Start
+              </Show>
             </button>
 
             <div class={styles.controls}>

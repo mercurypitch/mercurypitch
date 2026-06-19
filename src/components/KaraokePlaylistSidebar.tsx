@@ -4,10 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import type { KaraokePlaylistItem } from '@/db'
+import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
+import { createPersistedSignal } from '@/lib/storage'
 import { getAllUvrSessionsReactive, getGroupsReactive, } from '@/stores/app-store'
 import { addItem, createPlaylist, deletePlaylist, getPlaylistsReactive, removeItem, renamePlaylist, reorderItems, setItemShuffleWithinGroup, setItemSinger, setPlaylistShuffleOrder, startPlaylist, } from '@/stores/karaoke-playlist-store'
-import { CheckSmall, ChevronDown, ChevronUp, Pencil, Play, Trash2, X, } from './icons'
+import { CheckSmall, ChevronDown, ChevronUp, Mic, Pencil, Play, Trash2, X, } from './icons'
 import styles from './KaraokePlaylistSidebar.module.css'
 
 interface KaraokePlaylistSidebarProps {
@@ -25,6 +26,22 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
   const [newName, setNewName] = createSignal('')
   const [editingId, setEditingId] = createSignal<string | null>(null)
   const [editName, setEditName] = createSignal('')
+  // 'pills' (click-to-toggle badges) or 'list' (dropdowns). Persisted.
+  const [addView, setAddView] = createPersistedSignal<'pills' | 'list'>(
+    'km-add-view',
+    'pills',
+  )
+  // Controlled dropdown values so they always reset to the placeholder and a
+  // single/only option can still be picked (selecting fires change every time).
+  const [groupSelectVal, setGroupSelectVal] = createSignal('')
+  const [songSelectVal, setSongSelectVal] = createSignal('')
+  // Compact items view (hide per-item reorder/shuffle) + collapsible add list,
+  // so the editor stays short enough to reach the add controls. Persisted.
+  const [compactItems, setCompactItems] = createPersistedSignal(
+    'km-compact-items',
+    false,
+  )
+  const [addOpen, setAddOpen] = createPersistedSignal('km-add-open', true)
 
   const selected = createMemo(() =>
     playlists().find((p) => p.id === selectedId()),
@@ -59,7 +76,13 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
   const handleAddGroup = (gid: string) => {
     const id = selectedId()
     if (id === null || gid === '') return
-    void addItem(id, { kind: 'group', refId: gid })
+    // Default the singer to the group's name (a group is usually one person's
+    // set); the user can override it afterwards.
+    void addItem(id, {
+      kind: 'group',
+      refId: gid,
+      singerName: groupInfo(gid)?.name,
+    })
   }
 
   const handleAddSession = (sid: string) => {
@@ -68,10 +91,35 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
     void addItem(id, { kind: 'session', refId: sid })
   }
 
+  // Pill view: click to add, click again to remove.
+  const groupItem = (pl: KaraokePlaylistRecord, gid: string) =>
+    pl.items.find((it) => it.kind === 'group' && it.refId === gid)
+  const sessionItem = (pl: KaraokePlaylistRecord, sid: string) =>
+    pl.items.find((it) => it.kind === 'session' && it.refId === sid)
+
+  const toggleGroup = (pl: KaraokePlaylistRecord, gid: string) => {
+    const existing = groupItem(pl, gid)
+    if (existing) void removeItem(pl.id, existing.id)
+    else
+      void addItem(pl.id, {
+        kind: 'group',
+        refId: gid,
+        singerName: groupInfo(gid)?.name,
+      })
+  }
+  const toggleSession = (pl: KaraokePlaylistRecord, sid: string) => {
+    const existing = sessionItem(pl, sid)
+    if (existing) void removeItem(pl.id, existing.id)
+    else void addItem(pl.id, { kind: 'session', refId: sid })
+  }
+
   return (
     <div class={styles.sidebar}>
       <div class={styles.header}>
-        <h3 class={styles.title}>🎤 Karaoke Playlists</h3>
+        <h3 class={styles.title}>
+          <Mic />
+          Karaoke Playlists
+        </h3>
         <button
           class={styles.iconBtn}
           title="Close"
@@ -124,6 +172,14 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
                     when={editingId() === pl.id}
                     fallback={
                       <>
+                        <button
+                          class={`${styles.iconBtn} ${styles.playBtn}`}
+                          title="Start this playlist"
+                          disabled={pl.items.length === 0}
+                          onClick={() => startPlaylist(pl.id)}
+                        >
+                          <Play />
+                        </button>
                         <button
                           class={styles.iconBtn}
                           title="Rename"
@@ -194,135 +250,258 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
               </label>
 
               {/* Items */}
-              <For
-                each={pl().items}
-                fallback={
-                  <p class={styles.empty}>
-                    Add groups or songs below to build this playlist.
-                  </p>
-                }
-              >
-                {(item, i) => (
-                  <div class={styles.itemRow}>
-                    <div class={styles.itemReorder}>
-                      <button
-                        class={styles.iconBtn}
-                        title="Move up"
-                        disabled={i() === 0}
-                        onClick={() => void reorderItems(pl().id, i(), i() - 1)}
-                      >
-                        <ChevronUp />
-                      </button>
-                      <button
-                        class={styles.iconBtn}
-                        title="Move down"
-                        disabled={i() === pl().items.length - 1}
-                        onClick={() => void reorderItems(pl().id, i(), i() + 1)}
-                      >
-                        <ChevronDown size={16} />
-                      </button>
-                    </div>
-
-                    <div class={styles.itemMain}>
-                      <div class={styles.itemLabel}>
-                        <span
-                          class={styles.itemKind}
-                          classList={{
-                            [styles.kindGroup]: item.kind === 'group',
-                          }}
-                        >
-                          {item.kind === 'group' ? 'GROUP' : 'SONG'}
-                        </span>
-                        {itemLabel(item)}
-                      </div>
-                      <input
-                        class={styles.singerInput}
-                        placeholder={
-                          item.kind === 'group'
-                            ? 'Singer for whole group…'
-                            : 'Singer…'
-                        }
-                        value={item.singerName ?? ''}
-                        onChange={(e) =>
-                          void setItemSinger(
-                            pl().id,
-                            item.id,
-                            e.currentTarget.value,
-                          )
-                        }
-                      />
-                      <Show when={item.kind === 'group'}>
-                        <label class={styles.shuffleWithin}>
-                          <input
-                            type="checkbox"
-                            checked={item.shuffleWithinGroup ?? false}
-                            onChange={(e) =>
-                              void setItemShuffleWithinGroup(
-                                pl().id,
-                                item.id,
-                                e.currentTarget.checked,
-                              )
-                            }
-                          />
-                          Shuffle within group
-                        </label>
-                      </Show>
-                    </div>
-
-                    <button
-                      class={styles.iconBtn}
-                      title="Remove"
-                      onClick={() => void removeItem(pl().id, item.id)}
+              <Show when={pl().items.length > 0}>
+                <div class={styles.itemsHeader}>
+                  <span class={styles.itemsHeaderLabel}>
+                    In playlist ({pl().items.length})
+                  </span>
+                  <button
+                    class={styles.viewToggle}
+                    title={
+                      compactItems()
+                        ? 'Show reorder & shuffle controls'
+                        : 'Compact list (hide reorder)'
+                    }
+                    onClick={() => setCompactItems(!compactItems())}
+                  >
+                    {compactItems() ? 'Detailed' : 'Compact'}
+                  </button>
+                </div>
+              </Show>
+              <div class={styles.itemsList}>
+                <For
+                  each={pl().items}
+                  fallback={
+                    <p class={styles.empty}>
+                      Add groups or songs below to build this playlist.
+                    </p>
+                  }
+                >
+                  {(item, i) => (
+                    <div
+                      class={styles.itemRow}
+                      classList={{ [styles.itemRowCompact]: compactItems() }}
                     >
-                      <X />
-                    </button>
-                  </div>
-                )}
-              </For>
+                      <Show when={!compactItems()}>
+                        <div class={styles.itemReorder}>
+                          <button
+                            class={styles.iconBtn}
+                            title="Move up"
+                            disabled={i() === 0}
+                            onClick={() =>
+                              void reorderItems(pl().id, i(), i() - 1)
+                            }
+                          >
+                            <ChevronUp />
+                          </button>
+                          <button
+                            class={styles.iconBtn}
+                            title="Move down"
+                            disabled={i() === pl().items.length - 1}
+                            onClick={() =>
+                              void reorderItems(pl().id, i(), i() + 1)
+                            }
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                        </div>
+                      </Show>
+
+                      <div class={styles.itemMain}>
+                        <div class={styles.itemLabel}>
+                          <span
+                            class={styles.itemKind}
+                            classList={{
+                              [styles.kindGroup]: item.kind === 'group',
+                            }}
+                          >
+                            {item.kind === 'group' ? 'GROUP' : 'SONG'}
+                          </span>
+                          {itemLabel(item)}
+                        </div>
+                        <input
+                          class={styles.singerInput}
+                          placeholder={
+                            item.kind === 'group'
+                              ? 'Singer for whole group…'
+                              : 'Singer…'
+                          }
+                          value={item.singerName ?? ''}
+                          onChange={(e) =>
+                            void setItemSinger(
+                              pl().id,
+                              item.id,
+                              e.currentTarget.value,
+                            )
+                          }
+                        />
+                        <Show when={item.kind === 'group' && !compactItems()}>
+                          <label class={styles.shuffleWithin}>
+                            <input
+                              type="checkbox"
+                              checked={item.shuffleWithinGroup ?? false}
+                              onChange={(e) =>
+                                void setItemShuffleWithinGroup(
+                                  pl().id,
+                                  item.id,
+                                  e.currentTarget.checked,
+                                )
+                              }
+                            />
+                            Shuffle within group
+                          </label>
+                        </Show>
+                      </div>
+
+                      <button
+                        class={styles.iconBtn}
+                        title="Remove"
+                        onClick={() => void removeItem(pl().id, item.id)}
+                      >
+                        <X />
+                      </button>
+                    </div>
+                  )}
+                </For>
+              </div>
 
               {/* Add controls */}
               <div class={styles.addControls}>
-                <Show when={groups().length > 0}>
-                  <select
-                    class={styles.select}
-                    value=""
-                    onChange={(e) => {
-                      handleAddGroup(e.currentTarget.value)
-                      e.currentTarget.value = ''
-                    }}
+                <div class={styles.addHeader}>
+                  <button
+                    class={styles.addHeaderTitle}
+                    onClick={() => setAddOpen(!addOpen())}
                   >
-                    <option value="" disabled>
-                      + Add group…
-                    </option>
-                    <For each={groups()}>
-                      {(g) => (
-                        <option value={g.id}>
-                          {g.name} ({g.sessionIds.length})
-                        </option>
-                      )}
-                    </For>
-                  </select>
-                </Show>
+                    <Show when={addOpen()} fallback={<ChevronDown size={16} />}>
+                      <ChevronUp />
+                    </Show>
+                    Add songs & groups
+                  </button>
+                  <Show when={addOpen()}>
+                    <button
+                      class={styles.viewToggle}
+                      title={
+                        addView() === 'pills'
+                          ? 'Switch to dropdown view'
+                          : 'Switch to pill view'
+                      }
+                      onClick={() =>
+                        setAddView(addView() === 'pills' ? 'list' : 'pills')
+                      }
+                    >
+                      {addView() === 'pills' ? 'Dropdowns' : 'Pills'}
+                    </button>
+                  </Show>
+                </div>
 
-                <select
-                  class={styles.select}
-                  value=""
-                  onChange={(e) => {
-                    handleAddSession(e.currentTarget.value)
-                    e.currentTarget.value = ''
-                  }}
-                >
-                  <option value="" disabled>
-                    + Add song…
-                  </option>
-                  <For each={sessions()}>
-                    {(s) => (
-                      <option value={s.sessionId}>
-                        {s.originalFile?.name ?? 'Unknown'}
-                      </option>
-                    )}
-                  </For>
-                </select>
+                <Show when={addOpen()}>
+                  <Show
+                    when={addView() === 'pills'}
+                    fallback={
+                      <>
+                        <Show when={groups().length > 0}>
+                          <select
+                            class={styles.select}
+                            value={groupSelectVal()}
+                            onChange={(e) => {
+                              handleAddGroup(e.currentTarget.value)
+                              setGroupSelectVal('')
+                            }}
+                          >
+                            <option value="">+ Add group…</option>
+                            <For each={groups()}>
+                              {(g) => (
+                                <option value={g.id}>
+                                  {g.name} ({g.sessionIds.length})
+                                </option>
+                              )}
+                            </For>
+                          </select>
+                        </Show>
+
+                        <select
+                          class={styles.select}
+                          value={songSelectVal()}
+                          onChange={(e) => {
+                            handleAddSession(e.currentTarget.value)
+                            setSongSelectVal('')
+                          }}
+                        >
+                          <option value="">+ Add song…</option>
+                          <For each={sessions()}>
+                            {(s) => (
+                              <option value={s.sessionId}>
+                                {s.originalFile?.name ?? 'Unknown'}
+                              </option>
+                            )}
+                          </For>
+                        </select>
+                      </>
+                    }
+                  >
+                    {/* Pill view — click to add, click again to remove */}
+                    <Show when={groups().length > 0}>
+                      <div class={styles.pillSection}>
+                        <span class={styles.pillSectionLabel}>Groups</span>
+                        <div class={styles.pills}>
+                          <For each={groups()}>
+                            {(g) => (
+                              <button
+                                class={styles.pill}
+                                classList={{
+                                  [styles.pillActive]:
+                                    groupItem(pl(), g.id) !== undefined,
+                                }}
+                                title={`${g.name} (${g.sessionIds.length})`}
+                                onClick={() => toggleGroup(pl(), g.id)}
+                              >
+                                <Show when={groupItem(pl(), g.id)}>
+                                  <CheckSmall size={13} />
+                                </Show>
+                                {g.name}
+                                <span class={styles.pillCount}>
+                                  {g.sessionIds.length}
+                                </span>
+                              </button>
+                            )}
+                          </For>
+                        </div>
+                      </div>
+                    </Show>
+
+                    <Show
+                      when={sessions().length > 0}
+                      fallback={
+                        <p class={styles.empty}>No songs available yet.</p>
+                      }
+                    >
+                      <div class={styles.pillSection}>
+                        <span class={styles.pillSectionLabel}>Songs</span>
+                        <div class={styles.pills}>
+                          <For each={sessions()}>
+                            {(s) => (
+                              <button
+                                class={styles.pill}
+                                classList={{
+                                  [styles.pillActive]:
+                                    sessionItem(pl(), s.sessionId) !==
+                                    undefined,
+                                }}
+                                title={s.originalFile?.name ?? 'Unknown'}
+                                onClick={() => toggleSession(pl(), s.sessionId)}
+                              >
+                                <Show when={sessionItem(pl(), s.sessionId)}>
+                                  <CheckSmall size={13} />
+                                </Show>
+                                {s.originalFile?.name ?? 'Unknown'}
+                              </button>
+                            )}
+                          </For>
+                        </div>
+                      </div>
+                    </Show>
+                  </Show>
+                </Show>
               </div>
 
               <button

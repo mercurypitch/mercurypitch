@@ -80,9 +80,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.4rem;
+  color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.12);
   border: 1px solid rgba(88, 166, 255, 0.25);
+}
+.thumb svg {
+  width: 40px;
+  height: 40px;
 }
 
 .songTitle {
@@ -125,6 +129,10 @@
 
 .startBtn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   padding: 0.8rem;
   font-size: 1.05rem;
   font-weight: 700;
@@ -138,6 +146,10 @@
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
+}
+.startBtn svg {
+  width: 18px;
+  height: 18px;
 }
 .startBtn:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -188,7 +200,22 @@
 
 /* Countdown */
 .countdown {
-  padding: 1.5rem 0 0.5rem;
+  padding: 1rem 0 0.5rem;
+}
+.countReady {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.countSinger {
+  display: inline-block;
+  font-weight: 700;
+  color: #ffd166;
+  background: rgba(255, 209, 102, 0.14);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
 }
 .countNumber {
   font-size: 5.5rem;

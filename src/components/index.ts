@@ -45,6 +45,7 @@ export {
 export { UvrSessionResult } from './UvrSessionResult'
 export { SessionGroupTabs } from './SessionGroupTabs'
 export { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
+export { KaraokePlaylistGallery } from './KaraokePlaylistGallery'
 export { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 export { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 

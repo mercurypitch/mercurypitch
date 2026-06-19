@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
+import { batch, createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -12,6 +12,7 @@ import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
+import { createPersistedSignal } from '@/lib/storage'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
@@ -19,8 +20,8 @@ import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, d
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus } from '@/stores/ui-store'
-import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -162,6 +163,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [exportProgress, setExportProgress] = createSignal(0)
   const [isImporting, setIsImporting] = createSignal(false)
   const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
+  const [sessionGalleryOpen, setSessionGalleryOpen] = createPersistedSignal(
+    'uvr-session-gallery-open',
+    true,
+  )
   const [importFile, setImportFile] = createSignal<File | null>(null)
   const [showImportGroupSelect, setShowImportGroupSelect] = createSignal(false)
   const [importTargetGroupId, setImportTargetGroupId] = createSignal<
@@ -359,6 +364,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       lastLoadedSessionId,
     )
     if (!ready) return
+    // While a karaoke playlist drives the mixer it owns the session + view.
+    // Each song updates the URL hash (via onSessionChange), which feeds back
+    // here as initialSessionId — don't let that re-trigger handleSessionView,
+    // which would re-hydrate the session and flip the view to 'results'.
+    if (isPlaylistActive()) {
+      lastLoadedSessionId = sid ?? lastLoadedSessionId
+      return
+    }
     if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
       console.log('[UvrPanel] calling handleSessionView for:', sid)
@@ -411,18 +424,24 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       return
     }
     const hydrated = await ensureHydrated(session)
-    setCurrentUvrSession(hydrated)
-    setPrevView('results')
-    setMixerPracticeMode('full')
-    setMixerSessionId(hydrated.sessionId)
-    setMixerStems({
-      vocal: hydrated.outputs?.vocal,
-      instrumental: hydrated.outputs?.instrumental,
+    // Batch so the keyed StemMixer remounts exactly once with the final stems +
+    // sessionId together. Without this, changing mixerSessionId first would
+    // remount the mixer while it still reads the previous song's stems, so it
+    // would play a different song than the one shown.
+    batch(() => {
+      setCurrentUvrSession(hydrated)
+      setPrevView('results')
+      setMixerPracticeMode('full')
+      setMixerStems({
+        vocal: hydrated.outputs?.vocal,
+        instrumental: hydrated.outputs?.instrumental,
+      })
+      setMixerRequestedStems({ vocal: true, instrumental: true })
+      setMixerSessionId(hydrated.sessionId)
+      setMixerInitialSeekSec(undefined)
+      setMixerAutoPlay(false)
+      setCurrentView('mixer')
     })
-    setMixerRequestedStems({ vocal: true, instrumental: true })
-    setMixerInitialSeekSec(undefined)
-    setMixerAutoPlay(false)
-    setCurrentView('mixer')
   }
 
   createEffect(() => {
@@ -1075,13 +1094,29 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </Show>
                 </span>
               </div>
+
+              {/* Karaoke playlists gallery (above the session list) */}
+              <KaraokePlaylistGallery />
+
               <div class="section-header">
-                <Show
-                  when={allSessions().length > 0}
-                  fallback={<h4>Session Library</h4>}
+                <button
+                  class="uvr-collapse-toggle"
+                  onClick={() => setSessionGalleryOpen((v) => !v)}
+                  title={sessionGalleryOpen() ? 'Collapse' : 'Expand'}
                 >
-                  <h4>Recent Sessions</h4>
-                </Show>
+                  <Show
+                    when={allSessions().length > 0}
+                    fallback={<h4>Session Library</h4>}
+                  >
+                    <h4>Recent Sessions</h4>
+                  </Show>
+                  <Show
+                    when={sessionGalleryOpen()}
+                    fallback={<ChevronDown size={18} />}
+                  >
+                    <ChevronUp />
+                  </Show>
+                </button>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Show when={allSessions().length > 0}>
                     <Show
@@ -1143,7 +1178,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
               <Show
                 when={
-                  allSessions().length > 0 || getGroupsReactive().length > 0
+                  sessionGalleryOpen() &&
+                  (allSessions().length > 0 || getGroupsReactive().length > 0)
                 }
               >
                 <SessionGroupTabs

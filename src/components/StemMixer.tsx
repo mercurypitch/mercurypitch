@@ -24,7 +24,7 @@ import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
-import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, } from './icons'
+import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
@@ -319,6 +319,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // Manual playlist transport (header controls). Pause first — without scoring —
+  // so audio stops even when the action doesn't remount the mixer (skipping the
+  // last song into the summary, or stopping the playlist).
+  const handlePlaylistPrev = () => {
+    audio.handlePause()
+    playlist.prev()
+  }
+  const handlePlaylistNext = () => {
+    audio.handlePause()
+    playlist.advance()
+  }
+  const handlePlaylistStopAll = () => {
+    audio.handlePause()
+    playlist.stopPlaylist()
+  }
+
   // Start playback once the countdown flips the phase to 'playing'.
   createEffect(() => {
     if (
@@ -535,17 +551,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           segments,
         )
 
-        // Show warnings if transcription was poor or failed
-        if (segments.length === 0) {
-          showNotification(
-            'Transcription timed out or failed. You may need to provide better lyrics or sync manually.',
-            'error',
-          )
-        } else if (r.totalWords > 0 && r.accuracy < 0.25) {
-          showNotification(
-            `Alignment accuracy is very low (${(r.accuracy * 100).toFixed(0)}%). The lyrics might be incorrect.`,
-            'error',
-          )
+        // Show warnings if transcription was poor or failed — but stay quiet
+        // during karaoke playlist playback, where the focus is singing, not
+        // lyric-sync accuracy. (Still shown for single, non-playlist sessions.)
+        if (!playlist.isPlaylistActive()) {
+          if (segments.length === 0) {
+            showNotification(
+              'Transcription timed out or failed. You may need to provide better lyrics or sync manually.',
+              'error',
+            )
+          } else if (r.totalWords > 0 && r.accuracy < 0.25) {
+            showNotification(
+              `Alignment accuracy is very low (${(r.accuracy * 100).toFixed(0)}%). The lyrics might be incorrect.`,
+              'error',
+            )
+          }
         }
       }, 0)
     },
@@ -911,6 +931,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     /* eslint-enable solid/reactivity */
   }
 
+  const micMonitor = {
+    micActive: mic.micActive,
+    monitorEnabled: mic.micMonitorEnabled,
+    monitorVolume: mic.micMonitorVolume,
+    onToggleMonitor: (enabled: boolean) => mic.setMicMonitor(enabled),
+    onVolumeChange: (v: number) => mic.setMicMonitorVolume(v),
+  }
+
   onMount(() => {
     audio.loadStems()
     loadLyrics()
@@ -1122,6 +1150,30 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </Show>
                     </span>
                   </Show>
+                  <span class="sm-playlist-controls">
+                    <button
+                      class="sm-playlist-ctrl-btn"
+                      title="Previous song"
+                      disabled={playlist.currentIndex() === 0}
+                      onClick={handlePlaylistPrev}
+                    >
+                      <SkipBack />
+                    </button>
+                    <button
+                      class="sm-playlist-ctrl-btn"
+                      title="Skip to next song"
+                      onClick={handlePlaylistNext}
+                    >
+                      <SkipForward />
+                    </button>
+                    <button
+                      class="sm-playlist-ctrl-btn"
+                      title="Stop playlist"
+                      onClick={handlePlaylistStopAll}
+                    >
+                      <X />
+                    </button>
+                  </span>
                 </div>
               </Show>
             </div>
@@ -1310,6 +1362,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handleCanvasPointerUp={canvas.handleCanvasPointerUp}
           setWindowDuration={audio.setWindowDuration}
           stemControls={stemControls}
+          micMonitor={micMonitor}
           lyricsPanel={lyricsPanel}
           handleForceSearch={() => void handleForceSearch()}
           toggleEditMode={toggleEditMode}
@@ -1354,6 +1407,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           handleCanvasPointerMove={canvas.handleCanvasPointerMove}
           handleCanvasPointerUp={canvas.handleCanvasPointerUp}
           stemControls={stemControls}
+          micMonitor={micMonitor}
           lyricsPanel={lyricsPanel}
           handleForceSearch={() => void handleForceSearch()}
           toggleEditMode={toggleEditMode}
@@ -1565,6 +1619,40 @@ export const StemMixerStyles: string = `
   font-style: italic;
 }
 
+.sm-playlist-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 0.4rem;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--border, #30363d);
+}
+.sm-playlist-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--fg-tertiary, #768390);
+  cursor: pointer;
+}
+.sm-playlist-ctrl-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.sm-playlist-ctrl-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg-primary, #c9d1d9);
+}
+.sm-playlist-ctrl-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 /* Karaoke playlist sidebar (slides in from the left) */
 .sm-playlist-sidebar-wrap {
   position: absolute;
@@ -1749,6 +1837,63 @@ export const StemMixerStyles: string = `
 
 .sm-panel-header:active {
   cursor: grabbing;
+}
+
+/* Mic monitor (hear yourself) — sidebar control */
+.sm-mic-monitor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  border-top: 1px solid var(--border, #30363d);
+}
+.sm-mic-monitor-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+.sm-mic-monitor-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+.sm-mic-monitor-toggle--active {
+  color: #fff;
+  background: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+}
+.sm-mic-monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sm-mic-monitor-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent, #58a6ff);
+  cursor: pointer;
+}
+.sm-mic-monitor-slider:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sm-mic-monitor-pct {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-tertiary, #768390);
+  min-width: 2.4rem;
+  text-align: right;
+}
+.sm-mic-monitor-hint {
+  margin: 0;
+  font-size: 0.65rem;
+  color: var(--fg-tertiary, #768390);
 }
 
 /* Pitch Canvas Toolbar */

@@ -36,7 +36,11 @@
 }
 
 .trophy {
-  font-size: 2.6rem;
+  color: #ffd166;
+}
+.trophy svg {
+  width: 42px;
+  height: 42px;
 }
 
 .title {

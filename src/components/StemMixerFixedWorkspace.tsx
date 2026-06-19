@@ -11,6 +11,8 @@ import { karaokeFocus } from '@/stores/ui-store'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
+import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
+import { StemMixerMicMonitor } from './StemMixerMicMonitor'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
 import { StemMixerStemControls } from './StemMixerStemControls'
 
@@ -30,6 +32,7 @@ interface StemMixerFixedWorkspaceProps {
 
   // Stem controls
   stemControls: Omit<StemMixerStemControlsProps, 'direction'>
+  micMonitor: StemMixerMicMonitorProps
 
   // Lyrics panel body props
   lyricsPanel: Omit<
@@ -557,6 +560,7 @@ export const StemMixerFixedWorkspace: Component<
           >
             <div class="sm-panel-header">Stem Controls</div>
             <StemMixerStemControls {...props.stemControls} direction="column" />
+            <StemMixerMicMonitor {...props.micMonitor} />
           </div>
         </aside>
       </div>
