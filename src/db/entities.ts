@@ -297,8 +297,16 @@ export interface KaraokePlaylistItem {
 export interface KaraokePlaylistRecord extends DbEntity {
   name: string
   items: KaraokePlaylistItem[] // ordered
-  /** Shuffle the top-level item order on play. */
+  /** Shuffle the top-level item order on play (in round-robin, re-shuffles the
+   *  group turn order each round). */
   shuffleOrder?: boolean
+  /**
+   * Playback order:
+   * - 'sequential' (default): play each group/song fully, in order.
+   * - 'roundRobin': take one song per group per round (turn-based), until all
+   *   songs are played. Standalone sessions count as a one-song group.
+   */
+  playMode?: 'sequential' | 'roundRobin'
 }
 
 export interface UvrSessionLyrics extends DbEntity {

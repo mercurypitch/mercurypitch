@@ -11,7 +11,8 @@ import { createPersistedSignal } from '@/lib/storage'
 import { getGroupsReactive } from '@/stores/app-store'
 import { deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Trash2, X, } from './icons'
+import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, SlidersHorizontal, Trash2, X, } from './icons'
+import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistGallery.module.css'
 
 export const KaraokePlaylistGallery: Component = () => {
@@ -23,6 +24,8 @@ export const KaraokePlaylistGallery: Component = () => {
   const [editingId, setEditingId] = createSignal<string | null>(null)
   const [editName, setEditName] = createSignal('')
   const [exportingId, setExportingId] = createSignal<string | null>(null)
+  // Which card has the full editor expanded below it.
+  const [expandedId, setExpandedId] = createSignal<string | null>(null)
 
   const handleExport = (id: string) => {
     if (exportingId() !== null) return
@@ -77,102 +80,130 @@ export const KaraokePlaylistGallery: Component = () => {
           <div class={styles.cards}>
             <For each={playlists()}>
               {(pl) => (
-                <div class={styles.card}>
-                  <div class={styles.cardMain}>
-                    <Show
-                      when={editingId() === pl.id}
-                      fallback={
-                        <div class={styles.cardName} title={pl.name}>
-                          {pl.name}
-                        </div>
-                      }
-                    >
-                      <input
-                        class={styles.editInput}
-                        value={editName()}
-                        onInput={(e) => setEditName(e.currentTarget.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRename(pl.id)
-                          if (e.key === 'Escape') setEditingId(null)
-                        }}
-                        ref={(el) => setTimeout(() => el.focus(), 0)}
-                      />
-                    </Show>
-                    <div class={styles.cardMeta}>
-                      <span>
-                        {songCount(pl)} {songCount(pl) === 1 ? 'song' : 'songs'}
-                      </span>
-                      <Show when={singerNames(pl).length > 0}>
-                        <span class={styles.metaDot}>·</span>
-                        <span
-                          class={styles.singers}
-                          title={singerNames(pl).join(', ')}
-                        >
-                          {singerNames(pl).join(', ')}
+                <div class={styles.cardWrap}>
+                  <div
+                    class={styles.card}
+                    classList={{
+                      [styles.cardExpanded]: expandedId() === pl.id,
+                    }}
+                  >
+                    <div class={styles.cardMain}>
+                      <Show
+                        when={editingId() === pl.id}
+                        fallback={
+                          <div class={styles.cardName} title={pl.name}>
+                            {pl.name}
+                          </div>
+                        }
+                      >
+                        <input
+                          class={styles.editInput}
+                          value={editName()}
+                          onInput={(e) => setEditName(e.currentTarget.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRename(pl.id)
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
+                          ref={(el) => setTimeout(() => el.focus(), 0)}
+                        />
+                      </Show>
+                      <div class={styles.cardMeta}>
+                        <span>
+                          {songCount(pl)}{' '}
+                          {songCount(pl) === 1 ? 'song' : 'songs'}
                         </span>
+                        <Show when={singerNames(pl).length > 0}>
+                          <span class={styles.metaDot}>·</span>
+                          <span
+                            class={styles.singers}
+                            title={singerNames(pl).join(', ')}
+                          >
+                            {singerNames(pl).join(', ')}
+                          </span>
+                        </Show>
+                      </div>
+                    </div>
+
+                    <div class={styles.cardActions}>
+                      <Show
+                        when={editingId() === pl.id}
+                        fallback={
+                          <>
+                            <button
+                              class={`${styles.iconBtn} ${styles.playBtn}`}
+                              title="Start this playlist"
+                              disabled={pl.items.length === 0}
+                              onClick={() => startPlaylist(pl.id)}
+                            >
+                              <Play />
+                            </button>
+                            <button
+                              class={styles.iconBtn}
+                              title="Export this playlist + its songs (singers, groups) to a ZIP"
+                              disabled={
+                                pl.items.length === 0 || exportingId() !== null
+                              }
+                              onClick={() => handleExport(pl.id)}
+                            >
+                              <Download />
+                            </button>
+                            <button
+                              class={styles.iconBtn}
+                              classList={{
+                                [styles.iconBtnActive]: expandedId() === pl.id,
+                              }}
+                              title="Edit songs & groups"
+                              onClick={() =>
+                                setExpandedId(
+                                  expandedId() === pl.id ? null : pl.id,
+                                )
+                              }
+                            >
+                              <SlidersHorizontal />
+                            </button>
+                            <button
+                              class={styles.iconBtn}
+                              title="Rename"
+                              onClick={() => {
+                                setEditingId(pl.id)
+                                setEditName(pl.name)
+                              }}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              class={styles.iconBtn}
+                              title="Delete playlist"
+                              onClick={() => void deletePlaylist(pl.id)}
+                            >
+                              <Trash2 />
+                            </button>
+                          </>
+                        }
+                      >
+                        <button
+                          class={styles.iconBtn}
+                          title="Save"
+                          onClick={() => handleRename(pl.id)}
+                        >
+                          <CheckSmall size={16} />
+                        </button>
+                        <button
+                          class={styles.iconBtn}
+                          title="Cancel"
+                          onClick={() => setEditingId(null)}
+                        >
+                          <X />
+                        </button>
                       </Show>
                     </div>
                   </div>
 
-                  <div class={styles.cardActions}>
-                    <Show
-                      when={editingId() === pl.id}
-                      fallback={
-                        <>
-                          <button
-                            class={`${styles.iconBtn} ${styles.playBtn}`}
-                            title="Start this playlist"
-                            disabled={pl.items.length === 0}
-                            onClick={() => startPlaylist(pl.id)}
-                          >
-                            <Play />
-                          </button>
-                          <button
-                            class={styles.iconBtn}
-                            title="Export this playlist + its songs (singers, groups) to a ZIP"
-                            disabled={
-                              pl.items.length === 0 || exportingId() !== null
-                            }
-                            onClick={() => handleExport(pl.id)}
-                          >
-                            <Download />
-                          </button>
-                          <button
-                            class={styles.iconBtn}
-                            title="Rename"
-                            onClick={() => {
-                              setEditingId(pl.id)
-                              setEditName(pl.name)
-                            }}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            class={styles.iconBtn}
-                            title="Delete playlist"
-                            onClick={() => void deletePlaylist(pl.id)}
-                          >
-                            <Trash2 />
-                          </button>
-                        </>
-                      }
-                    >
-                      <button
-                        class={styles.iconBtn}
-                        title="Save"
-                        onClick={() => handleRename(pl.id)}
-                      >
-                        <CheckSmall size={16} />
-                      </button>
-                      <button
-                        class={styles.iconBtn}
-                        title="Cancel"
-                        onClick={() => setEditingId(null)}
-                      >
-                        <X />
-                      </button>
-                    </Show>
-                  </div>
+                  <Show when={expandedId() === pl.id}>
+                    <div class={styles.editorWrap}>
+                      <KaraokePlaylistEditor playlistId={pl.id} />
+                    </div>
+                  </Show>
                 </div>
               )}
             </For>

@@ -298,9 +298,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let pendingAdvance = false
   let playStarted = false
 
+  // True when this StemMixer instance is the playlist's current song (guards
+  // the brief window where a new song is loading and a stale instance lingers).
+  const isCurrentPlaylistSong = () =>
+    playlist.isPlaylistActive() &&
+    playlist.currentSong()?.sessionId === props.sessionId
+
   /** Called by the audio controller when the track ends naturally. */
   const handlePlaylistSongEnded = () => {
-    if (!playlist.isPlaylistActive() || playlist.phase() !== 'playing') return
+    if (!isCurrentPlaylistSong() || playlist.phase() !== 'playing') return
     if (mic.micActive() && mic.comparisonData().length > 0) {
       // handleStop() will show the score modal — advance when it closes.
       pendingAdvance = true
@@ -338,7 +344,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Start playback once the countdown flips the phase to 'playing'.
   createEffect(() => {
     if (
-      playlist.isPlaylistActive() &&
+      isCurrentPlaylistSong() &&
       playlist.phase() === 'playing' &&
       !playStarted &&
       !audio.loading() &&
@@ -346,6 +352,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     ) {
       playStarted = true
       audio.handlePlay()
+      // Get the playlist builder out of the way once the song is playing.
+      setPlaylistSidebarOpen(false)
     }
   })
 
@@ -1232,6 +1240,63 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </div>
       </Show>
 
+      {/* Focus-mode now-playing bar — the header (with the playlist subtitle and
+          transport) is hidden in focus mode, so surface the current
+          singer/song + Prev/Skip/Stop here when a playlist is running. */}
+      <Show
+        when={
+          karaokeFocus() &&
+          playlist.isPlaylistActive() &&
+          playlist.currentSong()
+        }
+      >
+        <div class="sm-focus-nowplaying">
+          <div class="sm-focus-np-info">
+            <Show when={playlist.currentSong()!.singerName}>
+              <span class="sm-playlist-singer">
+                {playlist.currentSong()!.singerName}
+              </span>
+            </Show>
+            <span class="sm-focus-song">
+              {playlist.currentSong()!.songTitle}
+            </span>
+            <Show when={playlist.nextSong()}>
+              <span class="sm-playlist-next">
+                · Next: {playlist.nextSong()!.songTitle}
+                <Show when={playlist.nextSong()!.singerName}>
+                  {' '}
+                  ({playlist.nextSong()!.singerName})
+                </Show>
+              </span>
+            </Show>
+          </div>
+          <span class="sm-playlist-controls">
+            <button
+              class="sm-playlist-ctrl-btn"
+              title="Previous song"
+              disabled={playlist.currentIndex() === 0}
+              onClick={handlePlaylistPrev}
+            >
+              <SkipBack />
+            </button>
+            <button
+              class="sm-playlist-ctrl-btn"
+              title="Skip to next song"
+              onClick={handlePlaylistNext}
+            >
+              <SkipForward />
+            </button>
+            <button
+              class="sm-playlist-ctrl-btn"
+              title="Stop playlist"
+              onClick={handlePlaylistStopAll}
+            >
+              <X />
+            </button>
+          </span>
+        </div>
+      </Show>
+
       {/* Loading / Error */}
       <Show when={audio.loading() || audio.midiGenerating()}>
         <div class="sm-loading">
@@ -1497,12 +1562,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </div>
       </Show>
 
-      <KaraokePlaylistOverlay
-        onStart={handlePlaylistStart}
-        onSkip={() => playlist.advance()}
-        durationSec={audio.duration}
-        loading={audio.loading}
-      />
+      {/* Only the StemMixer for the current song drives the overlay/Start, so a
+          stale instance during a song switch can't begin the wrong song. */}
+      <Show when={isCurrentPlaylistSong()}>
+        <KaraokePlaylistOverlay
+          onStart={handlePlaylistStart}
+          onSkip={() => playlist.advance()}
+          durationSec={audio.duration}
+          loading={audio.loading}
+        />
+      </Show>
       <KaraokePlaylistSummary />
     </div>
   )
@@ -1651,6 +1720,39 @@ export const StemMixerStyles: string = `
 .sm-playlist-ctrl-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* Focus-mode now-playing bar */
+.sm-focus-nowplaying {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  background: linear-gradient(
+    90deg,
+    rgba(88, 166, 255, 0.12),
+    rgba(88, 166, 255, 0.03)
+  );
+  border-bottom: 1px solid var(--border, #30363d);
+  font-size: 0.82rem;
+}
+.sm-focus-np-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow: hidden;
+}
+.sm-focus-song {
+  font-weight: 600;
+  color: var(--fg-primary, #c9d1d9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40ch;
 }
 
 /* Karaoke playlist sidebar (slides in from the left) */

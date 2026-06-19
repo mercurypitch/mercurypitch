@@ -42,6 +42,11 @@
   margin-top: 0.5rem;
 }
 
+.cardWrap {
+  display: flex;
+  flex-direction: column;
+}
+
 .card {
   display: flex;
   align-items: center;
@@ -54,6 +59,25 @@
 }
 .card:hover {
   border-color: var(--accent, #58a6ff);
+}
+.cardExpanded {
+  border-color: var(--accent, #58a6ff);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.editorWrap {
+  border: 1px solid var(--accent, #58a6ff);
+  border-top: none;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  background: var(--bg-primary, #0d1117);
+  padding: 0.5rem 0.65rem 0.65rem;
+}
+
+.iconBtnActive {
+  color: var(--accent, #58a6ff) !important;
+  background: rgba(88, 166, 255, 0.15) !important;
 }
 
 .cardMain {
