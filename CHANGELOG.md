@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.14] - 2026-06-19
+
+### Added
+
+- **Karaoke Playlist Mode**: Build saved, reusable set lists from session groups and/or individual sessions in a new togglable left sidebar on the Stem Mixer (Karaoke tab). Per-entry singer assignment ("who will do this song"), optional shuffle of the overall order and of songs within a group, and persistent storage in IndexedDB (`karaokePlaylists`).
+- **Guided Playback Flow**: A top "get ready" overlay shows the current song → group/singer → duration with a 4‑3‑2‑1‑Go countdown; the instrumental plays for true karaoke while the vocal stem is kept silent but tapped as the pitch reference for scoring. After each song the score modal appears, then the next song's overlay; a final ranked scoreboard recaps every singer at the end.
+- **Mic Monitoring ("Hear my voice")**: Optional toggle + volume to route the mic to the speakers/headphones so singers hear themselves over the backing track — no second app required (off by default to avoid feedback; best with headphones).
+- **Now-Playing Tab Title & Header**: The browser tab shows `MercuryPitch — <song>` during playback, and the Stem Mixer header gains a dimmed subtitle (Singer · Song · Next) while a playlist is running.
+
 ## [0.3.13] - 2026-06-13
 
 ### Added

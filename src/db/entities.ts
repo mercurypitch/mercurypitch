@@ -281,6 +281,26 @@ export interface SessionGroupRecord extends DbEntity {
   sessionIds: string[] // ordered list of UvrSession.sessionId values
 }
 
+/** One entry in a karaoke playlist — either a single session or a whole group. */
+export interface KaraokePlaylistItem {
+  id: string
+  kind: 'session' | 'group'
+  /** UvrSession.sessionId (kind==='session') | SessionGroupRecord.id (kind==='group') */
+  refId: string
+  /** "Who will do this song" — shown in the overlay/header/scoreboard. */
+  singerName?: string
+  /** Shuffle the order of sessions within the group when played. */
+  shuffleWithinGroup?: boolean
+}
+
+/** A saved, reusable karaoke set list built from sessions and/or groups. */
+export interface KaraokePlaylistRecord extends DbEntity {
+  name: string
+  items: KaraokePlaylistItem[] // ordered
+  /** Shuffle the top-level item order on play. */
+  shuffleOrder?: boolean
+}
+
 export interface UvrSessionLyrics extends DbEntity {
   sessionId: string // matches UvrSession.sessionId
   text: string

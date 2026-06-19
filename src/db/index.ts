@@ -96,6 +96,8 @@ export type {
   SessionTemplate,
   PlaylistRecord,
   SessionGroupRecord,
+  KaraokePlaylistRecord,
+  KaraokePlaylistItem,
   UvrSessionRecord,
   UvrStemBlob,
   UvrStemFingerprint,

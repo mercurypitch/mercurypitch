@@ -45,6 +45,8 @@ class DexieDatabase extends DexieDB {
     // v2: follows (Friends leaderboard). Incremental — existing local
     // DBs upgrade in place.
     this.version(2).stores({ follows: 'id, userId, followedUserId' })
+    // v3: karaokePlaylists (Karaoke playlist mode). Incremental.
+    this.version(3).stores({ karaokePlaylists: 'id' })
   }
 
   /** Add a new table at the next schema version. */

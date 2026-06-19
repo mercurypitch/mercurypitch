@@ -21,9 +21,13 @@ import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
+import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
-import { ChevronLeft, Maximize2, Minimize2, Settings, Share } from './icons'
+import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, } from './icons'
+import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
+import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
+import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
@@ -48,6 +52,8 @@ interface StemMixerProps {
   initialSeekSec?: number
   /** Auto-play after stems finish loading */
   autoPlay?: boolean
+  /** Karaoke playlist mode: silence the vocal but keep it as scoring reference. */
+  karaokeReferenceVocal?: boolean
   onBack?: () => void
 }
 
@@ -271,12 +277,71 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     requestedStems: props.requestedStems,
     songTitle: props.songTitle,
     /* eslint-enable solid/reactivity */
+    karaokeReferenceVocal: () => props.karaokeReferenceVocal === true,
+    onPlaybackEnded: () => handlePlaylistSongEnded(),
     showNotification,
   })
 
   // Backfill audio ctx holders for mic controller
   audioCtxForMic.getAudioCtx = () => audio.getAudioCtx()
   audioCtxForMic.ensureAudioCtx = () => audio.ensureAudioCtx()
+
+  // ── Karaoke playlist integration ─────────────────────────────
+  const [playlistSidebarOpen, setPlaylistSidebarOpen] = createPersistedSignal(
+    'sm-karaoke-playlist-sidebar',
+    false,
+  )
+  // True between a natural song end and the score modal being dismissed, so we
+  // advance the playlist only after the user has seen their score.
+  let pendingAdvance = false
+  let playStarted = false
+
+  /** Called by the audio controller when the track ends naturally. */
+  const handlePlaylistSongEnded = () => {
+    if (!playlist.isPlaylistActive() || playlist.phase() !== 'playing') return
+    if (mic.micActive() && mic.comparisonData().length > 0) {
+      // handleStop() will show the score modal — advance when it closes.
+      pendingAdvance = true
+    } else {
+      playlist.reportSongScore(null)
+      playlist.advance()
+    }
+  }
+
+  /** Overlay "Start": request the mic (user gesture) then run the countdown. */
+  const handlePlaylistStart = () => {
+    if (!mic.micActive()) {
+      void mic.toggleMic().finally(() => playlist.beginCountdown())
+    } else {
+      playlist.beginCountdown()
+    }
+  }
+
+  // Start playback once the countdown flips the phase to 'playing'.
+  createEffect(() => {
+    if (
+      playlist.isPlaylistActive() &&
+      playlist.phase() === 'playing' &&
+      !playStarted &&
+      !audio.loading() &&
+      !audio.loadError()
+    ) {
+      playStarted = true
+      audio.handlePlay()
+    }
+  })
+
+  // Reflect the playing song in the browser tab title.
+  const baseDocTitle = typeof document !== 'undefined' ? document.title : ''
+  createEffect(() => {
+    if (typeof document === 'undefined') return
+    const songName = (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim()
+    document.title =
+      audio.playing() && songName ? `MercuryPitch — ${songName}` : baseDocTitle
+  })
+  onCleanup(() => {
+    if (typeof document !== 'undefined') document.title = baseDocTitle
+  })
 
   const handleSeek = (e: MouseEvent) => {
     if (!audio.duration()) return
@@ -1027,15 +1092,51 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <ChevronLeft />
               </button>
             </Show>
-            <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
-            <span class="sm-session-id">
-              karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
-            </span>
+            <div class="sm-header-titles">
+              <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
+              <Show
+                when={playlist.isPlaylistActive() && playlist.currentSong()}
+                fallback={
+                  <span class="sm-session-id">
+                    karaoke-session-
+                    {props.sessionId.replace(/^.*-session-/, '')}
+                  </span>
+                }
+              >
+                <div class="sm-playlist-subtitle">
+                  <Show when={playlist.currentSong()!.singerName}>
+                    <span class="sm-playlist-singer">
+                      {playlist.currentSong()!.singerName}
+                    </span>
+                    <span class="sm-playlist-dot">·</span>
+                  </Show>
+                  <span>{playlist.currentSong()!.songTitle}</span>
+                  <Show when={playlist.nextSong()}>
+                    <span class="sm-playlist-next">
+                      · Next: {playlist.nextSong()!.songTitle}
+                      <Show when={playlist.nextSong()!.singerName}>
+                        {' '}
+                        ({playlist.nextSong()!.singerName})
+                      </Show>
+                    </span>
+                  </Show>
+                </div>
+              </Show>
+            </div>
           </div>
           <div
             class="sm-header-actions"
             style={{ display: 'flex', gap: '0.5rem' }}
           >
+            <button
+              class="sm-btn sm-btn-secondary"
+              classList={{ 'sm-btn--active': playlistSidebarOpen() }}
+              onClick={() => setPlaylistSidebarOpen((prev) => !prev)}
+              title="Karaoke playlists"
+              style={{ gap: '0.4rem' }}
+            >
+              <Music /> Playlist
+            </button>
             <button
               class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
               onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
@@ -1130,6 +1231,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           micActive={mic.micActive}
           micError={mic.micError}
           onToggleMic={() => void mic.toggleMic()}
+          micMonitorEnabled={mic.micMonitorEnabled}
+          onToggleMicMonitor={() => mic.setMicMonitor(!mic.micMonitorEnabled())}
           formatTime={canvas.formatTime}
           speed={audio.speed}
           onSpeedChange={audio.setSpeed}
@@ -1283,7 +1386,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       <StemMixerScoreModal
         showScore={mic.showScore}
         score={mic.score}
-        onClose={() => mic.setShowScore(false)}
+        onClose={() => {
+          mic.setShowScore(false)
+          if (playlist.isPlaylistActive() && pendingAdvance) {
+            pendingAdvance = false
+            playlist.reportSongScore(mic.score())
+            playlist.advance()
+          }
+        }}
       />
 
       <Show when={pitchAnalysis.panelOpen()}>
@@ -1321,6 +1431,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
+
+      {/* ── Karaoke playlist ─────────────────────────────────── */}
+      <Show when={playlistSidebarOpen()}>
+        <div class="sm-playlist-sidebar-wrap">
+          <KaraokePlaylistSidebar
+            onClose={() => setPlaylistSidebarOpen(false)}
+          />
+        </div>
+      </Show>
+
+      <KaraokePlaylistOverlay
+        onStart={handlePlaylistStart}
+        onSkip={() => playlist.advance()}
+        durationSec={audio.duration}
+        loading={audio.loading}
+      />
+      <KaraokePlaylistSummary />
     </div>
   )
 }
@@ -1405,6 +1532,61 @@ export const StemMixerStyles: string = `
   padding: 0.15rem 0.5rem;
   border-radius: 0.3rem;
   font-family: monospace;
+}
+
+.sm-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sm-playlist-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--fg-tertiary, #768390);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sm-playlist-singer {
+  font-weight: 600;
+  color: #ffd166;
+}
+.sm-playlist-dot {
+  opacity: 0.6;
+}
+.sm-playlist-next {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Karaoke playlist sidebar (slides in from the left) */
+.sm-playlist-sidebar-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 30;
+  animation: sm-playlist-slide-in 0.2s ease-out;
+}
+@keyframes sm-playlist-slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.sm-btn--active {
+  background: var(--accent, #58a6ff) !important;
+  color: #fff !important;
+  border-color: var(--accent, #58a6ff) !important;
 }
 
 .sm-back-btn {
