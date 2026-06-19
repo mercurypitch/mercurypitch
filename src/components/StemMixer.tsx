@@ -166,7 +166,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     gainNode: null,
     analyserNode: null,
     sourceNode: null,
-    muted: false,
+    // Karaoke playlist mode: vocal starts muted (kept only as the silent
+    // scoring reference). Unmute it to hear a guide vocal.
+    muted: props.karaokeReferenceVocal === true,
     soloed: false,
     volume: 0.8,
   })

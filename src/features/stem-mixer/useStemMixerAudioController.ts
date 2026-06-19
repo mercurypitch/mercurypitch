@@ -366,9 +366,9 @@ export const useStemMixerAudioController = (
 
       const isAudible = track.soloed || (!track.muted && !deps.anySoloed())
 
-      // Karaoke: the vocal stem is the scoring reference but must be silent to
-      // the speakers (instrumental-only playback). Force its initial volume to 0
-      // while still tapping it pre-gain below.
+      // Karaoke: the vocal is the scoring reference but is silenced via the
+      // track's `muted` flag (so the mute button + waveform reflect it). We tap
+      // it pre-gain below so muting/lowering it doesn't kill the reference.
       const isVocal = track.label === 'Vocal'
       const karaokeRef = isVocal && deps.karaokeReferenceVocal?.() === true
 
@@ -376,7 +376,7 @@ export const useStemMixerAudioController = (
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      const targetGain = karaokeRef ? 0 : isAudible ? track.volume : 0
+      const targetGain = isAudible ? track.volume : 0
       gain.gain.setValueAtTime(0, now)
       gain.gain.linearRampToValueAtTime(targetGain, now + 0.03)
 
