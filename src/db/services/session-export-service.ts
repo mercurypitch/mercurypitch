@@ -515,7 +515,10 @@ async function importKaraokeManifest(
           : {}),
       })
     }
-    await createPlaylistWithItems(pl.name, items, pl.shuffleOrder)
+    await createPlaylistWithItems(pl.name, items, {
+      shuffleOrder: pl.shuffleOrder,
+      playMode: pl.playMode,
+    })
     playlistCount++
   }
 
