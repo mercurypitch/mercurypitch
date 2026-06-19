@@ -287,92 +287,105 @@ export async function exportGroup(
 }
 
 /**
- * Export one or more karaoke playlists as a ZIP: every referenced session
+ * Build the karaoke export as a ZIP Blob: every referenced session
  * (audio/stems/lyrics) plus a karaoke.json manifest holding the playlists
- * (singers, order, shuffle) and the groups they use, so the whole karaoke set
- * round-trips through import.
+ * (singers, order, shuffle, play-mode) and the groups they use. Returns null
+ * when no playlists resolve. Separated from the browser download so the whole
+ * set can be round-tripped through import in tests.
+ */
+export async function buildKaraokePlaylistZip(
+  playlistIds: string[],
+  onProgress?: (pct: number) => void,
+): Promise<Blob | null> {
+  const playlists = playlistIds
+    .map((id) => getPlaylist(id))
+    .filter((p): p is KaraokePlaylistRecord => p !== undefined)
+  if (playlists.length === 0) return null
+
+  const allGroups = getGroupsReactive()
+  const groupIds = new Set<string>()
+  const sessionIds = new Set<string>()
+
+  for (const pl of playlists) {
+    for (const item of pl.items) {
+      if (item.kind === 'group') {
+        groupIds.add(item.refId)
+        const g = allGroups.find((gr) => gr.id === item.refId)
+        g?.sessionIds.forEach((s) => sessionIds.add(s))
+      } else {
+        sessionIds.add(item.refId)
+      }
+    }
+  }
+
+  // Resolve sessions; also pull in the group each one belongs to so the
+  // "band" label is restored on import.
+  const sessionList = [...sessionIds]
+    .map((sid) => getUvrSession(sid))
+    .filter((s): s is UvrSession => s !== undefined)
+  for (const s of sessionList) {
+    if (s.groupId !== undefined) groupIds.add(s.groupId)
+  }
+
+  const groups = [...groupIds]
+    .map((id) => allGroups.find((g) => g.id === id))
+    .filter((g): g is SessionGroupRecord => g !== undefined)
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      sessionIds: g.sessionIds.filter((s) => sessionIds.has(s)),
+    }))
+
+  onProgress?.(0)
+  let allZippable: fflate.Zippable = {}
+  for (let i = 0; i < sessionList.length; i++) {
+    const s = sessionList[i]
+    const safeName = (s.originalFile?.name ?? s.sessionId).replace(
+      /[^a-z0-9_-]/gi,
+      '_',
+    )
+    const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
+    const base = (i / sessionList.length) * 90
+    const range = 90 / Math.max(1, sessionList.length)
+    const files = await prepareSessionFilesForZip(
+      s.sessionId,
+      dirPrefix,
+      onProgress ? (sub) => onProgress(base + (sub / 100) * range) : undefined,
+    )
+    allZippable = { ...allZippable, ...files }
+  }
+
+  const manifest: KaraokeManifest = { version: 1, playlists, groups }
+  allZippable['karaoke.json'] = fflate.strToU8(
+    JSON.stringify(manifest, null, 2),
+  )
+
+  const zipped = await new Promise<Uint8Array>((resolve, reject) => {
+    fflate.zip(allZippable, { level: 6 }, (err, data) => {
+      if (err) reject(err)
+      else resolve(data)
+    })
+  })
+  onProgress?.(100)
+
+  return new Blob([zipped.buffer as ArrayBuffer], { type: 'application/zip' })
+}
+
+/**
+ * Export one or more karaoke playlists as a downloaded ZIP (contents per
+ * {@link buildKaraokePlaylistZip}).
  */
 export async function exportKaraokePlaylists(
   playlistIds: string[],
   onProgress?: (pct: number) => void,
 ): Promise<void> {
   try {
+    const blob = await buildKaraokePlaylistZip(playlistIds, onProgress)
+    if (blob === null) return
+
     const playlists = playlistIds
       .map((id) => getPlaylist(id))
       .filter((p): p is KaraokePlaylistRecord => p !== undefined)
-    if (playlists.length === 0) return
-
-    const allGroups = getGroupsReactive()
-    const groupIds = new Set<string>()
-    const sessionIds = new Set<string>()
-
-    for (const pl of playlists) {
-      for (const item of pl.items) {
-        if (item.kind === 'group') {
-          groupIds.add(item.refId)
-          const g = allGroups.find((gr) => gr.id === item.refId)
-          g?.sessionIds.forEach((s) => sessionIds.add(s))
-        } else {
-          sessionIds.add(item.refId)
-        }
-      }
-    }
-
-    // Resolve sessions; also pull in the group each one belongs to so the
-    // "band" label is restored on import.
-    const sessionList = [...sessionIds]
-      .map((sid) => getUvrSession(sid))
-      .filter((s): s is UvrSession => s !== undefined)
-    for (const s of sessionList) {
-      if (s.groupId !== undefined) groupIds.add(s.groupId)
-    }
-
-    const groups = [...groupIds]
-      .map((id) => allGroups.find((g) => g.id === id))
-      .filter((g): g is SessionGroupRecord => g !== undefined)
-      .map((g) => ({
-        id: g.id,
-        name: g.name,
-        sessionIds: g.sessionIds.filter((s) => sessionIds.has(s)),
-      }))
-
-    onProgress?.(0)
-    let allZippable: fflate.Zippable = {}
-    for (let i = 0; i < sessionList.length; i++) {
-      const s = sessionList[i]
-      const safeName = (s.originalFile?.name ?? s.sessionId).replace(
-        /[^a-z0-9_-]/gi,
-        '_',
-      )
-      const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
-      const base = (i / sessionList.length) * 90
-      const range = 90 / Math.max(1, sessionList.length)
-      const files = await prepareSessionFilesForZip(
-        s.sessionId,
-        dirPrefix,
-        onProgress
-          ? (sub) => onProgress(base + (sub / 100) * range)
-          : undefined,
-      )
-      allZippable = { ...allZippable, ...files }
-    }
-
-    const manifest: KaraokeManifest = { version: 1, playlists, groups }
-    allZippable['karaoke.json'] = fflate.strToU8(
-      JSON.stringify(manifest, null, 2),
-    )
-
-    const zipped = await new Promise<Uint8Array>((resolve, reject) => {
-      fflate.zip(allZippable, { level: 6 }, (err, data) => {
-        if (err) reject(err)
-        else resolve(data)
-      })
-    })
-    onProgress?.(100)
-
-    const blob = new Blob([zipped.buffer as ArrayBuffer], {
-      type: 'application/zip',
-    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
