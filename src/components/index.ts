@@ -44,6 +44,7 @@ export {
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
 export { SessionGroupTabs } from './SessionGroupTabs'
+export { UvrStemUploadControl } from './UvrStemUploadControl'
 export { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 export { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 export { KaraokePlaylistGallery } from './KaraokePlaylistGallery'

@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **In-playback playlist transport**: Prev / Skip / Stop controls in the Stem Mixer header subtitle so you can skip the current song mid-play (previously the playlist only advanced when a song finished).
 - **Mic monitor mixer**: A "Hear myself" toggle + volume fader in the Stem Mixer right sidebar (next to the stem faders) to set self-monitoring loudness during karaoke.
 - **Playlist builder pill view**: Add songs/groups via click-to-toggle pill badges (or classic dropdowns), with a compact items view, collapsible add list, and bounded/scrollable lists so the editor stays reachable.
+- **Round-robin "turns" mode**: A play mode where each group takes one song per round (like players taking turns) until every song has played; a standalone session counts as a one-song group, and shuffle re-randomises the turn order each round.
+- **Reusable playlist editor**: The same editor is available in the Stem Mixer sidebar and inline via an "Edit" button on each gallery card in the upload view. Add songs into a playlist group by selecting the group item, then clicking song pills.
+- **Focus-mode now-playing bar**: In karaoke focus mode (header hidden), a slim top bar shows Singer · Song · Next plus Prev/Skip/Stop controls; the playlist sidebar auto-closes once a song starts.
+- **Search sessions by song**: A fuzzy search box (substring + subsequence) in the Karaoke session library filters songs by name across all groups.
+- **Upload pre-separated stems**: Add a session from an uploaded vocal and/or instrumental (no separation). Add the missing stem later, or replace a stem with a better file — from the session card's stem list or the stem results view.
 
 ### Fixed
 
@@ -26,8 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Karaoke vocal muting**: The reference vocal is now silenced via the track's mute flag (so the mute button and waveform reflect it) while still driving the pitch reference.
 - **Add-song/group dropdowns**: The placeholder is no longer auto-skipped to the first option, so the only/first item can actually be selected; the dropdown resets after each add.
 - **Quieter karaoke**: The lyrics/transcription alignment-accuracy warning is suppressed during playlist playback (still shown for single sessions).
-
-### Changed
+- **Skip/advance reliability**: The mixer now remounts per song via a load token bumped only after the new song's stems are in place, with a stale-load guard and current-song gating — fixing songs that "ended immediately" or got stuck when skipping/going to the previous song.
+- **Previous/next replay after reload**: Revisiting a playlist song now persists its freshly-hydrated stem URLs to the session cache, so going to the previous song no longer fails on dead (post-reload) blob URLs.
+- **Group song resolution**: A group's songs resolve to existing sessions only (merging `group.sessionIds` with `session.groupId`), so stale ids no longer cascade the playlist straight to the summary.
+- **Karaoke import**: Round-robin play mode is preserved when importing a karaoke playlist (previously reverted to sequential).
 
 - **Session cards**: Removed the redundant "UVR Session" heading; cards now show the band/group above the song title with hover tooltips for long names, and the action buttons (delete/export/share) sit as smaller, right-aligned controls in the top row so the title spans the full width.
 - **Group singer default**: Adding a group to a playlist pre-fills its singer with the group's name (editable afterwards).

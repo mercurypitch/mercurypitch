@@ -8,6 +8,7 @@ import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
+import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
@@ -20,8 +21,8 @@ import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, d
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus } from '@/stores/ui-store'
-import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -163,6 +164,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [exportProgress, setExportProgress] = createSignal(0)
   const [isImporting, setIsImporting] = createSignal(false)
   const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
+  const [sessionSearch, setSessionSearch] = createSignal('')
   const [sessionGalleryOpen, setSessionGalleryOpen] = createPersistedSignal(
     'uvr-session-gallery-open',
     true,
@@ -263,6 +265,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const allSessions = () => getAllUvrSessionsReactive()
   const filteredSessions = () => {
     const sessions = allSessions()
+    const query = sessionSearch().trim()
+    if (query !== '') {
+      // While searching, look across all groups so a song is findable
+      // regardless of which group it's in; rank best matches first.
+      return sessions
+        .map((s) => ({
+          s,
+          score: fuzzyScore(query, s.originalFile?.name ?? ''),
+        }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map((x) => x.s)
+    }
     const groupId = activeGroupId()
     if (groupId == null) return sessions
     return sessions.filter((s) => s.groupId === groupId)
@@ -430,6 +445,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // A newer skip may have superseded this (async) load — bail if this song is
     // no longer the current one, so we don't clobber the mixer out of order.
     if (currentSong()?.sessionId !== sessionId) return
+    // Persist freshly-hydrated stem URLs back into the session cache. Otherwise
+    // revisiting this song (prev/next) re-reads the cached session, whose blob:
+    // URLs are dead after a reload, and the stems fail to load — so the song
+    // won't play. (handleSessionView does the same for single-session opens.)
+    if (hydrated !== session) {
+      const all = getAllUvrSessions()
+      const idx = all.findIndex((s) => s.sessionId === sessionId)
+      if (idx !== -1) {
+        all[idx] = {
+          ...all[idx],
+          outputs: { ...all[idx].outputs, ...hydrated.outputs },
+        }
+        saveAllUvrSessions(all)
+      }
+    }
     batch(() => {
       setCurrentUvrSession(hydrated)
       setPrevView('results')
@@ -1088,6 +1118,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
               />
+
+              <UvrStemUploadControl
+                disabled={allSessions().some((s) => s.status === 'processing')}
+              />
+
               <div class="upload-divider">
                 <span class="upload-divider-text">
                   <Show
@@ -1179,6 +1214,31 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </Show>
                 </div>
               </div>
+
+              <Show when={sessionGalleryOpen() && allSessions().length > 0}>
+                <div class="uvr-session-search">
+                  <Search />
+                  <input
+                    class="uvr-session-search-input"
+                    type="text"
+                    placeholder="Search songs by name…"
+                    value={sessionSearch()}
+                    onInput={(e) => setSessionSearch(e.currentTarget.value)}
+                  />
+                  <Show when={sessionSearch().trim() !== ''}>
+                    <span class="uvr-session-search-count">
+                      {filteredSessions().length} found
+                    </span>
+                    <button
+                      class="uvr-session-search-clear"
+                      title="Clear search"
+                      onClick={() => setSessionSearch('')}
+                    >
+                      <X />
+                    </button>
+                  </Show>
+                </div>
+              </Show>
 
               <Show
                 when={

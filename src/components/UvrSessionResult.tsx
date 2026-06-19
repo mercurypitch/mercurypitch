@@ -4,11 +4,13 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { addSessionToGroup, createGroup, deleteUvrSession, getGroupsReactive, getUvrSession, removeSessionFromGroup, } from '@/stores/app-store'
+import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -41,6 +43,36 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const gid = session()?.groupId
     if (gid == null) return null
     return groups().find((g) => g.id === gid) ?? null
+  }
+
+  // ── Per-stem add / replace (uploaded stems) ─────────────────
+  const hasVocal = () =>
+    session()?.outputs?.vocal != null || session()?.stemMeta?.vocal != null
+  const hasInstrumental = () =>
+    session()?.outputs?.instrumental != null ||
+    session()?.stemMeta?.instrumental != null
+
+  const [stemBusy, setStemBusy] = createSignal<'vocal' | 'instrumental' | null>(
+    null,
+  )
+  // Returns a file-input change handler; used as an event handler in JSX.
+  // eslint-disable-next-line solid/reactivity
+  const handleStemFile = (stemType: 'vocal' | 'instrumental') => (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (file === undefined) return
+    const had = stemType === 'vocal' ? hasVocal() : hasInstrumental()
+    setStemBusy(stemType)
+    void setSessionStem(props.sessionId, stemType, file)
+      .then(() =>
+        showNotification(
+          `${stemType === 'vocal' ? 'Vocal' : 'Instrumental'} ${had ? 'replaced' : 'added'}`,
+          'success',
+        ),
+      )
+      .catch(() => showNotification(`Failed to update ${stemType}`, 'error'))
+      .finally(() => setStemBusy(null))
   }
 
   const handleGroupChange = async (groupId: string) => {
@@ -567,6 +599,52 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               </button>
             </Show>
           </div>
+
+          {/* Add / replace uploaded stems — icon-only, single row */}
+          <Show when={session()?.status === 'completed'}>
+            <div class="stem-manage">
+              <label
+                class="stem-manage-btn"
+                classList={{ 'stem-manage-btn--busy': stemBusy() === 'vocal' }}
+                title={hasVocal() ? 'Replace vocal stem' : 'Add a vocal stem'}
+              >
+                <Voice />
+                <Show when={hasVocal()} fallback={<Plus size={13} />}>
+                  <Repeat size={13} />
+                </Show>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  style={{ display: 'none' }}
+                  onChange={handleStemFile('vocal')}
+                  disabled={props.disabled === true || stemBusy() !== null}
+                />
+              </label>
+              <label
+                class="stem-manage-btn"
+                classList={{
+                  'stem-manage-btn--busy': stemBusy() === 'instrumental',
+                }}
+                title={
+                  hasInstrumental()
+                    ? 'Replace instrumental stem'
+                    : 'Add an instrumental stem'
+                }
+              >
+                <Headphones />
+                <Show when={hasInstrumental()} fallback={<Plus size={13} />}>
+                  <Repeat size={13} />
+                </Show>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  style={{ display: 'none' }}
+                  onChange={handleStemFile('instrumental')}
+                  disabled={props.disabled === true || stemBusy() !== null}
+                />
+              </label>
+            </div>
+          </Show>
         </div>
       </Show>
 

@@ -58,6 +58,21 @@ export async function getStemBlobUrl(
   }
 }
 
+/** Delete all stored blobs for a session's stem (used when replacing a stem). */
+export async function deleteStemBlobs(
+  sessionId: string,
+  stemType: 'vocal' | 'instrumental' | 'original',
+): Promise<void> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const rows = await repo.findAll({ where: { sessionId, stemType } })
+    for (const row of rows) await repo.delete(row.id)
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] deleteStemBlobs failed:', err)
+  }
+}
+
 export async function getStemBlob(
   sessionId: string,
   stemType: 'vocal' | 'instrumental' | 'original',
