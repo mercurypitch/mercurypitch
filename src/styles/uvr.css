@@ -332,6 +332,204 @@
   color: var(--fg-primary);
 }
 
+/* Add / replace stems on a session card */
+.stem-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.stem-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.stem-manage-btn:hover {
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary, #c9d1d9);
+}
+.stem-manage-btn svg {
+  width: 13px;
+  height: 13px;
+}
+.stem-manage-btn--busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Manual stem upload */
+.stem-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary, #161b22);
+  border: 1px dashed var(--border, #30363d);
+  border-radius: 0.6rem;
+}
+.stem-upload-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.stem-upload-header h5 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--fg-primary, #c9d1d9);
+}
+.stem-upload-hint {
+  font-size: 0.7rem;
+  color: var(--fg-tertiary, #768390);
+}
+.stem-upload-name {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+}
+.stem-upload-pickers {
+  display: flex;
+  gap: 0.5rem;
+}
+.stem-picker {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+.stem-picker--set {
+  border-color: var(--accent, #58a6ff);
+}
+.stem-picker-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+}
+.stem-picker-label svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.stem-picker-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stem-picker-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg-tertiary, #768390);
+  cursor: pointer;
+}
+.stem-picker-clear:hover {
+  color: var(--fg-primary, #c9d1d9);
+}
+.stem-picker-clear svg {
+  width: 12px;
+  height: 12px;
+}
+.stem-upload-submit {
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent, #58a6ff);
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+.stem-upload-submit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Session search bar */
+.uvr-session-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  color: var(--fg-tertiary, #768390);
+}
+.uvr-session-search:focus-within {
+  border-color: var(--accent, #58a6ff);
+}
+.uvr-session-search svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.uvr-session-search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.85rem;
+}
+.uvr-session-search-count {
+  font-size: 0.72rem;
+  color: var(--fg-tertiary, #768390);
+  white-space: nowrap;
+}
+.uvr-session-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg-tertiary, #768390);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.uvr-session-search-clear:hover {
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-primary, #c9d1d9);
+}
+.uvr-session-search-clear svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* Collapsible section header (clickable title + chevron) */
 .uvr-collapse-toggle {
   display: flex;
@@ -2338,6 +2536,41 @@
 .rv-stem-btn-download:hover {
   background: var(--bg-hover);
   color: var(--fg-primary);
+}
+
+.rv-stem-btn-replace {
+  background: var(--bg-tertiary);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border);
+}
+.rv-stem-btn-replace:hover {
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary);
+}
+.rv-stem-btn--busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Add-missing-stem card */
+.rv-stem-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 96px;
+  border-style: dashed !important;
+  color: var(--fg-secondary);
+  cursor: pointer;
+}
+.rv-stem-add:hover {
+  border-color: var(--accent, #58a6ff) !important;
+  color: var(--fg-primary);
+}
+.rv-stem-add-text {
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .rv-stem-btn-mixer {

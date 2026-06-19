@@ -4,8 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import { setSessionStem } from '@/db/services/manual-stem-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
-import { Clock, Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { showNotification } from '@/stores/notifications-store'
+import { Clock, Download, Headphones, Midi, MusicBoard, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
 
 interface StemMeta {
   duration?: number
@@ -179,6 +181,33 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     return list
   }
   const [selectedKeys, setSelectedKeys] = createSignal<Set<string>>(new Set())
+
+  // ── Add / replace stems ─────────────────────────────────────
+  const hasVocal = () => props.outputs?.vocal !== undefined
+  const hasInstrumental = () => props.outputs?.instrumental !== undefined
+  const [stemBusy, setStemBusy] = createSignal<'vocal' | 'instrumental' | null>(
+    null,
+  )
+  // Returns a file-input change handler; used as an event handler in JSX.
+  // eslint-disable-next-line solid/reactivity
+  const replaceStem = (stemType: 'vocal' | 'instrumental') => (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    const sid = props.sessionId
+    if (file === undefined || sid === undefined) return
+    const had = stemType === 'vocal' ? hasVocal() : hasInstrumental()
+    setStemBusy(stemType)
+    void setSessionStem(sid, stemType, file)
+      .then(() =>
+        showNotification(
+          `${stemType === 'vocal' ? 'Vocal' : 'Instrumental'} ${had ? 'replaced' : 'added'}`,
+          'success',
+        ),
+      )
+      .catch(() => showNotification(`Failed to update ${stemType}`, 'error'))
+      .finally(() => setStemBusy(null))
+  }
 
   const toggleSelected = (key: string) => {
     setSelectedKeys((prev) => {
@@ -375,11 +404,68 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                       <Download />
                     )}
                   </button>
+                  <Show
+                    when={
+                      props.sessionId !== undefined &&
+                      (stem.key === 'vocal' || stem.key === 'instrumental')
+                    }
+                  >
+                    <label
+                      class="rv-stem-btn rv-stem-btn-replace"
+                      classList={{
+                        'rv-stem-btn--busy': stemBusy() === stem.key,
+                      }}
+                      title="Replace this stem with a new file"
+                    >
+                      <Repeat /> Replace
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        style={{ display: 'none' }}
+                        onChange={replaceStem(
+                          stem.key as 'vocal' | 'instrumental',
+                        )}
+                        disabled={stemBusy() !== null}
+                      />
+                    </label>
+                  </Show>
                 </div>
               </div>
             )
           }}
         </For>
+
+        {/* Add a missing stem */}
+        <Show when={props.sessionId !== undefined && !hasVocal()}>
+          <label class="rv-stem-card rv-stem-add">
+            <div class="rv-stem-icon" style={{ color: '#f59e0b' }}>
+              <Voice />
+            </div>
+            <span class="rv-stem-add-text">Add vocal stem</span>
+            <input
+              type="file"
+              accept="audio/*"
+              style={{ display: 'none' }}
+              onChange={replaceStem('vocal')}
+              disabled={stemBusy() !== null}
+            />
+          </label>
+        </Show>
+        <Show when={props.sessionId !== undefined && !hasInstrumental()}>
+          <label class="rv-stem-card rv-stem-add">
+            <div class="rv-stem-icon" style={{ color: '#3b82f6' }}>
+              <Headphones />
+            </div>
+            <span class="rv-stem-add-text">Add instrumental stem</span>
+            <input
+              type="file"
+              accept="audio/*"
+              style={{ display: 'none' }}
+              onChange={replaceStem('instrumental')}
+              disabled={stemBusy() !== null}
+            />
+          </label>
+        </Show>
       </div>
 
       {/* Full Mix — always visible when both stems exist */}
