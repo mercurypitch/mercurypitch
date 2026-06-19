@@ -178,18 +178,21 @@ export async function createPlaylist(
 }
 
 /** Create a playlist with a full set of items at once (used by import). New
- *  item ids are generated; original singer/shuffle metadata is preserved. */
+ *  item ids are generated; original singer/shuffle/play-mode metadata is kept. */
 export async function createPlaylistWithItems(
   name: string,
   items: Omit<KaraokePlaylistItem, 'id'>[],
-  shuffleOrder?: boolean,
+  opts?: { shuffleOrder?: boolean; playMode?: 'sequential' | 'roundRobin' },
 ): Promise<KaraokePlaylistRecord> {
   const db = await getDb()
   const repo = db.getRepository<KaraokePlaylistRecord>(REPO)
   const pl = await repo.create({
     name,
     items: items.map((it) => ({ ...it, id: globalThis.crypto.randomUUID() })),
-    ...(shuffleOrder !== undefined ? { shuffleOrder } : {}),
+    ...(opts?.shuffleOrder !== undefined
+      ? { shuffleOrder: opts.shuffleOrder }
+      : {}),
+    ...(opts?.playMode !== undefined ? { playMode: opts.playMode } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any)
   _setPlaylists((prev) => [...prev, pl])
