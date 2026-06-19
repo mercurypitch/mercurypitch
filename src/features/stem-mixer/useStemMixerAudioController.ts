@@ -100,6 +100,13 @@ export interface StemMixerAudioDeps {
   requestedStems?: { midi?: boolean }
   songTitle: string
 
+  /** Karaoke mode: keep the vocal stem silent to the speakers but still tap it
+   *  (pre-gain) as the pitch reference for scoring. */
+  karaokeReferenceVocal?: Accessor<boolean>
+  /** Fired only when playback reaches the end of the track naturally (not on a
+   *  manual stop). Used by the karaoke playlist to advance to the next song. */
+  onPlaybackEnded?: () => void
+
   showNotification: (
     msg: string,
     type?: 'info' | 'success' | 'warning' | 'error',
@@ -359,11 +366,17 @@ export const useStemMixerAudioController = (
 
       const isAudible = track.soloed || (!track.muted && !deps.anySoloed())
 
+      // Karaoke: the vocal stem is the scoring reference but must be silent to
+      // the speakers (instrumental-only playback). Force its initial volume to 0
+      // while still tapping it pre-gain below.
+      const isVocal = track.label === 'Vocal'
+      const karaokeRef = isVocal && deps.karaokeReferenceVocal?.() === true
+
       const src = ctx.createBufferSource()
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      const targetGain = isAudible ? track.volume : 0
+      const targetGain = karaokeRef ? 0 : isAudible ? track.volume : 0
       gain.gain.setValueAtTime(0, now)
       gain.gain.linearRampToValueAtTime(targetGain, now + 0.03)
 
@@ -375,8 +388,11 @@ export const useStemMixerAudioController = (
       gain.connect(analyser)
       analyser.connect(mainGain!)
 
-      if (track.label === 'Vocal' && vocalAnalyser) {
-        gain.connect(vocalAnalyser)
+      if (isVocal && vocalAnalyser) {
+        // Pre-gain tap in karaoke mode so a silenced/lowered vocal still drives
+        // the pitch reference; post-gain otherwise (unchanged behaviour).
+        if (karaokeRef) src.connect(vocalAnalyser)
+        else gain.connect(vocalAnalyser)
       }
 
       src.start(now, offset)
@@ -738,6 +754,8 @@ export const useStemMixerAudioController = (
         }
         // Outside loop or loop disabled — stop at end of track
         if (elapsedTime >= duration()) {
+          // Natural end (not a manual stop) — notify the playlist to advance.
+          deps.onPlaybackEnded?.()
           handleStop()
           return
         }

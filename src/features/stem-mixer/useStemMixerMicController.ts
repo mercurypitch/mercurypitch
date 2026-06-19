@@ -6,6 +6,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
+import { createPersistedSignal } from '@/lib/storage'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -46,6 +47,13 @@ export interface StemMixerMicController {
   micPitch: Accessor<DetectedPitch | null>
   setMicPitch: Setter<DetectedPitch | null>
   micError: Accessor<string>
+  /** Mic monitoring — routes the mic to the speakers so the singer hears
+   *  themselves over the backing track (true karaoke). Off by default to avoid
+   *  speaker feedback; best with headphones. */
+  micMonitorEnabled: Accessor<boolean>
+  setMicMonitor: (enabled: boolean) => void
+  micMonitorVolume: Accessor<number>
+  setMicMonitorVolume: (volume: number) => void
   comparisonData: Accessor<ComparisonPoint[]>
   setComparisonData: Setter<ComparisonPoint[]>
   toleranceCents: Accessor<number>
@@ -84,12 +92,56 @@ export const useStemMixerMicController = (
   const [score, setScore] = createSignal<MicScore | null>(null)
   const [showScore, setShowScore] = createSignal(false)
 
+  // Mic monitoring — persisted so the choice survives reloads/song switches.
+  const [micMonitorEnabled, setMicMonitorEnabled] = createPersistedSignal(
+    'sm-mic-monitor-enabled',
+    false,
+  )
+  const [micMonitorVolume, setMicMonitorVolumeSignal] = createPersistedSignal(
+    'sm-mic-monitor-volume',
+    0.8,
+  )
+
   // Mic refs (not signals — no reactivity needed in RAF loop)
   let micStream: MediaStream | null = null
   let micGainNode: GainNode | null = null
   let micAnalyserNode: AnalyserNode | null = null
+  let monitorGainNode: GainNode | null = null
   let micPitchDetector: PitchDetector | null = null
   let micPitchHistory: PitchNote[] = []
+
+  /** Wire or unwire the monitor branch (micGain → monitorGain → destination)
+   *  based on the enabled flag. Safe to call repeatedly. */
+  const applyMonitorRouting = () => {
+    const ctx = deps.getAudioCtx()
+    if (!ctx || !micGainNode) return
+    if (micMonitorEnabled()) {
+      if (!monitorGainNode) {
+        monitorGainNode = ctx.createGain()
+        monitorGainNode.gain.value = micMonitorVolume()
+        micGainNode.connect(monitorGainNode)
+        monitorGainNode.connect(ctx.destination)
+      }
+    } else if (monitorGainNode) {
+      try {
+        monitorGainNode.disconnect()
+      } catch (_) {
+        /* already disconnected */
+      }
+      monitorGainNode = null
+    }
+  }
+
+  const setMicMonitor = (enabled: boolean) => {
+    setMicMonitorEnabled(enabled)
+    applyMonitorRouting()
+  }
+
+  const setMicMonitorVolume = (volume: number) => {
+    const v = Math.max(0, Math.min(1, volume))
+    setMicMonitorVolumeSignal(v)
+    if (monitorGainNode) monitorGainNode.gain.value = v
+  }
 
   const getMicAnalyserNode = () => micAnalyserNode
   const getMicPitchDetector = () => micPitchDetector
@@ -145,9 +197,11 @@ export const useStemMixerMicController = (
       micStream?.getTracks().forEach((t) => t.stop())
       micGainNode?.disconnect()
       micAnalyserNode?.disconnect()
+      monitorGainNode?.disconnect()
       micStream = null
       micGainNode = null
       micAnalyserNode = null
+      monitorGainNode = null
       micPitchDetector = null
       micPitchHistory = []
       setMicActive(false)
@@ -172,6 +226,9 @@ export const useStemMixerMicController = (
         micAnalyserNode.smoothingTimeConstant = 0.3
         source.connect(micGainNode)
         micGainNode.connect(micAnalyserNode)
+
+        // Route mic to speakers if monitoring is enabled (hear yourself).
+        applyMonitorRouting()
 
         micPitchDetector = new PitchDetector({
           sampleRate: ctx.sampleRate,
@@ -211,6 +268,10 @@ export const useStemMixerMicController = (
     micPitch,
     setMicPitch,
     micError,
+    micMonitorEnabled,
+    setMicMonitor,
+    micMonitorVolume,
+    setMicMonitorVolume,
     comparisonData,
     setComparisonData,
     toleranceCents,

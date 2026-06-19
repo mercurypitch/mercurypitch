@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
-import { GripVertical, Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
+import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
@@ -30,6 +30,8 @@ export interface StemMixerTransportProps {
   micActive: Accessor<boolean>
   micError: Accessor<string>
   onToggleMic: () => void
+  micMonitorEnabled: Accessor<boolean>
+  onToggleMicMonitor: () => void
 
   // Formatting
   formatTime: (t: number) => string
@@ -421,6 +423,21 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           >
             <Mic />
           </button>
+
+          {/* ── Mic monitor (hear yourself) ──────────────── */}
+          <Show when={props.micActive()}>
+            <button
+              class={`sm-mic-toggle-btn${props.micMonitorEnabled() ? ' sm-mic-toggle-btn--active' : ''}`}
+              onClick={() => props.onToggleMicMonitor()}
+              title={
+                props.micMonitorEnabled()
+                  ? 'Mute self-monitoring'
+                  : 'Hear my voice over the track (use headphones)'
+              }
+            >
+              <Headphones />
+            </button>
+          </Show>
 
           {/* ── Speed selector (always visible) ──────────── */}
           <select

@@ -1,0 +1,191 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  overflow-y: auto;
+  background: rgba(8, 11, 16, 0.88);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.card {
+  width: min(520px, 94%);
+  padding: 1.75rem 1.5rem;
+  border-radius: 16px;
+  background: linear-gradient(
+    160deg,
+    rgba(28, 34, 46, 0.98),
+    rgba(15, 19, 27, 0.98)
+  );
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.trophy {
+  font-size: 2.6rem;
+}
+
+.title {
+  margin: 0.3rem 0 1.25rem;
+  font-size: 1.6rem;
+  color: var(--text-primary);
+}
+
+.noScores {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.winner {
+  background: rgba(255, 209, 102, 0.12);
+  border-color: rgba(255, 209, 102, 0.4);
+}
+
+.rank {
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.name {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grade {
+  font-weight: 800;
+  font-size: 1.1rem;
+  width: 1.6rem;
+  text-align: center;
+}
+.gradeS {
+  color: #ffd166;
+}
+.gradeA {
+  color: #6ee7b7;
+}
+.gradeB {
+  color: #60a5fa;
+}
+.gradeC {
+  color: #fbbf24;
+}
+.gradeD {
+  color: #f87171;
+}
+
+.accuracy {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.songCount {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.recapRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.3rem 0.25rem;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.recapSong {
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recapSinger {
+  color: #ffd166;
+}
+
+.recapScore {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.primaryBtn {
+  flex: 1;
+  padding: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.primaryBtn:hover {
+  filter: brightness(1.08);
+}
+
+.secondaryBtn {
+  flex: 1;
+  padding: 0.7rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}

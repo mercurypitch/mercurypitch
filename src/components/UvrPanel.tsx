@@ -16,6 +16,7 @@ import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
@@ -395,6 +396,44 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
     return session
   }
+
+  // ── Karaoke playlist runner ──────────────────────────────────
+  // When the playlist arms a song ('ready'), hydrate its stems into the mixer
+  // (instrumental audible + vocal kept as a silent scoring reference) and show
+  // the mixer view. The StemMixer is keyed per song so each is a fresh mount.
+  let loadingPlaylistSong: string | null = null
+
+  const loadPlaylistSong = async (sessionId: string) => {
+    const session = getUvrSession(sessionId)
+    if (!session) {
+      showNotification('Karaoke: song unavailable, skipping…', 'warning')
+      advance()
+      return
+    }
+    const hydrated = await ensureHydrated(session)
+    setCurrentUvrSession(hydrated)
+    setPrevView('results')
+    setMixerPracticeMode('full')
+    setMixerSessionId(hydrated.sessionId)
+    setMixerStems({
+      vocal: hydrated.outputs?.vocal,
+      instrumental: hydrated.outputs?.instrumental,
+    })
+    setMixerRequestedStems({ vocal: true, instrumental: true })
+    setMixerInitialSeekSec(undefined)
+    setMixerAutoPlay(false)
+    setCurrentView('mixer')
+  }
+
+  createEffect(() => {
+    const song = currentSong()
+    if (!isPlaylistActive() || !song || phase() !== 'ready') return
+    // Track index so the same song appearing twice still reloads.
+    const key = `${currentIndex()}:${song.sessionId}`
+    if (loadingPlaylistSong === key) return
+    loadingPlaylistSong = key
+    void loadPlaylistSong(song.sessionId)
+  })
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file)
@@ -1278,20 +1317,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           {/* Stem Mixer Inline */}
           <Show when={currentView() === 'mixer'}>
             <div class="view-section mixer-section">
-              <StemMixer
-                stems={mixerStems()}
-                sessionId={mixerSessionId()}
-                songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
-                practiceMode={mixerPracticeMode()}
-                requestedStems={mixerRequestedStems()}
-                initialSeekSec={mixerInitialSeekSec()}
-                autoPlay={mixerAutoPlay()}
-                onBack={() => {
-                  setMixerAutoPlay(false)
-                  setMixerInitialSeekSec(undefined)
-                  setCurrentView(prevView())
-                }}
-              />
+              {/* Keyed so each song (or playlist position) is a fresh mount —
+                  the StemMixer loads stems on mount only. */}
+              <Show
+                when={
+                  isPlaylistActive()
+                    ? `${currentIndex()}:${mixerSessionId()}`
+                    : mixerSessionId()
+                }
+                keyed
+              >
+                <StemMixer
+                  stems={mixerStems()}
+                  sessionId={mixerSessionId()}
+                  songTitle={
+                    currentUvrSession()?.originalFile?.name ?? 'Unknown'
+                  }
+                  practiceMode={mixerPracticeMode()}
+                  requestedStems={mixerRequestedStems()}
+                  initialSeekSec={mixerInitialSeekSec()}
+                  autoPlay={mixerAutoPlay()}
+                  karaokeReferenceVocal={isPlaylistActive()}
+                  onBack={() => {
+                    setMixerAutoPlay(false)
+                    setMixerInitialSeekSec(undefined)
+                    setCurrentView(prevView())
+                  }}
+                />
+              </Show>
             </div>
           </Show>
 
