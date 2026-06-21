@@ -67,6 +67,7 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import { SkeletonCardGrid, SkeletonList, SkeletonTabContent, } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 
 const UvrPanel = lazy(async () =>
@@ -1567,7 +1568,7 @@ const AppShell: Component<AppProps> = (props) => {
 
                   <Show when={editorView() === 'session-editor'}>
                     <div class={styles.sessionEditorContainer}>
-                      <Suspense fallback={<div class="tab-loading" />}>
+                      <Suspense fallback={<SkeletonTabContent />}>
                         <SessionEditor />
                       </Suspense>
                     </div>
@@ -1681,7 +1682,7 @@ const AppShell: Component<AppProps> = (props) => {
                           class="vocal-analysis-panel"
                           style="width: 100%; height: 100%;"
                         >
-                          <Suspense fallback={<div class="tab-loading" />}>
+                          <Suspense fallback={<SkeletonTabContent />}>
                             <VocalAnalysis />
                           </Suspense>
                         </div>
@@ -1712,7 +1713,7 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_COMMUNITY}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMMUNITY)}>
                   <div class="community-panel">
-                    <Suspense fallback={<div class="tab-loading" />}>
+                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
                       <CommunityShare />
                     </Suspense>
                   </div>
@@ -1722,7 +1723,7 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_LEADERBOARD}>
                 <TabErrorBoundary tabName={tabLabel(TAB_LEADERBOARD)}>
                   <div class="leaderboard-panel">
-                    <Suspense fallback={<div class="tab-loading" />}>
+                    <Suspense fallback={<SkeletonList rows={5} />}>
                       <CommunityLeaderboard
                         onOpenChallenges={() => setActiveTab(TAB_CHALLENGES)}
                       />
@@ -1734,7 +1735,7 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_CHALLENGES}>
                 <TabErrorBoundary tabName={tabLabel(TAB_CHALLENGES)}>
                   <div class="vocal-challenges-panel">
-                    <Suspense fallback={<div class="tab-loading" />}>
+                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
                       <VocalChallenges />
                     </Suspense>
                   </div>
@@ -1905,7 +1906,7 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_KARAOKE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_KARAOKE)}>
                   <div id="uvr-panel">
-                    <Suspense fallback={<div class="tab-loading" />}>
+                    <Suspense fallback={<SkeletonTabContent />}>
                       <UvrPanel
                         initialView={initialUvrView() ?? 'upload'}
                         initialSessionId={initialUvrSessionId() ?? undefined}
@@ -2290,7 +2291,7 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
 
         <Show when={showSessionBrowser()}>
-          <Suspense fallback={<div class="tab-loading" />}>
+          <Suspense fallback={<SkeletonTabContent />}>
             <SessionBrowser
               onClose={hideSessionPresetsLibrary}
               onStartSession={(template) => {

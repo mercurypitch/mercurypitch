@@ -1,0 +1,120 @@
+/* ── Shimmer animation ─────────────────────────────────────── */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ── Base skeleton pulse/shape ─────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary, rgba(255, 255, 255, 0.04)) 0%,
+    var(--bg-secondary, rgba(255, 255, 255, 0.08)) 40%,
+    var(--bg-tertiary, rgba(255, 255, 255, 0.04)) 80%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ── Shapes ────────────────────────────────────────────────── */
+.skeletonText {
+  height: 14px;
+  border-radius: 7px;
+}
+
+.skeletonTextShort {
+  height: 14px;
+  width: 60%;
+  border-radius: 7px;
+}
+
+.skeletonHeading {
+  height: 20px;
+  width: 40%;
+  border-radius: 10px;
+}
+
+.skeletonCard {
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.1));
+}
+
+.skeletonCircle {
+  border-radius: 50%;
+}
+
+.skeletonChip {
+  height: 22px;
+  width: 60px;
+  border-radius: 11px;
+}
+
+/* ── Layouts ───────────────────────────────────────────────── */
+.skeletonTabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  min-height: 300px;
+}
+
+.skeletonCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.skeletonCardItem {
+  height: 140px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.1));
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonListRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.08));
+}
+
+.skeletonStatRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.skeletonBar {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.skeletonSidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.skeletonAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
