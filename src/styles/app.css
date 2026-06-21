@@ -2488,3 +2488,40 @@ input[type='range'] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Transition animations ─────────────────────────────────── */
+
+.app-sidebar {
+  transition:
+    width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+}
+
+.sidebar-backdrop {
+  animation: backdropFadeIn 0.2s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:global(#score-card),
+:global(#session-summary-card) {
+  animation: cardPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
