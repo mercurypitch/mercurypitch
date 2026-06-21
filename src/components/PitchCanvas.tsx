@@ -138,6 +138,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let isSeeking = false
+  let needsRedraw = true
+  let lastPitchLength = 0
   let audioEngine: AudioEngine | null = null
   // Double-click detection + trill visual feedback
   let clickTimer: ReturnType<typeof setTimeout> | null = null
@@ -223,6 +225,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     const ro = new ResizeObserver(() => {
       resizeCanvas()
+      needsRedraw = true
     })
     ro.observe(canvasRef.parentElement!)
 
@@ -559,7 +562,27 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   const startLoop = () => {
     const loop = (ts: number) => {
       updateArc(ts)
-      draw()
+
+      // Throttle: only redraw when something changed. Reduces idle
+      // GPU usage from constant 60fps to near-zero when paused.
+      const playing = props.isPlaying?.() ?? false
+      const paused = props.isPaused?.() ?? false
+      const hasMicData = (props.pitchHistory?.()?.length ?? 0) > 0
+      const pitchLen = props.pitchHistory?.()?.length ?? 0
+
+      if (
+        needsRedraw ||
+        playing ||
+        paused ||
+        hasMicData ||
+        isSeeking ||
+        pitchLen !== lastPitchLength
+      ) {
+        draw()
+        needsRedraw = false
+        lastPitchLength = pitchLen
+      }
+
       animFrameId = requestAnimationFrame(loop)
     }
     animFrameId = requestAnimationFrame(loop)
