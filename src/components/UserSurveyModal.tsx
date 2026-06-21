@@ -1,5 +1,5 @@
 // ============================================================
-// UserSurveyModal — Optional onboarding survey (2-3 questions)
+// UserSurveyModal — Optional onboarding survey
 // ============================================================
 
 import type { Component } from 'solid-js'
@@ -13,20 +13,19 @@ interface Props {
 }
 
 const BACKGROUNDS = [
-  { id: 'beginner', label: 'Beginner — just starting out' },
-  { id: 'intermediate', label: 'Intermediate — some experience' },
-  { id: 'advanced', label: 'Advanced — trained vocalist' },
-  { id: 'professional', label: 'Professional — I perform regularly' },
-  { id: 'curious', label: 'Just curious — exploring my voice' },
+  { id: 'singer', label: 'Singer / Vocalist' },
+  { id: 'guitarist', label: 'Guitarist' },
+  { id: 'musician', label: 'Musician (multi-instrument)' },
+  { id: 'producer', label: 'Producer / Songwriter' },
+  { id: 'exploring', label: 'Just exploring' },
 ]
 
 const USAGES = [
-  { id: 'pitch', label: 'Improve pitch accuracy' },
-  { id: 'warmup', label: 'Vocal warmups & exercises' },
+  { id: 'singing', label: 'Singing practice' },
+  { id: 'guitar', label: 'Guitar practice' },
+  { id: 'jam', label: 'Jam sessions' },
+  { id: 'karaoke', label: 'Karaoke singing' },
   { id: 'ear', label: 'Ear training' },
-  { id: 'learn', label: 'Learn to sing' },
-  { id: 'pro', label: 'Professional practice tool' },
-  { id: 'fun', label: 'Just for fun' },
 ]
 
 const UserSurveyModal: Component<Props> = (props) => {
@@ -64,10 +63,6 @@ const UserSurveyModal: Component<Props> = (props) => {
     props.onClose()
   }
 
-  const handleSkip = () => {
-    props.onClose()
-  }
-
   return (
     <div
       class={styles.overlay}
@@ -75,23 +70,20 @@ const UserSurveyModal: Component<Props> = (props) => {
       role="dialog"
       aria-modal="true"
       aria-label="Quick survey"
-      onClick={handleSkip}
+      onClick={() => props.onClose()}
     >
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>
         <div class={styles.header}>
           <h2 class={styles.title}>Welcome to MercuryPitch</h2>
           <p class={styles.subtitle}>
-            Help us make the app better for you — this is optional and takes 30
-            seconds.
+            Help us improve — 3 quick questions (optional)
           </p>
         </div>
 
         <div class={styles.questions}>
           {/* Q1: Background */}
           <div class={styles.question}>
-            <h3 class={styles.questionLabel}>
-              What is your singing background?
-            </h3>
+            <h3 class={styles.questionLabel}>I am a...</h3>
             <div class={styles.options}>
               <For each={BACKGROUNDS}>
                 {(opt) => (
@@ -108,8 +100,8 @@ const UserSurveyModal: Component<Props> = (props) => {
                     <span class={styles.check}>
                       <Show when={background().includes(opt.id)}>
                         <svg
-                          width="14"
-                          height="14"
+                          width="12"
+                          height="12"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -131,7 +123,7 @@ const UserSurveyModal: Component<Props> = (props) => {
           {/* Q2: Usage */}
           <div class={styles.question}>
             <h3 class={styles.questionLabel}>
-              How do you plan to use MercuryPitch?
+              I plan to use MercuryPitch for...
             </h3>
             <div class={styles.options}>
               <For each={USAGES}>
@@ -147,8 +139,8 @@ const UserSurveyModal: Component<Props> = (props) => {
                     <span class={styles.check}>
                       <Show when={usage().includes(opt.id)}>
                         <svg
-                          width="14"
-                          height="14"
+                          width="12"
+                          height="12"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -170,13 +162,13 @@ const UserSurveyModal: Component<Props> = (props) => {
           {/* Q3: Feature request */}
           <div class={styles.question}>
             <h3 class={styles.questionLabel}>
-              What feature would you most like to see? (optional)
+              What feature would you most like to see?
             </h3>
             <textarea
               class={styles.textarea}
               value={featureRequest()}
               onInput={(e) => setFeatureRequest(e.currentTarget.value)}
-              placeholder="e.g. Guitar practice mode, downloadable exercises, offline support..."
+              placeholder="e.g. Offline mode, more exercises, tablature view..."
               rows={2}
               maxLength={500}
             />
@@ -184,7 +176,11 @@ const UserSurveyModal: Component<Props> = (props) => {
         </div>
 
         <div class={styles.actions}>
-          <button class={styles.skipBtn} onClick={handleSkip} type="button">
+          <button
+            class={styles.skipBtn}
+            onClick={() => props.onClose()}
+            type="button"
+          >
             Skip
           </button>
           <button
