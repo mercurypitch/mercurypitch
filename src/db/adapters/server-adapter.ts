@@ -46,20 +46,49 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     }
   }
 
-  private async request<R>(path: string, init?: RequestInit): Promise<R> {
-    const res = await fetch(`${this.url}${path}`, {
-      ...init,
-      headers: { ...this.headers(), ...init?.headers },
-    })
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      throw new Error(
-        `ServerAdapter: ${res.status} ${res.statusText} on ${res.url}${body ? ` — ${body}` : ''}`,
-      )
+  private async request<R>(
+    path: string,
+    init?: RequestInit,
+    retries = 2,
+  ): Promise<R> {
+    const url = `${this.url}${path}`
+    const headers = { ...this.headers(), ...init?.headers }
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url, { ...init, headers })
+
+        // Retry on 5xx server errors or 429 rate limits
+        if ((res.status >= 500 || res.status === 429) && attempt < retries) {
+          const delay = Math.pow(2, attempt) * 200 + Math.random() * 100
+          await new Promise((r) => setTimeout(r, delay))
+          continue
+        }
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => '')
+          throw new Error(
+            `ServerAdapter: ${res.status} ${res.statusText} on ${url}${body ? ` — ${body}` : ''}`,
+          )
+        }
+
+        // 204 No Content for delete
+        if (res.status === 204) return undefined as R
+        return res.json() as Promise<R>
+      } catch (err) {
+        if (attempt < retries && err instanceof TypeError) {
+          // Network error (offline, DNS failure) — retry
+          const delay = Math.pow(2, attempt) * 200 + Math.random() * 100
+          await new Promise((r) => setTimeout(r, delay))
+          continue
+        }
+        throw err
+      }
     }
-    // 204 No Content for delete
-    if (res.status === 204) return undefined as R
-    return res.json() as Promise<R>
+
+    throw new Error(
+      `ServerAdapter: request failed after ${retries + 1} attempts`,
+    )
   }
 
   async findById(id: string): Promise<T | null> {

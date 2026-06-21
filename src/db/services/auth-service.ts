@@ -291,6 +291,8 @@ export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
 export function logout(): void {
   const token = getAuthToken()
   const payload = token != null ? decodeToken(token) : null
+
+  // Clear token immediately so the UI reflects signed-out state.
   // An upgraded device can't fall back to anonymous auth — remember
   // that so ensureAuth() doesn't retry a doomed handshake at startup.
   if (payload != null && payload.provider !== 'anonymous') {
@@ -298,6 +300,22 @@ export function logout(): void {
   }
   setAuthToken(null)
   tokenServerVerified = false
+
+  // Notify the server to revoke all tokens for this account.
+  // Fire-and-forget: the client is already signed out regardless.
+  if (
+    token != null &&
+    payload != null &&
+    API_BASE_URL != null &&
+    API_BASE_URL !== ''
+  ) {
+    void fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {
+      // Network failure is non-fatal
+    })
+  }
 }
 
 /** Current user + profile, or null when not authenticated. */

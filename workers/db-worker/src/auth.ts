@@ -43,6 +43,7 @@ interface UserRow {
   emailVerified: number
   passwordHash: string | null
   lastLoginAt: string | null
+  tokenVersion: number
 }
 
 const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
@@ -50,6 +51,26 @@ const PBKDF2_ITERATIONS = 100_000
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PASSWORD_MIN_LENGTH = 8
+
+function isStrongPassword(password: string): { ok: boolean; reason?: string } {
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return { ok: false, reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` }
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { ok: false, reason: 'Password must contain at least one uppercase letter' }
+  }
+  if (!/[a-z]/.test(password)) {
+    return { ok: false, reason: 'Password must contain at least one lowercase letter' }
+  }
+  if (!/[0-9]/.test(password)) {
+    return { ok: false, reason: 'Password must contain at least one digit' }
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return { ok: false, reason: 'Password must contain at least one special character' }
+  }
+  return { ok: true }
+}
 
 const encoder = new TextEncoder()
 
@@ -85,6 +106,7 @@ interface JwtPayload {
   provider: string
   iat: number
   exp: number
+  v: number
 }
 
 async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
@@ -125,6 +147,16 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   if (!header?.startsWith('Bearer ')) return null
   const payload = await verifyJwt(header.slice(7), env.JWT_SECRET)
   if (!payload) return null
+
+  // Check token version: if the user's tokenVersion in the DB is higher
+  // than the one baked into the JWT, this token was revoked (logout, etc.)
+  if (payload.v != null) {
+    const user = await env.DB.prepare('SELECT tokenVersion FROM users WHERE id = ?')
+      .bind(payload.sub)
+      .first<{ tokenVersion: number }>()
+    if (user && user.tokenVersion > payload.v) return null
+  }
+
   return { userId: payload.sub, provider: payload.provider }
 }
 
@@ -174,10 +206,13 @@ interface GoogleClaims {
 }
 
 async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<GoogleClaims | null> {
-  // tokeninfo validates signature and expiry server-side at Google.
-  const res = await fetch(
-    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
-  )
+  // Use the v3 tokeninfo endpoint (POST body, not query param — avoids
+  // token leakage in intermediate proxy/server logs).
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ id_token: idToken }),
+  })
   if (!res.ok) return null
   const claims = await res.json<GoogleClaims>()
   if (claims.aud !== clientId) return null
@@ -212,8 +247,8 @@ async function createUser(
   const now = nowIso()
   await db
     .prepare(
-      `INSERT INTO users (id, createdAt, updatedAt, authProvider, providerId, email, emailVerified, passwordHash, lastLoginAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, createdAt, updatedAt, authProvider, providerId, email, emailVerified, passwordHash, lastLoginAt, tokenVersion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     )
     .bind(
       fields.id,
@@ -265,6 +300,63 @@ function publicUser(row: UserRow): object {
   }
 }
 
+// ── Rate limiting ────────────────────────────────────────────────────
+//
+// Per-IP counters in D1 (auth_ratelimit table). Each auth endpoint has
+// its own bucket. Counters auto-expire after the window passes.
+
+interface RateLimitBucket {
+  ip: string
+  endpoint: string
+  count: number
+  windowStart: number
+}
+
+const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
+  anonymous: { max: 30, windowMs: 60_000 },   // 30/min
+  register: { max: 5, windowMs: 300_000 },     // 5/5min
+  login: { max: 10, windowMs: 300_000 },       // 10/5min
+  google: { max: 30, windowMs: 60_000 },       // 30/min
+  logout: { max: 30, windowMs: 60_000 },       // 30/min
+}
+
+async function checkRateLimit(
+  db: D1Database,
+  ip: string,
+  endpoint: string,
+): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const limit = RATE_LIMITS[endpoint]
+  if (!limit) return { allowed: true }
+
+  const now = Date.now()
+  const existing = await db
+    .prepare('SELECT count, windowStart FROM auth_ratelimit WHERE ip = ? AND endpoint = ?')
+    .bind(ip, endpoint)
+    .first<{ count: number; windowStart: number }>()
+
+  if (!existing || now - existing.windowStart > limit.windowMs) {
+    // New window — reset
+    await db
+      .prepare(
+        'INSERT OR REPLACE INTO auth_ratelimit (ip, endpoint, count, windowStart) VALUES (?, ?, 1, ?)',
+      )
+      .bind(ip, endpoint, now)
+      .run()
+    return { allowed: true }
+  }
+
+  if (existing.count >= limit.max) {
+    const retryAfter = Math.ceil((limit.windowMs - (now - existing.windowStart)) / 1000)
+    return { allowed: false, retryAfter }
+  }
+
+  await db
+    .prepare('UPDATE auth_ratelimit SET count = count + 1 WHERE ip = ? AND endpoint = ?')
+    .bind(ip, endpoint)
+    .run()
+  return { allowed: true }
+}
+
 // ── Route handlers ───────────────────────────────────────────────────
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
@@ -272,7 +364,13 @@ type Respond = (body: object | null, init?: ResponseInit) => Response
 async function createSession(env: Env, row: UserRow): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
-    { sub: row.id, provider: row.authProvider, iat: now, exp: now + TOKEN_TTL_SECONDS },
+    {
+      sub: row.id,
+      provider: row.authProvider,
+      iat: now,
+      exp: now + TOKEN_TTL_SECONDS,
+      v: row.tokenVersion ?? 1,
+    },
     env.JWT_SECRET as string,
   )
   await touchLogin(env.DB, row.id)
@@ -326,8 +424,12 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
   if (!email || !EMAIL_RE.test(email)) {
     return respond({ error: 'Valid email required' }, { status: 400 })
   }
-  if (!body.password || body.password.length < 8) {
-    return respond({ error: 'Password must be at least 8 characters' }, { status: 400 })
+  if (!body.password) {
+    return respond({ error: 'Password required' }, { status: 400 })
+  }
+  const pwdCheck = isStrongPassword(body.password)
+  if (!pwdCheck.ok) {
+    return respond({ error: pwdCheck.reason }, { status: 400 })
   }
   if (await findUserByEmail(env.DB, email)) {
     return respond({ error: 'Email already registered' }, { status: 409 })
@@ -617,6 +719,18 @@ async function handleMe(request: Request, env: Env, respond: Respond): Promise<R
   return respond({ user: publicUser(row), profile })
 }
 
+async function handleLogout(request: Request, env: Env, respond: Respond): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  // Increment token version — all previously issued JWTs become invalid
+  await env.DB.prepare(
+    'UPDATE users SET tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+  )
+    .bind(nowIso(), auth.userId)
+    .run()
+  return respond({ ok: true })
+}
+
 /** Route /api/auth/* requests. Returns null when the path doesn't match. */
 export async function handleAuth(
   request: Request,
@@ -634,6 +748,9 @@ export async function handleAuth(
   if (route === 'me' && request.method === 'GET') {
     return handleMe(request, env, respond)
   }
+  if (route === 'logout' && request.method === 'POST') {
+    return handleLogout(request, env, respond)
+  }
   if (route === 'google/start' && request.method === 'GET') {
     return handleGoogleStart(request, env, respond)
   }
@@ -642,6 +759,21 @@ export async function handleAuth(
   }
   if (request.method !== 'POST') {
     return respond({ error: 'Method not allowed' }, { status: 405 })
+  }
+
+  // Rate limiting on auth POST endpoints
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const rl = await checkRateLimit(env.DB, ip, route)
+  if (!rl.allowed) {
+    return respond(
+      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+    )
+  }
+
+  // Logout doesn't need a body
+  if (route === 'logout') {
+    return handleLogout(request, env, respond)
   }
 
   const body = await parseBody(request)

@@ -28,7 +28,11 @@ const CORS: Record<string, string> = {
 }
 
 function respond(body: object | null, init?: ResponseInit): Response {
-  const headers = { ...CORS, ...(init?.headers as Record<string, string>) }
+  const headers = {
+    ...CORS,
+    'Cache-Control': 'private, max-age=0, must-revalidate',
+    ...(init?.headers as Record<string, string>),
+  }
   const status = init?.status ?? 200
   if (body === null) return new Response(null, { ...init, headers, status })
   return new Response(JSON.stringify(body), {
