@@ -107,7 +107,12 @@ export const CrashModal: Component = () => {
 
   return (
     <Show when={error() !== null}>
-      <div class={styles.crashModalOverlay}>
+      <div
+        class={styles.crashModalOverlay}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Application error"
+      >
         <div class={styles.crashModalGlass}>
           <div class="crash-modal-content">
             <div class={styles.crashHeader}>

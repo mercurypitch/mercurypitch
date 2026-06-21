@@ -459,6 +459,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               id="btn-once"
               data-testid="btn-once"
               title="Play Once"
+              aria-label="Play Once"
               class={styles.modeBtn}
               classList={{
                 [styles.active]: props.playMode() === PLAYBACK_MODE_ONCE,
@@ -485,6 +486,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               id="btn-repeat"
               data-testid="btn-repeat"
               title="Repeat Loop"
+              aria-label="Repeat Loop"
               class={styles.modeBtn}
               classList={{
                 [styles.active]: props.playMode() === PLAYBACK_MODE_REPEAT,
@@ -515,6 +517,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 id="btn-session"
                 data-testid="btn-session"
                 title="Practice Session"
+                aria-label="Practice Session"
                 class={styles.modeBtn}
                 classList={{
                   [styles.active]: props.playMode() === PLAYBACK_MODE_SESSION,
@@ -873,6 +876,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <div
               class={[styles.labelToggleGroup, styles.inlineControl].join(' ')}
               title="Toggle note labels"
+              aria-label="Toggle note labels"
             >
               <button
                 class={styles.labelToggleBtn}
@@ -910,6 +914,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   .trim()}
                 onClick={() => props.onSaveMelody?.()}
                 title="Save melody to library"
+                aria-label="Save melody to library"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">
                   <path
@@ -935,6 +940,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 class={styles.saveMelodyBtn}
                 onClick={() => props.onShareMelody?.()}
                 title="Copy shareable link"
+                aria-label="Copy shareable link"
               >
                 <svg
                   viewBox="0 0 24 24"
