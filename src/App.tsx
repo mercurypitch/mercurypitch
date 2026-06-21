@@ -141,6 +141,7 @@ import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
+import UserSurveyModal from './components/UserSurveyModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
@@ -294,6 +295,9 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   // ── Guide Selection dialog ──────────────────────────────────
+  const [showSurvey, setShowSurvey] = createSignal(false)
+  const [surveyChecked, setSurveyChecked] = createSignal(false)
+
   const [showShortcutHelp, setShowShortcutHelp] = createSignal(false)
   const toggleShortcutHelp = () => setShowShortcutHelp((v) => !v)
 
@@ -1248,6 +1252,19 @@ const AppShell: Component<AppProps> = (props) => {
     setupRuntimeEvents()
 
     props.onMounted?.()
+  })
+
+  // Show optional survey after welcome screen is dismissed (once per user)
+  createEffect(() => {
+    if (!showWelcome() && !surveyChecked()) {
+      setSurveyChecked(true)
+      void import('@/db/services/survey-service').then(
+        ({ hasSubmittedSurvey }) =>
+          hasSubmittedSurvey().then((already) => {
+            if (!already) setShowSurvey(true)
+          }),
+      )
+    }
   })
 
   // Hash routing: state → URL syncing is handled by useHashRouter above
@@ -2279,6 +2296,10 @@ const AppShell: Component<AppProps> = (props) => {
 
         <Show when={showShortcutHelp()}>
           <KeyboardShortcutOverlay onClose={() => setShowShortcutHelp(false)} />
+        </Show>
+
+        <Show when={showSurvey()}>
+          <UserSurveyModal onClose={() => setShowSurvey(false)} />
         </Show>
       </div>
     </PlaybackProvider>

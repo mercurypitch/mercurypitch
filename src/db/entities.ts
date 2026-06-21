@@ -338,3 +338,12 @@ export interface WhisperTranscriptionRecord extends DbEntity {
   /** Number of segments for quick stats */
   segmentCount: number
 }
+
+// ── Onboarding Survey ─────────────────────────────────────────
+
+export interface UserSurveyResponse extends DbEntity {
+  userId: string
+  /** JSON: { background?: string[], usage?: string[], featureRequest?: string } */
+  answersJson: string
+  submittedAt: string
+}
