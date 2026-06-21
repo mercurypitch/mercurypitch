@@ -42,11 +42,6 @@ export * from './jam-store'
 // Session-mode state lives in practice-session-store.sessionMode().
 export const isInSessionMode = () => _sessionMode()
 
-// No-op kept for backward compat (was a presets-store init).
-export const initPresets = (): void => {}
-
-// Session presets library stubs removed — real implementations in ui-store.ts
-
 // Composer for starting a practice session — sets practice store fields together.
 export const startPracticeSession = (session: PlaybackSession): void => {
   _setPracticeSession(session)
