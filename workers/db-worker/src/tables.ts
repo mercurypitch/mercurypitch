@@ -45,4 +45,5 @@ export const TABLES: Record<string, TableDef> = {
   featureFlags: { access: 'admin', boolCols: ['value'] },
   userSettings: { access: 'user' },
   follows: { access: 'user' },
+  userSurveyResponses: { access: 'user', jsonCols: ['answersJson'] },
 }

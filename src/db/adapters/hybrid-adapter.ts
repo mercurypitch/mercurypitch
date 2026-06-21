@@ -30,6 +30,7 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   'featureFlags',
   'userSettings',
   'follows',
+  'userSurveyResponses',
 ])
 
 /**

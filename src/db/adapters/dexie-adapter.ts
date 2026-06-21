@@ -28,6 +28,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrStemBlobs: 'id, sessionId, stemType, createdAt',
   uvrStemFingerprints: 'id, sessionId, createdAt',
   uvrSessionLyrics: 'id, sessionId',
+  userSurveyResponses: 'id, userId',
   offlinePitchAnalysis: 'id, fileHash',
   whisperTranscriptions: 'id, sessionId',
   sessionGroups: 'id',

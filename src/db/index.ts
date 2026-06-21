@@ -103,4 +103,5 @@ export type {
   UvrStemFingerprint,
   UvrSessionLyrics,
   WhisperTranscriptionRecord,
+  UserSurveyResponse,
 } from './entities'
