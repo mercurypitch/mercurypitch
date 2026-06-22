@@ -1,0 +1,83 @@
+/* ── Container ─────────────────────────────────────────────── */
+.heatmap {
+  padding: 8px 0;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.35));
+}
+
+/* ── Key row ───────────────────────────────────────────────── */
+.keys {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 32px;
+  height: 46px;
+  padding: 4px 3px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  cursor: default;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.key.hasData {
+  cursor: pointer;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.key.hasData:hover {
+  transform: translateY(-2px);
+  border-color: var(--key-color, var(--accent));
+  box-shadow: 0 3px 12px
+    color-mix(in srgb, var(--key-color, var(--accent)) 20%, transparent);
+}
+
+/* ── Note name ─────────────────────────────────────────────── */
+.noteName {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary, rgba(255, 255, 255, 0.85));
+}
+
+.octave {
+  font-size: 0.55rem;
+  font-weight: 400;
+  opacity: 0.5;
+  margin-left: 1px;
+  vertical-align: super;
+}
+
+/* ── Accuracy badge ────────────────────────────────────────── */
+.accuracy {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--key-color, var(--text-muted));
+  line-height: 1;
+}
+
+/* ── Data highlight ────────────────────────────────────────── */
+.key.hasData {
+  background: color-mix(in srgb, var(--key-color) 12%, var(--bg-tertiary));
+}
+
+.key.hasData:hover {
+  background: color-mix(in srgb, var(--key-color) 20%, var(--bg-tertiary));
+}

@@ -26,6 +26,7 @@ import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
+import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 
 const PitchAlgorithmTester = lazy(async () =>
@@ -1435,6 +1436,21 @@ const AppShell: Component<AppProps> = (props) => {
                         countInBeats={() => countIn()}
                       />
                     </div>
+
+                    <PitchAccuracyHeatmap
+                      scale={() => melodyStore.currentScale()}
+                      onSeekNote={(midi, _name) => {
+                        const items = melodyStore.items()
+                        const idx = items.findIndex(
+                          (item) => item.note.midi === midi,
+                        )
+                        if (idx >= 0) {
+                          const beat = items[idx].startBeat
+                          const total = melodyTotalBeats(items)
+                          playbackRuntime.seekTo(total > 0 ? beat / total : 0)
+                        }
+                      }}
+                    />
 
                     <div id="history-container">
                       <HistoryCanvas
