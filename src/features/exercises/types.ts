@@ -16,6 +16,7 @@ export const EXERCISE_DYNAMIC_SWELL = 'dynamic-swell' as const
 export const EXERCISE_CHORD_STACKER = 'chord-stacker' as const
 export const EXERCISE_STACCATO = 'staccato-precision' as const
 export const EXERCISE_ROUTINE_RUNNER = 'routine-runner' as const
+export const EXERCISE_SIGHT_SINGING = 'sight-singing' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -34,6 +35,7 @@ export type ExerciseType =
   | typeof EXERCISE_CHORD_STACKER
   | typeof EXERCISE_STACCATO
   | typeof EXERCISE_ROUTINE_RUNNER
+  | typeof EXERCISE_SIGHT_SINGING
 
 // ── Config ──────────────────────────────────────────────────────
 
