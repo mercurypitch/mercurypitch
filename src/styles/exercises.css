@@ -1221,3 +1221,46 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Sight-Singing Staff */
+.sight-singing-staff-container {
+  overflow-x: auto;
+  padding: 12px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.sight-singing-staff {
+  display: block;
+  min-width: 300px;
+}
+
+.sight-singing-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sight-singing-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.sight-singing-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.sight-singing-progress-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

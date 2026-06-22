@@ -93,6 +93,7 @@ import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise
 import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
 import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
 import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
+import SightSingingExercise from '@/features/exercises/sight-singing/SightSingingExercise'
 import SirenExercise from '@/features/exercises/siren/SirenExercise'
 import SlideExercise from '@/features/exercises/slide/SlideExercise'
 import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
@@ -1825,6 +1826,14 @@ const AppShell: Component<AppProps> = (props) => {
                       </Show>
                       <Show when={selectedExercise() === 'routine-runner'}>
                         <RoutineRunnerExercise
+                          audioEngine={audioEngine}
+                          practiceEngine={practiceEngine}
+                          onBack={clearExercise}
+                          autoStart={autoStartExercise()}
+                        />
+                      </Show>
+                      <Show when={selectedExercise() === 'sight-singing'}>
+                        <SightSingingExercise
                           audioEngine={audioEngine}
                           practiceEngine={practiceEngine}
                           onBack={clearExercise}

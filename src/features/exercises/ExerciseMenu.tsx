@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
-import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -163,6 +163,15 @@ const CARDS: ExerciseCardDef[] = [
       'Complete a full warm-up sequence: scales, arpeggios, and cool-down in one guided flow.',
     icon: () => <IconList size={28} />,
     tags: ['Warm-up', 'Endurance'],
+    available: true,
+  },
+  {
+    type: EXERCISE_SIGHT_SINGING,
+    title: 'Sight-Singing',
+    description:
+      'Read notes from a musical staff and sing them — no audio preview. Train your sight-reading.',
+    icon: () => <IconMusic size={28} />,
+    tags: ['Reading', 'Accuracy'],
     available: true,
   },
 ]
