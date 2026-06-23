@@ -253,3 +253,16 @@ CREATE TABLE IF NOT EXISTS follows (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_follows_pair ON follows(userId, followedUserId);
 CREATE INDEX IF NOT EXISTS idx_follows_userId ON follows(userId);
+
+-- ── Auth rate limiting ───────────────────────────────────────────────
+-- Per-IP, per-endpoint counters for the auth POST endpoints (see auth.ts).
+-- The PRIMARY KEY (ip, endpoint) is the conflict target for the atomic
+-- upsert in checkRateLimit(). Counters are short-lived (reset once the
+-- window elapses); rows are harmless if they linger.
+CREATE TABLE IF NOT EXISTS auth_ratelimit (
+  ip TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  windowStart INTEGER NOT NULL,
+  PRIMARY KEY (ip, endpoint)
+);

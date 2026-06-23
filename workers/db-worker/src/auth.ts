@@ -48,6 +48,10 @@ interface UserRow {
 
 const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 const PBKDF2_ITERATIONS = 100_000
+// Syntactically-valid PBKDF2 hash that never matches a real password. Used to
+// keep login timing constant when the email is unknown, defeating user
+// enumeration via response timing.
+const DUMMY_PASSWORD_HASH = `pbkdf2$${PBKDF2_ITERATIONS}$${'A'.repeat(22)}$${'A'.repeat(43)}`
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -148,14 +152,15 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   const payload = await verifyJwt(header.slice(7), env.JWT_SECRET)
   if (!payload) return null
 
-  // Check token version: if the user's tokenVersion in the DB is higher
-  // than the one baked into the JWT, this token was revoked (logout, etc.)
-  if (payload.v != null) {
-    const user = await env.DB.prepare('SELECT tokenVersion FROM users WHERE id = ?')
-      .bind(payload.sub)
-      .first<{ tokenVersion: number }>()
-    if (user && user.tokenVersion > payload.v) return null
-  }
+  // Fail closed: the user must still exist, and a token whose version is below
+  // the stored tokenVersion was revoked (logout, etc.). A missing `v` claim is
+  // treated as version 0 so a single tokenVersion bump also revokes legacy
+  // tokens.
+  const user = await env.DB.prepare('SELECT tokenVersion FROM users WHERE id = ?')
+    .bind(payload.sub)
+    .first<{ tokenVersion: number }>()
+  if (!user) return null
+  if (user.tokenVersion > (payload.v ?? 0)) return null
 
   return { userId: payload.sub, provider: payload.provider }
 }
@@ -329,31 +334,24 @@ async function checkRateLimit(
   if (!limit) return { allowed: true }
 
   const now = Date.now()
-  const existing = await db
-    .prepare('SELECT count, windowStart FROM auth_ratelimit WHERE ip = ? AND endpoint = ?')
-    .bind(ip, endpoint)
+  // Atomic upsert: start a fresh window when the previous one has elapsed,
+  // otherwise increment. Doing it in a single statement avoids the
+  // read-then-write race where concurrent requests both pass the check.
+  const row = await db
+    .prepare(
+      `INSERT INTO auth_ratelimit (ip, endpoint, count, windowStart) VALUES (?, ?, 1, ?)
+       ON CONFLICT(ip, endpoint) DO UPDATE SET
+         count = CASE WHEN ? - windowStart >= ? THEN 1 ELSE count + 1 END,
+         windowStart = CASE WHEN ? - windowStart >= ? THEN ? ELSE windowStart END
+       RETURNING count, windowStart`,
+    )
+    .bind(ip, endpoint, now, now, limit.windowMs, now, limit.windowMs, now)
     .first<{ count: number; windowStart: number }>()
 
-  if (!existing || now - existing.windowStart > limit.windowMs) {
-    // New window — reset
-    await db
-      .prepare(
-        'INSERT OR REPLACE INTO auth_ratelimit (ip, endpoint, count, windowStart) VALUES (?, ?, 1, ?)',
-      )
-      .bind(ip, endpoint, now)
-      .run()
-    return { allowed: true }
-  }
-
-  if (existing.count >= limit.max) {
-    const retryAfter = Math.ceil((limit.windowMs - (now - existing.windowStart)) / 1000)
+  if (row && row.count > limit.max) {
+    const retryAfter = Math.ceil((limit.windowMs - (now - row.windowStart)) / 1000)
     return { allowed: false, retryAfter }
   }
-
-  await db
-    .prepare('UPDATE auth_ratelimit SET count = count + 1 WHERE ip = ? AND endpoint = ?')
-    .bind(ip, endpoint)
-    .run()
   return { allowed: true }
 }
 
@@ -465,7 +463,13 @@ async function handleLogin(body: AuthBody, env: Env, respond: Respond): Promise<
     return respond({ error: 'Email and password required' }, { status: 400 })
   }
   const row = await findUserByEmail(env.DB, email)
-  if (!row?.passwordHash || !(await verifyPassword(body.password, row.passwordHash))) {
+  // Always run a PBKDF2 verification — even when the user/hash is absent — so
+  // the response time doesn't reveal whether the email is registered.
+  const ok = await verifyPassword(
+    body.password,
+    row?.passwordHash ?? DUMMY_PASSWORD_HASH,
+  )
+  if (!row?.passwordHash || !ok) {
     return respond({ error: 'Invalid email or password' }, { status: 401 })
   }
   return issueSession(env, row, respond)
