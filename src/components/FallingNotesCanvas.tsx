@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { onCleanup, onMount } from 'solid-js'
+import { createMemo, onCleanup, onMount } from 'solid-js'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
 
@@ -140,6 +140,22 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   let animFrameId: number | null = null
   const particles: Particle[] = []
 
+  // MIDI range of the loaded song. Memoized so the keyboard-layout math runs
+  // once per song (when songNotes changes) instead of ~60x/second in draw(),
+  // and in a single pass instead of two array spreads. Shared by all three
+  // call sites (hit-test, particles, draw).
+  const midiRange = createMemo<{ min: number; max: number }>(() => {
+    const notes = props.songNotes()
+    if (notes.length === 0) return { min: 60, max: 72 }
+    let min = Infinity
+    let max = -Infinity
+    for (const n of notes) {
+      if (n.midi < min) min = n.midi
+      if (n.midi > max) max = n.midi
+    }
+    return { min, max }
+  })
+
   let lastHitCount = 0
   let clickedKey: number | null = null
   let pointerDownX = 0
@@ -161,8 +177,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     const notes = props.songNotes()
     if (notes.length === 0) return null
 
-    const minMidi = Math.min(...notes.map((n) => n.midi))
-    const maxMidi = Math.max(...notes.map((n) => n.midi))
+    const { min: minMidi, max: maxMidi } = midiRange()
     const minWhiteLocal = midiToWhiteIndex(minMidi)
     const maxWhiteLocal = midiToWhiteIndex(maxMidi)
     const rangeWhiteLocal = maxWhiteLocal - minWhiteLocal + 1
@@ -358,8 +373,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
       const activeNotes = props.songNotes()
       if (activeNotes.length === 0) continue
-      const pMinMidi = Math.min(...activeNotes.map((n) => n.midi))
-      const pMaxMidi = Math.max(...activeNotes.map((n) => n.midi))
+      const { min: pMinMidi, max: pMaxMidi } = midiRange()
       const pMinWhite = midiToWhiteIndex(pMinMidi)
       const pMaxWhite = midiToWhiteIndex(pMaxMidi)
       const pRange = pMaxWhite - pMinWhite + 1
@@ -462,8 +476,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     const noteAreaH = jLineY
 
     // Compute column layout with minimum visible range for good scaling
-    const minMidi = Math.min(...notes.map((n) => n.midi))
-    const maxMidi = Math.max(...notes.map((n) => n.midi))
+    const { min: minMidi, max: maxMidi } = midiRange()
     const minWhite = midiToWhiteIndex(minMidi)
     const maxWhite = midiToWhiteIndex(maxMidi)
     const rangeWhite = maxWhite - minWhite + 1
@@ -487,6 +500,11 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     ctx.rect(0, 0, w, kbTop)
     ctx.clip()
 
+    // Index judgments by note id once per frame (avoids an O(n^2) find per note).
+    const judgmentById = new Map(
+      props.hitResults().map((r) => [r.itemIndex, r] as const),
+    )
+
     // Draw notes
     for (const note of notes) {
       const endBeat = note.startBeat + note.duration
@@ -501,8 +519,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       const xOffset = (colWidth - wNote) / 2
 
       // Determine if note has been judged
-      const results = props.hitResults()
-      const judgment = results.find((r) => r.itemIndex === note.id)
+      const judgment = judgmentById.get(note.id)
       const isJudged = judgment !== undefined
       const wasMiss = judgment?.timing === 'miss'
       const wasHit = isJudged && !wasMiss
