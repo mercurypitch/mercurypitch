@@ -1,5 +1,6 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace } from '@cloudflare/workers-types'
+import { verifyBearer } from './lib/verify-jwt'
 import { handleShareRequest } from './share-handler'
 
 export { ContainerProxy }
@@ -14,6 +15,10 @@ export interface Env {
   UVR_SERVICE: { getByName(name: string): unknown }
   ASSETS: { fetch(req: Request): Promise<Response> }
   SHARE_STORE: KVNamespace
+  /** HMAC secret for verifying app JWTs (same value the db-worker signs with).
+   *  `wrangler secret put JWT_SECRET` per env. When unset, the UVR write gate
+   *  rejects all non-GET /api/uvr/* requests. */
+  JWT_SECRET?: string
 }
 
 export default {
@@ -25,6 +30,21 @@ export default {
 
     // Proxy UVR API requests to the Docker container
     if (url.pathname.startsWith('/api/uvr/')) {
+      // Gate state-changing / expensive operations (process, delete-session)
+      // behind a valid app JWT; reads (models/status/output) stay open so
+      // <audio> playback and status polling keep working without auth headers.
+      // Signature + expiry only (no DB lookup) — enough to stop anonymous
+      // compute abuse and arbitrary session deletion.
+      if (method !== 'GET' && method !== 'OPTIONS') {
+        const auth = await verifyBearer(request, env.JWT_SECRET)
+        if (!auth) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+      }
+
       const stripped = url.pathname.replace(/^\/api\/uvr/, '')
       console.log(`[worker] proxying /api/uvr${stripped} → container`)
 

@@ -3,8 +3,22 @@
 // ============================================================
 
 import { z } from 'zod/v4'
+import { getAuthToken } from '@/db/services/user-service'
 
 const API_BASE = '/api/uvr'
+
+/**
+ * Authorization header for state-changing UVR calls. The production worker
+ * gates non-GET /api/uvr/* behind a valid app JWT (see src/worker.ts); GET
+ * reads stay open. An anonymous token is available after startup (ensureAuth),
+ * so this is populated for every user, signed-in or not.
+ */
+function authHeaders(): Record<string, string> {
+  const token = getAuthToken()
+  return token !== null && token !== ''
+    ? { Authorization: `Bearer ${token}` }
+    : {}
+}
 
 /**
  * Processing request parameters
@@ -170,6 +184,7 @@ export async function processAudio(
 
   const response = await fetch(`${API_BASE}/process`, {
     method: 'POST',
+    headers: authHeaders(),
     body: formData,
   })
 
@@ -212,6 +227,7 @@ export async function deleteSession(
 ): Promise<{ status: string; message: string }> {
   const response = await fetch(`${API_BASE}/session/${sessionId}`, {
     method: 'DELETE',
+    headers: authHeaders(),
   })
   if (!response.ok) {
     throw new Error(`Failed to delete session: ${response.statusText}`)

@@ -604,5 +604,7 @@ if __name__ == "__main__":
         "api:app",
         host=os.getenv("UVR_API_HOST", "0.0.0.0"),
         port=int(os.getenv("UVR_API_PORT", "8080")),
-        reload=True
+        # Auto-reload is a dev-only convenience; never run the file-watcher in
+        # production. Opt in with UVR_DEV=1.
+        reload=os.getenv("UVR_DEV") == "1",
     )
