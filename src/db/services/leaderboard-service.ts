@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserProfile, } from '@/db/entities'
+import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, SessionRecord, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { getAuthHeaders } from '@/db/services/user-service'
@@ -30,122 +30,59 @@ export interface LeaderboardUserView {
   accuracy: number
 }
 
-export interface LeaderboardUpdateInput {
-  score: number
-  bestScore: number
-  accuracy: number
-}
-
 /**
- * Record a result on the leaderboard: upserts BOTH the all-time and the
- * weekly row. A weekly row last touched before the current ISO week is
- * stale — its counters restart instead of averaging in old data (the
- * server filters stale weekly rows out of reads anyway).
+ * Local-mode leaderboard, DERIVED from sessionRecords (mirrors the worker's
+ * server-side derivation). The leaderboardEntries table is no longer written
+ * by the client — scores are aggregated from recorded sessions so they can't
+ * be self-reported. Cloud mode uses the worker endpoint (loadLeaderboardPage).
  */
-export async function updateLeaderboardEntry(
-  input: LeaderboardUpdateInput,
-  category: LeaderboardCategory = 'overall',
-): Promise<void> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
-    const userId = getUserId()
-    const streak = await getCurrentStreak()
-
-    // Prefer the profile display name (cloud row id == userId);
-    // fall back to a generated handle.
-    const profile = await db
-      .getRepository<UserProfile>('userProfiles')
-      .findById(userId)
-    const profileName = profile?.displayName.trim() ?? ''
-    const displayName =
-      profileName !== '' ? profileName : `Singer-${userId.slice(0, 6)}`
-
-    const weekStart = weekStartIso()
-    for (const period of ['all-time', 'weekly'] as LeaderboardPeriod[]) {
-      const existing = await repo.findAll({
-        where: { userId, category, period },
-      })
-      const entry = existing[0]
-      const stale =
-        period === 'weekly' && entry != null && entry.updatedAt < weekStart
-
-      if (entry != null && !stale) {
-        entry.score = Math.round((entry.score + input.score) / 2)
-        entry.bestScore = Math.max(entry.bestScore, input.bestScore)
-        entry.accuracy = Math.round((entry.accuracy + input.accuracy) / 2)
-        entry.totalSessions += 1
-        entry.streak = streak
-        await repo.update(entry.id, entry)
-      } else if (entry != null && stale) {
-        await repo.update(entry.id, {
-          displayName,
-          score: input.score,
-          bestScore: input.bestScore,
-          accuracy: input.accuracy,
-          totalSessions: 1,
-          streak,
-        })
-      } else {
-        // Stored rank is only a seed value — reads recompute ranks
-        // from current scores.
-        const rank = (await repo.count({ where: { category, period } })) + 1
-        await repo.create({
-          userId,
-          displayName,
-          category,
-          period,
-          rank,
-          score: input.score,
-          streak,
-          totalSessions: 1,
-          bestScore: input.bestScore,
-          accuracy: input.accuracy,
-        })
-      }
-    }
-  } catch {
-    // Silently fail — leaderboard is non-critical
-  }
-}
-
 export async function loadLeaderboard(
   category: LeaderboardCategory = 'overall',
   period: LeaderboardPeriod = 'all-time',
 ): Promise<LeaderboardUserView[]> {
   try {
     const db = await getDb()
-    const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
-    let entries = await repo.findAll({
-      where: { category, period },
-      orderBy: 'rank',
-    })
-    if (period === 'weekly') {
-      // Weekly rows from previous weeks are stale (the server filters
-      // them too) — only this ISO week counts.
-      const weekStart = weekStartIso()
-      entries = entries.filter((e) => e.updatedAt >= weekStart)
+    const sessions = await db
+      .getRepository<SessionRecord>('sessionRecords')
+      .findAll({})
+    const weekStart = weekStartIso()
+    const rows =
+      period === 'weekly'
+        ? sessions.filter((s) => s.endedAt >= weekStart)
+        : sessions
+
+    // Aggregate per user (avg score/accuracy, max best, session count).
+    const byUser = new Map<string, SessionRecord[]>()
+    for (const s of rows) {
+      const list = byUser.get(s.userId) ?? []
+      list.push(s)
+      byUser.set(s.userId, list)
     }
 
-    // Group by userId (one entry per user per category)
-    const seen = new Set<string>()
+    const profileRepo = db.getRepository<UserProfile>('userProfiles')
+    const selfId = getUserId()
+    const selfStreak = await getCurrentStreak()
+    const avg = (ns: number[]): number =>
+      ns.length > 0 ? ns.reduce((a, b) => a + b, 0) / ns.length : 0
+
     const users: LeaderboardUserView[] = []
-    for (const e of entries) {
-      if (seen.has(e.userId)) continue
-      seen.add(e.userId)
+    for (const [userId, recs] of byUser) {
+      const profile = await profileRepo.findById(userId)
+      const name = profile?.displayName.trim() ?? ''
       users.push({
-        userId: e.userId,
-        displayName: e.displayName,
-        score: e.score,
-        rank: e.rank,
-        streak: e.streak,
-        totalSessions: e.totalSessions,
-        bestScore: e.bestScore,
-        accuracy: e.accuracy,
+        userId,
+        displayName: name !== '' ? name : `Singer-${userId.slice(0, 6)}`,
+        score: Math.round(avg(recs.map((r) => r.score))),
+        bestScore: Math.round(Math.max(...recs.map((r) => r.score))),
+        accuracy: Math.round(avg(recs.map((r) => r.accuracy))),
+        totalSessions: recs.length,
+        // Local mode is effectively single-user; the signed-in user's streak
+        // comes from their profile, others (seed rows) report 0.
+        streak: userId === selfId ? selfStreak : 0,
+        rank: 0,
       })
     }
-    // Stored ranks go stale as scores change — recompute from the
-    // category's sort key so positions always reflect current data.
+
     const sortKey = (u: LeaderboardUserView): number => {
       switch (category) {
         case 'best-score':

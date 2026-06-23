@@ -1,4 +1,3 @@
-import { updateLeaderboardEntry } from '@/db/services/leaderboard-service'
 import { updatePracticeStreak } from '@/db/services/streak-service'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
@@ -39,13 +38,10 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type)
 
-  // Fire-and-forget: update streak and leaderboard in the background
+  // Fire-and-forget: keep the local practice streak current. Leaderboard
+  // standings are now derived server-side from sessionRecords, so exercises
+  // no longer post leaderboard entries.
   void updatePracticeStreak()
-  void updateLeaderboardEntry({
-    score: entry.score,
-    bestScore: entry.score,
-    accuracy: entry.metrics.avgAccuracy ?? entry.score,
-  })
 }
 
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
