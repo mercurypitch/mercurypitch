@@ -16,7 +16,7 @@ vi.mock('@/db', () => ({
 
 import type { ChallengeDefinition, UserProfile } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, saveChallengeProgress, } from '@/db/services/challenges-service'
-import { loadCurrentUserEntry, loadLeaderboard, updateLeaderboardEntry, } from '@/db/services/leaderboard-service'
+import { loadCurrentUserEntry, loadLeaderboard, } from '@/db/services/leaderboard-service'
 import { loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, } from '@/db/services/share-service'
 import { getUserId } from '@/db/services/user-service'
 
@@ -24,11 +24,34 @@ beforeEach(async () => {
   await adapter.destroy()
 })
 
+const nowIso = (): string => new Date().toISOString()
+
+/** Seed a sessionRecords row — the leaderboard is now derived from these. */
+function seedSession(
+  userId: string,
+  score: number,
+  accuracy: number,
+  endedAt: string = nowIso(),
+): Promise<unknown> {
+  return adapter.getRepository('sessionRecords').create({
+    userId,
+    melodyName: 'm',
+    startedAt: endedAt,
+    endedAt,
+    score,
+    accuracy,
+    notesHit: 0,
+    notesTotal: 0,
+    streak: 0,
+    results: [],
+  } as never)
+}
+
 // ── Leaderboard ─────────────────────────────────────────────────
 
 describe('leaderboard flows', () => {
-  it('creates an entry on first practice result', async () => {
-    await updateLeaderboardEntry({ score: 80, bestScore: 80, accuracy: 90 })
+  it('derives an entry from a recorded session', async () => {
+    await seedSession(getUserId(), 80, 90)
 
     const entry = await loadCurrentUserEntry()
     expect(entry).not.toBeNull()
@@ -37,43 +60,20 @@ describe('leaderboard flows', () => {
     expect(entry?.totalSessions).toBe(1)
   })
 
-  it('merges subsequent results into the existing entry', async () => {
-    await updateLeaderboardEntry({ score: 80, bestScore: 80, accuracy: 90 })
-    await updateLeaderboardEntry({ score: 90, bestScore: 90, accuracy: 70 })
+  it('aggregates multiple sessions (avg score/accuracy, max best)', async () => {
+    await seedSession(getUserId(), 80, 90)
+    await seedSession(getUserId(), 90, 70)
 
     const entry = await loadCurrentUserEntry()
-    expect(entry?.score).toBe(85) // running average
+    expect(entry?.score).toBe(85) // avg(80, 90)
     expect(entry?.bestScore).toBe(90) // max
-    expect(entry?.accuracy).toBe(80) // running average
+    expect(entry?.accuracy).toBe(80) // avg(90, 70)
     expect(entry?.totalSessions).toBe(2)
   })
 
-  it('recomputes ranks from current scores on load', async () => {
-    const repo = adapter.getRepository('leaderboardEntries')
-    const base = {
-      category: 'overall',
-      period: 'all-time',
-      streak: 0,
-      totalSessions: 1,
-      accuracy: 50,
-    }
-    // Stored ranks are intentionally stale/wrong
-    await repo.create({
-      ...base,
-      userId: 'low',
-      displayName: 'Low',
-      rank: 1,
-      score: 10,
-      bestScore: 10,
-    } as never)
-    await repo.create({
-      ...base,
-      userId: 'high',
-      displayName: 'High',
-      rank: 2,
-      score: 99,
-      bestScore: 99,
-    } as never)
+  it('ranks users by their derived score', async () => {
+    await seedSession('low', 10, 50)
+    await seedSession('high', 99, 50)
 
     const users = await loadLeaderboard('overall', 'all-time')
     expect(users.map((u) => u.userId)).toEqual(['high', 'low'])
@@ -81,28 +81,8 @@ describe('leaderboard flows', () => {
   })
 
   it('ranks by the category-specific metric', async () => {
-    const repo = adapter.getRepository('leaderboardEntries')
-    const base = { category: 'accuracy', period: 'all-time', streak: 0 }
-    await repo.create({
-      ...base,
-      userId: 'a',
-      displayName: 'A',
-      rank: 1,
-      score: 99,
-      bestScore: 99,
-      accuracy: 50,
-      totalSessions: 1,
-    } as never)
-    await repo.create({
-      ...base,
-      userId: 'b',
-      displayName: 'B',
-      rank: 2,
-      score: 10,
-      bestScore: 10,
-      accuracy: 95,
-      totalSessions: 1,
-    } as never)
+    await seedSession('a', 99, 50)
+    await seedSession('b', 10, 95)
 
     const users = await loadLeaderboard('accuracy', 'all-time')
     // 'b' wins on accuracy despite the lower score
@@ -256,51 +236,25 @@ describe('streak flow', () => {
   })
 })
 
-// ── Weekly leaderboard rows ─────────────────────────────────────
+// ── Weekly leaderboard window ───────────────────────────────────
 
 describe('weekly leaderboard', () => {
-  it('writes an all-time AND a weekly row per result', async () => {
-    await updateLeaderboardEntry({ score: 80, bestScore: 80, accuracy: 90 })
+  it('excludes sessions from before this ISO week; all-time keeps them', async () => {
+    const tenDaysAgo = new Date(
+      Date.now() - 10 * 24 * 60 * 60 * 1000,
+    ).toISOString()
+    await seedSession(getUserId(), 70, 70, tenDaysAgo)
 
-    const repo = adapter.getRepository('leaderboardEntries')
-    const rows = (await repo.findAll()) as unknown as Array<{
-      period: string
-    }>
-    expect(rows.map((r) => r.period).sort()).toEqual(['all-time', 'weekly'])
+    expect(await loadLeaderboard('overall', 'weekly')).toHaveLength(0)
+    expect(await loadLeaderboard('overall', 'all-time')).toHaveLength(1)
   })
 
-  it('resets a stale weekly row instead of averaging into it', async () => {
-    // Record a result 10 days ago (previous ISO week) — the in-memory
-    // adapter stamps updatedAt itself, so we shift the clock instead.
-    vi.useFakeTimers()
-    vi.setSystemTime(Date.now() - 10 * 24 * 60 * 60 * 1000)
-    await updateLeaderboardEntry({ score: 40, bestScore: 40, accuracy: 40 })
-    vi.useRealTimers()
+  it('includes a session recorded this week', async () => {
+    await seedSession(getUserId(), 80, 80)
 
-    await updateLeaderboardEntry({ score: 90, bestScore: 90, accuracy: 90 })
-
-    const repo = adapter.getRepository('leaderboardEntries')
-    const weekly = (await repo.findAll({
-      where: { period: 'weekly' },
-    })) as unknown as Array<{ score: number; totalSessions: number }>
+    const weekly = await loadLeaderboard('overall', 'weekly')
     expect(weekly).toHaveLength(1)
-    expect(weekly[0].score).toBe(90) // reset, not (40+90)/2
-    expect(weekly[0].totalSessions).toBe(1)
-
-    const allTime = (await repo.findAll({
-      where: { period: 'all-time' },
-    })) as unknown as Array<{ totalSessions: number }>
-    expect(allTime[0].totalSessions).toBe(2) // all-time keeps accumulating
-  })
-
-  it('filters stale weekly rows out of loadLeaderboard', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(Date.now() - 10 * 24 * 60 * 60 * 1000)
-    await updateLeaderboardEntry({ score: 70, bestScore: 70, accuracy: 70 })
-    vi.useRealTimers()
-
-    const board = await loadLeaderboard('overall', 'weekly')
-    expect(board).toHaveLength(0)
+    expect(weekly[0].score).toBe(80)
   })
 })
 
