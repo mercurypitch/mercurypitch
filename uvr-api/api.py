@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import shutil
 import os
+import re
 import uuid
 import logging
 import time
@@ -77,6 +78,25 @@ UPLOAD_DIR = "/app/uploads"
 # Create directories
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Session ids are server-generated UUID4s (see /process). Any client-supplied
+# session id must be validated before it touches a filesystem path, so a
+# crafted id/path cannot escape OUTPUT_DIR / UPLOAD_DIR (path traversal).
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
+)
+
+
+def _safe_session_dir(base_dir: str, session_id: str) -> str:
+    """Validate session_id and return its sandbox directory under base_dir.
+
+    Raises HTTPException(400) for a malformed id. The returned path is the
+    realpath of base_dir/session_id; callers that join further untrusted
+    segments must re-check containment with os.path.commonpath.
+    """
+    if not _UUID_RE.match(session_id):
+        raise HTTPException(status_code=400, detail="Invalid session id")
+    return os.path.realpath(os.path.join(base_dir, session_id))
 
 # ── Progress tracking ──────────────────────────────────────────
 
@@ -217,7 +237,7 @@ async def list_models():
         raise HTTPException(status_code=500, detail="Failed to fetch models from CLI")
     except Exception as e:
         logger.error(f"Error parsing models: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to list models")
 
 # @app.get("/models")
 # async def list_models():
@@ -481,13 +501,20 @@ async def get_status(session_id: str):
 @app.get("/output/{session_id}/{path:path}")
 async def get_output_file(session_id: str, path: str):
     """Serve processed output file"""
-    file_path = os.path.join(OUTPUT_DIR, session_id, path)
-
-    if not os.path.exists(file_path):
+    # `{path:path}` captures '/' and '..', so without a containment check a
+    # crafted path (e.g. ../../../../etc/passwd) would escape OUTPUT_DIR and
+    # be streamed back. Validate the id, then confine the resolved target to
+    # the session sandbox.
+    session_dir = _safe_session_dir(OUTPUT_DIR, session_id)
+    target = os.path.realpath(os.path.join(session_dir, path))
+    if (
+        os.path.commonpath([session_dir, target]) != session_dir
+        or not os.path.isfile(target)
+    ):
         raise HTTPException(status_code=404, detail="File not found")
 
     # Determine media type
-    ext = os.path.splitext(path)[1].lower()
+    ext = os.path.splitext(target)[1].lower()
     media_types = {
         ".wav": "audio/wav",
         ".mp3": "audio/mpeg",
@@ -496,17 +523,19 @@ async def get_output_file(session_id: str, path: str):
     media_type = media_types.get(ext, "application/octet-stream")
 
     return FileResponse(
-        file_path,
+        target,
         media_type=media_type,
-        filename=path
+        filename=os.path.basename(target),
     )
 
 
 @app.delete("/session/{session_id}")
 async def delete_session(session_id: str):
     """Delete a session and its files"""
-    session_output_dir = os.path.join(OUTPUT_DIR, session_id)
-    session_upload_dir = os.path.join(UPLOAD_DIR, session_id)
+    # Validate the id before any rmtree so a crafted id cannot remove a
+    # directory outside the OUTPUT_DIR / UPLOAD_DIR sandboxes.
+    session_output_dir = _safe_session_dir(OUTPUT_DIR, session_id)
+    session_upload_dir = _safe_session_dir(UPLOAD_DIR, session_id)
 
     try:
         if os.path.exists(session_output_dir):
@@ -517,7 +546,7 @@ async def delete_session(session_id: str):
         return {"status": "success", "message": f"Session {session_id} deleted"}
     except Exception as e:
         logger.error(f"Failed to delete session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to delete session")
 
 
 @app.get("/")
