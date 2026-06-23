@@ -66,8 +66,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  /* 24px minimum hit target (WCAG 2.2 — 2.5.8) */
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 3px;
   background: transparent;
