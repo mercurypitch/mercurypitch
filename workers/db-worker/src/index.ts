@@ -403,24 +403,25 @@ async function handleDelete(
   return respond(null, { status: 204 })
 }
 
-// ── Leaderboard view (server-side ranking) ───────────────────────────
+// ── Leaderboard view (server-DERIVED ranking) ────────────────────────
 //
 // GET /api/leaderboard?category=&period=&view=&limit=&offset=
 //   category: overall | best-score | accuracy | streak | sessions
-//   period:   all-time | weekly   (weekly = rows touched this ISO week)
+//   period:   all-time | weekly   (weekly = sessions ended this ISO week)
 //   view:     global | friends    (friends needs auth: follows + self)
 //
-// Ranks are computed here from the current metric — the `rank` column
-// on leaderboardEntries is only a write-time seed and goes stale.
-// Returns { entries: [...], total } for pagination ("Load More").
+// The leaderboard is DERIVED from sessionRecords (singing practice) and is no
+// longer a client-writable table, so scores/streaks cannot be forged: the
+// worker aggregates per user (avg/max/count) and computes the consecutive-day
+// streak in JS from distinct practice days. Returns { entries, total }.
 
-const LEADERBOARD_METRICS: Record<string, string> = {
-  overall: 'score',
-  'best-score': 'bestScore',
-  accuracy: 'accuracy',
-  streak: 'streak',
-  sessions: 'totalSessions',
-}
+const LEADERBOARD_CATEGORIES = new Set([
+  'overall',
+  'best-score',
+  'accuracy',
+  'streak',
+  'sessions',
+])
 
 /** ISO-week start (Monday 00:00 UTC) for "weekly" filtering. */
 function weekStartIso(): string {
@@ -433,13 +434,49 @@ function weekStartIso(): string {
   return monday.toISOString()
 }
 
+/** UTC YYYY-MM-DD, `offsetDays` from today. */
+function utcDay(offsetDays: number): string {
+  return new Date(Date.now() + offsetDays * 86_400_000)
+    .toISOString()
+    .slice(0, 10)
+}
+
+/** Current consecutive-day streak (ending today or yesterday) from a set of
+ *  practice days — mirrors the client's streak semantics. */
+function streakFromDays(days: Set<string>): number {
+  let cursor = utcDay(0)
+  if (!days.has(cursor)) {
+    cursor = utcDay(-1)
+    if (!days.has(cursor)) return 0
+  }
+  let streak = 0
+  let t = new Date(`${cursor}T00:00:00.000Z`).getTime()
+  while (days.has(new Date(t).toISOString().slice(0, 10))) {
+    streak++
+    t -= 86_400_000
+  }
+  return streak
+}
+
+interface AggRow {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  score: number
+  bestScore: number
+  accuracy: number
+  totalSessions: number
+}
+
 async function handleLeaderboard(
   url: URL,
   auth: AuthUser | null,
   env: Env,
 ): Promise<Response> {
-  const metric = LEADERBOARD_METRICS[url.searchParams.get('category') ?? 'overall']
-  if (!metric) return respond({ error: 'Unknown category' }, { status: 400 })
+  const category = url.searchParams.get('category') ?? 'overall'
+  if (!LEADERBOARD_CATEGORIES.has(category)) {
+    return respond({ error: 'Unknown category' }, { status: 400 })
+  }
   const period = url.searchParams.get('period') ?? 'all-time'
   if (period !== 'all-time' && period !== 'weekly') {
     return respond({ error: 'Unknown period' }, { status: 400 })
@@ -459,36 +496,88 @@ async function handleLeaderboard(
   const offsetRaw = Number(url.searchParams.get('offset'))
   const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
 
-  const clauses = ['"period" = ?']
-  const binds: SqlValue[] = [period]
+  // Shared filters on sessionRecords.
+  const clauses: string[] = []
+  const binds: SqlValue[] = []
   if (period === 'weekly') {
-    clauses.push('"updatedAt" >= ?')
+    clauses.push('s."endedAt" >= ?')
     binds.push(weekStartIso())
   }
   if (view === 'friends') {
     clauses.push(
-      '("userId" = ? OR "userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
+      '(s."userId" = ? OR s."userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
     )
     binds.push((auth as AuthUser).userId, (auth as AuthUser).userId)
   }
-  const where = ` WHERE ${clauses.join(' AND ')}`
+  const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
-  const totalRow = await env.DB.prepare(
-    `SELECT COUNT(*) AS count FROM "leaderboardEntries"${where}`,
+  // Per-user aggregates; displayName/avatar from the public profile.
+  const { results: aggRows } = await env.DB.prepare(
+    `SELECT s."userId" AS userId,
+            COALESCE(p."displayName", 'Singer-' || substr(s."userId", 1, 6)) AS displayName,
+            p."avatarUrl" AS avatarUrl,
+            AVG(s."score") AS score,
+            MAX(s."score") AS bestScore,
+            AVG(s."accuracy") AS accuracy,
+            COUNT(*) AS totalSessions
+     FROM "sessionRecords" s
+     LEFT JOIN "userProfiles" p ON p."id" = s."userId"${where}
+     GROUP BY s."userId"`,
   )
     .bind(...binds)
-    .first<{ count: number }>()
+    .all<AggRow>()
 
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM "leaderboardEntries"${where} ORDER BY "${metric}" DESC, "updatedAt" ASC LIMIT ? OFFSET ?`,
+  // Distinct practice days per user → consecutive-day streak (computed in JS).
+  const { results: dayRows } = await env.DB.prepare(
+    `SELECT s."userId" AS userId, substr(s."endedAt", 1, 10) AS day
+     FROM "sessionRecords" s${where}
+     GROUP BY s."userId", day`,
   )
-    .bind(...binds, limit, offset)
-    .all<Row>()
+    .bind(...binds)
+    .all<{ userId: string; day: string }>()
 
-  return respond({
-    total: totalRow?.count ?? 0,
-    entries: results.map((row, i) => ({ ...row, rank: offset + i + 1 })),
-  })
+  const daysByUser = new Map<string, Set<string>>()
+  for (const r of dayRows) {
+    const set = daysByUser.get(r.userId) ?? new Set<string>()
+    set.add(r.day)
+    daysByUser.set(r.userId, set)
+  }
+
+  const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; streak: number }): number => {
+    switch (category) {
+      case 'best-score':
+        return row.bestScore
+      case 'accuracy':
+        return row.accuracy
+      case 'streak':
+        return row.streak
+      case 'sessions':
+        return row.totalSessions
+      default:
+        return row.score
+    }
+  }
+
+  // Load all users' aggregates, then rank + paginate in memory. Fine at the
+  // current scale; revisit with a materialized table if the user base grows.
+  const ranked = aggRows
+    .map((r) => ({
+      userId: r.userId,
+      displayName: r.displayName,
+      avatarUrl: r.avatarUrl,
+      score: Math.round(r.score),
+      bestScore: Math.round(r.bestScore),
+      accuracy: Math.round(r.accuracy),
+      totalSessions: r.totalSessions,
+      streak: streakFromDays(daysByUser.get(r.userId) ?? new Set<string>()),
+    }))
+    .sort((a, b) => rankValue(b) - rankValue(a))
+
+  const page = ranked
+    .slice(offset, offset + limit)
+    .map((row, i) => ({ ...row, rank: offset + i + 1 }))
+
+  return respond({ total: ranked.length, entries: page })
 }
 
 // ── Router ───────────────────────────────────────────────────────────
