@@ -15,7 +15,7 @@
 // rules force userId scoping from the JWT, never from the request body.
 
 import type { AuthUser, Env } from './auth'
-import { getAuth, handleAuth } from './auth'
+import { checkRateLimit, getAuth, handleAuth } from './auth'
 import type { TableDef } from './tables'
 import { TABLES } from './tables'
 
@@ -247,6 +247,32 @@ async function handleGetById(
   return respond(fromSql(def, row))
 }
 
+/**
+ * Per-entity value validation for writes. Keeps the (server-derived)
+ * leaderboard honest — a forged sessionRecords row can't carry impossible
+ * numbers. Returns an error message, or null when the body is acceptable.
+ */
+function validateWrite(entity: string, body: Row): string | null {
+  if (entity === 'sessionRecords') {
+    const inRange = (v: unknown, lo: number, hi: number): boolean =>
+      v === undefined || (typeof v === 'number' && v >= lo && v <= hi)
+    if (!inRange(body.score, 0, 100)) return 'score must be between 0 and 100'
+    if (!inRange(body.accuracy, 0, 100)) {
+      return 'accuracy must be between 0 and 100'
+    }
+    const nh = body.notesHit
+    const nt = body.notesTotal
+    if (
+      typeof nh === 'number' &&
+      typeof nt === 'number' &&
+      (nh < 0 || nt < 0 || nh > nt)
+    ) {
+      return 'notesHit must be between 0 and notesTotal'
+    }
+  }
+  return null
+}
+
 async function handleCreate(
   entity: string,
   def: TableDef,
@@ -266,6 +292,9 @@ async function handleCreate(
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
   }
+
+  const createErr = validateWrite(entity, body)
+  if (createErr) return respond({ error: createErr }, { status: 400 })
 
   const now = new Date().toISOString()
   delete body.id
@@ -325,6 +354,9 @@ async function handleUpdate(
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
   }
+
+  const updateErr = validateWrite(entity, body)
+  if (updateErr) return respond({ error: updateErr }, { status: 400 })
 
   delete body.id
   delete body.createdAt
@@ -485,6 +517,25 @@ export default {
 
     const sub = match[2] ? decodeURIComponent(match[2]) : undefined
     const auth = await getAuth(request, env)
+
+    // Per-IP write rate limit on mutations — bounds scripted spam / unbounded
+    // row creation. (Volumetric DDoS is absorbed at the Cloudflare edge.)
+    if (
+      request.method === 'POST' ||
+      request.method === 'PATCH' ||
+      request.method === 'DELETE'
+    ) {
+      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
+      if (!rl.allowed) {
+        return respond(
+          {
+            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+          },
+          { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        )
+      }
+    }
 
     if (sub === 'count' && request.method === 'GET') {
       return handleList(entity, def, url, auth, env, true)
