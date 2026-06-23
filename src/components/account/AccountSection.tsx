@@ -181,6 +181,8 @@ export const AccountSection: Component = () => {
                 class={styles.authInput}
                 type="text"
                 placeholder="Display name"
+                aria-label="Display name"
+                autocomplete="nickname"
                 maxLength={40}
                 value={nameDraft()}
                 onInput={(e) => setNameDraft(e.currentTarget.value)}
@@ -288,6 +290,8 @@ export const AccountSection: Component = () => {
                   class={styles.authInput}
                   type="text"
                   placeholder="Display name (optional)"
+                  aria-label="Display name"
+                  autocomplete="nickname"
                   value={displayName()}
                   onInput={(e) => setDisplayName(e.currentTarget.value)}
                   data-testid="auth-display-name"
@@ -297,9 +301,13 @@ export const AccountSection: Component = () => {
                 class={styles.authInput}
                 type="email"
                 placeholder="Email"
+                aria-label="Email"
+                autocomplete="email"
                 required
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
+                aria-invalid={error() !== '' ? 'true' : undefined}
+                aria-describedby={error() !== '' ? 'auth-error' : undefined}
                 data-testid="auth-email"
               />
               <input
@@ -310,14 +318,25 @@ export const AccountSection: Component = () => {
                     ? 'Password (min 8 characters)'
                     : 'Password'
                 }
+                aria-label="Password"
+                autocomplete={
+                  mode() === 'register' ? 'new-password' : 'current-password'
+                }
                 required
                 minLength={mode() === 'register' ? 8 : undefined}
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
+                aria-invalid={error() !== '' ? 'true' : undefined}
+                aria-describedby={error() !== '' ? 'auth-error' : undefined}
                 data-testid="auth-password"
               />
               <Show when={error() !== ''}>
-                <p class={styles.errorNote} data-testid="auth-error">
+                <p
+                  class={styles.errorNote}
+                  id="auth-error"
+                  role="alert"
+                  data-testid="auth-error"
+                >
                   {error()}
                 </p>
               </Show>
