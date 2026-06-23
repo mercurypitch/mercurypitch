@@ -369,8 +369,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  /* 24px minimum hit target (WCAG 2.2 — 2.5.8) */
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
