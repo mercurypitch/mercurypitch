@@ -46,13 +46,14 @@ main
 | 5 | `fix:` | **M3**, **M4** | `workers/jam-worker/src/{index,jam-room}.ts` | Replace display-name host election with a server-issued `ownerToken` (stored in DO storage, returned once, required on rejoin). CSPRNG 8-char room ids (`crypto.getRandomValues`). Per-room occupancy cap + per-peer message throttle. |
 | 6 | `fix:` | **M5** | `src/share-handler.ts` | 64 KB payload byte cap (413); per-IP KV rate-limit bucket keyed on `CF-Connecting-IP`. |
 | 7 | `feat:` | **M6** | `src/worker.ts` | `withSecurityHeaders()` wrapper on asset responses: `X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security` enforced; **CSP shipped as `Content-Security-Policy-Report-Only` first** (see flag). |
-| 8 | `fix:` | L1, L2, L3, L4, L5, L6, L7(origins) | `workers/db-worker/src/{index,auth,tables}.ts` | Generic client error messages (log detail). `getAuth` fails closed when user row missing + treats `v ?? 0`. Origin-allowlist CORS (reflect, `Vary: Origin`). `publicCols` projection on `TableDef` for public reads. Constant-time login (dummy PBKDF2 when user absent). Atomic rate-limit upsert (`ON CONFLICT … RETURNING`). Per-env `returnTo` allowlist (drop localhost in prod). |
+| 8a | `fix:` | L2, L5, L6 | `workers/db-worker/src/auth.ts`, `schema.sql` | `getAuth` fails closed (user must exist; `v ?? 0`). Constant-time login (dummy PBKDF2 when user absent). Atomic rate-limit upsert (`ON CONFLICT … RETURNING`) + add the missing `auth_ratelimit` table to the schema. |
+| 8b | `fix:` | L1 | `workers/db-worker/src/index.ts` | Generic client error messages (detail logged server-side). |
 
 **Design decision — UVR proxy auth (commit 4):** The main worker has **no D1 binding**, so it cannot do the `tokenVersion` revocation lookup. Decision: validate **signature + `exp` only** at the proxy (no DB call). This closes the anonymous-compute / arbitrary-read hole; full revocation isn't needed to gate compute. Extract a dependency-free `verifyJwt(token, secret)` into `src/lib/verify-jwt.ts` (mirrors `auth.ts:120-141`).
 **Ops flag:** requires `wrangler secret put JWT_SECRET` on the main worker (`prod` + `dev`) — the same secret the db-worker signs with. Document in `BUILD.md`.
 **Review flag (commit 7):** CSP ships **Report-Only** first so a mis-scoped directive can't break Google Fonts / ONNX WASM. **Browser check (you):** load the app and confirm no CSP violations in the console. Once confirmed, I flip it to enforcing `Content-Security-Policy` within this PR before merge.
 
-**Deferred from this PR:** L8 (short-lived access + refresh-token rotation; cookie-based token storage) — larger client+server change, see Backlog.
+**Deferred from this PR:** L3 (origin-allowlist CORS), L4 (`publicCols` projection), L7-origins (per-env `returnTo`), and L8 (token rotation / cookie storage). Each needs cross-origin / prod / runtime verification disproportionate to its Low severity, or is a larger change — implementing them blind risks breaking the cloud API the user explicitly wants to merge carefully. See Backlog.
 
 ---
 
@@ -121,7 +122,11 @@ Tracked here so nothing is silently dropped. Each is a candidate for a later PR 
 
 **Security**
 - **L8** — short-lived access token + refresh-token rotation; migrate token storage from `localStorage` to a `Secure; HttpOnly; SameSite=Strict` cookie (requires API + client changes).
-- **L8** is the only security follow-up. (The CSP enforce-flip is handled within PR 1 after your browser check — not a separate item.)
+- **L3** — origin-allowlist CORS on the workers (reflect an allowlisted Origin + `Vary: Origin`) instead of `*`. Low because auth is Bearer-token, not cookies; needs cross-origin verification (the db-worker is served from a different origin than the app, so a wrong allowlist breaks cloud sync).
+- **L4** — `publicCols` projection on `TableDef` so public reads (`userProfiles`, `leaderboardEntries`) can't auto-expose a future column; needs a runtime check that no field the UI consumes gets dropped.
+- **L7-origins** — drop `localhost` from the prod `returnTo` allowlist (needs an `ENVIRONMENT` signal wired into the db-worker; not remotely exploitable today).
+- **L8** — short-lived access token + refresh-token rotation; migrate token storage from `localStorage` to a `Secure; HttpOnly; SameSite=Strict` cookie.
+- The CSP enforce-flip is handled within PR 1 after your browser check — not a separate item.
 
 **Architecture (large structural refactors)**
 - Replace the `groupsVersion`/`bumpGroups` "version counter" cache with a reactive `createStore` (`app-store.ts`, `karaoke-playlist-store.ts`).
