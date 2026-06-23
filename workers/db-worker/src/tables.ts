@@ -37,7 +37,9 @@ export const TABLES: Record<string, TableDef> = {
   userBadges: { access: 'user' },
   achievements: { access: 'admin' },
   userAchievements: { access: 'user', boolCols: ['unlocked'] },
-  leaderboardEntries: { access: 'public-user' },
+  // leaderboardEntries is intentionally NOT exposed: the leaderboard is now
+  // server-derived from sessionRecords (see handleLeaderboard), so the table
+  // is no longer client-readable or client-writable.
   sharedMelodies: { access: 'shared', boolCols: ['isPublic'], jsonCols: ['tags'] },
   sharedSessions: { access: 'shared', boolCols: ['isPublic'] },
   featureFlags: { access: 'admin', boolCols: ['value'] },
