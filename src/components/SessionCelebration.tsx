@@ -40,9 +40,19 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
   return (
     <Show when={props.data}>
       <div class="celebration-backdrop" onClick={() => props.onClose?.()}>
-        <div class="celebration-modal" onClick={(e) => e.stopPropagation()}>
-          <button class="celebration-close" onClick={() => props.onClose?.()}>
-            <svg viewBox="0 0 24 24" width="18" height="18">
+        <div
+          class="celebration-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="celebration-label-text"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            class="celebration-close"
+            aria-label="Close results"
+            onClick={() => props.onClose?.()}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
@@ -56,7 +66,9 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
               <span class="celebration-score-unit">%</span>
             </div>
 
-            <div class="celebration-label">{scoreLabel(props.data!.score)}</div>
+            <div class="celebration-label" id="celebration-label-text">
+              {scoreLabel(props.data!.score)}
+            </div>
 
             <Show when={props.data!.bestWindow}>
               <div class="celebration-best-moment">
