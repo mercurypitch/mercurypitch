@@ -1170,6 +1170,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     <canvas
       ref={canvasRef}
       id="falling-notes-canvas"
+      role="img"
+      aria-label="Falling-notes piano. Play the falling notes with a connected MIDI keyboard or the on-screen piano keys."
       style={{
         width: '100%',
         height: '100%',
