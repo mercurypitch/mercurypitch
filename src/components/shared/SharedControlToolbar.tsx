@@ -169,6 +169,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               class={[styles.ctrlBtn, styles.midiBtn].join(' ')}
               classList={{ [styles.active]: props.midiConnected?.() ?? false }}
               onClick={() => props.onMidiToggle?.()}
+              aria-pressed={props.midiConnected?.() ?? false}
               title={
                 (props.midiConnected?.() ?? false)
                   ? 'Disconnect MIDI'
@@ -240,6 +241,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               class={[styles.ctrlBtn, styles.waveBtn].join(' ')}
               classList={{ [styles.active]: micWaveVisible() }}
               onClick={toggleMicWaveVisible}
+              aria-pressed={micWaveVisible()}
               title="Toggle mic waveform view"
               aria-label="Toggle mic waveform view"
             >
