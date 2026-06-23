@@ -1260,6 +1260,9 @@ const AppShell: Component<AppProps> = (props) => {
       loadAndPlayMelodyForSession={loadAndPlayMelodyForSession}
     >
       <div id="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <a class="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         {/* Welcome Screen (shown on first visit) */}
         <Show when={showWelcome()}>
           <WelcomeScreen
@@ -1360,7 +1363,7 @@ const AppShell: Component<AppProps> = (props) => {
             />
 
             {/* Tab content */}
-            <main class="main-content">
+            <main class="main-content" id="main-content" tabindex="-1">
               <Show when={activeTab() === TAB_SINGING}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
                   {/* Practice panel */}
