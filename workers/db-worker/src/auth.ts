@@ -323,9 +323,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   login: { max: 10, windowMs: 300_000 },       // 10/5min
   google: { max: 30, windowMs: 60_000 },       // 30/min
   logout: { max: 30, windowMs: 60_000 },       // 30/min
+  // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
+  // index.ts. Generous for normal use (session saves, settings, follows) but
+  // bounds scripted spam / unbounded row creation. Tunable.
+  'crud-write': { max: 120, windowMs: 60_000 }, // 120/min
 }
 
-async function checkRateLimit(
+export async function checkRateLimit(
   db: D1Database,
   ip: string,
   endpoint: string,
