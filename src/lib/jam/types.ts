@@ -23,8 +23,19 @@ export interface JamRoom {
 
 export type SignalingMessage =
   | { type: 'create-room'; displayName: string }
-  | { type: 'room-created'; roomId: string; peerId: string; isHost: boolean }
-  | { type: 'join-room'; roomId: string; displayName: string }
+  | {
+      type: 'room-created'
+      roomId: string
+      peerId: string
+      isHost: boolean
+      ownerToken?: string
+    }
+  | {
+      type: 'join-room'
+      roomId: string
+      displayName: string
+      ownerToken?: string
+    }
   | {
       type: 'room-joined'
       roomId: string
