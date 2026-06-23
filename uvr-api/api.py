@@ -98,6 +98,13 @@ def _safe_session_dir(base_dir: str, session_id: str) -> str:
         raise HTTPException(status_code=400, detail="Invalid session id")
     return os.path.realpath(os.path.join(base_dir, session_id))
 
+
+# Upload guards
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB cap on uploaded audio
+# Model filenames resolve under model_file_dir; restrict to a safe charset so
+# the `model` parameter cannot traverse paths via load_model().
+_MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
 # ── Progress tracking ──────────────────────────────────────────
 
 def get_audio_duration(file_path: str) -> float:
@@ -277,6 +284,15 @@ async def process_audio(
             detail="Invalid output format. Use WAV, MP3, or FLAC"
         )
 
+    # Validate model name — blocks path traversal through load_model()
+    if not _MODEL_RE.match(model):
+        raise HTTPException(status_code=400, detail="Invalid model name")
+
+    # Reject obvious non-audio uploads early (empty/octet-stream/audio-* pass).
+    ctype = (file.content_type or "").lower()
+    if ctype and not ctype.startswith("audio/") and ctype != "application/octet-stream":
+        raise HTTPException(status_code=415, detail="Unsupported media type")
+
     # Create session directory
     session_id = str(uuid.uuid4())
     session_output_dir = os.path.join(OUTPUT_DIR, session_id)
@@ -290,9 +306,24 @@ async def process_audio(
     input_path = os.path.join(session_upload_dir, input_filename)
 
     try:
+        written = 0
         with open(input_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        logger.info(f"File uploaded: {input_path}")
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1 MB chunks
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > MAX_UPLOAD_BYTES:
+                    buffer.close()
+                    os.remove(input_path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File too large (max {MAX_UPLOAD_BYTES // (1024 * 1024)} MB)",
+                    )
+                buffer.write(chunk)
+        logger.info(f"File uploaded: {input_path} ({written} bytes)")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to save uploaded file: {e}")
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
