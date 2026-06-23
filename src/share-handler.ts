@@ -23,6 +23,9 @@ function respond(body: unknown, init?: ResponseInit): Response {
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const ID_LENGTH = 10
 const SIXTY_DAYS = 60 * 24 * 60 * 60
+const MAX_PAYLOAD_BYTES = 64 * 1024 // 64 KB is ample for a share blob
+const SHORTEN_RATE_MAX = 20 // max shorten calls per IP per window
+const SHORTEN_RATE_WINDOW_S = 60 // window length (KV minimum TTL is 60s)
 
 function generateShortId(): string {
   const bytes = new Uint8Array(ID_LENGTH)
@@ -33,6 +36,22 @@ function generateShortId(): string {
     id += BASE62[bytes[i] % 62]
   }
   return id
+}
+
+/**
+ * Best-effort per-IP rate limit for share creation, backed by KV. KV is
+ * eventually consistent so this is a soft cap (enough to stop unbounded
+ * unauthenticated writes, not a hard security control). Returns false when the
+ * caller is over budget.
+ */
+async function withinShortenRate(env: Env, ip: string): Promise<boolean> {
+  const key = `rl:shorten:${ip}`
+  const current = Number((await env.SHARE_STORE.get(key)) ?? '0')
+  if (current >= SHORTEN_RATE_MAX) return false
+  await env.SHARE_STORE.put(key, String(current + 1), {
+    expirationTtl: SHORTEN_RATE_WINDOW_S,
+  })
+  return true
 }
 
 /**
@@ -58,6 +77,14 @@ export async function handleShareRequest(
         body.payload.length === 0
       ) {
         return respond({ error: 'Missing payload' }, { status: 400 })
+      }
+      if (new TextEncoder().encode(body.payload).length > MAX_PAYLOAD_BYTES) {
+        return respond({ error: 'Payload too large' }, { status: 413 })
+      }
+
+      const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+      if (!(await withinShortenRate(env, ip))) {
+        return respond({ error: 'Too many requests' }, { status: 429 })
       }
 
       let id = generateShortId()
