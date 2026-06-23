@@ -21,6 +21,41 @@ export interface Env {
   JWT_SECRET?: string
 }
 
+// CSP ships as Report-Only first: a mis-scoped directive then only logs a
+// console violation instead of breaking the app (Google Fonts, ONNX WASM,
+// web workers, model CDNs). Promote to enforcing `Content-Security-Policy`
+// once a browser pass confirms no violations.
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: data:",
+  "worker-src 'self' blob:",
+  "connect-src 'self' https: wss:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+].join('; ')
+
+/** Add baseline security headers to a (document/asset) response. */
+function withSecurityHeaders(resp: Response): Response {
+  const headers = new Headers(resp.headers)
+  headers.set('Content-Security-Policy-Report-Only', CSP_DIRECTIVES)
+  headers.set('X-Content-Type-Options', 'nosniff')
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  headers.set(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains',
+  )
+  return new Response(resp.body, {
+    status: resp.status,
+    statusText: resp.statusText,
+    headers,
+  })
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -77,6 +112,6 @@ export default {
     }
 
     // All other requests (static assets, SPA routes) are served by the assets binding.
-    return env.ASSETS.fetch(request)
+    return withSecurityHeaders(await env.ASSETS.fetch(request))
   },
 }
