@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import rawChangelog from '../../CHANGELOG.md?raw'
 
 interface VersionEntry {
@@ -106,10 +107,23 @@ interface ChangelogModalProps {
 }
 
 export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
+  let dialogRef: HTMLDivElement | undefined
+  useFocusTrap(() => dialogRef, {
+    isOpen: () => props.open,
+    onClose: () => props.onClose(),
+  })
+
   return (
     <Show when={props.open}>
       <div class="modal-overlay" onClick={() => props.onClose()}>
-        <div class="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          class="modal-content"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Changelog"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div class="modal-header">
             <h2>What's New</h2>
             <button class="modal-close" onClick={() => props.onClose()}>

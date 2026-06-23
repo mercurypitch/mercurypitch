@@ -1,6 +1,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import styles from './VoiceTypeDetectorModal.module.css'
@@ -12,6 +13,12 @@ interface VoiceTypeDetectorModalProps {
 export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
   props,
 ) => {
+  let dialogRef: HTMLDivElement | undefined
+  useFocusTrap(() => dialogRef, {
+    isOpen: () => true,
+    onClose: () => props.onClose(),
+  })
+
   const { practiceEngine } = useEngines()
   const [step, setStep] = createSignal<'intro' | 'listening' | 'result'>(
     'intro',
@@ -141,7 +148,14 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
         props.onClose()
       }}
     >
-      <div class={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div
+        class={styles.modalContent}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Voice type detector"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div class={styles.modalHeader}>
           <h2>Find My Voice Type</h2>
           <button class={styles.closeBtn} onClick={() => props.onClose()}>
