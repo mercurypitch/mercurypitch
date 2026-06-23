@@ -8,6 +8,7 @@ import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showActionNotification, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
@@ -28,6 +29,12 @@ interface SessionLibraryModalProps {
 export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   props,
 ) => {
+  let dialogRef: HTMLDivElement | undefined
+  useFocusTrap(() => dialogRef, {
+    isOpen: () => props.isOpen,
+    onClose: () => props.close(),
+  })
+
   const [searchQuery, setSearchQuery] = createSignal('')
   const [dragState, setDragState] = createSignal<DragState>(null)
 
@@ -128,7 +135,14 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   return (
     <Show when={props.isOpen}>
       <div class="modal-overlay" onClick={() => props.close()}>
-        <div class="library-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          class="library-modal"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Session library"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div class="library-header">
             <h2>Practice Sessions</h2>
             <button

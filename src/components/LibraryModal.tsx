@@ -10,6 +10,7 @@ import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
@@ -44,6 +45,12 @@ type DragState =
   | { type: 'session'; sessionId: string }
 
 export const LibraryModal: Component<LibraryModalProps> = (props) => {
+  let dialogRef: HTMLDivElement | undefined
+  useFocusTrap(() => dialogRef, {
+    isOpen: () => props.isOpen,
+    onClose: () => props.close(),
+  })
+
   // ===========================================
   // 1. Signals - at the top
   // ===========================================
@@ -560,7 +567,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   return (
     <Show when={props.isOpen}>
       <div class="modal-overlay" onClick={() => props.close()}>
-        <div class="library-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          class="library-modal"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Melody library"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div class="library-header">
             <h2>Library</h2>
             <button
