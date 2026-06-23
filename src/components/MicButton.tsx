@@ -18,6 +18,8 @@ export const MicButton: Component<MicButtonProps> = (props) => {
       class={`${styles.ctrlBtn} ${props.active ? styles.recording : ''}`}
       onClick={() => props.onClick?.()}
       disabled={props.disabled}
+      aria-pressed={props.active}
+      aria-label={props.active ? 'Disable microphone' : 'Enable microphone'}
       title={props.active ? 'Disable microphone' : 'Enable microphone'}
     >
       {props.active ? (

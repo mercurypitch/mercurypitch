@@ -13,6 +13,11 @@ export interface AppNavTabsProps {
 export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   let navRef!: HTMLElement
 
+  // Expose the active tab to assistive tech — the `.active` class only conveys
+  // selection visually. `aria-current="page"` inside the <nav> is appropriate.
+  const ariaCurrent = (tab: ActiveTab): 'page' | undefined =>
+    props.activeTab() === tab ? 'page' : undefined
+
   createEffect(() => {
     props.activeTab() // track dependency
     requestAnimationFrame(() => {
@@ -36,6 +41,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           id="tab-singing"
           class={`app-tab ${props.activeTab() === TAB_SINGING ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_SINGING)}
+          aria-current={ariaCurrent(TAB_SINGING)}
           aria-label="Singing practice"
         >
           <svg
@@ -78,6 +84,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           id="tab-falling-notes"
           class={`app-tab ${props.activeTab() === TAB_PIANO ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_PIANO)}
+          aria-current={ariaCurrent(TAB_PIANO)}
           aria-label="Falling notes piano"
         >
           <svg
@@ -122,6 +129,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           id="tab-karaoke"
           class={`app-tab ${props.activeTab() === TAB_KARAOKE ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_KARAOKE)}
+          aria-current={ariaCurrent(TAB_KARAOKE)}
           aria-label="Karaoke"
         >
           <svg
@@ -151,6 +159,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             id="tab-community"
             class={`app-tab ${props.activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
             onClick={() => void props.handleTabChange(TAB_COMMUNITY)}
+            aria-current={ariaCurrent(TAB_COMMUNITY)}
             aria-label="Community"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
@@ -165,6 +174,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             id="tab-leaderboard"
             class={`app-tab ${props.activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
             onClick={() => void props.handleTabChange(TAB_LEADERBOARD)}
+            aria-current={ariaCurrent(TAB_LEADERBOARD)}
             aria-label="Leaderboard"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
@@ -179,6 +189,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             id="tab-challenges"
             class={`app-tab ${props.activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
             onClick={() => void props.handleTabChange(TAB_CHALLENGES)}
+            aria-current={ariaCurrent(TAB_CHALLENGES)}
             aria-label="Challenges"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
@@ -193,6 +204,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             id="tab-exercises"
             class={`app-tab ${props.activeTab() === TAB_EXERCISES ? 'active' : ''}`}
             onClick={() => void props.handleTabChange(TAB_EXERCISES)}
+            aria-current={ariaCurrent(TAB_EXERCISES)}
             aria-label="Singing Exercises"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
@@ -208,6 +220,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           id="tab-jam"
           class={`app-tab ${props.activeTab() === TAB_JAM ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_JAM)}
+          aria-current={ariaCurrent(TAB_JAM)}
           aria-label="Jam session"
         >
           <svg
@@ -235,6 +248,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           id="tab-compose"
           class={`app-tab ${props.activeTab() === TAB_COMPOSE ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_COMPOSE)}
+          aria-current={ariaCurrent(TAB_COMPOSE)}
           aria-label="Compose melodies"
         >
           <svg
@@ -258,6 +272,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           data-testid="tab-analysis"
           class={`app-tab ${props.activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_ANALYSIS)}
+          aria-current={ariaCurrent(TAB_ANALYSIS)}
           aria-label="Vocal analysis"
         >
           <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
@@ -273,6 +288,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           data-testid="tab-settings"
           class={`app-tab ${props.activeTab() === TAB_SETTINGS ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_SETTINGS)}
+          aria-current={ariaCurrent(TAB_SETTINGS)}
           aria-label="Settings"
         >
           <svg
