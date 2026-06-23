@@ -11,6 +11,9 @@ interface PeerInfo {
 }
 
 const GRACE_PERIOD_MS = 5 * 60 * 1000 // 5 min after last peer leaves
+const MAX_PEERS = 12 // occupancy cap per room (bounds an unauthenticated channel)
+const MSG_RATE_LIMIT = 120 // max messages per window, per connection
+const MSG_RATE_WINDOW_MS = 1000
 
 interface JamEnv {
   JAM_ROOM: DurableObjectNamespace
@@ -22,8 +25,11 @@ export class JamRoom extends DurableObject<JamEnv> {
   private roomId = ''
   private ownerId: string | null = null
   private ownerName: string | null = null
+  private ownerToken: string | null = null
   private deleteTimer: ReturnType<typeof setTimeout> | null = null
   private isHydrated = false
+  private msgRate: WeakMap<WebSocket, { windowStart: number; count: number }> =
+    new WeakMap()
 
   private hydrate(): void {
     if (this.isHydrated) return
@@ -64,6 +70,19 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   override webSocketMessage(ws: WebSocket, message: string): void {
     this.hydrate()
+
+    // Cheap per-connection flood guard: drop messages above the budget so a
+    // single peer can't amplify a flood via relay/broadcast. The ceiling is
+    // generous enough not to trip normal WebRTC signaling bursts.
+    const now = Date.now()
+    const rate = this.msgRate.get(ws)
+    if (rate === undefined || now - rate.windowStart >= MSG_RATE_WINDOW_MS) {
+      this.msgRate.set(ws, { windowStart: now, count: 1 })
+    } else {
+      rate.count++
+      if (rate.count > MSG_RATE_LIMIT) return
+    }
+
     let msg: { type: string; [k: string]: unknown }
     try {
       msg = JSON.parse(message)
@@ -80,6 +99,7 @@ export class JamRoom extends DurableObject<JamEnv> {
           type: string
           roomId: string
           displayName: string
+          ownerToken?: string
         })
         break
       case 'offer':
@@ -119,10 +139,13 @@ export class JamRoom extends DurableObject<JamEnv> {
     msg: { displayName: string },
   ): void {
     const peerId = crypto.randomUUID()
+    const ownerToken = crypto.randomUUID()
 
     this.ownerId = peerId
     this.ownerName = msg.displayName
+    this.ownerToken = ownerToken
     void this.ctx.storage.put('ownerName', msg.displayName)
+    void this.ctx.storage.put('ownerToken', ownerToken)
 
     ws.serializeAttachment({ peerId, displayName: msg.displayName, roomId: this.roomId })
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
@@ -131,28 +154,45 @@ export class JamRoom extends DurableObject<JamEnv> {
 
     console.log(`[JamRoom ${this.roomId}] Room created by ${msg.displayName || 'Anonymous'} (${peerId})`)
 
-    this.send(ws, { type: 'room-created', roomId: this.roomId, peerId, isHost: true })
+    // ownerToken is the secret that proves host on reconnect — returned once,
+    // and never derived from the (publicly broadcast) display name.
+    this.send(ws, { type: 'room-created', roomId: this.roomId, peerId, isHost: true, ownerToken })
   }
 
   private async handleJoinRoom(
     ws: WebSocket,
-    msg: { displayName: string },
+    msg: { displayName: string; ownerToken?: string },
   ): Promise<void> {
+    // Cap occupancy to bound the cost of an unauthenticated channel.
+    if (this.peers.size >= MAX_PEERS) {
+      this.send(ws, { type: 'error', message: 'Room is full' })
+      try {
+        ws.close(1008, 'Room is full')
+      } catch {
+        // already closing
+      }
+      return
+    }
+
     const peerId = crypto.randomUUID()
 
     const existing = Array.from(this.peers.values()).map((p) => ({
       id: p.id,
       displayName: p.displayName,
     }))
-    // Grant host if the joiner's name matches the original creator.
-    // Load ownerName from storage in case DO was hibernated and lost in-memory state.
-    if (this.ownerName === null) {
-      const stored = await this.ctx.storage.get<string>('ownerName')
-      if (stored !== undefined) this.ownerName = stored
+    // Host is proven by the secret ownerToken issued at creation — NOT by the
+    // (publicly broadcast) display name, which any peer can read and replay.
+    // Load it from storage in case the DO hibernated and lost in-memory state.
+    if (this.ownerToken === null) {
+      const stored = await this.ctx.storage.get<string>('ownerToken')
+      if (stored !== undefined) this.ownerToken = stored
     }
-    const isHost = this.ownerName !== null && msg.displayName === this.ownerName
+    const isHost =
+      this.ownerToken !== null &&
+      typeof msg.ownerToken === 'string' &&
+      msg.ownerToken === this.ownerToken
     if (isHost) this.ownerId = peerId
-    console.log(`[JamRoom ${this.roomId}] host check: ownerName="${this.ownerName}" incoming="${msg.displayName}" isHost=${isHost}`)
+    console.log(`[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`)
     this.send(ws, {
       type: 'room-joined',
       roomId: this.roomId,

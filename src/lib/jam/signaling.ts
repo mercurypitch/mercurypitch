@@ -28,6 +28,10 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   let currentRoomId: string | null = null
   let currentPeerId: string | null = null
   let currentDisplayName: string | null = null
+  // Secret proving host on reconnect, captured from `room-created`. Kept in
+  // memory so it survives WS reconnects (DO hibernation), the common re-grant
+  // path; a full page reload intentionally drops it.
+  let currentOwnerToken: string | null = null
   let connecting = false
 
   function connect(roomId: string, displayName: string): void {
@@ -50,7 +54,14 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
     ws.onopen = () => {
       connecting = false
-      ws?.send(JSON.stringify({ type: 'join-room', roomId, displayName }))
+      ws?.send(
+        JSON.stringify({
+          type: 'join-room',
+          roomId,
+          displayName,
+          ownerToken: currentOwnerToken ?? undefined,
+        }),
+      )
     }
 
     ws.onmessage = (event) => {
@@ -129,6 +140,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
       case 'room-created':
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
+        currentOwnerToken = msg.ownerToken ?? null
         callbacks.onHostStatus?.(msg.isHost)
         console.info(
           '[jam:signaling] room created',
@@ -241,6 +253,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
     currentRoomId = null
     currentPeerId = null
     currentDisplayName = null
+    currentOwnerToken = null
   }
 
   function clearReconnect(): void {
@@ -262,6 +275,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
     currentRoomId = null
     currentPeerId = null
     currentDisplayName = null
+    currentOwnerToken = null
   }
 
   function getRoomId(): string | null {

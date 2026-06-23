@@ -31,6 +31,19 @@ function respond(body: object | null, init?: ResponseInit): Response {
   })
 }
 
+/**
+ * Generate a room id. Cryptographically random (not Math.random) over an
+ * unambiguous alphabet — 32^8 ≈ 1.1e12 space, so room ids can't be enumerated.
+ */
+function newRoomId(): string {
+  const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I
+  const bytes = new Uint8Array(8)
+  crypto.getRandomValues(bytes)
+  let id = ''
+  for (const b of bytes) id += ALPHABET[b % ALPHABET.length]
+  return id
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -44,7 +57,7 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return respond({ error: 'WebSocket upgrade required' }, { status: 426 })
       }
-      const roomId = Math.random().toString(36).substring(2, 6).toUpperCase()
+      const roomId = newRoomId()
       const doId = env.JAM_ROOM.idFromName(roomId)
       const stub = env.JAM_ROOM.get(doId)
 
@@ -70,7 +83,7 @@ export default {
 
     // ── REST: Create room ─────────────────────────────────────────
     if (url.pathname === '/api/jam/rooms' && request.method === 'POST') {
-      const roomId = Math.random().toString(36).substring(2, 6).toUpperCase()
+      const roomId = newRoomId()
       env.JAM_ROOM.idFromName(roomId) // initialize DO
       return respond({ roomId })
     }
