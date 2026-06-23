@@ -297,7 +297,8 @@ async function handleCreate(
       .bind(...binds)
       .run()
   } catch (err) {
-    return respond({ error: `Insert failed: ${String(err)}` }, { status: 400 })
+    console.error('[create] insert failed', entity, err)
+    return respond({ error: 'Could not create record' }, { status: 400 })
   }
 
   const row = (await fetchRow(entity, id, env)) as Row
@@ -345,7 +346,8 @@ async function handleUpdate(
       .bind(...binds)
       .run()
   } catch (err) {
-    return respond({ error: `Update failed: ${String(err)}` }, { status: 400 })
+    console.error('[update] update failed', entity, err)
+    return respond({ error: 'Could not update record' }, { status: 400 })
   }
 
   const updated = (await fetchRow(entity, id, env)) as Row
