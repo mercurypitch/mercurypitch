@@ -1,0 +1,275 @@
+/* ============================================================
+   Practice Intelligence — styles for the weakness panel, summary
+   trends, difficulty badges and trend visualisations. These classes
+   were referenced by the practice-intelligence components but had no
+   stylesheet, leaving the exercises view unstyled.
+   ============================================================ */
+
+/* ── Weakness Panel ("Practice Suggestions" in the exercises menu) ── */
+.weakness-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.weakness-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weakness-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.weakness-panel-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: help;
+}
+
+.weakness-panel-subtitle {
+  margin: 2px 0 12px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.weakness-drills {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weakness-drill-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.weakness-drill-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.weakness-drill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+  color: var(--accent);
+}
+
+.weakness-drill-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.weakness-drill-info {
+  min-width: 0;
+}
+
+.weakness-drill-info strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.weakness-drill-desc {
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+.weakness-drill-reason {
+  margin: 2px 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.weakness-drill-start {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.weakness-drill-start:hover {
+  opacity: 0.9;
+}
+
+.weakness-pitch-summary {
+  margin-top: 12px;
+}
+
+.weakness-pitch-summary h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.weakness-pitch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weakness-pitch-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary, var(--text-muted));
+}
+
+.weakness-pitch-badge.pitch-bad {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.weakness-pitch-badge.pitch-ok {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow, #d29922);
+}
+
+/* ── Difficulty badge (on exercise cards) ── */
+.difficulty-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+}
+
+.difficulty-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.diff-beginner {
+  color: var(--green, #3fb950);
+}
+.diff-easy {
+  color: var(--teal, #39c5cf);
+}
+.diff-medium {
+  color: var(--accent, #58a6ff);
+}
+.diff-hard {
+  color: var(--yellow, #d29922);
+}
+.diff-expert {
+  color: #f85149;
+}
+
+/* ── Practice Summary Card — trends + weak-spot additions ── */
+.summary-sparkline {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.summary-trends {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.summary-trend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summary-trend-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.summary-trend-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-trend-value.trend-up {
+  color: var(--green, #3fb950);
+}
+
+.summary-trend-value.trend-down {
+  color: #f85149;
+}
+
+.summary-weakness {
+  margin-top: 12px;
+}
+
+.summary-weakness h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.summary-weakness-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.summary-weakness-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow, #d29922);
+}
+
+/* ── Trend visualisations ── */
+.calendar-heatmap {
+  display: block;
+  max-width: 100%;
+}
+
+.sparkline-chart {
+  display: block;
+}

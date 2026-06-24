@@ -77,6 +77,11 @@
 }
 
 .session-browser .modal-header {
+  /* The generic .modal-header is a centered column (for confirm dialogs);
+     this modal wants the title left and the close button top-right. */
+  flex-direction: row;
+  justify-content: space-between;
+  text-align: left;
   padding: 0 0 12px 0;
   margin-bottom: 12px;
 }
