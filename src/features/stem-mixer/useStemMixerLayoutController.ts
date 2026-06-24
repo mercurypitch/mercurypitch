@@ -14,7 +14,11 @@ export interface WorkspacePanel {
   height: number | null
 }
 
-export type WorkspaceLayout = 'auto-1col' | 'auto-2col' | 'fixed-2col'
+export type WorkspaceLayout =
+  | 'auto-1col'
+  | 'auto-2col'
+  | 'fixed-2col'
+  | 'performance'
 
 interface CanvasView {
   syncCanvasSizes: () => void

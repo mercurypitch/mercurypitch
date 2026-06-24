@@ -4,6 +4,9 @@
 
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { createPersistedSignal } from '@/lib/storage'
+
+export type LyricsAlign = 'left' | 'center' | 'right'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import { buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
@@ -47,6 +50,8 @@ export interface StemMixerLyricsController {
   setLyricsFontSize: Setter<number>
   lyricsColumns: () => 1 | 2
   setLyricsColumns: Setter<1 | 2>
+  lyricsAlign: () => LyricsAlign
+  setLyricsAlign: Setter<LyricsAlign>
   editMode: () => boolean
   setEditMode: Setter<boolean>
   wordTimings: () => WordTimingsMap
@@ -253,6 +258,10 @@ export function useStemMixerLyricsController(
   const [songPickerQuery, setSongPickerQuery] = createSignal('')
   const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3)
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
+  const [lyricsAlign, setLyricsAlign] = createPersistedSignal<LyricsAlign>(
+    'pitchperfect_lyrics_align',
+    'left',
+  )
   const [editMode, setEditMode] = createSignal(false)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
@@ -1901,6 +1910,8 @@ export function useStemMixerLyricsController(
     setLyricsFontSize,
     lyricsColumns,
     setLyricsColumns,
+    lyricsAlign,
+    setLyricsAlign,
     editMode,
     setEditMode,
     wordTimings,
