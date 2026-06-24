@@ -185,6 +185,73 @@ export function selectActiveItem(
   return { index, kind: 'line' }
 }
 
+/** A repeat block instance, as raw-LRC line indices [startLrc, endLrc). */
+export interface RepeatRange {
+  startLrc: number
+  endLrc: number
+  repeatCount: number
+}
+
+/** Estimated time for one pass through a block's lines (seconds). */
+function blockPassDuration(
+  lrcLines: LrcLine[],
+  r: RepeatRange,
+  gapEnd: number,
+): number {
+  const startTime = lrcLines[r.startLrc]?.time ?? 0
+  const lines = r.endLrc - r.startLrc
+  if (lines > 1) {
+    const span = (lrcLines[r.endLrc - 1]?.time ?? startTime) - startTime
+    // Extrapolate one more line's worth so the last line's duration counts.
+    return (span * lines) / (lines - 1)
+  }
+  // Single-line block: split the whole span into N passes + one silence unit.
+  return Math.max(0, (gapEnd - startTime) / (r.repeatCount + 1))
+}
+
+/**
+ * Phase-1 repeat handling: when a synthetic ~Rest~ follows the last line of a
+ * `repeatCount > 1` block, the block is actually sung that many times, so the
+ * real silence starts later. Push the rest's start by the extra passes (and
+ * resize its countdown). The last block line then stays active through the
+ * repeat instead of the rest firing early. Indices are preserved (no reindex).
+ *
+ * Full per-pass line/word re-highlighting is a later phase.
+ */
+export function applyRepeatBlocks(
+  canonical: CanonicalLrcEntry[],
+  lrcLines: LrcLine[],
+  ranges: RepeatRange[],
+): CanonicalLrcEntry[] {
+  if (ranges.length === 0) return canonical
+  const byLastLine = new Map<number, RepeatRange>()
+  for (const r of ranges) {
+    if (r.repeatCount > 1) byLastLine.set(r.endLrc - 1, r)
+  }
+  if (byLastLine.size === 0) return canonical
+
+  return canonical.map((entry, i) => {
+    if (entry.type !== 'rest' || i === 0) return entry
+    const prev = canonical[i - 1]
+    if (prev.type !== 'line') return entry
+    const r = byLastLine.get(prev.lrcIndex)
+    if (!r) return entry
+
+    const gapStart = entry.gapStart ?? entry.time
+    const gapEnd = entry.gapEnd ?? entry.time
+    const extra = (r.repeatCount - 1) * blockPassDuration(lrcLines, r, gapEnd)
+    const newGapStart = Math.min(gapEnd, gapStart + extra)
+    if (newGapStart <= gapStart) return entry
+
+    return {
+      ...entry,
+      time: newGapStart,
+      gapStart: newGapStart,
+      dotCount: restDotCount(newGapStart, gapEnd),
+    }
+  })
+}
+
 /**
  * Build LRC index → canonical index map.
  * Only real LRC entries (lrcIndex >= 0) are mapped.

@@ -9,7 +9,8 @@ import { createPersistedSignal } from '@/lib/storage'
 export type LyricsAlign = 'left' | 'center' | 'right'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
-import { buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
+import type { RepeatRange } from '@/lib/canonical-lrc'
+import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
@@ -1568,7 +1569,22 @@ export function useStemMixerLyricsController(
   const canonicalLrcLines = createMemo<CanonicalLrcEntry[]>(() => {
     const lrc = lrcLines()
     if (lrc.length === 0) return []
-    return buildCanonicalEntries(lrc)
+    const base = buildCanonicalEntries(lrc)
+    // Delay rests that follow a repeated block until all passes are sung.
+    const bl = blocks()
+    const bi = blockInstances()
+    const ranges: RepeatRange[] = []
+    for (const b of bl) {
+      if (b.repeatCount <= 1) continue
+      for (const inst of bi[b.id] ?? []) {
+        ranges.push({
+          startLrc: inst[0],
+          endLrc: inst[1],
+          repeatCount: b.repeatCount,
+        })
+      }
+    }
+    return applyRepeatBlocks(base, lrc, ranges)
   })
 
   const stableParsedLyrics = createMemo(() => {

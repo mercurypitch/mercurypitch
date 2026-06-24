@@ -390,47 +390,53 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 <line x1="20" y1="9" x2="20" y2="15" />
               </svg>
             </button>
-            <button
-              class="sm-focus-toggle-btn"
-              classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
-              onClick={() => props.setShowPitch((p) => !p)}
-              title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+            {/* Pitch + lyrics toggles do nothing in the performance layout
+                (lyrics always shown, pitch never) — only the waveform toggles. */}
+            <Show when={props.workspaceLayout() !== 'performance'}>
+              <button
+                class="sm-focus-toggle-btn"
+                classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
+                onClick={() => props.setShowPitch((p) => !p)}
+                title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
               >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </button>
-            <button
-              class="sm-focus-toggle-btn"
-              classList={{ 'sm-focus-toggle-btn--active': props.showLyrics() }}
-              onClick={() => props.setShowLyrics((p) => !p)}
-              title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              </button>
+              <button
+                class="sm-focus-toggle-btn"
+                classList={{
+                  'sm-focus-toggle-btn--active': props.showLyrics(),
+                }}
+                onClick={() => props.setShowLyrics((p) => !p)}
+                title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
               >
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-            </button>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </button>
+            </Show>
           </Show>
 
           <div class="sm-focus-divider" />
