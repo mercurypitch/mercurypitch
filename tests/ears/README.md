@@ -14,6 +14,7 @@ tests/ears/
 ├── session-editor.md                  # Drag-and-drop session timeline
 ├── metronome.md                       # Metronome functionality
 ├── focus-mode.md                      # Focus mode behavior
+├── practice-intelligence.md           # Adaptive difficulty, weakness drills, trends
 ├── recording.md                       # Recording to piano roll
 └── walkthroughs.md                    # Guided tutorials
 ```
@@ -47,6 +48,7 @@ Each EARS spec has a corresponding e2e test file:
 | session-editor.md | src/e2e/session-editor.spec.ts | ✅ Complete |
 | metronome.md | src/e2e/metronome.spec.ts | ✅ Complete |
 | focus-mode.md | src/e2e/focus-mode.spec.ts | ✅ Complete |
+| practice-intelligence.md | 📝 Documentation only | 🔄 Pending |
 | recording.md | 📝 Documentation only | 🔄 Pending |
 | walkthroughs.md | src/e2e/walkthrough.spec.ts | ✅ Complete |
 

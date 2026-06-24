@@ -398,3 +398,52 @@
     display: none;
   }
 }
+
+/* Practice Intelligence — Trend section in score overlay */
+.trendSection {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+}
+
+.trendSparkline {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.trendStats {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: var(--text-muted, #888);
+}
+
+.trendUp {
+  color: var(--green, #22c55e);
+  font-weight: 600;
+}
+
+.trendDown {
+  color: var(--red, #ef4444);
+  font-weight: 600;
+}
+
+.weakNoteRow {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.weakNoteBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}

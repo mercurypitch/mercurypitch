@@ -14,6 +14,7 @@ import { PitchDisplay } from '@/components/PitchDisplay'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { StatsBars } from '@/components/StatsBars'
 import { StreakCalendar } from '@/components/StreakCalendar'
+import { CalendarHeatmap } from '@/features/practice-intelligence/components/CalendarHeatmap'
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
@@ -528,6 +529,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                       </div>
                     )}
                   </For>
+                </div>
+                <div class={styles.heatmapWrapper}>
+                  <CalendarHeatmap weeks={8} />
                 </div>
               </div>
             </Show>

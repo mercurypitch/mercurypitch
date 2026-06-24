@@ -3,6 +3,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from '
 import { IconTarget } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -69,14 +70,15 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
         metrics: r.metrics,
         bestWindow: r.bestWindow,
       })
-      untrack(() =>
+      untrack(() => {
         recordExerciseResult({
           type: r.type,
           score: r.score,
           metrics: r.metrics,
           completedAt: r.completedAt,
-        }),
-      )
+        })
+        updateDifficultyFromEma(r.type)
+      })
     }
   })
 

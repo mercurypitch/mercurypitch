@@ -7,7 +7,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
-import { Cpu, Ear, MusicBoard, RotateCcw, SlidersHorizontal, Voice, X, } from '@/components/icons'
+import { Cpu, Ear, MusicBoard, SlidersHorizontal, Voice, } from '@/components/icons'
 import { AppNavTabs } from './components'
 
 const CommunityLeaderboard = lazy(async () =>
@@ -105,6 +105,9 @@ import { useFallingNotesController } from '@/features/falling-notes/useFallingNo
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
+import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
+import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
+import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
@@ -2072,7 +2075,20 @@ const AppShell: Component<AppProps> = (props) => {
                               aria-label="Play again"
                               title="Play again"
                             >
-                              <RotateCcw /> Play Again
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <polyline points="1 4 1 10 7 10" />
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                              </svg>{' '}
+                              Play Again
                             </button>
                             <button
                               class="fn-btn fn-btn-close"
@@ -2080,7 +2096,20 @@ const AppShell: Component<AppProps> = (props) => {
                               aria-label="Close"
                               title="Close"
                             >
-                              <X /> Close
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>{' '}
+                              Close
                             </button>
                           </div>
                         </div>
@@ -2195,7 +2224,20 @@ const AppShell: Component<AppProps> = (props) => {
                   aria-label="Try again"
                   title="Try again"
                 >
-                  <RotateCcw /> Try Again
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>{' '}
+                  Try Again
                 </button>
                 <button
                   class={styles.overlayBtn}
@@ -2203,11 +2245,24 @@ const AppShell: Component<AppProps> = (props) => {
                   aria-label="Close"
                   title="Close"
                 >
-                  <X /> Close
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>{' '}
+                  Close
                 </button>
               </div>
 
-              <Show when={getSessionHistory().length > 1}>
+              <Show when={getSessionHistory().length > 0}>
                 <div id="score-history">
                   <h3 class={styles.historyTitle}>Recent Progress</h3>
                   <div class={styles.historyChart}>
@@ -2221,6 +2276,61 @@ const AppShell: Component<AppProps> = (props) => {
                       )}
                     </For>
                   </div>
+                  {/* Practice Intelligence trend insights */}
+                  {(() => {
+                    const scores = getRecentScores(20)
+                    if (scores.length < 1) return null
+                    const stats = computePracticeStats()
+                    const improvement = computeImprovementRate()
+                    const report = generateWeaknessReport()
+                    return (
+                      <div class={styles.trendSection}>
+                        <div class={styles.trendSparkline}>
+                          <SparklineChart
+                            data={scores}
+                            width={180}
+                            height={36}
+                          />
+                        </div>
+                        <div class={styles.trendStats}>
+                          <span>
+                            {stats.sessionsThisWeek} session
+                            {stats.sessionsThisWeek !== 1 ? 's' : ''} this week
+                            · {stats.overallAvg}% avg
+                          </span>
+                          {improvement !== null && (
+                            <span
+                              classList={{
+                                [styles.trendUp]: improvement > 0,
+                                [styles.trendDown]: improvement < 0,
+                              }}
+                            >
+                              {improvement > 0
+                                ? '↑'
+                                : improvement < 0
+                                  ? '↓'
+                                  : '→'}{' '}
+                              {Math.abs(improvement).toFixed(1)} pts/week
+                            </span>
+                          )}
+                        </div>
+                        {report.weakPitches.length > 0 && (
+                          <div class={styles.weakNoteRow}>
+                            <For each={report.weakPitches.slice(0, 3)}>
+                              {(p) => (
+                                <span
+                                  class={styles.weakNoteBadge}
+                                  title={`${p.avgDeviation}¢ avg deviation`}
+                                >
+                                  {p.noteName} {p.avgDeviation}¢
+                                </span>
+                              )}
+                            </For>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               </Show>
             </div>
