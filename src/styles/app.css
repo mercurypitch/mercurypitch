@@ -2523,8 +2523,8 @@ input[type='range'] {
   }
 }
 
-:global(#score-card),
-:global(#session-summary-card) {
+#score-card,
+#session-summary-card {
   animation: cardPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

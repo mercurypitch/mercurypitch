@@ -1051,9 +1051,6 @@ export const StemMixerLyricsPanelBody: Component<
                             }}
                           </For>
                         </div>
-                        <span class="sm-lyrics-rest-label">
-                          {active() ? 'Get ready…' : '~Rest~'}
-                        </span>
                       </div>
                     )
                   }
