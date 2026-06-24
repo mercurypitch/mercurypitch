@@ -63,3 +63,6 @@ package-lock.json
 
 # Claude Code local settings (launch.json is shared)
 .claude/settings.local.json
+
+# Local-only working notes / scratch (not for the public repo)
+assets/local/
