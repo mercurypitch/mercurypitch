@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
-import { buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
+import { buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, selectActiveItem, } from '@/lib/canonical-lrc'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyrics-service'
 
@@ -687,5 +687,129 @@ describe('REQ-UV-045: Edge cases', () => {
     const entries = buildCanonicalEntries(lrc)
     expect(entries).toHaveLength(1)
     expect(entries[0].type).toBe('line')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// Rest gap metric + countdown fields (word-level)
+// ═══════════════════════════════════════════════════════════════
+
+/** Word-level LRC: line A is sung 10..12s, line B starts at 40s.
+ *  Word-end→next gap = 40-12 = 28s (> 20) → synthetic rest. */
+const LRC_WL_BIG_GAP = `[00:10.00]Hold [00:11.00]this [00:12.00]note
+[00:40.00]After [00:41.00]long [00:42.00]rest`
+
+/** Word-level LRC where the line-START gap (34-10 = 24s) exceeds 20s but the
+ *  real silence (last word 16s → next 34s = 18s) does NOT — so the old
+ *  line-start metric would wrongly insert a rest; the fixed metric must not. */
+const LRC_WL_NO_REST = `[00:10.00]One [00:12.00]two [00:14.00]three [00:16.00]four
+[00:34.00]Next [00:35.00]line [00:36.00]here`
+
+describe('Rest gap metric (word-level)', () => {
+  it('measures the gap from the previous last word, not the line start', () => {
+    const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_NO_REST))
+    // 24s line-start gap, but only 18s of real silence -> NO rest.
+    expect(entries.every((e) => e.type === 'line')).toBe(true)
+    expect(entries).toHaveLength(2)
+  })
+
+  it('inserts a rest sized from the silence, with gapStart/gapEnd/dotCount', () => {
+    const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_BIG_GAP))
+    expect(entries).toHaveLength(3) // line, rest, line
+    const rest = entries[1]
+    expect(rest.type).toBe('rest')
+    expect(rest.lrcIndex).toBe(-1) // synthetic
+    expect(rest.gapStart).toBeCloseTo(12, 1) // prev line's last word start
+    expect(rest.gapEnd).toBeCloseTo(40, 1) // next line's first word
+    expect(rest.time).toBeCloseTo(12, 1) // activates when silence begins
+    expect(rest.dotCount).toBe(6) // round(28 / 5)
+  })
+
+  it('sizes explicit ~Rest~ dots to the next line', () => {
+    // explicit rest at 25s, next line at 50s -> 25s -> 5 dots
+    const entries = buildCanonicalEntries(parseLrcFile(LRC_WITH_EXPLICIT_REST))
+    const explicit = entries.find((e) => e.lrcIndex === 1)
+    expect(explicit?.type).toBe('rest')
+    expect(explicit?.gapStart).toBeCloseTo(25, 1)
+    expect(explicit?.gapEnd).toBeCloseTo(50, 1)
+    expect(explicit?.dotCount).toBe(5)
+  })
+})
+
+describe('computeRestProgress', () => {
+  // gapStart 10, gapEnd 30 (20s), 4 dots (5s each)
+  it('is empty at gapStart and before', () => {
+    expect(computeRestProgress(10, 30, 4, 10)).toEqual({
+      filledDots: 0,
+      currentDotFrac: 0,
+    })
+    expect(computeRestProgress(10, 30, 4, 5)).toEqual({
+      filledDots: 0,
+      currentDotFrac: 0,
+    })
+  })
+
+  it('is fully filled at gapEnd and after', () => {
+    expect(computeRestProgress(10, 30, 4, 30)).toEqual({
+      filledDots: 4,
+      currentDotFrac: 0,
+    })
+    expect(computeRestProgress(10, 30, 4, 45)).toEqual({
+      filledDots: 4,
+      currentDotFrac: 0,
+    })
+  })
+
+  it('fills proportionally mid-gap', () => {
+    // halfway -> 2 of 4 dots
+    expect(computeRestProgress(10, 30, 4, 20)).toEqual({
+      filledDots: 2,
+      currentDotFrac: 0,
+    })
+    // 37.5% -> 1.5 dots: 1 full + half of the next
+    const p = computeRestProgress(10, 30, 4, 17.5)
+    expect(p.filledDots).toBe(1)
+    expect(p.currentDotFrac).toBeCloseTo(0.5, 5)
+  })
+
+  it('guards degenerate inputs', () => {
+    expect(computeRestProgress(30, 10, 4, 20)).toEqual({
+      filledDots: 0,
+      currentDotFrac: 0,
+    })
+    expect(computeRestProgress(10, 30, 0, 20)).toEqual({
+      filledDots: 0,
+      currentDotFrac: 0,
+    })
+  })
+})
+
+describe('selectActiveItem', () => {
+  const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_BIG_GAP))
+  // [ lineA(time 10), rest(time 12, gap 12..40, 6 dots), lineB(time 40) ]
+
+  it('returns none before the first entry', () => {
+    expect(selectActiveItem(entries, 5)).toEqual({ index: -1, kind: 'none' })
+  })
+
+  it('selects the active line while it is being sung', () => {
+    const a = selectActiveItem(entries, 11)
+    expect(a.index).toBe(0)
+    expect(a.kind).toBe('line')
+  })
+
+  it('selects the rest during the gap and reports fill', () => {
+    const a = selectActiveItem(entries, 20)
+    expect(a.index).toBe(1)
+    expect(a.kind).toBe('rest')
+    // (20-12)/28 * 6 = 1.714 dots
+    expect(a.restProgress?.filledDots).toBe(1)
+    expect(a.restProgress?.currentDotFrac).toBeCloseTo(0.714, 2)
+  })
+
+  it('selects the next line after the gap', () => {
+    const a = selectActiveItem(entries, 45)
+    expect(a.index).toBe(2)
+    expect(a.kind).toBe('line')
   })
 })
