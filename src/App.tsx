@@ -335,11 +335,19 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // Auto-launch exercise drill from challenge "Practice" button.
-  // Consume the pending drill once so it doesn't re-fire and trap the user
-  // on the drilled exercise when they navigate back to the menu.
+  // Stash the drill's curated target notes as a one-shot launch override so
+  // the exercise starts on the challenge's notes, then consume the pending
+  // drill once so it doesn't re-fire and trap the user on that exercise.
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
+      if (drill.notes.length > 0) {
+        setLaunchOverride(drill.exercise, {
+          type: drill.exercise,
+          targetNote: drill.notes[0],
+          targetNotes: drill.notes,
+        })
+      }
       setSelectedExercise(drill.exercise)
       setPendingDrill(null)
     }
@@ -405,15 +413,12 @@ const AppShell: Component<AppProps> = (props) => {
         TAB_GUITAR,
       ]
 
+      // Community / Leaderboard / Challenges are always available now; only
+      // the dev-only pitch-test / pitch-algo tabs stay behind the flag.
       let availableTabs = TABS_ORDER
       if (!advancedFeaturesEnabled()) {
         availableTabs = TABS_ORDER.filter(
-          (t) =>
-            t !== TAB_COMMUNITY &&
-            t !== TAB_LEADERBOARD &&
-            t !== TAB_CHALLENGES &&
-            t !== TAB_PITCH_TEST &&
-            t !== TAB_PITCH_ALGO,
+          (t) => t !== TAB_PITCH_TEST && t !== TAB_PITCH_ALGO,
         )
       }
 

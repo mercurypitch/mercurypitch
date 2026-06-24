@@ -7,6 +7,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { authVersion } from '@/db/services/user-service'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
@@ -175,10 +176,11 @@ export const VocalChallenges: Component = () => {
     progress[progressKey] = saved
     saveProgress(progress)
 
-    // Also save to DB
+    // Also save to DB, then award any badges the completion unlocked
+    // (grant check reads the just-saved progress, so chain after the save).
     const def = dbChallengeDefs().find((d) => d.id === challengeId)
     if (def) {
-      saveChallengeProgress({
+      void saveChallengeProgress({
         userId: getUserId(),
         challengeId,
         progress: saved.progress,
@@ -188,6 +190,8 @@ export const VocalChallenges: Component = () => {
         completed: saved.status === 'completed',
         attempts: saved.actualScores?.length ?? 1,
       })
+        .then(() => checkAndGrantBadges())
+        .catch(() => {})
     }
   }
 

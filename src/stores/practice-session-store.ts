@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js'
+import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
@@ -115,6 +116,8 @@ export function endPracticeSession(): SessionResult | null {
 
   setSessionResults((prev) => [result, ...prev].slice(0, 50))
 
+  // Persist the record, then check for newly-earned badges/achievements
+  // (grant check reads the just-saved record, so chain it after the save).
   void saveSessionRecord({
     melodyName: session.name,
     score: avgScore,
@@ -122,6 +125,8 @@ export function endPracticeSession(): SessionResult | null {
     notesHit: results.length,
     notesTotal: session.items.length,
   })
+    .then(() => checkAndGrantBadges())
+    .catch(() => {})
 
   setSessionActive(false)
   setPracticeSession(null)
