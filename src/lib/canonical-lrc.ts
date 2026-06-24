@@ -47,12 +47,14 @@ export function buildCanonicalEntries(
   let prevEnd = 0
   let prevTime = 0
   let hasPrev = false
+  let afterExplicitRest = false
 
   for (let i = 0; i < lrcLines.length; i++) {
     const line = lrcLines[i]
 
-    // Synthetic ~Rest~ when the silence before this entry is large.
-    if (hasPrev) {
+    // Synthetic ~Rest~ when the silence before this entry is large — but not
+    // right after an explicit ~Rest~, which already covers that silence.
+    if (hasPrev && !afterExplicitRest) {
       const gap = line.time - prevEnd
       if (gap > REST_THRESHOLD_SEC) {
         const gapEnd = line.time
@@ -84,10 +86,12 @@ export function buildCanonicalEntries(
         gapEnd,
         dotCount: restDotCount(line.time, gapEnd),
       })
-      // The explicit rest itself marks the silence — measure the next gap from it.
+      // The explicit rest itself marks the silence — measure the next gap from
+      // it, and suppress a redundant synthetic rest right after it.
       prevEnd = line.time
       prevTime = line.time
       hasPrev = true
+      afterExplicitRest = true
       continue
     }
 
@@ -116,6 +120,7 @@ export function buildCanonicalEntries(
         ? parsedWt.wordTimes[parsedWt.wordTimes.length - 1]
         : line.time
     hasPrev = true
+    afterExplicitRest = false
   }
 
   return result
@@ -192,11 +197,12 @@ export interface RepeatRange {
   repeatCount: number
 }
 
-/** Estimated time for one pass through a block's lines (seconds). */
+/** Estimated time for one pass through a block's lines (seconds). `passEnd` is
+ *  where pass 1 ends (the rest's original start), used for single-line blocks. */
 function blockPassDuration(
   lrcLines: LrcLine[],
   r: RepeatRange,
-  gapEnd: number,
+  passEnd: number,
 ): number {
   const startTime = lrcLines[r.startLrc]?.time ?? 0
   const lines = r.endLrc - r.startLrc
@@ -205,8 +211,9 @@ function blockPassDuration(
     // Extrapolate one more line's worth so the last line's duration counts.
     return (span * lines) / (lines - 1)
   }
-  // Single-line block: split the whole span into N passes + one silence unit.
-  return Math.max(0, (gapEnd - startTime) / (r.repeatCount + 1))
+  // Single-line block: the pass lasts ~as long as the line was sung, i.e. from
+  // its start to where pass 1 ends (the rest's original start).
+  return Math.max(2, passEnd - startTime)
 }
 
 /**
@@ -239,7 +246,7 @@ export function applyRepeatBlocks(
 
     const gapStart = entry.gapStart ?? entry.time
     const gapEnd = entry.gapEnd ?? entry.time
-    const extra = (r.repeatCount - 1) * blockPassDuration(lrcLines, r, gapEnd)
+    const extra = (r.repeatCount - 1) * blockPassDuration(lrcLines, r, gapStart)
     const newGapStart = Math.min(gapEnd, gapStart + extra)
     if (newGapStart <= gapStart) return entry
 

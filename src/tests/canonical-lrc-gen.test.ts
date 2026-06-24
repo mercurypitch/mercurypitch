@@ -94,17 +94,18 @@ describe('REQ-UV-028: Canonical entry construction', () => {
     expect(entries[1].time).toBeCloseTo(20, 0)
   })
 
-  it('handles explicit ~Rest~ from API data', () => {
+  it('handles explicit ~Rest~ from API data (no double rest after it)', () => {
     const lrc = parseLrcFile(LRC_WITH_EXPLICIT_REST)
     const entries = buildCanonicalEntries(lrc)
-    // [line0, ~Rest~(explicit, lrcIdx=1), line1] — gap 0→rest=15s, rest→line1=25s
-    // 25s > 20s → synthetic rest inserted before line1
-    expect(entries.length).toBeGreaterThanOrEqual(3)
-    // The explicit ~Rest~ should have its real lrcIndex
+    // [line0(10), ~Rest~(explicit, lrcIdx=1, 25), line1(50)]. The explicit rest
+    // already covers the 25s silence, so NO synthetic rest is added after it.
+    expect(entries).toHaveLength(3)
     const explicitRest = entries.find((e) => e.lrcIndex === 1)
     expect(explicitRest).toBeDefined()
     expect(explicitRest!.type).toBe('rest')
     expect(explicitRest!.text).toBe('~Rest~')
+    // its countdown spans to the next line
+    expect(explicitRest!.gapEnd).toBeCloseTo(50, 1)
   })
 
   it('handles mixed synthetic + explicit rests', () => {
@@ -862,5 +863,28 @@ describe('applyRepeatBlocks (repeat-block rest delay)', () => {
         { startLrc: 0, endLrc: 2, repeatCount: 1 },
       ]),
     ).toEqual(base)
+  })
+
+  it('delays an EXPLICIT rest after a single-line repeat block', () => {
+    // The real-world case: one line, then an explicit ~Rest~ that starts right
+    // when the line's last word ends, then the next section. Marking the line
+    // repeat x2 should push the rest past the second pass.
+    const lrc = parseLrcFile(`[00:10.00]kad ces doci
+[00:13.00]~Rest~
+[00:40.00]Srebrni snijeg`)
+    const base = buildCanonicalEntries(lrc)
+    const restBefore = base.find((e) => e.type === 'rest')!
+    expect(restBefore.gapStart).toBeCloseTo(13, 1) // fires at pass-1 end
+
+    const out = applyRepeatBlocks(base, lrc, [
+      { startLrc: 0, endLrc: 1, repeatCount: 2 },
+    ])
+    const rest = out.find((e) => e.type === 'rest')!
+    // one extra ~3s pass (10->13) pushes the rest start to ~16
+    expect(rest.gapStart).toBeGreaterThan(13)
+    expect(rest.gapStart).toBeCloseTo(16, 1)
+    // the last line stays active through the repeat (until ~16)
+    expect(selectActiveItem(out, 14).kind).toBe('line')
+    expect(selectActiveItem(out, 18).kind).toBe('rest')
   })
 })

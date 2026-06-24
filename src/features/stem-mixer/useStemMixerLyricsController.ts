@@ -1576,10 +1576,13 @@ export function useStemMixerLyricsController(
     const ranges: RepeatRange[] = []
     for (const b of bl) {
       if (b.repeatCount <= 1) continue
+      // An instance is either the template's full index list ([s, s+1, …]) or a
+      // detected [start, end) pair; both start at inst[0] and span lineIndices.
+      const len = b.lineIndices.length
       for (const inst of bi[b.id] ?? []) {
         ranges.push({
           startLrc: inst[0],
-          endLrc: inst[1],
+          endLrc: inst[0] + len,
           repeatCount: b.repeatCount,
         })
       }
