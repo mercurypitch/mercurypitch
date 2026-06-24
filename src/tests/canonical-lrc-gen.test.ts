@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
-import { buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, selectActiveItem, } from '@/lib/canonical-lrc'
+import { applyRepeatBlocks, buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, selectActiveItem, } from '@/lib/canonical-lrc'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyrics-service'
 
@@ -811,5 +811,56 @@ describe('selectActiveItem', () => {
     const a = selectActiveItem(entries, 45)
     expect(a.index).toBe(2)
     expect(a.kind).toBe('line')
+  })
+})
+
+describe('applyRepeatBlocks (repeat-block rest delay)', () => {
+  // 2-line block sung at 10s/14s, then a 36s gap, then the next section.
+  const LRC_REPEAT = `[00:10.00]Chorus line one
+[00:14.00]Chorus line two
+[00:50.00]Next section`
+
+  it('delays a rest after a repeated block until all passes are sung', () => {
+    const lrc = parseLrcFile(LRC_REPEAT)
+    const base = buildCanonicalEntries(lrc)
+    expect(base[2].type).toBe('rest')
+    const restBefore = base[2].time // midpoint ~32
+
+    const out = applyRepeatBlocks(base, lrc, [
+      { startLrc: 0, endLrc: 2, repeatCount: 2 },
+    ])
+    const rest = out[2]
+    expect(rest.type).toBe('rest')
+    expect(rest.time).toBeGreaterThan(restBefore)
+    // one extra 8s pass (4s span * 2/1) pushes ~32 -> ~40
+    expect(rest.gapStart).toBeCloseTo(40, 0)
+    expect(rest.gapEnd).toBeCloseTo(50, 1)
+    expect(rest.dotCount).toBe(2) // round((50-40)/5)
+    // indices preserved (no reindex)
+    expect(out).toHaveLength(base.length)
+  })
+
+  it('keeps the last block line active through the repeat', () => {
+    const lrc = parseLrcFile(LRC_REPEAT)
+    const out = applyRepeatBlocks(buildCanonicalEntries(lrc), lrc, [
+      { startLrc: 0, endLrc: 2, repeatCount: 2 },
+    ])
+    // at 35s (pass 2) the last block line is active, not the rest
+    const mid = selectActiveItem(out, 35)
+    expect(mid.index).toBe(1)
+    expect(mid.kind).toBe('line')
+    // after the delayed rest the rest is active
+    expect(selectActiveItem(out, 45).kind).toBe('rest')
+  })
+
+  it('is a no-op without ranges or for repeatCount <= 1', () => {
+    const lrc = parseLrcFile(LRC_REPEAT)
+    const base = buildCanonicalEntries(lrc)
+    expect(applyRepeatBlocks(base, lrc, [])).toEqual(base)
+    expect(
+      applyRepeatBlocks(base, lrc, [
+        { startLrc: 0, endLrc: 2, repeatCount: 1 },
+      ]),
+    ).toEqual(base)
   })
 })
