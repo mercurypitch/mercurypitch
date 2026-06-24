@@ -3,13 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  findWeakExercises,
-  findWeakIntervals,
-  findWeakPitches,
-  generateWeaknessReport,
-  hasWeaknesses,
-} from '@/features/practice-intelligence/weakness-analyzer'
+import { findWeakExercises, findWeakIntervals, findWeakPitches, generateWeaknessReport, hasWeaknesses, } from '@/features/practice-intelligence/weakness-analyzer'
 import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
 
@@ -27,7 +21,9 @@ function seedExercise(type: string, score: number) {
   })
 }
 
-function seedSessionWithNotes(noteResults: { midi: number; avgCents: number }[]) {
+function seedSessionWithNotes(
+  noteResults: { midi: number; avgCents: number }[],
+) {
   setSessionResults((prev) => [
     {
       name: 'Test',

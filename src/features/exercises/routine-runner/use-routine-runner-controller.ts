@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
@@ -18,6 +20,10 @@ const PHASES: Array<{ name: string; notes: number[] }> = [
 const NOTE_PLAY_DURATION_MS = 600
 const GAP_BETWEEN_NOTES_MS = 250
 const MATCH_WINDOW_MS = 2000
+// Baseline rest between phases (segment transition). The only meta-level knob
+// this runner owns that isn't already scaled by its sub-segments' own
+// difficulty: harder = shorter recovery between phases, easier = longer.
+const PHASE_REST_MS = 500
 
 export function useRoutineRunnerController(
   base: BaseExerciseController,
@@ -34,6 +40,8 @@ export function useRoutineRunnerController(
     phaseTimer = undefined
   })
   let _cancelled = false
+  // Difficulty-scaled rest between phases; difficultyFactor(5) === 1 → 500ms.
+  let phaseRestMs = PHASE_REST_MS
 
   function setBase(midi: number): void {
     _cancelled = false
@@ -41,6 +49,8 @@ export function useRoutineRunnerController(
     phaseIndex = 0
     allScores = []
     fatigueCheckpoints = []
+    const difficulty = launchDifficulty(EXERCISE_ROUTINE_RUNNER)
+    phaseRestMs = Math.round(PHASE_REST_MS * difficultyFactor(difficulty))
   }
 
   function startRoutine(): void {
@@ -77,7 +87,7 @@ export function useRoutineRunnerController(
       phaseTimer = setTimeout(() => {
         if (_cancelled) return
         startPhase()
-      }, 500)
+      }, phaseRestMs)
       return
     }
 

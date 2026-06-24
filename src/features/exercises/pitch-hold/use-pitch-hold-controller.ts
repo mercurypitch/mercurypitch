@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -30,7 +32,9 @@ export function usePitchHoldController(base: BaseExerciseController) {
   }
 
   function startLoop(): void {
-    zoneRadius = INITIAL_ZONE_CENTS
+    const difficulty = launchDifficulty(EXERCISE_PITCH_HOLD)
+    // scale by adaptive difficulty: tighter zone when harder
+    zoneRadius = INITIAL_ZONE_CENTS * difficultyFactor(difficulty)
     inZoneFrames = 0
     totalFrames = 0
     lastShrinkTime = performance.now()
@@ -88,10 +92,11 @@ export function usePitchHoldController(base: BaseExerciseController) {
     }
 
     // Score: zone percentage weighted by duration
-    const durationScore = Math.min(
-      100,
-      (durationSec / TARGET_DURATION_SEC) * 100,
-    )
+    const difficulty = launchDifficulty(EXERCISE_PITCH_HOLD)
+    // scale by adaptive difficulty: longer required hold when harder
+    const targetDurationSec =
+      TARGET_DURATION_SEC * (2 - difficultyFactor(difficulty))
+    const durationScore = Math.min(100, (durationSec / targetDurationSec) * 100)
     const score = Math.round(
       zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT,
     )

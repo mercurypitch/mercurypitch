@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
@@ -6,11 +8,12 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_CALL_RESPONSE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
-const ROUNDS = 5
+const BASE_ROUNDS = 5
 const NOTE_PLAY_DURATION_MS = 500
 const GAP_BETWEEN_NOTES_MS = 200
 const GAP_BEFORE_MATCH_MS = 600
-const MATCH_WINDOW_MS = 3000
+const BASE_MATCH_WINDOW_MS = 3000
+const BASE_SCORE_CENTS_K = 1.5
 
 interface PhraseNote {
   midi: number
@@ -47,9 +50,19 @@ export function useCallResponseController(
   let matchStartTime = 0
   let _cancelled = false
 
+  // scale by adaptive difficulty (resolved per round set-up in setBase)
+  let matchWindowMs = BASE_MATCH_WINDOW_MS
+  let scoreCentsK = BASE_SCORE_CENTS_K
+
   function setBase(baseMidi: number): void {
     _cancelled = false
-    phrases = Array.from({ length: ROUNDS }, () =>
+    // scale by adaptive difficulty
+    const difficulty = launchDifficulty(EXERCISE_CALL_RESPONSE)
+    const factor = difficultyFactor(difficulty)
+    const rounds = Math.round(BASE_ROUNDS * (2 - factor))
+    matchWindowMs = BASE_MATCH_WINDOW_MS * factor
+    scoreCentsK = BASE_SCORE_CENTS_K / factor
+    phrases = Array.from({ length: rounds }, () =>
       generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2)),
     )
     roundIndex = 0
@@ -106,7 +119,8 @@ export function useCallResponseController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateRound()
-    }, MATCH_WINDOW_MS)
+      // scale by adaptive difficulty
+    }, matchWindowMs)
   }
 
   function evaluateRound(): void {
@@ -130,7 +144,8 @@ export function useCallResponseController(
           })
         if (deviations.length > 0) {
           const best = Math.min(...deviations)
-          noteScores.push(Math.round(Math.max(0, 100 - best * 1.5)))
+          // scale by adaptive difficulty
+          noteScores.push(Math.round(Math.max(0, 100 - best * scoreCentsK)))
         } else {
           noteScores.push(0)
         }

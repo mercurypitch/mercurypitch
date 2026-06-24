@@ -3,13 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  clampDifficulty,
-  computeEma,
-  difficultyLabel,
-  getSuggestedDifficulty,
-  suggestedDifficulty,
-} from '@/features/practice-intelligence/adaptive-difficulty'
+import { clampDifficulty, computeEma, difficultyLabel, getSuggestedDifficulty, suggestedDifficulty, } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
 
 function seedScores(type: string, scores: number[]) {

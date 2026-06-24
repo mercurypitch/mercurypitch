@@ -5,13 +5,13 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconLock, IconMusic, IconTarget, } from '@/components/exercise-icons'
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import type { MicroDrill } from '../drill-generator'
 import { generateDrills } from '../drill-generator'
 import { generateWeaknessReport } from '../weakness-analyzer'
 
 interface WeaknessPanelProps {
-  onStartDrill?: (exerciseType: ExerciseType) => void
+  onStartDrill?: (exerciseType: ExerciseType, config?: ExerciseConfig) => void
 }
 
 const drillIconCls = 'weakness-drill-icon-svg'
@@ -80,7 +80,9 @@ export const WeaknessPanel: Component<WeaknessPanelProps> = (props) => {
                   </div>
                   <button
                     class="weakness-drill-start"
-                    onClick={() => props.onStartDrill?.(drill.exerciseType)}
+                    onClick={() =>
+                      props.onStartDrill?.(drill.exerciseType, drill.config)
+                    }
                   >
                     Practice
                   </button>

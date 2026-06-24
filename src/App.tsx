@@ -99,13 +99,14 @@ import SightSingingExercise from '@/features/exercises/sight-singing/SightSingin
 import SirenExercise from '@/features/exercises/siren/SirenExercise'
 import SlideExercise from '@/features/exercises/slide/SlideExercise'
 import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
+import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { useRecordingController } from '@/features/recording/useRecordingController'
@@ -284,8 +285,12 @@ const AppShell: Component<AppProps> = (props) => {
     setSelectedExercise(null)
     setPendingDrill(null)
     setAutoStartExercise(false)
+    clearLaunchOverride()
   }
-  const handleQuickStart = (type: ExerciseType) => {
+  const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
+    // A targeted drill carries a one-shot difficulty / target note; a normal
+    // launch passes no config, which clears any stale override.
+    setLaunchOverride(type, config)
     setSelectedExercise(type)
     setAutoStartExercise(true)
   }

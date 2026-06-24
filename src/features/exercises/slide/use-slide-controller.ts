@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { detectSlides } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
@@ -10,11 +12,17 @@ const SCORE_ARRIVAL_WEIGHT = 0.3
 const SCORE_DEPARTURE_WEIGHT = 0.2
 const SCORE_SPEED_WEIGHT = 0.2
 const OPTIMAL_SLIDE_MS = 300
+// Baseline cents->penalty slope for arrival/departure accuracy (100 - |cents|*K).
+const CENTS_PENALTY_K = 0.8
 const METRIC_UPDATE_HZ = 10
 
 export function useSlideController(base: BaseExerciseController) {
   let targetStartMidi = 0
   let targetEndMidi = 0
+  // Per-round difficulty-scaled knobs (defaults == original at difficulty 5,
+  // where difficultyFactor(5) === 1.0). Recomputed each round in setTargets.
+  let centsPenaltyK = CENTS_PENALTY_K
+  let optimalSlideMs = OPTIMAL_SLIDE_MS
   let metricTimer: ReturnType<typeof setInterval> | undefined
   base._registerDispose(() => {
     clearInterval(metricTimer)
@@ -24,6 +32,14 @@ export function useSlideController(base: BaseExerciseController) {
   function setTargets(fromMidi: number, toMidi: number): void {
     targetStartMidi = fromMidi
     targetEndMidi = toMidi
+
+    // Scale this controller's own tolerance/timing by adaptive difficulty.
+    const difficulty = launchDifficulty(EXERCISE_SLIDE)
+    const factor = difficultyFactor(difficulty)
+    // Tighter accept window when harder: steeper cents penalty (1/factor).
+    centsPenaltyK = CENTS_PENALTY_K / factor
+    // Less time allowed when harder: shrink the optimal-slide window.
+    optimalSlideMs = OPTIMAL_SLIDE_MS * factor
   }
 
   function startLoop(): void {
@@ -61,16 +77,18 @@ export function useSlideController(base: BaseExerciseController) {
       const avgResidual = totalResidual / n
       const smoothness = Math.round(Math.max(0, 100 - avgResidual * 100 * 2))
 
-      // Arrival accuracy from latest pitch
+      // Arrival accuracy from latest pitch (difficulty-scaled penalty slope)
       const latest = validSamples[validSamples.length - 1]!
       const arrivalOff = Math.abs(latest.midi - targetEndMidi) * 100
-      const arrivalAccuracy = Math.round(Math.max(0, 100 - arrivalOff * 0.8))
+      const arrivalAccuracy = Math.round(
+        Math.max(0, 100 - arrivalOff * centsPenaltyK),
+      )
 
-      // Departure accuracy from first valid sample
+      // Departure accuracy from first valid sample (difficulty-scaled slope)
       const first = validSamples[0]!
       const departureOff = Math.abs(first.midi - targetStartMidi) * 100
       const departureAccuracy = Math.round(
-        Math.max(0, 100 - departureOff * 0.8),
+        Math.max(0, 100 - departureOff * centsPenaltyK),
       )
 
       // Elapsed
@@ -149,33 +167,36 @@ export function useSlideController(base: BaseExerciseController) {
     const smoothnessScore = primarySlide.directness
 
     // Arrival accuracy: how close the end pitch is to target
+    // (difficulty-scaled penalty slope: tighter window when harder)
     let arrivalScore = 0
     if (targetEndMidi > 0) {
       const endCentsOff = Math.abs(primarySlide.endMidi - targetEndMidi) * 100
-      arrivalScore = Math.max(0, 100 - endCentsOff * 0.8)
+      arrivalScore = Math.max(0, 100 - endCentsOff * centsPenaltyK)
     } else {
       arrivalScore = primarySlide.score // fallback to analyzer score
     }
 
     // Departure accuracy: how close the start pitch is to target
+    // (difficulty-scaled penalty slope)
     let departureScore = 0
     if (targetStartMidi > 0) {
       const startCentsOff =
         Math.abs(primarySlide.startMidi - targetStartMidi) * 100
-      departureScore = Math.max(0, 100 - startCentsOff * 0.8)
+      departureScore = Math.max(0, 100 - startCentsOff * centsPenaltyK)
     } else {
       departureScore = 70 // neutral when no start target specified
     }
 
-    // Speed score: faster slides score higher, but not too fast
+    // Speed score: faster slides score higher, but not too fast.
+    // Optimal window is difficulty-scaled: less time allowed when harder.
     const slideMs = primarySlide.durationMs
     let speedScore: number
     if (slideMs <= 0) {
       speedScore = 0
-    } else if (slideMs <= OPTIMAL_SLIDE_MS) {
+    } else if (slideMs <= optimalSlideMs) {
       speedScore = 100
     } else {
-      speedScore = Math.max(0, 100 - (slideMs - OPTIMAL_SLIDE_MS) * 0.15)
+      speedScore = Math.max(0, 100 - (slideMs - optimalSlideMs) * 0.15)
     }
 
     const classificationMap: Record<string, number> = {

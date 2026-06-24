@@ -3,18 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  generateDrills,
-  generateIntervalDrill,
-  generatePrecisionDrill,
-  generateRangeDrill,
-  generateStaminaDrill,
-} from '@/features/practice-intelligence/drill-generator'
-import type {
-  WeakExercise,
-  WeakInterval,
-  WeakPitch,
-} from '@/features/practice-intelligence/weakness-analyzer'
+import { generateDrills, generateIntervalDrill, generatePrecisionDrill, generateRangeDrill, generateStaminaDrill, } from '@/features/practice-intelligence/drill-generator'
+import type { WeakExercise, WeakInterval, WeakPitch, } from '@/features/practice-intelligence/weakness-analyzer'
 
 describe('generatePrecisionDrill', () => {
   it('generates a drill for a weak exercise', () => {

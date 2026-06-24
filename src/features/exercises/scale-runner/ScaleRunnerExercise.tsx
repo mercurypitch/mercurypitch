@@ -5,6 +5,7 @@ import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icon
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -12,6 +13,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
+import { EXERCISE_SCALE_RUNNER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useScaleRunnerController } from './use-scale-runner-controller'
 
@@ -33,7 +35,15 @@ const SCALE_TYPES: { value: ScaleType; label: string }[] = [
 
 const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
+    untrack(() => {
+      // A weak-pitch range drill can request a specific starting note.
+      const requested = launchTargetNote(EXERCISE_SCALE_RUNNER)
+      const preset = vocalRangePreset()
+      return requested !== undefined &&
+        getNoteOptions(preset).includes(requested)
+        ? requested
+        : getDefaultNote(preset)
+    }),
   )
   const [scaleType, setScaleType] = createSignal<ScaleType>('major')
   const [direction, setDirection] = createSignal<'up' | 'down'>('up')

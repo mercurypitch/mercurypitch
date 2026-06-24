@@ -3,19 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  computeImprovementRate,
-  computeMonthlyTrends,
-  computePerExerciseStats,
-  computePracticeStats,
-  computeRollingAverage,
-  computeWeeklyTrends,
-  getRecentScores,
-} from '@/features/practice-intelligence/trends-computer'
-import {
-  clearExerciseHistory,
-  recordExerciseResult,
-} from '@/stores/exercise-history-store'
+import { computeImprovementRate, computeMonthlyTrends, computePerExerciseStats, computePracticeStats, computeRollingAverage, computeWeeklyTrends, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
+import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
 
 function seedSession(score: number, daysAgo: number) {

@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { scoreNoteAccuracy } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
@@ -23,9 +25,11 @@ const CHORD_LABELS: Record<ChordType, string> = {
   maj6: 'Major 6th',
 }
 
-const NOTE_PLAY_DURATION_MS = 600
+// Baselines at difficulty 5 (difficultyFactor(5) === 1.0). Harder levels
+// shorten the playback/hold and match window (factor < 1); easier lengthen them.
+const NOTE_PLAY_DURATION_BASE_MS = 600
 const GAP_BETWEEN_NOTES_MS = 300
-const MATCH_WINDOW_MS = 2500
+const MATCH_WINDOW_BASE_MS = 2500
 
 function avgOf(arr: number[]): number {
   return arr.length > 0
@@ -59,6 +63,9 @@ export function useChordStackerController(
   })
   let baseMidi = 60
   let _cancelled = false
+  // Adaptive timing for this session's chord set, set when it is generated.
+  let notePlayDurationMs = NOTE_PLAY_DURATION_BASE_MS
+  let matchWindowMs = MATCH_WINDOW_BASE_MS
 
   function setBase(midi: number): void {
     _cancelled = false
@@ -66,6 +73,12 @@ export function useChordStackerController(
     chordTypes = shuffleArray(Object.keys(CHORD_DEGREES) as ChordType[])
     roundIndex = 0
     allRoundScores = []
+
+    // Scale playback/hold and match window by difficulty (5 == baseline).
+    const difficulty = launchDifficulty(EXERCISE_CHORD_STACKER)
+    const factor = difficultyFactor(difficulty)
+    notePlayDurationMs = Math.round(NOTE_PLAY_DURATION_BASE_MS * factor)
+    matchWindowMs = Math.round(MATCH_WINDOW_BASE_MS * factor)
   }
 
   function startRounds(): void {
@@ -101,7 +114,7 @@ export function useChordStackerController(
     for (let i = 0; i < chordNotes.length; i++) {
       const midi = chordNotes[i]
       batch(() => base._updateMetrics({ currentMidi: midi }))
-      await audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      await audioEngine.playTone(midiToFreq(midi), notePlayDurationMs)
       if (_cancelled) return
       if (i < chordNotes.length - 1) {
         await new Promise((r) => setTimeout(r, GAP_BETWEEN_NOTES_MS))
@@ -136,7 +149,7 @@ export function useChordStackerController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       scoreCurrentNote()
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs)
   }
 
   function scoreCurrentNote(): void {
@@ -144,7 +157,7 @@ export function useChordStackerController(
     const noteScore = scoreNoteAccuracy(
       base.pitchHistory(),
       targetMidi,
-      MATCH_WINDOW_MS,
+      matchWindowMs,
     )
 
     noteScores.push(noteScore)

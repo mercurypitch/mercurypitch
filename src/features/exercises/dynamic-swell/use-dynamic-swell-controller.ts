@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { intensityFromPitchResults } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
@@ -8,6 +10,8 @@ import type { BaseExerciseController } from '../use-base-exercise'
 
 const NOTE_PLAY_DURATION_MS = 800
 const HOLD_DURATION_MS = 8000
+// Cents-deviation penalty for the steadiness score (`100 - avgDeviation * K`).
+const DEVIATION_PENALTY = 2.0
 
 const INTERVALS = [0, 2, 4, 7] // unison, M2, M3, P5
 
@@ -25,9 +29,19 @@ export function useDynamicSwellController(
   })
   let holdStartTime = 0
   let _cancelled = false
+  // Adaptive constants resolved per round set; default level 5 == originals.
+  let holdDurationMs = HOLD_DURATION_MS
+  let deviationPenalty = DEVIATION_PENALTY
 
   function setBase(baseMidi: number): void {
     _cancelled = false
+    // Scale steadiness tolerance + swell duration by adaptive difficulty.
+    const difficulty = launchDifficulty(EXERCISE_DYNAMIC_SWELL)
+    const f = difficultyFactor(difficulty)
+    // Harder = longer hold: base * (2 - factor). At d5, f=1 -> 8000ms.
+    holdDurationMs = Math.round(HOLD_DURATION_MS * (2 - f))
+    // Harder = tighter window: penalty / factor. At d5, f=1 -> 2.0.
+    deviationPenalty = DEVIATION_PENALTY / f
     targetNotes = INTERVALS.map((i) => baseMidi + i)
     // Shuffle for variety
     targetNotes.sort(() => Math.random() - 0.5)
@@ -71,7 +85,7 @@ export function useDynamicSwellController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateRound()
-    }, HOLD_DURATION_MS)
+    }, holdDurationMs)
   }
 
   function evaluateRound(): void {
@@ -94,7 +108,9 @@ export function useDynamicSwellController(
       if (deviations.length > 0) {
         const avgDeviation =
           deviations.reduce((a, b) => a + b, 0) / deviations.length
-        roundScore = Math.round(Math.max(0, 100 - avgDeviation * 2.0))
+        roundScore = Math.round(
+          Math.max(0, 100 - avgDeviation * deviationPenalty),
+        )
       }
     }
 

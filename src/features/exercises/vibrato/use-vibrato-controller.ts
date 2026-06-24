@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { detectVibrato } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
@@ -13,6 +15,21 @@ const SCORE_RATE_WEIGHT = 0.4
 const SCORE_DEPTH_WEIGHT = 0.3
 const SCORE_CONSISTENCY_WEIGHT = 0.3
 const METRIC_UPDATE_MS = 1500
+
+/**
+ * Tighten an acceptance window around its center by the difficulty factor.
+ * Harder (factor < 1) shrinks the half-width; difficultyFactor(5) === 1.0,
+ * so at the default level the returned bounds equal [min, max] exactly.
+ */
+function scaleWindow(
+  min: number,
+  max: number,
+  difficulty: number,
+): { min: number; max: number } {
+  const center = (min + max) / 2
+  const half = ((max - min) / 2) * difficultyFactor(difficulty)
+  return { min: center - half, max: center + half }
+}
 
 export function useVibratoController(base: BaseExerciseController) {
   let metricTimer: ReturnType<typeof setInterval> | undefined
@@ -43,32 +60,34 @@ export function useVibratoController(base: BaseExerciseController) {
 
       if (!vibResult.detected) return
 
+      // Tighten acceptance windows with adaptive difficulty (harder = narrower).
+      const difficulty = launchDifficulty(EXERCISE_VIBRATO)
+      const rateWin = scaleWindow(IDEAL_RATE_MIN, IDEAL_RATE_MAX, difficulty)
+      const depthWin = scaleWindow(IDEAL_DEPTH_MIN, IDEAL_DEPTH_MAX, difficulty)
+
       // Rate score
       let rateScore: number
-      if (
-        vibResult.rateHz >= IDEAL_RATE_MIN &&
-        vibResult.rateHz <= IDEAL_RATE_MAX
-      ) {
+      if (vibResult.rateHz >= rateWin.min && vibResult.rateHz <= rateWin.max) {
         rateScore = 100
-      } else if (vibResult.rateHz < IDEAL_RATE_MIN) {
-        rateScore = Math.max(0, (vibResult.rateHz / IDEAL_RATE_MIN) * 100)
+      } else if (vibResult.rateHz < rateWin.min) {
+        rateScore = Math.max(0, (vibResult.rateHz / rateWin.min) * 100)
       } else {
-        rateScore = Math.max(0, 100 - (vibResult.rateHz - IDEAL_RATE_MAX) * 10)
+        rateScore = Math.max(0, 100 - (vibResult.rateHz - rateWin.max) * 10)
       }
 
       // Depth score
       let depthScore: number
       if (
-        vibResult.depthCents >= IDEAL_DEPTH_MIN &&
-        vibResult.depthCents <= IDEAL_DEPTH_MAX
+        vibResult.depthCents >= depthWin.min &&
+        vibResult.depthCents <= depthWin.max
       ) {
         depthScore = 100
-      } else if (vibResult.depthCents < IDEAL_DEPTH_MIN) {
-        depthScore = Math.max(0, (vibResult.depthCents / IDEAL_DEPTH_MIN) * 100)
+      } else if (vibResult.depthCents < depthWin.min) {
+        depthScore = Math.max(0, (vibResult.depthCents / depthWin.min) * 100)
       } else {
         depthScore = Math.max(
           0,
-          100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8,
+          100 - (vibResult.depthCents - depthWin.max) * 0.8,
         )
       }
 
@@ -132,32 +151,34 @@ export function useVibratoController(base: BaseExerciseController) {
       }
     }
 
-    // Rate score: best in 4-7 Hz range, penalty outside
+    // Tighten acceptance windows with adaptive difficulty (harder = narrower).
+    const difficulty = launchDifficulty(EXERCISE_VIBRATO)
+    const rateWin = scaleWindow(IDEAL_RATE_MIN, IDEAL_RATE_MAX, difficulty)
+    const depthWin = scaleWindow(IDEAL_DEPTH_MIN, IDEAL_DEPTH_MAX, difficulty)
+
+    // Rate score: best inside the (scaled) rate window, penalty outside
     let rateScore: number
-    if (
-      vibResult.rateHz >= IDEAL_RATE_MIN &&
-      vibResult.rateHz <= IDEAL_RATE_MAX
-    ) {
+    if (vibResult.rateHz >= rateWin.min && vibResult.rateHz <= rateWin.max) {
       rateScore = 100
-    } else if (vibResult.rateHz < IDEAL_RATE_MIN) {
-      rateScore = Math.max(0, (vibResult.rateHz / IDEAL_RATE_MIN) * 100)
+    } else if (vibResult.rateHz < rateWin.min) {
+      rateScore = Math.max(0, (vibResult.rateHz / rateWin.min) * 100)
     } else {
-      rateScore = Math.max(0, 100 - (vibResult.rateHz - IDEAL_RATE_MAX) * 10)
+      rateScore = Math.max(0, 100 - (vibResult.rateHz - rateWin.max) * 10)
     }
 
-    // Depth score: best in 10-50 cents range
+    // Depth score: best inside the (scaled) depth window
     let depthScore: number
     if (
-      vibResult.depthCents >= IDEAL_DEPTH_MIN &&
-      vibResult.depthCents <= IDEAL_DEPTH_MAX
+      vibResult.depthCents >= depthWin.min &&
+      vibResult.depthCents <= depthWin.max
     ) {
       depthScore = 100
-    } else if (vibResult.depthCents < IDEAL_DEPTH_MIN) {
-      depthScore = Math.max(0, (vibResult.depthCents / IDEAL_DEPTH_MIN) * 100)
+    } else if (vibResult.depthCents < depthWin.min) {
+      depthScore = Math.max(0, (vibResult.depthCents / depthWin.min) * 100)
     } else {
       depthScore = Math.max(
         0,
-        100 - (vibResult.depthCents - IDEAL_DEPTH_MAX) * 0.8,
+        100 - (vibResult.depthCents - depthWin.max) * 0.8,
       )
     }
 

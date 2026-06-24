@@ -1,9 +1,12 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
+// Baselines reproduced exactly at difficulty 5 (difficultyFactor(5) === 1.0).
 const HIT_TOLERANCE_CENTS = 50
 const FALL_DURATION_MS = 5000
 const SPAWN_INTERVAL_MS = 2200
@@ -36,6 +39,12 @@ export function usePitchPursuitController(base: BaseExerciseController) {
   let totalAccuracy = 0
   let gameLoopId = 0
 
+  // Adaptive params, resolved at round setup. Default to baselines so the
+  // controller behaves identically before startGame() runs.
+  let hitToleranceCents = HIT_TOLERANCE_CENTS
+  let fallDurationMs = FALL_DURATION_MS
+  let totalNotes = TOTAL_NOTES
+
   const NOTE_POOL = [60, 62, 64, 65, 67, 69, 71, 72, 55, 57, 59]
 
   function spawnNote(): void {
@@ -59,6 +68,18 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     combo = 0
     maxCombo = 0
     totalAccuracy = 0
+
+    // Resolve adaptive difficulty for this round. Each scaled expression
+    // reduces to its baseline at d5 because difficultyFactor(5) === 1.0.
+    const difficulty = launchDifficulty(EXERCISE_PITCH_PURSUIT)
+    const factor = difficultyFactor(difficulty)
+    // Acceptance window: harder = tighter (|cents| <= W * factor).
+    hitToleranceCents = HIT_TOLERANCE_CENTS * factor
+    // Pursuit duration: harder = shorter fall, so the target moves faster.
+    fallDurationMs = FALL_DURATION_MS * factor
+    // Target count: harder = more notes (2 - factor grows as factor shrinks).
+    totalNotes = Math.round(TOTAL_NOTES * (2 - factor))
+
     lastSpawnTime = performance.now()
     spawnNote()
 
@@ -81,7 +102,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     // Spawn new notes
     if (
       now - lastSpawnTime > SPAWN_INTERVAL_MS &&
-      notes.filter((n) => n.active).length < TOTAL_NOTES
+      notes.filter((n) => n.active).length < totalNotes
     ) {
       spawnNote()
       lastSpawnTime = now
@@ -98,7 +119,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
       if (!note.active || note.scored) continue
 
       const elapsed = now - note.spawnedAt
-      const progress = elapsed / FALL_DURATION_MS
+      const progress = elapsed / fallDurationMs
       const yFrac = progress
 
       // Note reached target zone
@@ -107,7 +128,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
         if (currentMidi > 0) {
           const cents = (currentMidi - note.midi) * 100
-          if (Math.abs(cents) <= HIT_TOLERANCE_CENTS) {
+          if (Math.abs(cents) <= hitToleranceCents) {
             note.hit = true
             hits++
             combo++
@@ -139,7 +160,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     notes = notes.filter(
       (n) =>
         n.active ||
-        (n.scored && performance.now() - n.spawnedAt < FALL_DURATION_MS + 1000),
+        (n.scored && performance.now() - n.spawnedAt < fallDurationMs + 1000),
     )
 
     // Update live metrics
@@ -158,7 +179,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
     // End condition
     const newlySpawned = notes.filter((n) => n.active).length
-    if (total >= TOTAL_NOTES && newlySpawned === 0 && notes.length === 0) {
+    if (total >= totalNotes && newlySpawned === 0 && notes.length === 0) {
       finish()
       return
     }

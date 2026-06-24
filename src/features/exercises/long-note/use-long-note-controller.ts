@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_LONG_NOTE } from '../types'
@@ -17,6 +19,9 @@ const METRIC_WINDOW_SEC = 3
 export function useLongNoteController(base: BaseExerciseController) {
   let targetMidi = 0
   let metricTimer: ReturnType<typeof setInterval> | undefined
+  // scale by adaptive difficulty (captured at round setup; default == base at d5)
+  let steadyZoneThresholdCents = STEADY_ZONE_THRESHOLD_CENTS
+  let targetDurationSec = TARGET_DURATION_SEC
   base._registerDispose(() => {
     clearInterval(metricTimer)
     metricTimer = undefined
@@ -25,6 +30,11 @@ export function useLongNoteController(base: BaseExerciseController) {
   function setTarget(midi: number): void {
     targetMidi = midi
     base._setTargetPitch(midi)
+    // scale by adaptive difficulty
+    const difficulty = launchDifficulty(EXERCISE_LONG_NOTE)
+    const factor = difficultyFactor(difficulty)
+    targetDurationSec = TARGET_DURATION_SEC * (2 - factor) // longer when harder
+    steadyZoneThresholdCents = STEADY_ZONE_THRESHOLD_CENTS * factor // tighter when harder
   }
 
   function startLoop(): void {
@@ -55,7 +65,7 @@ export function useLongNoteController(base: BaseExerciseController) {
       const absDeviations = deviations.map((d) => Math.abs(d))
       const maxDrift = Math.round(Math.max(...absDeviations))
       const steadyCount = absDeviations.filter(
-        (d) => d <= STEADY_ZONE_THRESHOLD_CENTS,
+        (d) => d <= steadyZoneThresholdCents, // scaled by adaptive difficulty
       ).length
       const steadyPct = Math.round((steadyCount / deviations.length) * 100)
 
@@ -125,9 +135,9 @@ export function useLongNoteController(base: BaseExerciseController) {
     const absDeviations = deviations.map((d) => Math.abs(d))
     const maxDrift = Math.max(...absDeviations)
 
-    // Steady zone: % of samples within ±15 cents
+    // Steady zone: % of samples within scaled cents tolerance
     const steadyCount = absDeviations.filter(
-      (d) => d <= STEADY_ZONE_THRESHOLD_CENTS,
+      (d) => d <= steadyZoneThresholdCents, // scaled by adaptive difficulty
     ).length
     const steadyPct = (steadyCount / deviations.length) * 100
 
@@ -142,7 +152,7 @@ export function useLongNoteController(base: BaseExerciseController) {
     const steadyScore = steadyPct // already 0-100
     const durationScore = Math.min(
       100,
-      (durationSec / TARGET_DURATION_SEC) * 100,
+      (durationSec / targetDurationSec) * 100, // scaled by adaptive difficulty
     )
 
     const score = Math.round(
