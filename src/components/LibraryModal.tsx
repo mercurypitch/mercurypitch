@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { CheckCircle, FilePlus, MusicBoard, MusicNote, Trash2, X, } from '@/components/icons'
+import { CheckCircle, FilePlus, MusicNote, Playlist, Trash2, X, } from '@/components/icons'
 import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -608,7 +608,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               aria-label="Playlists"
               title="Playlists"
             >
-              <MusicBoard />
+              <Playlist />
               Playlists
               <span class="tab-count">
                 {Object.keys(library().playlists).length}
