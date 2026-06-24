@@ -71,30 +71,23 @@ test.describe('Vocal Analysis Tab', () => {
   }) => {
     await switchTab(page, 'analysis')
 
-    const modeToggle = page.locator('.mode-toggle')
-    await expect(modeToggle).toBeVisible({ timeout: 5000 })
+    const historyBtn = page.getByTestId('analysis-mode-history')
+    const liveBtn = page.getByTestId('analysis-mode-live')
+    await expect(historyBtn).toBeVisible({ timeout: 5000 })
 
     // History should be active by default
-    const historyBtn = modeToggle.locator('button').first()
     await expect(historyBtn).toHaveClass(/active/)
 
-    // Click Live Mic
-    const liveBtn = modeToggle.locator('button').last()
+    // Click Live Mic → it becomes active
     await liveBtn.click()
-    await page.waitForTimeout(500)
-
-    // Live Mic button should now be active
     await expect(liveBtn).toHaveClass(/active/)
 
-    // Should show "Start Live Analysis" button
-    await expect(page.locator('.analyze-btn.live-start')).toBeVisible()
+    // Should show the "Start Live Analysis" button
+    await expect(page.getByTestId('analyze-live-start')).toBeVisible()
 
-    // Switch back to History
+    // Switch back to History → its start button returns
     await historyBtn.click()
-    await page.waitForTimeout(300)
-
-    // Should show "Start Vocal Analysis" button
-    await expect(page.locator('.analyze-btn')).toBeVisible()
+    await expect(page.getByTestId('analyze-history-start')).toBeVisible()
   })
 
   // ── Vocal Techniques Grid ──────────────────────────────────
