@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { EnvelopePoint, FatigueCheckpoint } from '@/lib/vocal-analyzer'
-import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, compareIntensity, computeHarmonicRichness, computeHNR, computeRMSEnvelope, detectResonance, detectSlides, detectVibrato, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
+import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, compareIntensity, computeHarmonicRichness, computeHNR, computePitchStability, computeRMSEnvelope, computeTonalQuality, detectResonance, detectSlides, detectVibrato, detectVocalRange, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 
 // ── computeRMSEnvelope ─────────────────────────────────────────
 
@@ -670,5 +670,152 @@ describe('analyzeFatigue', () => {
     const result = analyzeFatigue(checkpoints)
     // Only HNR declining significantly, needs 2+ metrics
     expect(result.fatigued).toBe(false)
+  })
+})
+
+// ── computePitchStability ──────────────────────────────────────
+
+describe('computePitchStability', () => {
+  it('returns perfect stability for identical pitches', () => {
+    const history = Array.from({ length: 30 }, (_, i) => ({
+      time: i * 0.01,
+      midi: 60,
+      clarity: 0.9,
+    }))
+    const result = computePitchStability(history)
+    expect(result).toBe(100)
+  })
+
+  it('returns low stability for highly variable pitches', () => {
+    const history = Array.from({ length: 30 }, (_, i) => ({
+      time: i * 0.01,
+      midi: 60 + Math.sin(i * 0.5) * 3, // ±3 semitones wobble
+      clarity: 0.9,
+    }))
+    const result = computePitchStability(history)
+    expect(result).toBeLessThan(50)
+  })
+
+  it('returns 0 for empty input', () => {
+    const result = computePitchStability([])
+    expect(result).toBe(0)
+  })
+
+  it('returns 0 for single sample', () => {
+    const result = computePitchStability([{ time: 0, midi: 64, clarity: 0.8 }])
+    expect(result).toBe(0)
+  })
+
+  it('same stability regardless of clarity as long as above threshold', () => {
+    const lowerClarity = Array.from({ length: 20 }, (_, i) => ({
+      time: i * 0.01,
+      midi: 60,
+      clarity: 0.6,
+    }))
+    const higherClarity = Array.from({ length: 20 }, (_, i) => ({
+      time: i * 0.01,
+      midi: 60,
+      clarity: 0.95,
+    }))
+    // Same midi → same stability, since both are above the 0.5 clarity threshold
+    expect(computePitchStability(lowerClarity)).toBe(
+      computePitchStability(higherClarity),
+    )
+  })
+})
+
+// ── computeTonalQuality ────────────────────────────────────────
+
+describe('computeTonalQuality', () => {
+  it('returns professional for perfect scores', () => {
+    const result = computeTonalQuality(100, 100, 100)
+    expect(result.score).toBe(100)
+    expect(result.label).toBe('Professional')
+  })
+
+  it('returns nascent for zero scores', () => {
+    const result = computeTonalQuality(0, 0, 0)
+    expect(result.score).toBe(0)
+    expect(result.label).toBe('Nascent')
+  })
+
+  it('weights richness more than HNR or stability', () => {
+    // Richness-only: 0*0.3 + 100*0.4 + 0*0.3 = 40
+    const richOnly = computeTonalQuality(0, 100, 0)
+    // HNR-only: 100*0.3 + 0*0.4 + 0*0.3 = 30
+    const hnrOnly = computeTonalQuality(100, 0, 0)
+    expect(richOnly.score).toBeGreaterThan(hnrOnly.score)
+  })
+
+  it('has correct label thresholds', () => {
+    expect(computeTonalQuality(90, 90, 90).label).toBe('Professional')
+    expect(computeTonalQuality(70, 70, 70).label).toBe('Excellent')
+    expect(computeTonalQuality(55, 55, 55).label).toBe('Good')
+    expect(computeTonalQuality(40, 40, 40).label).toBe('Developing')
+    expect(computeTonalQuality(20, 20, 20).label).toBe('Nascent')
+  })
+})
+
+// ── detectVocalRange ───────────────────────────────────────────
+
+describe('detectVocalRange', () => {
+  it('returns unknown for fewer than 10 samples', () => {
+    const result = detectVocalRange([60, 62, 64])
+    expect(result.voiceType).toBe('unknown')
+    expect(result.confident).toBe(false)
+  })
+
+  it('detects tenor range correctly', () => {
+    // Tenor: C3-C5 (48-72). Generate evenly-spaced notes across the range.
+    const midis: number[] = []
+    for (let i = 0; i < 100; i++) {
+      midis.push(48 + Math.round((i / 99) * 24)) // 48-72, evenly spread
+    }
+    const result = detectVocalRange(midis)
+    expect(result.voiceType).toBe('tenor')
+    expect(result.confident).toBe(true)
+  })
+
+  it('detects soprano range correctly', () => {
+    // Soprano: C4-C6 (60-84)
+    const midis: number[] = []
+    for (let i = 0; i < 100; i++) {
+      midis.push(60 + Math.round((i / 99) * 24)) // 60-84
+    }
+    const result = detectVocalRange(midis)
+    expect(result.voiceType).toBe('soprano')
+  })
+
+  it('detects bass range correctly', () => {
+    // Bass: E2-E4 (40-64)
+    const midis: number[] = []
+    for (let i = 0; i < 100; i++) {
+      midis.push(40 + Math.round((i / 99) * 24)) // 40-64
+    }
+    const result = detectVocalRange(midis)
+    expect(result.voiceType).toBe('bass')
+  })
+
+  it('filters outliers with 5th/95th percentile', () => {
+    // Mostly baritone, with a few squeaks
+    const midis: number[] = []
+    for (let i = 0; i < 98; i++) {
+      midis.push(43 + Math.round((i / 97) * 24)) // baritone: G2-G4
+    }
+    midis.push(96) // outlier: very high squeak (C7)
+    midis.push(20) // outlier: very low growl (E0)
+    const result = detectVocalRange(midis)
+    // Should still detect baritone despite outliers
+    expect(result.voiceType).toBe('baritone')
+  })
+
+  it('returns note names for low/high', () => {
+    const midis: number[] = []
+    for (let i = 0; i < 100; i++) {
+      midis.push(60 + Math.round((i / 99) * 24))
+    }
+    const result = detectVocalRange(midis)
+    expect(result.lowNote).toMatch(/^[A-G][#b]?\d$/)
+    expect(result.highNote).toMatch(/^[A-G][#b]?\d$/)
   })
 })

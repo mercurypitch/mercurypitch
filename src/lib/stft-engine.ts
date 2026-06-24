@@ -186,6 +186,24 @@ function bluesteinDFT(
  * Periodic Hann window matching `torch.hann_window(N, periodic=True)`.
  * Formula: 0.5 * (1 - cos(2π * n / N)) for n = 0..N-1
  */
+export type WindowType = 'hann' | 'hamming' | 'blackman-harris'
+
+/** Create a window function for the given FFT size and window type. */
+export function makeWindow(
+  nFft: number,
+  windowType: WindowType = 'hann',
+): Float32Array {
+  switch (windowType) {
+    case 'hamming':
+      return periodicHammingWindow(nFft)
+    case 'blackman-harris':
+      return periodicBlackmanHarrisWindow(nFft)
+    default:
+      return periodicHannWindow(nFft)
+  }
+}
+
+/** Periodic Hann window matching torch.hann_window(N, periodic=True). */
 export function periodicHannWindow(nFft: number): Float32Array {
   const win = new Float32Array(nFft)
   for (let i = 0; i < nFft; i++) {
@@ -194,22 +212,44 @@ export function periodicHannWindow(nFft: number): Float32Array {
   return win
 }
 
+/** Periodic Hamming window: 0.54 - 0.46*cos(2πn/N). Better sidelobe suppression than Hann. */
+function periodicHammingWindow(nFft: number): Float32Array {
+  const win = new Float32Array(nFft)
+  for (let i = 0; i < nFft; i++) {
+    win[i] = 0.54 - 0.46 * Math.cos((2 * Math.PI * i) / nFft)
+  }
+  return win
+}
+
+/** Periodic Blackman-Harris window: best spectral leakage suppression for vocal formant analysis. */
+function periodicBlackmanHarrisWindow(nFft: number): Float32Array {
+  const win = new Float32Array(nFft)
+  for (let i = 0; i < nFft; i++) {
+    const a = (2 * Math.PI * i) / nFft
+    win[i] =
+      0.35875 -
+      0.48829 * Math.cos(a) +
+      0.14128 * Math.cos(2 * a) -
+      0.01168 * Math.cos(3 * a)
+  }
+  return win
+}
+
 /**
- * Forward STFT matching PyTorch's `torch.stft`:
- *   torch.stft(input, n_fft, hop_length, window=torch.hann_window(n_fft, periodic=True),
- *              center=True, return_complex=True)
+ * Forward STFT matching PyTorch's `torch.stft`.
  *
  * @param audio  Mono audio samples (Float32Array)
- * @param nFft   FFT size (can be non-power-of-2, uses Bluestein's algorithm)
+ * @param nFft   FFT size
  * @param hopLength  Hop length between successive frames
- * @returns StftResult with interleaved complex spectrogram data
+ * @param windowType  Window function (default: 'hann')
  */
 export function stftForward(
   audio: Float32Array,
   nFft: number,
   hopLength: number,
+  windowType: WindowType = 'hann',
 ): StftResult {
-  const window = periodicHannWindow(nFft)
+  const window = makeWindow(nFft, windowType)
   const padSize = nFft / 2
   const paddedLen = audio.length + nFft // padSize on each side = nFft total
   const nFrames = Math.max(1, Math.floor((paddedLen - nFft) / hopLength) + 1)

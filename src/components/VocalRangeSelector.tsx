@@ -1,4 +1,8 @@
 import type { Component } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
+import type { VocalRangeResult } from '@/lib/vocal-analyzer'
+import { detectVocalRange } from '@/lib/vocal-analyzer'
+import { getSessionHistory } from '@/stores/practice-session-store'
 import { setVocalRangePreset, vocalRangePreset } from '@/stores/settings-store'
 
 interface VocalRangeSelectorProps {
@@ -8,8 +12,71 @@ interface VocalRangeSelectorProps {
 export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
   props,
 ) => {
+  const [detectedRange, setDetectedRange] =
+    createSignal<VocalRangeResult | null>(null)
+
+  // Collect MIDI notes from session history for auto-detection
+  const midiHistory = createMemo(() => {
+    const history = getSessionHistory()
+    const midis: number[] = []
+    for (const session of history) {
+      for (const pr of session.practiceItemResult) {
+        for (const nr of pr.noteResult) {
+          if (nr.item?.note?.midi !== undefined && nr.item.note.midi > 0) {
+            midis.push(nr.item.note.midi)
+          }
+        }
+      }
+    }
+    return midis
+  })
+
+  const handleAutoDetect = () => {
+    const result = detectVocalRange(midiHistory())
+    setDetectedRange(result)
+    if (result.confident && result.voiceType !== 'unknown') {
+      setVocalRangePreset(result.voiceType)
+    }
+  }
+
   return (
     <div class={`tier-selector ${props.class ?? ''}`}>
+      {/* Auto-detect button */}
+      <Show when={midiHistory().length >= 10}>
+        <button
+          class="welcome-tier-btn welcome-tier-auto"
+          onClick={handleAutoDetect}
+          title="Auto-detect from your singing history"
+          style={{
+            width: '100%',
+            'margin-bottom': '0.5rem',
+            'justify-content': 'center',
+            gap: '8px',
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span class="tier-name">
+            {detectedRange()?.confident === true
+              ? `Auto: ${detectedRange()!.voiceType} (${detectedRange()!.lowNote}–${detectedRange()!.highNote})`
+              : detectedRange() !== null
+                ? `Not enough data (${midiHistory().length} notes)`
+                : `Auto-Detect (${midiHistory().length} notes)`}
+          </span>
+        </button>
+      </Show>
+
       <div
         class="welcome-tier-buttons"
         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;"

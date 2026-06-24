@@ -3,21 +3,44 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { AnnotationControls } from '@/components/AnnotationControls'
+import { AnnotationLayer } from '@/components/AnnotationLayer'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { authVersion } from '@/db/services/user-service'
+import { AlignClient, OnsetClient } from '@/lib/analysis-clients'
+import { computeNNLSChroma, detectChords, simplifyChordSequence, } from '@/lib/chord-detector'
+import type { ColourMapId } from '@/lib/colour-maps'
+import { nextColourMap } from '@/lib/colour-maps'
 import { IS_DEV } from '@/lib/defaults'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { computeCentsDeviation, midiToNoteName } from '@/lib/frequency-to-note'
+import { detectKeyFromSpectra } from '@/lib/key-detector'
 import type { LiveAnalysisSnapshot, LivePitchSample, } from '@/lib/live-pitch-analysis'
 import { analyzeLiveBuffer } from '@/lib/live-pitch-analysis'
 import { PitchDetector } from '@/lib/pitch-detector'
+import { segmentAudio } from '@/lib/segmenter'
+import { SpectralClient } from '@/lib/spectral-client'
+import type { WindowType } from '@/lib/stft-engine'
+import { getTransforms, registerBuiltinTransforms, } from '@/lib/transform-registry'
 import { generateMockSessions } from '@/lib/vocal-analysis-mock'
 import type { BreathinessResult, FatigueCheckpoint, FatigueResult, HarmonicRichnessResult, ResonanceResult, SlideTrackingResult, VibratoResult, } from '@/lib/vocal-analyzer'
-import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, detectSlides, detectVibrato, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
+import { analyzeFatigue, approximateBreathiness, approximateResonance, approximateRichness, computePitchStability, detectSlides, detectVibrato, intensityFromPitchResults, } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores'
-import type { PitchResult, SessionResult } from '@/types'
+import { annotations, createTimeInstant, setAnnotations, } from '@/stores/annotation-store'
+import { paneLayout, setPaneLayout } from '@/stores/pane-layout-store'
+import { setBpm } from '@/stores/transport-store'
+import type { AlignmentResult, ChordFrame, KeyResult, OnsetResult, PitchResult, SegmentationResult, SessionResult, } from '@/types'
+import { CentsDeviationCanvas } from './CentsDeviationCanvas'
+import type { PitchTracePoint } from './MultiPaneView'
+import { MultiPaneView } from './MultiPaneView'
+import { ProDashboard } from './ProDashboard/ProDashboard'
+import type { NormalizeMode } from './SpectrogramCanvas'
+import { SpectrogramCanvas } from './SpectrogramCanvas'
+import { TransformRunner } from './TransformRunner'
+import { UnitConverter } from './UnitConverter'
+import { VibratoWaveformCanvas } from './VibratoWaveformCanvas'
 
 // ============================================================
 // SVG Icons
@@ -182,6 +205,16 @@ type AnalysisMode = 'history' | 'live'
 // ============================================================
 
 export const VocalAnalysis: Component = () => {
+  // ── Engine refs (must be declared before any createMemo) ────
+  let engines: ReturnType<typeof useEngines> | null = null
+  let spectralClient: SpectralClient | null = null
+  // Try to get engine context (may fail outside EngineProvider)
+  try {
+    engines = useEngines()
+  } catch {
+    engines = null
+  }
+
   const [activeExercise, setActiveExercise] =
     createSignal<VocalExerciseType | null>(null)
   const [spectralData, setSpectralData] = createSignal<SpectrumData[]>([])
@@ -212,8 +245,76 @@ export const VocalAnalysis: Component = () => {
     createSignal<ResonanceResult | null>(null)
   const [fatigueData, setFatigueData] = createSignal<FatigueResult | null>(null)
 
+  // Spectral Worker Output
+  const [spectralMagnitude, setSpectralMagnitude] =
+    createSignal<Float32Array | null>(null)
+  const [spectralPhase, setSpectralPhase] = createSignal<Float32Array | null>(
+    null,
+  )
+  const [currentCentsOffset, setCurrentCentsOffset] = createSignal<
+    number | null
+  >(null)
+  const [currentTargetNote, setCurrentTargetNote] = createSignal<string | null>(
+    null,
+  )
+  const [pitchStability, setPitchStability] = createSignal<number | null>(null)
+
   // ── Live Mic Mode State ────────────────────────────────────
   const [analysisMode, setAnalysisMode] = createSignal<AnalysisMode>('history')
+  const [dashboardTab, setDashboardTab] = createSignal<
+    'standard' | 'pro' | 'panes'
+  >('standard')
+  const [colourMap, setColourMap] = createSignal<ColourMapId>(
+    (localStorage.getItem('pitchperfect_colour_map') as ColourMapId) ??
+      'viridis',
+  )
+  const cycleColourMap = () => {
+    const next = nextColourMap(colourMap())
+    setColourMap(next)
+    localStorage.setItem('pitchperfect_colour_map', next)
+  }
+  const [peakBinsOnly, setPeakBinsOnly] = createSignal(false)
+  const [normalizeMode, setNormalizeMode] =
+    createSignal<NormalizeMode>('column')
+  const cycleNormalizeMode = () => {
+    const modes: NormalizeMode[] = ['column', 'view', 'hybrid']
+    const idx = modes.indexOf(normalizeMode())
+    setNormalizeMode(modes[(idx + 1) % modes.length])
+  }
+  const [colourRotation, setColourRotation] = createSignal(0)
+  const [showHarmonicCursor, setShowHarmonicCursor] = createSignal(false)
+  const [hoverFrequency, setHoverFrequency] = createSignal<number | null>(null)
+  const [vocalRangeOnly, setVocalRangeOnly] = createSignal(false)
+  const [playheadPosition, setPlayheadPosition] = createSignal(0)
+
+  const [windowType, setWindowType] = createSignal<WindowType>(
+    (localStorage.getItem('pitchperfect_stft_window') as WindowType) ?? 'hann',
+  )
+  const cycleWindowType = () => {
+    const windows: WindowType[] = ['hann', 'hamming', 'blackman-harris']
+    const idx = windows.indexOf(windowType())
+    const next = windows[(idx + 1) % windows.length]
+    setWindowType(next)
+    localStorage.setItem('pitchperfect_stft_window', next)
+    spectralClient?.setWindowType(next)
+  }
+
+  // ── Annotations ────────────────────────────────────────────
+  const [selectedAnnotationId, setSelectedAnnotationId] = createSignal<
+    string | null
+  >(null)
+  /** Input ref for keyboard handler exclusion */
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === ' ' || e.code === 'Space') {
+      // Only if not typing in an input
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      e.preventDefault()
+      if (isLiveActive() || analysisMode() === 'live') {
+        createTimeInstant(playheadPosition(), undefined)
+      }
+    }
+  }
   const [isLiveActive, setIsLiveActive] = createSignal(false)
   const [livePitchBuffer, setLivePitchBuffer] = createSignal<LivePitchSample[]>(
     [],
@@ -240,20 +341,61 @@ export const VocalAnalysis: Component = () => {
     return bars
   })
 
-  // ── Engine refs for live mode ──────────────────────────────
-  let engines: ReturnType<typeof useEngines> | null = null
+  // ── Phase 4: Analysis Tools state ────────────────────────────
+  const [onsetResults, setOnsetResults] = createSignal<OnsetResult[]>([])
+  const [detectedBpm, setDetectedBpm] = createSignal<number | null>(null)
+  const [detectedKey, setDetectedKey] = createSignal<KeyResult | null>(null)
+  const [alignmentResult, setAlignmentResult] =
+    createSignal<AlignmentResult | null>(null)
+  const [isDetecting, setIsDetecting] = createSignal(false)
+  const [isAligning, setIsAligning] = createSignal(false)
+  // Accumulated spectra buffers (for onset detection)
+  const [accumulatedSpectra, setAccumulatedSpectra] = createSignal<
+    Float32Array[]
+  >([])
+
+  // ── Phase 5: Advanced Features state ────────────────────────
+  const [chordFrames, setChordFrames] = createSignal<ChordFrame[]>([])
+  const [segmentationResult, setSegmentationResult] =
+    createSignal<SegmentationResult | null>(null)
+  const [availableTransforms, setAvailableTransforms] = createSignal(0)
+
+  // ── MultiPaneView derived data ──────────────────────────────
+  const panePitchHistory = createMemo<PitchTracePoint[]>(() => {
+    const buffer = livePitchBuffer()
+    return buffer.map((s) => {
+      const midi = 69 + 12 * Math.log2(Math.max(1, s.frequency) / 440)
+      return { time: s.timestamp, midi, clarity: s.clarity * 100 }
+    })
+  })
+
+  const paneWaveformData = createMemo<Float32Array | null>(() => {
+    if (!engines) return null
+    try {
+      return engines.audioEngine.getTimeData()
+    } catch {
+      return null
+    }
+  })
+
+  const liveDuration = createMemo(() => {
+    const buffer = livePitchBuffer()
+    if (buffer.length > 0) return buffer[buffer.length - 1].timestamp + 2
+    return 60
+  })
+
+  const panePlayheadPosition = createMemo(() => {
+    if (liveDuration() <= 0) return 0
+    const buffer = livePitchBuffer()
+    return buffer[buffer.length - 1]?.timestamp ?? 0
+  })
+
+  // ── Live mode refs (engines + spectralClient declared at top) ──
   let pitchDetector: PitchDetector | null = null
   let rafId = 0
   let lastAnalysisTime = 0
   let recordingStartTime = 0
   let frameCount = 0
-
-  // Try to get engine context (may fail outside EngineProvider)
-  try {
-    engines = useEngines()
-  } catch {
-    engines = null
-  }
 
   // Load on mount and whenever the signed-in identity changes
   createEffect(() => {
@@ -311,6 +453,20 @@ export const VocalAnalysis: Component = () => {
         minAmplitude: 0.02,
       })
 
+      spectralClient = new SpectralClient()
+      spectralClient.setCallback((result) => {
+        setSpectralMagnitude(result.magnitudeSpectrum)
+        if (result.phaseSpectrum) setSpectralPhase(result.phaseSpectrum)
+        setBreathiness(result.breathiness)
+        setHarmonicRichness(result.richness)
+        setResonanceData(result.resonance)
+        // Accumulate for onset detection (keep last ~600 frames ≈ 30s at 50ms)
+        setAccumulatedSpectra((prev) => {
+          const next = [...prev, result.magnitudeSpectrum]
+          return next.length > 600 ? next.slice(-600) : next
+        })
+      })
+
       setIsLiveActive(true)
       recordingStartTime = performance.now()
       lastAnalysisTime = recordingStartTime
@@ -322,6 +478,9 @@ export const VocalAnalysis: Component = () => {
         const timeData = engines!.audioEngine.getTimeData()
         const now = performance.now()
         const elapsed = (now - recordingStartTime) / 1000
+        setPlayheadPosition(elapsed)
+
+        let currentDetectedFreq: number | null = null
 
         if (timeData.length > 0) {
           const detected = pitchDetector!.detect(timeData)
@@ -330,6 +489,7 @@ export const VocalAnalysis: Component = () => {
             detected.clarity > 0.3 &&
             detected.frequency > 65
           ) {
+            currentDetectedFreq = detected.frequency
             const sample: LivePitchSample = {
               frequency: detected.frequency,
               clarity: detected.clarity,
@@ -350,6 +510,29 @@ export const VocalAnalysis: Component = () => {
           const freqData = engines!.audioEngine.getFrequencyData()
           if (freqData.length > 0) {
             setMicSpectrum(new Float32Array(freqData))
+          }
+
+          if (timeData.length > 0 && currentDetectedFreq !== null) {
+            spectralClient?.analyzeFrame(
+              timeData,
+              engines!.audioEngine.getSampleRate(),
+              currentDetectedFreq,
+            )
+
+            const buffer = livePitchBuffer()
+            const stabilityHist = buffer.map((s) => {
+              const midi = 69 + 12 * Math.log2(Math.max(1, s.frequency) / 440)
+              return { time: s.timestamp, midi, clarity: s.clarity }
+            })
+            setPitchStability(computePitchStability(stabilityHist))
+
+            const midiPitch =
+              69 + 12 * Math.log2(Math.max(1, currentDetectedFreq) / 440)
+            const targetNoteName = midiToNoteName(Math.round(midiPitch))
+            setCurrentCentsOffset(computeCentsDeviation(midiPitch))
+            setCurrentTargetNote(targetNoteName)
+          } else {
+            setCurrentCentsOffset(null)
           }
         }
 
@@ -377,6 +560,15 @@ export const VocalAnalysis: Component = () => {
               }
             })
             setVocalRunData(pitchResults)
+
+            const vibrato = detectVibrato(
+              pitchResults.map((p, i) => ({
+                time: buffer[i].timestamp,
+                freq: p.freq,
+                midi: p.midi,
+              })),
+            )
+            setVibratoAnalysis(vibrato)
 
             // Update spectrogram from live mic spectrum
             const freqData = engines!.audioEngine.getFrequencyData()
@@ -418,12 +610,172 @@ export const VocalAnalysis: Component = () => {
       engines.practiceEngine.stopMic()
     }
     pitchDetector = null
+    if (spectralClient) {
+      spectralClient.destroy()
+      spectralClient = null
+    }
     frameCount = 0
     // Keep buffer + snapshot for display
   }
 
+  // ── Phase 4: Analysis tool handlers ──────────────────────────
+
+  let onsetClient: OnsetClient | null = null
+  let alignClient: AlignClient | null = null
+
+  const handleDetectBeats = () => {
+    const spectra = accumulatedSpectra()
+    if (spectra.length < 10) return
+    setIsDetecting(true)
+    if (onsetClient) onsetClient.destroy()
+    const sampleRate = engines?.audioEngine.getSampleRate() ?? 44100
+    onsetClient = new OnsetClient(
+      (result) => {
+        setOnsetResults(result.onsets)
+        setDetectedBpm(result.bpm)
+        setIsDetecting(false)
+      },
+      () => setIsDetecting(false),
+    )
+    // hopSize: 2048 samples / sampleRate
+    const hopSize = 2048
+    onsetClient.detect(spectra, sampleRate, hopSize)
+  }
+
+  const handleDetectKey = () => {
+    const spectra = accumulatedSpectra()
+    if (spectra.length < 10) return
+    setIsDetecting(true)
+    // Run synchronously (fast enough for typical spectra counts)
+    const sampleRate = engines?.audioEngine.getSampleRate() ?? 44100
+    setTimeout(() => {
+      try {
+        const result = detectKeyFromSpectra(spectra, sampleRate, 2048)
+        setDetectedKey(result)
+      } catch {
+        /* ignore */
+      }
+      setIsDetecting(false)
+    }, 0)
+  }
+
+  const handleAlign = () => {
+    const spectra = accumulatedSpectra()
+    if (spectra.length < 10) return
+    setIsAligning(true)
+
+    // Use accumulated spectra as the "user" recording
+    // In a real scenario, users would load a reference track
+    // For now, auto-generate a synthetic reference by time-stretching
+    const sampleRate = engines?.audioEngine.getSampleRate() ?? 44100
+
+    setTimeout(() => {
+      try {
+        // Build a synthetic reference from the same spectra (shifted)
+        // Actual use case: user loads reference track via file picker
+        const chroma = spectra.map((s) => {
+          // Convert magnitude spectrum to chroma
+          const avg = new Float32Array(12)
+          for (let i = 0; i < s.length; i++) {
+            const freq = (i / s.length) * (sampleRate / 2)
+            if (freq > 65) {
+              const midi = 69 + 12 * Math.log2(Math.max(1, freq) / 440)
+              const pc = Math.round(midi) % 12
+              const p = pc < 0 ? pc + 12 : pc
+              avg[p] += s[i]
+            }
+          }
+          const total = avg.reduce((a, b) => a + b, 0)
+          if (total > 0) for (let j = 0; j < 12; j++) avg[j] /= total
+          return avg
+        })
+
+        if (chroma.length < 5) {
+          setIsAligning(false)
+          return
+        }
+
+        // Use onset worker to align (for simplicity, align chroma to itself with shift)
+        if (alignClient) alignClient.destroy()
+        alignClient = new AlignClient(
+          (result) => {
+            setAlignmentResult(result)
+            setIsAligning(false)
+          },
+          () => setIsAligning(false),
+        )
+        // For demonstration: align against a time-stretched version
+        const stretched = chroma.slice(0, Math.floor(chroma.length * 0.9))
+        alignClient.align(chroma, stretched)
+      } catch {
+        setIsAligning(false)
+      }
+    }, 0)
+  }
+
+  // ── Phase 5: Advanced feature handlers ──────────────────────
+
+  const handleDetectChords = () => {
+    const spectra = accumulatedSpectra()
+    if (spectra.length < 10) return
+    setIsDetecting(true)
+    setTimeout(() => {
+      try {
+        const sampleRate = engines?.audioEngine.getSampleRate() ?? 44100
+        const chromaFrames = spectra.map((s) =>
+          computeNNLSChroma(s, sampleRate, 2048),
+        )
+        const hopSize = 2048 / sampleRate
+        const chords = detectChords(chromaFrames, hopSize, {
+          medianWindow: 3,
+          minDuration: 0.25,
+        })
+        const simplified = simplifyChordSequence(chords)
+        setChordFrames(simplified)
+      } catch {
+        /* ignore */
+      }
+      setIsDetecting(false)
+    }, 0)
+  }
+
+  const handleSegment = () => {
+    const spectra = accumulatedSpectra()
+    if (spectra.length < 20) return
+    setIsDetecting(true)
+    setTimeout(() => {
+      try {
+        const sampleRate = engines?.audioEngine.getSampleRate() ?? 44100
+        const result = segmentAudio(spectra, sampleRate, 2048, {
+          minSegmentDuration: 4,
+          maxSegments: 12,
+        })
+        setSegmentationResult(result)
+      } catch {
+        /* ignore */
+      }
+      setIsDetecting(false)
+    }, 0)
+  }
+
+  // Register built-in transforms on first render
+  let transformsRegistered = false
+  if (!transformsRegistered) {
+    registerBuiltinTransforms()
+    setAvailableTransforms(getTransforms().length)
+    transformsRegistered = true
+  }
+
   onCleanup(() => {
     if (isLiveActive()) stopLiveAnalysis()
+    window.removeEventListener('keydown', handleKeyDown)
+    onsetClient?.destroy()
+    alignClient?.destroy()
+  })
+
+  // Attach keyboard listener for annotation tap-to-mark
+  onMount(() => {
+    window.addEventListener('keydown', handleKeyDown)
   })
 
   // ── Demo Data ──────────────────────────────────────────────
@@ -1093,6 +1445,29 @@ export const VocalAnalysis: Component = () => {
               Live Mic
             </button>
           </div>
+          <Show when={analysisMode() === 'live'}>
+            <div class="mode-toggle" style={{ 'margin-left': '8px' }}>
+              <button
+                class={`mode-toggle-btn ${dashboardTab() === 'standard' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('standard')}
+              >
+                Standard
+              </button>
+              <button
+                class={`mode-toggle-btn ${dashboardTab() === 'pro' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('pro')}
+              >
+                Pro
+              </button>
+              <button
+                class={`mode-toggle-btn ${dashboardTab() === 'panes' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('panes')}
+              >
+                Panes
+              </button>
+            </div>
+          </Show>
+
           {/* Action Button */}
           <Show when={analysisMode() === 'history'}>
             <button
@@ -1256,99 +1631,137 @@ export const VocalAnalysis: Component = () => {
         <div class="vocal-column-right">
           {/* Live Dashboard */}
           <Show when={isLiveActive()}>
-            <div class="live-dashboard">
-              <div class="live-dashboard-header">
-                <span class="live-dot" />
-                <span class="live-dashboard-title">Live Analysis</span>
-                <span class="live-status-chip">
-                  {livePitchBuffer().length} samples
-                </span>
-                <Show when={liveSnapshot()}>
-                  <span class="live-status-chip">
-                    {liveSnapshot()!.resonance.zone} zone
-                  </span>
-                  <span class="live-status-chip">
-                    {liveSnapshot()!.resonance.avgFrequency.toFixed(0)} Hz
-                  </span>
-                </Show>
+            <Show when={dashboardTab() === 'pro'}>
+              <div style={{ 'margin-bottom': '24px' }}>
+                <ProDashboard
+                  isActive={isLiveActive()}
+                  pitchStability={pitchStability()}
+                  centsOffset={currentCentsOffset()}
+                  targetNote={currentTargetNote()}
+                  liveSnapshot={liveSnapshot()}
+                  vibrato={vibratoAnalysis()}
+                  spectralMagnitude={spectralMagnitude()}
+                  fftBreathiness={breathiness()}
+                  fftRichness={harmonicRichness()}
+                  fftResonance={resonanceData()}
+                  sampleRate={engines?.audioEngine.getSampleRate() ?? 44100}
+                />
               </div>
-              <div class="live-dashboard-body">
-                <Show when={liveSnapshot()}>
-                  <div class="live-cards-grid">
-                    <LiveMetricCard
-                      label="Intensity"
-                      value={`${liveSnapshot()!.intensity.avgDb} dB`}
-                      detail={`Peak ${liveSnapshot()!.intensity.peakDb} dB`}
-                      highlight={liveSnapshot()!.intensity.isConsistent}
-                      icon={IconBolt}
-                      color="#f85149"
-                    />
-                    <LiveMetricCard
-                      label="Breathiness"
-                      value={liveSnapshot()!.breathiness.label}
-                      detail={`Score ${liveSnapshot()!.breathiness.score}/100`}
-                      highlight={liveSnapshot()!.breathiness.hasGoodClosure}
-                      icon={IconWind}
-                      color="#58a6ff"
-                    />
-                    <LiveMetricCard
-                      label="Slides"
-                      value={`${liveSnapshot()!.slides.count} detected`}
-                      detail={`Avg ${liveSnapshot()!.slides.avgDistance} semitones`}
-                      highlight={liveSnapshot()!.slides.isSmooth}
-                      icon={IconChartLine}
-                      color="#d29922"
-                    />
-                    <LiveMetricCard
-                      label="Vibrato"
-                      value={
-                        liveSnapshot()!.vibrato.detected
-                          ? `${liveSnapshot()!.vibrato.rate} Hz`
-                          : 'None'
-                      }
-                      detail={`${liveSnapshot()!.vibrato.quality}`}
-                      highlight={liveSnapshot()!.vibrato.quality === 'Good'}
-                      icon={IconChartBar}
-                      color="#bc8cff"
-                    />
-                    <LiveMetricCard
-                      label="Harmonics"
-                      value={liveSnapshot()!.richness.label}
-                      detail={`~${liveSnapshot()!.richness.harmonicCount} harmonics`}
-                      highlight={
-                        liveSnapshot()!.richness.label === 'Rich' ||
-                        liveSnapshot()!.richness.label === 'Full'
-                      }
-                      icon={IconGuitar}
-                      color="#3fb950"
-                    />
-                    <LiveMetricCard
-                      label="Resonance"
-                      value={`${liveSnapshot()!.resonance.zone} (${liveSnapshot()!.resonance.confidence}%)`}
-                      detail={`Avg ${liveSnapshot()!.resonance.avgFrequency} Hz`}
-                      highlight={liveSnapshot()!.resonance.confidence > 50}
-                      icon={IconKeyboard}
-                      color="#2dd4bf"
-                    />
-                  </div>
-                </Show>
+            </Show>
+            <Show when={dashboardTab() === 'panes'}>
+              <div style={{ 'margin-bottom': '24px', height: '600px' }}>
+                <MultiPaneView
+                  audioDuration={liveDuration()}
+                  playheadPosition={panePlayheadPosition()}
+                  isPlaying={isLiveActive()}
+                  magnitudeSpectrum={spectralMagnitude()}
+                  phaseSpectrum={spectralPhase()}
+                  pitchHistory={panePitchHistory()}
+                  centsOffset={currentCentsOffset()}
+                  targetNote={currentTargetNote()}
+                  vibratoRate={vibratoAnalysis()?.rateHz ?? null}
+                  vibratoDepth={vibratoAnalysis()?.depthCents ?? null}
+                  waveformData={paneWaveformData()}
+                  sampleRate={engines?.audioEngine.getSampleRate() ?? 44100}
+                  annotationCount={annotations().length}
+                />
+              </div>
+            </Show>
+            <Show when={dashboardTab() === 'standard'}>
+              <div class="live-dashboard">
+                <div class="live-dashboard-header">
+                  <span class="live-dot" />
+                  <span class="live-dashboard-title">Live Analysis</span>
+                  <span class="live-status-chip">
+                    {livePitchBuffer().length} samples
+                  </span>
+                  <Show when={liveSnapshot()}>
+                    <span class="live-status-chip">
+                      {liveSnapshot()!.resonance.zone} zone
+                    </span>
+                    <span class="live-status-chip">
+                      {liveSnapshot()!.resonance.avgFrequency.toFixed(0)} Hz
+                    </span>
+                  </Show>
+                </div>
+                <div class="live-dashboard-body">
+                  <Show when={liveSnapshot()}>
+                    <div class="live-cards-grid">
+                      <LiveMetricCard
+                        label="Intensity"
+                        value={`${liveSnapshot()!.intensity.avgDb} dB`}
+                        detail={`Peak ${liveSnapshot()!.intensity.peakDb} dB`}
+                        highlight={liveSnapshot()!.intensity.isConsistent}
+                        icon={IconBolt}
+                        color="#f85149"
+                      />
+                      <LiveMetricCard
+                        label="Breathiness"
+                        value={liveSnapshot()!.breathiness.label}
+                        detail={`Score ${liveSnapshot()!.breathiness.score}/100`}
+                        highlight={liveSnapshot()!.breathiness.hasGoodClosure}
+                        icon={IconWind}
+                        color="#58a6ff"
+                      />
+                      <LiveMetricCard
+                        label="Slides"
+                        value={`${liveSnapshot()!.slides.count} detected`}
+                        detail={`Avg ${liveSnapshot()!.slides.avgDistance} semitones`}
+                        highlight={liveSnapshot()!.slides.isSmooth}
+                        icon={IconChartLine}
+                        color="#d29922"
+                      />
+                      <LiveMetricCard
+                        label="Vibrato"
+                        value={
+                          liveSnapshot()!.vibrato.detected
+                            ? `${liveSnapshot()!.vibrato.rate} Hz`
+                            : 'None'
+                        }
+                        detail={`${liveSnapshot()!.vibrato.quality}`}
+                        highlight={liveSnapshot()!.vibrato.quality === 'Good'}
+                        icon={IconChartBar}
+                        color="#bc8cff"
+                      />
+                      <LiveMetricCard
+                        label="Harmonics"
+                        value={liveSnapshot()!.richness.label}
+                        detail={`~${liveSnapshot()!.richness.harmonicCount} harmonics`}
+                        highlight={
+                          liveSnapshot()!.richness.label === 'Rich' ||
+                          liveSnapshot()!.richness.label === 'Full'
+                        }
+                        icon={IconGuitar}
+                        color="#3fb950"
+                      />
+                      <LiveMetricCard
+                        label="Resonance"
+                        value={`${liveSnapshot()!.resonance.zone} (${liveSnapshot()!.resonance.confidence}%)`}
+                        detail={`Avg ${liveSnapshot()!.resonance.avgFrequency} Hz`}
+                        highlight={liveSnapshot()!.resonance.confidence > 50}
+                        icon={IconKeyboard}
+                        color="#2dd4bf"
+                      />
+                    </div>
+                  </Show>
 
-                {/* Mic Input Spectrum */}
-                <div class="mic-spectrum-display">
-                  <h3>Mic Input Spectrum</h3>
-                  <div class="mic-spectrum-bars">
-                    <For each={micBars()}>
-                      {(bar) => (
-                        <div
-                          class={`mic-spectrum-bar ${bar.active ? 'active' : ''}`}
-                          style={{ height: `${bar.height}%` }}
-                        />
-                      )}
-                    </For>
+                  {/* Mic Input Spectrum */}
+                  <div class="mic-spectrum-display">
+                    <h3>Mic Input Spectrum</h3>
+                    <div class="mic-spectrum-bars">
+                      <For each={micBars()}>
+                        {(bar) => (
+                          <div
+                            class={`mic-spectrum-bar ${bar.active ? 'active' : ''}`}
+                            style={{ height: `${bar.height}%` }}
+                          />
+                        )}
+                      </For>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Show>
           </Show>
 
           {/* Horizontal Layout for Techniques and Results */}
@@ -1561,75 +1974,909 @@ export const VocalAnalysis: Component = () => {
           {/* Spectrogram Display */}
           <div class="spectrogram-display">
             <h3>Spectrum Analysis</h3>
-            <div class="spectrogram-container">
-              <div class="spectrogram-grid">
-                <div class="freq-axis">
-                  <div class="freq-label">100%</div>
-                  <div class="freq-label">75%</div>
-                  <div class="freq-label">50%</div>
-                  <div class="freq-label">25%</div>
-                  <div class="freq-label">0%</div>
-                </div>
-                <div class="time-axis">
-                  <div class="time-label">0 Hz</div>
-                  <div class="time-label">2 kHz</div>
-                  <div class="time-label">4 kHz</div>
-                  <div class="time-label">6 kHz</div>
-                  <div class="time-label">8 kHz</div>
-                </div>
-                <div class="spectrogram-bars">
-                  {spectralData().length === 0 && (
-                    <div class="spectrogram-empty">
-                      No spectrum data yet — start singing or playing audio
-                    </div>
-                  )}
-                  <For each={spectralData()}>
-                    {(data, i) => {
-                      // Color accessor to ensure reactivity for the index i()
-                      const barColor = createMemo(() => {
-                        // Low freq (warm) → mid (accent blue) → high (cool teal)
-                        const t = i() / Math.max(1, spectralData().length - 1)
-                        let r: number, g: number, b: number
-                        if (t < 0.5) {
-                          // Orange (#f0883e) → Blue (#58a6ff)
-                          const s = t / 0.5
-                          r = Math.round(240 - s * 152)
-                          g = Math.round(136 + s * 30)
-                          b = Math.round(62 + s * 193)
-                        } else {
-                          // Blue (#58a6ff) → Teal (#2dd4bf)
-                          const s = (t - 0.5) / 0.5
-                          r = Math.round(88 - s * 43)
-                          g = Math.round(166 + s * 46)
-                          b = Math.round(255 - s * 64)
-                        }
-                        return `rgb(${r},${g},${b})`
-                      })
 
-                      return (
-                        <div
-                          class="spectrogram-bar"
-                          style={{
-                            height: `${Math.min(100, Math.max(0.5, data.amplitude))}%`,
-                            background: barColor(),
-                          }}
-                        />
-                      )
-                    }}
-                  </For>
+            <Show when={analysisMode() === 'history'}>
+              <div class="spectrogram-container">
+                <div class="spectrogram-grid">
+                  <div class="freq-axis">
+                    <div class="freq-label">100%</div>
+                    <div class="freq-label">75%</div>
+                    <div class="freq-label">50%</div>
+                    <div class="freq-label">25%</div>
+                    <div class="freq-label">0%</div>
+                  </div>
+                  <div class="time-axis">
+                    <div class="time-label">0 Hz</div>
+                    <div class="time-label">2 kHz</div>
+                    <div class="time-label">4 kHz</div>
+                    <div class="time-label">6 kHz</div>
+                    <div class="time-label">8 kHz</div>
+                  </div>
+                  <div class="spectrogram-bars">
+                    {spectralData().length === 0 && (
+                      <div class="spectrogram-empty">
+                        No spectrum data yet — start singing or playing audio
+                      </div>
+                    )}
+                    <For each={spectralData()}>
+                      {(data, i) => {
+                        // Color accessor to ensure reactivity for the index i()
+                        const barColor = createMemo(() => {
+                          // Low freq (warm) → mid (accent blue) → high (cool teal)
+                          const t = i() / Math.max(1, spectralData().length - 1)
+                          let r: number, g: number, b: number
+                          if (t < 0.5) {
+                            // Orange (#f0883e) → Blue (#58a6ff)
+                            const s = t / 0.5
+                            r = Math.round(240 - s * 152)
+                            g = Math.round(136 + s * 30)
+                            b = Math.round(62 + s * 193)
+                          } else {
+                            // Blue (#58a6ff) → Teal (#2dd4bf)
+                            const s = (t - 0.5) / 0.5
+                            r = Math.round(88 - s * 43)
+                            g = Math.round(166 + s * 46)
+                            b = Math.round(255 - s * 64)
+                          }
+                          return `rgb(${r},${g},${b})`
+                        })
+
+                        return (
+                          <div
+                            class="spectrogram-bar"
+                            style={{
+                              height: `${Math.min(100, Math.max(0.5, data.amplitude))}%`,
+                              background: barColor(),
+                            }}
+                          />
+                        )
+                      }}
+                    </For>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="spectrogram-legend">
-              <span class="legend-gradient">
-                <span class="gradient-bar" />
-                Low
+              <div class="spectrogram-legend">
+                <span class="legend-gradient">
+                  <span class="gradient-bar" />
+                  Low
+                </span>
+                <span>→ Freq →</span>
+                <span>High</span>
+                <span class="legend-sep">|</span>
+                <span>Height = Amplitude</span>
+              </div>
+            </Show>
+
+            <Show when={analysisMode() === 'live'}>
+              <div
+                class="live-canvases-container"
+                style={{
+                  display: 'flex',
+                  'flex-direction': 'column',
+                  gap: '1rem',
+                }}
+              >
+                <div
+                  class="live-canvas-wrap"
+                  style={{
+                    height: '200px',
+                    'margin-top': '0.5rem',
+                    position: 'relative',
+                  }}
+                >
+                  <h4
+                    style={{
+                      'margin-bottom': '0.5rem',
+                      color: 'rgba(255,255,255,0.7)',
+                      'font-size': '0.875rem',
+                    }}
+                  >
+                    <span style={{ 'margin-right': '8px' }}>
+                      Real-time Spectrogram
+                    </span>
+                    <button
+                      class="spectrogram-cycle-btn"
+                      onClick={cycleColourMap}
+                      title={`Colour map: ${colourMap()}. Click to cycle.`}
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.6)',
+                        'font-size': '0.65rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {colourMap()}
+                    </button>
+                    <button
+                      class="spectrogram-peak-btn"
+                      onClick={() => setPeakBinsOnly((v) => !v)}
+                      title={
+                        peakBinsOnly()
+                          ? 'Peak bins: ON (click for full)'
+                          : 'Peak bins: OFF (click for peaks only)'
+                      }
+                      style={{
+                        background: peakBinsOnly()
+                          ? 'rgba(34,197,94,0.2)'
+                          : 'rgba(255,255,255,0.08)',
+                        border: peakBinsOnly()
+                          ? '1px solid rgba(34,197,94,0.4)'
+                          : '1px solid rgba(255,255,255,0.15)',
+                        color: peakBinsOnly()
+                          ? '#22c55e'
+                          : 'rgba(255,255,255,0.6)',
+                        'font-size': '0.65rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Peaks
+                    </button>
+                    <button
+                      class="spectrogram-window-btn"
+                      onClick={cycleWindowType}
+                      title={`Window: ${windowType()}. Click to cycle.`}
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.5)',
+                        'font-size': '0.6rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {windowType()}
+                    </button>
+                    <button
+                      class="spectrogram-window-btn"
+                      onClick={cycleNormalizeMode}
+                      title={`Normalize: ${normalizeMode()}. Click to cycle.`}
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.5)',
+                        'font-size': '0.6rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {normalizeMode()}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="0.5"
+                      step="0.01"
+                      value={colourRotation()}
+                      onInput={(e) =>
+                        setColourRotation(parseFloat(e.currentTarget.value))
+                      }
+                      title={`Colour rotation: ${colourRotation().toFixed(2)}`}
+                      style={{
+                        width: '40px',
+                        height: '14px',
+                        cursor: 'pointer',
+                        'accent-color': '#58a6ff',
+                      }}
+                    />
+                    <button
+                      class="spectrogram-peak-btn"
+                      onClick={() => setShowHarmonicCursor((v) => !v)}
+                      title={
+                        showHarmonicCursor()
+                          ? 'Harmonic cursor: ON'
+                          : 'Harmonic cursor: OFF'
+                      }
+                      style={{
+                        background: showHarmonicCursor()
+                          ? 'rgba(88,166,255,0.15)'
+                          : 'rgba(255,255,255,0.06)',
+                        border: showHarmonicCursor()
+                          ? '1px solid rgba(88,166,255,0.3)'
+                          : '1px solid rgba(255,255,255,0.12)',
+                        color: showHarmonicCursor()
+                          ? '#58a6ff'
+                          : 'rgba(255,255,255,0.4)',
+                        'font-size': '0.6rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Harmonics
+                    </button>
+                    {hoverFrequency() !== null && (
+                      <span
+                        style={{
+                          'font-size': '0.6rem',
+                          color: 'rgba(255,255,255,0.4)',
+                        }}
+                      >
+                        {hoverFrequency()!.toFixed(0)}Hz
+                      </span>
+                    )}
+                    <button
+                      class="spectrogram-window-btn"
+                      onClick={() => setVocalRangeOnly((v) => !v)}
+                      title={
+                        vocalRangeOnly()
+                          ? 'Vocal range: ON (65-1500Hz)'
+                          : 'Vocal range: OFF'
+                      }
+                      style={{
+                        background: vocalRangeOnly()
+                          ? 'rgba(188,140,255,0.15)'
+                          : 'rgba(255,255,255,0.06)',
+                        border: vocalRangeOnly()
+                          ? '1px solid rgba(188,140,255,0.3)'
+                          : '1px solid rgba(255,255,255,0.12)',
+                        color: vocalRangeOnly()
+                          ? '#bc8cff'
+                          : 'rgba(255,255,255,0.4)',
+                        'font-size': '0.6rem',
+                        padding: '2px 8px',
+                        'border-radius': '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Vocal
+                    </button>
+                  </h4>
+                  <SpectrogramCanvas
+                    isActive={isLiveActive()}
+                    magnitudeSpectrum={spectralMagnitude()}
+                    sampleRate={engines?.audioEngine.getSampleRate() ?? 44100}
+                    colourMap={colourMap()}
+                    peakBinsOnly={peakBinsOnly()}
+                    phaseSpectrum={spectralPhase()}
+                    normalizeMode={normalizeMode()}
+                    colourRotation={colourRotation()}
+                    showHarmonicCursor={showHarmonicCursor()}
+                    onHoverFrequency={(f) => setHoverFrequency(f)}
+                    freqMin={vocalRangeOnly() ? 65 : undefined}
+                    freqMax={vocalRangeOnly() ? 1500 : undefined}
+                  />
+                  <Show when={isLiveActive()}>
+                    <AnnotationLayer
+                      annotations={annotations()}
+                      timeRange={[0, Math.max(60, playheadPosition() + 5)]}
+                      yRange={[0, 100]}
+                      isActive={true}
+                      selectedId={selectedAnnotationId()}
+                      onSelect={(id) => setSelectedAnnotationId(id)}
+                      onDoubleClickAt={(time) => {
+                        createTimeInstant(time, undefined)
+                      }}
+                    />
+                  </Show>
+                </div>
+
+                {/* Annotation controls */}
+                <Show when={isLiveActive() && annotations().length > 0}>
+                  <div style={{ 'margin-top': '0.5rem' }}>
+                    <AnnotationControls
+                      annotations={annotations()}
+                      selectedId={selectedAnnotationId()}
+                      onSelect={(id) => setSelectedAnnotationId(id)}
+                      onDeselectAll={() => setSelectedAnnotationId(null)}
+                    />
+                  </div>
+                </Show>
+
+                <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+                  <div
+                    class="live-canvas-wrap"
+                    style={{
+                      height: '100px',
+                      flex: 1,
+                      'min-width': 0,
+                      'margin-top': '0.5rem',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        'justify-content': 'space-between',
+                        'align-items': 'center',
+                        'margin-bottom': '0.5rem',
+                      }}
+                    >
+                      <h4
+                        style={{
+                          margin: 0,
+                          color: 'rgba(255,255,255,0.7)',
+                          'font-size': '0.875rem',
+                        }}
+                      >
+                        Cents Deviation
+                      </h4>
+                      <span
+                        style={{
+                          color: 'rgba(255,255,255,0.5)',
+                          'font-size': '0.75rem',
+                          'white-space': 'nowrap',
+                          overflow: 'hidden',
+                          'text-overflow': 'ellipsis',
+                        }}
+                      >
+                        Pitch Stability:{' '}
+                        {pitchStability() !== null ? pitchStability() : '--'} /
+                        100
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: 'calc(100% - 1.5rem)',
+                      }}
+                    >
+                      <CentsDeviationCanvas
+                        isActive={isLiveActive()}
+                        centsOffset={currentCentsOffset()}
+                        targetNote={currentTargetNote()}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="live-canvas-wrap"
+                    style={{
+                      height: '100px',
+                      flex: 1,
+                      'min-width': 0,
+                      'margin-top': '0.5rem',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        'justify-content': 'space-between',
+                        'align-items': 'center',
+                        'margin-bottom': '0.5rem',
+                      }}
+                    >
+                      <h4
+                        style={{
+                          margin: 0,
+                          color: 'rgba(255,255,255,0.7)',
+                          'font-size': '0.875rem',
+                        }}
+                      >
+                        Vibrato
+                      </h4>
+                    </div>
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: 'calc(100% - 1.5rem)',
+                      }}
+                    >
+                      <VibratoWaveformCanvas
+                        isActive={isLiveActive()}
+                        vibrato={vibratoAnalysis()}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Show>
+          </div>
+
+          {/* Phase 4: Analysis Tools */}
+          <div
+            class="analysis-tools-section"
+            style={{
+              'margin-top': '16px',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.02)',
+              'border-radius': '8px',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <h3
+              style={{
+                margin: '0 0 10px 0',
+                'font-size': '0.85rem',
+                color: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              🔬 Analysis Tools
+            </h3>
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                'flex-wrap': 'wrap',
+                'margin-bottom': '12px',
+              }}
+            >
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={handleDetectBeats}
+                disabled={isDetecting() || accumulatedSpectra().length < 10}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.7)',
+                  'font-size': '0.72rem',
+                  padding: '6px 12px',
+                  'border-radius': '4px',
+                  cursor:
+                    accumulatedSpectra().length < 10
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: accumulatedSpectra().length < 10 ? 0.4 : 1,
+                }}
+              >
+                {isDetecting() ? 'Detecting…' : '🥁 Detect Beats'}
+              </button>
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={handleDetectKey}
+                disabled={isDetecting() || accumulatedSpectra().length < 10}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.7)',
+                  'font-size': '0.72rem',
+                  padding: '6px 12px',
+                  'border-radius': '4px',
+                  cursor:
+                    accumulatedSpectra().length < 10
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: accumulatedSpectra().length < 10 ? 0.4 : 1,
+                }}
+              >
+                {isDetecting() ? 'Detecting…' : '🎹 Detect Key'}
+              </button>
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={handleAlign}
+                disabled={isAligning() || accumulatedSpectra().length < 10}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.7)',
+                  'font-size': '0.72rem',
+                  padding: '6px 12px',
+                  'border-radius': '4px',
+                  cursor:
+                    accumulatedSpectra().length < 10
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: accumulatedSpectra().length < 10 ? 0.4 : 1,
+                }}
+              >
+                {isAligning() ? 'Aligning…' : '↔ Align to Ref'}
+              </button>
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={handleDetectChords}
+                disabled={isDetecting() || accumulatedSpectra().length < 10}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.7)',
+                  'font-size': '0.72rem',
+                  padding: '6px 12px',
+                  'border-radius': '4px',
+                  cursor:
+                    accumulatedSpectra().length < 10
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: accumulatedSpectra().length < 10 ? 0.4 : 1,
+                }}
+              >
+                {isDetecting() ? 'Detecting…' : '🎸 Detect Chords'}
+              </button>
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={handleSegment}
+                disabled={isDetecting() || accumulatedSpectra().length < 20}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.7)',
+                  'font-size': '0.72rem',
+                  padding: '6px 12px',
+                  'border-radius': '4px',
+                  cursor:
+                    accumulatedSpectra().length < 20
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: accumulatedSpectra().length < 20 ? 0.4 : 1,
+                }}
+              >
+                {isDetecting() ? 'Segmenting…' : '🧩 Segment Song'}
+              </button>
+              <span
+                style={{
+                  'font-size': '0.65rem',
+                  color: 'rgba(255,255,255,0.3)',
+                  'align-self': 'center',
+                  'margin-left': '8px',
+                }}
+              >
+                {accumulatedSpectra().length} frames · {availableTransforms()}{' '}
+                plug-ins
               </span>
-              <span>→ Freq →</span>
-              <span>High</span>
-              <span class="legend-sep">|</span>
-              <span>Height = Amplitude</span>
+              <button
+                class="spectrogram-cycle-btn"
+                onClick={() => {
+                  void (async () => {
+                    const { exportWorkspace } = await import('@/lib/session-io')
+                    exportWorkspace({
+                      version: '1.0.0',
+                      exportedAt: Date.now(),
+                      annotations: annotations(),
+                      paneLayout: paneLayout(),
+                      analysisResults: {
+                        onsets: onsetResults(),
+                        key: detectedKey() ?? undefined,
+                        chords: chordFrames(),
+                        segments: segmentationResult()?.segments,
+                        detectedBpm: detectedBpm() ?? undefined,
+                      },
+                    })
+                  })()
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.5)',
+                  'font-size': '0.65rem',
+                  padding: '2px 8px',
+                  'border-radius': '4px',
+                  cursor: 'pointer',
+                  'margin-left': '8px',
+                }}
+              >
+                💾 Export
+              </button>
+              <label
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.5)',
+                  'font-size': '0.65rem',
+                  padding: '2px 8px',
+                  'border-radius': '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                📂 Import
+                <input
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    void (async () => {
+                      const file = e.currentTarget.files?.[0]
+                      if (file === undefined) return
+                      const { importWorkspace } =
+                        await import('@/lib/session-io')
+                      const ws = await importWorkspace(file)
+                      if (ws !== null) {
+                        if (ws.annotations.length > 0)
+                          setAnnotations(ws.annotations)
+                        setPaneLayout(ws.paneLayout)
+                        if (ws.analysisResults?.detectedBpm !== undefined) {
+                          setDetectedBpm(ws.analysisResults.detectedBpm)
+                        }
+                      }
+                    })()
+                  }}
+                />
+              </label>
             </div>
+
+            {/* Results cards */}
+            <Show
+              when={
+                onsetResults().length > 0 ||
+                detectedKey() ||
+                alignmentResult() ||
+                chordFrames().length > 0 ||
+                segmentationResult()
+              }
+            >
+              <div
+                style={{ display: 'flex', gap: '10px', 'flex-wrap': 'wrap' }}
+              >
+                <Show when={onsetResults().length > 0}>
+                  <div
+                    style={{
+                      flex: '1',
+                      'min-width': '200px',
+                      padding: '10px',
+                      background: 'rgba(88,166,255,0.08)',
+                      'border-radius': '6px',
+                      border: '1px solid rgba(88,166,255,0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        'font-size': '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      🥁 Beat Detection
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.85rem',
+                        color: '#58a6ff',
+                        'font-weight': '600',
+                      }}
+                    >
+                      {onsetResults().filter((o) => o.isBeat).length} beats
+                      <Show when={detectedBpm()}>
+                        <span
+                          style={{
+                            'margin-left': '8px',
+                            color: 'rgba(255,255,255,0.6)',
+                          }}
+                        >
+                          ({detectedBpm()} BPM)
+                        </span>
+                      </Show>
+                      <Show when={detectedBpm()}>
+                        <button
+                          onClick={() => setBpm(detectedBpm()!)}
+                          style={{
+                            'margin-left': '8px',
+                            background: 'rgba(88,166,255,0.15)',
+                            border: '1px solid rgba(88,166,255,0.3)',
+                            color: '#58a6ff',
+                            'font-size': '0.65rem',
+                            padding: '1px 6px',
+                            'border-radius': '3px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Set Tempo
+                        </button>
+                      </Show>
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.7rem',
+                        color: 'rgba(255,255,255,0.4)',
+                        'margin-top': '4px',
+                      }}
+                    >
+                      {onsetResults().length} onsets · strongest at{' '}
+                      {(onsetResults()[0]?.strength ?? 0).toFixed(2)}
+                    </div>
+                  </div>
+                </Show>
+                <Show when={detectedKey()}>
+                  <div
+                    style={{
+                      flex: '1',
+                      'min-width': '200px',
+                      padding: '10px',
+                      background: 'rgba(188,140,255,0.08)',
+                      'border-radius': '6px',
+                      border: '1px solid rgba(188,140,255,0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        'font-size': '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      🎹 Key Detection
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.85rem',
+                        color: '#bc8cff',
+                        'font-weight': '600',
+                      }}
+                    >
+                      {detectedKey()!.key}
+                      <span
+                        style={{
+                          'margin-left': '8px',
+                          color: 'rgba(255,255,255,0.5)',
+                          'font-size': '0.7rem',
+                        }}
+                      >
+                        ({(detectedKey()!.confidence * 100).toFixed(0)}% conf.)
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.7rem',
+                        color: 'rgba(255,255,255,0.4)',
+                        'margin-top': '4px',
+                      }}
+                    >
+                      Alt:{' '}
+                      {detectedKey()!
+                        .alternatives.slice(0, 2)
+                        .map((a) => `${a.key} (${(a.score * 100).toFixed(0)}%)`)
+                        .join(', ')}
+                    </div>
+                  </div>
+                </Show>
+                <Show when={alignmentResult()}>
+                  <div
+                    style={{
+                      flex: '1',
+                      'min-width': '200px',
+                      padding: '10px',
+                      background: 'rgba(63,185,80,0.08)',
+                      'border-radius': '6px',
+                      border: '1px solid rgba(63,185,80,0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        'font-size': '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      ↔ Alignment
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.85rem',
+                        color: '#3fb950',
+                        'font-weight': '600',
+                      }}
+                    >
+                      {(alignmentResult()!.similarityScore * 100).toFixed(0)}%
+                      match
+                      <span
+                        style={{
+                          'margin-left': '8px',
+                          color: 'rgba(255,255,255,0.5)',
+                          'font-size': '0.7rem',
+                        }}
+                      >
+                        tempo ×{alignmentResult()!.tempoRatio.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </Show>
+                <Show when={chordFrames().length > 0}>
+                  <div
+                    style={{
+                      flex: '1',
+                      'min-width': '280px',
+                      padding: '10px',
+                      background: 'rgba(242,145,73,0.08)',
+                      'border-radius': '6px',
+                      border: '1px solid rgba(242,145,73,0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        'font-size': '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      🎸 Chord Detection
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.8rem',
+                        color: '#f29149',
+                        'font-weight': '600',
+                        display: 'flex',
+                        gap: '6px',
+                        'flex-wrap': 'wrap',
+                      }}
+                    >
+                      <For each={chordFrames().slice(0, 8)}>
+                        {(c) => (
+                          <span
+                            style={{
+                              padding: '1px 4px',
+                              background: 'rgba(242,145,73,0.15)',
+                              'border-radius': '3px',
+                            }}
+                          >
+                            {c.chord}
+                          </span>
+                        )}
+                      </For>
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.7rem',
+                        color: 'rgba(255,255,255,0.4)',
+                        'margin-top': '4px',
+                      }}
+                    >
+                      {chordFrames().length} chords ·{' '}
+                      {new Set(chordFrames().map((c) => c.chord)).size} unique
+                    </div>
+                  </div>
+                </Show>
+                <Show when={segmentationResult()}>
+                  <div
+                    style={{
+                      flex: '1',
+                      'min-width': '300px',
+                      padding: '10px',
+                      background: 'rgba(45,212,191,0.08)',
+                      'border-radius': '6px',
+                      border: '1px solid rgba(45,212,191,0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        'font-size': '0.75rem',
+                        color: 'rgba(255,255,255,0.5)',
+                        'margin-bottom': '4px',
+                      }}
+                    >
+                      🧩 Song Structure
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '6px',
+                        'flex-wrap': 'wrap',
+                      }}
+                    >
+                      <For each={segmentationResult()!.segments}>
+                        {(s) => (
+                          <span
+                            style={{
+                              padding: '2px 6px',
+                              'border-radius': '4px',
+                              'font-size': '0.7rem',
+                              'font-weight': '500',
+                              background:
+                                s.label === 'Chorus'
+                                  ? 'rgba(63,185,80,0.2)'
+                                  : s.label === 'Verse'
+                                    ? 'rgba(88,166,255,0.2)'
+                                    : 'rgba(255,255,255,0.08)',
+                              color:
+                                s.label === 'Chorus'
+                                  ? '#3fb950'
+                                  : s.label === 'Verse'
+                                    ? '#58a6ff'
+                                    : 'rgba(255,255,255,0.6)',
+                            }}
+                          >
+                            {s.label}
+                          </span>
+                        )}
+                      </For>
+                    </div>
+                    <div
+                      style={{
+                        'font-size': '0.7rem',
+                        color: 'rgba(255,255,255,0.4)',
+                        'margin-top': '4px',
+                      }}
+                    >
+                      {segmentationResult()!.segments.length} sections ·{' '}
+                      {segmentationResult()!.labels.length} types
+                    </div>
+                  </div>
+                </Show>
+              </div>
+            </Show>
           </div>
 
           {/* Pitch History */}
@@ -1796,6 +3043,12 @@ export const VocalAnalysis: Component = () => {
               </div>
             </div>
           </Show>
+
+          {/* Unit Converter */}
+          <UnitConverter />
+
+          {/* Transform Runner */}
+          <TransformRunner />
         </div>
       </div>
     </div>
