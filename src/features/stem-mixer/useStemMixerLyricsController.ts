@@ -1664,6 +1664,9 @@ export function useStemMixerLyricsController(
         isBlank: false,
         isRest: entry.type === 'rest',
         lyricsIndex: entry.canonicalIndex,
+        restGapStart: entry.gapStart,
+        restGapEnd: entry.gapEnd,
+        restDotCount: entry.dotCount,
       }))
     }
     if (!raw || ll.length === 0) return []
