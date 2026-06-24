@@ -1033,7 +1033,15 @@ export const StemMixerLyricsPanelBody: Component<
                       <div
                         class="sm-lyrics-rest"
                         classList={{ 'sm-lyrics-rest--active': active() }}
-                        style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
+                        style={{
+                          'font-size': `${props.lyricsFontSize()}rem`,
+                          'justify-content':
+                            props.lyricsAlign() === 'center'
+                              ? 'center'
+                              : props.lyricsAlign() === 'right'
+                                ? 'flex-end'
+                                : 'flex-start',
+                        }}
                       >
                         <div class="sm-lyrics-rest-dots" aria-hidden="true">
                           <For each={Array.from({ length: dotCount })}>
@@ -1062,7 +1070,15 @@ export const StemMixerLyricsPanelBody: Component<
                   return (
                     <div
                       class="sm-lyrics-rest"
-                      style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
+                      style={{
+                        'font-size': `${props.lyricsFontSize()}rem`,
+                        'justify-content':
+                          props.lyricsAlign() === 'center'
+                            ? 'center'
+                            : props.lyricsAlign() === 'right'
+                              ? 'flex-end'
+                              : 'flex-start',
+                      }}
                     >
                       <span class="sm-lyrics-rest-pulse" />
                       <span class="sm-lyrics-rest-label">~Rest~</span>
