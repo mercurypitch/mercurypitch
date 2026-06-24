@@ -313,7 +313,7 @@ export const StemMixerFixedWorkspace: Component<
                         class="sm-lyrics-zoom-btn"
                         onClick={() =>
                           lp().setLyricsFontSize((prev) =>
-                            Math.min(1.5, +(prev + 0.1).toFixed(2)),
+                            Math.min(4, +(prev + 0.1).toFixed(2)),
                           )
                         }
                         title="Larger text"

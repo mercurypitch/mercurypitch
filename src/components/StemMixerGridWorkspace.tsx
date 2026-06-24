@@ -91,7 +91,12 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
 ) => {
   const lp = () => props.lyricsPanel
   return (
-    <Show when={props.workspaceLayout() !== 'fixed-2col'}>
+    <Show
+      when={
+        props.workspaceLayout() !== 'fixed-2col' &&
+        props.workspaceLayout() !== 'performance'
+      }
+    >
       <div
         ref={props.workspaceRef}
         class="sm-workspace"
@@ -601,7 +606,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                     class="sm-lyrics-zoom-btn"
                     onClick={() =>
                       lp().setLyricsFontSize((prev) =>
-                        Math.min(1.5, +(prev + 0.1).toFixed(2)),
+                        Math.min(4, +(prev + 0.1).toFixed(2)),
                       )
                     }
                     title="Larger text"

@@ -6,6 +6,7 @@ import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { computeRestProgress } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
@@ -206,6 +207,7 @@ export interface StemMixerLyricsPanelBodyProps {
   setLyricsFontSize: Setter<number>
   lyricsColumns: Accessor<1 | 2>
   setLyricsColumns: Setter<1 | 2>
+  lyricsAlign: Accessor<LyricsAlign>
   editMode: Accessor<boolean>
   setEditMode: Setter<boolean>
   setEditBuffer: Setter<WordTimingsMap>
@@ -338,7 +340,7 @@ export const StemMixerLyricsPanelBody: Component<
     const ratio = curDist / lyricsPinchDist
     const dampenedRatio = 1 + (ratio - 1) * 0.3
     const newSize = Math.min(
-      3,
+      4,
       Math.max(0.45, lyricsPinchStartSize * dampenedRatio),
     )
     props.setLyricsFontSize(newSize)
@@ -981,7 +983,10 @@ export const StemMixerLyricsPanelBody: Component<
               'sm-lyrics-columns-2': props.lyricsColumns() === 2,
               'sm-lyrics-lines--marking': props.blockMarkMode(),
             }}
-            style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
+            style={{
+              'font-size': `${props.lyricsFontSize()}rem`,
+              'text-align': props.lyricsAlign(),
+            }}
             onContextMenu={(e) => e.preventDefault()}
             onWheel={(e) => {
               e.stopPropagation()
@@ -989,7 +994,7 @@ export const StemMixerLyricsPanelBody: Component<
                 e.preventDefault()
                 props.setLyricsFontSize((prev) =>
                   Math.min(
-                    3,
+                    4,
                     Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
                   ),
                 )

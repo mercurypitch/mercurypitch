@@ -30,6 +30,7 @@ import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
+import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
 import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
 import { StemMixerScoreModal } from './StemMixerScoreModal'
 import { StemMixerTransport } from './StemMixerTransport'
@@ -381,6 +382,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics controller ─────────────────────────────────────────
   const {
     // Signals
+    lyricsAlign,
+    setLyricsAlign,
     lyricsLines,
     lrcLines,
     currentLineIdx,
@@ -742,6 +745,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Lyrics panel props bundle ──────────────────────────────────
   const lyricsPanel = {
+    lyricsAlign,
     lyricsLines,
     lrcLines,
     currentLineIdx,
@@ -1501,6 +1505,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showWaveform={showWaveform}
           showPitch={showPitch}
           showLyrics={showLyrics}
+        />
+        <StemMixerPerformanceWorkspace
+          workspaceLayout={layout.workspaceLayout}
+          sidebarHidden={layout.sidebarHidden}
+          setCanvasRef={canvas.setCanvasRef}
+          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
+          stemControls={stemControls}
+          micMonitor={micMonitor}
+          lyricsPanel={lyricsPanel}
+          showLyricNoteLabels={showLyricNoteLabels}
+          alignmentResult={alignmentResult}
+          lyricsAlign={lyricsAlign}
+          setLyricsAlign={setLyricsAlign}
+          handleForceSearch={() => void handleForceSearch()}
+          triggerChangeFile={() => lyricsFileInputRef?.click()}
+          showWaveform={showWaveform}
         />
       </Show>
 
@@ -4207,6 +4229,65 @@ export const StemMixerStyles: string = `
 }
 
 /* Right Sidebar */
+/* Performance ("karaoke stage") layout — big centred lyrics + mixer */
+.sm-perf-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+.sm-perf-waveform {
+  height: 84px;
+  flex-shrink: 0;
+}
+.sm-perf-waveform .sm-canvas {
+  width: 100%;
+  height: 100%;
+}
+.sm-perf-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0.5rem;
+}
+.sm-perf-lyrics {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sm-perf-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.sm-perf-title {
+  font-weight: 600;
+}
+.sm-lyrics-align-toggle {
+  display: inline-flex;
+  gap: 2px;
+}
+.sm-lyrics-align-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 4px;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+}
+.sm-lyrics-align-btn.sm-lyrics-align-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
 .sm-sidebar {
   width: 240px;
   flex-shrink: 0;

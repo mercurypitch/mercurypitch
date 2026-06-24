@@ -332,6 +332,35 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 />
               </svg>
             </button>
+            <button
+              class={`sm-col-btn${props.workspaceLayout() === 'performance' ? ' sm-col-active' : ''}`}
+              onClick={() => {
+                props.setWorkspaceLayout('performance')
+                props.onQueueRedraw()
+              }}
+              title="Performance (karaoke stage — big centered lyrics)"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12">
+                <rect
+                  x="2"
+                  y="3"
+                  width="14"
+                  height="18"
+                  rx="1"
+                  fill="currentColor"
+                />
+                <rect
+                  x="18"
+                  y="3"
+                  width="4"
+                  height="18"
+                  rx="1"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
           </div>
 
           {/* ── Focus mode: panel visibility toggles ───────── */}
