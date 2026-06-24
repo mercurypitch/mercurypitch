@@ -3,17 +3,20 @@
 // piano practice
 // ============================================================
 
-import { createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
 import type { MidiNoteEvent } from '@/lib/midi-engine'
 import { MidiEngine } from '@/lib/midi-engine'
+import { midiToNoteName } from '@/lib/note-utils'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { setMicActive } from '@/stores'
 import { countIn } from '@/stores'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { beatsPerSecond, clickPianoEnabled, combo, currentSongBpm, gameState, hitResults, inputMode, maxCombo, midiConnected, notesMissed, playheadBeat, score, setClickPianoEnabled, setCombo, setCurrentSongBpm, setGameState, setHitResults, setInputMode, setMaxCombo, setMidiConnected, setNotesMissed, setPlayheadBeat, setScore, setSelectedSongName, setShowNoteLabels, setSongNotes, setTotalNotes, setVisibleBeatWindow, showNoteLabels, songNotes, totalNotes, visibleBeatWindow, } from '@/stores/falling-notes-store'
+import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
+import { updateMidiSongSelection } from '@/stores/saved-midi-songs-store'
 import type { AccuracyRating } from '@/types'
 
 export type PianoPlayMode = 'once' | 'repeat'
@@ -44,6 +47,107 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   const [pianoPlayMode, setPianoPlayMode] = createSignal<PianoPlayMode>('once')
   const [pianoRepeatCycles, setPianoRepeatCycles] = createSignal(5)
   const [pianoCurrentCycle, setPianoCurrentCycle] = createSignal(1)
+
+  const [currentSong, setCurrentSong] = createSignal<SavedMidiSong | null>(null)
+  const [mutedTrackIds, setMutedTrackIds] = createSignal<Set<string>>(new Set())
+  const [visibleTrackIds, setVisibleTrackIds] = createSignal<Set<string>>(
+    new Set(),
+  )
+  const [totalBeats, setTotalBeats] = createSignal(0)
+
+  const toggleTrackMute = (trackId: string) => {
+    const song = currentSong()
+    if (!song) return
+
+    const nextMuted = new Set(mutedTrackIds())
+    if (nextMuted.has(trackId)) {
+      nextMuted.delete(trackId)
+    } else {
+      nextMuted.add(trackId)
+    }
+    setMutedTrackIds(nextMuted)
+
+    const newBackingTrackIds = song.tracks
+      .filter((t) => t.id !== song.scoreTrackId && !nextMuted.has(t.id))
+      .map((t) => t.id)
+
+    const updatedSong = {
+      ...song,
+      backingTrackIds: newBackingTrackIds,
+    }
+    setCurrentSong(updatedSong)
+
+    updateMidiSongSelection(song.id, song.scoreTrackId, newBackingTrackIds)
+  }
+
+  const toggleTrackVisibility = (trackId: string) => {
+    const song = currentSong()
+    if (!song) return
+
+    const nextVisible = new Set(visibleTrackIds())
+    if (nextVisible.has(trackId)) {
+      if (trackId === song.scoreTrackId) return
+      nextVisible.delete(trackId)
+    } else {
+      nextVisible.add(trackId)
+    }
+    setVisibleTrackIds(nextVisible)
+  }
+
+  // Combine scored track notes and other visible backing track notes
+  createEffect(() => {
+    const song = currentSong()
+    if (!song) return
+
+    const scoreTrack =
+      song.tracks.find((t) => t.id === song.scoreTrackId) ?? song.tracks[0]
+    const activeScoreNotes: FallingNote[] =
+      scoreTrack !== undefined
+        ? scoreTrack.notes.map((n, i) => ({
+            id: i,
+            midi: n.midi,
+            name: midiToNoteName(n.midi),
+            startBeat: n.startBeat,
+            duration: n.duration,
+            targetFreq: midiToFreq(n.midi),
+          }))
+        : []
+
+    const otherVisibleNotes: FallingNote[] = []
+    const visibleIds = visibleTrackIds()
+    let idCounter = activeScoreNotes.length
+    for (const t of song.tracks) {
+      if (t.id === song.scoreTrackId) continue
+      if (!visibleIds.has(t.id)) continue
+
+      const mapped = t.notes.map((n) => ({
+        id: idCounter++,
+        midi: n.midi,
+        name: midiToNoteName(n.midi),
+        startBeat: n.startBeat,
+        duration: n.duration,
+        targetFreq: midiToFreq(n.midi),
+        isBacking: true,
+        trackId: t.id,
+      }))
+      otherVisibleNotes.push(...mapped)
+    }
+
+    const combined = [...activeScoreNotes, ...otherVisibleNotes]
+    combined.sort((a, b) => a.startBeat - b.startBeat)
+
+    setSongNotes(combined)
+    setTotalNotes(activeScoreNotes.length)
+  })
+
+  // Backing tracks
+  let backingNotes: Array<{
+    freq: number
+    startBeat: number
+    duration: number
+    trackId?: string
+  }> = []
+  let playedBackingIndices = new Set<number>()
 
   let animFrameId: number | null = null
   let gameStartTime = 0
@@ -155,6 +259,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     const detectedCents = pitch?.cents ?? null
 
     for (const note of notes) {
+      if (note.isBacking === true) continue
       if (judgedNotes.has(note.id)) continue
 
       const deltaBeats = note.startBeat - currentBeat
@@ -186,12 +291,35 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       }
     }
 
+    // Backing tracks: trigger audio as each note crosses the playhead
+    for (let i = 0; i < backingNotes.length; i++) {
+      if (playedBackingIndices.has(i)) continue
+      const b = backingNotes[i]
+      const delta = b.startBeat - currentBeat
+      if (delta <= 0) {
+        playedBackingIndices.add(i)
+        if (delta > -1) {
+          if (b.trackId !== undefined && mutedTrackIds().has(b.trackId)) {
+            continue
+          }
+          void audioEngine.playTone(
+            b.freq,
+            Math.max(50, (b.duration / bps) * 1000),
+          )
+        }
+      }
+    }
+
     // Check if all notes are done AND playhead has passed the last note
-    const maxEndBeat = Math.max(...notes.map((n) => n.startBeat + n.duration))
+    const scoredNotes = notes.filter((n) => n.isBacking !== true)
+    const maxEndBeat =
+      scoredNotes.length > 0
+        ? Math.max(...scoredNotes.map((n) => n.startBeat + n.duration))
+        : 0
     if (
-      judgedNotes.size >= notes.length &&
+      judgedNotes.size >= scoredNotes.length &&
       currentBeat >= maxEndBeat &&
-      notes.length > 0
+      scoredNotes.length > 0
     ) {
       finishGame()
     }
@@ -432,7 +560,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     startLoop()
   }
 
-  const loadSong = (notes: FallingNote[], name: string, bpm: number) => {
+  const loadSong = (
+    notes: FallingNote[],
+    name: string,
+    bpm: number,
+    backingItems?: FallingNote[],
+    mutedIds?: string[],
+    songObj?: SavedMidiSong | null,
+  ) => {
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
     setSongNotes(notes)
@@ -446,6 +581,66 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setHitResults([])
     setNotesMissed(0)
     setPlayheadBeat(0)
+
+    backingNotes = (backingItems ?? []).map((b) => ({
+      freq: b.targetFreq,
+      startBeat: b.startBeat,
+      duration: b.duration,
+      trackId: b.trackId,
+    }))
+    playedBackingIndices = new Set()
+    setCurrentSong(songObj ?? null)
+    setMutedTrackIds(new Set(mutedIds ?? []))
+    if (songObj) {
+      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+    } else {
+      setVisibleTrackIds(new Set<string>())
+    }
+
+    const maxNoteBeat =
+      notes.length > 0
+        ? Math.max(...notes.map((n) => n.startBeat + n.duration))
+        : 0
+    const maxBackingBeat =
+      backingNotes.length > 0
+        ? Math.max(...backingNotes.map((n) => n.startBeat + n.duration))
+        : 0
+    setTotalBeats(Math.max(maxNoteBeat, maxBackingBeat))
+  }
+
+  const seekToBeat = (targetBeat: number) => {
+    const notes = songNotes()
+    const bps = beatsPerSecond() * speed()
+
+    const target = Math.max(0, Math.min(targetBeat, totalBeats()))
+    setPlayheadBeat(target)
+
+    if (gameState() === 'playing') {
+      gameStartTime = performance.now() - (target / bps) * 1000
+    } else if (gameState() === 'countdown') {
+      gameStartTime = performance.now() - ((target + countIn()) / bps) * 1000
+    }
+
+    judgedNotes.clear()
+    playedNotes.clear()
+    playedBackingIndices.clear()
+
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i]
+      if (note.startBeat < target) {
+        playedNotes.add(note.id)
+      }
+      const endBeats = note.startBeat + note.duration
+      if (endBeats < target) {
+        judgedNotes.add(note.id)
+      }
+    }
+
+    for (let i = 0; i < backingNotes.length; i++) {
+      if (backingNotes[i].startBeat < target) {
+        playedBackingIndices.add(i)
+      }
+    }
   }
 
   const setSpeedSafe = (newSpeed: number) => {
@@ -551,6 +746,13 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     showNoteLabels,
     toggleNoteLabels,
     setBpm: setBpmSafe,
+    currentSong,
+    mutedTrackIds,
+    toggleTrackMute,
+    visibleTrackIds,
+    toggleTrackVisibility,
+    totalBeats,
+    seekToBeat,
 
     // Engine (for waveform display)
     engine,

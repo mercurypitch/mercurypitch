@@ -264,7 +264,7 @@ export class PlaybackEngine implements PlaybackTimekeeper {
 
   /** Set BPM - updates timing calculations */
   setBPM(bpm: number): void {
-    this.audioEngine.setBPM(bpm)
+    this.audioEngine.setBpm(bpm)
     this.beatsPerSecond = bpm / 60
   }
 

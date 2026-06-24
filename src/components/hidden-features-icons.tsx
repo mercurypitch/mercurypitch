@@ -21,19 +21,40 @@ export const IconMicChallenge = () => (
   </svg>
 )
 
-export const IconGuitarChallenge = () => (
+export const IconMic = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+  </svg>
+)
+
+export const IconMicOff = () => (
   <svg
     viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
+    width="20"
+    height="20"
+    fill="currentColor"
+    opacity="0.6"
   >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
+    <path d="M19 11h-2c0 .91-.26 1.75-.69 2.48l1.46 1.46A6.921 6.921 0 0019 11zM14.98 11.17c.01-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3s-3 1.34-3 3v1.17l5.98 5.98zM4.27 3L3 4.27l6 6V11c0 1.66 1.34 3 3 3 .23 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c1.37-.2 2.62-.77 3.65-1.55l2.08 2.08 1.27-1.27L4.27 3z" />
+  </svg>
+)
+
+export const IconGuitarChallenge = () => (
+  <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
+    {/* Acoustic guitar silhouette drawn upright, rotated 45° for a
+        diagonal pose: headstock up-right, waisted body down-left */}
+    <g transform="rotate(45 12 12)" fill="currentColor">
+      {/* Headstock */}
+      <path d="M10.7 1.6h2.6l.55 3.1h-3.7z" />
+      {/* Neck (gap above is the nut) */}
+      <path d="M11.05 5.4h1.9l.25 5.2h-2.4z" />
+      {/* Waisted body with punched-out sound hole */}
+      <path
+        fill-rule="evenodd"
+        d="M12 10.3c2.7 0 3.9 1.3 3.5 2.8-.2.9-.2 1.4.4 2.4 1 1.7.1 6.2-3.9 6.2s-4.9-4.5-3.9-6.2c.6-1 .6-1.5.4-2.4-.4-1.5.8-2.8 3.5-2.8zm0 2.7a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z"
+      />
+    </g>
   </svg>
 )
 

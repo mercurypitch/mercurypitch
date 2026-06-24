@@ -3,6 +3,8 @@
    ============================================================ */
 
 .ctrlBtn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -17,6 +19,23 @@
   transition: all 0.12s ease;
   white-space: nowrap;
   line-height: 1;
+}
+
+.micWave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.35);
+  height: calc(var(--mic-level, 0) * 100%);
+  transition: height 0.05s linear;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ctrlBtn :global(svg) {
+  position: relative;
+  z-index: 1;
 }
 
 .ctrlBtn:hover:not(:disabled) {

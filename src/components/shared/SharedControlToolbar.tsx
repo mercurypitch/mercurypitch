@@ -9,7 +9,7 @@ import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { Tooltip } from '@/components/Tooltip'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { bpm, enterFocusMode, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import { setTonicAnchor } from '@/stores/settings-store'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
@@ -60,6 +60,7 @@ interface SharedControlToolbarProps {
   singingTab?: () => boolean
   editorTab?: () => boolean
   pianoTab?: () => boolean
+  guitarTab?: () => boolean
 
   // Playback state
   isPlaying: () => boolean
@@ -112,6 +113,10 @@ interface SharedControlToolbarProps {
   showNoteLabels?: () => boolean
   onToggleNoteLabels?: () => void
 
+  // User notes toggle (falling-notes tab only)
+  showUserNotes?: () => boolean
+  onToggleUserNotes?: () => void
+
   // MIDI (falling-notes tab only)
   inputMode?: () => 'mic' | 'midi'
   midiConnected?: () => boolean
@@ -141,6 +146,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   const isEditorTab = () =>
     props.editorTab?.() ?? props.activeTab() === TAB_COMPOSE
   const isPianoTab = () => props.pianoTab?.() ?? props.activeTab() === TAB_PIANO
+  const isGuitarTab = () =>
+    props.guitarTab?.() ?? props.activeTab() === TAB_GUITAR
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
@@ -163,7 +170,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         )}
 
         {/* MIDI — falling notes only, toggle between mic and MIDI input */}
-        <Show when={isPianoTab() && props.onMidiToggle}>
+        <Show when={(isPianoTab() || isGuitarTab()) && props.onMidiToggle}>
           <div class={styles.essentialControlGroup}>
             <button
               class={[styles.ctrlBtn, styles.midiBtn].join(' ')}
@@ -455,7 +462,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <div class={styles.appHeaderSep} />
 
         {/* Mode toggles - practice and piano modes */}
-        <Show when={isPracticeTab() || isPianoTab()}>
+        <Show when={isPracticeTab() || isPianoTab() || isGuitarTab()}>
           <div class={styles.modeGroup}>
             <button
               id="btn-once"
@@ -553,7 +560,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Cycles input — applies to Repeat mode on both practice and piano tabs */}
         <Show
           when={
-            (isPracticeTab() || isPianoTab()) &&
+            (isPracticeTab() || isPianoTab() || isGuitarTab()) &&
             props.playMode() === PLAYBACK_MODE_REPEAT
           }
         >
@@ -673,14 +680,16 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 min="40"
                 max="280"
                 value={
-                  isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
+                  (isPianoTab() || isGuitarTab()) && props.bpmValue
+                    ? props.bpmValue()
+                    : bpm()
                 }
                 class={styles.bpmNumberInput}
                 aria-label="BPM"
                 onInput={(e) => {
                   const value = parseInt(e.currentTarget.value)
                   if (value !== undefined && !isNaN(value)) {
-                    if (isPianoTab() && props.onBpmChange) {
+                    if ((isPianoTab() || isGuitarTab()) && props.onBpmChange) {
                       props.onBpmChange(value)
                     } else {
                       setBpm(value)
@@ -694,13 +703,15 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 min="40"
                 max="280"
                 value={
-                  isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
+                  (isPianoTab() || isGuitarTab()) && props.bpmValue
+                    ? props.bpmValue()
+                    : bpm()
                 }
                 class={styles.tempoSlider}
                 aria-label="BPM slider"
                 onInput={(e) => {
                   const val = parseInt(e.currentTarget.value) || 80
-                  if (isPianoTab() && props.onBpmChange) {
+                  if ((isPianoTab() || isGuitarTab()) && props.onBpmChange) {
                     props.onBpmChange(val)
                   } else {
                     setBpm(val)
@@ -755,7 +766,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           {/* Sensitivity — styled like BPM/Volume so the entire mic
               sensitivity widget reads as one cohesive control instead
               of a stray label-slider pair tucked at the right edge. */}
-          <Show when={!isPianoTab()}>
+          <Show when={!isPianoTab() && !isGuitarTab()}>
             <div
               class={styles.inlineControl}
               title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
@@ -872,7 +883,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           {/* Note label toggle — falling notes tab only */}
           <Show
             when={
-              isPianoTab() && props.showNoteLabels && props.onToggleNoteLabels
+              (isPianoTab() || isGuitarTab()) &&
+              props.showNoteLabels &&
+              props.onToggleNoteLabels
             }
           >
             <div
@@ -888,10 +901,40 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 aria-label="Toggle note labels"
                 onClick={() => props.onToggleNoteLabels?.()}
               >
-                <svg viewBox="0 0 24 24" width="14" height="14">
+                <svg viewBox="0 0 24 24" width="16" height="16">
                   <path
                     fill="currentColor"
                     d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </Show>
+
+          {/* User note toggle — falling notes tab only */}
+          <Show
+            when={
+              (isPianoTab() || isGuitarTab()) &&
+              props.showUserNotes &&
+              props.onToggleUserNotes
+            }
+          >
+            <div
+              class={[styles.labelToggleGroup, styles.inlineControl].join(' ')}
+              title="Toggle user notes visualization"
+            >
+              <button
+                class={styles.labelToggleBtn}
+                classList={{
+                  [styles.active]: props.showUserNotes?.() === true,
+                }}
+                aria-label="Toggle user notes"
+                onClick={() => props.onToggleUserNotes?.()}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path
+                    fill="currentColor"
+                    d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                   />
                 </svg>
               </button>
