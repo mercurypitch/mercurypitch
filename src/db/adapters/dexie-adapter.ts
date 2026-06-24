@@ -28,7 +28,6 @@ const STORE_SCHEMAS: Record<string, string> = {
   uvrStemBlobs: 'id, sessionId, stemType, createdAt',
   uvrStemFingerprints: 'id, sessionId, createdAt',
   uvrSessionLyrics: 'id, sessionId',
-  userSurveyResponses: 'id, userId',
   offlinePitchAnalysis: 'id, fileHash',
   whisperTranscriptions: 'id, sessionId',
   sessionGroups: 'id',
@@ -48,6 +47,8 @@ class DexieDatabase extends DexieDB {
     this.version(2).stores({ follows: 'id, userId, followedUserId' })
     // v3: karaokePlaylists (Karaoke playlist mode). Incremental.
     this.version(3).stores({ karaokePlaylists: 'id' })
+    // v4: userSurveyResponses (onboarding survey). Incremental.
+    this.version(4).stores({ userSurveyResponses: 'id, userId' })
   }
 
   /** Add a new table at the next schema version. */

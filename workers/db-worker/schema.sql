@@ -259,6 +259,21 @@ CREATE TABLE IF NOT EXISTS follows (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_follows_pair ON follows(userId, followedUserId);
 CREATE INDEX IF NOT EXISTS idx_follows_userId ON follows(userId);
 
+-- ── Onboarding survey ────────────────────────────────────────────────
+-- Optional onboarding survey responses. answersJson holds the survey
+-- payload ({ background?, usage?, featureRequest? }); access is 'user'
+-- (rows are private to the submitting user). See tables.ts allowlist.
+CREATE TABLE IF NOT EXISTS userSurveyResponses (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  answersJson TEXT NOT NULL, -- JSON
+  submittedAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_userSurveyResponses_userId ON userSurveyResponses(userId);
+
 -- ── Auth rate limiting ───────────────────────────────────────────────
 -- Per-IP, per-endpoint counters for the auth POST endpoints (see auth.ts).
 -- The PRIMARY KEY (ip, endpoint) is the conflict target for the atomic

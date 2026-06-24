@@ -120,8 +120,8 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
-import { celebrationData, dismissCelebration, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
@@ -1254,17 +1254,32 @@ const AppShell: Component<AppProps> = (props) => {
     props.onMounted?.()
   })
 
-  // Show optional survey after welcome screen is dismissed (once per user)
-  createEffect(() => {
-    if (!showWelcome() && !surveyChecked()) {
-      setSurveyChecked(true)
-      void import('@/db/services/survey-service').then(
-        ({ hasSubmittedSurvey }) =>
-          hasSubmittedSurvey().then((already) => {
-            if (!already) setShowSurvey(true)
-          }),
-      )
+  // The onboarding survey is shown on real deployments only — never on the
+  // local dev server or in E2E (both run on localhost), so it can't block
+  // dev work or tests. A dev can force it locally by setting localStorage
+  // 'pitchperfect_survey_force' = '1'.
+  const surveyEnabledHere = (): boolean => {
+    if (typeof window === 'undefined') return false
+    try {
+      if (localStorage.getItem('pitchperfect_survey_force') === '1') return true
+    } catch {
+      /* localStorage unavailable — treat as not forced */
     }
+    const host = window.location.hostname
+    return host !== 'localhost' && host !== '127.0.0.1' && host !== ''
+  }
+
+  // Show optional survey after welcome screen is dismissed (once per browser,
+  // tracked via the persisted surveySeen flag — same as the welcome screen).
+  createEffect(() => {
+    if (showWelcome() || surveyChecked()) return
+    setSurveyChecked(true)
+    if (!surveyEnabledHere() || surveySeen()) return
+    void import('@/db/services/survey-service').then(({ hasSubmittedSurvey }) =>
+      hasSubmittedSurvey().then((already) => {
+        if (!already) setShowSurvey(true)
+      }),
+    )
   })
 
   // Hash routing: state → URL syncing is handled by useHashRouter above
@@ -2299,7 +2314,12 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
 
         <Show when={showSurvey()}>
-          <UserSurveyModal onClose={() => setShowSurvey(false)} />
+          <UserSurveyModal
+            onClose={() => {
+              dismissSurvey()
+              setShowSurvey(false)
+            }}
+          />
         </Show>
       </div>
     </PlaybackProvider>
