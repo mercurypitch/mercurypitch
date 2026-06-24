@@ -566,6 +566,13 @@
   padding: 24px 12px;
 }
 
+.chart-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 24px 8px;
+  text-align: center;
+}
+
 /* Search & Filter */
 .search-filter-bar {
   display: flex;

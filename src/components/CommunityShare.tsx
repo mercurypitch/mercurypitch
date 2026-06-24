@@ -373,6 +373,37 @@ export const CommunityShare: Component = () => {
     }
   })
 
+  // Real recent-session series for the profile charts (oldest → newest)
+  const recentSessions = createMemo(() => getSessionHistory().slice(-8))
+  const recentScores = createMemo(() =>
+    recentSessions().map((s) => Math.round(s.score || 0)),
+  )
+  const recentAccuracy = createMemo(() =>
+    recentSessions().map((s) =>
+      s.avgCents !== undefined
+        ? Math.max(0, Math.min(100, Math.round(100 - Math.abs(s.avgCents))))
+        : Math.round(s.score || 0),
+    ),
+  )
+
+  // Real personal records derived from session history (null if none yet)
+  const personalRecords = createMemo(() => {
+    const sessions = getSessionHistory()
+    if (sessions.length === 0) return null
+    const scores = sessions.map((s) => s.score || 0)
+    const recent = sessions.slice(-5)
+    return {
+      best: Math.round(Math.max(...scores)),
+      sessions: sessions.length,
+      recentAvg: Math.round(
+        recent.reduce((a, s) => a + (s.score || 0), 0) / recent.length,
+      ),
+      firstDate: new Date(
+        Math.min(...sessions.map((s) => s.completedAt)),
+      ).toLocaleDateString(),
+    }
+  })
+
   // Filter and sort shared melodies
   const displayMelodies = createMemo(() => {
     let result = sharedMelodies()
@@ -829,79 +860,104 @@ export const CommunityShare: Component = () => {
               </div>
             </div>
 
-            {/* Progress Chart Placeholder */}
+            {/* Progress charts — derived from your real practice history */}
             <div class="profile-charts">
               <div class="chart-card">
-                <h3>Weekly Progress</h3>
-                <div class="mini-chart">
-                  <For each={[65, 78, 72, 85, 90, 82, 75]}>
-                    {(score) => (
-                      <div class="mini-bar-wrapper">
-                        <div
-                          class="mini-bar"
-                          style={{
-                            width: `${score}%`,
-                            background: getBarColor(score),
-                          }}
-                        />
-                      </div>
-                    )}
-                  </For>
-                </div>
+                <h3>Recent Scores</h3>
+                <Show
+                  when={recentScores().length > 0}
+                  fallback={
+                    <p class="chart-empty">
+                      Complete a practice session to see your progress.
+                    </p>
+                  }
+                >
+                  <div class="mini-chart">
+                    <For each={recentScores()}>
+                      {(score) => (
+                        <div class="mini-bar-wrapper">
+                          <div
+                            class="mini-bar"
+                            style={{
+                              height: `${score}%`,
+                              background: getBarColor(score),
+                            }}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </div>
               <div class="chart-card">
-                <h3>Accuracy Over Time</h3>
-                <div class="mini-chart">
-                  <For each={[70, 72, 71, 75, 78, 80, 82]}>
-                    {(score) => (
-                      <div class="mini-bar-wrapper">
-                        <div
-                          class="mini-bar line-chart"
-                          style={{
-                            height: `${score}%`,
-                            background: getBarColor(score),
-                          }}
-                        />
-                      </div>
-                    )}
-                  </For>
-                </div>
+                <h3>Accuracy</h3>
+                <Show
+                  when={recentAccuracy().length > 0}
+                  fallback={<p class="chart-empty">No data yet.</p>}
+                >
+                  <div class="mini-chart">
+                    <For each={recentAccuracy()}>
+                      {(score) => (
+                        <div class="mini-bar-wrapper">
+                          <div
+                            class="mini-bar line-chart"
+                            style={{
+                              height: `${score}%`,
+                              background: getBarColor(score),
+                            }}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </div>
             </div>
 
-            {/* Personal Records */}
+            {/* Personal Records — real, derived from session history */}
             <div class="personal-records">
               <h3>Personal Records</h3>
-              <div class="records-grid">
-                <div class="record-item">
-                  <span class="record-icon">{IconMic()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Highest Note</span>
-                    <span class="record-value">C5</span>
+              <Show
+                when={personalRecords()}
+                fallback={
+                  <p class="chart-empty">
+                    Complete a practice session to start building records.
+                  </p>
+                }
+              >
+                {(rec) => (
+                  <div class="records-grid">
+                    <div class="record-item">
+                      <span class="record-icon">{IconStar()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Best Score</span>
+                        <span class="record-value">{rec().best}%</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconSession()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Sessions</span>
+                        <span class="record-value">{rec().sessions}</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconGoal()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Recent Avg</span>
+                        <span class="record-value">{rec().recentAvg}%</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconMelody()}</span>
+                      <div class="record-info">
+                        <span class="record-label">First Session</span>
+                        <span class="record-value">{rec().firstDate}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconGoal()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Perfect Run</span>
-                    <span class="record-value">27 notes</span>
-                  </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconStar()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Fastest Scale</span>
-                    <span class="record-value">8 notes/sec</span>
-                  </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconMelody()}</span>
-                  <div class="record-info">
-                    <span class="record-label">First Session</span>
-                    <span class="record-value">2026-04-01</span>
-                  </div>
-                </div>
-              </div>
+                )}
+              </Show>
             </div>
 
             {/* Shared Content Preview */}

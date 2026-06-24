@@ -148,24 +148,6 @@ const IconTrophy = () => (
   </svg>
 )
 
-const IconWizard = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-    <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-    <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-    <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-    <path d="M12 11a5 5 0 0 1 5 5v3H7v-3a5 5 0 0 1 5-5z" />
-  </svg>
-)
-
 const IconChallenge = () => (
   <svg
     viewBox="0 0 24 24"
@@ -210,117 +192,6 @@ const leaderboardCategories = [
   { id: 'accuracy' as const, name: 'Accuracy', icon: IconAccuracy },
   { id: 'streak' as const, name: 'Longest Streak', icon: IconStreak },
   { id: 'sessions' as const, name: 'Most Sessions', icon: IconSessions },
-]
-
-const mockLeaderboardUsers: LeaderboardUser[] = [
-  {
-    userId: 'u1',
-    displayName: 'MelodyMaven',
-    avatar: IconUser,
-    score: 1543200,
-    rank: 1,
-    streak: 45,
-    totalSessions: 324,
-    bestScore: 98,
-    accuracy: 92,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365,
-  },
-  {
-    userId: 'u2',
-    displayName: 'VocalVirtuoso',
-    avatar: IconUser,
-    score: 1498500,
-    rank: 2,
-    streak: 38,
-    totalSessions: 289,
-    bestScore: 97,
-    accuracy: 91,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365 * 2,
-  },
-  {
-    userId: 'u3',
-    displayName: 'MercuryPitchPro',
-    avatar: IconUser,
-    score: 1421000,
-    rank: 3,
-    streak: 52,
-    totalSessions: 356,
-    bestScore: 96,
-    accuracy: 90,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365 * 3,
-  },
-  {
-    userId: 'u4',
-    displayName: 'SingingStar',
-    avatar: IconUser,
-    score: 1385000,
-    rank: 4,
-    streak: 28,
-    totalSessions: 198,
-    bestScore: 95,
-    accuracy: 88,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365 * 2,
-  },
-  {
-    userId: 'u5',
-    displayName: 'HarmonyKing',
-    avatar: IconUser,
-    score: 1312000,
-    rank: 5,
-    streak: 31,
-    totalSessions: 245,
-    bestScore: 94,
-    accuracy: 87,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365,
-  },
-  {
-    userId: 'u6',
-    displayName: 'ToneMaster',
-    avatar: IconUser,
-    score: 1248000,
-    rank: 6,
-    streak: 22,
-    totalSessions: 187,
-    bestScore: 93,
-    accuracy: 86,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365,
-  },
-  {
-    userId: 'u7',
-    displayName: 'VoiceWizard',
-    avatar: IconWizard,
-    score: 1183000,
-    rank: 7,
-    streak: 25,
-    totalSessions: 156,
-    bestScore: 92,
-    accuracy: 85,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365,
-  },
-  {
-    userId: 'u8',
-    displayName: 'SoundSaga',
-    avatar: IconUser,
-    score: 1125000,
-    rank: 8,
-    streak: 19,
-    totalSessions: 134,
-    bestScore: 91,
-    accuracy: 84,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 365,
-  },
-  {
-    userId: 'me',
-    displayName: 'SingerPro',
-    avatar: IconUser,
-    score: 875000,
-    rank: 42,
-    streak: 7,
-    totalSessions: 45,
-    bestScore: 85,
-    accuracy: 78,
-    joinDate: Date.now() - 1000 * 60 * 60 * 24 * 30,
-  },
 ]
 
 /** A challenge definition joined with the user's own progress. */
@@ -451,13 +322,9 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     if (activeView() === 'friends') void loadPage(0)
   }
 
-  // Unified user list: real data when a cloud API is configured (even
-  // if empty); mock demo data only in local-only builds.
-  const allLeaderboardUsers = createMemo(() => {
-    const db = dbLeaderboardUsers()
-    if (cloudConfigured) return db
-    return db.length > 0 ? db : mockLeaderboardUsers
-  })
+  // Real data only — server-derived in cloud mode, locally-derived from
+  // your own sessionRecords otherwise. Never fabricated competitors.
+  const allLeaderboardUsers = createMemo(() => dbLeaderboardUsers())
 
   // Filter users based on search
   const filteredUsers = createMemo(() => {
@@ -672,12 +539,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                   <div class="podium-info">
                     <div class="podium-name">{user.displayName}</div>
                     <div class="podard-score">
-                      {user.score.toLocaleString()} pts
+                      {categoryMetric(user, activeCategory())}
                     </div>
                   </div>
                   <Show when={index() < 3}>
                     <div class="podium-score-display">
-                      {user.score.toLocaleString()}
+                      {categoryMetric(user, activeCategory())}
                     </div>
                   </Show>
                 </div>
@@ -900,4 +767,24 @@ function getStreakColor(streak: number): string {
   if (streak >= 15) return 'var(--accent)'
   if (streak >= 7) return 'var(--teal)'
   return 'var(--yellow)'
+}
+
+/** The prominent metric to show for a user under the active category. */
+function categoryMetric(
+  user: LeaderboardUser,
+  category: LeaderboardCategory,
+): string {
+  switch (category) {
+    case 'accuracy':
+      return `${Math.round(user.accuracy)}%`
+    case 'best-score':
+      return `${Math.round(user.bestScore)}%`
+    case 'streak':
+      return `${user.streak} day${user.streak === 1 ? '' : 's'}`
+    case 'sessions':
+      return `${user.totalSessions} session${user.totalSessions === 1 ? '' : 's'}`
+    case 'overall':
+    default:
+      return `${user.score.toLocaleString()} pts`
+  }
 }

@@ -334,11 +334,14 @@ const AppShell: Component<AppProps> = (props) => {
     setAutoStartExercise(true)
   }
 
-  // Auto-launch exercise drill from challenge "Practice" button
+  // Auto-launch exercise drill from challenge "Practice" button.
+  // Consume the pending drill once so it doesn't re-fire and trap the user
+  // on the drilled exercise when they navigate back to the menu.
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
       setSelectedExercise(drill.exercise)
+      setPendingDrill(null)
     }
   })
 

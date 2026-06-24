@@ -916,24 +916,21 @@ interface ChallengeModalProps {
 }
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
-  const [isPracticing, setIsPracticing] = createSignal(false)
-  const [_sessionScore, _setSessionScore] = createSignal(0)
-
-  const handleComplete = () => {
+  // Evaluate the user's recent practice sessions against the target and
+  // persist progress (marks the challenge complete if the average meets it).
+  const handleUpdateProgress = () => {
     const sessions = getSessionHistory()
     const recentSessions = sessions.slice(-5)
+    if (recentSessions.length === 0) {
+      props.onComplete()
+      return
+    }
     const avgScore =
-      recentSessions.length > 0
-        ? recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) /
-          recentSessions.length
-        : 0
+      recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) /
+      recentSessions.length
 
-    const target = props.challenge.targetScore
-    const completed = avgScore >= target
-
-    props.updateProgress?.(props.challenge.id, avgScore, completed)
-
-    setIsPracticing(false)
+    const completed = avgScore >= props.challenge.targetScore
+    props.updateProgress?.(props.challenge.id, Math.round(avgScore), completed)
     props.onComplete()
   }
 
@@ -953,90 +950,72 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
           </div>
         </div>
 
-        {isPracticing() ? (
-          <>
-            <div class="modal-practice-status">
-              <div class="practice-pulse">
-                <IconMicChallenge />
-              </div>
-              <p class="practice-text">Practice session in progress...</p>
-              <p class="practice-instruction">
-                Complete a session to track your progress
-              </p>
-            </div>
-            <div class="modal-actions">
-              <button class="modal-btn primary" onClick={handleComplete}>
-                Complete Session
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div class="modal-stats">
-              <div class="stat-card">
-                <span class="stat-label">Target Score</span>
-                <span class="stat-value">{props.challenge.targetScore}%</span>
-              </div>
-              <div class="stat-card">
-                <span class="stat-label">Your Progress</span>
-                <span class="stat-value">{props.challenge.progress}%</span>
-              </div>
-              <div class="stat-card">
-                <span class="stat-label">Sessions</span>
-                <span class="stat-value">
-                  {props.challenge.actualScores?.length ?? 0}
-                </span>
-              </div>
-            </div>
+        <div class="modal-stats">
+          <div class="stat-card">
+            <span class="stat-label">Target Score</span>
+            <span class="stat-value">{props.challenge.targetScore}%</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Your Progress</span>
+            <span class="stat-value">{props.challenge.progress}%</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Sessions</span>
+            <span class="stat-value">
+              {props.challenge.actualScores?.length ?? 0}
+            </span>
+          </div>
+        </div>
 
-            <div class="modal-instructions">
-              <h3>
-                <IconPaper /> How to Complete
-              </h3>
-              <ul class="instructions-list">
-                <li>Practice the target notes for at least 5 minutes</li>
-                <li>
-                  Try to achieve {props.challenge.targetScore}% or higher
-                  accuracy
-                </li>
-                <li>Practice at least 3 sessions this week</li>
-                <li>Track your progress in the Analysis tab</li>
-              </ul>
-            </div>
+        <div class="modal-instructions">
+          <h3>
+            <IconPaper /> How to Complete
+          </h3>
+          <ul class="instructions-list">
+            <li>Practice the target notes for at least 5 minutes</li>
+            <li>
+              Try to achieve {props.challenge.targetScore}% or higher accuracy
+            </li>
+            <li>Practice at least 3 sessions this week</li>
+            <li>
+              Come back and tap <strong>Update Progress</strong> to score your
+              recent sessions
+            </li>
+          </ul>
+        </div>
 
-            <div class="modal-progress-large">
-              <div class="progress-bar-large">
-                <div
-                  class="progress-fill-large"
-                  style={{
-                    width: `${props.challenge.progress}%`,
-                    background: getChallengeProgressColor(
-                      props.challenge.progress,
-                    ),
-                  }}
-                />
-              </div>
-              <span class="progress-text-large">
-                {props.challenge.progress}% to {props.challenge.targetScore}%
-              </span>
-            </div>
+        <div class="modal-progress-large">
+          <div class="progress-bar-large">
+            <div
+              class="progress-fill-large"
+              style={{
+                width: `${props.challenge.progress}%`,
+                background: getChallengeProgressColor(props.challenge.progress),
+              }}
+            />
+          </div>
+          <span class="progress-text-large">
+            {props.challenge.progress}% to {props.challenge.targetScore}%
+          </span>
+        </div>
 
-            <div class="modal-actions">
-              <button class="modal-btn secondary" onClick={props.onClose}>
-                Cancel
-              </button>
-              <button
-                class="modal-btn primary"
-                onClick={() => {
-                  setActiveTab(TAB_SINGING)
-                  props.onClose()
-                }}
-              >
-                Start Practice
-              </button>
-            </div>
-          </>
-        )}
+        <div class="modal-actions">
+          <button class="modal-btn secondary" onClick={() => props.onClose()}>
+            Cancel
+          </button>
+          <button class="modal-btn" onClick={handleUpdateProgress}>
+            Update Progress
+          </button>
+          <button
+            class="modal-btn primary"
+            onClick={() => {
+              setActiveTab(TAB_SINGING)
+              props.onClose()
+            }}
+          >
+            Start Practice
+          </button>
+        </div>
       </div>
     </div>
   )
