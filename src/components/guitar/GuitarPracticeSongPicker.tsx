@@ -1,25 +1,31 @@
 // ============================================================
-// FallingNotesSongPicker — song picker for Synthesia-style piano practice
+// GuitarPracticeSongPicker — melody picker for guitar practice
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { MidiSongTrack } from '@/lib/midi-song'
 import { defaultScoreTrack, parseMidiSong } from '@/lib/midi-song'
-import { midiToNoteName } from '@/lib/note-utils'
-import { midiToFreq } from '@/lib/scale-data'
-import type { FallingNote } from '@/stores/falling-notes-store'
 import { getAllMelodies } from '@/stores/melody-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { deleteMidiSong, savedMidiSongs, saveMidiSong, updateMidiSongSelection, } from '@/stores/saved-midi-songs-store'
-import type { MelodyData, MelodyItem } from '@/types'
+import type { MelodyItem } from '@/types'
 
-export interface FallingNotesSongPickerProps {
+export interface GuitarSongLoadData {
+  midi: number
+  noteName?: string
+  startBeat: number
+  duration: number
+  targetFreq?: number
+  trackId?: string
+}
+
+interface GuitarPracticeSongPickerProps {
   onSongLoaded: (
-    notes: FallingNote[],
+    items: GuitarSongLoadData[],
     name: string,
     bpm: number,
-    backingItems?: FallingNote[],
+    backingItems?: GuitarSongLoadData[],
     mutedIds?: string[],
     songObj?: SavedMidiSong | null,
   ) => void
@@ -34,31 +40,15 @@ export interface FallingNotesSongPickerProps {
   onSeek: (beat: number) => void
 }
 
-function melodyToFallingNotes(items: MelodyItem[]): FallingNote[] {
-  return items.map((item, i) => ({
-    id: item.id ?? i,
+function melodyToGuitarItems(items: MelodyItem[]): GuitarSongLoadData[] {
+  return items.map((item) => ({
     midi: item.note.midi,
-    name: item.note.name,
+    noteName: item.note.name,
     startBeat: item.startBeat,
     duration: item.duration,
     targetFreq: item.note.freq,
   }))
 }
-
-function midiNotesToFallingNotes(
-  notes: Array<{ midi: number; startBeat: number; duration: number }>,
-): FallingNote[] {
-  return notes.map((n, i) => ({
-    id: i,
-    midi: n.midi,
-    name: midiToNoteName(n.midi),
-    startBeat: n.startBeat,
-    duration: n.duration,
-    targetFreq: midiToFreq(n.midi),
-  }))
-}
-
-// ── Icons ────────────────────────────────────────────────────────
 
 const ChevronDownIcon = () => (
   <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
@@ -137,9 +127,9 @@ const SpeakerMutedIcon = () => (
   </svg>
 )
 
-export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
-  props,
-) => {
+export const GuitarPracticeSongPicker: Component<
+  GuitarPracticeSongPickerProps
+> = (props) => {
   const [selectedId, setSelectedId] = createSignal<string | null>(null)
   const [importStatus, setImportStatus] = createSignal<string>('')
   const [isModalOpen, setIsModalOpen] = createSignal(false)
@@ -151,9 +141,27 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
     new Set(),
   )
 
-  const melodies = createMemo(() =>
-    getAllMelodies().filter((m) => m.items.length > 0),
-  )
+  const formatTime = (t: number): string => {
+    const mins = Math.floor(t / 60)
+    const secs = Math.floor(t % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const handleProgressClick = (e: MouseEvent) => {
+    const bar = e.currentTarget as HTMLDivElement
+    const rect = bar.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const targetBeat = ratio * props.totalBeats()
+    props.onSeek(targetBeat)
+  }
+
+  const melodies = createMemo(() => {
+    try {
+      return getAllMelodies().filter((m) => m.items.length > 0)
+    } catch {
+      return []
+    }
+  })
 
   const currentMelodyName = createMemo(() => {
     const id = selectedId()
@@ -167,18 +175,17 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
   const loadMelody = (id: string) => {
     const melody = melodies().find((m) => m.id === id)
     if (!melody) return
-    const notes = melodyToFallingNotes(melody.items)
-    props.onSongLoaded(notes, melody.name, melody.bpm, [], [], null)
+    const items = melodyToGuitarItems(melody.items)
+    props.onSongLoaded(items, melody.name, melody.bpm, [], [], null)
   }
 
   const loadSavedSong = (song: SavedMidiSong) => {
     const scoreTrack =
       song.tracks.find((t) => t.id === song.scoreTrackId) ?? song.tracks[0]
-    const backing: FallingNote[] = []
+    const backing: GuitarSongLoadData[] = []
     for (const t of song.tracks) {
       if (t.id === scoreTrack.id) continue
-      const trackNotes = midiNotesToFallingNotes(t.notes)
-      backing.push(...trackNotes.map((n) => ({ ...n, trackId: t.id })))
+      backing.push(...t.notes.map((n) => ({ ...n, trackId: t.id })))
     }
     const mutedIds = song.tracks
       .filter(
@@ -187,7 +194,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
       .map((t) => t.id)
     setSelectedId(song.id)
     props.onSongLoaded(
-      midiNotesToFallingNotes(scoreTrack.notes),
+      scoreTrack.notes,
       song.name,
       song.bpm,
       backing,
@@ -290,36 +297,22 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
     input.click()
   }
 
-  const formatTime = (t: number): string => {
-    const mins = Math.floor(t / 60)
-    const secs = Math.floor(t % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const handleProgressClick = (e: MouseEvent) => {
-    const bar = e.currentTarget as HTMLDivElement
-    const rect = bar.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const targetBeat = ratio * props.totalBeats()
-    props.onSeek(targetBeat)
-  }
-
   return (
-    <div id="falling-notes-song-picker">
-      <div class="fn-picker-row">
-        <button class="fn-song-select-btn" onClick={() => setIsModalOpen(true)}>
-          <span class="fn-song-name">{currentMelodyName()}</span>
-          <span class="fn-song-arrow">
+    <div id="guitar-song-picker">
+      <div class="gp-picker-row">
+        <button class="gp-song-select-btn" onClick={() => setIsModalOpen(true)}>
+          <span class="gp-song-name">{currentMelodyName()}</span>
+          <span class="gp-song-arrow">
             <ChevronDownIcon />
           </span>
         </button>
 
-        <button class="fn-btn fn-btn-import" onClick={handleMidiImport}>
+        <button class="gp-btn" onClick={handleMidiImport}>
           Import MIDI
         </button>
       </div>
 
-      {importStatus() && <div class="fn-import-status">{importStatus()}</div>}
+      {importStatus() && <div class="gp-import-status">{importStatus()}</div>}
 
       <Show when={props.currentSong()}>
         {(song) => (
@@ -398,15 +391,15 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
               </For>
             </div>
             <Show when={props.totalBeats() > 0}>
-              <div class="fn-progress-area">
-                <span class="fn-time">
+              <div class="gp-progress-area">
+                <span class="gp-time">
                   {formatTime(
                     Math.max(0, props.playheadBeat()) / (props.songBpm() / 60),
                   )}
                 </span>
-                <div class="fn-progress-bar" onClick={handleProgressClick}>
+                <div class="gp-progress-bar" onClick={handleProgressClick}>
                   <div
-                    class="fn-progress-fill"
+                    class="gp-progress-fill"
                     style={{
                       width: `${
                         props.totalBeats() > 0
@@ -418,7 +411,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
                     }}
                   />
                 </div>
-                <span class="fn-time">
+                <span class="gp-time">
                   {formatTime(props.totalBeats() / (props.songBpm() / 60))}
                 </span>
               </div>
@@ -428,35 +421,35 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
       </Show>
 
       <Show when={isModalOpen()}>
-        <div class="fn-modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div class="fn-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div class="fn-modal-header">
+        <div class="gp-modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div class="gp-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div class="gp-modal-header">
               <h3>Select a Song</h3>
               <button
-                class="fn-modal-close"
+                class="gp-modal-close"
                 onClick={() => setIsModalOpen(false)}
               >
                 <CloseIcon />
               </button>
             </div>
-            <div class="fn-modal-list">
+            <div class="gp-modal-list">
               <Show when={savedMidiSongs().length > 0}>
-                <div class="fn-modal-section">Imported MIDI</div>
+                <div class="gp-modal-section">Imported MIDI</div>
                 <For each={savedMidiSongs()}>
                   {(s) => (
                     <div
-                      class="fn-modal-item fn-modal-item-row"
-                      classList={{ 'fn-modal-active': selectedId() === s.id }}
+                      class="gp-modal-item gp-modal-item-row"
+                      classList={{ 'gp-modal-active': selectedId() === s.id }}
                     >
                       <button
-                        class="fn-modal-item-main"
+                        class="gp-modal-item-main"
                         onClick={() => {
                           loadSavedSong(s)
                           setIsModalOpen(false)
                         }}
                       >
-                        <div class="fn-item-name">{s.name}</div>
-                        <div class="fn-item-meta">
+                        <div class="gp-item-name">{s.name}</div>
+                        <div class="gp-item-meta">
                           {s.tracks.length}{' '}
                           {s.tracks.length === 1 ? 'track' : 'tracks'} &middot;{' '}
                           {s.tracks.reduce((n, t) => n + t.noteCount, 0)} notes
@@ -473,7 +466,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
                         </button>
                       </Show>
                       <button
-                        class="fn-modal-close fn-song-delete"
+                        class="gp-modal-close gp-song-delete"
                         title="Remove imported song"
                         onClick={() => {
                           deleteMidiSong(s.id)
@@ -485,21 +478,21 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
                     </div>
                   )}
                 </For>
-                <div class="fn-modal-section">Library</div>
+                <div class="gp-modal-section">Library</div>
               </Show>
               <For each={melodies()}>
-                {(m: MelodyData) => (
+                {(m) => (
                   <button
-                    class="fn-modal-item"
-                    classList={{ 'fn-modal-active': selectedId() === m.id }}
+                    class="gp-modal-item"
+                    classList={{ 'gp-modal-active': selectedId() === m.id }}
                     onClick={() => {
                       setSelectedId(m.id)
                       loadMelody(m.id)
                       setIsModalOpen(false)
                     }}
                   >
-                    <div class="fn-item-name">{m.name}</div>
-                    <div class="fn-item-meta">
+                    <div class="gp-item-name">{m.name}</div>
+                    <div class="gp-item-meta">
                       {m.items.length} notes &middot; {m.bpm} BPM &middot;{' '}
                       {m.key}
                     </div>
@@ -513,12 +506,12 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
 
       <Show when={trackModalSong()}>
         {(song) => (
-          <div class="fn-modal-overlay" onClick={() => setTrackModalSong(null)}>
-            <div class="fn-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div class="fn-modal-header">
+          <div class="gp-modal-overlay" onClick={() => setTrackModalSong(null)}>
+            <div class="gp-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div class="gp-modal-header">
                 <h3>Choose Tracks — {song().name}</h3>
                 <button
-                  class="fn-modal-close"
+                  class="gp-modal-close"
                   onClick={() => setTrackModalSong(null)}
                 >
                   <CloseIcon />
@@ -533,14 +526,14 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
                   <strong>Hear</strong>: played as backing audio
                 </span>
               </div>
-              <div class="fn-modal-list">
+              <div class="gp-modal-list">
                 <For each={song().tracks}>
                   {(t: MidiSongTrack) => (
                     <div class="gp-track-row">
                       <label class="gp-track-score">
                         <input
                           type="radio"
-                          name="fn-score-track"
+                          name="gp-score-track"
                           checked={pendingScoreId() === t.id}
                           onChange={() => setPendingScoreId(t.id)}
                         />

@@ -28,7 +28,7 @@ export function usePianoRollEvents(deps: PianoRollEventsDeps): void {
   }) => {
     if (detail.bpm !== undefined) {
       setBpm(detail.bpm)
-      audioEngine.setBPM(detail.bpm)
+      audioEngine.setBpm(detail.bpm)
     }
     if (detail.melody !== undefined) {
       melodyStore.setMelody(detail.melody as never)

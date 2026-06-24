@@ -24,6 +24,8 @@ export interface FallingNote {
   startBeat: number
   duration: number
   targetFreq: number
+  isBacking?: boolean
+  trackId?: string
 }
 
 // ── Signals ─────────────────────────────────────────────────

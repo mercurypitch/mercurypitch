@@ -1,0 +1,1560 @@
+/* ============================================================
+   Guitar Practice — drum machine + fretboard styles
+   ============================================================ */
+
+/* ── Layout container ──────────────────────────────────────── */
+
+#guitar-practice-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#guitar-fretboard-container {
+  flex: 1;
+  min-height: 300px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--bg-tertiary);
+  background: #1a120b;
+}
+
+/* ── Drum Machine Panel ────────────────────────────────────── */
+
+.drum-machine-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.dm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.dm-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dm-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-tertiary);
+}
+
+/* ── Controls row ──────────────────────────────────────────── */
+
+.dm-control-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dm-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  min-width: 42px;
+}
+
+.dm-select {
+  flex: 1;
+  max-width: 140px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+}
+
+.dm-select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+
+.dm-btn {
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.dm-btn:hover {
+  background: var(--surface);
+  border-color: var(--text-muted);
+}
+
+.dm-btn-clear {
+  color: var(--yellow);
+}
+
+.dm-btn-clear:hover {
+  border-color: var(--yellow);
+}
+
+.dm-btn-play {
+  color: var(--green);
+}
+
+.dm-btn-play:hover {
+  border-color: var(--green);
+}
+
+/* ── Slider ────────────────────────────────────────────────── */
+
+.dm-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.dm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.dm-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.dm-bpm-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Pattern grid ──────────────────────────────────────────── */
+
+.dm-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  padding: 1px 0 1px 1px;
+}
+
+.dm-grid-header {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.dm-sound-col {
+  width: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dm-step-header {
+  flex: 1;
+  text-align: center;
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  padding: 2px 0;
+  user-select: none;
+}
+
+.dm-step-header.dm-beat-accent {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.dm-row {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.dm-sound-trigger {
+  width: 100%;
+  padding: 2px 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.dm-sound-trigger:hover {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.dm-sound-trigger:active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ── Step buttons ──────────────────────────────────────────── */
+
+.dm-step {
+  flex: 1;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
+}
+
+.dm-step:hover {
+  background: var(--surface);
+  border-color: var(--text-muted);
+}
+
+.dm-step.dm-beat-accent {
+  border-left-color: var(--text-muted);
+}
+
+.dm-step.dm-step-on {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.dm-step.dm-step-on.dm-beat-accent {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+.dm-step.dm-step-on:hover {
+  background: var(--accent);
+}
+
+/* ── Volume controls ───────────────────────────────────────── */
+
+.dm-volume-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--bg-tertiary);
+}
+
+.dm-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 0 calc(25% - 2px);
+  min-width: 80px;
+}
+
+.dm-volume-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+.dm-volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--bg-tertiary);
+  border-radius: 1.5px;
+  outline: none;
+  cursor: pointer;
+}
+
+.dm-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  cursor: pointer;
+}
+
+.dm-volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Song picker ─────────────────────────────────────────── */
+
+.gp-picker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gp-song-select-btn {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gp-song-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-song-arrow {
+  margin-left: 8px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.gp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.gp-modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.gp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.gp-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.gp-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.gp-modal-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.gp-modal-list {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.gp-modal-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.gp-modal-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.gp-modal-active {
+  background: var(--accent-dim) !important;
+  color: var(--accent);
+}
+
+.gp-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.gp-item-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.gp-import-status {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* -- Imported MIDI songs + track selector -- */
+
+.gp-modal-section {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.gp-modal-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 0;
+}
+
+.gp-modal-item-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.gp-track-btn {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.gp-song-delete {
+  flex-shrink: 0;
+}
+
+.gp-track-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.gp-track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.gp-track-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.gp-track-score,
+.gp-track-hear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gp-track-hear-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gp-track-info {
+  min-width: 0;
+}
+
+.gp-track-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.gp-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gp-header-left,
+.gp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Instrument selector ──────────────────────────────────── */
+
+.gp-instrument-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gp-instrument-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  min-width: 40px;
+}
+
+.gp-instrument-btn {
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.gp-instrument-btn:hover {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.gp-instrument-active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Generic guitar practice buttons ──────────────────────── */
+
+.gp-btn {
+  padding: 8px 16px;
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gp-btn:hover:not(:disabled) {
+  background: #30363d;
+}
+
+.gp-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gp-btn-play {
+  background: #238636;
+  border-color: #2ea043;
+}
+
+.gp-btn-play:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+.gp-btn-close {
+  background: #30363d;
+  color: #8b949e;
+  border: 1px solid #484f58;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.gp-btn-close:hover {
+  background: #484f58;
+  color: #c9d1d9;
+}
+
+/* ── Score overlay ────────────────────────────────────────── */
+
+.gp-score-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  border-radius: 6px;
+}
+
+.gp-score-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 32px 48px;
+  text-align: center;
+  color: #c9d1d9;
+}
+
+.gp-score-card h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: #f0f6fc;
+}
+
+.gp-score-grade {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #3fb950;
+}
+
+.gp-score-pct {
+  font-size: 48px;
+  font-weight: bold;
+  color: #f0f6fc;
+  margin-bottom: 8px;
+}
+
+.gp-score-detail {
+  font-size: 14px;
+  color: #8b949e;
+  margin-bottom: 20px;
+}
+
+.gp-score-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ── Current step highlight in drum grid ──────────────────── */
+
+.dm-step.dm-step-current {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.dm-step-header.dm-step-current {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Responsive: short screens ────────────────────────────── */
+
+@media (max-height: 700px) {
+  #guitar-fretboard-container {
+    min-height: 180px;
+  }
+}
+
+/* ── Responsive: drum grid on narrow screens ───────────────── */
+
+@media (max-width: 480px) {
+  .dm-sound-col {
+    width: 34px;
+    min-width: 34px;
+  }
+
+  .dm-sound-trigger {
+    font-size: 0.5rem;
+    padding: 1px 0;
+  }
+
+  .dm-step {
+    aspect-ratio: auto;
+    min-height: 18px;
+  }
+
+  .dm-volume-row {
+    flex: 1 0 calc(50% - 2px);
+  }
+}
+
+/* ── View toggle ─────────────────────────────────────────────── */
+
+.gp-view-toggle {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.gp-view-tab {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.gp-view-tab:hover {
+  color: var(--text-primary);
+}
+
+.gp-view-tab-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.gp-view-tab-active:hover {
+  color: #fff;
+}
+
+/* ── Key / Scale selector ───────────────────────────────────── */
+
+.gp-key-scale-row {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.gp-key-scale-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gp-key-scale-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gp-key-scale-select {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+}
+
+.gp-key-scale-select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Responsive: narrow screens ──────────────────────────────── */
+
+@media (max-width: 480px) {
+  .gp-view-tab {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+
+  .gp-key-scale-select {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+
+/* ── Mode tabs (sub-tabs within Fretboard view) ────────────────── */
+
+.gp-mode-tabs {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.gp-mode-tab {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.gp-mode-tab:hover {
+  color: var(--text-primary);
+}
+
+.gp-mode-tab-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.gp-mode-tab-active:hover {
+  color: #fff;
+}
+
+/* ── Chord selector ──────────────────────────────────────────── */
+
+.gp-chord-select {
+  min-width: 120px;
+}
+
+/* ── Note Locator Quiz HUD ──────────────────────────────────── */
+
+.gp-quiz-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.gp-quiz-target {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.gp-quiz-stats {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.gp-quiz-timer {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+}
+
+.gp-quiz-progress {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-quiz-score {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--green);
+}
+
+/* ── Ear Training Panel ──────────────────────────────────────── */
+
+.gp-ear-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.gp-ear-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gp-ear-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.gp-ear-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gp-ear-streak {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.gp-ear-accuracy {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.gp-ear-feedback {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.gp-ear-correct {
+  color: var(--green);
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.gp-ear-wrong {
+  color: #f44;
+  background: rgba(255, 68, 68, 0.12);
+}
+
+/* ── Melody Transcription HUD ────────────────────────────────── */
+
+.gp-transcription-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.gp-transcription-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gp-transcription-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gp-transcription-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gp-transcription-progress {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-transcription-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-transcription-length {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Transcription Trainer HUD ───────────────────────────────── */
+
+.gp-tt-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.gp-tt-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gp-tt-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gp-tt-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gp-tt-progress {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-tt-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-tt-load-btn {
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gp-tt-load-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.gp-tt-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 2px;
+}
+
+.gp-tt-speed-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 70px;
+}
+
+.gp-tt-speed-slider {
+  flex: 1;
+  max-width: 160px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.gp-tt-speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.gp-tt-speed-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Call & Response HUD ──────────────────────────────────────── */
+
+.gp-callresponse-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.gp-callresponse-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gp-callresponse-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gp-callresponse-phase-indicator {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-callresponse-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gp-callresponse-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── CAGED Position Trainer HUD ────────────────────────────── */
+
+.gp-caged-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: -4px 0 4px 0;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.gp-caged-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gp-caged-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gp-caged-chord {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.gp-caged-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Sing-to-Fretboard HUD ─────────────────────────────────── */
+
+.gp-singtofret-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: -4px 0 4px 0;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.gp-singtofret-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gp-singtofret-phase {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.gp-singtofret-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gp-singtofret-streak {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.gp-singtofret-total {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* ── Chord Progression HUD ─────────────────────────────────── */
+
+.gp-chordprog-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: -4px 0 4px 0;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.gp-chordprog-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gp-chordprog-progression {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gp-chordprog-chord {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gp-chordprog-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Adaptive Jam HUD ─────────────────────────────────────────── */
+
+.gp-aj-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  gap: 12px;
+}
+
+.gp-aj-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gp-aj-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gp-aj-chord {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--bg-tertiary);
+  padding: 2px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.gp-aj-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gp-aj-density {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-aj-history {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 320px;
+}
+
+.gp-aj-history-chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* ── Keyboard legend (hero mode) ───────────────────────────── */
+
+.gp-key-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  justify-content: center;
+}
+
+.gp-key-legend-label {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
+.gp-key-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent-muted, rgba(88, 166, 255, 0.3));
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ── Inline Mixer / Track chips row ────────────────────────── */
+
+.gp-inline-mixer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 8px);
+  margin-top: var(--spacing-sm, 8px);
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 8px);
+  align-items: center;
+}
+
+.gp-mixer-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-right: var(--spacing-xs, 4px);
+}
+
+.gp-track-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.gp-track-chip-name {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.gp-track-chip-name:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gp-track-chip-eye,
+.gp-track-chip-speaker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  border: none;
+  border-left: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.gp-track-chip-eye:hover,
+.gp-track-chip-speaker:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gp-track-chip-eye:disabled,
+.gp-track-chip-speaker:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Scored state */
+.gp-track-chip-scored {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+
+.gp-track-chip-scored .gp-track-chip-name {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Muted / Invisible states */
+.gp-track-chip-muted .gp-track-chip-speaker {
+  color: var(--text-muted);
+}
+
+.gp-track-chip-invisible .gp-track-chip-eye {
+  color: var(--text-muted);
+}
+
+.gp-track-chip-muted.gp-track-chip-invisible {
+  opacity: 0.55;
+}
+
+/* ── Progress Bar / Scrubber ────────────────────────────── */
+
+.gp-progress-area,
+.fn-progress-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 12px);
+  margin-top: var(--spacing-sm, 10px);
+  padding: 4px 12px;
+  width: 100%;
+}
+
+.gp-time,
+.fn-time {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  min-width: 36px;
+  text-align: center;
+}
+
+.gp-progress-bar,
+.fn-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.2s ease;
+}
+
+.gp-progress-bar:hover,
+.fn-progress-bar:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gp-progress-fill,
+.fn-progress-fill {
+  height: 100%;
+  background: var(--accent, #9333ea);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s linear;
+}

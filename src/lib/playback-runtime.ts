@@ -397,7 +397,7 @@ export class PlaybackRuntime {
    * Get current BPM from AudioEngine (which reads from appStore)
    */
   getBPM(): number {
-    return this.audioEngine.getBPM?.() || 120
+    return this.audioEngine.getBpm?.() || 120
   }
 
   getMelody(): MelodyItem[] {

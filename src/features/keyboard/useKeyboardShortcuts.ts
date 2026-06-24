@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMPOSE, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -59,6 +59,13 @@ interface KeyboardShortcutHandlers {
 
   /** Toggle shortcut help overlay. */
   onToggleShortcutHelp?: () => void
+
+  /** Guitar tab strum handler — keys 1-6 or A-H to strum strings. */
+  guitar?: {
+    strumKeyboard: (e: KeyboardEvent) => void
+    /** Toggle drum machine / jam playback in interactive view, or practice play in hero view. */
+    togglePlayback?: () => void
+  }
 }
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
@@ -81,6 +88,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
       ) {
         return
       }
+    }
+
+    // ── Guitar strum keys ──────────────────────────────────────
+    // Route to guitar tab when active; handler silently ignores non-strum keys
+    if (tab === TAB_GUITAR && handlers.guitar && !isTyping) {
+      handlers.guitar.strumKeyboard(e)
     }
 
     // ── Escape ────────────────────────────────────────────────
@@ -152,6 +165,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         } else if (gs === 'idle' || gs === 'finished') {
           handlers.piano.startGame()
         }
+        return
+      }
+
+      // Guitar tab — toggle drum machine / jam / practice playback
+      if (tab === TAB_GUITAR && handlers.guitar?.togglePlayback) {
+        handlers.guitar.togglePlayback()
         return
       }
 

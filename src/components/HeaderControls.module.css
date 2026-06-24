@@ -399,39 +399,44 @@
 .labelToggleGroup {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
 }
 
+/* Plain icon toggles — no box/background; state reads through color:
+   dimmed when off, accent-colored when on. */
 .labelToggleBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-size: var(--text-body);
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0.55;
   line-height: 1;
-  white-space: nowrap;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.1s ease;
   flex-shrink: 0;
 }
 
 .labelToggleBtn:hover {
-  border-color: var(--accent);
-  background: var(--accent-dim);
   color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .labelToggleBtn:active {
-  transform: scale(0.97);
+  transform: scale(0.92);
 }
 
 .labelToggleBtn.active {
-  border-color: var(--green);
-  background: var(--green-dim);
-  color: var(--green);
+  color: var(--accent);
+  opacity: 1;
 }
 
 .labelToggleText {

@@ -15,6 +15,7 @@ export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
 export const TAB_EXERCISES = 'exercises' as const
 export const TAB_JAM = 'jam' as const
+export const TAB_GUITAR = 'guitar' as const
 
 export type ActiveTab =
   | typeof TAB_SINGING
@@ -30,6 +31,7 @@ export type ActiveTab =
   | typeof TAB_PITCH_ALGO
   | typeof TAB_EXERCISES
   | typeof TAB_JAM
+  | typeof TAB_GUITAR
 
 /** Default tab when the app loads. */
 export const DEFAULT_TAB = TAB_SINGING
@@ -70,6 +72,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_PITCH_ALGO]: 'pitch-algo',
   [TAB_EXERCISES]: 'exercises',
   [TAB_JAM]: 'jam',
+  [TAB_GUITAR]: 'guitar',
 }
 
 /** Returns the DOM element CSS selector for a tab button, e.g. `#tab-singing`. */
@@ -98,6 +101,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_PITCH_ALGO]: 'Pitch Test',
     [TAB_EXERCISES]: 'Exercises',
     [TAB_JAM]: 'Jam',
+    [TAB_GUITAR]: 'Guitar',
   }
   return labels[tab]
 }

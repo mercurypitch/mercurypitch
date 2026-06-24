@@ -6,6 +6,7 @@ import { showNotification } from '@/stores/notifications-store'
 import type { CharacterName } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
+import { createBassVoice, createGuitarVoice } from './guitar/guitar-synth'
 import { UvrProcessor } from './uvr-processor'
 
 export interface AudioEngineCallbacks {
@@ -17,7 +18,15 @@ export interface AudioEngineCallbacks {
   onNoteChange?: (note: MelodyNote, noteIndex: number) => void
 }
 
-export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
+export type InstrumentType =
+  | 'sine'
+  | 'piano'
+  | 'organ'
+  | 'strings'
+  | 'synth'
+  | 'guitar-acoustic'
+  | 'guitar-electric'
+  | 'bass'
 
 export const CHARACTER_PROFILES: Record<
   CharacterName,
@@ -73,7 +82,7 @@ export const CHARACTER_PROFILES: Record<
 }
 
 export class AudioEngine {
-  private audioCtx: AudioContext | null = null
+  audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
   private metronomeGain: GainNode | null = null
   private uvrOutput: GainNode | null = null
@@ -86,7 +95,7 @@ export class AudioEngine {
   private micGain: GainNode | null = null
   // Legacy aliases for compatibility
   private micAnalyser: AnalyserNode | null = null
-  private toneOscillator: OscillatorNode | null = null
+  private toneOscillator: AudioBufferSourceNode | OscillatorNode | null = null
   private toneGain: GainNode | null = null
   private toneCleanupTimer: ReturnType<typeof setTimeout> | null = null
   private isRecording = false
@@ -104,7 +113,7 @@ export class AudioEngine {
   private _activeVoices = new Map<
     number,
     {
-      oscillators: OscillatorNode[]
+      oscillators: (OscillatorNode | AudioBufferSourceNode)[]
       gains: GainNode[]
       stopTime: number
       lfos?: OscillatorNode[]
@@ -114,14 +123,6 @@ export class AudioEngine {
 
   // BPM state (used for timing calculations)
   private _bpm = 120
-
-  setBpm(bpm: number): void {
-    this._bpm = bpm
-  }
-
-  getBpm(): number {
-    return this._bpm
-  }
 
   // ADSR Envelope configuration (default values)
   private adsrAttack = 0.01 // seconds (10ms)
@@ -179,8 +180,6 @@ export class AudioEngine {
     this.reverbReturnGain.gain.value = 0
 
     // UVR processing node - inserted between mainGain and downstream effects
-    this.uvrOutput = this.audioCtx.createGain()
-
     if (
       this.playbackAnalyser !== null &&
       this.playbackAnalyser !== undefined &&
@@ -222,10 +221,6 @@ export class AudioEngine {
     // Initialize UVR processor
     await this.uvrProcessor.initAudio(this.audioCtx)
     this.uvrInitialized = true
-
-    // UVR output gain for vocal/instrumental separation
-    this.uvrOutput = this.audioCtx.createGain()
-    this.uvrOutput.gain.value = 1.0
   }
 
   /** Enable UVR vocal separation processing */
@@ -545,16 +540,25 @@ export class AudioEngine {
 
   /** Get available instrument names */
   getInstruments(): InstrumentType[] {
-    return ['sine', 'piano', 'organ', 'strings', 'synth']
+    return [
+      'sine',
+      'piano',
+      'organ',
+      'strings',
+      'synth',
+      'guitar-acoustic',
+      'guitar-electric',
+      'bass',
+    ]
   }
 
-  /** Set BPM */
-  setBPM(bpm: number): void {
+  /** Set BPM (clamped 40–280) */
+  setBpm(bpm: number): void {
     this._bpm = Math.max(40, Math.min(280, bpm))
   }
 
   /** Get current BPM */
-  getBPM(): number {
+  getBpm(): number {
     return this._bpm
   }
 
@@ -831,8 +835,10 @@ export class AudioEngine {
 
     // A new note must replace the previous note immediately at the note boundary.
     // Lingering release tails here make the previous pitch sound over the next note.
+    // Use 80ms release so sustained instruments (guitar, piano) fade smoothly;
+    // the quick attack on the new voice prevents audible overlap.
     if (this.toneOscillator !== null) {
-      this.stopTone(50) // 50ms fade out to prevent popping/crackling
+      this.stopTone(80)
     }
 
     if (this.toneCleanupTimer !== null) {
@@ -847,17 +853,20 @@ export class AudioEngine {
     // Previously this method hardcoded oscillator.type='sine', which is
     // why changing the instrument dropdown didn't audibly affect live
     // playback even though WAV export (which uses _createVoice) did.
-    // We default to 1 second when no duration is provided so the
-    // per-instrument envelopes inside _createVoice have a sensible
+    // Default to one beat at current BPM when no duration is provided
+    // so the per-instrument envelopes inside _createVoice have a sensible
     // stop time; stopTone() can still cut the note early.
     const effectiveDurationMs =
-      duration !== undefined && duration > 0 ? duration : 1000
+      duration !== undefined && duration > 0
+        ? duration
+        : (60 / this.getBpm()) * 1000
     const voice = this._createVoice(
       frequency,
       effectiveDurationMs,
       effectType,
       targetFreq,
       vibratoAmplitude,
+      undefined,
       tremoloRate,
       tremoloDepth,
       trillInterval,
@@ -876,8 +885,14 @@ export class AudioEngine {
     // Apply user volume on top of the per-instrument envelope by
     // chaining via an extra gain node. This keeps each instrument's
     // built-in envelope intact while still respecting the global slider.
+    // Quick ramp from 0 to prevent a click when the gain node enters the
+    // signal chain with an instantaneous value.
     const userGain = this.audioCtx.createGain()
-    userGain.gain.value = this.volume * activeVolumeMultiplier
+    userGain.gain.setValueAtTime(0, startTime)
+    userGain.gain.linearRampToValueAtTime(
+      this.volume * activeVolumeMultiplier,
+      startTime + 0.003,
+    )
     masterGain.connect(userGain)
 
     // Apply UVR processing if enabled
@@ -886,19 +901,26 @@ export class AudioEngine {
       node.connect(this.uvrMainGain ?? this.mainGain!),
     )
 
-    // Start every oscillator. LFOs are already started inside
-    // _applyEffectModulation, so we only need to start oscillators here.
-    for (const osc of voice.oscillators) osc.start(startTime)
+    // Start every oscillator. Some instrument voices (guitar, bass)
+    // already start their oscillators internally, so we skip those.
+    // LFOs are already started inside _applyEffectModulation.
+    for (const osc of voice.allOscillators) {
+      try {
+        osc.start(startTime)
+      } catch {
+        /* already started by the instrument factory */
+      }
+    }
 
     // Track the primary oscillator/gain so stopTone() can release it.
-    const primaryOsc = voice.oscillators[0] ?? null
+    const primaryOsc = voice.allOscillators[0] ?? null
     this.toneOscillator = primaryOsc
     this.toneGain = userGain
 
     this.isPlaying = true
 
     const cleanup = (): void => {
-      for (const osc of voice.oscillators) {
+      for (const osc of voice.allOscillators) {
         try {
           osc.disconnect()
         } catch {
@@ -940,8 +962,11 @@ export class AudioEngine {
 
     if (duration !== undefined) {
       const durationSeconds = Math.max(0.001, duration / 1000)
-      const stopTime = startTime + durationSeconds
-      for (const osc of voice.oscillators) {
+      // Plucked voices release via their gain envelope — stop the source
+      // late enough that the ring-out isn't audibly truncated.
+      const tailSeconds = this._isPluckedInstrument() ? 1.2 : 0
+      const stopTime = startTime + durationSeconds + tailSeconds
+      for (const osc of voice.allOscillators) {
         try {
           osc.stop(stopTime)
         } catch {
@@ -1024,7 +1049,11 @@ export class AudioEngine {
 
   /** Change the frequency of the current tone smoothly */
   setToneFrequency(frequency: number): void {
-    if (this.toneOscillator && this.audioCtx) {
+    if (
+      this.toneOscillator &&
+      this.audioCtx &&
+      'frequency' in this.toneOscillator
+    ) {
       this.toneOscillator.frequency.setTargetAtTime(
         frequency,
         this.audioCtx.currentTime,
@@ -1064,7 +1093,8 @@ export class AudioEngine {
 
     // Create oscillators based on instrument
     const {
-      oscillators,
+      oscillatorsToStart,
+      allOscillators,
       gain: mainGain,
       lfos,
       lfoGains,
@@ -1075,6 +1105,7 @@ export class AudioEngine {
       effectType,
       targetFreq,
       vibratoAmplitude,
+      undefined,
       tremoloRate,
       tremoloDepth,
       trillInterval,
@@ -1094,7 +1125,7 @@ export class AudioEngine {
       mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.015)
     }
 
-    for (const osc of oscillators) {
+    for (const osc of oscillatorsToStart) {
       osc.start(now)
       osc.stop(now + durationMs / 1000 + 0.1)
     }
@@ -1106,21 +1137,33 @@ export class AudioEngine {
 
     // Store voice reference (with optional LFOs)
     this._activeVoices.set(noteId, {
-      oscillators,
+      oscillators: allOscillators,
       gains: [mainGain, voiceVolumeGain],
       stopTime: now + durationMs / 1000,
       lfos,
       lfoGains,
     })
 
-    // Auto-stop after duration
+    // Auto-stop after duration. Plucked instruments get extra tail time so
+    // their natural Karplus-Strong decay rings out past the note boundary
+    // (the release envelope in _createVoice has already faded them by then).
     if (durationMs) {
+      const tailMs = this._isPluckedInstrument() ? 1500 : 0
       setTimeout(() => {
         this.stopNote(noteId)
-      }, durationMs)
+      }, durationMs + tailMs)
     }
 
     return noteId
+  }
+
+  /** Whether the current instrument is a plucked-string voice with its own natural decay */
+  private _isPluckedInstrument(): boolean {
+    return (
+      this.currentInstrument === 'guitar-acoustic' ||
+      this.currentInstrument === 'guitar-electric' ||
+      this.currentInstrument === 'bass'
+    )
   }
 
   /**
@@ -1134,6 +1177,7 @@ export class AudioEngine {
     effectType?: EffectType,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    audioContext?: BaseAudioContext,
     tremoloRate?: number,
     tremoloDepth?: number,
     trillInterval?: number,
@@ -1141,18 +1185,20 @@ export class AudioEngine {
     staccatoRatio?: number,
     chordIntervals?: number[],
   ): {
-    oscillators: OscillatorNode[]
+    oscillatorsToStart: (OscillatorNode | AudioBufferSourceNode)[]
+    allOscillators: (OscillatorNode | AudioBufferSourceNode)[]
     gain: GainNode
     lfos: OscillatorNode[]
     lfoGains: GainNode[]
     hasCustomEnvelope: boolean
   } {
-    const ctx = this.audioCtx!
+    const ctx = audioContext ?? this.audioCtx!
     const now = ctx.currentTime
     const dur = durationMs / 1000
 
     const mainGain = ctx.createGain()
-    const oscillators: OscillatorNode[] = []
+    const oscillatorsToStart: (OscillatorNode | AudioBufferSourceNode)[] = []
+    const allOscillators: (OscillatorNode | AudioBufferSourceNode)[] = []
     let hasCustomEnvelope = false
 
     let activeInstrument = this.currentInstrument
@@ -1193,7 +1239,8 @@ export class AudioEngine {
           gain.gain.value = amplitudes[i] * 0.15
           osc.connect(gain)
           gain.connect(mainGain)
-          oscillators.push(osc)
+          oscillatorsToStart.push(osc)
+          allOscillators.push(osc)
         })
         // Piano has its own envelope — smooth attack, decay, sustain
         mainGain.gain.setValueAtTime(0, now)
@@ -1221,7 +1268,8 @@ export class AudioEngine {
           gain.gain.value = levels[i] * 0.2
           osc.connect(gain)
           gain.connect(mainGain)
-          oscillators.push(osc)
+          oscillatorsToStart.push(osc)
+          allOscillators.push(osc)
         })
         // Smooth attack to prevent click at note start, hold, then release
         mainGain.gain.setValueAtTime(0, now)
@@ -1244,7 +1292,8 @@ export class AudioEngine {
           gain.gain.value = levels[i] * 0.1
           osc.connect(gain)
           gain.connect(mainGain)
-          oscillators.push(osc)
+          oscillatorsToStart.push(osc)
+          allOscillators.push(osc)
         })
         // Slow fade in/out for strings feel
         mainGain.gain.setValueAtTime(0, now)
@@ -1263,7 +1312,8 @@ export class AudioEngine {
         gain1.gain.value = 0.08
         osc1.connect(gain1)
         gain1.connect(mainGain)
-        oscillators.push(osc1)
+        oscillatorsToStart.push(osc1)
+        allOscillators.push(osc1)
 
         const osc2 = ctx.createOscillator()
         osc2.type = 'sawtooth'
@@ -1272,12 +1322,37 @@ export class AudioEngine {
         gain2.gain.value = 0.05
         osc2.connect(gain2)
         gain2.connect(mainGain)
-        oscillators.push(osc2)
+        oscillatorsToStart.push(osc2)
+        allOscillators.push(osc2)
         // Smooth attack to prevent click, sustain at 70%, then release
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(1.0, now + 0.015)
         mainGain.gain.setValueAtTime(1.0, Math.max(now, now + dur - 0.1))
         mainGain.gain.linearRampToValueAtTime(0, now + dur)
+        hasCustomEnvelope = true
+        break
+      }
+      case 'guitar-acoustic':
+      case 'guitar-electric':
+      case 'bass': {
+        const voice =
+          this.currentInstrument === 'bass'
+            ? createBassVoice(ctx, freq, durationMs)
+            : createGuitarVoice(
+                ctx,
+                freq,
+                durationMs,
+                this.currentInstrument === 'guitar-electric'
+                  ? 'electric'
+                  : 'acoustic',
+              )
+        allOscillators.push(...voice.oscillators)
+        // The Karplus-Strong buffer carries its own natural decay — keep
+        // mainGain at unity for the note duration, then release gently so
+        // the string rings out instead of being chopped at the note edge.
+        mainGain.gain.setValueAtTime(1, now)
+        mainGain.gain.setTargetAtTime(0, now + dur, 0.25)
+        voice.gain.connect(mainGain)
         hasCustomEnvelope = true
         break
       }
@@ -1287,7 +1362,8 @@ export class AudioEngine {
         osc.type = 'sine'
         osc.frequency.value = freq
         osc.connect(mainGain)
-        oscillators.push(osc)
+        oscillatorsToStart.push(osc)
+        allOscillators.push(osc)
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015)
         mainGain.gain.setValueAtTime(0.7, Math.max(now, now + dur - 0.05))
@@ -1310,22 +1386,24 @@ export class AudioEngine {
         memberGain.gain.value = 0.12
         osc.connect(memberGain)
         memberGain.connect(mainGain)
-        oscillators.push(osc)
+        oscillatorsToStart.push(osc)
+        allOscillators.push(osc)
       }
     }
 
     // Apply effect modulation to the primary oscillator (index 0)
     let lfos: OscillatorNode[] = []
     let lfoGains: GainNode[] = []
-    if (activeEffectType && oscillators.length > 0) {
+    if (activeEffectType && oscillatorsToStart.length > 0) {
       const result = this._applyEffectModulation(
-        oscillators[0],
+        oscillatorsToStart[0],
         activeEffectType,
         freq,
         durationMs,
         now,
         targetFreq,
         activeVibratoAmplitude,
+        audioContext,
         trillInterval,
         trillRate,
       )
@@ -1380,7 +1458,14 @@ export class AudioEngine {
       mainGain.connect(tremoloGain)
     }
 
-    return { oscillators, gain: finalGain, lfos, lfoGains, hasCustomEnvelope }
+    return {
+      oscillatorsToStart,
+      allOscillators,
+      gain: finalGain,
+      lfos,
+      lfoGains,
+      hasCustomEnvelope,
+    }
   }
 
   /**
@@ -1414,17 +1499,21 @@ export class AudioEngine {
    * Apply effect modulation (vibrato, slide, ease)
    */
   private _applyEffectModulation(
-    osc: OscillatorNode,
+    osc: AudioBufferSourceNode | OscillatorNode,
     effectType: EffectType | undefined,
     freq: number,
     durationMs: number,
     now: number,
     targetFreq?: number,
     vibratoAmplitude?: number,
+    audioContext?: BaseAudioContext,
     trillInterval?: number,
     trillRate?: number,
   ): { lfos: OscillatorNode[]; lfoGains: GainNode[] } | null {
     if (!effectType) return null
+    // AudioBufferSourceNode (e.g. Karplus-Strong guitar) has no frequency
+    // control; effects like vibrato/slide do not apply.
+    if (!('frequency' in osc)) return null
 
     const dur = durationMs / 1000
     const lfos: OscillatorNode[] = []
@@ -1434,8 +1523,9 @@ export class AudioEngine {
       case 'vibrato': {
         // Vibrato: LFO modulates oscillator frequency for a wobble effect.
         // amplitude is specified in semitones (default 0.5 ≈ 50 cents).
-        const lfo = this.audioCtx!.createOscillator()
-        const lfoGain = this.audioCtx!.createGain()
+        const ctx = audioContext ?? this.audioCtx!
+        const lfo = ctx.createOscillator()
+        const lfoGain = ctx.createGain()
         lfo.type = 'sine'
         lfo.frequency.value = 5
         const ampSemitones = vibratoAmplitude ?? 0.5
@@ -1795,13 +1885,13 @@ export class AudioEngine {
     const dur = durationMs / 1000
     const now = startTime
 
-    const { oscillators, gain: mainGain } = this._createVoiceForContext(
-      ctx,
+    const { oscillatorsToStart, gain: mainGain } = this._createVoice(
       freq,
       durationMs,
       effectType,
       targetFreq,
       vibratoAmplitude,
+      ctx,
       tremoloRate,
       tremoloDepth,
       trillInterval,
@@ -1812,222 +1902,10 @@ export class AudioEngine {
 
     mainGain.connect(destination)
 
-    for (const osc of oscillators) {
+    for (const osc of oscillatorsToStart) {
       osc.start(now)
       osc.stop(now + dur + 0.1)
     }
-  }
-
-  /**
-   * Create oscillators for offline rendering (same logic as _createVoice but for any context).
-   */
-  private _createVoiceForContext(
-    ctx: OfflineAudioContext | AudioContext,
-    freq: number,
-    _durationMs: number,
-    effectType?: EffectType,
-    targetFreq?: number,
-    vibratoAmplitude?: number,
-    tremoloRate?: number,
-    tremoloDepth?: number,
-    trillInterval?: number,
-    trillRate?: number,
-    staccatoRatio?: number,
-    chordIntervals?: number[],
-  ): { oscillators: OscillatorNode[]; gain: GainNode } {
-    const now = ctx.currentTime
-    // const dur = _durationMs / 1000
-
-    const mainGain = ctx.createGain()
-    const oscillators: OscillatorNode[] = []
-
-    switch (this.currentInstrument) {
-      case 'piano': {
-        const harmonics = [1, 2, 3, 4, 5, 6]
-        const amplitudes = [1, 0.5, 0.3, 0.2, 0.1, 0.05]
-        harmonics.forEach((h, i) => {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'sine'
-          osc.frequency.value = freq * h
-          gain.gain.value = amplitudes[i] * 0.15
-          osc.connect(gain)
-          gain.connect(mainGain)
-          oscillators.push(osc)
-        })
-        // Piano envelope
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack)
-        mainGain.gain.exponentialRampToValueAtTime(
-          0.4,
-          now + this.adsrAttack + this.adsrDecay,
-        )
-        mainGain.gain.setValueAtTime(
-          0.3,
-          now + this.adsrAttack + this.adsrDecay + 0.1,
-        )
-        break
-      }
-      case 'organ': {
-        const ratios = [1, 1.5, 2, 3, 4]
-        const levels = [0.5, 0.3, 0.4, 0.2, 0.15]
-        ratios.forEach((r, i) => {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'sine'
-          osc.frequency.value = freq * r
-          gain.gain.value = levels[i] * 0.25
-          osc.connect(gain)
-          gain.connect(mainGain)
-          oscillators.push(osc)
-        })
-        // Organ: slow attack, no decay
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.9, now + 0.02)
-        break
-      }
-      case 'strings': {
-        // Strings: detuned sawtooth for warmth
-        for (let i = 0; i < 3; i++) {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'sawtooth'
-          osc.frequency.value = freq * (1 + (i - 1) * 0.003)
-          gain.gain.value = 0.07 / 3
-          osc.connect(gain)
-          gain.connect(mainGain)
-          oscillators.push(osc)
-        }
-        // Strings: slow attack (vibrato starts after attack)
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.8, now + 0.08)
-        // Slight vibrato via detune modulation
-        break
-      }
-      case 'synth': {
-        // Synth: square + sine for rich tone
-        const osc1 = ctx.createOscillator()
-        const gain1 = ctx.createGain()
-        osc1.type = 'square'
-        osc1.frequency.value = freq
-        gain1.gain.value = 0.15
-        osc1.connect(gain1)
-        gain1.connect(mainGain)
-        oscillators.push(osc1)
-
-        const osc2 = ctx.createOscillator()
-        const gain2 = ctx.createGain()
-        osc2.type = 'sine'
-        osc2.frequency.value = freq
-        gain2.gain.value = 0.2
-        osc2.connect(gain2)
-        gain2.connect(mainGain)
-        oscillators.push(osc2)
-        // Synth envelope
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005)
-        mainGain.gain.exponentialRampToValueAtTime(0.5, now + 0.05)
-        break
-      }
-      case 'sine':
-      default: {
-        const osc = ctx.createOscillator()
-        osc.type = 'sine'
-        osc.frequency.value = freq
-        oscillators.push(osc)
-        // Simple sine with release
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.8, now + 0.01)
-        break
-      }
-    }
-
-    // Chord: additional sine oscillators for chord member pitches
-    if (chordIntervals && chordIntervals.length > 0) {
-      for (const interval of chordIntervals) {
-        if (interval === 0) continue
-        const memberFreq = freq * Math.pow(2, interval / 12)
-        const osc = ctx.createOscillator()
-        osc.type = 'sine'
-        osc.frequency.value = memberFreq
-        const memberGain = ctx.createGain()
-        memberGain.gain.value = 0.12
-        osc.connect(memberGain)
-        memberGain.connect(mainGain)
-        oscillators.push(osc)
-      }
-    }
-
-    // Apply effect modulation for offline rendering
-    let finalGain = mainGain
-    if (effectType && oscillators.length > 0) {
-      const dur = _durationMs / 1000
-      if (effectType === 'vibrato') {
-        const lfo = ctx.createOscillator()
-        const lfoGain = ctx.createGain()
-        lfo.type = 'sine'
-        lfo.frequency.value = 5
-        const ampSemitones = vibratoAmplitude ?? 0.5
-        const deviationFactor = Math.pow(2, ampSemitones / 12) - 1
-        lfoGain.gain.value = freq * deviationFactor
-        lfo.connect(lfoGain)
-        lfoGain.connect(oscillators[0].frequency)
-        lfo.start(now)
-        lfo.stop(now + dur + 0.1)
-      } else if (effectType === 'slide-up' || effectType === 'slide-down') {
-        const dest =
-          targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
-        oscillators[0].frequency.setValueAtTime(freq, now)
-        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
-      } else if (effectType === 'ease-in') {
-        const dest = targetFreq ?? freq * 1.5
-        oscillators[0].frequency.setValueAtTime(freq, now)
-        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
-      } else if (effectType === 'ease-out') {
-        const dest = targetFreq ?? freq * 1.25
-        oscillators[0].frequency.setValueAtTime(freq, now)
-        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
-      } else if (effectType === 'trill') {
-        const interval = trillInterval ?? 2
-        const rate = trillRate ?? 10
-        const deviationFactor = Math.pow(2, interval / 12) - 1
-        const lfo = ctx.createOscillator()
-        const lfoGain = ctx.createGain()
-        lfo.type = 'square'
-        lfo.frequency.value = rate
-        lfoGain.gain.value = freq * deviationFactor
-        lfo.connect(lfoGain)
-        lfoGain.connect(oscillators[0].frequency)
-        lfo.start(now)
-        lfo.stop(now + dur + 0.1)
-      } else if (effectType === 'tremolo') {
-        const rate = tremoloRate ?? 8
-        const depth = tremoloDepth ?? 0.5
-        const lfo = ctx.createOscillator()
-        const lfoGain = ctx.createGain()
-        const tremoGain = ctx.createGain()
-        lfo.type = 'sine'
-        lfo.frequency.value = rate
-        lfoGain.gain.value = depth / 2
-        tremoGain.gain.value = 1 - depth / 2
-        lfo.connect(lfoGain)
-        lfoGain.connect(tremoGain.gain)
-        lfo.start(now)
-        lfo.stop(now + dur + 0.1)
-        mainGain.connect(tremoGain)
-        finalGain = tremoGain
-      } else if (effectType === 'staccato') {
-        const ratio = staccatoRatio ?? 0.4
-        const shortDur = dur * ratio
-        mainGain.gain.cancelScheduledValues(now)
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005)
-        mainGain.gain.setValueAtTime(0.7, now + shortDur)
-        mainGain.gain.linearRampToValueAtTime(0, now + shortDur + 0.03)
-      }
-    }
-
-    return { oscillators, gain: finalGain }
   }
 
   /**

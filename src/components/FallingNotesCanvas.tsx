@@ -527,7 +527,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       // Color and gradient
       let fillColor: string
       let useGradient = false
-      if (wasMiss) {
+      if (note.isBacking === true) {
+        fillColor = noteColor(note.midi)
+        useGradient = true
+      } else if (wasMiss) {
         fillColor = '#f8514999'
       } else if (wasHit) {
         fillColor = '#3fb95099'
@@ -541,16 +544,28 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
       // Border
       let strokeColor = 'transparent'
-      if (wasMiss) strokeColor = '#f85149'
-      else if (wasHit) strokeColor = '#3fb950'
-      else if (note.startBeat <= currentBeat && currentBeat <= endBeat)
-        strokeColor = '#ffffff'
+      if (note.isBacking !== true) {
+        if (wasMiss) strokeColor = '#f85149'
+        else if (wasHit) strokeColor = '#3fb950'
+        else if (note.startBeat <= currentBeat && currentBeat <= endBeat)
+          strokeColor = '#ffffff'
+      }
 
       // Shadow beneath note
-      if (useGradient) ctx.save()
-      ctx.shadowColor = 'rgba(0,0,0,0.4)'
-      ctx.shadowBlur = 4
-      ctx.shadowOffsetY = 2
+      const drawShadow = useGradient && note.isBacking !== true
+      if (drawShadow) ctx.save()
+      if (note.isBacking === true) {
+        ctx.globalAlpha = 0.35
+      } else if (wasMiss) {
+        ctx.globalAlpha = 0.3
+      } else {
+        ctx.globalAlpha = 0.92
+      }
+      if (drawShadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.4)'
+        ctx.shadowBlur = 4
+        ctx.shadowOffsetY = 2
+      }
 
       // Draw note rectangle with gradient or flat fill
       if (useGradient) {
@@ -592,10 +607,11 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       ctx.fill()
       if (strokeColor !== 'transparent') ctx.stroke()
 
-      if (useGradient) ctx.restore()
+      if (drawShadow) ctx.restore()
+      ctx.globalAlpha = 1
 
       // Note name label — always visible when showNoteLabels is on
-      if (showNoteLabels()) {
+      if (showNoteLabels() && note.isBacking !== true) {
         const noteName = midiToNoteName(note.midi)
         const octave = Math.floor(note.midi / 12) - 1
         const labelFontSize = Math.max(9, Math.min(noteH * 0.5, 13))

@@ -4,6 +4,7 @@ import { getDb } from '@/db'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
@@ -15,7 +16,7 @@ export const [keyName, setKeyName] = createSignal<string>('C')
 export const [scaleType, setScaleType] = createSignal<string>('major')
 export const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 
-export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
+export type { InstrumentType } from '@/lib/audio-engine'
 
 // ── UVR (Vocal Separation) ─────────────────────────────────────
 
