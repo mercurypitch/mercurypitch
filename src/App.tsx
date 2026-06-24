@@ -78,7 +78,7 @@ import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
-import { takeGoogleRedirectResult } from '@/db/services/auth-service'
+import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -1284,6 +1284,11 @@ const AppShell: Component<AppProps> = (props) => {
     if (showWelcome() || surveyChecked()) return
     setSurveyChecked(true)
     if (!surveyEnabledHere() || surveySeen()) return
+    // The survey persists to the cloud, so only prompt signed-in users —
+    // a signed-out submit hits the user-scoped write guard and fails. (On
+    // deployed builds where the survey shows, a fresh visitor is signed in
+    // anonymously at startup; an upgraded-then-signed-out device is not.)
+    if (!hasValidToken()) return
     void import('@/db/services/survey-service').then(({ hasSubmittedSurvey }) =>
       hasSubmittedSurvey().then((already) => {
         if (!already) setShowSurvey(true)

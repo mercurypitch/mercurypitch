@@ -587,58 +587,70 @@ export default {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
     }
-
-    const url = new URL(request.url)
-
-    const authResponse = await handleAuth(request, env, url.pathname, respond)
-    if (authResponse) return authResponse
-
-    if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
-      return handleLeaderboard(url, await getAuth(request, env), env)
+    try {
+      return await handleRequest(request, env)
+    } catch (err) {
+      // Without this boundary an unhandled throw returns Cloudflare's error
+      // page with no CORS headers, which the browser surfaces to the app as
+      // an opaque "Failed to fetch". Log it (visible via `wrangler tail`) and
+      // return a CORS-bearing 500 so the client sees a real error instead.
+      console.error('[db-worker] unhandled error:', err)
+      return respond({ error: 'Internal server error' }, { status: 500 })
     }
-
-    const match = url.pathname.match(/^\/api\/([A-Za-z]+)(?:\/([^/]+))?$/)
-    if (!match) return respond({ error: 'Not found' }, { status: 404 })
-
-    const entity = match[1]
-    const def = TABLES[entity]
-    if (!def) return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
-
-    const sub = match[2] ? decodeURIComponent(match[2]) : undefined
-    const auth = await getAuth(request, env)
-
-    // Per-IP write rate limit on mutations — bounds scripted spam / unbounded
-    // row creation. (Volumetric DDoS is absorbed at the Cloudflare edge.)
-    if (
-      request.method === 'POST' ||
-      request.method === 'PATCH' ||
-      request.method === 'DELETE'
-    ) {
-      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
-      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
-      if (!rl.allowed) {
-        return respond(
-          {
-            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-          },
-          { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
-        )
-      }
-    }
-
-    if (sub === 'count' && request.method === 'GET') {
-      return handleList(entity, def, url, auth, env, true)
-    }
-
-    if (sub === undefined) {
-      if (request.method === 'GET') return handleList(entity, def, url, auth, env, false)
-      if (request.method === 'POST') return handleCreate(entity, def, request, auth, env)
-      return respond({ error: 'Method not allowed' }, { status: 405 })
-    }
-
-    if (request.method === 'GET') return handleGetById(entity, def, sub, auth, env)
-    if (request.method === 'PATCH') return handleUpdate(entity, def, sub, request, auth, env)
-    if (request.method === 'DELETE') return handleDelete(entity, def, sub, request, auth, env)
-    return respond({ error: 'Method not allowed' }, { status: 405 })
   },
+}
+
+async function handleRequest(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url)
+
+  const authResponse = await handleAuth(request, env, url.pathname, respond)
+  if (authResponse) return authResponse
+
+  if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
+    return handleLeaderboard(url, await getAuth(request, env), env)
+  }
+
+  const match = url.pathname.match(/^\/api\/([A-Za-z]+)(?:\/([^/]+))?$/)
+  if (!match) return respond({ error: 'Not found' }, { status: 404 })
+
+  const entity = match[1]
+  const def = TABLES[entity]
+  if (!def) return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
+
+  const sub = match[2] ? decodeURIComponent(match[2]) : undefined
+  const auth = await getAuth(request, env)
+
+  // Per-IP write rate limit on mutations — bounds scripted spam / unbounded
+  // row creation. (Volumetric DDoS is absorbed at the Cloudflare edge.)
+  if (
+    request.method === 'POST' ||
+    request.method === 'PATCH' ||
+    request.method === 'DELETE'
+  ) {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'crud-write')
+    if (!rl.allowed) {
+      return respond(
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+  }
+
+  if (sub === 'count' && request.method === 'GET') {
+    return handleList(entity, def, url, auth, env, true)
+  }
+
+  if (sub === undefined) {
+    if (request.method === 'GET') return handleList(entity, def, url, auth, env, false)
+    if (request.method === 'POST') return handleCreate(entity, def, request, auth, env)
+    return respond({ error: 'Method not allowed' }, { status: 405 })
+  }
+
+  if (request.method === 'GET') return handleGetById(entity, def, sub, auth, env)
+  if (request.method === 'PATCH') return handleUpdate(entity, def, sub, request, auth, env)
+  if (request.method === 'DELETE') return handleDelete(entity, def, sub, request, auth, env)
+  return respond({ error: 'Method not allowed' }, { status: 405 })
 }
