@@ -53,13 +53,15 @@ const UserSurveyModal: Component<Props> = (props) => {
 
   const handleSubmit = async () => {
     setSubmitting(true)
-    await submitSurvey({
+    const saved = await submitSurvey({
       background: background(),
       usage: usage(),
       featureRequest: featureRequest().trim() || undefined,
     })
     setSubmitting(false)
-    showNotification('Thank you for sharing!', 'success')
+    // Only thank the user if the response was actually persisted; otherwise
+    // close quietly rather than claim a success that did not happen.
+    if (saved) showNotification('Thank you for sharing!', 'success')
     props.onClose()
   }
 

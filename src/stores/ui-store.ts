@@ -86,6 +86,21 @@ export function dismissWelcome(): void {
   setWelcomeSeen(APP_VERSION)
 }
 
+// ── Onboarding survey (GH #97) ──────────────────────────────────
+// Shown once on real deployments after the welcome screen. A non-empty
+// stored value means the user has already seen (submitted or skipped) it,
+// so it never re-prompts — same dismiss pattern as the welcome screen.
+const PITCH_PERFECT_SURVEY_SEEN_KEY = 'pitchperfect_survey_seen'
+
+export const [surveySeen, setSurveySeen] = createPersistedSignal<string>(
+  PITCH_PERFECT_SURVEY_SEEN_KEY,
+  '',
+)
+
+export function dismissSurvey(): void {
+  setSurveySeen('1')
+}
+
 // ── User Profile ────────────────────
 
 export function userProfile(): { name: string; email?: string } {

@@ -46,6 +46,7 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   'userAchievements',
   'userSettings',
   'follows',
+  'userSurveyResponses',
 ])
 
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
