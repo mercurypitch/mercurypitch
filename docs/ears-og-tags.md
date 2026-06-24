@@ -14,7 +14,7 @@
 - `og:type` — `website`
 - `og:url` — canonical URL
 - `og:image` — preview image (PNG, min 1200×630)
-- `og:site_name` — PitchPerfect
+- `og:site_name` — MercuryPitch
 - `twitter:card` — `summary_large_image`
 - `twitter:title`, `twitter:description`, `twitter:image`
 
@@ -32,12 +32,12 @@
 **WHEN** the application loads a shared melody from URL query parameters (`?n=...`), **THEN** the system shall update the document head meta tags (`og:title`, `og:description`, `og:url`) to reflect the shared content.
 
 ### REQ-OG-005 — Melody Share Title Format
-**WHEN** a melody is shared, **THEN** the `og:title` shall be: `"Melody shared on PitchPerfect"`.  
-**IF** a key is specified, **THEN** the title shall include it: `"Melody in <key> shared on PitchPerfect"`.
+**WHEN** a melody is shared, **THEN** the `og:title` shall be: `"Melody shared on MercuryPitch"`.  
+**IF** a key is specified, **THEN** the title shall include it: `"Melody in <key> shared on MercuryPitch"`.
 
 ### REQ-OG-006 — Melody Share Description Format
 **WHEN** a melody is shared, **THEN** the `og:description` shall include the note count, BPM, and key (if available).  
-Example: `"A 15-note melody at 120 BPM in C major — practice it on PitchPerfect."`
+Example: `"A 15-note melody at 120 BPM in C major — practice it on MercuryPitch."`
 
 ### REQ-OG-007 — Dynamic OG URL
 **WHEN** a melody is loaded from URL parameters, **THEN** the `og:url` shall be updated to the current full URL including query string so crawlers associate the correct preview.
@@ -54,7 +54,7 @@ Example: `"A 15-note melody at 120 BPM in C major — practice it on PitchPerfec
 ### REQ-OG-009 — OG Image Endpoint
 **Eventual:** `GET /og?melody=<encoded_melody>`
 
-The server shall return a PNG image (1200×630) showing a piano-roll visualization of the encoded melody with PitchPerfect branding.
+The server shall return a PNG image (1200×630) showing a piano-roll visualization of the encoded melody with MercuryPitch branding.
 
 ### REQ-OG-010 — OG Image Dimensions
 **Eventual:** `GET /og?melody=<encoded_melody>&width=<px>&height=<px>`
@@ -77,7 +77,7 @@ The server shall return an HTML page containing only OG meta tags for the shared
 **Ubiquitous:** The system shall provide a function that renders an OG preview image (1200×630) onto an HTML Canvas, suitable for download or sharing.
 
 The image shall include:
-- PitchPerfect logo/title
+- MercuryPitch logo/title
 - Piano roll fragment of the shared melody
 - Note count, BPM, and key metadata
 - Dark theme consistent with app branding (`#0d1117` background)

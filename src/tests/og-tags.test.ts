@@ -20,7 +20,7 @@ describe('initDefaultOGTags', () => {
 
   it('sets og:title meta tag', () => {
     initDefaultOGTags()
-    expect(getMetaContent('property', 'og:title')).toContain('PitchPerfect')
+    expect(getMetaContent('property', 'og:title')).toContain('MercuryPitch')
   })
 
   it('sets og:description meta tag', () => {
@@ -43,13 +43,13 @@ describe('initDefaultOGTags', () => {
   it('sets og:image to favicon', () => {
     initDefaultOGTags()
     expect(getMetaContent('property', 'og:image')).toBe(
-      'https://mercurypitch.com/favicon.png',
+      'https://mercurypitch.com/og-image.png',
     )
   })
 
-  it('sets og:site_name to PitchPerfect', () => {
+  it('sets og:site_name to MercuryPitch', () => {
     initDefaultOGTags()
-    expect(getMetaContent('property', 'og:site_name')).toBe('PitchPerfect')
+    expect(getMetaContent('property', 'og:site_name')).toBe('MercuryPitch')
   })
 
   it('sets twitter:card to summary_large_image', () => {
@@ -59,7 +59,7 @@ describe('initDefaultOGTags', () => {
 
   it('sets twitter:title matching og:title', () => {
     initDefaultOGTags()
-    expect(getMetaContent('name', 'twitter:title')).toContain('PitchPerfect')
+    expect(getMetaContent('name', 'twitter:title')).toContain('MercuryPitch')
   })
 
   it('sets twitter:description matching og:description', () => {
@@ -70,7 +70,7 @@ describe('initDefaultOGTags', () => {
   it('sets twitter:image matching og:image', () => {
     initDefaultOGTags()
     expect(getMetaContent('name', 'twitter:image')).toBe(
-      'https://mercurypitch.com/favicon.png',
+      'https://mercurypitch.com/og-image.png',
     )
   })
 
@@ -93,42 +93,42 @@ describe('setMelodyOGTags', () => {
   it('updates og:title with melody info and key', () => {
     setMelodyOGTags({ noteCount: 15, bpm: 120, key: 'C' })
     expect(getMetaContent('property', 'og:title')).toBe(
-      'Melody in C shared on PitchPerfect',
+      'Melody in C shared on MercuryPitch',
     )
   })
 
   it('updates og:title without key', () => {
     setMelodyOGTags({ noteCount: 10 })
     expect(getMetaContent('property', 'og:title')).toBe(
-      'Melody shared on PitchPerfect',
+      'Melody shared on MercuryPitch',
     )
   })
 
   it('updates og:description with full metadata', () => {
     setMelodyOGTags({ noteCount: 20, bpm: 140, key: 'Am' })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 20-note melody at 140 BPM in Am — practice it on PitchPerfect.',
+      'A 20-note melody at 140 BPM in Am — practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description without optional fields', () => {
     setMelodyOGTags({ noteCount: 5 })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 5-note melody — practice it on PitchPerfect.',
+      'A 5-note melody — practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description with BPM but no key', () => {
     setMelodyOGTags({ noteCount: 8, bpm: 100 })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 8-note melody at 100 BPM — practice it on PitchPerfect.',
+      'A 8-note melody at 100 BPM — practice it on MercuryPitch.',
     )
   })
 
   it('updates og:description with key but no BPM', () => {
     setMelodyOGTags({ noteCount: 12, key: 'Dm' })
     expect(getMetaContent('property', 'og:description')).toBe(
-      'A 12-note melody in Dm — practice it on PitchPerfect.',
+      'A 12-note melody in Dm — practice it on MercuryPitch.',
     )
   })
 
@@ -144,14 +144,14 @@ describe('setMelodyOGTags', () => {
   it('updates twitter:title to match melody title', () => {
     setMelodyOGTags({ noteCount: 10, key: 'G' })
     expect(getMetaContent('name', 'twitter:title')).toBe(
-      'Melody in G shared on PitchPerfect',
+      'Melody in G shared on MercuryPitch',
     )
   })
 
   it('updates twitter:description to match melody description', () => {
     setMelodyOGTags({ noteCount: 7, bpm: 110 })
     expect(getMetaContent('name', 'twitter:description')).toBe(
-      'A 7-note melody at 110 BPM — practice it on PitchPerfect.',
+      'A 7-note melody at 110 BPM — practice it on MercuryPitch.',
     )
   })
 
@@ -159,9 +159,9 @@ describe('setMelodyOGTags', () => {
     setMelodyOGTags({ noteCount: 3 })
     expect(getMetaContent('property', 'og:type')).toBe('website')
     expect(getMetaContent('property', 'og:image')).toBe(
-      'https://mercurypitch.com/favicon.png',
+      'https://mercurypitch.com/og-image.png',
     )
-    expect(getMetaContent('property', 'og:site_name')).toBe('PitchPerfect')
+    expect(getMetaContent('property', 'og:site_name')).toBe('MercuryPitch')
   })
 })
 
@@ -174,7 +174,7 @@ describe('resetToDefaultOGTags', () => {
   it('reverts og:title to default', () => {
     setMelodyOGTags({ noteCount: 15, bpm: 120, key: 'C' })
     resetToDefaultOGTags()
-    expect(getMetaContent('property', 'og:title')).toContain('PitchPerfect')
+    expect(getMetaContent('property', 'og:title')).toContain('MercuryPitch')
     expect(getMetaContent('property', 'og:title')).not.toContain('Melody')
   })
 
@@ -200,7 +200,7 @@ describe('resetToDefaultOGTags', () => {
   it('reverts twitter:title to default', () => {
     setMelodyOGTags({ noteCount: 5, key: 'D' })
     resetToDefaultOGTags()
-    expect(getMetaContent('name', 'twitter:title')).toContain('PitchPerfect')
+    expect(getMetaContent('name', 'twitter:title')).toContain('MercuryPitch')
     expect(getMetaContent('name', 'twitter:title')).not.toContain('Melody')
   })
 

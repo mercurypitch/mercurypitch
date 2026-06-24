@@ -2,12 +2,12 @@
 // OG Tags — Dynamic Open Graph meta tag management
 // ============================================================
 
-const OG_TITLE = 'PitchPerfect — Vocal Pitch Training with Real-Time Feedback'
+const OG_TITLE = 'MercuryPitch — Vocal Pitch Training with Real-Time Feedback'
 const OG_DESC =
   'Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.'
-const OG_IMAGE = 'https://mercurypitch.com/favicon.png'
+const OG_IMAGE = 'https://mercurypitch.com/og-image.png'
 const OG_URL = 'https://mercurypitch.com/'
-const SITE_NAME = 'PitchPerfect'
+const SITE_NAME = 'MercuryPitch'
 
 function setMeta(property: string, content: string, isName = false): void {
   const attr = isName ? 'name' : 'property'
@@ -46,14 +46,14 @@ export interface MelodyOGMeta {
 export function setMelodyOGTags(meta: MelodyOGMeta): void {
   const title =
     meta.key !== null && meta.key !== undefined
-      ? `Melody in ${meta.key} shared on PitchPerfect`
-      : 'Melody shared on PitchPerfect'
+      ? `Melody in ${meta.key} shared on MercuryPitch`
+      : 'Melody shared on MercuryPitch'
 
   const parts: string[] = [`A ${meta.noteCount}-note melody`]
   if (meta.bpm !== null && meta.bpm !== undefined)
     parts.push(`at ${meta.bpm} BPM`)
   if (meta.key !== null && meta.key !== undefined) parts.push(`in ${meta.key}`)
-  parts.push('— practice it on PitchPerfect.')
+  parts.push('— practice it on MercuryPitch.')
   const description = parts.join(' ')
 
   const url = window.location.href
