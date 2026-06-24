@@ -1221,3 +1221,186 @@ function findClosestByTime<T extends { time: number }>(
 
   return closestDist < 0.1 ? closest : null // reject if > 100ms away
 }
+
+/**
+ * Compute pitch stability from a history of pitch samples over a sliding window.
+ * Returns a score 0-100 where 100 is perfectly stable.
+ */
+export function computePitchStability(
+  pitchHistory: Array<{ time: number; midi: number; clarity: number }>,
+  windowMs = 500,
+): number {
+  if (pitchHistory.length < 5) return 0
+
+  const now = pitchHistory[pitchHistory.length - 1].time
+  const windowSamples = pitchHistory.filter(
+    (p) => now - p.time <= windowMs / 1000 && p.clarity > 0.5,
+  )
+
+  if (windowSamples.length < 5) return 0
+
+  let meanMidi = 0
+  for (const p of windowSamples) {
+    meanMidi += p.midi
+  }
+  meanMidi /= windowSamples.length
+
+  let variance = 0
+  for (const p of windowSamples) {
+    variance += (p.midi - meanMidi) * (p.midi - meanMidi)
+  }
+  variance /= windowSamples.length
+
+  const stdDev = Math.sqrt(variance)
+
+  // 0 semitones variance = 100 score, 1 semitone variance = 0 score
+  const score = Math.max(0, 100 - stdDev * 100)
+  return Math.round(score)
+}
+
+// ── Vocal Range Detection ─────────────────────────────────────
+
+/** Voice type classification from detected MIDI range. */
+export type DetectedVocalRange =
+  | 'soprano'
+  | 'mezzo-soprano'
+  | 'alto'
+  | 'tenor'
+  | 'baritone'
+  | 'bass'
+  | 'unknown'
+
+/** Approximate MIDI ranges for each voice type (5th-95th percentile of trained singers). */
+const VOICE_MIDI_RANGES: Record<
+  Exclude<DetectedVocalRange, 'unknown'>,
+  { minMidi: number; maxMidi: number; label: string }
+> = {
+  soprano: { minMidi: 60, maxMidi: 84, label: 'Soprano' }, // C4-C6
+  'mezzo-soprano': { minMidi: 57, maxMidi: 81, label: 'Mezzo' }, // A3-A5
+  alto: { minMidi: 53, maxMidi: 77, label: 'Alto' }, // F3-F5
+  tenor: { minMidi: 48, maxMidi: 72, label: 'Tenor' }, // C3-C5
+  baritone: { minMidi: 43, maxMidi: 67, label: 'Baritone' }, // G2-G4
+  bass: { minMidi: 40, maxMidi: 64, label: 'Bass' }, // E2-E4
+}
+
+export interface VocalRangeResult {
+  /** Detected voice type */
+  voiceType: DetectedVocalRange
+  /** The 5th percentile MIDI (lowest sustainable note) */
+  lowMidi: number
+  /** The 95th percentile MIDI (highest sustainable note) */
+  highMidi: number
+  /** Note name of lowest detected note */
+  lowNote: string
+  /** Note name of highest detected note */
+  highNote: string
+  /** Number of samples used for detection */
+  sampleCount: number
+  /** Whether enough data was available for confident detection */
+  confident: boolean
+}
+
+/**
+ * Detect the user's vocal range from a history of sung MIDI notes.
+ *
+ * Uses the 5th and 95th percentile to filter out outliers (cracked notes,
+ * momentary squeaks). Matches the resulting range against known voice-type
+ * MIDI ranges via overlap scoring.
+ */
+export function detectVocalRange(midiHistory: number[]): VocalRangeResult {
+  if (midiHistory.length < 10) {
+    return {
+      voiceType: 'unknown',
+      lowMidi: 0,
+      highMidi: 0,
+      lowNote: '--',
+      highNote: '--',
+      sampleCount: midiHistory.length,
+      confident: false,
+    }
+  }
+
+  const sorted = [...midiHistory].sort((a, b) => a - b)
+  const lowIdx = Math.floor(sorted.length * 0.05)
+  const highIdx = Math.floor(sorted.length * 0.95)
+  const lowMidi = sorted[lowIdx]
+  const highMidi = sorted[highIdx]
+
+  // Score each voice type by how well the user's range overlaps
+  let bestType: DetectedVocalRange = 'unknown'
+  let bestScore = -Infinity
+
+  for (const [type, range] of Object.entries(VOICE_MIDI_RANGES)) {
+    const overlapLow = Math.max(lowMidi, range.minMidi)
+    const overlapHigh = Math.min(highMidi, range.maxMidi)
+    const overlap = Math.max(0, overlapHigh - overlapLow)
+
+    // Penalize ranges that are far from the user's
+    const centerUser = (lowMidi + highMidi) / 2
+    const centerRange = (range.minMidi + range.maxMidi) / 2
+    const centerPenalty = Math.abs(centerUser - centerRange) * 0.5
+
+    const score = overlap - centerPenalty
+    if (score > bestScore) {
+      bestScore = score
+      bestType = type as DetectedVocalRange
+    }
+  }
+
+  return {
+    voiceType: bestType,
+    lowMidi,
+    highMidi,
+    lowNote: midiToNoteName(lowMidi),
+    highNote: midiToNoteName(highMidi),
+    sampleCount: midiHistory.length,
+    confident: bestScore > 2,
+  }
+}
+
+/**
+ * Compute a composite tonal quality score from HNR, harmonic richness,
+ * and pitch stability. All inputs are 0-100. Returns 0-100 with a
+ * qualitative label.
+ */
+export function computeTonalQuality(
+  hnrEfficiency: number,
+  richnessScore: number,
+  pitchStability: number,
+): { score: number; label: string } {
+  // Weighted blend: richness contributes most (timbre), HNR contributes
+  // clarity, stability contributes consistency.
+  const score = Math.round(
+    hnrEfficiency * 0.3 + richnessScore * 0.4 + pitchStability * 0.3,
+  )
+
+  let label: string
+  if (score >= 85) label = 'Professional'
+  else if (score >= 70) label = 'Excellent'
+  else if (score >= 55) label = 'Good'
+  else if (score >= 40) label = 'Developing'
+  else label = 'Nascent'
+
+  return { score, label }
+}
+
+/** Convert MIDI number to note name (e.g. 60 → "C4"). */
+function midiToNoteName(midi: number): string {
+  const noteNames = [
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
+  ]
+  const octave = Math.floor(midi / 12) - 1
+  const noteIndex = midi % 12
+  return `${noteNames[noteIndex]}${octave}`
+}

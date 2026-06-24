@@ -644,3 +644,208 @@ export interface WeeklyChallengeResult {
   /** User's score on this challenge */
   userScore: number
 }
+
+// ============================================================
+// Annotation System (Phase 2 — Sonic Visualiser-style annotations)
+// ============================================================
+
+export type AnnotationType = 'instant' | 'value' | 'region'
+
+export interface AnnotationBase {
+  id: string
+  type: AnnotationType
+  /** Time in seconds from audio start */
+  time: number
+  /** Optional text label */
+  label?: string
+  /** User-created vs auto-generated */
+  source: 'manual' | 'auto'
+  createdAt: number
+  /** Optional link to a practice session */
+  sessionId?: string
+}
+
+export interface TimeInstant extends AnnotationBase {
+  type: 'instant'
+}
+
+export interface TimeValue extends AnnotationBase {
+  type: 'value'
+  /** Y-axis value (pitch, intensity, etc.) */
+  value: number
+  /** What the value represents */
+  valueUnit: 'cents' | 'hz' | 'db' | 'midi' | 'percent'
+}
+
+export interface Region extends AnnotationBase {
+  type: 'region'
+  /** End time in seconds */
+  endTime: number
+  /** Optional value at this region */
+  value?: number
+  valueUnit?: 'cents' | 'hz' | 'db' | 'midi' | 'percent'
+}
+
+export type Annotation = TimeInstant | TimeValue | Region
+
+// ============================================================
+// Multi-Pane Views (Phase 3 — Sonic Visualiser-style panes)
+// ============================================================
+
+export type PaneLayerType =
+  | 'spectrogram'
+  | 'waveform'
+  | 'pitch-trace'
+  | 'cents-deviation'
+  | 'vibrato'
+  | 'annotation'
+  | 'spectrum'
+
+export interface PaneConfig {
+  id: string
+  layerType: PaneLayerType
+  /** Height as percentage of total pane container (0-100). */
+  height: number
+  collapsed: boolean
+  /** Layer-specific options. */
+  options?: Record<string, unknown>
+}
+
+export interface PaneLayoutState {
+  panes: PaneConfig[]
+  /** Synchronize time axes across panes. */
+  syncTime: boolean
+  /** Synchronize zoom level across panes. */
+  syncZoom: boolean
+  activePaneId: string | null
+}
+
+// ============================================================
+// Analysis Tools (Phase 4 — onset, key, DTW alignment)
+// ============================================================
+
+export interface OnsetResult {
+  /** Time in seconds from audio start. */
+  time: number
+  /** Onset strength 0-1 (higher = clearer). */
+  strength: number
+  /** Whether this onset is a beat (vs. just any detected onset). */
+  isBeat: boolean
+  /** Beat position within bar (1, 2, 3, 4) if tempo is known. */
+  beatPosition?: number
+}
+
+export interface KeyResult {
+  /** Full key name, e.g. "D major", "Bb minor". */
+  key: string
+  /** Tonic note name, e.g. "D", "Bb". */
+  tonic: string
+  /** Mode (major or minor). */
+  mode: 'major' | 'minor'
+  /** Detection confidence 0-1. */
+  confidence: number
+  /** Top alternative candidates. */
+  alternatives: Array<{ key: string; score: number }>
+}
+
+export interface AlignmentResult {
+  /** timeMap[i] = reference time for user frame i. */
+  timeMap: Float32Array
+  /** Global similarity score 0-1. */
+  similarityScore: number
+  /** Total time stretch factor (1.0 = same tempo). */
+  tempoRatio: number
+  /** Frame-level distance values for visualization. */
+  frameDistance: Float32Array
+}
+
+// ============================================================
+// Advanced Features (Phase 5 — chord, segment, transforms)
+// ============================================================
+
+export interface ChordFrame {
+  /** Time in seconds from audio start. */
+  time: number
+  /** Chord label, e.g. "Cmaj", "Gmin", "Ddim". */
+  chord: string
+  /** Root note, e.g. "C", "G". */
+  root: string
+  /** Chord quality. */
+  quality: 'major' | 'minor' | 'diminished' | 'augmented' | 'unknown'
+  /** Bass note for inversions, e.g. "E" for C/E. */
+  bass?: string
+  /** Detection confidence 0-1. */
+  confidence: number
+}
+
+export interface Segment {
+  /** Start time in seconds. */
+  startTime: number
+  /** End time in seconds. */
+  endTime: number
+  /** Section label: Verse, Chorus, Bridge, Intro, Outro, or A/B/C. */
+  label: string
+  /** Label confidence 0-1. */
+  confidence: number
+}
+
+export interface SegmentationResult {
+  /** Detected segments in time order. */
+  segments: Segment[]
+  /** Unique labels in order of first appearance. */
+  labels: string[]
+  /** Novelty curve values for visualization. */
+  noveltyCurve: Float32Array
+}
+
+export interface TransformOutput {
+  id: string
+  name: string
+  /** Which annotation type the output maps to. */
+  annotationType: 'instant' | 'value' | 'region'
+  /** Unit of Y-axis values (if value type). */
+  unit?: string
+  /** Min/max for normalization. */
+  valueRange?: [number, number]
+}
+
+export interface TransformDescriptor {
+  id: string
+  name: string
+  description: string
+  category: 'pitch' | 'time' | 'spectral' | 'key' | 'structure'
+  version: string
+  outputs: TransformOutput[]
+  /** Parameters the user can configure. */
+  parameters?: TransformParameter[]
+  /** Minimum audio duration required (seconds). */
+  minDuration?: number
+}
+
+export interface TransformParameter {
+  id: string
+  label: string
+  type: 'number' | 'selection' | 'boolean'
+  default: number | string | boolean
+  min?: number
+  max?: number
+  options?: string[]
+}
+
+export interface TransformInput {
+  audio: Float32Array
+  sampleRate: number
+  channels: number
+  parameters: Record<string, number | string | boolean>
+}
+
+export interface TransformOutputData {
+  outputId: string
+  annotations: Array<{
+    time: number
+    duration?: number
+    value?: number
+    label?: string
+    confidence?: number
+  }>
+}

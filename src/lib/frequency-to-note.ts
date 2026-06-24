@@ -115,3 +115,14 @@ export function midiToFrequency(midi: number): number {
   const A4Note = 69
   return A4 * 2 ** ((midi - A4Note) / 12)
 }
+
+/**
+ * Compute deviation in cents between a given pitch (in MIDI note format) and the exact target note.
+ */
+export function computeCentsDeviation(
+  midiPitch: number,
+  targetNoteMidi?: number,
+): number {
+  const target = targetNoteMidi ?? Math.round(midiPitch)
+  return (midiPitch - target) * 100
+}
