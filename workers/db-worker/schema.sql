@@ -23,7 +23,12 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,
   emailVerified BOOLEAN NOT NULL DEFAULT 0,
   passwordHash TEXT,
-  lastLoginAt TEXT
+  lastLoginAt TEXT,
+  -- JWT revocation counter (see auth.ts): issued tokens carry `v`; logout
+  -- increments this so older tokens fail the `getAuth` version check.
+  -- Required by createUser/issueSession/getAuth — a fresh DB without it
+  -- breaks register/login (table has no column named tokenVersion).
+  tokenVersion INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider
