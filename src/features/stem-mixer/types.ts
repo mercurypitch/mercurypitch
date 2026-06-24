@@ -21,6 +21,12 @@ export interface CanonicalLrcEntry {
   text: string
   words: string[]
   wordTimes?: number[]
+  /** Rest entries only: when the silence begins (seconds). Equals `time`. */
+  gapStart?: number
+  /** Rest entries only: when the next line starts (seconds). */
+  gapEnd?: number
+  /** Rest entries only: number of countdown dots (~5s each, min 1). */
+  dotCount?: number
 }
 
 export interface DisplayLine {
