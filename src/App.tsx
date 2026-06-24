@@ -1449,9 +1449,7 @@ const AppShell: Component<AppProps> = (props) => {
                           (item) => item.note.midi === midi,
                         )
                         if (idx >= 0) {
-                          const beat = items[idx].startBeat
-                          const total = melodyTotalBeats(items)
-                          playbackRuntime.seekTo(total > 0 ? beat / total : 0)
+                          playbackRuntime.seekTo(items[idx].startBeat)
                         }
                       }}
                     />
