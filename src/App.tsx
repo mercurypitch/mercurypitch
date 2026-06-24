@@ -124,6 +124,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { buildChordToneMidis } from '@/lib/guitar/chord-utils'
 import { DrumMachine } from '@/lib/guitar/drum-machine'
 import { NOTE_NAMES } from '@/lib/note-utils'
+import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { KEY_OFFSETS, melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, SCALE_DEFINITIONS, } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
@@ -1351,6 +1352,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+    initDefaultOGTags()
 
     // Cloud settings sync: pull on startup/auth change, write-through
     // on preference changes. Inert when no API is configured.
@@ -1480,6 +1482,11 @@ const AppShell: Component<AppProps> = (props) => {
           setScaleType(sharedData.scaleType)
         }
         showNotification('Shared preset loaded from URL', 'info')
+        setMelodyOGTags({
+          noteCount: sharedData.melody.length,
+          bpm: sharedData.bpm,
+          key: sharedData.key,
+        })
       }
     }
 
