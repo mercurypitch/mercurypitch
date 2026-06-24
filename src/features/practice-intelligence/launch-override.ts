@@ -47,5 +47,12 @@ export function launchDifficulty(type: ExerciseType): number {
 /** Target note a drill requested for `type`, if any (else undefined). */
 export function launchTargetNote(type: ExerciseType): string | undefined {
   const o = override()
-  return o && o.type === type ? o.config.targetNote : undefined
+  if (!o || o.type !== type) return undefined
+  return o.config.targetNote ?? o.config.targetNotes?.[0]
+}
+
+/** Full target-note sequence a drill requested for `type` (else undefined). */
+export function launchTargetNotes(type: ExerciseType): string[] | undefined {
+  const o = override()
+  return o && o.type === type ? o.config.targetNotes : undefined
 }

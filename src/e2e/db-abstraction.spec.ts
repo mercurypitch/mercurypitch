@@ -597,7 +597,7 @@ test.describe('Database Abstraction Layer', () => {
     await expect(page.locator('#tab-analysis')).toBeVisible()
   })
 
-  test('Hidden feature tabs hidden when advanced features disabled', async ({
+  test('Social tabs stay visible even when advanced features are disabled', async ({
     page,
   }) => {
     await page.evaluate(async () => {
@@ -605,7 +605,10 @@ test.describe('Database Abstraction Layer', () => {
       await new Promise((r) => setTimeout(r, 500))
     })
 
-    await expect(page.locator('#tab-challenges')).not.toBeVisible()
+    // Community / Leaderboard / Challenges are no longer gated by the flag.
+    await expect(page.locator('#tab-community')).toBeVisible()
+    await expect(page.locator('#tab-leaderboard')).toBeVisible()
+    await expect(page.locator('#tab-challenges')).toBeVisible()
   })
 
   test('Can navigate to Challenges tab when enabled', async ({ page }) => {
@@ -648,15 +651,16 @@ test.describe('Database Abstraction Layer', () => {
     await expect(page.locator('#tab-analysis.active')).toBeVisible()
   })
 
-  test('Feature flag changes take effect without reload', async ({ page }) => {
-    // Disable first
+  test('Social tabs remain visible across an advanced-features toggle', async ({
+    page,
+  }) => {
+    // Challenges is decoupled from the flag — visible both ways.
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(false)
       await new Promise((r) => setTimeout(r, 300))
     })
-    await expect(page.locator('#tab-challenges')).not.toBeVisible()
+    await expect(page.locator('#tab-challenges')).toBeVisible()
 
-    // Enable
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(true)
       await new Promise((r) => setTimeout(r, 300))

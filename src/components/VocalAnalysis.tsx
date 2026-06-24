@@ -1427,8 +1427,9 @@ export const VocalAnalysis: Component = () => {
         </div>
         <div class="vocal-header-actions">
           {/* Mode Toggle */}
-          <div class="mode-toggle">
+          <div class="mode-toggle" data-testid="analysis-mode-toggle">
             <button
+              data-testid="analysis-mode-history"
               class={`mode-toggle-btn ${analysisMode() === 'history' ? 'active' : ''}`}
               onClick={() => {
                 setAnalysisMode('history')
@@ -1438,6 +1439,7 @@ export const VocalAnalysis: Component = () => {
               Session History
             </button>
             <button
+              data-testid="analysis-mode-live"
               class={`mode-toggle-btn ${analysisMode() === 'live' ? 'active' : ''}`}
               onClick={() => setAnalysisMode('live')}
             >
@@ -1446,20 +1448,27 @@ export const VocalAnalysis: Component = () => {
             </button>
           </div>
           <Show when={analysisMode() === 'live'}>
-            <div class="mode-toggle" style={{ 'margin-left': '8px' }}>
+            <div
+              class="mode-toggle"
+              data-testid="analysis-dashboard-toggle"
+              style={{ 'margin-left': '8px' }}
+            >
               <button
+                data-testid="analysis-dashboard-standard"
                 class={`mode-toggle-btn ${dashboardTab() === 'standard' ? 'active' : ''}`}
                 onClick={() => setDashboardTab('standard')}
               >
                 Standard
               </button>
               <button
+                data-testid="analysis-dashboard-pro"
                 class={`mode-toggle-btn ${dashboardTab() === 'pro' ? 'active' : ''}`}
                 onClick={() => setDashboardTab('pro')}
               >
                 Pro
               </button>
               <button
+                data-testid="analysis-dashboard-panes"
                 class={`mode-toggle-btn ${dashboardTab() === 'panes' ? 'active' : ''}`}
                 onClick={() => setDashboardTab('panes')}
               >
@@ -1471,6 +1480,7 @@ export const VocalAnalysis: Component = () => {
           {/* Action Button */}
           <Show when={analysisMode() === 'history'}>
             <button
+              data-testid="analyze-history-start"
               class="analyze-btn"
               onClick={startAnalysis}
               disabled={isAnalyzing() || history().length === 0}
@@ -1497,6 +1507,7 @@ export const VocalAnalysis: Component = () => {
               }
             >
               <button
+                data-testid="analyze-live-start"
                 class="analyze-btn live-start"
                 onClick={() => void startLiveAnalysis()}
               >

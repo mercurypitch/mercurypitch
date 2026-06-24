@@ -32,20 +32,26 @@ export function freqToExactMidi(freq: number): number {
 /**
  * Score how accurately recent pitch samples match a target MIDI note.
  *
+ * Samples carry a `time` field (seconds since the exercise started), so the
+ * trailing window is selected by actual elapsed time rather than a guessed
+ * sample count. This keeps scoring independent of the pitch loop's frame
+ * rate (the loop runs on requestAnimationFrame, ~16ms, not a fixed 50ms).
+ *
  * @param history   - Full pitch history from `base.pitchHistory()`
  * @param targetMidi - The expected MIDI note number
  * @param windowMs   - How many milliseconds of recent history to consider
- * @param sampleRateMs - Approximate interval between samples (default 50ms)
  * @returns A score 0-100 (100 = perfect match)
  */
 export function scoreNoteAccuracy(
   history: PitchSample[],
   targetMidi: number,
   windowMs: number,
-  sampleRateMs = 50,
 ): number {
-  const sampleCount = Math.max(1, Math.floor(windowMs / sampleRateMs))
-  const recentSamples = history.slice(-sampleCount)
+  if (history.length === 0) return 0
+
+  const windowSec = windowMs / 1000
+  const latest = history[history.length - 1].time
+  const recentSamples = history.filter((p) => latest - p.time <= windowSec)
 
   const deviations = recentSamples
     .filter((p) => p.freq > 0)

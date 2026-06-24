@@ -5,6 +5,7 @@ import { IconExpand, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -24,7 +25,15 @@ interface DynamicSwellExerciseProps {
 
 const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
+    untrack(() => {
+      // A challenge drill can request a starting note for this exercise.
+      const requested = launchTargetNote('dynamic-swell')
+      const preset = vocalRangePreset()
+      return requested !== undefined &&
+        getNoteOptions(preset).includes(requested)
+        ? requested
+        : getDefaultNote(preset)
+    }),
   )
   const audioEngine = untrack(() => props.audioEngine)
 

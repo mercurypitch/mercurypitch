@@ -12,8 +12,9 @@ import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
 import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
+import { getAllMelodies } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
-import type { MelodyItem, PlaybackSession } from '@/types'
+import type { MelodyItem, PlaybackSession, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -290,6 +291,29 @@ export const CommunityShare: Component = () => {
 
   const [streak, setStreak] = createSignal(0)
 
+  // Locally-shared items, kept reactive (localStorage reads are not), so a
+  // newly shared melody/session shows up in the list immediately.
+  const [localMelodies, setLocalMelodies] = createSignal<SharedMelody[]>(
+    storageGet<SharedMelody[]>('pp_shared_melodies', [])!,
+  )
+  const [localSessions, setLocalSessions] = createSignal<SharedSession[]>(
+    storageGet<SharedSession[]>('pp_shared_sessions', [])!,
+  )
+
+  // Which share picker is open (choose what to share from your own content)
+  const [pickerType, setPickerType] = createSignal<'melody' | 'session' | null>(
+    null,
+  )
+
+  // The user's own melodies (saved library + the currently-loaded one)
+  const libraryMelodies = createMemo(() => {
+    try {
+      return getAllMelodies().filter((m) => m.items.length > 0)
+    } catch {
+      return []
+    }
+  })
+
   // Load on mount and whenever the signed-in identity changes
   createEffect(() => {
     authVersion()
@@ -310,17 +334,15 @@ export const CommunityShare: Component = () => {
   // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
     const db = dbMelodies()
-    const stored = storageGet<SharedMelody[]>('pp_shared_melodies', [])!
-    // DB data takes priority; merge localStorage items not in DB
+    // DB data takes priority; merge local items not in DB
     const dbIds = new Set(db.map((m) => m.id))
-    return [...db, ...stored.filter((m) => !dbIds.has(m.id))]
+    return [...db, ...localMelodies().filter((m) => !dbIds.has(m.id))]
   })
 
   const sharedSessions = createMemo(() => {
     const db = dbSessions()
-    const stored = storageGet<SharedSession[]>('pp_shared_sessions', [])!
     const dbIds = new Set(db.map((s) => s.id))
-    return [...db, ...stored.filter((s) => !dbIds.has(s.id))]
+    return [...db, ...localSessions().filter((s) => !dbIds.has(s.id))]
   })
 
   // Current user profile (DB-backed, canonical persisted user id)
@@ -348,6 +370,37 @@ export const CommunityShare: Component = () => {
           : 0,
       accuracy: sessions.length > 0 ? avgScore : 0,
       joinDate: dbProf?.joinDate ?? Date.now() - 1000 * 60 * 60 * 24 * 30,
+    }
+  })
+
+  // Real recent-session series for the profile charts (oldest → newest)
+  const recentSessions = createMemo(() => getSessionHistory().slice(-8))
+  const recentScores = createMemo(() =>
+    recentSessions().map((s) => Math.round(s.score || 0)),
+  )
+  const recentAccuracy = createMemo(() =>
+    recentSessions().map((s) =>
+      s.avgCents !== undefined
+        ? Math.max(0, Math.min(100, Math.round(100 - Math.abs(s.avgCents))))
+        : Math.round(s.score || 0),
+    ),
+  )
+
+  // Real personal records derived from session history (null if none yet)
+  const personalRecords = createMemo(() => {
+    const sessions = getSessionHistory()
+    if (sessions.length === 0) return null
+    const scores = sessions.map((s) => s.score || 0)
+    const recent = sessions.slice(-5)
+    return {
+      best: Math.round(Math.max(...scores)),
+      sessions: sessions.length,
+      recentAvg: Math.round(
+        recent.reduce((a, s) => a + (s.score || 0), 0) / recent.length,
+      ),
+      firstDate: new Date(
+        Math.min(...sessions.map((s) => s.completedAt)),
+      ).toLocaleDateString(),
     }
   })
 
@@ -402,31 +455,35 @@ export const CommunityShare: Component = () => {
     return result
   })
 
-  // Export current melody as shareable
-  const exportMelody = () => {
-    const current = melodyStore.currentMelody()
-    if (!current || current.items.length === 0) {
-      showNotification('No melody to share!', 'warning')
+  // Share a specific melody (from the library or the current one).
+  const shareMelody = (m: {
+    name: string
+    items: MelodyItem[]
+    bpm?: number
+    key?: string
+    scale?: string
+  }) => {
+    if (m.items.length === 0) {
+      showNotification('That melody is empty', 'warning')
       return
     }
 
-    const items = current.items
-    const bpmVal = bpm()
-    const keyVal = keyName()
-    const scaleVal = scaleType()
+    const bpmVal = m.bpm ?? bpm()
+    const keyVal = m.key ?? keyName()
+    const scaleVal = m.scale ?? scaleType()
     const encoded = encodeMelodyForShare(
-      items,
+      m.items,
       bpmVal,
       keyVal,
       scaleVal,
       undefined,
-      current.name,
+      m.name,
     )
 
     const shareable: SharedMelody = {
       id: generateId(),
-      name: current.name || 'My Melody',
-      items,
+      name: m.name || 'My Melody',
+      items: m.items,
       author: currentProfile().displayName,
       tags: ['my-melody', 'practice'],
       date: Date.now(),
@@ -435,7 +492,8 @@ export const CommunityShare: Component = () => {
       scale: scaleVal || undefined,
     }
 
-    const updated = [...sharedMelodies(), shareable]
+    const updated = [...localMelodies(), shareable]
+    setLocalMelodies(updated)
     storageSet('pp_shared_melodies', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedMelodyToDb({
@@ -444,35 +502,29 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       tags: shareable.tags,
     })
+    setPickerType(null)
+    setActiveTab('melodies')
     void copyShareUrl(encoded).then((ok) => {
-      if (ok) showNotification('Share link copied to clipboard!', 'info')
-      else
-        showNotification(
-          `Failed to copy link. URL: ${window.location.href}`,
-          'error',
-        )
+      if (ok)
+        showNotification(`Shared "${shareable.name}" — link copied!`, 'info')
+      else showNotification(`Shared "${shareable.name}"`, 'info')
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Export current session as shareable
-  const exportSession = () => {
-    const sessions = getSessionHistory()
-    if (sessions.length === 0) {
-      showNotification('No session to share!', 'warning')
-      return
-    }
-
+  // Share a specific practice session.
+  const shareSession = (s: SessionResult) => {
     const shareable: SharedSession = {
       id: generateId(),
-      name: 'My Practice Session',
+      name: s.sessionName || s.name || 'Practice Session',
       items: [],
       author: currentProfile().displayName,
-      results: sessions.map((s) => s.score || 0),
-      date: Date.now(),
+      results: [Math.round(s.score || 0)],
+      date: s.completedAt || Date.now(),
     }
 
-    const updated = [...sharedSessions(), shareable]
+    const updated = [...localSessions(), shareable]
+    setLocalSessions(updated)
     storageSet('pp_shared_sessions', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedSessionToDb({
@@ -481,7 +533,9 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       results: shareable.results,
     })
-    showNotification('Session shared successfully!', 'info')
+    setPickerType(null)
+    setActiveTab('sessions')
+    showNotification(`Shared "${shareable.name}"`, 'info')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -543,24 +597,22 @@ export const CommunityShare: Component = () => {
         </div>
         <div class="community-actions">
           <button
-            class="share-btn"
-            onClick={exportMelody}
-            aria-label="Share melody"
-            title="Share melody"
+            class="share-btn share-btn-labeled"
+            onClick={() => setPickerType('melody')}
+            aria-label="Share a melody"
+            title="Choose one of your melodies to share"
           >
-            <span>
-              <IconShare />
-            </span>
+            <IconMelody />
+            <span>Share Melody</span>
           </button>
           <button
-            class="share-btn"
-            onClick={exportSession}
-            aria-label="Share session"
-            title="Share session"
+            class="share-btn share-btn-labeled"
+            onClick={() => setPickerType('session')}
+            aria-label="Share a session"
+            title="Choose one of your practice sessions to share"
           >
-            <span>
-              <IconShare />
-            </span>
+            <IconSession />
+            <span>Share Session</span>
           </button>
         </div>
       </div>
@@ -667,7 +719,7 @@ export const CommunityShare: Component = () => {
                 </p>
                 <button
                   class="primary-btn"
-                  onClick={exportMelody}
+                  onClick={() => setPickerType('melody')}
                   aria-label="Share your first melody"
                   title="Share your first melody"
                 >
@@ -760,7 +812,7 @@ export const CommunityShare: Component = () => {
                 </p>
                 <button
                   class="primary-btn"
-                  onClick={exportSession}
+                  onClick={() => setPickerType('session')}
                   aria-label="Share your first session"
                   title="Share your first session"
                 >
@@ -808,79 +860,104 @@ export const CommunityShare: Component = () => {
               </div>
             </div>
 
-            {/* Progress Chart Placeholder */}
+            {/* Progress charts — derived from your real practice history */}
             <div class="profile-charts">
               <div class="chart-card">
-                <h3>Weekly Progress</h3>
-                <div class="mini-chart">
-                  <For each={[65, 78, 72, 85, 90, 82, 75]}>
-                    {(score) => (
-                      <div class="mini-bar-wrapper">
-                        <div
-                          class="mini-bar"
-                          style={{
-                            width: `${score}%`,
-                            background: getBarColor(score),
-                          }}
-                        />
-                      </div>
-                    )}
-                  </For>
-                </div>
+                <h3>Recent Scores</h3>
+                <Show
+                  when={recentScores().length > 0}
+                  fallback={
+                    <p class="chart-empty">
+                      Complete a practice session to see your progress.
+                    </p>
+                  }
+                >
+                  <div class="mini-chart">
+                    <For each={recentScores()}>
+                      {(score) => (
+                        <div class="mini-bar-wrapper">
+                          <div
+                            class="mini-bar"
+                            style={{
+                              height: `${score}%`,
+                              background: getBarColor(score),
+                            }}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </div>
               <div class="chart-card">
-                <h3>Accuracy Over Time</h3>
-                <div class="mini-chart">
-                  <For each={[70, 72, 71, 75, 78, 80, 82]}>
-                    {(score) => (
-                      <div class="mini-bar-wrapper">
-                        <div
-                          class="mini-bar line-chart"
-                          style={{
-                            height: `${score}%`,
-                            background: getBarColor(score),
-                          }}
-                        />
-                      </div>
-                    )}
-                  </For>
-                </div>
+                <h3>Accuracy</h3>
+                <Show
+                  when={recentAccuracy().length > 0}
+                  fallback={<p class="chart-empty">No data yet.</p>}
+                >
+                  <div class="mini-chart">
+                    <For each={recentAccuracy()}>
+                      {(score) => (
+                        <div class="mini-bar-wrapper">
+                          <div
+                            class="mini-bar line-chart"
+                            style={{
+                              height: `${score}%`,
+                              background: getBarColor(score),
+                            }}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </div>
             </div>
 
-            {/* Personal Records */}
+            {/* Personal Records — real, derived from session history */}
             <div class="personal-records">
               <h3>Personal Records</h3>
-              <div class="records-grid">
-                <div class="record-item">
-                  <span class="record-icon">{IconMic()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Highest Note</span>
-                    <span class="record-value">C5</span>
+              <Show
+                when={personalRecords()}
+                fallback={
+                  <p class="chart-empty">
+                    Complete a practice session to start building records.
+                  </p>
+                }
+              >
+                {(rec) => (
+                  <div class="records-grid">
+                    <div class="record-item">
+                      <span class="record-icon">{IconStar()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Best Score</span>
+                        <span class="record-value">{rec().best}%</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconSession()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Sessions</span>
+                        <span class="record-value">{rec().sessions}</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconGoal()}</span>
+                      <div class="record-info">
+                        <span class="record-label">Recent Avg</span>
+                        <span class="record-value">{rec().recentAvg}%</span>
+                      </div>
+                    </div>
+                    <div class="record-item">
+                      <span class="record-icon">{IconMelody()}</span>
+                      <div class="record-info">
+                        <span class="record-label">First Session</span>
+                        <span class="record-value">{rec().firstDate}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconGoal()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Perfect Run</span>
-                    <span class="record-value">27 notes</span>
-                  </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconStar()}</span>
-                  <div class="record-info">
-                    <span class="record-label">Fastest Scale</span>
-                    <span class="record-value">8 notes/sec</span>
-                  </div>
-                </div>
-                <div class="record-item">
-                  <span class="record-icon">{IconMelody()}</span>
-                  <div class="record-info">
-                    <span class="record-label">First Session</span>
-                    <span class="record-value">2026-04-01</span>
-                  </div>
-                </div>
-              </div>
+                )}
+              </Show>
             </div>
 
             {/* Shared Content Preview */}
@@ -934,8 +1011,145 @@ export const CommunityShare: Component = () => {
           </div>
         </Show>
       </div>
+
+      {/* Share picker — choose which of your own melodies/sessions to share */}
+      <Show when={pickerType() !== null}>
+        <div class="share-picker-overlay" onClick={() => setPickerType(null)}>
+          <div class="share-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div class="share-picker-header">
+              <h3>
+                {pickerType() === 'melody'
+                  ? 'Share a Melody'
+                  : 'Share a Session'}
+              </h3>
+              <button
+                class="share-picker-close"
+                onClick={() => setPickerType(null)}
+                aria-label="Close"
+                title="Close"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 14 14"
+                  fill="currentColor"
+                >
+                  <path d="M14 1.4L12.6 0 7 5.6 1.4 0 0 1.4 5.6 7 0 12.6 1.4 14 7 8.4l5.6 5.6 1.4-1.4L8.4 7z" />
+                </svg>
+              </button>
+            </div>
+            <p class="share-picker-hint">
+              {pickerType() === 'melody'
+                ? 'Pick one of your melodies to publish to the community and copy a share link.'
+                : 'Pick one of your practice sessions to publish to the community.'}
+            </p>
+            <div class="share-picker-list">
+              <Show when={pickerType() === 'melody'}>
+                <Show when={melodyHasNotes(melodyStore.currentMelody())}>
+                  <div class="share-picker-row">
+                    <div class="share-picker-info">
+                      <span class="share-picker-name">
+                        {melodyStore.currentMelody()?.name ?? 'Current melody'}
+                      </span>
+                      <span class="share-picker-meta">
+                        Current &middot;{' '}
+                        {melodyStore.currentMelody()?.items.length} notes
+                      </span>
+                    </div>
+                    <button
+                      class="primary-btn share-picker-action"
+                      onClick={() => {
+                        const c = melodyStore.currentMelody()
+                        if (c)
+                          shareMelody({
+                            name: c.name || 'Current melody',
+                            items: c.items,
+                          })
+                      }}
+                    >
+                      Share
+                    </button>
+                  </div>
+                </Show>
+                <For each={libraryMelodies()}>
+                  {(m) => (
+                    <div class="share-picker-row">
+                      <div class="share-picker-info">
+                        <span class="share-picker-name">{m.name}</span>
+                        <span class="share-picker-meta">
+                          {m.items.length} notes &middot; {m.bpm} BPM
+                          {m.key ? ` · ${m.key}` : ''}
+                        </span>
+                      </div>
+                      <button
+                        class="primary-btn share-picker-action"
+                        onClick={() =>
+                          shareMelody({
+                            name: m.name,
+                            items: m.items,
+                            bpm: m.bpm,
+                            key: m.key,
+                            scale: m.scaleType,
+                          })
+                        }
+                      >
+                        Share
+                      </button>
+                    </div>
+                  )}
+                </For>
+                <Show
+                  when={
+                    libraryMelodies().length === 0 &&
+                    !melodyHasNotes(melodyStore.currentMelody())
+                  }
+                >
+                  <p class="share-picker-empty">
+                    No melodies yet — create one in the Compose tab first.
+                  </p>
+                </Show>
+              </Show>
+
+              <Show when={pickerType() === 'session'}>
+                <For each={getSessionHistory()}>
+                  {(s) => (
+                    <div class="share-picker-row">
+                      <div class="share-picker-info">
+                        <span class="share-picker-name">
+                          {s.sessionName || s.name || 'Practice Session'}
+                        </span>
+                        <span class="share-picker-meta">
+                          {Math.round(s.score || 0)}% &middot;{' '}
+                          {new Date(s.completedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button
+                        class="primary-btn share-picker-action"
+                        onClick={() => shareSession(s)}
+                      >
+                        Share
+                      </button>
+                    </div>
+                  )}
+                </For>
+                <Show when={getSessionHistory().length === 0}>
+                  <p class="share-picker-empty">
+                    No practice sessions yet — complete a session to share it.
+                  </p>
+                </Show>
+              </Show>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   )
+
+  function melodyHasNotes(
+    m: ReturnType<typeof melodyStore.currentMelody>,
+  ): boolean {
+    return m !== null && m !== undefined && m.items.length > 0
+  }
 
   function getBarColor(score: number): string {
     if (score >= 90) return 'var(--green)'
