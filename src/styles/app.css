@@ -769,6 +769,10 @@ input:checked + .settings-slider:before {
 .cancel-btn,
 .save-btn {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
@@ -776,6 +780,15 @@ input:checked + .settings-slider:before {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
+}
+
+/* The shared SVG icons are authored at 24px; size them down to match the
+   button text (CSS width/height overrides the SVG's own attributes). */
+.cancel-btn svg,
+.save-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .cancel-btn {

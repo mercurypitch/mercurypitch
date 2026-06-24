@@ -2933,6 +2933,13 @@
   color: var(--fg-secondary);
 }
 
+/* The shared SVG icons are authored at 24px; constrain them to the 14px
+   badge box so the icon stays inside the pill instead of overflowing it. */
+.provider-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .provider-icon.provider-gpu {
   color: var(--accent);
 }

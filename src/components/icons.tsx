@@ -380,6 +380,26 @@ export const MusicBoard: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+/** Playlist — a list with a music note (for the Playlists tab). */
+export const Playlist: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <line x1="3" y1="6" x2="14" y2="6" />
+    <line x1="3" y1="12" x2="14" y2="12" />
+    <line x1="3" y1="18" x2="10" y2="18" />
+    <circle cx="16" cy="18" r="2.5" />
+    <path d="M18.5 18V8" />
+  </svg>
+)
+
 // Calendar Icon (for dates)
 export const Calendar: Component = () => (
   <svg
