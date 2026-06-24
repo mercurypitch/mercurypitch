@@ -6,23 +6,6 @@ import type { Component } from 'solid-js'
 import { For } from 'solid-js'
 import styles from './Skeleton.module.css'
 
-// ── Primitives ───────────────────────────────────────────────
-
-export const SkeletonBlock: Component<{
-  width?: string
-  height?: string
-  class?: string
-}> = (props) => (
-  <div
-    class={[styles.skeleton, props.class ?? ''].join(' ')}
-    style={{
-      width: props.width ?? '100%',
-      height: props.height ?? '14px',
-      'border-radius': undefined,
-    }}
-  />
-)
-
 // ── Common patterns ──────────────────────────────────────────
 
 export const SkeletonText: Component<{ short?: boolean }> = (props) => (
@@ -38,25 +21,13 @@ export const SkeletonHeading: Component = () => (
   <div class={[styles.skeleton, styles.skeletonHeading].join(' ')} />
 )
 
-export const SkeletonChip: Component = () => (
-  <div class={[styles.skeleton, styles.skeletonChip].join(' ')} />
-)
-
-export const SkeletonCircle: Component<{ size?: number }> = (props) => (
-  <div
-    class={[styles.skeleton, styles.skeletonCircle].join(' ')}
-    style={{
-      width: `${props.size ?? 32}px`,
-      height: `${props.size ?? 32}px`,
-    }}
-  />
-)
-
 // ── Layouts ──────────────────────────────────────────────────
+// These are used as Suspense fallbacks, so they are purely decorative —
+// aria-hidden keeps assistive tech from announcing the placeholder boxes.
 
 /** Full tab content: heading + text lines + card grid */
 export const SkeletonTabContent: Component = () => (
-  <div class={styles.skeletonTabContent}>
+  <div class={styles.skeletonTabContent} aria-hidden="true">
     <SkeletonHeading />
     <SkeletonText />
     <SkeletonText short />
@@ -73,7 +44,7 @@ export const SkeletonTabContent: Component = () => (
 
 /** Card grid for exercise library or community panels */
 export const SkeletonCardGrid: Component<{ count?: number }> = (props) => (
-  <div class={styles.skeletonCardGrid}>
+  <div class={styles.skeletonCardGrid} aria-hidden="true">
     <For each={Array.from({ length: props.count ?? 6 })}>
       {() => (
         <div class={[styles.skeleton, styles.skeletonCardItem].join(' ')} />
@@ -84,7 +55,7 @@ export const SkeletonCardGrid: Component<{ count?: number }> = (props) => (
 
 /** List rows for session history, melody list, leaderboard */
 export const SkeletonList: Component<{ rows?: number }> = (props) => (
-  <div class={styles.skeletonList}>
+  <div class={styles.skeletonList} aria-hidden="true">
     <For each={Array.from({ length: props.rows ?? 5 })}>
       {() => (
         <div class={[styles.skeleton, styles.skeletonListRow].join(' ')}>
@@ -93,23 +64,6 @@ export const SkeletonList: Component<{ rows?: number }> = (props) => (
             <SkeletonText />
             <SkeletonText short />
           </div>
-        </div>
-      )}
-    </For>
-  </div>
-)
-
-/** Stats panel for sidebar sections */
-export const SkeletonSidebarSection: Component<{ items?: number }> = (
-  props,
-) => (
-  <div class={styles.skeletonList} style="margin-top:10px">
-    <SkeletonHeading />
-    <For each={Array.from({ length: props.items ?? 3 })}>
-      {() => (
-        <div class={styles.skeletonStatRow}>
-          <SkeletonText short />
-          <SkeletonChip />
         </div>
       )}
     </For>

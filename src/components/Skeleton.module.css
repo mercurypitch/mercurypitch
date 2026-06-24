@@ -39,21 +39,6 @@
   border-radius: 10px;
 }
 
-.skeletonCard {
-  border-radius: 12px;
-  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.1));
-}
-
-.skeletonCircle {
-  border-radius: 50%;
-}
-
-.skeletonChip {
-  height: 22px;
-  width: 60px;
-  border-radius: 11px;
-}
-
 /* ── Layouts ───────────────────────────────────────────────── */
 .skeletonTabContent {
   display: flex;
@@ -89,27 +74,6 @@
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--border-color, rgba(128, 128, 128, 0.08));
-}
-
-.skeletonStatRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-}
-
-.skeletonBar {
-  height: 40px;
-  width: 100%;
-  border-radius: 8px;
-}
-
-.skeletonSidebarItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
 }
 
 .skeletonAvatar {
