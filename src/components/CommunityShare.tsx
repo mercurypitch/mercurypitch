@@ -12,8 +12,9 @@ import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
 import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
+import { getAllMelodies } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
-import type { MelodyItem, PlaybackSession } from '@/types'
+import type { MelodyItem, PlaybackSession, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -290,6 +291,29 @@ export const CommunityShare: Component = () => {
 
   const [streak, setStreak] = createSignal(0)
 
+  // Locally-shared items, kept reactive (localStorage reads are not), so a
+  // newly shared melody/session shows up in the list immediately.
+  const [localMelodies, setLocalMelodies] = createSignal<SharedMelody[]>(
+    storageGet<SharedMelody[]>('pp_shared_melodies', [])!,
+  )
+  const [localSessions, setLocalSessions] = createSignal<SharedSession[]>(
+    storageGet<SharedSession[]>('pp_shared_sessions', [])!,
+  )
+
+  // Which share picker is open (choose what to share from your own content)
+  const [pickerType, setPickerType] = createSignal<'melody' | 'session' | null>(
+    null,
+  )
+
+  // The user's own melodies (saved library + the currently-loaded one)
+  const libraryMelodies = createMemo(() => {
+    try {
+      return getAllMelodies().filter((m) => m.items.length > 0)
+    } catch {
+      return []
+    }
+  })
+
   // Load on mount and whenever the signed-in identity changes
   createEffect(() => {
     authVersion()
@@ -310,17 +334,15 @@ export const CommunityShare: Component = () => {
   // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
     const db = dbMelodies()
-    const stored = storageGet<SharedMelody[]>('pp_shared_melodies', [])!
-    // DB data takes priority; merge localStorage items not in DB
+    // DB data takes priority; merge local items not in DB
     const dbIds = new Set(db.map((m) => m.id))
-    return [...db, ...stored.filter((m) => !dbIds.has(m.id))]
+    return [...db, ...localMelodies().filter((m) => !dbIds.has(m.id))]
   })
 
   const sharedSessions = createMemo(() => {
     const db = dbSessions()
-    const stored = storageGet<SharedSession[]>('pp_shared_sessions', [])!
     const dbIds = new Set(db.map((s) => s.id))
-    return [...db, ...stored.filter((s) => !dbIds.has(s.id))]
+    return [...db, ...localSessions().filter((s) => !dbIds.has(s.id))]
   })
 
   // Current user profile (DB-backed, canonical persisted user id)
@@ -402,31 +424,35 @@ export const CommunityShare: Component = () => {
     return result
   })
 
-  // Export current melody as shareable
-  const exportMelody = () => {
-    const current = melodyStore.currentMelody()
-    if (!current || current.items.length === 0) {
-      showNotification('No melody to share!', 'warning')
+  // Share a specific melody (from the library or the current one).
+  const shareMelody = (m: {
+    name: string
+    items: MelodyItem[]
+    bpm?: number
+    key?: string
+    scale?: string
+  }) => {
+    if (m.items.length === 0) {
+      showNotification('That melody is empty', 'warning')
       return
     }
 
-    const items = current.items
-    const bpmVal = bpm()
-    const keyVal = keyName()
-    const scaleVal = scaleType()
+    const bpmVal = m.bpm ?? bpm()
+    const keyVal = m.key ?? keyName()
+    const scaleVal = m.scale ?? scaleType()
     const encoded = encodeMelodyForShare(
-      items,
+      m.items,
       bpmVal,
       keyVal,
       scaleVal,
       undefined,
-      current.name,
+      m.name,
     )
 
     const shareable: SharedMelody = {
       id: generateId(),
-      name: current.name || 'My Melody',
-      items,
+      name: m.name || 'My Melody',
+      items: m.items,
       author: currentProfile().displayName,
       tags: ['my-melody', 'practice'],
       date: Date.now(),
@@ -435,7 +461,8 @@ export const CommunityShare: Component = () => {
       scale: scaleVal || undefined,
     }
 
-    const updated = [...sharedMelodies(), shareable]
+    const updated = [...localMelodies(), shareable]
+    setLocalMelodies(updated)
     storageSet('pp_shared_melodies', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedMelodyToDb({
@@ -444,35 +471,29 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       tags: shareable.tags,
     })
+    setPickerType(null)
+    setActiveTab('melodies')
     void copyShareUrl(encoded).then((ok) => {
-      if (ok) showNotification('Share link copied to clipboard!', 'info')
-      else
-        showNotification(
-          `Failed to copy link. URL: ${window.location.href}`,
-          'error',
-        )
+      if (ok)
+        showNotification(`Shared "${shareable.name}" — link copied!`, 'info')
+      else showNotification(`Shared "${shareable.name}"`, 'info')
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Export current session as shareable
-  const exportSession = () => {
-    const sessions = getSessionHistory()
-    if (sessions.length === 0) {
-      showNotification('No session to share!', 'warning')
-      return
-    }
-
+  // Share a specific practice session.
+  const shareSession = (s: SessionResult) => {
     const shareable: SharedSession = {
       id: generateId(),
-      name: 'My Practice Session',
+      name: s.sessionName || s.name || 'Practice Session',
       items: [],
       author: currentProfile().displayName,
-      results: sessions.map((s) => s.score || 0),
-      date: Date.now(),
+      results: [Math.round(s.score || 0)],
+      date: s.completedAt || Date.now(),
     }
 
-    const updated = [...sharedSessions(), shareable]
+    const updated = [...localSessions(), shareable]
+    setLocalSessions(updated)
     storageSet('pp_shared_sessions', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedSessionToDb({
@@ -481,7 +502,9 @@ export const CommunityShare: Component = () => {
       author: shareable.author,
       results: shareable.results,
     })
-    showNotification('Session shared successfully!', 'info')
+    setPickerType(null)
+    setActiveTab('sessions')
+    showNotification(`Shared "${shareable.name}"`, 'info')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -543,24 +566,22 @@ export const CommunityShare: Component = () => {
         </div>
         <div class="community-actions">
           <button
-            class="share-btn"
-            onClick={exportMelody}
-            aria-label="Share melody"
-            title="Share melody"
+            class="share-btn share-btn-labeled"
+            onClick={() => setPickerType('melody')}
+            aria-label="Share a melody"
+            title="Choose one of your melodies to share"
           >
-            <span>
-              <IconShare />
-            </span>
+            <IconMelody />
+            <span>Share Melody</span>
           </button>
           <button
-            class="share-btn"
-            onClick={exportSession}
-            aria-label="Share session"
-            title="Share session"
+            class="share-btn share-btn-labeled"
+            onClick={() => setPickerType('session')}
+            aria-label="Share a session"
+            title="Choose one of your practice sessions to share"
           >
-            <span>
-              <IconShare />
-            </span>
+            <IconSession />
+            <span>Share Session</span>
           </button>
         </div>
       </div>
@@ -667,7 +688,7 @@ export const CommunityShare: Component = () => {
                 </p>
                 <button
                   class="primary-btn"
-                  onClick={exportMelody}
+                  onClick={() => setPickerType('melody')}
                   aria-label="Share your first melody"
                   title="Share your first melody"
                 >
@@ -760,7 +781,7 @@ export const CommunityShare: Component = () => {
                 </p>
                 <button
                   class="primary-btn"
-                  onClick={exportSession}
+                  onClick={() => setPickerType('session')}
                   aria-label="Share your first session"
                   title="Share your first session"
                 >
@@ -934,8 +955,145 @@ export const CommunityShare: Component = () => {
           </div>
         </Show>
       </div>
+
+      {/* Share picker — choose which of your own melodies/sessions to share */}
+      <Show when={pickerType() !== null}>
+        <div class="share-picker-overlay" onClick={() => setPickerType(null)}>
+          <div class="share-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div class="share-picker-header">
+              <h3>
+                {pickerType() === 'melody'
+                  ? 'Share a Melody'
+                  : 'Share a Session'}
+              </h3>
+              <button
+                class="share-picker-close"
+                onClick={() => setPickerType(null)}
+                aria-label="Close"
+                title="Close"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 14 14"
+                  fill="currentColor"
+                >
+                  <path d="M14 1.4L12.6 0 7 5.6 1.4 0 0 1.4 5.6 7 0 12.6 1.4 14 7 8.4l5.6 5.6 1.4-1.4L8.4 7z" />
+                </svg>
+              </button>
+            </div>
+            <p class="share-picker-hint">
+              {pickerType() === 'melody'
+                ? 'Pick one of your melodies to publish to the community and copy a share link.'
+                : 'Pick one of your practice sessions to publish to the community.'}
+            </p>
+            <div class="share-picker-list">
+              <Show when={pickerType() === 'melody'}>
+                <Show when={melodyHasNotes(melodyStore.currentMelody())}>
+                  <div class="share-picker-row">
+                    <div class="share-picker-info">
+                      <span class="share-picker-name">
+                        {melodyStore.currentMelody()?.name ?? 'Current melody'}
+                      </span>
+                      <span class="share-picker-meta">
+                        Current &middot;{' '}
+                        {melodyStore.currentMelody()?.items.length} notes
+                      </span>
+                    </div>
+                    <button
+                      class="primary-btn share-picker-action"
+                      onClick={() => {
+                        const c = melodyStore.currentMelody()
+                        if (c)
+                          shareMelody({
+                            name: c.name || 'Current melody',
+                            items: c.items,
+                          })
+                      }}
+                    >
+                      Share
+                    </button>
+                  </div>
+                </Show>
+                <For each={libraryMelodies()}>
+                  {(m) => (
+                    <div class="share-picker-row">
+                      <div class="share-picker-info">
+                        <span class="share-picker-name">{m.name}</span>
+                        <span class="share-picker-meta">
+                          {m.items.length} notes &middot; {m.bpm} BPM
+                          {m.key ? ` · ${m.key}` : ''}
+                        </span>
+                      </div>
+                      <button
+                        class="primary-btn share-picker-action"
+                        onClick={() =>
+                          shareMelody({
+                            name: m.name,
+                            items: m.items,
+                            bpm: m.bpm,
+                            key: m.key,
+                            scale: m.scaleType,
+                          })
+                        }
+                      >
+                        Share
+                      </button>
+                    </div>
+                  )}
+                </For>
+                <Show
+                  when={
+                    libraryMelodies().length === 0 &&
+                    !melodyHasNotes(melodyStore.currentMelody())
+                  }
+                >
+                  <p class="share-picker-empty">
+                    No melodies yet — create one in the Compose tab first.
+                  </p>
+                </Show>
+              </Show>
+
+              <Show when={pickerType() === 'session'}>
+                <For each={getSessionHistory()}>
+                  {(s) => (
+                    <div class="share-picker-row">
+                      <div class="share-picker-info">
+                        <span class="share-picker-name">
+                          {s.sessionName || s.name || 'Practice Session'}
+                        </span>
+                        <span class="share-picker-meta">
+                          {Math.round(s.score || 0)}% &middot;{' '}
+                          {new Date(s.completedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button
+                        class="primary-btn share-picker-action"
+                        onClick={() => shareSession(s)}
+                      >
+                        Share
+                      </button>
+                    </div>
+                  )}
+                </For>
+                <Show when={getSessionHistory().length === 0}>
+                  <p class="share-picker-empty">
+                    No practice sessions yet — complete a session to share it.
+                  </p>
+                </Show>
+              </Show>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   )
+
+  function melodyHasNotes(
+    m: ReturnType<typeof melodyStore.currentMelody>,
+  ): boolean {
+    return m !== null && m !== undefined && m.items.length > 0
+  }
 
   function getBarColor(score: number): string {
     if (score >= 90) return 'var(--green)'
