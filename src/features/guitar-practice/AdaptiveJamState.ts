@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
 import { CHORD_TYPES } from '@/lib/guitar/chord-utils'
 import type { DrumMachine } from '@/lib/guitar/drum-machine'
 import { KEY_OFFSETS, MAJOR_SCALE_INTERVALS, NOTE_NAMES, } from '@/lib/scale-data'
@@ -178,6 +178,9 @@ export function createAdaptiveJam(
     accumulatedNotes = []
     noteTimestamps = []
   }
+
+  // Release the drum-machine subscription if the panel unmounts mid-jam.
+  onCleanup(() => stop())
 
   const handleFretNotePlayed = (midi: number) => {
     if (!playing()) return

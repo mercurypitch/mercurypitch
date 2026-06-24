@@ -1053,6 +1053,8 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Clean up pending session sequencer timeouts on unmount
   onCleanup(() => sessionSequencer.destroy())
+  // Dispose the drum machine's AudioContext + scheduling loop on unmount.
+  onCleanup(() => drumMachine.dispose())
 
   // ── Tab change handler with audio cleanup ──────────────────
   // ── Tab-change cleanup ──────────────────────────────────────

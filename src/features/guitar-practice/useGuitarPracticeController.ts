@@ -474,9 +474,11 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     const timingScore =
       timing === 'perfect' ? 100 : timing === 'great' ? 75 : 50
 
-    console.log(
-      `[GuitarPractice] Hit: note=${note.noteName} string=${note.stringIndex} timing=${timing} score=${timingScore} (deltaMs: ${deltaMs.toFixed(1)})`,
-    )
+    if (import.meta.env.DEV) {
+      console.log(
+        `[GuitarPractice] Hit: note=${note.noteName} string=${note.stringIndex} timing=${timing} score=${timingScore} (deltaMs: ${deltaMs.toFixed(1)})`,
+      )
+    }
 
     const judgment: GuitarHitResult = {
       itemIndex: note.id,
@@ -497,9 +499,11 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   }
 
   const recordMiss = (note: GuitarNote) => {
-    console.log(
-      `[GuitarPractice] Missed: note=${note.noteName} string=${note.stringIndex}`,
-    )
+    if (import.meta.env.DEV) {
+      console.log(
+        `[GuitarPractice] Missed: note=${note.noteName} string=${note.stringIndex}`,
+      )
+    }
     judgedIndices.add(note.id)
     const judgment: GuitarHitResult = {
       itemIndex: note.id,
