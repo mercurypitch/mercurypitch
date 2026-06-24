@@ -1,0 +1,23 @@
+-- Migration: add users.tokenVersion to pre-existing databases.
+--
+-- schema.sql declares `users` with `CREATE TABLE IF NOT EXISTS`, so on a
+-- database that already had a `users` table (created before the tokenVersion
+-- column was added) re-running schema.sql is a no-op and the column is never
+-- added. Every auth call then crashes with a D1_ERROR:
+--   createUser  -> "table users has no column named tokenVersion"
+--   getAuth     -> "no such column: tokenVersion"
+-- which surfaces in the app as an opaque "TypeError: Failed to fetch" on
+-- sign-in (and silently signs anonymous users out).
+--
+-- tokenVersion is the JWT-revocation counter (see workers/db-worker/src/auth.ts):
+-- issued tokens carry `v`; logout increments this so older tokens fail getAuth.
+--
+-- Run ONCE per environment whose `users` table predates the column:
+--   wrangler d1 execute mercurypitch-db-dev --remote --file scripts/migrate-users-add-tokenVersion.sql
+--   wrangler d1 execute mercurypitch-db     --remote --file scripts/migrate-users-add-tokenVersion.sql
+--
+-- NOTE: SQLite has no "ADD COLUMN IF NOT EXISTS"; this errors (harmlessly) if
+-- the column already exists. Fresh databases get the column from schema.sql and
+-- do not need this migration.
+
+ALTER TABLE users ADD COLUMN tokenVersion INTEGER NOT NULL DEFAULT 1;
