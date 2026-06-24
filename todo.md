@@ -9,14 +9,15 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 
 - [ ] **Guitar practice page** (`feat/guitar-practice`)
 - [ ] **Vocal analysis enhancements** (`feature/vocal-analysis-enhancements`)
+- [x] **Practice Intelligence** (`feat/practice-intelligence`) — adaptive difficulty engine, weakness drill generator, practice summary & trends dashboard
 
 ---
 
-## Practice Intelligence
+## ~~Practice Intelligence~~ ✅
 
-- [ ] **Adaptive difficulty engine** -- Auto-adjust exercise difficulty based on rolling performance (EMA of last 10 scores)
-- [ ] **Weakness drill generator** -- Analyze exercise history to find weak areas, generate targeted micro-drills
-- [ ] **Practice summary & trends dashboard** -- Post-routine summary card with sparklines, weekly/monthly trends
+- [x] **Adaptive difficulty engine** -- Auto-adjust exercise difficulty based on rolling performance (EMA of last 10 scores)
+- [x] **Weakness drill generator** -- Analyze exercise history to find weak areas, generate targeted micro-drills
+- [x] **Practice summary & trends dashboard** -- Post-routine summary card with sparklines, weekly/monthly trends
 
 ---
 

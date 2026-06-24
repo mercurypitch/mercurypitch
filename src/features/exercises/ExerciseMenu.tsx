@@ -2,13 +2,15 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import { DifficultyIndicator } from '@/features/practice-intelligence/components/DifficultyIndicator'
+import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
-import type { ExerciseType } from './types'
+import type { ExerciseConfig, ExerciseType } from './types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
-  onQuickStart?: (type: ExerciseType) => void
+  onQuickStart?: (type: ExerciseType, config?: ExerciseConfig) => void
 }
 
 interface ExerciseCardDef {
@@ -237,6 +239,12 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         </span>
       </div>
 
+      <Show when={exerciseHistory().length > 0}>
+        <WeaknessPanel
+          onStartDrill={(type, config) => props.onQuickStart?.(type, config)}
+        />
+      </Show>
+
       <div class="exercises-grid">
         <For each={CARDS}>
           {(card) => {
@@ -251,7 +259,10 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                 }
               >
                 <div class="exercise-card-icon">{card.icon()}</div>
-                <h3>{card.title}</h3>
+                <h3>
+                  {card.title}
+                  <DifficultyIndicator exerciseType={card.type} />
+                </h3>
                 <p>{card.description}</p>
                 <div class="exercise-card-tags">
                   <For each={card.tags}>{(t) => <span>{t}</span>}</For>

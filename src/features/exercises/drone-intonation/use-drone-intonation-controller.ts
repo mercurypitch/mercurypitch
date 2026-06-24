@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
@@ -8,6 +10,9 @@ import type { BaseExerciseController } from '../use-base-exercise'
 
 const ROUNDS = 6
 const MATCH_WINDOW_MS = 4000
+// Cents penalty per cent of average deviation in the round score
+// (100 - avgDeviation * SCORE_K). Tightened by difficulty below.
+const SCORE_K = 1.5
 
 const INTERVALS: Array<{ semitones: number; label: string }> = [
   { semitones: 0, label: 'Unison' },
@@ -36,6 +41,9 @@ export function useDroneIntonationController(
   let rounds: Array<{ semitones: number; label: string }> = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Adaptive knobs, resolved per drone setup (default d5 == originals).
+  let scoreK = SCORE_K
+  let matchWindowMs = MATCH_WINDOW_MS
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -46,7 +54,18 @@ export function useDroneIntonationController(
   function setBase(baseMidi: number): void {
     _cancelled = false
     droneMidi = baseMidi
-    rounds = pickIntervals(ROUNDS)
+    const difficulty = launchDifficulty(EXERCISE_DRONE_INTONATION)
+    const factor = difficultyFactor(difficulty)
+    // Harder = tighter cents tolerance: penalty grows as 1/factor.
+    scoreK = SCORE_K / factor
+    // Harder = longer sustain required to match the drone.
+    matchWindowMs = Math.round(MATCH_WINDOW_MS * (2 - factor))
+    // Harder = more intervals/rounds over the drone (d5: 6 * 1 == 6).
+    const roundCount = Math.min(
+      INTERVALS.length,
+      Math.max(1, Math.round(ROUNDS * (2 - factor))),
+    )
+    rounds = pickIntervals(roundCount)
     roundIndex = 0
     roundScores = []
   }
@@ -67,7 +86,11 @@ export function useDroneIntonationController(
     const targetMidi = droneMidi + interval.semitones
 
     // Start drone
-    void audioEngine.playTone(midiToFreq(droneMidi), MATCH_WINDOW_MS + 2000)
+    void audioEngine.playTone(midiToFreq(droneMidi), matchWindowMs + 2000)
+
+    // Displayed acceptance window (cents) where the round score stays > 0:
+    // 100 - cents * scoreK > 0  ->  |cents| < 100 / scoreK.
+    const acceptanceCents = 100 / scoreK
 
     batch(() => {
       base._setTargetPitch(midiToFreq(targetMidi))
@@ -78,6 +101,7 @@ export function useDroneIntonationController(
         droneMidi,
         phase: 2, // matching (drone is already playing)
         intervalSemitones: interval.semitones,
+        acceptanceCents,
       })
     })
 
@@ -85,7 +109,7 @@ export function useDroneIntonationController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateRound()
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs)
   }
 
   function evaluateRound(): void {
@@ -93,7 +117,7 @@ export function useDroneIntonationController(
     const targetMidi = droneMidi + interval.semitones
     const history = base.pitchHistory()
     const recentSamples = history.slice(
-      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+      -Math.max(1, Math.floor(matchWindowMs / 50)),
     )
 
     let roundScore = 0
@@ -107,7 +131,7 @@ export function useDroneIntonationController(
       if (deviations.length > 0) {
         const avgDeviation =
           deviations.reduce((a, b) => a + b, 0) / deviations.length
-        roundScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
+        roundScore = Math.round(Math.max(0, 100 - avgDeviation * scoreK))
       }
     }
 

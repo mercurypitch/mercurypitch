@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { scoreNoteAccuracy } from '../exercise-scoring-utils'
@@ -39,6 +41,10 @@ export function useArpeggioJumperController(
   let arpeggioNotes: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // Per-round timing knobs, scaled by adaptive difficulty in setArpeggio
+  // (default to the unscaled baselines so difficulty 5 == original).
+  let notePlayDurationMs = NOTE_PLAY_DURATION_MS
+  let matchWindowMs = MATCH_WINDOW_MS
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -55,6 +61,13 @@ export function useArpeggioJumperController(
     arpeggioNotes = buildArpeggioNotes(baseMidi, arpeggioType, direction)
     noteIndex = 0
     noteScores = []
+
+    // scale by adaptive difficulty (centred on 5 == 1.0): harder = shorter
+    // demo + tighter match/scoring window.
+    const difficulty = launchDifficulty(EXERCISE_ARPEGGIO_JUMPER)
+    const factor = difficultyFactor(difficulty)
+    notePlayDurationMs = Math.round(NOTE_PLAY_DURATION_MS * factor)
+    matchWindowMs = Math.round(MATCH_WINDOW_MS * factor)
   }
 
   function startArpeggio(): void {
@@ -75,11 +88,13 @@ export function useArpeggioJumperController(
         arpeggioLength: arpeggioNotes.length,
         currentMidi: midi,
         phase: 1,
+        // report the SCALED acceptance window for the component to display
+        matchWindowMs,
       })
     })
 
     void audioEngine
-      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      .playTone(midiToFreq(midi), notePlayDurationMs) // scale by adaptive difficulty
       .then(() => {
         if (_cancelled) return
         phaseTimer = setTimeout(() => {
@@ -95,7 +110,7 @@ export function useArpeggioJumperController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateNote(idx)
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs) // scale by adaptive difficulty
   }
 
   function evaluateNote(idx: number): void {
@@ -103,7 +118,7 @@ export function useArpeggioJumperController(
     const noteScore = scoreNoteAccuracy(
       base.pitchHistory(),
       targetMidi,
-      MATCH_WINDOW_MS,
+      matchWindowMs, // scale by adaptive difficulty
     )
 
     noteScores.push(noteScore)

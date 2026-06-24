@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
@@ -10,7 +12,10 @@ const GAP_BETWEEN_NOTES_MS = 300
 const GAP_BEFORE_MATCH_MS = 400
 const MATCH_WINDOW_MS = 3000
 
-function generateIntervals(baseMidi: number): Array<[number, number]> {
+function generateIntervals(
+  baseMidi: number,
+  rounds: number,
+): Array<[number, number]> {
   const intervals: Array<[number, number]> = [
     [0, 2], // Major 2nd
     [0, 4], // Major 3rd
@@ -21,7 +26,7 @@ function generateIntervals(baseMidi: number): Array<[number, number]> {
   ]
   // Shuffle and pick
   const shuffled = [...intervals].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, ROUNDS).map(([a, b]) => {
+  return shuffled.slice(0, rounds).map(([a, b]) => {
     const octaveShift = Math.floor(Math.random() * 2) * 12
     return [
       baseMidi + a,
@@ -45,10 +50,19 @@ export function useIntervalTrainerController(
   })
   let matchStartTime = 0
   let _cancelled = false
+  // Scaling-penalty per cent of pitch error; set from difficulty in setBase.
+  // 1.5 at difficulty 5 (default) reproduces the original scoring formula.
+  let centsPenalty = 1.5
 
   function setBase(baseMidi: number): void {
     _cancelled = false
-    intervals = generateIntervals(baseMidi)
+    // Read effective difficulty at round-setup, centred so 5 == original.
+    const d = launchDifficulty(EXERCISE_INTERVAL_TRAINER)
+    // More rounds when harder: round(6 * (2 - factor)); == 6 at d5.
+    const rounds = Math.round(ROUNDS * (2 - difficultyFactor(d)))
+    // Harsher cents penalty when harder: 1.5 / factor; == 1.5 at d5.
+    centsPenalty = 1.5 / difficultyFactor(d)
+    intervals = generateIntervals(baseMidi, rounds)
     roundIndex = 0
     roundScores = []
     intervalSpans = []
@@ -136,7 +150,7 @@ export function useIntervalTrainerController(
           { error: Infinity, cents: 0 },
         )
       if (best.error === Infinity) return 0
-      return Math.round(Math.max(0, 100 - Math.abs(best.cents) * 1.5))
+      return Math.round(Math.max(0, 100 - Math.abs(best.cents) * centsPenalty))
     }
 
     const note1Score = scoreNote(target1)

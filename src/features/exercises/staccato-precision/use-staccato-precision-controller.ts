@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
@@ -9,12 +11,13 @@ const ROUNDS = 8
 const NOTE_PLAY_DURATION_MS = 200 // short staccato reference
 const GAP_BEFORE_MATCH_MS = 300
 const MATCH_WINDOW_MS = 1500 // short window for staccato
+const SCORE_TOLERANCE_K = 1.5 // cents penalty multiplier (lower = more lenient)
 
 // Generate varied target notes spanning roughly an octave
-function generateNotes(baseMidi: number): number[] {
+function generateNotes(baseMidi: number, rounds: number): number[] {
   const intervals = [0, 2, 4, 5, 7, 9, 11, 12]
   const shuffled = [...intervals].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, ROUNDS).map((i) => baseMidi + i)
+  return shuffled.slice(0, rounds).map((i) => baseMidi + i)
 }
 
 export function useStaccatoPrecisionController(
@@ -25,6 +28,10 @@ export function useStaccatoPrecisionController(
   let roundIndex = 0
   let roundScores: number[] = []
   let attackPrecisionScores: number[] = []
+  // Adaptive params, recomputed from the launch difficulty at each round setup.
+  let notePlayDurationMs = NOTE_PLAY_DURATION_MS
+  let matchWindowMs = MATCH_WINDOW_MS
+  let scoreToleranceK = SCORE_TOLERANCE_K
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -34,7 +41,17 @@ export function useStaccatoPrecisionController(
 
   function setBase(baseMidi: number): void {
     _cancelled = false
-    targetNotes = generateNotes(baseMidi)
+    // Read effective difficulty at round setup (not module load).
+    const d = launchDifficulty(EXERCISE_STACCATO)
+    const factor = difficultyFactor(d)
+    // More rounds when harder (factor < 1 → 2 - factor > 1); == ROUNDS at d5.
+    const rounds = Math.round(ROUNDS * (2 - factor))
+    // Tighter/faster timing when harder; == base at d5 (factor === 1).
+    notePlayDurationMs = NOTE_PLAY_DURATION_MS * factor
+    matchWindowMs = MATCH_WINDOW_MS * factor
+    // Steeper cents penalty when harder; == SCORE_TOLERANCE_K at d5.
+    scoreToleranceK = SCORE_TOLERANCE_K / factor
+    targetNotes = generateNotes(baseMidi, rounds)
     roundIndex = 0
     roundScores = []
     attackPrecisionScores = []
@@ -61,15 +78,13 @@ export function useStaccatoPrecisionController(
     })
 
     // Play a short staccato reference
-    void audioEngine
-      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
-      .then(() => {
+    void audioEngine.playTone(midiToFreq(midi), notePlayDurationMs).then(() => {
+      if (_cancelled) return
+      phaseTimer = setTimeout(() => {
         if (_cancelled) return
-        phaseTimer = setTimeout(() => {
-          if (_cancelled) return
-          startMatching()
-        }, GAP_BEFORE_MATCH_MS)
-      })
+        startMatching()
+      }, GAP_BEFORE_MATCH_MS)
+    })
   }
 
   function startMatching(): void {
@@ -82,14 +97,14 @@ export function useStaccatoPrecisionController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateRound()
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs)
   }
 
   function evaluateRound(): void {
     const targetMidi = targetNotes[roundIndex]
     const history = base.pitchHistory()
     const recentSamples = history.slice(
-      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
+      -Math.max(1, Math.floor(matchWindowMs / 50)),
     )
 
     let roundScore = 0
@@ -103,7 +118,9 @@ export function useStaccatoPrecisionController(
         })
         const avgDeviation =
           deviations.reduce((a, b) => a + b, 0) / deviations.length
-        roundScore = Math.round(Math.max(0, 100 - avgDeviation * 1.5))
+        roundScore = Math.round(
+          Math.max(0, 100 - avgDeviation * scoreToleranceK),
+        )
 
         // Attack precision: % of early samples within ±25 cents
         const earlyCount = Math.max(1, Math.floor(validSamples.length * 0.3))

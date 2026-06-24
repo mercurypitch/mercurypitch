@@ -3,6 +3,8 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from '
 import { IconTarget } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -10,6 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { showCelebration } from '@/stores/ui-store'
+import { EXERCISE_LONG_NOTE } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useLongNoteController } from './use-long-note-controller'
 
@@ -22,7 +25,15 @@ interface LongNoteExerciseProps {
 
 const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal(
-    untrack(() => getDefaultNote(vocalRangePreset())),
+    untrack(() => {
+      // A weak-pitch drill can request a specific note to focus on.
+      const requested = launchTargetNote(EXERCISE_LONG_NOTE)
+      const preset = vocalRangePreset()
+      return requested !== undefined &&
+        getNoteOptions(preset).includes(requested)
+        ? requested
+        : getDefaultNote(preset)
+    }),
   )
 
   const audioEngine = untrack(() => props.audioEngine)
@@ -69,14 +80,15 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
         metrics: r.metrics,
         bestWindow: r.bestWindow,
       })
-      untrack(() =>
+      untrack(() => {
         recordExerciseResult({
           type: r.type,
           score: r.score,
           metrics: r.metrics,
           completedAt: r.completedAt,
-        }),
-      )
+        })
+        updateDifficultyFromEma(r.type)
+      })
     }
   })
 

@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { getScaleDegrees } from '@/lib/scale-data'
 import { approximateRichness } from '@/lib/vocal-analyzer'
@@ -9,6 +11,7 @@ import type { BaseExerciseController } from '../use-base-exercise'
 
 type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
 
+// Baselines reproduced exactly at difficulty 5 (difficultyFactor(5) === 1.0).
 const NOTE_PLAY_DURATION_MS = 700
 const GAP_BETWEEN_NOTES_MS = 250
 const MATCH_WINDOW_MS = 2000
@@ -38,6 +41,10 @@ export function useScaleRunnerController(
   let scaleNotes: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // Difficulty-scaled timings; default to baselines (== difficulty 5).
+  let notePlayDurationMs = NOTE_PLAY_DURATION_MS
+  let gapBetweenNotesMs = GAP_BETWEEN_NOTES_MS
+  let matchWindowMs = MATCH_WINDOW_MS
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -51,6 +58,13 @@ export function useScaleRunnerController(
     direction: 'up' | 'down' = 'up',
   ): void {
     _cancelled = false
+    // Harder = faster notes and a tighter match window (factor < 1 above d5,
+    // > 1 below). At difficulty 5 the factor is 1.0, so timings == baselines.
+    const difficulty = launchDifficulty(EXERCISE_SCALE_RUNNER)
+    const factor = difficultyFactor(difficulty)
+    notePlayDurationMs = Math.round(NOTE_PLAY_DURATION_MS * factor)
+    gapBetweenNotesMs = Math.round(GAP_BETWEEN_NOTES_MS * factor)
+    matchWindowMs = Math.round(MATCH_WINDOW_MS * factor)
     scaleNotes = buildScaleNotes(baseMidi, scaleType, direction)
     noteIndex = 0
     noteScores = []
@@ -77,15 +91,13 @@ export function useScaleRunnerController(
       })
     })
 
-    void audioEngine
-      .playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
-      .then(() => {
+    void audioEngine.playTone(midiToFreq(midi), notePlayDurationMs).then(() => {
+      if (_cancelled) return
+      phaseTimer = setTimeout(() => {
         if (_cancelled) return
-        phaseTimer = setTimeout(() => {
-          if (_cancelled) return
-          startMatching(noteIndex)
-        }, GAP_BETWEEN_NOTES_MS)
-      })
+        startMatching(noteIndex)
+      }, gapBetweenNotesMs)
+    })
   }
 
   function startMatching(idx: number): void {
@@ -94,7 +106,7 @@ export function useScaleRunnerController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateNote(idx)
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs)
   }
 
   function evaluateNote(idx: number): void {
@@ -102,7 +114,7 @@ export function useScaleRunnerController(
     const noteScore = scoreNoteAccuracy(
       base.pitchHistory(),
       targetMidi,
-      MATCH_WINDOW_MS,
+      matchWindowMs,
     )
 
     noteScores.push(noteScore)

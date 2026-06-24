@@ -4,6 +4,7 @@ import { For } from 'solid-js'
 import { IconMic, IconMusic, IconReply } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -64,14 +65,15 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
         exerciseType: r.type,
         metrics: r.metrics,
       })
-      untrack(() =>
+      untrack(() => {
         recordExerciseResult({
           type: r.type,
           score: r.score,
           metrics: r.metrics,
           completedAt: r.completedAt,
-        }),
-      )
+        })
+        updateDifficultyFromEma(r.type)
+      })
     }
   })
 

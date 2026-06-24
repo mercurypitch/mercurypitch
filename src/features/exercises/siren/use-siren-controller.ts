@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { detectSlides } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
@@ -10,18 +12,26 @@ const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 600
 const GAP_BETWEEN_NOTES_MS = 400
 const MATCH_WINDOW_MS = 4000
+// Baseline cents-deviation slope: roundScore = 100 - avgBestCents * K.
+const SCORE_SLOPE_K = 1.5
 
 interface SirenRound {
   startMidi: number
   endMidi: number
 }
 
-function generateSirens(baseMidi: number): SirenRound[] {
+function generateSirens(baseMidi: number, difficulty: number): SirenRound[] {
   const intervals = [4, 5, 7, 8, 12, 16]
   const rounds: SirenRound[] = []
+  // Widen the glide span when harder: (2 - factor) is 1.0 at d5 (unchanged),
+  // >1 when factor<1 (harder, wider), <1 when factor>1 (easier, narrower).
+  const spanScale = 2 - difficultyFactor(difficulty)
 
   for (let i = 0; i < ROUNDS; i++) {
-    const interval = intervals[i % intervals.length]
+    const interval = Math.max(
+      1,
+      Math.round(intervals[i % intervals.length] * spanScale),
+    )
     const direction = i % 2 === 0 ? 1 : -1
     const start = baseMidi - (direction === 1 ? 5 : interval + 5)
     const end = start + direction * interval
@@ -38,6 +48,8 @@ export function useSirenController(
   let rounds: SirenRound[] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Effective difficulty for this run; read fresh at setup (not module load).
+  let difficulty = 5
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -47,7 +59,8 @@ export function useSirenController(
 
   function setBase(baseMidi: number): void {
     _cancelled = false
-    rounds = generateSirens(baseMidi)
+    difficulty = launchDifficulty(EXERCISE_SIREN)
+    rounds = generateSirens(baseMidi, difficulty)
     roundIndex = 0
     roundScores = []
   }
@@ -127,7 +140,10 @@ export function useSirenController(
         const bestDeviations = sorted.slice(0, bestCount)
         const avgBest =
           bestDeviations.reduce((a, b) => a + b, 0) / bestDeviations.length
-        roundScore = Math.round(Math.max(0, 100 - avgBest * 1.5))
+        // Tighten the cents->score slope when harder: K * (1/factor) is K at
+        // d5 (factor 1.0), larger when factor<1 (harder = penalised faster).
+        const slopeK = SCORE_SLOPE_K * (1 / difficultyFactor(difficulty))
+        roundScore = Math.round(Math.max(0, 100 - avgBest * slopeK))
       }
     }
 

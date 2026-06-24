@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -74,14 +75,15 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         exerciseType: r.type,
         metrics: r.metrics,
       })
-      untrack(() =>
+      untrack(() => {
         recordExerciseResult({
           type: r.type,
           score: r.score,
           metrics: r.metrics,
           completedAt: r.completedAt,
-        }),
-      )
+        })
+        updateDifficultyFromEma(r.type)
+      })
     }
   })
 

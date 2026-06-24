@@ -458,3 +458,18 @@
 .scoreLow {
   color: var(--red);
 }
+
+/* Practice activity heatmap in sidebar */
+.heatmapWrapper {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.15));
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.heatmapWrapper svg {
+  max-width: 100%;
+  height: auto;
+}

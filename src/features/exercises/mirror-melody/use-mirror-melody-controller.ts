@@ -1,4 +1,6 @@
 import { batch } from 'solid-js'
+import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { scoreNoteAccuracy } from '../exercise-scoring-utils'
@@ -6,6 +8,8 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_MIRROR_MELODY } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
+// Baselines below are the difficulty-5 defaults; adaptive scaling in
+// `setMelody` reproduces them exactly when difficultyFactor === 1.0.
 const MATCH_WINDOW_MS = 2500
 const TONE_DURATION_MS = 1200
 const GAP_BEFORE_MATCH_MS = 400
@@ -33,6 +37,9 @@ export function useMirrorMelodyController(
   let melody: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // Adaptive params, set per-round in `setMelody`; default to d5 baselines.
+  let matchWindowMs = MATCH_WINDOW_MS
+  let toneDurationMs = TONE_DURATION_MS
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
@@ -42,7 +49,18 @@ export function useMirrorMelodyController(
 
   function setMelody(baseMidi: number): void {
     _cancelled = false
-    melody = generateMelody(baseMidi, MELODY_LENGTH)
+    // Read effective difficulty as the round is set up (drill override or
+    // stored level). difficultyFactor(5) === 1.0 → all values below equal
+    // their d5 baselines; harder (d>5) = tighter window, faster tone,
+    // longer melody; easier (d<5) = the inverse.
+    const d = launchDifficulty(EXERCISE_MIRROR_MELODY)
+    const factor = difficultyFactor(d)
+    // Window/tempo shrink as difficulty rises (multiply by factor < 1).
+    matchWindowMs = MATCH_WINDOW_MS * factor
+    toneDurationMs = TONE_DURATION_MS * factor
+    // More notes to mirror when harder: 2 - factor > 1 above d5.
+    const length = Math.round(MELODY_LENGTH * (2 - factor))
+    melody = generateMelody(baseMidi, length)
     noteIndex = 0
     noteScores = []
     base._setTargetPitch(baseMidi)
@@ -68,7 +86,7 @@ export function useMirrorMelodyController(
       })
     })
 
-    void audioEngine.playTone(midiToFreq(midi), TONE_DURATION_MS).then(() => {
+    void audioEngine.playTone(midiToFreq(midi), toneDurationMs).then(() => {
       if (_cancelled) return
       phaseTimer = setTimeout(() => {
         if (_cancelled) return
@@ -84,7 +102,7 @@ export function useMirrorMelodyController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateMatch()
-    }, MATCH_WINDOW_MS)
+    }, matchWindowMs)
   }
 
   function evaluateMatch(): void {
@@ -92,7 +110,7 @@ export function useMirrorMelodyController(
     const noteScore = scoreNoteAccuracy(
       base.pitchHistory(),
       targetMidi,
-      MATCH_WINDOW_MS,
+      matchWindowMs,
     )
 
     noteScores.push(noteScore)
