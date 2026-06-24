@@ -2440,6 +2440,32 @@ export const StemMixerStyles: string = `
   50% { opacity: 1; }
 }
 
+/* Karaoke rest countdown — each dot fills as the wait elapses so the singer
+   knows when to come back in (driven by playback time, so it stays correct
+   under reduced-motion; only the per-dot fill easing is decorative). */
+.sm-lyrics-rest--active {
+  opacity: 1;
+}
+
+.sm-lyrics-rest-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.sm-lyrics-rest-dot {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: linear-gradient(
+    to right,
+    var(--accent, #58a6ff) var(--fill, 0%),
+    var(--bg-tertiary, rgba(255, 255, 255, 0.15)) var(--fill, 0%)
+  );
+  box-shadow: inset 0 0 0 1px var(--border, rgba(255, 255, 255, 0.2));
+  transition: background 0.12s linear;
+}
+
 .sm-lyrics-time {
   display: inline-block;
   font-size: 0.55rem;

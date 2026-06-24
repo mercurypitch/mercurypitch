@@ -34,6 +34,10 @@ export interface DisplayLine {
   isBlank: boolean
   isRest: boolean
   lyricsIndex: number
+  /** Rest rows only: drives the karaoke countdown dots. */
+  restGapStart?: number
+  restGapEnd?: number
+  restDotCount?: number
 }
 
 export interface BlockInfo {

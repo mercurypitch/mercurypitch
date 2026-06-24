@@ -6,6 +6,7 @@ import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
+import { computeRestProgress } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { MagnifyingGlass } from './icons'
@@ -1008,6 +1009,54 @@ export const StemMixerLyricsPanelBody: Component<
                 }
 
                 if (dl.isRest) {
+                  const gapStart = dl.restGapStart ?? 0
+                  const gapEnd = dl.restGapEnd ?? 0
+                  const dotCount = dl.restDotCount ?? 0
+                  // Countdown only for a real, sized gap (word-level timing);
+                  // otherwise keep the simple rest marker.
+                  if (dotCount > 0 && gapEnd > gapStart) {
+                    const progress = () =>
+                      computeRestProgress(
+                        gapStart,
+                        gapEnd,
+                        dotCount,
+                        props.elapsed(),
+                      )
+                    const active = () =>
+                      props.elapsed() >= gapStart && props.elapsed() < gapEnd
+                    return (
+                      <div
+                        class="sm-lyrics-rest"
+                        classList={{ 'sm-lyrics-rest--active': active() }}
+                        style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
+                      >
+                        <div class="sm-lyrics-rest-dots" aria-hidden="true">
+                          <For each={Array.from({ length: dotCount })}>
+                            {(_, i) => {
+                              const fill = () => {
+                                const p = progress()
+                                if (i() < p.filledDots) return 1
+                                if (i() === p.filledDots)
+                                  return p.currentDotFrac
+                                return 0
+                              }
+                              return (
+                                <span
+                                  class="sm-lyrics-rest-dot"
+                                  style={{
+                                    '--fill': `${Math.round(fill() * 100)}%`,
+                                  }}
+                                />
+                              )
+                            }}
+                          </For>
+                        </div>
+                        <span class="sm-lyrics-rest-label">
+                          {active() ? 'Get ready…' : '~Rest~'}
+                        </span>
+                      </div>
+                    )
+                  }
                   return (
                     <div
                       class="sm-lyrics-rest"
