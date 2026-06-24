@@ -300,9 +300,11 @@ export const AccountSection: Component = () => {
               <input
                 class={styles.authInput}
                 type="email"
+                name="email"
+                id="auth-email"
                 placeholder="Email"
                 aria-label="Email"
-                autocomplete="email"
+                autocomplete="username"
                 required
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
@@ -313,6 +315,8 @@ export const AccountSection: Component = () => {
               <input
                 class={styles.authInput}
                 type="password"
+                name="password"
+                id="auth-password"
                 placeholder={
                   mode() === 'register'
                     ? 'Password (min 8 characters)'
