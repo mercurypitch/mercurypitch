@@ -1861,6 +1861,38 @@ input:checked + .settings-slider:before {
   color: var(--text-secondary);
 }
 
+/* Imported-MIDI row: name/meta button + Tracks + delete, laid out inline. */
+.fn-modal-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 0;
+}
+
+.fn-modal-item-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.fn-song-delete {
+  flex-shrink: 0;
+}
+
+.fn-modal-section {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
 .fn-import-status {
   margin-top: 6px;
   font-size: 12px;
