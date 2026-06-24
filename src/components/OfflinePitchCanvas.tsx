@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import type { MelodyItem } from '@/types'
@@ -310,12 +310,16 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     }
   }
 
+  const togglePlayback = () => {
+    if (!audio) return
+    if (audio.paused) fadeInPlay()
+    else fadeOutPause()
+  }
+
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'Space') {
       e.preventDefault()
-      if (!audio) return
-      if (audio.paused) fadeInPlay()
-      else fadeOutPause()
+      togglePlayback()
     }
   }
 
@@ -640,6 +644,52 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
           'touch-action': 'none',
         }}
       />
+
+      {/* Play/pause overlay — Space toggles playback, but touch devices have
+          no keyboard, so give them a tappable button on the waveform. */}
+      <Show when={props.audioFile}>
+        <button
+          onClick={() => togglePlayback()}
+          title={isPlaying() ? 'Pause (Space)' : 'Play (Space)'}
+          aria-label={isPlaying() ? 'Pause' : 'Play'}
+          style={{
+            position: 'absolute',
+            top: '8px',
+            left: '8px',
+            width: '38px',
+            height: '38px',
+            display: 'flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+            padding: '0',
+            color: 'var(--text-primary, #e6edf3)',
+            background: 'rgba(13, 17, 23, 0.7)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            'border-radius': '8px',
+            'backdrop-filter': 'blur(4px)',
+            cursor: 'pointer',
+          }}
+        >
+          <Show
+            when={isPlaying()}
+            fallback={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            }
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+          </Show>
+        </button>
+      </Show>
 
       {/* HTML Overlay Legend */}
       <div
