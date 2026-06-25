@@ -126,6 +126,25 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           {props.tabLabel(TAB_PIANO)}
         </button>
         <button
+          id="tab-guitar"
+          class={`app-tab ${props.activeTab() === TAB_GUITAR ? 'active' : ''}`}
+          onClick={() => void props.handleTabChange(TAB_GUITAR)}
+          aria-label="Guitar practice"
+        >
+          <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16">
+            {/* Diagonal acoustic guitar: headstock up-right, body down-left */}
+            <g transform="rotate(45 12 12)" fill="currentColor">
+              <path d="M10.7 1.6h2.6l.55 3.1h-3.7z" />
+              <path d="M11.05 5.4h1.9l.25 5.2h-2.4z" />
+              <path
+                fill-rule="evenodd"
+                d="M12 10.3c2.7 0 3.9 1.3 3.5 2.8-.2.9-.2 1.4.4 2.4 1 1.7.1 6.2-3.9 6.2s-4.9-4.5-3.9-6.2c.6-1 .6-1.5.4-2.4-.4-1.5.8-2.8 3.5-2.8zm0 2.7a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z"
+              />
+            </g>
+          </svg>
+          {props.tabLabel(TAB_GUITAR)}
+        </button>
+        <button
           id="tab-karaoke"
           class={`app-tab ${props.activeTab() === TAB_KARAOKE ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_KARAOKE)}
@@ -149,25 +168,6 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             <line x1="16" y1="10" x2="16" y2="14"></line>
           </svg>
           {props.tabLabel(TAB_KARAOKE)}
-        </button>
-        <button
-          id="tab-guitar"
-          class={`app-tab ${props.activeTab() === TAB_GUITAR ? 'active' : ''}`}
-          onClick={() => void props.handleTabChange(TAB_GUITAR)}
-          aria-label="Guitar practice"
-        >
-          <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16">
-            {/* Diagonal acoustic guitar: headstock up-right, body down-left */}
-            <g transform="rotate(45 12 12)" fill="currentColor">
-              <path d="M10.7 1.6h2.6l.55 3.1h-3.7z" />
-              <path d="M11.05 5.4h1.9l.25 5.2h-2.4z" />
-              <path
-                fill-rule="evenodd"
-                d="M12 10.3c2.7 0 3.9 1.3 3.5 2.8-.2.9-.2 1.4.4 2.4 1 1.7.1 6.2-3.9 6.2s-4.9-4.5-3.9-6.2c.6-1 .6-1.5.4-2.4-.4-1.5.8-2.8 3.5-2.8zm0 2.7a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z"
-              />
-            </g>
-          </svg>
-          {props.tabLabel(TAB_GUITAR)}
         </button>
       </div>
 

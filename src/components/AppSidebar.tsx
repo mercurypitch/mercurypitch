@@ -27,6 +27,7 @@ import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/se
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 import appStyles from './App.module.css'
 import styles from './AppSidebar.module.css'
+import { MicSensitivityControls } from './MicSensitivityControls'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -55,6 +56,8 @@ interface AppSidebarProps {
   collapsed?: boolean
   /** Called when the collapse toggle is clicked */
   onToggleCollapse?: () => void
+  /** Sample the room and auto-pick a mic sensitivity preset. */
+  onAutoCalibrate?: () => void | Promise<void>
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
@@ -373,6 +376,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               Custom
             </button>
           </div>
+        </div>
+      </Show>
+
+      {/* Mic & sensitivity quick presets (practice/singing) */}
+      <Show when={isPracticeOrSettingsTab()}>
+        <div class={styles.sidebarSection}>
+          <h2 class={styles.panelTitle}>Mic &amp; Sensitivity</h2>
+          <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
         </div>
       </Show>
 

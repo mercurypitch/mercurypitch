@@ -1,4 +1,8 @@
 // Vitest test setup file
+// Provide a real in-memory IndexedDB so the DexieAdapter (used when
+// VITE_API_BASE_URL is empty in tests) works instead of throwing
+// MissingAPIError and logging noisy caught errors to stderr.
+import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom'
 
 // Mock Web Audio API for tests

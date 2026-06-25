@@ -12,6 +12,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { MusicBoard, SlidersHorizontal } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
+import { MicQuietHint } from '@/components/MicQuietHint'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
@@ -41,6 +42,7 @@ import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
+import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { initSettingsSync } from '@/db/services/settings-service'
@@ -48,8 +50,10 @@ import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
-import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
+import { useMicLevelMonitor } from '@/features/mic-feedback/useMicLevelMonitor'
+import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
@@ -66,11 +70,8 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { buildChordToneMidis } from '@/lib/guitar/chord-utils'
-import { DrumMachine } from '@/lib/guitar/drum-machine'
-import { NOTE_NAMES } from '@/lib/note-utils'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
-import { KEY_OFFSETS, melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, SCALE_DEFINITIONS, } from '@/lib/scale-data'
+import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -80,6 +81,7 @@ import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
 import { ExercisesPage } from '@/pages/ExercisesPage'
+import { GuitarPage } from '@/pages/GuitarPage'
 import { JamPage } from '@/pages/JamPage'
 import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
@@ -102,27 +104,9 @@ import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
-import { ChordSelector } from './components/guitar/ChordSelector'
-import { DrumMachinePanel } from './components/guitar/DrumMachinePanel'
-import { GuitarFretboardCanvas } from './components/guitar/GuitarFretboardCanvas'
-import type { FretboardMode } from './components/guitar/GuitarFretboardModeTabs'
-import { GuitarFretboardModeTabs } from './components/guitar/GuitarFretboardModeTabs'
-import { GuitarPracticeSongPicker } from './components/guitar/GuitarPracticeSongPicker'
-import { GuitarViewToggle } from './components/guitar/GuitarViewToggle'
-import { InteractiveGuitarFretboardCanvas } from './components/guitar/InteractiveGuitarFretboardCanvas'
-import { KeyScaleSelector } from './components/guitar/KeyScaleSelector'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import UserSurveyModal from './components/UserSurveyModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
-import { createAdaptiveJam } from './features/guitar-practice/AdaptiveJamState'
-import { createCagedTrainer } from './features/guitar-practice/CagedTrainerState'
-import { createCallResponse } from './features/guitar-practice/CallResponseState'
-import { createChordProgression } from './features/guitar-practice/ChordProgressionState'
-import { createEarTraining } from './features/guitar-practice/EarTrainingPanel'
-import { createMelodyTranscription } from './features/guitar-practice/MelodyTranscriptionState'
-import { createNoteLocatorQuiz } from './features/guitar-practice/NoteLocatorQuiz'
-import { createSingToFretboard } from './features/guitar-practice/SingToFretboardState'
-import { createTranscriptionTrainer } from './features/guitar-practice/TranscriptionTrainerState'
 
 // ============================================================
 // Tab type
@@ -204,9 +188,7 @@ function filterMelodyForPractice(
 
 const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
-  const drumMachine = new DrumMachine()
-  const [drumBpm, setDrumBpm] = createSignal(drumMachine.bpm)
-  drumMachine.onChange(() => setDrumBpm(drumMachine.bpm))
+  const guitarCtx = useGuitar()
 
   // ── Local UI state ──────────────────────────────────────────
   const activeTab = (): ActiveTab => activeTabSignal()
@@ -234,7 +216,7 @@ const AppShell: Component<AppProps> = (props) => {
     const engine = audioEngine
 
     if (tab === TAB_GUITAR) {
-      engine.setInstrument(guitar.instrumentType())
+      engine.setInstrument(guitarCtx.guitar.instrumentType())
     } else if (tab === TAB_PIANO) {
       engine.setInstrument('piano')
     }
@@ -755,168 +737,9 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
 
-  // ── Guitar Practice controller ────────────────────────────────
-  const guitar = useGuitarPracticeController(audioEngine)
-
-  const [guitarView, setGuitarView] = createSignal<'interactive' | 'hero'>(
-    'hero',
-  )
-  const [fretboardKey, setFretboardKey] = createSignal('C')
-  const [fretboardScale, setFretboardScale] = createSignal('major')
-  const [lastPlayedNote, setLastPlayedNote] = createSignal<{
-    midi: number
-    stringIndex: number
-    fret: number
-  } | null>(null)
-
-  const highlightedNotes = createMemo(() => {
-    const keyOffset = KEY_OFFSETS[fretboardKey()] ?? 0
-    const degrees =
-      SCALE_DEFINITIONS[fretboardScale()]?.degrees ??
-      SCALE_DEFINITIONS.major.degrees
-    const openMidi = [40, 45, 50, 55, 59, 64]
-    const set = new Set<number>()
-    for (let s = 0; s < 6; s++)
-      for (let f = 0; f <= 15; f++) {
-        const midi = openMidi[s] + f
-        const deg = (((midi - keyOffset) % 12) + 12) % 12
-        if (degrees.includes(deg)) set.add(midi)
-      }
-    return set
-  })
-
-  const [fretboardMode, setFretboardMode] =
-    createSignal<FretboardMode>('explore')
-  const [selectedChord, setSelectedChord] = createSignal<string | null>(null)
-
-  const chordToneMidis = createMemo(() => {
-    const chord = selectedChord()
-    const key = fretboardKey()
-    if (chord === null) return new Set<number>()
-    const rootMidi = (KEY_OFFSETS[key] ?? 0) + 60
-    return buildChordToneMidis(rootMidi, chord)
-  })
-
-  const noteQuiz = createNoteLocatorQuiz()
-  const earTraining = createEarTraining(audioEngine!)
-  const melodyTranscription = createMelodyTranscription(
-    audioEngine!,
-    fretboardKey,
-    fretboardScale,
-  )
-  const callResponse = createCallResponse(
-    audioEngine!,
-    fretboardKey,
-    fretboardScale,
-  )
-
-  const cagedTrainer = createCagedTrainer()
-  const chordProgression = createChordProgression(
-    fretboardKey,
-    setSelectedChord,
-  )
-
-  const singToFretboard = createSingToFretboard(audioEngine!)
-  const transcriptionTrainer = createTranscriptionTrainer(audioEngine!)
-  const adaptiveJam = createAdaptiveJam(
-    fretboardKey,
-    drumMachine,
-    setSelectedChord,
-  )
-
-  const handleFretNotePlayed = (
-    midi: number,
-    stringIndex: number,
-    fret: number,
-  ) => {
-    const mode = fretboardMode()
-    if (mode === 'noteQuiz') {
-      noteQuiz.handleNotePlayed(midi)
-    } else if (mode === 'earTraining') {
-      earTraining.handleNotePlayed(midi)
-    } else if (mode === 'melodyTranscription') {
-      melodyTranscription.handleNotePlayed(midi)
-    } else if (mode === 'callResponse') {
-      callResponse.handleNotePlayed(midi)
-    } else if (mode === 'singToFretboard') {
-      singToFretboard.handleFretNotePlayed(midi)
-    } else if (mode === 'transcriptionTrainer') {
-      transcriptionTrainer.handleFretNotePlayed(midi)
-    } else if (mode === 'adaptiveJam') {
-      adaptiveJam.handleFretNotePlayed(midi)
-    } else {
-      audioEngine?.playTone(midiToFreq(midi), 600)
-    }
-    setLastPlayedNote({ midi, stringIndex, fret })
-  }
-
-  // ── Guitar mode lifecycle ────────────────────────────────────
-  // Single createEffect dispatches on the active mode, starting
-  // the correct sub-mode on enter and stopping/disabling it on
-  // leave.  Previously 9 separate createEffect blocks.
-  createEffect(() => {
-    const active = activeTab() === TAB_GUITAR && guitarView() === 'interactive'
-    const mode = active ? fretboardMode() : null
-
-    // Modes that auto-start on enter
-    if (mode === 'noteQuiz' && !noteQuiz.roundActive()) {
-      noteQuiz.startRound()
-    }
-    if (mode === 'earTraining' && earTraining.targetMidi() === null) {
-      earTraining.playNewNote()
-    }
-    if (
-      mode === 'melodyTranscription' &&
-      melodyTranscription.phase() === 'idle'
-    ) {
-      melodyTranscription.startNewPhrase()
-    }
-    if (mode === 'callResponse' && callResponse.phase() === 'idle') {
-      callResponse.startRound()
-    }
-
-    // Modes that auto-start on enter AND auto-stop on leave
-    if (mode === 'chordProgression') {
-      if (!chordProgression.playing()) chordProgression.start()
-    } else if (chordProgression.playing()) {
-      chordProgression.stop()
-    }
-
-    if (mode === 'adaptiveJam') {
-      if (!adaptiveJam.playing()) adaptiveJam.start()
-    } else if (adaptiveJam.playing()) {
-      adaptiveJam.stop()
-    }
-
-    // singToFretboard: start/stop with mic lifecycle
-    if (mode === 'singToFretboard') {
-      if (!singToFretboard.running()) {
-        void practiceEngine.startMic()
-        singToFretboard.start()
-      }
-    } else if (singToFretboard.running()) {
-      singToFretboard.stop()
-      practiceEngine.stopMic()
-    }
-
-    // transcriptionTrainer: stop when leaving mode
-    if (mode !== 'transcriptionTrainer') {
-      transcriptionTrainer.stop()
-    }
-
-    // Hero mode: mic only during active gameplay with audio input enabled
-    const heroActive = activeTab() === TAB_GUITAR && guitarView() === 'hero'
-    const heroState = guitar.gameState()
-    if (
-      heroActive &&
-      guitar.isMicActive() &&
-      (heroState === 'playing' || heroState === 'countdown')
-    ) {
-      void practiceEngine.startMic()
-    } else if (!guitar.isMicActive() || !heroActive) {
-      practiceEngine.stopMic()
-    }
-  })
+  // Guitar-tab state (controller, drum machine, fretboard signals, 9 mode
+  // states, handleFretNotePlayed, mode-lifecycle effect) lives in
+  // GuitarContext now — consumed via guitarCtx above.
 
   const pianoIsPlaying = createMemo(
     () =>
@@ -979,16 +802,16 @@ const AppShell: Component<AppProps> = (props) => {
     },
     onToggleShortcutHelp: toggleShortcutHelp,
     guitar: {
-      strumKeyboard: guitar.strumKeyboard,
+      strumKeyboard: guitarCtx.guitar.strumKeyboard,
       togglePlayback: () => {
-        if (guitarView() === 'hero') {
-          guitar.togglePlay()
+        if (guitarCtx.fretboard.guitarView() === 'hero') {
+          guitarCtx.guitar.togglePlay()
         } else {
-          if (drumMachine.playing) {
-            drumMachine.stop()
+          if (guitarCtx.drumMachine.playing) {
+            guitarCtx.drumMachine.stop()
           } else {
-            void drumMachine.init().then(() => {
-              void drumMachine.start()
+            void guitarCtx.drumMachine.init().then(() => {
+              void guitarCtx.drumMachine.start()
             })
           }
         }
@@ -1009,8 +832,6 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Clean up pending session sequencer timeouts on unmount
   onCleanup(() => sessionSequencer.destroy())
-  // Dispose the drum machine's AudioContext + scheduling loop on unmount.
-  onCleanup(() => drumMachine.dispose())
 
   // ── Tab change handler with audio cleanup ──────────────────
   // ── Tab-change cleanup ──────────────────────────────────────
@@ -1034,8 +855,8 @@ const AppShell: Component<AppProps> = (props) => {
         }
 
         // 3. Stop guitar practice if active
-        if (prevTab === TAB_GUITAR && guitar.gameState() !== 'idle') {
-          guitar.stopGame()
+        if (prevTab === TAB_GUITAR && guitarCtx.guitar.gameState() !== 'idle') {
+          guitarCtx.guitar.stopGame()
         }
 
         // 4. Stop guitar mic if active
@@ -1068,6 +889,33 @@ const AppShell: Component<AppProps> = (props) => {
     } else {
       await practiceEngine.startMic()
     }
+  }
+
+  // Nudge once if singing playback starts while the mic is off.
+  usePlaybackMicNudge({
+    isPlaying,
+    micActive,
+    isRelevantTab: () => activeTab() === TAB_SINGING,
+    onEnableMic: () => void handleMicToggle(),
+  })
+
+  // Live mic-level monitor → "we hear you but it's too quiet" hint.
+  const micLevel = useMicLevelMonitor({
+    micActive,
+    getLevel: () => practiceEngine.getInputLevel(),
+    isDetecting: () => (currentPitch()?.frequency ?? 0) > 0,
+  })
+
+  // Sidebar "Auto-calibrate": ensure the mic is on, then sample the room.
+  const handleAutoCalibrate = async () => {
+    if (!micActive()) {
+      const ok = await practiceEngine.startMic()
+      if (!ok) {
+        showNotification('Enable your mic to auto-calibrate.', 'warning')
+        return
+      }
+    }
+    await autoCalibrateSensitivity(() => practiceEngine.getInputLevel())
   }
 
   // ── Octave shift ──────────────────────────────────────────
@@ -1600,6 +1448,7 @@ const AppShell: Component<AppProps> = (props) => {
               onClose={closeSidebar}
               collapsed={sidebarCollapsed()}
               onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+              onAutoCalibrate={handleAutoCalibrate}
             />
 
             {/* Tab content */}
@@ -1649,10 +1498,16 @@ const AppShell: Component<AppProps> = (props) => {
                     />
 
                     <Show when={sessionActive()}>
-                      <SessionPlayer
-                        onSkip={handleSessionSkip}
-                        onEnd={handleSessionEnd}
-                      />
+                      <div style={{ position: 'relative' }}>
+                        <SessionPlayer
+                          onSkip={handleSessionSkip}
+                          onEnd={handleSessionEnd}
+                        />
+                        {/* Centered over the session status bar */}
+                        <MicQuietHint
+                          when={() => micActive() && micLevel.tooQuiet()}
+                        />
+                      </div>
                     </Show>
 
                     <div id="canvas-container">
@@ -1905,684 +1760,7 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
               <Show when={activeTab() === TAB_GUITAR}>
                 <TabErrorBoundary tabName={tabLabel(TAB_GUITAR)}>
-                  <div id="guitar-practice-panel">
-                    <SharedControlToolbar
-                      activeTab={activeTab}
-                      guitarTab={() => activeTab() === TAB_GUITAR}
-                      isPlaying={() =>
-                        guitar.gameState() === 'playing' ||
-                        guitar.gameState() === 'countdown'
-                      }
-                      isPaused={() => guitar.gameState() === 'paused'}
-                      onPlay={() => void guitar.startGame()}
-                      onPause={guitar.pauseGame}
-                      onResume={guitar.resumeGame}
-                      onStop={guitar.stopGame}
-                      volume={savedVol}
-                      onVolumeChange={(vol) => {
-                        setSavedVol(vol)
-                        audioEngine?.setVolume(vol / 100)
-                      }}
-                      speed={1}
-                      onSpeedChange={() => {}}
-                      metronomeEnabled={() => false}
-                      onMetronomeToggle={() => {}}
-                      playMode={() => PLAYBACK_MODE_ONCE}
-                      playModeChange={() => {}}
-                      practiceCycles={() => 1}
-                      onCyclesChange={() => {}}
-                      currentCycle={() => 1}
-                      practiceSubMode={() => 'all' as const}
-                      onPracticeSubModeChange={() => {}}
-                      isCountingIn={() => guitar.gameState() === 'countdown'}
-                      countInBeat={() =>
-                        guitar.playheadBeat() < 0
-                          ? Math.ceil(-guitar.playheadBeat())
-                          : 0
-                      }
-                      countInBeats={() => countIn()}
-                      showNoteLabels={guitar.showNoteLabels}
-                      onToggleNoteLabels={() =>
-                        guitar.setShowNoteLabels((p) => !p)
-                      }
-                      showUserNotes={guitar.showUserNotes}
-                      onToggleUserNotes={() =>
-                        guitar.setShowUserNotes((p) => !p)
-                      }
-                      bpmValue={
-                        guitarView() === 'interactive'
-                          ? drumBpm
-                          : guitar.songBpm
-                      }
-                      onBpmChange={
-                        guitarView() === 'interactive'
-                          ? (b: number) => {
-                              drumMachine.setBpm(b)
-                              setDrumBpm(b)
-                            }
-                          : () => {}
-                      }
-                      onMicToggle={() =>
-                        guitar.isMicActive()
-                          ? guitar.stopMic()
-                          : void guitar.startMic()
-                      }
-                      onMidiToggle={() =>
-                        guitar.midiConnected()
-                          ? guitar.midiDisconnect()
-                          : void guitar.midiConnect()
-                      }
-                      midiConnected={guitar.midiConnected}
-                    />
-                    <div class="gp-header-controls">
-                      <div class="gp-header-left">
-                        <GuitarPracticeSongPicker
-                          onSongLoaded={guitar.loadSong}
-                          currentSong={guitar.currentSong}
-                          mutedTrackIds={guitar.mutedTrackIds}
-                          onToggleMute={guitar.toggleTrackMute}
-                          visibleTrackIds={guitar.visibleTrackIds}
-                          onToggleVisibility={guitar.toggleTrackVisibility}
-                          playheadBeat={guitar.playheadBeat}
-                          totalBeats={guitar.totalBeats}
-                          songBpm={guitar.songBpm}
-                          onSeek={guitar.seekToBeat}
-                        />
-                      </div>
-                      <div class="gp-header-right">
-                        <div class="gp-instrument-selector">
-                          <span class="gp-instrument-label">Sound:</span>
-                          <For
-                            each={
-                              [
-                                {
-                                  value: 'guitar-acoustic' as InstrumentType,
-                                  label: 'Acoustic',
-                                },
-                                {
-                                  value: 'guitar-electric' as InstrumentType,
-                                  label: 'Electric',
-                                },
-                                {
-                                  value: 'bass' as InstrumentType,
-                                  label: 'Bass',
-                                },
-                              ] as const
-                            }
-                          >
-                            {(opt) => (
-                              <button
-                                class="gp-instrument-btn"
-                                classList={{
-                                  'gp-instrument-active':
-                                    guitar.instrumentType() === opt.value,
-                                }}
-                                onClick={() =>
-                                  guitar.setInstrumentType(opt.value)
-                                }
-                              >
-                                {opt.label}
-                              </button>
-                            )}
-                          </For>
-                        </div>
-                        <GuitarViewToggle
-                          activeView={guitarView}
-                          onViewChange={setGuitarView}
-                        />
-                      </div>
-                    </div>
-                    <Show when={guitarView() === 'interactive'}>
-                      <KeyScaleSelector
-                        selectedKey={fretboardKey}
-                        selectedScale={fretboardScale}
-                        onKeyChange={setFretboardKey}
-                        onScaleChange={setFretboardScale}
-                      >
-                        <GuitarFretboardModeTabs
-                          activeMode={fretboardMode}
-                          onModeChange={setFretboardMode}
-                        />
-                        <Show
-                          when={
-                            fretboardMode() === 'explore' ||
-                            fretboardMode() === 'jam'
-                          }
-                        >
-                          <ChordSelector
-                            selectedKey={fretboardKey}
-                            selectedScale={fretboardScale}
-                            selectedChord={selectedChord}
-                            onChordChange={setSelectedChord}
-                          />
-                        </Show>
-                      </KeyScaleSelector>
-                      <Show when={fretboardMode() === 'noteQuiz'}>
-                        <div class="gp-quiz-hud">
-                          <div class="gp-quiz-target">
-                            Find all{' '}
-                            <span
-                              style={{
-                                color: 'var(--accent)',
-                                'font-weight': '700',
-                              }}
-                            >
-                              {NOTE_NAMES[noteQuiz.targetMidiClass()]}
-                            </span>{' '}
-                            on the neck
-                          </div>
-                          <div class="gp-quiz-stats">
-                            <span class="gp-quiz-timer">
-                              {noteQuiz.roundActive()
-                                ? `${noteQuiz.timeLeft()}s`
-                                : '--'}
-                            </span>
-                            <span class="gp-quiz-progress">
-                              {noteQuiz.foundMidis().size}/
-                              {(() => {
-                                const target = noteQuiz.targetMidiClass()
-                                const openMidi = [40, 45, 50, 55, 59, 64]
-                                let count = 0
-                                for (let s = 0; s < 6; s++)
-                                  for (let f = 0; f <= 15; f++) {
-                                    if ((openMidi[s] + f) % 12 === target)
-                                      count++
-                                  }
-                                return count
-                              })()}{' '}
-                              found
-                            </span>
-                            <span class="gp-quiz-score">
-                              Score: {noteQuiz.score()}
-                            </span>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'earTraining'}>
-                        <div class="gp-ear-panel">
-                          <div class="gp-ear-difficulty">
-                            <span class="gp-key-scale-label">Difficulty</span>
-                            <select
-                              class="gp-key-scale-select"
-                              value={earTraining.difficulty()}
-                              onChange={(e) =>
-                                earTraining.setDifficulty(
-                                  e.currentTarget.value as
-                                    | 'easy'
-                                    | 'medium'
-                                    | 'hard',
-                                )
-                              }
-                            >
-                              <option value="easy">Easy (frets 0-3)</option>
-                              <option value="medium">Medium (frets 0-7)</option>
-                              <option value="hard">Hard (full neck)</option>
-                            </select>
-                          </div>
-                          <div class="gp-ear-hud">
-                            <span class="gp-ear-label">What note is this?</span>
-                            <span class="gp-ear-streak">
-                              Streak: {earTraining.streak()}
-                            </span>
-                            <span class="gp-ear-accuracy">
-                              {Math.round(earTraining.accuracy() * 100)}%
-                            </span>
-                            {earTraining.feedback() && (
-                              <span
-                                class="gp-ear-feedback"
-                                classList={{
-                                  'gp-ear-correct':
-                                    earTraining.feedback() === 'correct',
-                                  'gp-ear-wrong':
-                                    earTraining.feedback() === 'wrong',
-                                }}
-                              >
-                                {earTraining.feedback() === 'correct'
-                                  ? 'Correct!'
-                                  : 'Try again'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'melodyTranscription'}>
-                        <div class="gp-transcription-hud">
-                          <div class="gp-transcription-left">
-                            <span class="gp-transcription-label">
-                              {melodyTranscription.phase() === 'playing'
-                                ? 'Listen...'
-                                : melodyTranscription.phase() === 'listening'
-                                  ? 'Your turn! Play the melody'
-                                  : melodyTranscription.phase() === 'feedback'
-                                    ? 'Feedback'
-                                    : 'Ready'}
-                            </span>
-                            <span class="gp-transcription-progress">
-                              Note {melodyTranscription.currentNoteIndex() + 1}/
-                              {melodyTranscription.phraseLength()}
-                            </span>
-                          </div>
-                          <div class="gp-transcription-right">
-                            <span class="gp-transcription-score">
-                              Score: {melodyTranscription.score()}
-                            </span>
-                            <div class="gp-transcription-length">
-                              <span class="gp-key-scale-label">Length</span>
-                              <select
-                                class="gp-key-scale-select"
-                                value={melodyTranscription.phraseLength()}
-                                onChange={(e) =>
-                                  melodyTranscription.setPhraseLength(
-                                    Number(e.currentTarget.value),
-                                  )
-                                }
-                              >
-                                <option value={2}>2 notes</option>
-                                <option value={3}>3 notes</option>
-                                <option value={4}>4 notes</option>
-                                <option value={5}>5 notes</option>
-                              </select>
-                            </div>
-                            <button
-                              class="gp-btn"
-                              onClick={() =>
-                                melodyTranscription.startNewPhrase()
-                              }
-                            >
-                              New Phrase
-                            </button>
-                            <button
-                              class="gp-btn"
-                              onClick={() => melodyTranscription.skipPhrase()}
-                            >
-                              Skip
-                            </button>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'callResponse'}>
-                        <div class="gp-callresponse-hud">
-                          <div class="gp-callresponse-left">
-                            <span class="gp-callresponse-label">
-                              {callResponse.phase() === 'callPlaying'
-                                ? 'Listen to the call...'
-                                : callResponse.phase() === 'callEcho'
-                                  ? 'Your turn! Echo the call'
-                                  : callResponse.phase() === 'responsePlaying'
-                                    ? 'Listen to the response...'
-                                    : callResponse.phase() === 'responseImprov'
-                                      ? 'Improvise your reply!'
-                                      : callResponse.phase() === 'feedback'
-                                        ? 'Round feedback'
-                                        : 'Ready'}
-                            </span>
-                            <span class="gp-callresponse-phase-indicator">
-                              {callResponse.phase() === 'callEcho'
-                                ? `Echo: ${callResponse.userEchoNotes().length}/${callResponse.callNotes().length}`
-                                : callResponse.phase() === 'responseImprov'
-                                  ? `Notes: ${callResponse.userImprovNotes().length}`
-                                  : ''}
-                            </span>
-                          </div>
-                          <div class="gp-callresponse-right">
-                            <span class="gp-callresponse-score">
-                              Score: {callResponse.totalScore()}
-                            </span>
-                            <Show when={callResponse.phase() === 'callEcho'}>
-                              <button
-                                class="gp-btn"
-                                onClick={() => callResponse.finishEcho()}
-                              >
-                                Echo Done
-                              </button>
-                            </Show>
-                            <Show
-                              when={callResponse.phase() === 'responseImprov'}
-                            >
-                              <button
-                                class="gp-btn"
-                                onClick={() => callResponse.finishImprov()}
-                              >
-                                Improv Done
-                              </button>
-                            </Show>
-                            <Show
-                              when={
-                                callResponse.phase() === 'callPlaying' ||
-                                callResponse.phase() === 'responsePlaying'
-                              }
-                            >
-                              <button
-                                class="gp-btn"
-                                onClick={() => callResponse.skipRound()}
-                              >
-                                Skip
-                              </button>
-                            </Show>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'cagedTrainer'}>
-                        <div class="gp-caged-hud">
-                          <div class="gp-caged-left">
-                            <span class="gp-caged-label">
-                              {cagedTrainer.activeShape()} Position
-                            </span>
-                            <span class="gp-caged-chord">
-                              Chord: {cagedTrainer.activeChord()}
-                            </span>
-                          </div>
-                          <div class="gp-caged-right">
-                            <button
-                              class="gp-btn"
-                              onClick={() => cagedTrainer.prevShape()}
-                            >
-                              Prev
-                            </button>
-                            <button
-                              class="gp-btn"
-                              onClick={() => cagedTrainer.nextShape()}
-                            >
-                              Next
-                            </button>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'chordProgression'}>
-                        <div class="gp-chordprog-hud">
-                          <div class="gp-chordprog-left">
-                            <span class="gp-chordprog-progression">
-                              {chordProgression.progressionName()}
-                            </span>
-                            <span class="gp-chordprog-chord">
-                              {chordProgression.currentChordName()}
-                            </span>
-                          </div>
-                          <div class="gp-chordprog-controls">
-                            <button
-                              class="gp-btn gp-btn-sm"
-                              onClick={() => chordProgression.prevProgression()}
-                            >
-                              Prev
-                            </button>
-                            <button
-                              class="gp-btn gp-btn-sm"
-                              onClick={() => chordProgression.toggle()}
-                            >
-                              {chordProgression.playing() ? 'Stop' : 'Start'}
-                            </button>
-                            <button
-                              class="gp-btn gp-btn-sm"
-                              onClick={() => chordProgression.nextProgression()}
-                            >
-                              Next
-                            </button>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'singToFretboard'}>
-                        <div class="gp-singtofret-hud">
-                          <div class="gp-singtofret-left">
-                            <span class="gp-singtofret-phase">
-                              {singToFretboard.phase() === 'listening'
-                                ? 'Sing a note...'
-                                : singToFretboard.phase() === 'locked'
-                                  ? `Find ${singToFretboard.targetNoteName()}`
-                                  : 'Found!'}
-                            </span>
-                          </div>
-                          <div class="gp-singtofret-right">
-                            <span class="gp-singtofret-streak">
-                              Streak: {singToFretboard.streak()}
-                            </span>
-                            <span class="gp-singtofret-total">
-                              Found: {singToFretboard.totalFound()}
-                            </span>
-                          </div>
-                        </div>
-                      </Show>
-                      <Show when={fretboardMode() === 'transcriptionTrainer'}>
-                        <div class="gp-tt-hud">
-                          <div class="gp-tt-left">
-                            <span class="gp-tt-label">Transcribe</span>
-                            <span class="gp-tt-progress">
-                              {transcriptionTrainer.phase() === 'idle'
-                                ? 'Load audio to start'
-                                : transcriptionTrainer.phase() === 'loaded'
-                                  ? 'Ready — press Play'
-                                  : `${transcriptionTrainer.currentTime().toFixed(1)}s / ${transcriptionTrainer.duration().toFixed(1)}s`}
-                            </span>
-                          </div>
-                          <div class="gp-tt-right">
-                            <span class="gp-tt-score">
-                              Notes: {transcriptionTrainer.foundNotes().length}
-                            </span>
-                            <Show
-                              when={transcriptionTrainer.phase() === 'idle'}
-                            >
-                              <label class="gp-tt-load-btn">
-                                Load Audio
-                                <input
-                                  type="file"
-                                  accept="audio/*"
-                                  style="display:none"
-                                  onChange={(e) => {
-                                    const file = e.currentTarget.files?.[0]
-                                    if (file)
-                                      transcriptionTrainer.loadAudio(file)
-                                  }}
-                                />
-                              </label>
-                            </Show>
-                            <Show
-                              when={transcriptionTrainer.phase() !== 'idle'}
-                            >
-                              <button
-                                class="gp-btn gp-btn-sm"
-                                onClick={() => transcriptionTrainer.play()}
-                              >
-                                Play
-                              </button>
-                              <button
-                                class="gp-btn gp-btn-sm"
-                                onClick={() => transcriptionTrainer.pause()}
-                              >
-                                Pause
-                              </button>
-                              <button
-                                class="gp-btn gp-btn-sm"
-                                onClick={() => transcriptionTrainer.stop()}
-                              >
-                                Stop
-                              </button>
-                              <button
-                                class="gp-btn gp-btn-sm"
-                                onClick={() =>
-                                  transcriptionTrainer.toggleLoop()
-                                }
-                              >
-                                {transcriptionTrainer.loopEnabled()
-                                  ? 'Loop'
-                                  : 'No Loop'}
-                              </button>
-                            </Show>
-                          </div>
-                        </div>
-                        <Show when={transcriptionTrainer.phase() !== 'idle'}>
-                          <div class="gp-tt-controls">
-                            <span class="gp-tt-speed-label">
-                              Speed:{' '}
-                              {transcriptionTrainer.playbackRate().toFixed(2)}x
-                            </span>
-                            <input
-                              type="range"
-                              class="gp-tt-speed-slider"
-                              min="0.25"
-                              max="2"
-                              step="0.05"
-                              value={transcriptionTrainer.playbackRate()}
-                              onInput={(e) =>
-                                transcriptionTrainer.setPlaybackRate(
-                                  Number(e.currentTarget.value),
-                                )
-                              }
-                            />
-                            <button
-                              class="gp-btn gp-btn-sm"
-                              onClick={() =>
-                                transcriptionTrainer.clearFoundNotes()
-                              }
-                            >
-                              Clear Notes
-                            </button>
-                          </div>
-                        </Show>
-                      </Show>
-                    </Show>
-                    <Show when={fretboardMode() === 'adaptiveJam'}>
-                      <div class="gp-aj-hud">
-                        <div class="gp-aj-left">
-                          <span class="gp-aj-label">Adaptive Jam</span>
-                          <span class="gp-aj-chord">
-                            {adaptiveJam.currentChordRoot()}
-                            {adaptiveJam.currentChord()}
-                          </span>
-                        </div>
-                        <div class="gp-aj-right">
-                          <span class="gp-aj-density">
-                            {adaptiveJam.userNoteDensity().toFixed(1)} n/s
-                          </span>
-                          <div class="gp-aj-history">
-                            <For each={adaptiveJam.chordHistory()}>
-                              {(c) => (
-                                <span class="gp-aj-history-chip">{c}</span>
-                              )}
-                            </For>
-                          </div>
-                        </div>
-                      </div>
-                    </Show>
-                    <div id="guitar-fretboard-container">
-                      <Show
-                        when={guitarView() === 'interactive'}
-                        fallback={
-                          <GuitarFretboardCanvas
-                            fallingNotes={guitar.fallingNotes}
-                            gameState={guitar.gameState}
-                            playheadBeat={guitar.playheadBeat}
-                            hitResults={guitar.hitResults}
-                            combo={guitar.combo}
-                            score={guitar.score}
-                            visibleBeatWindow={guitar.visibleBeatWindow}
-                            showNoteLabels={guitar.showNoteLabels}
-                            songBpm={guitar.songBpm}
-                            isActive={() => activeTab() === TAB_GUITAR}
-                            detectedMidi={guitar.detectedMidi}
-                            detectedClarity={guitar.detectedClarity}
-                            showUserNotes={guitar.showUserNotes}
-                            onStrum={guitar.strumString}
-                          />
-                        }
-                      >
-                        <InteractiveGuitarFretboardCanvas
-                          selectedKey={fretboardKey}
-                          selectedScale={fretboardScale}
-                          highlightedNotes={highlightedNotes}
-                          isActive={() =>
-                            activeTab() === TAB_GUITAR &&
-                            guitarView() === 'interactive'
-                          }
-                          lastPlayedNote={lastPlayedNote}
-                          onNotePlayed={handleFretNotePlayed}
-                          selectedChord={selectedChord}
-                          chordToneMidis={chordToneMidis}
-                          mode={fretboardMode}
-                          quizFoundMidis={noteQuiz.foundMidis}
-                          earTargetMidi={earTraining.targetMidi}
-                          earFeedback={earTraining.feedback}
-                          transcriptionResults={
-                            fretboardMode() === 'callResponse'
-                              ? callResponse.echoResults
-                              : melodyTranscription.noteResults
-                          }
-                          transcriptionPhase={
-                            fretboardMode() === 'callResponse'
-                              ? () =>
-                                  callResponse.phase() === 'callEcho'
-                                    ? 'listening'
-                                    : 'feedback'
-                              : melodyTranscription.phase
-                          }
-                          cagedHighlight={cagedTrainer.highlightedFrets}
-                          viewFretRange={cagedTrainer.viewFretRange}
-                          singTargetMidi={singToFretboard.targetMidi}
-                        />
-                      </Show>
-                    </div>
-
-                    <Show
-                      when={
-                        guitarView() === 'interactive' &&
-                        (fretboardMode() === 'jam' ||
-                          fretboardMode() === 'adaptiveJam' ||
-                          fretboardMode() === 'chordProgression')
-                      }
-                    >
-                      <DrumMachinePanel drumMachine={drumMachine} />
-                    </Show>
-                    <Show when={guitar.gameState() === 'finished'}>
-                      <div class="gp-score-overlay">
-                        <div class="gp-score-card">
-                          <h2>Complete!</h2>
-                          <div class="gp-score-grade">
-                            {(() => {
-                              const s = guitar.score()
-                              const t = guitar.totalNotes()
-                              const pct =
-                                t > 0 ? Math.round((s / (t * 100)) * 100) : 0
-                              return pct >= 90
-                                ? 'Pitch Perfect!'
-                                : pct >= 80
-                                  ? 'Excellent!'
-                                  : pct >= 65
-                                    ? 'Good!'
-                                    : pct >= 50
-                                      ? 'Okay!'
-                                      : 'Keep Practicing!'
-                            })()}
-                          </div>
-                          <div class="gp-score-pct">
-                            {guitar.totalNotes() > 0
-                              ? Math.round(
-                                  (guitar.score() /
-                                    (guitar.totalNotes() * 100)) *
-                                    100,
-                                )
-                              : 0}
-                            %
-                          </div>
-                          <div class="gp-score-detail">
-                            {guitar.totalNotes()} notes · Max Combo:{' '}
-                            {guitar.maxCombo()}x
-                          </div>
-                          <div class="gp-score-actions">
-                            <button
-                              class="gp-btn gp-btn-play"
-                              onClick={() => void guitar.startGame()}
-                            >
-                              Play Again
-                            </button>
-                            <button
-                              class="gp-btn gp-btn-close"
-                              onClick={guitar.stopGame}
-                            >
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Show>
-                  </div>
+                  <GuitarPage volume={savedVol} setVolume={setSavedVol} />
                 </TabErrorBoundary>
               </Show>
             </main>
@@ -2908,7 +2086,9 @@ export const App: Component<AppProps> = (props) => {
   return (
     <AppErrorBoundary>
       <EngineProvider>
-        <AppShell {...props} />
+        <GuitarProvider>
+          <AppShell {...props} />
+        </GuitarProvider>
         <CrashModal />
       </EngineProvider>
     </AppErrorBoundary>
