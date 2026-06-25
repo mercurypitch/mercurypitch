@@ -319,9 +319,13 @@ export const Walkthrough: Component = () => {
     })
   }
 
-  // Re-prepare whenever the step changes while the tour is active.
+  // Re-prepare whenever the step OR the step list changes while active. Reading
+  // tourSteps() here matters: starting a fresh tour that also begins at step 0
+  // wouldn't re-trigger on walkthroughStep alone (same value), so prep would be
+  // skipped and the spotlight would keep the previous tour's position.
   createEffect(() => {
     walkthroughStep()
+    tourSteps()
     if (!walkthroughActive()) return
     void prepareAndPosition()
   })

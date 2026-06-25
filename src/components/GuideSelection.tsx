@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, onMount, Show } from 'solid-js'
-import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, startTour, STEM_MIXER_TOUR_STEPS, } from '@/stores/app-store'
+import { createEffect, For, onCleanup, Show } from 'solid-js'
+import { startMixerTourIfReady } from '@/features/tours/startMixerTour'
+import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, } from '@/stores/app-store'
 import type { ActiveTab } from '@/types'
 import styles from './GuideSelection.module.css'
 
@@ -51,16 +52,17 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   const handleStartMixerTour = () => {
     props.onClose()
-    startTour(STEM_MIXER_TOUR_STEPS)
+    startMixerTourIfReady()
   }
 
-  // Close on Escape
+  // Close on Escape — only while open, and detach when closed.
   const handleKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') props.onClose()
   }
-
-  onMount(() => {
+  createEffect(() => {
+    if (!props.isOpen) return
     window.addEventListener('keydown', handleKeydown)
+    onCleanup(() => window.removeEventListener('keydown', handleKeydown))
   })
 
   return (

@@ -2,7 +2,7 @@
 // WeaknessPanel — Displays weakness analysis and micro-drills
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconLock, IconMusic, IconTarget, } from '@/components/exercise-icons'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
@@ -12,6 +12,8 @@ import { generateWeaknessReport } from '../weakness-analyzer'
 
 interface WeaknessPanelProps {
   onStartDrill?: (exerciseType: ExerciseType, config?: ExerciseConfig) => void
+  /** Rendered when there are no weak spots to surface (keeps the area filled). */
+  fallback?: JSX.Element
 }
 
 const drillIconCls = 'weakness-drill-icon-svg'
@@ -47,7 +49,7 @@ export const WeaknessPanel: Component<WeaknessPanelProps> = (props) => {
   )
 
   return (
-    <Show when={hasContent()}>
+    <Show when={hasContent()} fallback={props.fallback}>
       <div class="weakness-panel">
         <div class="weakness-panel-title-row">
           <h3 class="weakness-panel-title">Practice Suggestions</h3>

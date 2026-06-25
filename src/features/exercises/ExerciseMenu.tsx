@@ -246,6 +246,27 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         STARTER_TYPES[Math.floor(Math.random() * STARTER_TYPES.length)],
     ) ?? CARDS[0]
 
+  // Shown when there's nothing to suggest yet (no history, or no weak spots) —
+  // so the practice-intel area is never empty. A function so each use gets its
+  // own element (the two fallbacks are mutually exclusive, but never share a node).
+  const gettingStarted = () => (
+    <div class="weakness-panel">
+      <div class="weakness-panel-title-row">
+        <h3 class="weakness-panel-title">Get started</h3>
+      </div>
+      <p class="weakness-panel-subtitle">
+        Warm up with{' '}
+        <button
+          class="exercise-start-link"
+          onClick={() => props.onQuickStart?.(starter.type)}
+        >
+          {starter.title}
+        </button>
+        , or pick any drill below.
+      </p>
+    </div>
+  )
+
   return (
     <div class="exercises-panel">
       <div class="exercises-header">
@@ -257,28 +278,10 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
 
       {/* Practice intel: suggestions (or a getting-started nudge), then recent
           sessions — always shows something so the area is never empty. */}
-      <Show
-        when={exerciseHistory().length > 0}
-        fallback={
-          <div class="weakness-panel">
-            <div class="weakness-panel-title-row">
-              <h3 class="weakness-panel-title">Get started</h3>
-            </div>
-            <p class="weakness-panel-subtitle">
-              You haven't done any exercises yet — warm up with{' '}
-              <button
-                class="exercise-start-link"
-                onClick={() => props.onQuickStart?.(starter.type)}
-              >
-                {starter.title}
-              </button>
-              .
-            </p>
-          </div>
-        }
-      >
+      <Show when={exerciseHistory().length > 0} fallback={gettingStarted()}>
         <WeaknessPanel
           onStartDrill={(type, config) => props.onQuickStart?.(type, config)}
+          fallback={gettingStarted()}
         />
       </Show>
 
