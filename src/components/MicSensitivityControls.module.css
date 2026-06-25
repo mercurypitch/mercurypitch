@@ -1,0 +1,39 @@
+.autoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.15));
+  background: transparent;
+  color: var(--text-secondary, #555);
+  cursor: pointer;
+}
+
+.autoBtn:disabled {
+  cursor: default;
+}
+
+/* Pulsating "listening" feedback while the room is being sampled. */
+.calibrating {
+  animation: ms-calibrate-pulse 0.9s ease-in-out infinite;
+  border-color: var(--accent, #4a7);
+  color: var(--accent, #4a7);
+}
+
+@keyframes ms-calibrate-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent, rgba(68, 170, 119, 0.5));
+    opacity: 1;
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 0.65;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    opacity: 1;
+  }
+}

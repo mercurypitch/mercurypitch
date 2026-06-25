@@ -14,18 +14,24 @@ export function MicQuietHint(props: { when: Accessor<boolean> }) {
         role="status"
         aria-live="polite"
         style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          'z-index': '6',
           display: 'flex',
           'align-items': 'center',
-          gap: '0.5rem',
-          padding: '0.4rem 0.85rem',
-          margin: '0.5rem auto',
-          width: 'fit-content',
+          gap: '0.45rem',
+          padding: '0.2rem 0.8rem',
           'max-width': '90%',
           'border-radius': '999px',
-          background: 'var(--bg-secondary, rgba(0, 0, 0, 0.06))',
-          color: 'var(--text-secondary, #555)',
-          'font-size': '0.85rem',
-          border: '1px solid var(--warning, rgba(220, 160, 0, 0.5))',
+          background: 'var(--bg-elevated, rgba(20, 20, 24, 0.92))',
+          color: 'var(--text-primary, #eee)',
+          'font-size': '0.78rem',
+          'white-space': 'nowrap',
+          'pointer-events': 'none',
+          border: '1px solid var(--warning, rgba(220, 160, 0, 0.7))',
+          'box-shadow': '0 1px 8px rgba(0, 0, 0, 0.35)',
         }}
       >
         <svg

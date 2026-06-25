@@ -51,6 +51,7 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicLevelMonitor } from '@/features/mic-feedback/useMicLevelMonitor'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
@@ -93,7 +94,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { fontFamily, settings, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -902,8 +903,20 @@ const AppShell: Component<AppProps> = (props) => {
   const micLevel = useMicLevelMonitor({
     micActive,
     getLevel: () => practiceEngine.getInputLevel(),
-    minAmplitude: () => settings().minAmplitude,
+    isDetecting: () => (currentPitch()?.frequency ?? 0) > 0,
   })
+
+  // Sidebar "Auto-calibrate": ensure the mic is on, then sample the room.
+  const handleAutoCalibrate = async () => {
+    if (!micActive()) {
+      const ok = await practiceEngine.startMic()
+      if (!ok) {
+        showNotification('Enable your mic to auto-calibrate.', 'warning')
+        return
+      }
+    }
+    await autoCalibrateSensitivity(() => practiceEngine.getInputLevel())
+  }
 
   // ── Octave shift ──────────────────────────────────────────
   const handleOctaveShift = (delta: number) => {
@@ -1435,6 +1448,7 @@ const AppShell: Component<AppProps> = (props) => {
               onClose={closeSidebar}
               collapsed={sidebarCollapsed()}
               onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+              onAutoCalibrate={handleAutoCalibrate}
             />
 
             {/* Tab content */}
@@ -1483,15 +1497,17 @@ const AppShell: Component<AppProps> = (props) => {
                       onWaveToggle={toggleMicWaveVisible}
                     />
 
-                    <MicQuietHint
-                      when={() => micActive() && micLevel.tooQuiet()}
-                    />
-
                     <Show when={sessionActive()}>
-                      <SessionPlayer
-                        onSkip={handleSessionSkip}
-                        onEnd={handleSessionEnd}
-                      />
+                      <div style={{ position: 'relative' }}>
+                        <SessionPlayer
+                          onSkip={handleSessionSkip}
+                          onEnd={handleSessionEnd}
+                        />
+                        {/* Centered over the session status bar */}
+                        <MicQuietHint
+                          when={() => micActive() && micLevel.tooQuiet()}
+                        />
+                      </div>
                     </Show>
 
                     <div id="canvas-container">
