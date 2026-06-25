@@ -7,27 +7,16 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
-import { Cpu, Ear, MusicBoard, SlidersHorizontal, Voice, } from '@/components/icons'
-import { AppNavTabs } from './components'
-
-const CommunityLeaderboard = lazy(async () =>
-  import('@/components/CommunityLeaderboard').then((m) => ({
-    default: m.CommunityLeaderboard,
-  })),
-)
-const CommunityShare = lazy(async () =>
-  import('@/components/CommunityShare').then((m) => ({
-    default: m.CommunityShare,
-  })),
-)
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { Cpu, Ear, MusicBoard, SlidersHorizontal, Voice, } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { AppNavTabs } from './components'
 
 const PitchAlgorithmTester = lazy(async () =>
   import('@/components/PitchAlgorithmTester').then((m) => ({
@@ -42,11 +31,6 @@ const PitchTestingTab = lazy(async () =>
 const VocalAnalysis = lazy(async () =>
   import('@/components/VocalAnalysis').then((m) => ({
     default: m.VocalAnalysis,
-  })),
-)
-const VocalChallenges = lazy(async () =>
-  import('@/components/VocalChallenges').then((m) => ({
-    default: m.VocalChallenges,
   })),
 )
 import { ScaleBuilder } from '@/components/ScaleBuilder'
@@ -64,10 +48,9 @@ const SessionEditor = lazy(async () =>
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
-import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { SkeletonCardGrid, SkeletonList, SkeletonTabContent, } from '@/components/Skeleton'
+import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 
 const UvrPanel = lazy(async () =>
@@ -131,6 +114,11 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
+import { ChallengesPage } from '@/pages/ChallengesPage'
+import { CommunityPage } from '@/pages/CommunityPage'
+import { JamPage } from '@/pages/JamPage'
+import { LeaderboardPage } from '@/pages/LeaderboardPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
@@ -159,7 +147,6 @@ import { GuitarPracticeSongPicker } from './components/guitar/GuitarPracticeSong
 import { GuitarViewToggle } from './components/guitar/GuitarViewToggle'
 import { InteractiveGuitarFretboardCanvas } from './components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from './components/guitar/KeyScaleSelector'
-import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import UserSurveyModal from './components/UserSurveyModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -1962,41 +1949,25 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_JAM}>
                 <TabErrorBoundary tabName={tabLabel(TAB_JAM)}>
-                  <div id="jam-panel">
-                    <JamPanel />
-                  </div>
+                  <JamPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_COMMUNITY}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMMUNITY)}>
-                  <div class="community-panel">
-                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
-                      <CommunityShare />
-                    </Suspense>
-                  </div>
+                  <CommunityPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_LEADERBOARD}>
                 <TabErrorBoundary tabName={tabLabel(TAB_LEADERBOARD)}>
-                  <div class="leaderboard-panel">
-                    <Suspense fallback={<SkeletonList rows={5} />}>
-                      <CommunityLeaderboard
-                        onOpenChallenges={() => setActiveTab(TAB_CHALLENGES)}
-                      />
-                    </Suspense>
-                  </div>
+                  <LeaderboardPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_CHALLENGES}>
                 <TabErrorBoundary tabName={tabLabel(TAB_CHALLENGES)}>
-                  <div class="vocal-challenges-panel">
-                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
-                      <VocalChallenges />
-                    </Suspense>
-                  </div>
+                  <ChallengesPage />
                 </TabErrorBoundary>
               </Show>
 
@@ -2155,9 +2126,7 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_SETTINGS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
-                  <div id="settings-panel">
-                    <SettingsPanel />
-                  </div>
+                  <SettingsPage />
                 </TabErrorBoundary>
               </Show>
 
