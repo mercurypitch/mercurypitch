@@ -11,8 +11,6 @@ interface MicLevelMonitorOptions {
 }
 
 interface MicLevelMonitor {
-  /** Smoothed input level (0–1). */
-  level: Accessor<number>
   /**
    * True when the mic is picking up audible sound but NO pitch is being
    * detected for a sustained moment — i.e. "we hear you, but it's too quiet
@@ -39,12 +37,10 @@ const QUIET_FRAMES_TO_WARN = 45
 export function useMicLevelMonitor(
   opts: MicLevelMonitorOptions,
 ): MicLevelMonitor {
-  const [level, setLevel] = createSignal(0)
   const [tooQuiet, setTooQuiet] = createSignal(false)
 
   createEffect(() => {
     if (!opts.micActive()) {
-      setLevel(0)
       setTooQuiet(false)
       return
     }
@@ -55,7 +51,6 @@ export function useMicLevelMonitor(
 
     const tick = () => {
       smoothed = smoothed * 0.8 + opts.getLevel() * 0.2
-      setLevel(smoothed)
 
       if (opts.isDetecting()) {
         // A pitch is being read — by definition not too quiet.
@@ -78,5 +73,5 @@ export function useMicLevelMonitor(
     onCleanup(() => cancelAnimationFrame(raf))
   })
 
-  return { level, tooQuiet }
+  return { tooQuiet }
 }
