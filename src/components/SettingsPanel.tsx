@@ -141,16 +141,30 @@ export const SettingsPanel: Component = () => {
             <VocalRangeSelector class={styles.settingsTierSelector} />
             <button
               onClick={() => setShowVoiceDetector(true)}
-              style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+              style="display: inline-flex; align-items: center; gap: 7px; background: var(--bg-secondary); border: 1px solid var(--accent); color: var(--accent); padding: 9px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
               onMouseOver={(e) => {
-                e.currentTarget.style.color = 'var(--text-primary)'
-                e.currentTarget.style.background = 'var(--bg-secondary)'
+                e.currentTarget.style.color = '#fff'
+                e.currentTarget.style.background = 'var(--accent)'
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.color = 'var(--text-secondary)'
-                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--accent)'
+                e.currentTarget.style.background = 'var(--bg-secondary)'
               }}
             >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                stroke="currentColor"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
               Don't know? Find my voice
             </button>
           </div>
