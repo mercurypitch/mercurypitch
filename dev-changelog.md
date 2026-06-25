@@ -6,6 +6,31 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-06-25
+
+### Added
+
+- **Navigation-aware spotlight tour engine** (`Walkthrough.tsx`): steps can switch tabs (`requiredTab`), click through sub-tabs/sub-views/dropdowns to reveal a target (`navigate[]`, generation-token guarded), and open the off-canvas mobile sidebar (`inSidebar`, store-backed `sidebarOpen`). Springy glide + pulsing accent ring with a `prefers-reduced-motion` opt-out; tall targets scroll to their top; a listener-leak fix. Per-page tours for every tab via `PAGE_TOURS` + `PAGE_TOUR_CATALOG`, all listed in the Guide modal; stale legacy selectors refreshed onto a stable `data-tour` layer; crammed steps split into focused substeps.
+- **Learn tutorials for every feature** (`src/types/walkthrough-content-extended.ts`, spread into `WALKTHROUGHS`; `WALKTHROUGH_TABS` extended): one read-along guide per remaining tab, plus a per-tutorial "Take the interactive tour" bridge in `WalkthroughModal` (per-id overrides, e.g. "Understanding Practice Modes" -> a focused practice-modes tour).
+- **Shared mic-insights engine** (`useMicInsights`): debounced `none` / `no-input` / `too-quiet` state machine with a readable min-display hold, a reactive `insight()` and an `onChange` callback; tab-agnostic `MicInsightHint`. Ported to Singing, Karaoke, Piano, Guitar and Jam via a shared `rmsOfTimeData`/`rmsOfAnalyser` helper (per-tab `getInputLevel`).
+- **StemMixer Vocal Pitch**: togglable live mic pitch line (red) and sung-note labels on the red user outlines; the mic hint now lives in the Vocal Pitch panel header; lyric-tool tour steps scoped to individual buttons.
+- **Find My Voice** (`VoiceTypeDetectorModal`): auto-requests the mic and starts listening on open, waits for a strong sustained "Ah", scratches an abandoned take, with a live hearing/singing indicator and a permission-error retry.
+
+### Changed
+
+- **Exercises**: compact card redesign (badge icons, pill tags, centered gallery, centered Start); practice-intel reorg (suggestions + recent sessions up top, always-shown "Get started" fallback via a `WeaknessPanel` `fallback` prop).
+- **Karaoke share link** gated behind a new `PREMIUM_FEATURES` flag (`src/lib/defaults.ts`, off by default; `VITE_PREMIUM_FEATURES=true` to enable) since sessions are local IndexedDB only; the session-id pill now shows the song duration.
+
+### Fixed
+
+- Self-review pass: per-frame `Float32Array` allocation removed from `rmsOfAnalyser`; Guitar count-in no longer trips "can't hear you"; `useMicInsights` `now()` falls back to `Date.now()`; the tour prepare-effect tracks `tourSteps()`; `GuideSelection` keydown listener moved to an `isOpen`-keyed effect with cleanup; the Karaoke/StemMixer tour is guarded on a loaded mixer (both Guide modal and Learn bridge).
+- `.fn-btn` is `inline-flex` (score-card icon/label alignment); `.sm-session-id` fits its content; tab-name drift fixed in tours and Learn guides ("Practice Tab" -> "Singing", "Editor tab" -> "Compose").
+- Resolved the outstanding `solid/reactivity` warnings in `GuitarPage`/`PianoPage`.
+
+### Tests
+
+- Re-runnable, gitignored Playwright control scripts in `assets/local/playwright/`: page-tours (35/35), guide-modal (16/16), learn-modal (20/20), legacy selectors (25/25), mobile tour (28/28). Full suite stays at 2053 passing.
+
 ## [0.4.0] - 2026-06-24
 
 ### Added
