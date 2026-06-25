@@ -12,6 +12,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { MusicBoard, SlidersHorizontal } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
+import { MicQuietHint } from '@/components/MicQuietHint'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
@@ -50,6 +51,8 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import { useMicLevelMonitor } from '@/features/mic-feedback/useMicLevelMonitor'
+import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
@@ -90,7 +93,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { fontFamily, settings, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -887,6 +890,21 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
+  // Nudge once if singing playback starts while the mic is off.
+  usePlaybackMicNudge({
+    isPlaying,
+    micActive,
+    isRelevantTab: () => activeTab() === TAB_SINGING,
+    onEnableMic: () => void handleMicToggle(),
+  })
+
+  // Live mic-level monitor → "we hear you but it's too quiet" hint.
+  const micLevel = useMicLevelMonitor({
+    micActive,
+    getLevel: () => practiceEngine.getInputLevel(),
+    minAmplitude: () => settings().minAmplitude,
+  })
+
   // ── Octave shift ──────────────────────────────────────────
   const handleOctaveShift = (delta: number) => {
     const newOctave = melodyStore.getCurrentOctave() + delta
@@ -1463,6 +1481,10 @@ const AppShell: Component<AppProps> = (props) => {
                         void handleMicToggle()
                       }}
                       onWaveToggle={toggleMicWaveVisible}
+                    />
+
+                    <MicQuietHint
+                      when={() => micActive() && micLevel.tooQuiet()}
                     />
 
                     <Show when={sessionActive()}>

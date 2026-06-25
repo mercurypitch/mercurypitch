@@ -212,6 +212,20 @@ export class PracticeEngine {
     return this.audioEngine.getTimeData()
   }
 
+  /**
+   * Current microphone input level as RMS amplitude (0–1) of the live
+   * time-domain signal. 0 when the mic is off. Compare against the detector's
+   * `minAmplitude` threshold to tell "audible but too quiet to detect" apart
+   * from "silent" and "detecting".
+   */
+  getInputLevel(): number {
+    if (!this.micActive) return 0
+    const data = this.audioEngine.getTimeData()
+    let sum = 0
+    for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+    return data.length > 0 ? Math.sqrt(sum / data.length) : 0
+  }
+
   // ── Pitch Detection ──────────────────────────────────────
 
   detectPitch(): {
