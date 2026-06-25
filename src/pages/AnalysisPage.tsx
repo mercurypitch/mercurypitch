@@ -35,6 +35,7 @@ export function AnalysisPage() {
     >
       <div
         class="analysis-tabs"
+        data-tour="analysis.subtabs"
         style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
       >
         <button
@@ -77,17 +78,33 @@ export function AnalysisPage() {
         style="flex: 1; overflow: hidden; position: relative;"
       >
         <Show when={analysisSubTab() === 'vocal'}>
-          <div class="vocal-analysis-panel" style="width: 100%; height: 100%;">
+          <div
+            class="vocal-analysis-panel"
+            data-tour="analysis.vocal"
+            style="width: 100%; height: 100%;"
+          >
             <Suspense fallback={<SkeletonTabContent />}>
               <VocalAnalysis />
             </Suspense>
           </div>
         </Show>
         <Show when={analysisSubTab() === 'detection'}>
-          <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
+          <div
+            class="pitch-detection-panel"
+            data-tour="analysis.detection"
+            style="width: 100%; height: 100%;"
+          >
+            <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
+          </div>
         </Show>
         <Show when={analysisSubTab() === 'algorithms'}>
-          <PitchAlgorithmTester onClose={() => setActiveTab(TAB_SINGING)} />
+          <div
+            class="pitch-algorithms-panel"
+            data-tour="analysis.algorithms"
+            style="width: 100%; height: 100%;"
+          >
+            <PitchAlgorithmTester onClose={() => setActiveTab(TAB_SINGING)} />
+          </div>
         </Show>
       </div>
     </div>
