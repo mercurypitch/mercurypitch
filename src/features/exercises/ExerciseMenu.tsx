@@ -28,7 +28,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Long Note',
     description:
       'Hold a steady pitch as long as you can. Builds breath support and pitch stability.',
-    icon: () => <IconTarget size={28} />,
+    icon: () => <IconTarget size={24} />,
     tags: ['Stability', 'Breath Control'],
     available: true,
   },
@@ -37,7 +37,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Vibrato',
     description:
       'Develop controlled, even vibrato. Live feedback on rate and depth.',
-    icon: () => <IconWave size={28} />,
+    icon: () => <IconWave size={24} />,
     tags: ['Vibrato', 'Control'],
     available: true,
   },
@@ -46,7 +46,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Slide In/Out',
     description:
       'Practice clean transitions between notes. No scooping, no overshoot.',
-    icon: () => <IconSlide size={28} />,
+    icon: () => <IconSlide size={24} />,
     tags: ['Transitions', 'Precision'],
     available: true,
   },
@@ -55,7 +55,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Pitch Pursuit',
     description:
       'Match falling notes before they reach the bottom. Game-like pitch training.',
-    icon: () => <IconGame size={28} />,
+    icon: () => <IconGame size={24} />,
     tags: ['Game', 'Speed'],
     available: true,
   },
@@ -64,7 +64,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Mirror the Melody',
     description:
       'Listen to a phrase and sing it back. Train your ear and voice together.',
-    icon: () => <IconMirror size={28} />,
+    icon: () => <IconMirror size={24} />,
     tags: ['Ear Training'],
     available: true,
   },
@@ -73,7 +73,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Pitch Hold',
     description:
       'Keep your pitch inside a shrinking target zone. How long can you stay locked in?',
-    icon: () => <IconLock size={28} />,
+    icon: () => <IconLock size={24} />,
     tags: ['Endurance'],
     available: true,
   },
@@ -82,7 +82,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Interval Trainer',
     description:
       'Sing specific intervals above and below a reference note. Train your ear to internalize musical distances.',
-    icon: () => <IconArrowUpDown size={28} />,
+    icon: () => <IconArrowUpDown size={24} />,
     tags: ['Intervals', 'Ear Training'],
     available: true,
   },
@@ -91,7 +91,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Scale Runner',
     description:
       'Move smoothly up and down scales. Practice major, minor, pentatonic, and chromatic patterns.',
-    icon: () => <IconArrowUpDown size={28} />,
+    icon: () => <IconArrowUpDown size={24} />,
     tags: ['Scales', 'Agility'],
     available: true,
   },
@@ -100,7 +100,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Arpeggio Jumper',
     description:
       'Leap between chord tones with precision. Build confidence hitting notes across wide intervals.',
-    icon: () => <IconLayers size={28} />,
+    icon: () => <IconLayers size={24} />,
     tags: ['Arpeggios', 'Precision'],
     available: true,
   },
@@ -109,7 +109,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Drone Intonation',
     description:
       'Sing intervals against a sustained drone. Fine-tune your sense of harmonic alignment.',
-    icon: () => <IconDrone size={28} />,
+    icon: () => <IconDrone size={24} />,
     tags: ['Intonation', 'Harmony'],
     available: true,
   },
@@ -118,7 +118,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Siren / Range Explorer',
     description:
       'Glide smoothly across your range. Develop seamless register transitions and vocal flexibility.',
-    icon: () => <IconSiren size={28} />,
+    icon: () => <IconSiren size={24} />,
     tags: ['Range', 'Flexibility'],
     available: true,
   },
@@ -127,7 +127,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Call & Response',
     description:
       'Hear a melodic phrase, then sing it back. Train pitch memory and rhythmic accuracy together.',
-    icon: () => <IconReply size={28} />,
+    icon: () => <IconReply size={24} />,
     tags: ['Memory', 'Phrasing'],
     available: true,
   },
@@ -136,7 +136,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Dynamic Swell',
     description:
       'Hold a note with controlled crescendo and decrescendo. Master breath support and dynamic control.',
-    icon: () => <IconExpand size={28} />,
+    icon: () => <IconExpand size={24} />,
     tags: ['Dynamics', 'Breath Control'],
     available: true,
   },
@@ -145,7 +145,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Chord Stacker',
     description:
       'Hear a chord played note by note, then sing each pitch back. Build harmonic awareness.',
-    icon: () => <IconLayers size={28} />,
+    icon: () => <IconLayers size={24} />,
     tags: ['Chords', 'Harmony'],
     available: true,
   },
@@ -154,7 +154,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Staccato Precision',
     description:
       'Hit short, crisp notes dead-on. Sharpen your attack accuracy and pitch precision.',
-    icon: () => <IconZap size={28} />,
+    icon: () => <IconZap size={24} />,
     tags: ['Attack', 'Precision'],
     available: true,
   },
@@ -163,7 +163,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Routine Runner',
     description:
       'Complete a full warm-up sequence: scales, arpeggios, and cool-down in one guided flow.',
-    icon: () => <IconList size={28} />,
+    icon: () => <IconList size={24} />,
     tags: ['Warm-up', 'Endurance'],
     available: true,
   },
@@ -172,7 +172,7 @@ const CARDS: ExerciseCardDef[] = [
     title: 'Sight-Singing',
     description:
       'Read notes from a musical staff and sing them — no audio preview. Train your sight-reading.',
-    icon: () => <IconMusic size={28} />,
+    icon: () => <IconMusic size={24} />,
     tags: ['Reading', 'Accuracy'],
     available: true,
   },
@@ -258,11 +258,13 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                   card.available ? {} : { opacity: 0.5, cursor: 'not-allowed' }
                 }
               >
-                <div class="exercise-card-icon">{card.icon()}</div>
-                <h3>
-                  {card.title}
-                  <DifficultyIndicator exerciseType={card.type} />
-                </h3>
+                <div class="exercise-card-head">
+                  <span class="exercise-card-icon">{card.icon()}</span>
+                  <h3>
+                    {card.title}
+                    <DifficultyIndicator exerciseType={card.type} />
+                  </h3>
+                </div>
                 <p>{card.description}</p>
                 <div class="exercise-card-tags">
                   <For each={card.tags}>{(t) => <span>{t}</span>}</For>
