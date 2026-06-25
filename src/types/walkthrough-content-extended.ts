@@ -285,4 +285,174 @@ Switch between **session history** (analyse past practice) and **live mic** mode
       thumbnail: 'trending',
     },
   ],
+  jam: [
+    {
+      id: 'jam-overview',
+      tab: 'jam',
+      title: 'Real-time Jam Rooms',
+      description: 'Sing together with others in a shared, synced room',
+      content: `
+## Set your name
+
+Enter the display name other singers will see in the room. This is how you'll show up in the peer list.
+
+## Create or join a room
+
+- **Create a room** to start a new session, then share the room code with friends.
+- **Join a room** by entering a code someone shared with you.
+
+## In the room
+
+Once you're in, everyone shares synced playback so you can practice or perform together. From the room controls you can:
+
+- Toggle your **microphone** and **camera**.
+- See the **peer list** and each singer's live status.
+- **Invite** others or **leave** the room.
+
+> **Tip:** Use headphones in a jam room — they stop the shared playback leaking back into your mic and throwing off everyone's pitch.
+      `,
+      steps: [
+        {
+          title: 'Set your name',
+          description: 'Enter the display name others will see.',
+          action: 'Type a display name',
+        },
+        {
+          title: 'Create or join',
+          description: 'Start a new room, or join with a shared code.',
+          action: 'Create or join a room',
+        },
+        {
+          title: 'Enable mic & camera',
+          description: 'Turn on your mic (and camera) to join in.',
+          action: 'Toggle mic/camera',
+        },
+      ],
+      thumbnail: 'building',
+    },
+  ],
+  community: [
+    {
+      id: 'community-overview',
+      tab: 'community',
+      title: 'Share & Community Feed',
+      description: 'Publish your work and explore what others have shared',
+      content: `
+## Share your work
+
+Use the share buttons to publish a **melody**, a **practice session**, or an **exercise** so other singers can try it.
+
+## Browse the feed
+
+Switch between shared **melodies**, **sessions**, and your own **profile**. Open anything in the feed to load and play it — or send a shared melody straight into practice.
+
+## Your profile
+
+Your profile shows your stats (streak, sessions, best score) and the things you've shared publicly.
+
+> **Tip:** Share a session you're proud of — others can load it as a practice target and try to beat your score.
+      `,
+      steps: [
+        {
+          title: 'Share something',
+          description:
+            'Publish a melody, session, or exercise from the share buttons.',
+          action: 'Open the share menu',
+        },
+        {
+          title: 'Browse the feed',
+          description: 'Switch between melodies, sessions, and your profile.',
+          action: 'Switch community tabs',
+        },
+        {
+          title: 'Open a share',
+          description: 'Load and play what someone else has shared.',
+          action: 'Open a feed item',
+        },
+      ],
+      thumbnail: 'sheet',
+    },
+  ],
+  leaderboard: [
+    {
+      id: 'leaderboard-overview',
+      tab: 'leaderboard',
+      title: 'Leaderboards & Ranking',
+      description: 'See how you stack up and what to climb toward',
+      content: `
+## Choose a board
+
+Switch between **Global**, **Friends**, and **Weekly** views to compare yourself against everyone, just your friends, or this week's climbers.
+
+## Rank by metric
+
+Re-rank the board by **overall score**, **best score**, **accuracy**, **streak**, or **sessions** — whichever you're chasing.
+
+## Podium & table
+
+The **podium** highlights the current top three for the selected metric, and the **full table** lists everyone below. Find your row to see exactly what it takes to move up.
+
+> **Tip:** Switch to the metric you're strongest at first — it's the quickest way to find a board where you already rank well, then build from there.
+      `,
+      steps: [
+        {
+          title: 'Pick a board',
+          description: 'Choose Global, Friends, or Weekly.',
+          action: 'Switch the view',
+        },
+        {
+          title: 'Choose a metric',
+          description: 'Re-rank by score, accuracy, streak, or sessions.',
+          action: 'Switch the metric',
+        },
+        {
+          title: 'Find your row',
+          description: 'Scan the podium and table to see your standing.',
+          action: 'Read the table',
+        },
+      ],
+      thumbnail: 'trending',
+    },
+  ],
+  challenges: [
+    {
+      id: 'challenges-overview',
+      tab: 'challenges',
+      title: 'Vocal Challenges & Badges',
+      description: 'Take on focused challenges and collect badges',
+      content: `
+## Challenge categories
+
+Challenges are grouped by type — **high notes**, **low notes**, **speed**, **perfect pitch**, **scales**, and more. Switch categories from the tabs at the top.
+
+## Take on a challenge
+
+Pick a challenge card to attempt it. Each tracks its own status — not started, in progress, or completed — so you can see what's left.
+
+## Earn badges
+
+Completing challenges unlocks **badges**, shown in the badges section. They're a record of what you've mastered.
+
+> **Tip:** Start with a category that matches your strengths to bank a few quick wins and badges, then stretch into the harder ones.
+      `,
+      steps: [
+        {
+          title: 'Pick a category',
+          description: 'Switch challenge types from the category tabs.',
+          action: 'Switch categories',
+        },
+        {
+          title: 'Attempt a challenge',
+          description: 'Choose a challenge card and give it a go.',
+          action: 'Open a challenge',
+        },
+        {
+          title: 'Collect badges',
+          description: 'Complete challenges to unlock badges below.',
+          action: 'Check the badges section',
+        },
+      ],
+      thumbnail: 'sparkle',
+    },
+  ],
 }
