@@ -17,6 +17,13 @@ export const IS_DEV =
 /** True when running inside Vitest or an E2E test harness. */
 export const IS_TEST = import.meta.env.MODE === 'test'
 
+/**
+ * Premium features that depend on cloud storage of users' songs (cross-device
+ * share links, reopening a separated session on another device, etc.). OFF by
+ * default until cloud sync ships; opt in with VITE_PREMIUM_FEATURES=true.
+ */
+export const PREMIUM_FEATURES = import.meta.env.VITE_PREMIUM_FEATURES === 'true'
+
 // ── App metadata ──────────────────────────────────────────────
 
 /** Semantic version from package.json (e.g. "0.1.2"). */
