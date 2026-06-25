@@ -5,8 +5,9 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { TAB_COMPOSE, TAB_KARAOKE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
+import { startMixerTourIfReady } from '@/features/tours/startMixerTour'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
-import { hasPageTour, PRACTICE_MODES_TOUR_STEPS, startPageTour, startTour, startWalkthrough as startSectionTour, STEM_MIXER_TOUR_STEPS, } from '@/stores'
+import { hasPageTour, PRACTICE_MODES_TOUR_STEPS, startPageTour, startTour, startWalkthrough as startSectionTour, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from '@/types'
@@ -151,7 +152,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
       return
     }
     if (w.tab === TAB_KARAOKE) {
-      startTour(STEM_MIXER_TOUR_STEPS)
+      startMixerTourIfReady()
     } else if (hasPageTour(w.tab as ActiveTab)) {
       startPageTour(w.tab as ActiveTab)
     } else {

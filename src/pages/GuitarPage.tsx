@@ -37,11 +37,12 @@ export function GuitarPage(props: GuitarPageProps) {
   const ctx = useGuitar()
   const guitar = ctx.guitar
 
-  // Mic feedback: "can't hear you" / "too quiet" while playing along.
+  // Mic feedback: "can't hear you" / "too quiet" while playing along. Gate on
+  // 'playing' only — during the count-in the user is waiting, not playing, so a
+  // long count-in shouldn't trip the "can't hear you" message.
   const micInsights = useMicInsights({
     micActive: guitar.isMicActive,
-    isPlaying: () =>
-      guitar.gameState() === 'playing' || guitar.gameState() === 'countdown',
+    isPlaying: () => guitar.gameState() === 'playing',
     getLevel: guitar.getInputLevel,
     isDetecting: () =>
       guitar.detectedMidi() !== null || guitar.detectedClarity() > 0,

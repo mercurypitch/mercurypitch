@@ -54,7 +54,7 @@ export const MIC_INSIGHT_MESSAGE: Record<MicInsight, string> = {
 }
 
 const now = (): number =>
-  typeof performance !== 'undefined' ? performance.now() : 0
+  typeof performance !== 'undefined' ? performance.now() : Date.now()
 
 /**
  * Derives a debounced {@link MicInsight} from raw mic state. The detector is the

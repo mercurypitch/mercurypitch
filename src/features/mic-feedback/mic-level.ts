@@ -12,12 +12,17 @@ export function rmsOfTimeData(data: Float32Array | null | undefined): number {
   return Math.sqrt(sum / data.length)
 }
 
+// Reused scratch buffer so the per-frame RMS sampling doesn't allocate ~60×/s.
+let scratch: Float32Array | null = null
+
 /** RMS amplitude (0–1) sampled from an AnalyserNode's time-domain data. */
 export function rmsOfAnalyser(
   analyser: AnalyserNode | null | undefined,
 ): number {
   if (!analyser) return 0
-  const buf = new Float32Array(analyser.fftSize)
-  analyser.getFloatTimeDomainData(buf)
-  return rmsOfTimeData(buf)
+  if (scratch === null || scratch.length !== analyser.fftSize) {
+    scratch = new Float32Array(analyser.fftSize)
+  }
+  analyser.getFloatTimeDomainData(scratch as Float32Array<ArrayBuffer>)
+  return rmsOfTimeData(scratch)
 }
