@@ -135,6 +135,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       </Show>
       <div
         class="sm-transport"
+        data-tour="mixer.transport"
         classList={{
           'sm-transport--vertical': isVertical(),
           [`sm-transport--docked-${props.toolbarPosition?.()}`]:

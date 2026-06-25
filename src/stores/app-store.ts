@@ -3,7 +3,7 @@ import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
-import { TAB_COMPOSE, TAB_GUITAR, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -1362,6 +1362,60 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+// Karaoke stem-mixer tour. Contextual (not tab-keyed): the targets only exist
+// while a session is loaded in the mixer, so it is offered from StemMixer itself
+// (auto-once on mount + a manual "Tour" button) rather than via PAGE_TOURS.
+export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Mix the stems',
+    description:
+      'Separate vocal and instrumental tracks. Drag a fader to balance them, or mute / solo a stem to isolate it.',
+    targetSelector: '[data-tour="mixer.stems"]',
+    placement: 'left',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Transport & seek',
+    description:
+      'Play / pause (or hit Space) and scrub the timeline. Set an A–B loop with the A and B keys to drill a tricky phrase.',
+    targetSelector: '[data-tour="mixer.transport"]',
+    placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Synced lyrics',
+    description:
+      'Lyrics scroll and highlight in time with the song. Click any line to jump there.',
+    targetSelector: '[data-tour="mixer.lyrics"]',
+    placement: 'right',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Lyric tools',
+    description:
+      'These buttons load lyrics (search online, upload, or paste), edit word timings, generate LRC sync during playback, mark repeat blocks (chorus/verse), and download a .lrc file.',
+    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'See your pitch',
+    description:
+      'The vocal pitch contour is drawn here. Enable the mic to overlay your live pitch and get a sung-accuracy score.',
+    targetSelector: '[data-tour="mixer.pitch"]',
+    placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Playlist, pitch & share',
+    description:
+      'Build a karaoke playlist, open pitch analysis & settings, copy a share link, or enter full-screen focus mode.',
+    targetSelector: '[data-tour="mixer.header"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+]
+
 export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_GUITAR]: GUITAR_TOUR_STEPS,
   [TAB_PIANO]: PIANO_TOUR_STEPS,
@@ -1371,13 +1425,19 @@ export function hasPageTour(tab: ActiveTab): boolean {
   return (PAGE_TOURS[tab]?.length ?? 0) > 0
 }
 
-/** Start the spotlight tour for a given tab (no-op if it has none). */
-export function startPageTour(tab: ActiveTab): void {
-  const steps = PAGE_TOURS[tab]
-  if (steps === undefined || steps.length === 0) return
+/** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
+export function startTour(steps: WalkthroughStep[]): void {
+  if (steps.length === 0) return
   setTourSteps(steps)
   setWalkthroughActive(true)
   setWalkthroughStep(0)
+}
+
+/** Start the spotlight tour for a given tab (no-op if it has none). */
+export function startPageTour(tab: ActiveTab): void {
+  const steps = PAGE_TOURS[tab]
+  if (steps === undefined) return
+  startTour(steps)
 }
 
 export function nextWalkthroughStep(): void {

@@ -107,6 +107,7 @@ export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
   return (
     <div
       class="sm-strips-row"
+      data-tour="mixer.stems"
       style={
         props.direction === 'column'
           ? { 'flex-direction': 'column', 'align-items': 'stretch' }

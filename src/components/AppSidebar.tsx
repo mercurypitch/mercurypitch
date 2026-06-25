@@ -19,7 +19,7 @@ import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, sessionResults, setActiveTab, showNotification, } from '@/stores'
+import { activeTab as appActiveTab, hasPageTour, sessionResults, setActiveTab, showNotification, startPageTour, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { CHARACTER_INFO, selectedCharacter, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
@@ -208,6 +208,21 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           </svg>
           <span class={styles.walkthroughControlText}>Guide</span>
         </button>
+        <Show when={hasPageTour(activeTab())}>
+          <button
+            class={styles.walkthroughControlBtn}
+            onClick={() => startPageTour(activeTab())}
+            title="Take a guided tour of this page"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path
+                fill="currentColor"
+                d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+              />
+            </svg>
+            <span class={styles.walkthroughControlText}>Tour</span>
+          </button>
+        </Show>
       </div>
 
       <CharacterIcons

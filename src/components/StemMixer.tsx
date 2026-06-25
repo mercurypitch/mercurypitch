@@ -10,6 +10,7 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -21,6 +22,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
+import { startTour, STEM_MIXER_TOUR_STEPS } from '@/stores/app-store'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -966,6 +968,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.initObserver()
     canvas.queueCanvasRedraw()
 
+    // Offer the mixer tour once — but not mid-playlist, where the focus is
+    // singing, not learning the UI.
+    if (!playlist.isPlaylistActive()) {
+      offerTourOnce(
+        'pitchperfect_mixer_tour_offered',
+        'New to the mixer? Take a quick tour.',
+        STEM_MIXER_TOUR_STEPS,
+      )
+    }
+
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore when typing in inputs
@@ -1193,7 +1205,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           <div
             class="sm-header-actions"
             style={{ display: 'flex', gap: '0.5rem' }}
+            data-tour="mixer.header"
           >
+            <button
+              class="sm-btn sm-btn-secondary"
+              onClick={() => startTour(STEM_MIXER_TOUR_STEPS)}
+              title="Take a guided tour of the mixer"
+              style={{ gap: '0.4rem' }}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+                />
+              </svg>{' '}
+              Tour
+            </button>
             <button
               class="sm-btn sm-btn-secondary"
               classList={{ 'sm-btn--active': playlistSidebarOpen() }}
