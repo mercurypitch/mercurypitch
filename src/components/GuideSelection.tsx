@@ -4,8 +4,19 @@
 
 import type { Component } from 'solid-js'
 import { For, onMount, Show } from 'solid-js'
-import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, } from '@/stores/app-store'
+import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, startTour, STEM_MIXER_TOUR_STEPS, } from '@/stores/app-store'
+import type { ActiveTab } from '@/types'
 import styles from './GuideSelection.module.css'
+
+/** Compass icon for the interactive spotlight-tour entries. */
+const TourIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18">
+    <path
+      fill="currentColor"
+      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+    />
+  </svg>
+)
 
 interface GuideSelectionProps {
   isOpen: boolean
@@ -31,6 +42,16 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
   const handleStartSection = (id: string) => {
     props.onClose()
     props.onStartTour([id])
+  }
+
+  const handleStartPageTour = (tab: ActiveTab) => {
+    props.onClose()
+    startPageTour(tab)
+  }
+
+  const handleStartMixerTour = () => {
+    props.onClose()
+    startTour(STEM_MIXER_TOUR_STEPS)
   }
 
   // Close on Escape
@@ -95,9 +116,9 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
             </Show>
           </div>
 
-          {/* Section list */}
+          {/* App basics — legacy section spotlight tours */}
           <div class={styles.guideSectionsList}>
-            <h3>Sections</h3>
+            <h3>App basics</h3>
             <For each={GUIDE_SECTIONS}>
               {(sec) => {
                 const done = isGuideSectionCompleted(sec.id)
@@ -138,6 +159,44 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                 )
               }}
             </For>
+          </div>
+
+          {/* Per-page interactive tours */}
+          <div class={styles.guideSectionsList}>
+            <h3>Per-page tours</h3>
+            <For each={PAGE_TOUR_CATALOG}>
+              {(item) => (
+                <button
+                  class={styles.guideSectionItem}
+                  onClick={() => handleStartPageTour(item.tab)}
+                >
+                  <span class={styles.guideSectionIcon}>
+                    <TourIcon />
+                  </span>
+                  <span class={styles.guideSectionText}>
+                    <span class={styles.guideSectionName}>{item.title}</span>
+                    <span class={styles.guideSectionDesc}>
+                      {item.description}
+                    </span>
+                  </span>
+                </button>
+              )}
+            </For>
+            <button
+              class={styles.guideSectionItem}
+              onClick={handleStartMixerTour}
+            >
+              <span class={styles.guideSectionIcon}>
+                <TourIcon />
+              </span>
+              <span class={styles.guideSectionText}>
+                <span class={styles.guideSectionName}>Karaoke mixer</span>
+                <span class={styles.guideSectionDesc}>
+                  Stems, lyrics & LRC tools, pitch scoring, playlists — shown
+                  once a song is loaded
+                </span>
+              </span>
+            </button>
           </div>
         </div>
       </div>

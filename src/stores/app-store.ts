@@ -1655,6 +1655,59 @@ export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_CHALLENGES]: CHALLENGES_TOUR_STEPS,
 }
 
+/**
+ * Catalog of page tours for the Guide modal — title + one-line blurb per tab.
+ * Order matches PAGE_TOURS; the modal launches each via startPageTour(tab).
+ */
+export const PAGE_TOUR_CATALOG: {
+  tab: ActiveTab
+  title: string
+  description: string
+}[] = [
+  {
+    tab: TAB_GUITAR,
+    title: 'Guitar',
+    description:
+      'Practice & Fretboard views, instruments, song play-along, and training modes',
+  },
+  {
+    tab: TAB_PIANO,
+    title: 'Piano',
+    description:
+      'Falling-notes play-along: load a song, sing or play, and get scored',
+  },
+  {
+    tab: TAB_ANALYSIS,
+    title: 'Analysis',
+    description: 'Vocal analysis, pitch detection, and algorithm benchmarking',
+  },
+  {
+    tab: TAB_EXERCISES,
+    title: 'Exercises',
+    description: 'Targeted singing drills with live pitch feedback',
+  },
+  {
+    tab: TAB_JAM,
+    title: 'Jam',
+    description: 'Create or join a real-time jam room and sing together',
+  },
+  {
+    tab: TAB_COMMUNITY,
+    title: 'Community',
+    description: 'Share your work and browse the community feed',
+  },
+  {
+    tab: TAB_LEADERBOARD,
+    title: 'Leaderboard',
+    description: 'Global, friends, and weekly rankings by metric',
+  },
+  {
+    tab: TAB_CHALLENGES,
+    title: 'Challenges',
+    description: 'Vocal challenges and the badges you earn',
+  },
+]
+
 export function hasPageTour(tab: ActiveTab): boolean {
   return (PAGE_TOURS[tab]?.length ?? 0) > 0
 }
