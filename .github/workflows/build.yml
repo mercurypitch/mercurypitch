@@ -36,10 +36,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Debug Info
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Target Branch: ${{ github.base_ref }}"
+          echo "Event: $EVENT_NAME"
+          echo "Ref: $REF"
+          echo "Target Branch: $BASE_REF"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -56,16 +60,20 @@ jobs:
 
       - name: Build app
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENV: ${{ github.event.inputs.environment }}
+          REF: ${{ github.ref }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            if [[ "${{ github.event.inputs.environment }}" == "dev" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$INPUT_ENV" == "dev" ]]; then
               pnpm run build:dev
             else
               pnpm run build
             fi
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          elif [[ "$REF" == "refs/heads/main" ]]; then
             pnpm run build:dev
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
             pnpm run build:dev
           else
             pnpm run build

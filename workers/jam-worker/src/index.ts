@@ -12,6 +12,53 @@ export { JamRoom } from './jam-room'
 
 interface Env {
   JAM_ROOM: DurableObjectNamespace<JamRoom>
+  /**
+   * Optional comma-separated list of EXTRA origins allowed to connect, beyond
+   * the worker's own first-party origin. Only needed if the app is ever served
+   * from a different host than the jam worker; normally left unset.
+   */
+  ALLOWED_ORIGINS?: string
+}
+
+function isLocalHost(host: string): boolean {
+  return (
+    host === 'localhost' ||
+    host.startsWith('localhost:') ||
+    host === '127.0.0.1' ||
+    host.startsWith('127.0.0.1:')
+  )
+}
+
+/**
+ * Gate WebSocket upgrades / room creation by Origin without hardcoding any
+ * domains. The jam worker's routes are host-pinned (see wrangler.jsonc), and
+ * the client always connects same-origin (lib/jam/signaling.ts builds the URL
+ * from window.location.host), so a legitimate page is first-party with the
+ * worker. We derive "allowed" from the request's own host rather than a magic
+ * origin string, which keeps dev and prod correct with zero configuration.
+ * Local development (the wrangler-dev host) is permissive, and an optional
+ * ALLOWED_ORIGINS env can add extra first-party origins if ever needed.
+ */
+function isOriginAllowed(request: Request, env: Env): boolean {
+  const requestHost = new URL(request.url).host
+  // Local dev (wrangler dev behind the Vite proxy) — no cross-site risk.
+  if (isLocalHost(requestHost)) return true
+
+  const origin = request.headers.get('Origin')
+  if (origin === null) return false
+  let originHost: string
+  try {
+    originHost = new URL(origin).host
+  } catch {
+    return false
+  }
+  // First-party: the page must be served from the same host as this worker.
+  if (originHost === requestHost) return true
+
+  // Optional explicit extras (comma-separated full origins).
+  const extra = env.ALLOWED_ORIGINS
+  if (extra === undefined) return false
+  return extra.split(',').some((o) => o.trim() === origin)
 }
 
 const CORS: Record<string, string> = {
@@ -48,6 +95,15 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
+    }
+
+    // Gate the security-relevant endpoints (WebSocket signaling upgrades and
+    // room creation) by Origin. These always carry an Origin header from a
+    // browser; the read-only GET room-info path is left ungated because a
+    // same-origin GET may legitimately omit Origin.
+    const isWsUpgrade = request.headers.get('Upgrade') === 'websocket'
+    if ((isWsUpgrade || request.method === 'POST') && !isOriginAllowed(request, env)) {
+      return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
 
     const url = new URL(request.url)

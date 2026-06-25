@@ -40,5 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Delete merged PR branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          git push origin --delete "${{ github.head_ref }}"
+          git push origin --delete "$HEAD_REF"

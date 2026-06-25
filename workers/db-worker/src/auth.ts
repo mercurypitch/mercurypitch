@@ -199,6 +199,20 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return diff === 0
 }
 
+/**
+ * Constant-time string comparison for secrets (admin keys, tokens). Unlike
+ * `===`, it never short-circuits on the first differing byte, so the time
+ * taken does not leak how many leading bytes a guess got right. A length
+ * mismatch is folded into the result rather than returned early.
+ */
+export function timingSafeEqual(a: string, b: string): boolean {
+  const ab = encoder.encode(a)
+  const bb = encoder.encode(b)
+  let diff = ab.length ^ bb.length
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ (bb[i] ?? 0)
+  return diff === 0
+}
+
 // ── Google ID-token verification ─────────────────────────────────────
 
 interface GoogleClaims {
