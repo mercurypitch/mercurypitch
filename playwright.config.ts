@@ -28,7 +28,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
+    // Build with the cloud API disabled so e2e exercises the local IndexedDB
+    // (DexieAdapter) path it asserts against. e2e runs offline, and .env.production
+    // now sets VITE_API_BASE_URL (HybridAdapter), whose stores aren't seeded locally.
+    command: `cross-env VITE_API_BASE_URL= pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
     url: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
     reuseExistingServer: true,
     timeout: process.env.VITE_E2E_WEBSERVER_TIMEOUT ? Number(process.env.VITE_E2E_WEBSERVER_TIMEOUT) : 120000,
