@@ -7,49 +7,17 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
-import { Cpu, Ear, MusicBoard, SlidersHorizontal, Voice, } from '@/components/icons'
-import { AppNavTabs } from './components'
-
-const CommunityLeaderboard = lazy(async () =>
-  import('@/components/CommunityLeaderboard').then((m) => ({
-    default: m.CommunityLeaderboard,
-  })),
-)
-const CommunityShare = lazy(async () =>
-  import('@/components/CommunityShare').then((m) => ({
-    default: m.CommunityShare,
-  })),
-)
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { MusicBoard, SlidersHorizontal } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
-
-const PitchAlgorithmTester = lazy(async () =>
-  import('@/components/PitchAlgorithmTester').then((m) => ({
-    default: m.PitchAlgorithmTester,
-  })),
-)
-const PitchTestingTab = lazy(async () =>
-  import('@/components/PitchTestingTab').then((m) => ({
-    default: m.PitchTestingTab,
-  })),
-)
-const VocalAnalysis = lazy(async () =>
-  import('@/components/VocalAnalysis').then((m) => ({
-    default: m.VocalAnalysis,
-  })),
-)
-const VocalChallenges = lazy(async () =>
-  import('@/components/VocalChallenges').then((m) => ({
-    default: m.VocalChallenges,
-  })),
-)
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { AppNavTabs } from './components'
 
 const SessionBrowser = lazy(async () =>
   import('@/components/SessionBrowser').then((m) => ({
@@ -61,47 +29,24 @@ const SessionEditor = lazy(async () =>
     default: m.SessionEditor,
   })),
 )
-import { SessionCelebration } from '@/components/SessionCelebration'
-import { SessionLibraryModal } from '@/components/SessionLibraryModal'
-import { SessionPlayer } from '@/components/SessionPlayer'
-import { SettingsPanel } from '@/components/SettingsPanel'
-import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
-import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { SkeletonCardGrid, SkeletonList, SkeletonTabContent, } from '@/components/Skeleton'
-import type { UvrView } from '@/components/UvrPanel'
-
-const UvrPanel = lazy(async () =>
-  import('@/components/UvrPanel').then((m) => ({ default: m.UvrPanel })),
-)
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
+import { SessionCelebration } from '@/components/SessionCelebration'
+import { SessionLibraryModal } from '@/components/SessionLibraryModal'
+import { SessionPlayer } from '@/components/SessionPlayer'
+import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
+import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import { SkeletonTabContent } from '@/components/Skeleton'
+import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
-import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
-import CallResponseExercise from '@/features/exercises/call-response/CallResponseExercise'
-import ChordStackerExercise from '@/features/exercises/chord-stacker/ChordStackerExercise'
-import DroneIntonationExercise from '@/features/exercises/drone-intonation/DroneIntonationExercise'
-import DynamicSwellExercise from '@/features/exercises/dynamic-swell/DynamicSwellExercise'
-import ExerciseMenu from '@/features/exercises/ExerciseMenu'
-import IntervalTrainerExercise from '@/features/exercises/interval-trainer/IntervalTrainerExercise'
-import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
-import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
-import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
-import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
-import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
-import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
-import SightSingingExercise from '@/features/exercises/sight-singing/SightSingingExercise'
-import SirenExercise from '@/features/exercises/siren/SirenExercise'
-import SlideExercise from '@/features/exercises/slide/SlideExercise'
-import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
-import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
@@ -131,6 +76,15 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
+import { AnalysisPage } from '@/pages/AnalysisPage'
+import { ChallengesPage } from '@/pages/ChallengesPage'
+import { CommunityPage } from '@/pages/CommunityPage'
+import { ExercisesPage } from '@/pages/ExercisesPage'
+import { JamPage } from '@/pages/JamPage'
+import { KaraokePage } from '@/pages/KaraokePage'
+import { LeaderboardPage } from '@/pages/LeaderboardPage'
+import { PianoPage } from '@/pages/PianoPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
@@ -147,8 +101,6 @@ import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
-import { FallingNotesCanvas } from './components/FallingNotesCanvas'
-import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { ChordSelector } from './components/guitar/ChordSelector'
 import { DrumMachinePanel } from './components/guitar/DrumMachinePanel'
@@ -159,7 +111,6 @@ import { GuitarPracticeSongPicker } from './components/guitar/GuitarPracticeSong
 import { GuitarViewToggle } from './components/guitar/GuitarViewToggle'
 import { InteractiveGuitarFretboardCanvas } from './components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from './components/guitar/KeyScaleSelector'
-import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import UserSurveyModal from './components/UserSurveyModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -291,10 +242,6 @@ const AppShell: Component<AppProps> = (props) => {
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
-  const [analysisSubTab, setAnalysisSubTab] = createSignal<
-    'vocal' | 'detection' | 'algorithms'
-  >('vocal')
-
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
   // ── Play mode ───────────────────────────────────────────────
@@ -1886,500 +1833,74 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_ANALYSIS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
-                  <div
-                    class="analysis-container"
-                    style="display: flex; flex-direction: column; width: 100%; height: 100%;"
-                  >
-                    <div
-                      class="analysis-tabs"
-                      style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
-                    >
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]: analysisSubTab() === 'vocal',
-                        }}
-                        onClick={() => setAnalysisSubTab('vocal')}
-                        aria-label="Vocal Analysis"
-                        title="Vocal Analysis"
-                      >
-                        <Voice /> Vocal Analysis
-                      </button>
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]:
-                            analysisSubTab() === 'detection',
-                        }}
-                        onClick={() => setAnalysisSubTab('detection')}
-                        aria-label="Pitch Detection"
-                        title="Pitch Detection"
-                      >
-                        <Ear /> Pitch Detection
-                      </button>
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]:
-                            analysisSubTab() === 'algorithms',
-                        }}
-                        onClick={() => setAnalysisSubTab('algorithms')}
-                        aria-label="Pitch Algorithms"
-                        title="Pitch Algorithms"
-                      >
-                        <Cpu /> Pitch Algorithms
-                      </button>
-                    </div>
-
-                    <div
-                      class="analysis-content"
-                      style="flex: 1; overflow: hidden; position: relative;"
-                    >
-                      <Show when={analysisSubTab() === 'vocal'}>
-                        <div
-                          class="vocal-analysis-panel"
-                          style="width: 100%; height: 100%;"
-                        >
-                          <Suspense fallback={<SkeletonTabContent />}>
-                            <VocalAnalysis />
-                          </Suspense>
-                        </div>
-                      </Show>
-                      <Show when={analysisSubTab() === 'detection'}>
-                        <PitchTestingTab
-                          onClose={() => setActiveTab(TAB_SINGING)}
-                        />
-                      </Show>
-                      <Show when={analysisSubTab() === 'algorithms'}>
-                        <PitchAlgorithmTester
-                          onClose={() => setActiveTab(TAB_SINGING)}
-                        />
-                      </Show>
-                    </div>
-                  </div>
+                  <AnalysisPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_JAM}>
                 <TabErrorBoundary tabName={tabLabel(TAB_JAM)}>
-                  <div id="jam-panel">
-                    <JamPanel />
-                  </div>
+                  <JamPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_COMMUNITY}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMMUNITY)}>
-                  <div class="community-panel">
-                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
-                      <CommunityShare />
-                    </Suspense>
-                  </div>
+                  <CommunityPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_LEADERBOARD}>
                 <TabErrorBoundary tabName={tabLabel(TAB_LEADERBOARD)}>
-                  <div class="leaderboard-panel">
-                    <Suspense fallback={<SkeletonList rows={5} />}>
-                      <CommunityLeaderboard
-                        onOpenChallenges={() => setActiveTab(TAB_CHALLENGES)}
-                      />
-                    </Suspense>
-                  </div>
+                  <LeaderboardPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_CHALLENGES}>
                 <TabErrorBoundary tabName={tabLabel(TAB_CHALLENGES)}>
-                  <div class="vocal-challenges-panel">
-                    <Suspense fallback={<SkeletonCardGrid count={6} />}>
-                      <VocalChallenges />
-                    </Suspense>
-                  </div>
+                  <ChallengesPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_EXERCISES}>
                 <TabErrorBoundary tabName={tabLabel(TAB_EXERCISES)}>
-                  <div id="exercises-panel">
-                    <Show
-                      when={selectedExercise()}
-                      fallback={
-                        <ExerciseMenu
-                          onSelect={(type) => setSelectedExercise(type)}
-                          onQuickStart={handleQuickStart}
-                        />
-                      }
-                    >
-                      <Show when={selectedExercise() === 'long-note'}>
-                        <LongNoteExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'vibrato'}>
-                        <VibratoExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'slide'}>
-                        <SlideExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'pitch-hold'}>
-                        <PitchHoldExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'mirror-melody'}>
-                        <MirrorMelodyExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'pitch-pursuit'}>
-                        <PitchPursuitExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'interval-trainer'}>
-                        <IntervalTrainerExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'scale-runner'}>
-                        <ScaleRunnerExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'arpeggio-jumper'}>
-                        <ArpeggioJumperExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'drone-intonation'}>
-                        <DroneIntonationExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'siren'}>
-                        <SirenExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'call-response'}>
-                        <CallResponseExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'dynamic-swell'}>
-                        <DynamicSwellExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'chord-stacker'}>
-                        <ChordStackerExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'staccato-precision'}>
-                        <StaccatoPrecisionExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'routine-runner'}>
-                        <RoutineRunnerExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                      <Show when={selectedExercise() === 'sight-singing'}>
-                        <SightSingingExercise
-                          audioEngine={audioEngine}
-                          practiceEngine={practiceEngine}
-                          onBack={clearExercise}
-                          autoStart={autoStartExercise()}
-                        />
-                      </Show>
-                    </Show>
-                  </div>
+                  <ExercisesPage
+                    selectedExercise={selectedExercise}
+                    autoStartExercise={autoStartExercise}
+                    onSelect={setSelectedExercise}
+                    onQuickStart={handleQuickStart}
+                    onBack={clearExercise}
+                  />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_SETTINGS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
-                  <div id="settings-panel">
-                    <SettingsPanel />
-                  </div>
+                  <SettingsPage />
                 </TabErrorBoundary>
               </Show>
 
               <Show when={activeTab() === TAB_KARAOKE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_KARAOKE)}>
-                  <div id="uvr-panel">
-                    <Suspense fallback={<SkeletonTabContent />}>
-                      <UvrPanel
-                        initialView={initialUvrView() ?? 'upload'}
-                        initialSessionId={initialUvrSessionId() ?? undefined}
-                        onSessionChange={(sessionId) =>
-                          setActiveUvrSessionId(sessionId)
-                        }
-                        onViewChange={(view) => setActiveUvrView(view)}
-                        onSelectMelody={(melodyId) => {
-                          melodyStore.loadMelody(melodyId)
-                          setActiveTab(TAB_SINGING)
-                        }}
-                        onPracticeStart={(mode) => {
-                          console.log('Starting practice with mode:', mode)
-                        }}
-                        onExport={(type) => {
-                          console.log('Exporting:', type)
-                        }}
-                        onSessionView={(sessionId) => {
-                          console.log('Viewing session:', sessionId)
-                        }}
-                      />
-                    </Suspense>
-                  </div>
+                  <KaraokePage
+                    initialView={initialUvrView}
+                    initialSessionId={initialUvrSessionId}
+                    onSessionChange={setActiveUvrSessionId}
+                    onViewChange={setActiveUvrView}
+                  />
                 </TabErrorBoundary>
               </Show>
               <Show when={activeTab() === TAB_PIANO}>
                 <TabErrorBoundary tabName={tabLabel(TAB_PIANO)}>
-                  <div id="falling-notes-panel">
-                    <SharedControlToolbar
-                      activeTab={activeTab}
-                      pianoTab={() => activeTab() === TAB_PIANO}
-                      isPlaying={pianoIsPlaying}
-                      isPaused={pianoIsPaused}
-                      onPlay={() => {
-                        // Fresh user-triggered Play resets cycle counter
-                        if (fallingNotes.gameState() !== 'paused') {
-                          fallingNotes.setPianoCurrentCycle(1)
-                        }
-                        void fallingNotes.startGame()
-                      }}
-                      onPause={fallingNotes.pauseGame}
-                      onResume={fallingNotes.resumeGame}
-                      onStop={fallingNotes.resetGame}
-                      volume={savedVol}
-                      onVolumeChange={(vol) => {
-                        setSavedVol(vol)
-                        audioEngine?.setVolume(vol / 100)
-                      }}
-                      speed={fallingNotes.speed()}
-                      onSpeedChange={fallingNotes.setSpeed}
-                      metronomeEnabled={() => false}
-                      onMetronomeToggle={() => {}}
-                      playMode={() =>
-                        fallingNotes.pianoPlayMode() === 'repeat'
-                          ? PLAYBACK_MODE_REPEAT
-                          : PLAYBACK_MODE_ONCE
-                      }
-                      playModeChange={(mode) => {
-                        fallingNotes.setPianoPlayMode(
-                          mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
-                        )
-                        if (mode === PLAYBACK_MODE_REPEAT) {
-                          fallingNotes.setPianoCurrentCycle(1)
-                        }
-                      }}
-                      practiceCycles={() => fallingNotes.pianoRepeatCycles()}
-                      onCyclesChange={(n) =>
-                        fallingNotes.setPianoRepeatCycles(n)
-                      }
-                      currentCycle={() => fallingNotes.pianoCurrentCycle()}
-                      practiceSubMode={() => 'all' as const}
-                      onPracticeSubModeChange={() => {}}
-                      isCountingIn={() => fallingNotes.isCountingIn()}
-                      countInBeat={() => fallingNotes.countInBeat()}
-                      countInBeats={() => countIn()}
-                      onMicToggle={() => {
-                        if (fallingNotes.isMicActive()) {
-                          fallingNotes.stopMic()
-                        } else {
-                          void fallingNotes.startMic()
-                        }
-                      }}
-                      inputMode={fallingNotes.inputMode}
-                      midiConnected={fallingNotes.midiConnected}
-                      onMidiToggle={() => {
-                        if (fallingNotes.midiConnected()) {
-                          fallingNotes.midiDisconnect()
-                        } else {
-                          void fallingNotes.midiConnect()
-                        }
-                      }}
-                      zoomLevel={fallingNotes.zoomPercent}
-                      onZoomIn={fallingNotes.zoomIn}
-                      onZoomOut={fallingNotes.zoomOut}
-                      showNoteLabels={fallingNotes.showNoteLabels}
-                      onToggleNoteLabels={fallingNotes.toggleNoteLabels}
-                      bpmValue={fallingNotes.currentSongBpm}
-                      onBpmChange={fallingNotes.setBpm}
-                    />
-                    <FallingNotesSongPicker
-                      onSongLoaded={fallingNotes.loadSong}
-                      currentSong={fallingNotes.currentSong}
-                      mutedTrackIds={fallingNotes.mutedTrackIds}
-                      onToggleMute={fallingNotes.toggleTrackMute}
-                      visibleTrackIds={fallingNotes.visibleTrackIds}
-                      onToggleVisibility={fallingNotes.toggleTrackVisibility}
-                      playheadBeat={fallingNotes.playheadBeat}
-                      totalBeats={fallingNotes.totalBeats}
-                      songBpm={fallingNotes.currentSongBpm}
-                      onSeek={fallingNotes.seekToBeat}
-                    />
-                    <div id="falling-notes-canvas-container">
-                      <FallingNotesCanvas
-                        songNotes={fallingNotes.songNotes}
-                        gameState={fallingNotes.gameState}
-                        playheadBeat={fallingNotes.playheadBeat}
-                        hitResults={fallingNotes.hitResults}
-                        combo={fallingNotes.combo}
-                        score={fallingNotes.score}
-                        totalNotes={fallingNotes.totalNotes}
-                        notesMissed={fallingNotes.notesMissed}
-                        currentPitch={fallingNotes.currentPitch}
-                        isMicActive={fallingNotes.isMicActive}
-                        inputMode={fallingNotes.inputMode}
-                        visibleBeatWindow={fallingNotes.visibleBeatWindow}
-                        midiHeldNotes={fallingNotes.midiHeldNotes}
-                        onClickPianoOn={fallingNotes.clickPianoNoteOn}
-                        onClickPianoOff={fallingNotes.clickPianoNoteOff}
-                        clickPianoEnabled={fallingNotes.clickPianoEnabled}
-                      />
-                    </div>
-                    {/* Score overlay for finished game */}
-                    <Show when={fallingNotes.gameState() === 'finished'}>
-                      <div class="fn-score-overlay">
-                        <div class="fn-score-card">
-                          <h2>Complete!</h2>
-                          <div class="fn-score-grade">
-                            {(() => {
-                              const s = fallingNotes.score()
-                              const t = fallingNotes.totalNotes()
-                              const pct =
-                                t > 0 ? Math.round((s / (t * 100)) * 100) : 0
-                              return pct >= 90
-                                ? 'Pitch Perfect!'
-                                : pct >= 80
-                                  ? 'Excellent!'
-                                  : pct >= 65
-                                    ? 'Good!'
-                                    : pct >= 50
-                                      ? 'Okay!'
-                                      : 'Keep Practicing!'
-                            })()}
-                          </div>
-                          <div class="fn-score-pct">
-                            {fallingNotes.totalNotes() > 0
-                              ? Math.round(
-                                  (fallingNotes.score() /
-                                    (fallingNotes.totalNotes() * 100)) *
-                                    100,
-                                )
-                              : 0}
-                            %
-                          </div>
-                          <div class="fn-score-detail">
-                            {fallingNotes.totalNotes()} notes · Max Combo:{' '}
-                            {fallingNotes.maxCombo()}x
-                          </div>
-                          <div class="fn-score-actions">
-                            <button
-                              class="fn-btn fn-btn-play"
-                              onClick={() => void fallingNotes.startGame()}
-                              aria-label="Play again"
-                              title="Play again"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              >
-                                <polyline points="1 4 1 10 7 10" />
-                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                              </svg>{' '}
-                              Play Again
-                            </button>
-                            <button
-                              class="fn-btn fn-btn-close"
-                              onClick={fallingNotes.resetGame}
-                              aria-label="Close"
-                              title="Close"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              >
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>{' '}
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Show>
-                  </div>
+                  <PianoPage
+                    fallingNotes={fallingNotes}
+                    isPlaying={pianoIsPlaying}
+                    isPaused={pianoIsPaused}
+                    volume={savedVol}
+                    onVolumeChange={(vol) => {
+                      setSavedVol(vol)
+                      audioEngine?.setVolume(vol / 100)
+                    }}
+                  />
                 </TabErrorBoundary>
               </Show>
               <Show when={activeTab() === TAB_GUITAR}>
