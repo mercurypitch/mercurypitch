@@ -6,6 +6,12 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-06-25
+
+### Fixed
+
+- Shazam Sing view: the shared icon components render at a fixed 24px, which dwarfed the small button labels after the icon migration. Scoped icon sizing + inline-flex alignment in `ShazamListen.module.css` (13px on the Speech/Debug toggles, 16px on Stop & Match / Cancel / Try Again, 14px on the "Upload audio instead" link).
+
 ## [0.4.1] - 2026-06-25
 
 ### Added
