@@ -1309,6 +1309,36 @@ export function startWalkthrough(sectionIds?: string[]): void {
   setWalkthroughStep(0)
 }
 
+// Focused "practice modes" tour for the Singing toolbar — distinct from the
+// broader Toolbar tour. Launched from the "Understanding Practice Modes" Learn
+// tutorial's "Take the tour" bridge.
+export const PRACTICE_MODES_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Once',
+    targetSelector: '#btn-once',
+    description:
+      'Play the melody through a single time — best for first learning and memorizing it.',
+    placement: 'bottom',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Repeat',
+    targetSelector: '#btn-repeat',
+    description:
+      'Loop the melody for a set number of cycles (set the count beside it) — great for drilling a tricky passage.',
+    placement: 'bottom',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Practice session',
+    targetSelector: '#btn-session',
+    description:
+      'Run your saved session in sequence. In this mode a sub-mode selector appears so you can choose how the notes are ordered.',
+    placement: 'bottom',
+    requiredTab: TAB_SINGING,
+  },
+]
+
 // ── Per-page spotlight tours ─────────────────────────────────────────
 // Page-scoped tours that target stable [data-tour="<page>.<thing>"] hooks
 // (decoupled from CSS/test ids so refactors don't break them). Started via
