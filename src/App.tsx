@@ -66,6 +66,7 @@ import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -898,6 +899,9 @@ const AppShell: Component<AppProps> = (props) => {
     isRelevantTab: () => activeTab() === TAB_SINGING,
     onEnableMic: () => void handleMicToggle(),
   })
+
+  // Offer a page's spotlight tour the first time it's visited.
+  usePageTourOffer(activeTab)
 
   // Live mic-level monitor → "we hear you but it's too quiet" hint.
   const micLevel = useMicLevelMonitor({

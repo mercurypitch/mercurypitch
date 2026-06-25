@@ -91,19 +91,21 @@ export function PianoPage(props: PianoPageProps) {
         bpmValue={fallingNotes.currentSongBpm}
         onBpmChange={fallingNotes.setBpm}
       />
-      <FallingNotesSongPicker
-        onSongLoaded={fallingNotes.loadSong}
-        currentSong={fallingNotes.currentSong}
-        mutedTrackIds={fallingNotes.mutedTrackIds}
-        onToggleMute={fallingNotes.toggleTrackMute}
-        visibleTrackIds={fallingNotes.visibleTrackIds}
-        onToggleVisibility={fallingNotes.toggleTrackVisibility}
-        playheadBeat={fallingNotes.playheadBeat}
-        totalBeats={fallingNotes.totalBeats}
-        songBpm={fallingNotes.currentSongBpm}
-        onSeek={fallingNotes.seekToBeat}
-      />
-      <div id="falling-notes-canvas-container">
+      <div data-tour="piano.song-picker">
+        <FallingNotesSongPicker
+          onSongLoaded={fallingNotes.loadSong}
+          currentSong={fallingNotes.currentSong}
+          mutedTrackIds={fallingNotes.mutedTrackIds}
+          onToggleMute={fallingNotes.toggleTrackMute}
+          visibleTrackIds={fallingNotes.visibleTrackIds}
+          onToggleVisibility={fallingNotes.toggleTrackVisibility}
+          playheadBeat={fallingNotes.playheadBeat}
+          totalBeats={fallingNotes.totalBeats}
+          songBpm={fallingNotes.currentSongBpm}
+          onSeek={fallingNotes.seekToBeat}
+        />
+      </div>
+      <div id="falling-notes-canvas-container" data-tour="piano.canvas">
         <FallingNotesCanvas
           songNotes={fallingNotes.songNotes}
           gameState={fallingNotes.gameState}
