@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
 import { micManager } from '@/lib/mic-manager'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -251,6 +251,17 @@ export const useStemMixerMicController = (
       }
     }
   }
+
+  // Release the shared mic device if this panel unmounts while the mic is on
+  // (e.g. navigating away from Karaoke). Without this the 'stem-mixer' hold
+  // would leak, keeping the device open and leaving global mic state stale.
+  onCleanup(() => {
+    if (!micActive()) return
+    micGainNode?.disconnect()
+    micAnalyserNode?.disconnect()
+    monitorGainNode?.disconnect()
+    micManager.release('stem-mixer')
+  })
 
   return {
     micEnabled,
