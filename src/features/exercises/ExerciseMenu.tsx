@@ -227,8 +227,24 @@ function formatTime(ts: number): string {
   return `${diffDay}d ago`
 }
 
+/** Beginner-friendly drills to suggest before any history exists. */
+const STARTER_TYPES = [
+  EXERCISE_LONG_NOTE,
+  EXERCISE_SIREN,
+  EXERCISE_MIRROR_MELODY,
+  EXERCISE_PITCH_HOLD,
+]
+
 const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
   const recentEntries = createMemo(() => exerciseHistory().slice(0, 5))
+
+  // Pick a starter once on mount so the suggestion doesn't shuffle each render.
+  const starter =
+    CARDS.find(
+      (c) =>
+        c.type ===
+        STARTER_TYPES[Math.floor(Math.random() * STARTER_TYPES.length)],
+    ) ?? CARDS[0]
 
   return (
     <div class="exercises-panel">
@@ -239,10 +255,55 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         </span>
       </div>
 
-      <Show when={exerciseHistory().length > 0}>
+      {/* Practice intel: suggestions (or a getting-started nudge), then recent
+          sessions — always shows something so the area is never empty. */}
+      <Show
+        when={exerciseHistory().length > 0}
+        fallback={
+          <div class="weakness-panel">
+            <div class="weakness-panel-title-row">
+              <h3 class="weakness-panel-title">Get started</h3>
+            </div>
+            <p class="weakness-panel-subtitle">
+              You haven't done any exercises yet — warm up with{' '}
+              <button
+                class="exercise-start-link"
+                onClick={() => props.onQuickStart?.(starter.type)}
+              >
+                {starter.title}
+              </button>
+              .
+            </p>
+          </div>
+        }
+      >
         <WeaknessPanel
           onStartDrill={(type, config) => props.onQuickStart?.(type, config)}
         />
+      </Show>
+
+      <Show when={recentEntries().length > 0}>
+        <div class="exercise-recent">
+          <h4 class="exercise-recent-title">Recent Sessions</h4>
+          <div class="exercise-recent-list">
+            <For each={recentEntries()}>
+              {(entry) => (
+                <div class="exercise-recent-item">
+                  <span class="exercise-recent-type">{entry.type}</span>
+                  <span
+                    class="exercise-recent-score"
+                    style={`color:${entry.score >= 80 ? '#22c55e' : entry.score >= 50 ? '#eab308' : '#ef4444'}`}
+                  >
+                    {entry.score}%
+                  </span>
+                  <span class="exercise-recent-time">
+                    {formatTime(entry.completedAt)}
+                  </span>
+                </div>
+              )}
+            </For>
+          </div>
+        </div>
       </Show>
 
       <div class="exercises-grid">
@@ -300,30 +361,6 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
           }}
         </For>
       </div>
-
-      <Show when={recentEntries().length > 0}>
-        <div class="exercise-recent">
-          <h4 class="exercise-recent-title">Recent Sessions</h4>
-          <div class="exercise-recent-list">
-            <For each={recentEntries()}>
-              {(entry) => (
-                <div class="exercise-recent-item">
-                  <span class="exercise-recent-type">{entry.type}</span>
-                  <span
-                    class="exercise-recent-score"
-                    style={`color:${entry.score >= 80 ? '#22c55e' : entry.score >= 50 ? '#eab308' : '#ef4444'}`}
-                  >
-                    {entry.score}%
-                  </span>
-                  <span class="exercise-recent-time">
-                    {formatTime(entry.completedAt)}
-                  </span>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
-      </Show>
     </div>
   )
 }

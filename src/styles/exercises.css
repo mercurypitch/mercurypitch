@@ -186,10 +186,29 @@
   background: var(--accent-hover, #4f46e5);
 }
 
-/* ── Recent Sessions ──────────────────────────────────────── */
+/* Inline "start with X" link in the getting-started nudge. */
+.exercise-start-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-color, #818cf8);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.exercise-start-link:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Recent Sessions (sits in the practice-intel area, up top) ── */
 
 .exercise-recent {
-  margin-top: 24px;
+  /* Match the suggestions panel + gallery width and centre it. */
+  max-width: 1120px;
+  margin: 0 auto 16px;
 }
 
 .exercise-recent-title {
