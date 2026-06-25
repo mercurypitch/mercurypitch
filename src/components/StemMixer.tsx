@@ -32,7 +32,6 @@ import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, Sk
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
-import { MicInsightHint } from './MicInsightHint'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
@@ -555,6 +554,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   )
   const [showLyricNoteLabels, setShowLyricNoteLabels] =
     createPersistedSignal<boolean>('pitchperfect_show_lyric_note_labels', false)
+  // Plot the user's live mic pitch as a continuous red line over the vocal-stem
+  // line, and label the note on each red user outline.
+  const [showMicLine, setShowMicLine] = createPersistedSignal<boolean>(
+    'pitchperfect_show_mic_line',
+    false,
+  )
+  const [showUserNoteLabels, setShowUserNoteLabels] =
+    createPersistedSignal<boolean>('pitchperfect_show_user_note_labels', false)
 
   const whisper = useWhisperTranscription({
     getAudioBuffer: () => vocal().buffer,
@@ -706,6 +713,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     midiNotes,
     showNoteLabels,
     showLyricLabels,
+    showMicLine,
+    showUserNoteLabels,
     alignedWords: () => alignmentResult().alignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
@@ -1376,10 +1385,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       </Show>
 
       <Show when={!audio.loading() && !audio.loadError()}>
-        <MicInsightHint
-          message={micInsights.message}
-          style={{ margin: '4px auto', width: 'fit-content' }}
-        />
         <StemMixerTransport
           playing={audio.playing}
           elapsed={audio.elapsed}
@@ -1545,6 +1550,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           startWhisperTranscription={startWhisperTranscription}
           whisperLanguage={whisperLanguage}
           setWhisperLanguage={setWhisperLanguage}
+          showMicLine={showMicLine}
+          setShowMicLine={setShowMicLine}
+          showUserNoteLabels={showUserNoteLabels}
+          setShowUserNoteLabels={setShowUserNoteLabels}
+          micMessage={micInsights.message}
           showWaveform={showWaveform}
           showPitch={showPitch}
           showLyrics={showLyrics}

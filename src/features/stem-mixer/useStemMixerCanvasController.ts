@@ -33,6 +33,8 @@ export interface StemMixerCanvasDeps {
   midiNotes: Accessor<MidiNoteEvent[]>
   showNoteLabels: Accessor<boolean>
   showLyricLabels: Accessor<boolean>
+  showMicLine: Accessor<boolean>
+  showUserNoteLabels: Accessor<boolean>
   alignedWords: Accessor<AlignedWord[]>
   seekTo: (time: number) => void
   setWindowStart: Setter<number>
@@ -451,6 +453,7 @@ export const useStemMixerCanvasController = (
       merged: MergedNote[],
       fillStyle: string,
       strokeStyle?: string,
+      userNotes = false,
     ) => {
       for (const n of merged) {
         if (n.endSec < winStart || n.startSec > winEnd) continue
@@ -471,6 +474,14 @@ export const useStemMixerCanvasController = (
           ctx.setLineDash([3, 3])
           ctx.stroke()
           ctx.setLineDash([])
+        }
+        // Label the note the user actually sang, just above their red outline.
+        if (userNotes && deps.showUserNoteLabels() && pillW > 14) {
+          ctx.fillStyle = '#ff8fa3'
+          ctx.font = 'bold 8px monospace'
+          ctx.textAlign = 'left'
+          ctx.fillText(n.noteName, x1 + 2, Math.max(7, y - 2))
+          ctx.textAlign = 'start'
         }
         if (pillW > 24) {
           const showNotes = deps.showNoteLabels()
@@ -520,7 +531,41 @@ export const useStemMixerCanvasController = (
     const micHistory = deps.getMicPitchHistory()
     if (deps.micActive() && micHistory.length > 0) {
       const micPills = mergeConsecutiveNotes(toDetections(micHistory))
-      drawMergedNotes(micPills, 'transparent', '#ff6b8a')
+      drawMergedNotes(micPills, 'transparent', '#ff6b8a', true)
+    }
+
+    // Continuous red line tracking the user's live mic pitch (togglable),
+    // overlaid on the vocal-stem line so the user can follow how closely they
+    // match. Breaks across silent gaps and octave jumps so it doesn't draw
+    // misleading vertical streaks.
+    if (deps.showMicLine() && deps.micActive() && micHistory.length > 1) {
+      ctx.strokeStyle = 'rgba(255, 107, 138, 0.9)'
+      ctx.lineWidth = 1.5
+      ctx.lineJoin = 'round'
+      ctx.beginPath()
+      let drawing = false
+      let prevTime = 0
+      let prevY = 0
+      for (const p of micHistory) {
+        if (p.frequency <= 0 || p.time < winStart || p.time > winEnd) {
+          drawing = false
+          continue
+        }
+        const x = ((p.time - winStart) / winDur) * w
+        const pc = ((freqToMidi(p.frequency) % 12) + 12) % 12
+        const y = (11 - pc) * rowH + rowH * 0.5
+        const gap = p.time - prevTime > 0.18
+        const jump = Math.abs(y - prevY) > rowH * 6
+        if (!drawing || gap || jump) {
+          ctx.moveTo(x, y)
+          drawing = true
+        } else {
+          ctx.lineTo(x, y)
+        }
+        prevTime = p.time
+        prevY = y
+      }
+      ctx.stroke()
     }
 
     // Diff bars

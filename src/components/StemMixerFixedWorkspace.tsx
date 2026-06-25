@@ -8,6 +8,7 @@ import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { karaokeFocus } from '@/stores/ui-store'
+import { MicInsightHint } from './MicInsightHint'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
@@ -60,6 +61,13 @@ interface StemMixerFixedWorkspaceProps {
   setShowLyricLabels: Setter<boolean>
   showLyricNoteLabels: Accessor<boolean>
   setShowLyricNoteLabels: Setter<boolean>
+  showMicLine: Accessor<boolean>
+  setShowMicLine: Setter<boolean>
+  showUserNoteLabels: Accessor<boolean>
+  setShowUserNoteLabels: Setter<boolean>
+
+  // Mic-feedback message, shown in the Vocal Pitch panel header.
+  micMessage: Accessor<string>
 
   // Whisper alignment
   whisperStatus: Accessor<string>
@@ -497,11 +505,19 @@ export const StemMixerFixedWorkspace: Component<
                       Transcribe
                     </button>
                   </Show>
+                  <MicInsightHint
+                    message={props.micMessage}
+                    style={{ 'margin-left': 'auto', 'font-size': '0.7rem' }}
+                  />
                   <PitchCanvasToolbar
                     showNoteLabels={props.showNoteLabels}
                     setShowNoteLabels={props.setShowNoteLabels}
                     showLyricLabels={props.showLyricLabels}
                     setShowLyricLabels={props.setShowLyricLabels}
+                    showMicLine={props.showMicLine}
+                    setShowMicLine={props.setShowMicLine}
+                    showUserNoteLabels={props.showUserNoteLabels}
+                    setShowUserNoteLabels={props.setShowUserNoteLabels}
                   />
                 </div>
                 <canvas
