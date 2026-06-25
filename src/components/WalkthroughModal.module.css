@@ -515,6 +515,28 @@
   filter: brightness(1.15);
 }
 
+/* "Take the interactive tour" bridge — accent-tinted pill below the description */
+.walkthroughTourBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 14px;
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.82rem;
+  transition: all 0.2s;
+}
+
+.walkthroughTourBtn:hover {
+  background: var(--accent);
+  color: white;
+}
+
 /* Responsive: narrow viewports */
 @media (max-width: 480px) {
   .walkthroughBody {
