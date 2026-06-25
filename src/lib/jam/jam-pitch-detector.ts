@@ -60,6 +60,15 @@ export class JamPitchDetector {
     return null
   }
 
+  /** Latest RMS input level (0–1) for mic-feedback insights; 0 when stopped. */
+  getInputLevel(): number {
+    if (!this.running) return 0
+    const d = this.timeData
+    let sum = 0
+    for (let i = 0; i < d.length; i++) sum += d[i] * d[i]
+    return d.length > 0 ? Math.sqrt(sum / d.length) : 0
+  }
+
   private loop = (): void => {
     if (!this.running || !this.analyser) return
     this.analyser.getFloatTimeDomainData(

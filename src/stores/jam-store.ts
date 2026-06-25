@@ -449,6 +449,11 @@ export function sendJamChatMessage(text: string): void {
 
 // ── Pitch detection ──────────────────────────────────────────────────
 
+/** Latest RMS mic input level (0–1) for mic-feedback insights; 0 when off. */
+export function jamGetInputLevel(): number {
+  return pitchDetector?.getInputLevel() ?? 0
+}
+
 export function startJamPitchDetection(): void {
   if (pitchDetector) return
   const stream = jamService?.getLocalStream()

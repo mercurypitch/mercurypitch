@@ -3,8 +3,10 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
+import { MicInsightHint } from '@/components/MicInsightHint'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -30,6 +32,14 @@ export const JamPanel: Component = () => {
   const [linkCopied, setLinkCopied] = createSignal(false)
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
+
+  // Mic feedback: "can't hear you" / "too quiet" during a jam exercise.
+  const micInsights = useMicInsights({
+    micActive: () => jamState() === 'active' && !jamIsMuted(),
+    isPlaying: jamExercisePlaying,
+    getLevel: jamGetInputLevel,
+    isDetecting: () => (jamLocalPitch()?.frequency ?? 0) > 0,
+  })
 
   const roomLink = createMemo(
     () => `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`,
@@ -281,6 +291,10 @@ export const JamPanel: Component = () => {
               </div>
               <JamPeerList peers={jamPeers()} />
               <JamPitchDisplay />
+              <MicInsightHint
+                message={micInsights.message}
+                style={{ margin: '6px auto 0', width: 'fit-content' }}
+              />
             </div>
           </div>
           {/* ── Main content ───────────────────────────────────── */}

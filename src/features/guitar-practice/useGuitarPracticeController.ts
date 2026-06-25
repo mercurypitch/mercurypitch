@@ -3,6 +3,7 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
@@ -761,6 +762,9 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     startMic,
     stopMic,
     isMicActive: micOn,
+    /** RMS mic input level (0–1) for mic-feedback insights; 0 when mic off. */
+    getInputLevel: () =>
+      micOn() ? rmsOfTimeData(audioEngine.getTimeData()) : 0,
     midiConnect,
     midiDisconnect,
     midiConnected,
