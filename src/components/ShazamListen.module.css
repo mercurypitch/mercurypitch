@@ -280,6 +280,39 @@
   color: var(--color-text, #e2e8f0);
 }
 
+/* Icon sizing — the shared icon components render at a fixed 24px, which dwarfs
+   these small button labels after the icon migration. Lay the icon out beside
+   the label and scale it to the text. */
+.speechToggle,
+.debugToggle,
+.stopBtn,
+.cancelBtn,
+.retryBtn,
+.uploadLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.speechToggle svg,
+.debugToggle svg {
+  width: 13px;
+  height: 13px;
+}
+
+.stopBtn svg,
+.cancelBtn svg,
+.retryBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.uploadLink svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Auto-mode toggle */
 
 .autoMode {
