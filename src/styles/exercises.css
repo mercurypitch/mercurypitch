@@ -16,7 +16,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  max-width: 1120px;
+  margin: 0 auto 18px;
 }
 
 .exercises-header h2 {
@@ -27,40 +28,66 @@
 
 .exercises-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 360px));
-  gap: 14px;
-  max-width: 1140px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 280px));
+  gap: 12px;
+  max-width: 1120px;
+  /* Centered gallery rather than left-aligned. */
+  margin: 0 auto;
+  justify-content: center;
 }
 
 .exercise-card {
-  padding: 16px;
-  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 13px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   cursor: pointer;
   transition:
     transform 0.15s,
-    box-shadow 0.15s;
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .exercise-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  border-color: var(--accent-color, #6366f1);
+}
+
+/* Icon + title share a compact header row to save vertical space. */
+.exercise-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
 .exercise-card-icon {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: var(--bg-accent, rgba(99, 102, 241, 0.12));
+  color: var(--accent-color, #818cf8);
 }
 
 .exercise-card h3 {
-  font-size: 0.95rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 .exercise-card p {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   margin: 0 0 8px;
   line-height: 1.35;
@@ -68,16 +95,19 @@
 
 .exercise-card-tags {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
+/* Pill badges for the skill tags (Vibrato, Control, …). */
 .exercise-card-tags span {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  background: var(--bg-accent);
-  color: var(--text-accent);
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--bg-accent, rgba(99, 102, 241, 0.1));
+  color: var(--text-accent, #a5b4fc);
 }
 
 /* ── Exercise Card Stats ──────────────────────────────────── */
@@ -132,17 +162,24 @@
 /* ── Exercise Card Start Button ────────────────────────────── */
 
 .exercise-card-start-btn {
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px 0;
-  border-radius: 6px;
+  align-self: center;
+  /* Clear gap from the tags/stats above so it never touches them. */
+  margin-top: 12px;
+  padding: 5px 22px;
+  border-radius: 999px;
   border: none;
   background: var(--accent-color, #6366f1);
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.exercise-card-start-btn:active {
+  transform: scale(0.96);
 }
 
 .exercise-card-start-btn:hover {

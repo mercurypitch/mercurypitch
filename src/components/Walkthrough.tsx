@@ -133,8 +133,12 @@ export const Walkthrough: Component = () => {
       r.top < -margin || r.bottom > window.innerHeight + margin
     if (!needsScroll) return
 
-    // Use instant scroll so highlight/tooltip update immediately
-    el.scrollIntoView({ behavior: 'auto', block: 'center' })
+    // Targets taller than most of the viewport (e.g. a full card grid) look
+    // wrong centered — it scrolls past their top. Align those to the top
+    // instead; center everything else. Instant scroll so highlight/tooltip
+    // update immediately.
+    const tall = r.height > window.innerHeight * 0.8
+    el.scrollIntoView({ behavior: 'auto', block: tall ? 'start' : 'center' })
     // Re-position after scroll (needs one frame for layout)
     requestAnimationFrame(() => {
       updateHighlight()
