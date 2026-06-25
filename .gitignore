@@ -42,6 +42,9 @@ public/assets/
 
 **/**/*.patch
 
+# Local DevSecOps audit telemetry (semgrep/gitleaks/nuclei/eslint scan output)
+.audit_telemetry/
+
 # wrangler files
 .wrangler
 .dev.vars*
