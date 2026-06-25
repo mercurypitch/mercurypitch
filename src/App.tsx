@@ -12,7 +12,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { MusicBoard, SlidersHorizontal } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
-import { MicQuietHint } from '@/components/MicQuietHint'
+import { MicInsightHint } from '@/components/MicInsightHint'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
@@ -52,7 +52,7 @@ import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
-import { useMicLevelMonitor } from '@/features/mic-feedback/useMicLevelMonitor'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
@@ -903,9 +903,11 @@ const AppShell: Component<AppProps> = (props) => {
   // Offer a page's spotlight tour the first time it's visited.
   usePageTourOffer(activeTab)
 
-  // Live mic-level monitor → "we hear you but it's too quiet" hint.
-  const micLevel = useMicLevelMonitor({
+  // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
+  const micInsights = useMicInsights({
+    enabled: () => activeTab() === TAB_SINGING,
     micActive,
+    isPlaying,
     getLevel: () => practiceEngine.getInputLevel(),
     isDetecting: () => (currentPitch()?.frequency ?? 0) > 0,
   })
@@ -1508,8 +1510,16 @@ const AppShell: Component<AppProps> = (props) => {
                           onEnd={handleSessionEnd}
                         />
                         {/* Centered over the session status bar */}
-                        <MicQuietHint
-                          when={() => micActive() && micLevel.tooQuiet()}
+                        <MicInsightHint
+                          message={micInsights.message}
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            'z-index': '6',
+                            'white-space': 'nowrap',
+                          }}
                         />
                       </div>
                     </Show>
