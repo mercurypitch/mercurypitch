@@ -4,6 +4,7 @@
 
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { micManager } from '@/lib/mic-manager'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
@@ -102,8 +103,8 @@ export const useStemMixerMicController = (
     0.8,
   )
 
-  // Mic refs (not signals — no reactivity needed in RAF loop)
-  let micStream: MediaStream | null = null
+  // Mic refs (not signals — no reactivity needed in RAF loop). The capture
+  // stream itself is owned by the shared MicManager, not held here.
   let micGainNode: GainNode | null = null
   let micAnalyserNode: AnalyserNode | null = null
   let monitorGainNode: GainNode | null = null
@@ -194,16 +195,17 @@ export const useStemMixerMicController = (
   // ── Mic Toggle ──────────────────────────────────────────────
   const toggleMic = async () => {
     if (micActive()) {
-      micStream?.getTracks().forEach((t) => t.stop())
+      // Disconnect our own nodes; the MicManager owns the device and stops the
+      // tracks once no other feature holds them.
       micGainNode?.disconnect()
       micAnalyserNode?.disconnect()
       monitorGainNode?.disconnect()
-      micStream = null
       micGainNode = null
       micAnalyserNode = null
       monitorGainNode = null
       micPitchDetector = null
       micPitchHistory = []
+      micManager.release('stem-mixer')
       setMicActive(false)
       setMicEnabled(false)
       setMicPitch(null)
@@ -211,13 +213,7 @@ export const useStemMixerMicController = (
     } else {
       try {
         const ctx = deps.getAudioCtx() ?? deps.ensureAudioCtx()
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-          },
-        })
+        const stream = await micManager.acquire('stem-mixer')
         const source = ctx.createMediaStreamSource(stream)
         micGainNode = ctx.createGain()
         micGainNode.gain.value = 1.0
@@ -237,7 +233,6 @@ export const useStemMixerMicController = (
           minAmplitude: 0.01,
         })
 
-        micStream = stream
         micPitchHistory = []
         setComparisonData([])
         setScore(null)
@@ -247,15 +242,10 @@ export const useStemMixerMicController = (
         setMicPitch(null)
         setMicError('')
       } catch (err: unknown) {
-        const e = err as DOMException | Error | undefined
+        // MicManager rejects with a classified { kind, message }.
         const msg =
-          e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError'
-            ? 'Microphone access denied'
-            : e !== undefined &&
-                'message' in e &&
-                typeof (e as Error).message === 'string'
-              ? (e as Error).message
-              : 'Microphone unavailable'
+          (err as { message?: string } | null | undefined)?.message ??
+          'Microphone unavailable'
         setMicError(msg)
         setMicEnabled(false)
       }
