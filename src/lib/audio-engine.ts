@@ -706,8 +706,11 @@ export class AudioEngine {
 
       console.info('[AudioEngine] Requesting microphone access...')
 
-      // The shared MicManager owns the device (ref-counted across features);
-      // we just borrow its stream and wire it into our analyser graph.
+      // The shared MicManager owns the device (ref-counted across features) and
+      // captures with the raw analysis profile — echoCancellation /
+      // noiseSuppression / autoGainControl all off (ANALYSIS_CONSTRAINTS in
+      // mic-manager.ts), exactly the constraints this engine requested before.
+      // We just borrow its stream and wire it into our analyser graph.
       this.micStream = await micManager.acquire(this.micConsumerId)
 
       const ctx = this.audioCtx
