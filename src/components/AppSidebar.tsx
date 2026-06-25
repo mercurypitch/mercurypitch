@@ -234,7 +234,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <div class={styles.sidebarSection}>
           <h2 class={styles.panelTitle}>Playback Setup</h2>
 
-          <div class={styles.scaleInfo}>
+          <div class={styles.scaleInfo} data-tour="singing.key-scale">
             <SafeSelect
               class={['dropdown-select-style', styles.keySelect].join(' ')}
               id="key-select"

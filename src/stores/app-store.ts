@@ -986,7 +986,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Scale & Key',
-    targetSelector: '#scale-info',
+    targetSelector: '[data-tour="singing.key-scale"]',
     description:
       'Choose your musical key and scale type here. The piano roll updates to match your selection automatically.',
     placement: 'right',
@@ -995,7 +995,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Load a Melody',
-    targetSelector: '.library-tab',
+    targetSelector: '[data-tour="singing.library"]',
     description:
       'Load a preset melody from the library, import a MIDI file, or record your own. Presets give you a great head start.',
     placement: 'right',
@@ -1013,7 +1013,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Play / Pause / Stop',
-    targetSelector: '.essential-controls',
+    targetSelector: '[data-tour="transport.essential"]',
     description:
       'Play starts the backing track, Pause halts it temporarily, and Stop returns to the beginning.',
     placement: 'bottom',
@@ -1087,7 +1087,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   // ── Editor Section ──
   {
     title: 'Editor Tab',
-    targetSelector: '#editor-panel',
+    targetSelector: '[data-tour="compose.editor"]',
     description:
       'The Editor tab lets you build and modify melodies. Click to switch here to explore.',
     placement: 'bottom',
@@ -1096,7 +1096,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Piano Roll',
-    targetSelector: '.piano-roll-container',
+    targetSelector: '[data-tour="compose.piano-roll"]',
     description:
       'Click on the grid to add notes. Drag them to adjust pitch or timing. Right-click a note to delete it.',
     placement: 'bottom',
@@ -1108,15 +1108,6 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     targetSelector: '#record-btn',
     description:
       'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll.',
-    placement: 'bottom',
-    section: 'editor',
-    requiredTab: TAB_COMPOSE,
-  },
-  {
-    title: 'Save Melody',
-    targetSelector: '#save-melody-btn',
-    description:
-      'Save your melody to the library so you can load it later in Practice mode.',
     placement: 'bottom',
     section: 'editor',
     requiredTab: TAB_COMPOSE,
@@ -1181,7 +1172,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Practice Aids',
-    targetSelector: '#set-tonic-anchor',
+    targetSelector: '[data-tour="settings.practice-aids"]',
     description:
       'Tonic anchor gives a reference tone before singing, helping you stay in key.',
     placement: 'left',

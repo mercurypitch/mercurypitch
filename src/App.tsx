@@ -1603,7 +1603,10 @@ const AppShell: Component<AppProps> = (props) => {
                     onWaveToggle={toggleMicWaveVisible}
                   />
 
-                  <div class={styles.editorViewToggle}>
+                  <div
+                    class={styles.editorViewToggle}
+                    data-tour="compose.editor"
+                  >
                     <button
                       class={styles.viewBtn}
                       classList={{

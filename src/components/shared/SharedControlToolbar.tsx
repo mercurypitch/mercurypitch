@@ -155,7 +155,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   return (
     <div class={styles.practiceHeaderBar} data-testid="practice-header-bar">
       {/* Essential controls (always visible on mobile) */}
-      <div class={styles.essentialControls}>
+      <div class={styles.essentialControls} data-tour="transport.essential">
         {/* Mic — enabled even during playback (UX requirement) */}
         {props.onMicToggle && (
           <div class={styles.essentialControlGroup}>
