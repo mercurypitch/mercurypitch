@@ -37,7 +37,7 @@ export const GuitarFretboardModeTabs: Component<
   GuitarFretboardModeTabsProps
 > = (props) => {
   return (
-    <div class="gp-key-scale-group">
+    <div class="gp-key-scale-group" data-tour="guitar.mode-select">
       <label class="gp-key-scale-label">Mode</label>
       <select
         class="gp-key-scale-select"

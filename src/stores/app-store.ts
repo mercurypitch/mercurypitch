@@ -3,7 +3,7 @@ import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_GUITAR, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -1298,6 +1298,83 @@ export function startWalkthrough(sectionIds?: string[]): void {
   const sections = sectionIds ?? GUIDE_SECTIONS.map((s) => s.id)
   const steps = buildStepsFromSections(sections)
   if (steps.length === 0) return
+  setTourSteps(steps)
+  setWalkthroughActive(true)
+  setWalkthroughStep(0)
+}
+
+// ── Per-page spotlight tours ─────────────────────────────────────────
+// Page-scoped tours that target stable [data-tour="<page>.<thing>"] hooks
+// (decoupled from CSS/test ids so refactors don't break them). Started via
+// startPageTour(tab); offered per page by usePageTourOffer.
+
+const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Two ways to play',
+    description:
+      'Switch between Practice (play along with falling notes) and Fretboard (interactive learning).',
+    targetSelector: '[data-tour="guitar.view-toggle"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+  },
+  {
+    title: 'Pick your sound',
+    description:
+      'Choose acoustic, electric, or bass — the guitar synth switches instantly.',
+    targetSelector: '[data-tour="guitar.instruments"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+  },
+  {
+    title: 'Load a song',
+    description:
+      'Load a MIDI song to play along with, mute or solo tracks, and seek the timeline.',
+    targetSelector: '[data-tour="guitar.song-picker"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+  },
+  {
+    title: 'The fretboard',
+    description:
+      'Play notes on the interactive neck (or your real guitar via mic / MIDI). In Fretboard view, the Mode dropdown unlocks note quiz, ear training, CAGED, chord progressions, adaptive jam and more.',
+    targetSelector: '[data-tour="guitar.fretboard"]',
+    placement: 'top',
+    requiredTab: TAB_GUITAR,
+  },
+]
+
+const PIANO_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Load a song',
+    description:
+      'Pick a MIDI song; mute or solo tracks and seek along the timeline.',
+    targetSelector: '[data-tour="piano.song-picker"]',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+  },
+  {
+    title: 'Play the falling notes',
+    description:
+      'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring.',
+    targetSelector: '[data-tour="piano.canvas"]',
+    placement: 'top',
+    requiredTab: TAB_PIANO,
+  },
+]
+
+export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
+  [TAB_GUITAR]: GUITAR_TOUR_STEPS,
+  [TAB_PIANO]: PIANO_TOUR_STEPS,
+}
+
+export function hasPageTour(tab: ActiveTab): boolean {
+  return (PAGE_TOURS[tab]?.length ?? 0) > 0
+}
+
+/** Start the spotlight tour for a given tab (no-op if it has none). */
+export function startPageTour(tab: ActiveTab): void {
+  const steps = PAGE_TOURS[tab]
+  if (steps === undefined || steps.length === 0) return
   setTourSteps(steps)
   setWalkthroughActive(true)
   setWalkthroughStep(0)

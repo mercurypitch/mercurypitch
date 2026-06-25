@@ -125,7 +125,7 @@ export function GuitarPage(props: GuitarPageProps) {
         midiConnected={guitar.midiConnected}
       />
       <div class="gp-header-controls">
-        <div class="gp-header-left">
+        <div class="gp-header-left" data-tour="guitar.song-picker">
           <GuitarPracticeSongPicker
             onSongLoaded={guitar.loadSong}
             currentSong={guitar.currentSong}
@@ -140,7 +140,7 @@ export function GuitarPage(props: GuitarPageProps) {
           />
         </div>
         <div class="gp-header-right">
-          <div class="gp-instrument-selector">
+          <div class="gp-instrument-selector" data-tour="guitar.instruments">
             <span class="gp-instrument-label">Sound:</span>
             <For
               each={
@@ -174,10 +174,12 @@ export function GuitarPage(props: GuitarPageProps) {
               )}
             </For>
           </div>
-          <GuitarViewToggle
-            activeView={guitarView}
-            onViewChange={setGuitarView}
-          />
+          <div data-tour="guitar.view-toggle">
+            <GuitarViewToggle
+              activeView={guitarView}
+              onViewChange={setGuitarView}
+            />
+          </div>
         </div>
       </div>
       <Show when={guitarView() === 'interactive'}>
@@ -568,7 +570,7 @@ export function GuitarPage(props: GuitarPageProps) {
           </div>
         </div>
       </Show>
-      <div id="guitar-fretboard-container">
+      <div id="guitar-fretboard-container" data-tour="guitar.fretboard">
         <Show
           when={guitarView() === 'interactive'}
           fallback={
