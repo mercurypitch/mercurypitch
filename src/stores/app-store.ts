@@ -3,7 +3,7 @@ import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
-import { TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -1433,9 +1433,195 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Three analysis tools',
+    description:
+      'Switch between Vocal Analysis, Pitch Detection, and Pitch Algorithms — the tour will visit each.',
+    targetSelector: '[data-tour="analysis.subtabs"]',
+    placement: 'bottom',
+    requiredTab: TAB_ANALYSIS,
+  },
+  {
+    title: 'Vocal Analysis',
+    description:
+      'Deep-dive a recording or your session history: pitch accuracy, range, vibrato and trends over time.',
+    targetSelector: '[data-tour="analysis.vocal"]',
+    placement: 'top',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Vocal Analysis"]'],
+  },
+  {
+    title: 'Pitch Detection',
+    description:
+      'Test the real-time detector against audio files, your mic, or generated tones to see how it tracks pitch.',
+    targetSelector: '[data-tour="analysis.detection"]',
+    placement: 'top',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Pitch Detection"]'],
+  },
+  {
+    title: 'Pitch Algorithms',
+    description:
+      'Benchmark the detection algorithms head-to-head on the same signal to compare accuracy and latency.',
+    targetSelector: '[data-tour="analysis.algorithms"]',
+    placement: 'top',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Pitch Algorithms"]'],
+  },
+]
+
+const EXERCISES_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Singing exercises',
+    description:
+      'Focused drills for breath control, intervals, agility, range and more — each builds a specific skill.',
+    targetSelector: '.exercises-header',
+    placement: 'bottom',
+    requiredTab: TAB_EXERCISES,
+  },
+  {
+    title: 'Pick a drill',
+    description:
+      'Browse the exercise library. Cards are grouped by skill — tap one to start.',
+    targetSelector: '.exercises-grid',
+    placement: 'top',
+    requiredTab: TAB_EXERCISES,
+  },
+  {
+    title: 'Start an exercise',
+    description:
+      'Each card explains the drill and its difficulty. Hit Start to jump straight into guided practice with live pitch feedback.',
+    targetSelector: '.exercise-card',
+    placement: 'bottom',
+    requiredTab: TAB_EXERCISES,
+  },
+]
+
+const JAM_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Pick a name',
+    description:
+      'Set the display name other singers will see when you jam together in real time.',
+    targetSelector: '#jam-display-name',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'Create a room',
+    description:
+      'Start a new jam room and share the code, then practice or perform together with synced playback.',
+    targetSelector: '.jam-actions',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'Join a room',
+    description:
+      'Already have a room code from a friend? Enter it here to hop into their session.',
+    targetSelector: '#jam-room-id',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+]
+
+const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Share your work',
+    description:
+      'Publish a melody, session or exercise so other singers can try it — these buttons start a share.',
+    targetSelector: '.community-header',
+    placement: 'bottom',
+    requiredTab: TAB_COMMUNITY,
+  },
+  {
+    title: 'Browse the community',
+    description:
+      'Switch between shared melodies, practice sessions, and your public profile.',
+    targetSelector: '.community-tabs',
+    placement: 'bottom',
+    requiredTab: TAB_COMMUNITY,
+  },
+  {
+    title: 'The feed',
+    description:
+      'Load and play what others have shared, or open a melody straight into practice.',
+    targetSelector: '.community-content',
+    placement: 'top',
+    requiredTab: TAB_COMMUNITY,
+  },
+]
+
+const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Global, friends, weekly',
+    description:
+      "Compare yourself against everyone, just your friends, or this week's climbers.",
+    targetSelector: '.leaderboard-tabs',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
+    title: 'Rank by metric',
+    description:
+      'Sort the board by overall score, best score, accuracy, streak or sessions.',
+    targetSelector: '.category-tabs',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
+    title: 'Top of the board',
+    description: 'The current top three singers for the selected metric.',
+    targetSelector: '.podium-section',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
+    title: 'Full rankings',
+    description:
+      'The complete table — find your row and see what it takes to climb.',
+    targetSelector: '.leaderboard-table',
+    placement: 'top',
+    requiredTab: TAB_LEADERBOARD,
+  },
+]
+
+const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Challenge categories',
+    description:
+      'High notes, low notes, speed, perfect pitch, scales and more — each category has its own set.',
+    targetSelector: '.category-tabs',
+    placement: 'bottom',
+    requiredTab: TAB_CHALLENGES,
+  },
+  {
+    title: 'Take on a challenge',
+    description:
+      'Pick a challenge card to attempt it. Your progress and status are tracked per challenge.',
+    targetSelector: '.challenges-grid',
+    placement: 'top',
+    requiredTab: TAB_CHALLENGES,
+  },
+  {
+    title: 'Earn badges',
+    description:
+      'Completing challenges unlocks badges that show up here — collect them all.',
+    targetSelector: '.badges-section',
+    placement: 'top',
+    requiredTab: TAB_CHALLENGES,
+  },
+]
+
 export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_GUITAR]: GUITAR_TOUR_STEPS,
   [TAB_PIANO]: PIANO_TOUR_STEPS,
+  [TAB_ANALYSIS]: ANALYSIS_TOUR_STEPS,
+  [TAB_EXERCISES]: EXERCISES_TOUR_STEPS,
+  [TAB_JAM]: JAM_TOUR_STEPS,
+  [TAB_COMMUNITY]: COMMUNITY_TOUR_STEPS,
+  [TAB_LEADERBOARD]: LEADERBOARD_TOUR_STEPS,
+  [TAB_CHALLENGES]: CHALLENGES_TOUR_STEPS,
 }
 
 export function hasPageTour(tab: ActiveTab): boolean {
