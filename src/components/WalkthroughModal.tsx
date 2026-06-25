@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { TAB_COMPOSE, TAB_KARAOKE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
-import { hasPageTour, startPageTour, startTour, startWalkthrough as startSectionTour, STEM_MIXER_TOUR_STEPS, } from '@/stores'
+import { hasPageTour, PRACTICE_MODES_TOUR_STEPS, startPageTour, startTour, startWalkthrough as startSectionTour, STEM_MIXER_TOUR_STEPS, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from '@/types'
@@ -117,32 +117,45 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     props.onBackToList?.()
   }
 
-  // Bridge: a tutorial's tab -> its matching spotlight tour.
-  // Singing/Compose/Settings map to a legacy GUIDE_SECTIONS id.
+  // Bridge: a tutorial -> its matching spotlight tour. Tab-level mapping is the
+  // default; specific tutorials override it so e.g. "Understanding Practice
+  // Modes" opens the focused practice-modes tour rather than the generic
+  // Singing tour.
   const SECTION_FOR_TAB: Partial<Record<WalkthroughTab, string>> = {
     [TAB_SINGING]: 'practice',
     [TAB_COMPOSE]: 'editor',
     [TAB_SETTINGS]: 'settings',
   }
 
+  // Per-tutorial-id overrides (more specific than the tab default).
+  const TOUR_BY_ID: Record<string, () => void> = {
+    'practice-toolbar': () => startSectionTour(['toolbar']),
+    'practice-modes': () => startTour(PRACTICE_MODES_TOUR_STEPS),
+  }
+
   const tourAvailable = () => {
-    const tab = currentWalkthrough()?.tab
-    if (!tab) return false
-    if (tab === TAB_KARAOKE) return true
-    if (hasPageTour(tab as ActiveTab)) return true
-    return tab in SECTION_FOR_TAB
+    const w = currentWalkthrough()
+    if (!w) return false
+    if (w.id in TOUR_BY_ID) return true
+    if (w.tab === TAB_KARAOKE) return true
+    if (hasPageTour(w.tab as ActiveTab)) return true
+    return w.tab in SECTION_FOR_TAB
   }
 
   const handleTakeTour = () => {
-    const tab = currentWalkthrough()?.tab
-    if (!tab) return
+    const w = currentWalkthrough()
+    if (!w) return
     props.onClose() // hand off cleanly to the spotlight overlay
-    if (tab === TAB_KARAOKE) {
+    if (w.id in TOUR_BY_ID) {
+      TOUR_BY_ID[w.id]()
+      return
+    }
+    if (w.tab === TAB_KARAOKE) {
       startTour(STEM_MIXER_TOUR_STEPS)
-    } else if (hasPageTour(tab as ActiveTab)) {
-      startPageTour(tab as ActiveTab)
+    } else if (hasPageTour(w.tab as ActiveTab)) {
+      startPageTour(w.tab as ActiveTab)
     } else {
-      const section = SECTION_FOR_TAB[tab]
+      const section = SECTION_FOR_TAB[w.tab]
       if (section !== undefined) startSectionTour([section])
     }
   }
