@@ -4,6 +4,8 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -30,6 +32,7 @@ import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, Sk
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import { MicInsightHint } from './MicInsightHint'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
@@ -290,6 +293,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Backfill audio ctx holders for mic controller
   audioCtxForMic.getAudioCtx = () => audio.getAudioCtx()
   audioCtxForMic.ensureAudioCtx = () => audio.ensureAudioCtx()
+
+  // Mic feedback: "can't hear you" / "too quiet" while a song plays.
+  const micInsights = useMicInsights({
+    micActive: mic.micActive,
+    isPlaying: audio.playing,
+    getLevel: () => rmsOfAnalyser(mic.getMicAnalyserNode()),
+    isDetecting: () => (mic.micPitch()?.frequency ?? 0) > 0,
+  })
 
   // ── Karaoke playlist integration ─────────────────────────────
   const [playlistSidebarOpen, setPlaylistSidebarOpen] = createPersistedSignal(
@@ -1365,6 +1376,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       </Show>
 
       <Show when={!audio.loading() && !audio.loadError()}>
+        <MicInsightHint
+          message={micInsights.message}
+          style={{ margin: '4px auto', width: 'fit-content' }}
+        />
         <StemMixerTransport
           playing={audio.playing}
           elapsed={audio.elapsed}

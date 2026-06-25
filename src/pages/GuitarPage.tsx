@@ -8,9 +8,11 @@ import { GuitarPracticeSongPicker } from '@/components/guitar/GuitarPracticeSong
 import { GuitarViewToggle } from '@/components/guitar/GuitarViewToggle'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
+import { MicInsightHint } from '@/components/MicInsightHint'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
@@ -34,6 +36,17 @@ export function GuitarPage(props: GuitarPageProps) {
   const { audioEngine } = useEngines()
   const ctx = useGuitar()
   const guitar = ctx.guitar
+
+  // Mic feedback: "can't hear you" / "too quiet" while playing along.
+  const micInsights = useMicInsights({
+    micActive: guitar.isMicActive,
+    isPlaying: () =>
+      guitar.gameState() === 'playing' || guitar.gameState() === 'countdown',
+    getLevel: guitar.getInputLevel,
+    isDetecting: () =>
+      guitar.detectedMidi() !== null || guitar.detectedClarity() > 0,
+  })
+
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm
   const setDrumBpm = ctx.setDrumBpm
@@ -570,7 +583,22 @@ export function GuitarPage(props: GuitarPageProps) {
           </div>
         </div>
       </Show>
-      <div id="guitar-fretboard-container" data-tour="guitar.fretboard">
+      <div
+        id="guitar-fretboard-container"
+        data-tour="guitar.fretboard"
+        style={{ position: 'relative' }}
+      >
+        <MicInsightHint
+          message={micInsights.message}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            'z-index': '6',
+            'white-space': 'nowrap',
+          }}
+        />
         <Show
           when={guitarView() === 'interactive'}
           fallback={

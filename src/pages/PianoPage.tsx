@@ -2,8 +2,10 @@ import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from '@/components/FallingNotesSongPicker'
+import { MicInsightHint } from '@/components/MicInsightHint'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, TAB_PIANO, } from '@/features/tabs/constants'
 import { activeTab, countIn } from '@/stores'
 
@@ -22,6 +24,14 @@ interface PianoPageProps {
 /** Piano tab (TAB_PIANO): falling-notes game with toolbar + song picker. */
 export function PianoPage(props: PianoPageProps) {
   const fallingNotes = props.fallingNotes
+
+  // Mic feedback: "can't hear you" / "too quiet" while playing the game.
+  const micInsights = useMicInsights({
+    micActive: fallingNotes.isMicActive,
+    isPlaying: () => fallingNotes.gameState() === 'playing',
+    getLevel: fallingNotes.getInputLevel,
+    isDetecting: () => (fallingNotes.currentPitch()?.frequency ?? 0) > 0,
+  })
 
   return (
     <div id="falling-notes-panel">
@@ -105,7 +115,22 @@ export function PianoPage(props: PianoPageProps) {
           onSeek={fallingNotes.seekToBeat}
         />
       </div>
-      <div id="falling-notes-canvas-container" data-tour="piano.canvas">
+      <div
+        id="falling-notes-canvas-container"
+        data-tour="piano.canvas"
+        style={{ position: 'relative' }}
+      >
+        <MicInsightHint
+          message={micInsights.message}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            'z-index': '6',
+            'white-space': 'nowrap',
+          }}
+        />
         <FallingNotesCanvas
           songNotes={fallingNotes.songNotes}
           gameState={fallingNotes.gameState}

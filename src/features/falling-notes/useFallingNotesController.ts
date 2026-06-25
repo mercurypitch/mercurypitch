@@ -4,6 +4,7 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
 import type { MidiNoteEvent } from '@/lib/midi-engine'
@@ -723,6 +724,9 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     startMic,
     stopMic,
     isMicActive: micOn,
+    /** RMS mic input level (0–1) for mic-feedback insights; 0 when mic off. */
+    getInputLevel: () =>
+      micOn() ? rmsOfTimeData(audioEngine.getTimeData()) : 0,
     midiConnect,
     midiDisconnect,
     midiHeldNotes,
