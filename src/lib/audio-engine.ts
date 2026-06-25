@@ -7,6 +7,7 @@ import type { CharacterName } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 import { createBassVoice, createGuitarVoice } from './guitar/guitar-synth'
+import { micManager } from './mic-manager'
 import { UvrProcessor } from './uvr-processor'
 
 export interface AudioEngineCallbacks {
@@ -89,6 +90,11 @@ export class AudioEngine {
   // Microphone
   private micStream: MediaStream | null = null
   private micSource: MediaStreamAudioSourceNode | null = null
+  // Unique per-instance id for the shared MicManager. Several AudioEngine
+  // instances exist (EngineContext, pitch canvases, etc.); each must hold the
+  // shared device under its own id so releases are ref-counted correctly.
+  private static micSeq = 0
+  private readonly micConsumerId = `audio-engine-${(AudioEngine.micSeq += 1)}`
   // Shared analyser used for both mic input and pitch detection (mirrors old JS behavior)
   private analyser: AnalyserNode | null = null
   private playbackAnalyser: AnalyserNode | null = null
@@ -700,13 +706,9 @@ export class AudioEngine {
 
       console.info('[AudioEngine] Requesting microphone access...')
 
-      this.micStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-      })
+      // The shared MicManager owns the device (ref-counted across features);
+      // we just borrow its stream and wire it into our analyser graph.
+      this.micStream = await micManager.acquire(this.micConsumerId)
 
       const ctx = this.audioCtx
       if (!ctx || !this.analyser) {
@@ -749,11 +751,11 @@ export class AudioEngine {
       this.micGain.disconnect()
       this.micGain = null
     }
+    // Release our hold on the shared device; the MicManager stops the tracks
+    // once no other feature is using them (after a short linger).
     if (this.micStream) {
-      this.micStream.getTracks().forEach((track) => {
-        track.stop()
-      })
       this.micStream = null
+      micManager.release(this.micConsumerId)
     }
     console.info('[AudioEngine] Microphone stopped')
     // Note: analyser stays active for visualization
