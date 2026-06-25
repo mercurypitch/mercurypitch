@@ -1223,6 +1223,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </button>
             <button
               class="sm-btn sm-btn-secondary"
+              data-tour="mixer.playlist"
               classList={{ 'sm-btn--active': playlistSidebarOpen() }}
               onClick={() => setPlaylistSidebarOpen((prev) => !prev)}
               title="Karaoke playlists"
