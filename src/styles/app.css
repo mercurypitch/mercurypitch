@@ -1900,6 +1900,12 @@ input:checked + .settings-slider:before {
 }
 
 .fn-btn {
+  /* Centre the leading icon with the label (was inline, so the SVG sat on the
+     text baseline and looked out of place on the score card). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 8px 16px;
   background: #21262d;
   color: #c9d1d9;
