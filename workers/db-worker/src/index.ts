@@ -15,7 +15,7 @@
 // rules force userId scoping from the JWT, never from the request body.
 
 import type { AuthUser, Env } from './auth'
-import { checkRateLimit, getAuth, handleAuth } from './auth'
+import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
 import type { TableDef } from './tables'
 import { TABLES } from './tables'
 
@@ -132,7 +132,7 @@ function parseListQuery(url: URL): ListQuery | null {
 
 function isAdmin(request: Request, env: Env): boolean {
   const key = request.headers.get('X-Admin-Key')
-  return !!key && !!env.ADMIN_KEY && key === env.ADMIN_KEY
+  return !!key && !!env.ADMIN_KEY && timingSafeEqual(key, env.ADMIN_KEY)
 }
 
 /**

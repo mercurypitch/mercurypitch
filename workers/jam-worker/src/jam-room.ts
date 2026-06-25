@@ -15,6 +15,20 @@ const MAX_PEERS = 12 // occupancy cap per room (bounds an unauthenticated channe
 const MSG_RATE_LIMIT = 120 // max messages per window, per connection
 const MSG_RATE_WINDOW_MS = 1000
 
+/**
+ * Constant-time string comparison. Used for the secret ownerToken so the
+ * host check does not short-circuit on the first differing byte (a `===`
+ * compare leaks, via timing, how many leading bytes a guess got right).
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder()
+  const ab = enc.encode(a)
+  const bb = enc.encode(b)
+  let diff = ab.length ^ bb.length
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ (bb[i] ?? 0)
+  return diff === 0
+}
+
 interface JamEnv {
   JAM_ROOM: DurableObjectNamespace
 }
@@ -190,7 +204,7 @@ export class JamRoom extends DurableObject<JamEnv> {
     const isHost =
       this.ownerToken !== null &&
       typeof msg.ownerToken === 'string' &&
-      msg.ownerToken === this.ownerToken
+      timingSafeEqual(msg.ownerToken, this.ownerToken)
     if (isHost) this.ownerId = peerId
     console.log(`[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`)
     this.send(ws, {

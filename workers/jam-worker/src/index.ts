@@ -12,6 +12,26 @@ export { JamRoom } from './jam-room'
 
 interface Env {
   JAM_ROOM: DurableObjectNamespace<JamRoom>
+  /**
+   * Optional comma-separated Origin allowlist for WebSocket upgrades and room
+   * creation (e.g. "https://mercurypitch.com"). When unset, all origins are
+   * allowed — this preserves the current behaviour for local dev. Set it per
+   * environment in wrangler.jsonc to reject cross-site connections.
+   */
+  ALLOWED_ORIGINS?: string
+}
+
+/**
+ * Gate WebSocket upgrades / room creation by Origin. Permissive by default
+ * (no allowlist configured) so local development is unaffected; once
+ * ALLOWED_ORIGINS is set, only those exact origins may connect.
+ */
+function isOriginAllowed(request: Request, env: Env): boolean {
+  const allow = env.ALLOWED_ORIGINS?.trim()
+  if (!allow) return true
+  const origin = request.headers.get('Origin')
+  if (!origin) return false
+  return allow.split(',').some((o) => o.trim() === origin)
 }
 
 const CORS: Record<string, string> = {
@@ -48,6 +68,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
+    }
+
+    if (!isOriginAllowed(request, env)) {
+      return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
 
     const url = new URL(request.url)
