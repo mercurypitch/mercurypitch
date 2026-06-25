@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.2] - 2026-06-25
+
+### Fixed
+
+- Shazam Sing: the button icons (Speech/Debug toggles, Stop & Match, Cancel, and "Upload audio instead") are sized correctly again instead of looking oversized.
+
 ## [0.4.1] - 2026-06-25
 
 ### Added
