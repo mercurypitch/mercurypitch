@@ -918,6 +918,18 @@ export interface WalkthroughStep {
   section?: string
   /** If set, switch to this tab before showing the step */
   requiredTab?: ActiveTab
+  /**
+   * Selectors to click, in order, to reveal the target before highlighting it —
+   * e.g. switch a sub-tab, open a sub-view, expand a panel, open a dropdown.
+   * Each is polled until present, clicked, then the next runs. Lets a single
+   * tour walk through nested UI to reach any element seamlessly.
+   */
+  navigate?: string[]
+  /**
+   * Ensure the (mobile, off-canvas) sidebar drawer is open for this step, so
+   * sidebar-anchored targets are on-screen. No-op on desktop.
+   */
+  inSidebar?: boolean
 }
 export interface WalkthroughSection {
   id: string
@@ -992,6 +1004,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    inSidebar: true,
   },
   {
     title: 'Load a Melody',
@@ -1001,6 +1014,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    inSidebar: true,
   },
   {
     title: 'Mic Button',
@@ -1117,9 +1131,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     targetSelector: '#key-select',
     description:
       'Change key, scale, BPM, and sensitivity directly from the editor toolbar before recording or editing.',
-    placement: 'bottom',
+    placement: 'right',
     section: 'editor',
     requiredTab: TAB_COMPOSE,
+    inSidebar: true,
   },
 
   // ── Effects & Slides Section ──
@@ -1327,10 +1342,21 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'The fretboard',
     description:
-      'Play notes on the interactive neck (or your real guitar via mic / MIDI). In Fretboard view, the Mode dropdown unlocks note quiz, ear training, CAGED, chord progressions, adaptive jam and more.',
+      'Play notes on the interactive neck (or your real guitar via mic / MIDI).',
     targetSelector: '[data-tour="guitar.fretboard"]',
     placement: 'top',
     requiredTab: TAB_GUITAR,
+    // Make sure we're in Fretboard view (not Practice) before pointing at it.
+    navigate: ['[data-tour="guitar.view-fretboard"]'],
+  },
+  {
+    title: 'Practice modes',
+    description:
+      'Switch the Mode dropdown to unlock note quiz, ear training, CAGED shapes, chord progressions, melody transcription, adaptive jam and more — each turns the fretboard into a focused drill.',
+    targetSelector: '[data-tour="guitar.mode-select"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+    navigate: ['[data-tour="guitar.view-fretboard"]'],
   },
 ]
 

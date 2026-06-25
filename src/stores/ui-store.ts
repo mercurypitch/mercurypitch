@@ -12,6 +12,10 @@ export type { ActiveTab } from '@/features/tabs/constants'
 
 export const [activeTab, setActiveTab] = createSignal<ActiveTab>(DEFAULT_TAB)
 
+// Mobile sidebar drawer open state. Store-backed (not AppShell-local) so the
+// spotlight tour engine can open it to reach sidebar-anchored steps on mobile.
+export const [sidebarOpen, setSidebarOpen] = createSignal(false)
+
 // Editor view within the Editor tab
 export type EditorView = 'piano-roll' | 'session-editor'
 export const [editorView, setEditorView] =

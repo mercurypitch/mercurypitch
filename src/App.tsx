@@ -88,7 +88,7 @@ import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarOpen, showSelection, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -195,7 +195,7 @@ const AppShell: Component<AppProps> = (props) => {
   const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
-  const [sidebarOpen, setSidebarOpen] = createSignal(false)
+  // Store-backed (ui-store) so the tour engine can open the mobile sidebar.
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
   const savedSidebarCollapsed =

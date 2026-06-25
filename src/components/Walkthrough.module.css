@@ -16,11 +16,47 @@
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
   pointer-events: none;
   z-index: 9999;
+  /* Springy glide as the spotlight travels between targets. */
   transition:
-    top 0.2s ease,
-    left 0.2s ease,
-    width 0.2s ease,
-    height 0.2s ease;
+    top 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Soft pulsing accent ring so the focused element stays eye-catching. */
+.walkthroughHighlight::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 10px;
+  border: 2px solid rgba(108, 99, 255, 0.65);
+  pointer-events: none;
+  animation: walkthroughPulse 1.8s ease-out infinite;
+}
+
+@keyframes walkthroughPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .walkthroughHighlight,
+  .walkthroughTooltip {
+    transition: none;
+  }
+  .walkthroughHighlight::after {
+    animation: none;
+  }
 }
 
 /* Tooltip card */
@@ -36,8 +72,8 @@
   color: var(--text-primary);
   pointer-events: auto;
   transition:
-    left 0.2s ease,
-    top 0.2s ease;
+    left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Tooltip arrow indicator — points toward the highlighted target */
