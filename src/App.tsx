@@ -41,6 +41,7 @@ import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
+import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { initSettingsSync } from '@/db/services/settings-service'
@@ -48,7 +49,6 @@ import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
-import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
@@ -66,10 +66,8 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { buildChordToneMidis } from '@/lib/guitar/chord-utils'
-import { DrumMachine } from '@/lib/guitar/drum-machine'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
-import { KEY_OFFSETS, melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, SCALE_DEFINITIONS, } from '@/lib/scale-data'
+import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -102,19 +100,9 @@ import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
-import type { FretboardMode } from './components/guitar/GuitarFretboardModeTabs'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import UserSurveyModal from './components/UserSurveyModal'
 import { WelcomeScreen } from './components/WelcomeScreen'
-import { createAdaptiveJam } from './features/guitar-practice/AdaptiveJamState'
-import { createCagedTrainer } from './features/guitar-practice/CagedTrainerState'
-import { createCallResponse } from './features/guitar-practice/CallResponseState'
-import { createChordProgression } from './features/guitar-practice/ChordProgressionState'
-import { createEarTraining } from './features/guitar-practice/EarTrainingPanel'
-import { createMelodyTranscription } from './features/guitar-practice/MelodyTranscriptionState'
-import { createNoteLocatorQuiz } from './features/guitar-practice/NoteLocatorQuiz'
-import { createSingToFretboard } from './features/guitar-practice/SingToFretboardState'
-import { createTranscriptionTrainer } from './features/guitar-practice/TranscriptionTrainerState'
 
 // ============================================================
 // Tab type
@@ -196,9 +184,7 @@ function filterMelodyForPractice(
 
 const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
-  const drumMachine = new DrumMachine()
-  const [drumBpm, setDrumBpm] = createSignal(drumMachine.bpm)
-  drumMachine.onChange(() => setDrumBpm(drumMachine.bpm))
+  const guitarCtx = useGuitar()
 
   // ── Local UI state ──────────────────────────────────────────
   const activeTab = (): ActiveTab => activeTabSignal()
@@ -226,7 +212,7 @@ const AppShell: Component<AppProps> = (props) => {
     const engine = audioEngine
 
     if (tab === TAB_GUITAR) {
-      engine.setInstrument(guitar.instrumentType())
+      engine.setInstrument(guitarCtx.guitar.instrumentType())
     } else if (tab === TAB_PIANO) {
       engine.setInstrument('piano')
     }
@@ -747,168 +733,9 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
 
-  // ── Guitar Practice controller ────────────────────────────────
-  const guitar = useGuitarPracticeController(audioEngine)
-
-  const [guitarView, setGuitarView] = createSignal<'interactive' | 'hero'>(
-    'hero',
-  )
-  const [fretboardKey, setFretboardKey] = createSignal('C')
-  const [fretboardScale, setFretboardScale] = createSignal('major')
-  const [lastPlayedNote, setLastPlayedNote] = createSignal<{
-    midi: number
-    stringIndex: number
-    fret: number
-  } | null>(null)
-
-  const highlightedNotes = createMemo(() => {
-    const keyOffset = KEY_OFFSETS[fretboardKey()] ?? 0
-    const degrees =
-      SCALE_DEFINITIONS[fretboardScale()]?.degrees ??
-      SCALE_DEFINITIONS.major.degrees
-    const openMidi = [40, 45, 50, 55, 59, 64]
-    const set = new Set<number>()
-    for (let s = 0; s < 6; s++)
-      for (let f = 0; f <= 15; f++) {
-        const midi = openMidi[s] + f
-        const deg = (((midi - keyOffset) % 12) + 12) % 12
-        if (degrees.includes(deg)) set.add(midi)
-      }
-    return set
-  })
-
-  const [fretboardMode, setFretboardMode] =
-    createSignal<FretboardMode>('explore')
-  const [selectedChord, setSelectedChord] = createSignal<string | null>(null)
-
-  const chordToneMidis = createMemo(() => {
-    const chord = selectedChord()
-    const key = fretboardKey()
-    if (chord === null) return new Set<number>()
-    const rootMidi = (KEY_OFFSETS[key] ?? 0) + 60
-    return buildChordToneMidis(rootMidi, chord)
-  })
-
-  const noteQuiz = createNoteLocatorQuiz()
-  const earTraining = createEarTraining(audioEngine!)
-  const melodyTranscription = createMelodyTranscription(
-    audioEngine!,
-    fretboardKey,
-    fretboardScale,
-  )
-  const callResponse = createCallResponse(
-    audioEngine!,
-    fretboardKey,
-    fretboardScale,
-  )
-
-  const cagedTrainer = createCagedTrainer()
-  const chordProgression = createChordProgression(
-    fretboardKey,
-    setSelectedChord,
-  )
-
-  const singToFretboard = createSingToFretboard(audioEngine!)
-  const transcriptionTrainer = createTranscriptionTrainer(audioEngine!)
-  const adaptiveJam = createAdaptiveJam(
-    fretboardKey,
-    drumMachine,
-    setSelectedChord,
-  )
-
-  const handleFretNotePlayed = (
-    midi: number,
-    stringIndex: number,
-    fret: number,
-  ) => {
-    const mode = fretboardMode()
-    if (mode === 'noteQuiz') {
-      noteQuiz.handleNotePlayed(midi)
-    } else if (mode === 'earTraining') {
-      earTraining.handleNotePlayed(midi)
-    } else if (mode === 'melodyTranscription') {
-      melodyTranscription.handleNotePlayed(midi)
-    } else if (mode === 'callResponse') {
-      callResponse.handleNotePlayed(midi)
-    } else if (mode === 'singToFretboard') {
-      singToFretboard.handleFretNotePlayed(midi)
-    } else if (mode === 'transcriptionTrainer') {
-      transcriptionTrainer.handleFretNotePlayed(midi)
-    } else if (mode === 'adaptiveJam') {
-      adaptiveJam.handleFretNotePlayed(midi)
-    } else {
-      audioEngine?.playTone(midiToFreq(midi), 600)
-    }
-    setLastPlayedNote({ midi, stringIndex, fret })
-  }
-
-  // ── Guitar mode lifecycle ────────────────────────────────────
-  // Single createEffect dispatches on the active mode, starting
-  // the correct sub-mode on enter and stopping/disabling it on
-  // leave.  Previously 9 separate createEffect blocks.
-  createEffect(() => {
-    const active = activeTab() === TAB_GUITAR && guitarView() === 'interactive'
-    const mode = active ? fretboardMode() : null
-
-    // Modes that auto-start on enter
-    if (mode === 'noteQuiz' && !noteQuiz.roundActive()) {
-      noteQuiz.startRound()
-    }
-    if (mode === 'earTraining' && earTraining.targetMidi() === null) {
-      earTraining.playNewNote()
-    }
-    if (
-      mode === 'melodyTranscription' &&
-      melodyTranscription.phase() === 'idle'
-    ) {
-      melodyTranscription.startNewPhrase()
-    }
-    if (mode === 'callResponse' && callResponse.phase() === 'idle') {
-      callResponse.startRound()
-    }
-
-    // Modes that auto-start on enter AND auto-stop on leave
-    if (mode === 'chordProgression') {
-      if (!chordProgression.playing()) chordProgression.start()
-    } else if (chordProgression.playing()) {
-      chordProgression.stop()
-    }
-
-    if (mode === 'adaptiveJam') {
-      if (!adaptiveJam.playing()) adaptiveJam.start()
-    } else if (adaptiveJam.playing()) {
-      adaptiveJam.stop()
-    }
-
-    // singToFretboard: start/stop with mic lifecycle
-    if (mode === 'singToFretboard') {
-      if (!singToFretboard.running()) {
-        void practiceEngine.startMic()
-        singToFretboard.start()
-      }
-    } else if (singToFretboard.running()) {
-      singToFretboard.stop()
-      practiceEngine.stopMic()
-    }
-
-    // transcriptionTrainer: stop when leaving mode
-    if (mode !== 'transcriptionTrainer') {
-      transcriptionTrainer.stop()
-    }
-
-    // Hero mode: mic only during active gameplay with audio input enabled
-    const heroActive = activeTab() === TAB_GUITAR && guitarView() === 'hero'
-    const heroState = guitar.gameState()
-    if (
-      heroActive &&
-      guitar.isMicActive() &&
-      (heroState === 'playing' || heroState === 'countdown')
-    ) {
-      void practiceEngine.startMic()
-    } else if (!guitar.isMicActive() || !heroActive) {
-      practiceEngine.stopMic()
-    }
-  })
+  // Guitar-tab state (controller, drum machine, fretboard signals, 9 mode
+  // states, handleFretNotePlayed, mode-lifecycle effect) lives in
+  // GuitarContext now — consumed via guitarCtx above.
 
   const pianoIsPlaying = createMemo(
     () =>
@@ -971,16 +798,16 @@ const AppShell: Component<AppProps> = (props) => {
     },
     onToggleShortcutHelp: toggleShortcutHelp,
     guitar: {
-      strumKeyboard: guitar.strumKeyboard,
+      strumKeyboard: guitarCtx.guitar.strumKeyboard,
       togglePlayback: () => {
-        if (guitarView() === 'hero') {
-          guitar.togglePlay()
+        if (guitarCtx.fretboard.guitarView() === 'hero') {
+          guitarCtx.guitar.togglePlay()
         } else {
-          if (drumMachine.playing) {
-            drumMachine.stop()
+          if (guitarCtx.drumMachine.playing) {
+            guitarCtx.drumMachine.stop()
           } else {
-            void drumMachine.init().then(() => {
-              void drumMachine.start()
+            void guitarCtx.drumMachine.init().then(() => {
+              void guitarCtx.drumMachine.start()
             })
           }
         }
@@ -1001,8 +828,6 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Clean up pending session sequencer timeouts on unmount
   onCleanup(() => sessionSequencer.destroy())
-  // Dispose the drum machine's AudioContext + scheduling loop on unmount.
-  onCleanup(() => drumMachine.dispose())
 
   // ── Tab change handler with audio cleanup ──────────────────
   // ── Tab-change cleanup ──────────────────────────────────────
@@ -1026,8 +851,8 @@ const AppShell: Component<AppProps> = (props) => {
         }
 
         // 3. Stop guitar practice if active
-        if (prevTab === TAB_GUITAR && guitar.gameState() !== 'idle') {
-          guitar.stopGame()
+        if (prevTab === TAB_GUITAR && guitarCtx.guitar.gameState() !== 'idle') {
+          guitarCtx.guitar.stopGame()
         }
 
         // 4. Stop guitar mic if active
@@ -1897,41 +1722,7 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
               <Show when={activeTab() === TAB_GUITAR}>
                 <TabErrorBoundary tabName={tabLabel(TAB_GUITAR)}>
-                  <GuitarPage
-                    guitar={guitar}
-                    drumMachine={drumMachine}
-                    drumBpm={drumBpm}
-                    setDrumBpm={setDrumBpm}
-                    volume={savedVol}
-                    setVolume={setSavedVol}
-                    onFretNotePlayed={handleFretNotePlayed}
-                    fretboard={{
-                      guitarView,
-                      setGuitarView,
-                      fretboardKey,
-                      setFretboardKey,
-                      fretboardScale,
-                      setFretboardScale,
-                      fretboardMode,
-                      setFretboardMode,
-                      selectedChord,
-                      setSelectedChord,
-                      lastPlayedNote,
-                      highlightedNotes,
-                      chordToneMidis,
-                    }}
-                    modes={{
-                      noteQuiz,
-                      earTraining,
-                      melodyTranscription,
-                      callResponse,
-                      cagedTrainer,
-                      chordProgression,
-                      singToFretboard,
-                      transcriptionTrainer,
-                      adaptiveJam,
-                    }}
-                  />
+                  <GuitarPage volume={savedVol} setVolume={setSavedVol} />
                 </TabErrorBoundary>
               </Show>
             </main>
@@ -2257,7 +2048,9 @@ export const App: Component<AppProps> = (props) => {
   return (
     <AppErrorBoundary>
       <EngineProvider>
-        <AppShell {...props} />
+        <GuitarProvider>
+          <AppShell {...props} />
+        </GuitarProvider>
         <CrashModal />
       </EngineProvider>
     </AppErrorBoundary>

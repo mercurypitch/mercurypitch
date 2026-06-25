@@ -3,7 +3,6 @@ import { For, Show } from 'solid-js'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
-import type { FretboardMode } from '@/components/guitar/GuitarFretboardModeTabs'
 import { GuitarFretboardModeTabs } from '@/components/guitar/GuitarFretboardModeTabs'
 import { GuitarPracticeSongPicker } from '@/components/guitar/GuitarPracticeSongPicker'
 import { GuitarViewToggle } from '@/components/guitar/GuitarViewToggle'
@@ -11,84 +10,36 @@ import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/Interactiv
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { useEngines } from '@/contexts/EngineContext'
-import type { createAdaptiveJam } from '@/features/guitar-practice/AdaptiveJamState'
-import type { createCagedTrainer } from '@/features/guitar-practice/CagedTrainerState'
-import type { createCallResponse } from '@/features/guitar-practice/CallResponseState'
-import type { createChordProgression } from '@/features/guitar-practice/ChordProgressionState'
-import type { createEarTraining } from '@/features/guitar-practice/EarTrainingPanel'
-import type { createMelodyTranscription } from '@/features/guitar-practice/MelodyTranscriptionState'
-import type { createNoteLocatorQuiz } from '@/features/guitar-practice/NoteLocatorQuiz'
-import type { createSingToFretboard } from '@/features/guitar-practice/SingToFretboardState'
-import type { createTranscriptionTrainer } from '@/features/guitar-practice/TranscriptionTrainerState'
-import type { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
+import { useGuitar } from '@/contexts/GuitarContext'
 import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
-import type { DrumMachine } from '@/lib/guitar/drum-machine'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { activeTab, countIn } from '@/stores'
 
-interface FretboardState {
-  guitarView: Accessor<'interactive' | 'hero'>
-  setGuitarView: Setter<'interactive' | 'hero'>
-  fretboardKey: Accessor<string>
-  setFretboardKey: Setter<string>
-  fretboardScale: Accessor<string>
-  setFretboardScale: Setter<string>
-  fretboardMode: Accessor<FretboardMode>
-  setFretboardMode: Setter<FretboardMode>
-  selectedChord: Accessor<string | null>
-  setSelectedChord: Setter<string | null>
-  lastPlayedNote: Accessor<{
-    midi: number
-    stringIndex: number
-    fret: number
-  } | null>
-  highlightedNotes: Accessor<Set<number>>
-  chordToneMidis: Accessor<Set<number>>
-}
-
-interface GuitarModes {
-  noteQuiz: ReturnType<typeof createNoteLocatorQuiz>
-  earTraining: ReturnType<typeof createEarTraining>
-  melodyTranscription: ReturnType<typeof createMelodyTranscription>
-  callResponse: ReturnType<typeof createCallResponse>
-  cagedTrainer: ReturnType<typeof createCagedTrainer>
-  chordProgression: ReturnType<typeof createChordProgression>
-  singToFretboard: ReturnType<typeof createSingToFretboard>
-  transcriptionTrainer: ReturnType<typeof createTranscriptionTrainer>
-  adaptiveJam: ReturnType<typeof createAdaptiveJam>
-}
-
 interface GuitarPageProps {
-  guitar: ReturnType<typeof useGuitarPracticeController>
-  drumMachine: DrumMachine
-  drumBpm: Accessor<number>
-  setDrumBpm: Setter<number>
+  /** Shared volume signal (owned by AppShell, used across tabs). */
   volume: Accessor<number>
   setVolume: Setter<number>
-  fretboard: FretboardState
-  modes: GuitarModes
-  onFretNotePlayed: (midi: number, stringIndex: number, fret: number) => void
 }
 
 /**
  * Guitar tab (TAB_GUITAR): fretboard practice + 9 interactive modes.
  *
- * The guitar controller, drum machine, fretboard signals, the 9 mode-state
- * objects, and the mode-lifecycle effect all stay in AppShell (they are wired
- * into the keyboard shortcuts, instrument sync, and tab-change cleanup). This
- * page is the view: it receives them and renders. Props are destructured into
- * identically-named locals so the markup matches the original 1:1.
+ * All guitar state lives in GuitarContext, so it survives tab switches and the
+ * keyboard/instrument/cleanup wiring in AppShell can share it. This page is the
+ * view: it reads the context and renders. Context fields are destructured into
+ * identically-named locals so the markup reads 1:1.
  */
 export function GuitarPage(props: GuitarPageProps) {
   const { audioEngine } = useEngines()
-  const guitar = props.guitar
-  const drumMachine = props.drumMachine
-  const drumBpm = props.drumBpm
-  const setDrumBpm = props.setDrumBpm
+  const ctx = useGuitar()
+  const guitar = ctx.guitar
+  const drumMachine = ctx.drumMachine
+  const drumBpm = ctx.drumBpm
+  const setDrumBpm = ctx.setDrumBpm
   const savedVol = props.volume
   const setSavedVol = props.setVolume
-  const handleFretNotePlayed = props.onFretNotePlayed
+  const handleFretNotePlayed = ctx.onFretNotePlayed
   const {
     guitarView,
     setGuitarView,
@@ -103,7 +54,7 @@ export function GuitarPage(props: GuitarPageProps) {
     lastPlayedNote,
     highlightedNotes,
     chordToneMidis,
-  } = props.fretboard
+  } = ctx.fretboard
   const {
     noteQuiz,
     earTraining,
@@ -114,7 +65,7 @@ export function GuitarPage(props: GuitarPageProps) {
     singToFretboard,
     transcriptionTrainer,
     adaptiveJam,
-  } = props.modes
+  } = ctx.modes
 
   return (
     <div id="guitar-practice-panel">
