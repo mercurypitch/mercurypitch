@@ -9,31 +9,15 @@ import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { Cpu, Ear, MusicBoard, SlidersHorizontal, Voice, } from '@/components/icons'
+import { MusicBoard, SlidersHorizontal } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import { AppNavTabs } from './components'
-
-const PitchAlgorithmTester = lazy(async () =>
-  import('@/components/PitchAlgorithmTester').then((m) => ({
-    default: m.PitchAlgorithmTester,
-  })),
-)
-const PitchTestingTab = lazy(async () =>
-  import('@/components/PitchTestingTab').then((m) => ({
-    default: m.PitchTestingTab,
-  })),
-)
-const VocalAnalysis = lazy(async () =>
-  import('@/components/VocalAnalysis').then((m) => ({
-    default: m.VocalAnalysis,
-  })),
-)
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { AppNavTabs } from './components'
 
 const SessionBrowser = lazy(async () =>
   import('@/components/SessionBrowser').then((m) => ({
@@ -45,6 +29,10 @@ const SessionEditor = lazy(async () =>
     default: m.SessionEditor,
   })),
 )
+import './styles/guitar-practice.css'
+import './components/AppHeader.css'
+import './components/TierSelector.css'
+import './components/SessionEditorTimeline.css'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
@@ -52,14 +40,6 @@ import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
-
-const UvrPanel = lazy(async () =>
-  import('@/components/UvrPanel').then((m) => ({ default: m.UvrPanel })),
-)
-import './styles/guitar-practice.css'
-import './components/AppHeader.css'
-import './components/TierSelector.css'
-import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
@@ -114,9 +94,11 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
+import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
 import { JamPage } from '@/pages/JamPage'
+import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
@@ -278,10 +260,6 @@ const AppShell: Component<AppProps> = (props) => {
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
-  const [analysisSubTab, setAnalysisSubTab] = createSignal<
-    'vocal' | 'detection' | 'algorithms'
-  >('vocal')
-
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
   // ── Play mode ───────────────────────────────────────────────
@@ -1873,77 +1851,7 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_ANALYSIS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
-                  <div
-                    class="analysis-container"
-                    style="display: flex; flex-direction: column; width: 100%; height: 100%;"
-                  >
-                    <div
-                      class="analysis-tabs"
-                      style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
-                    >
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]: analysisSubTab() === 'vocal',
-                        }}
-                        onClick={() => setAnalysisSubTab('vocal')}
-                        aria-label="Vocal Analysis"
-                        title="Vocal Analysis"
-                      >
-                        <Voice /> Vocal Analysis
-                      </button>
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]:
-                            analysisSubTab() === 'detection',
-                        }}
-                        onClick={() => setAnalysisSubTab('detection')}
-                        aria-label="Pitch Detection"
-                        title="Pitch Detection"
-                      >
-                        <Ear /> Pitch Detection
-                      </button>
-                      <button
-                        class={styles.viewBtn}
-                        classList={{
-                          [styles.activeViewBtn]:
-                            analysisSubTab() === 'algorithms',
-                        }}
-                        onClick={() => setAnalysisSubTab('algorithms')}
-                        aria-label="Pitch Algorithms"
-                        title="Pitch Algorithms"
-                      >
-                        <Cpu /> Pitch Algorithms
-                      </button>
-                    </div>
-
-                    <div
-                      class="analysis-content"
-                      style="flex: 1; overflow: hidden; position: relative;"
-                    >
-                      <Show when={analysisSubTab() === 'vocal'}>
-                        <div
-                          class="vocal-analysis-panel"
-                          style="width: 100%; height: 100%;"
-                        >
-                          <Suspense fallback={<SkeletonTabContent />}>
-                            <VocalAnalysis />
-                          </Suspense>
-                        </div>
-                      </Show>
-                      <Show when={analysisSubTab() === 'detection'}>
-                        <PitchTestingTab
-                          onClose={() => setActiveTab(TAB_SINGING)}
-                        />
-                      </Show>
-                      <Show when={analysisSubTab() === 'algorithms'}>
-                        <PitchAlgorithmTester
-                          onClose={() => setActiveTab(TAB_SINGING)}
-                        />
-                      </Show>
-                    </div>
-                  </div>
+                  <AnalysisPage />
                 </TabErrorBoundary>
               </Show>
 
@@ -2132,31 +2040,12 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_KARAOKE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_KARAOKE)}>
-                  <div id="uvr-panel">
-                    <Suspense fallback={<SkeletonTabContent />}>
-                      <UvrPanel
-                        initialView={initialUvrView() ?? 'upload'}
-                        initialSessionId={initialUvrSessionId() ?? undefined}
-                        onSessionChange={(sessionId) =>
-                          setActiveUvrSessionId(sessionId)
-                        }
-                        onViewChange={(view) => setActiveUvrView(view)}
-                        onSelectMelody={(melodyId) => {
-                          melodyStore.loadMelody(melodyId)
-                          setActiveTab(TAB_SINGING)
-                        }}
-                        onPracticeStart={(mode) => {
-                          console.log('Starting practice with mode:', mode)
-                        }}
-                        onExport={(type) => {
-                          console.log('Exporting:', type)
-                        }}
-                        onSessionView={(sessionId) => {
-                          console.log('Viewing session:', sessionId)
-                        }}
-                      />
-                    </Suspense>
-                  </div>
+                  <KaraokePage
+                    initialView={initialUvrView}
+                    initialSessionId={initialUvrSessionId}
+                    onSessionChange={setActiveUvrSessionId}
+                    onViewChange={setActiveUvrView}
+                  />
                 </TabErrorBoundary>
               </Show>
               <Show when={activeTab() === TAB_PIANO}>
