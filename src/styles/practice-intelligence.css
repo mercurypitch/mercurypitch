@@ -11,7 +11,9 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 16px;
+  /* Scope to the exercise gallery width and centre it (not full-bleed). */
+  max-width: 1120px;
+  margin: 0 auto 16px;
 }
 
 .weakness-panel-title-row {
