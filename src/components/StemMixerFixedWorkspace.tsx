@@ -142,6 +142,7 @@ export const StemMixerFixedWorkspace: Component<
                   >
                     <button
                       class="sm-lyrics-edit-btn"
+                      data-tour="mixer.lyric-source"
                       onClick={(e) => {
                         e.stopPropagation()
                         props.handleForceSearch()
@@ -181,6 +182,7 @@ export const StemMixerFixedWorkspace: Component<
                   >
                     <button
                       class="sm-lyrics-gen-btn"
+                      data-tour="mixer.lyric-sync"
                       onClick={(e) => {
                         e.stopPropagation()
                         props.startLrcGen()
@@ -232,6 +234,7 @@ export const StemMixerFixedWorkspace: Component<
                   >
                     <button
                       class="sm-lyrics-download-btn"
+                      data-tour="mixer.lyric-export"
                       onClick={(e) => {
                         e.stopPropagation()
                         props.handleDownloadLrc()
@@ -284,6 +287,7 @@ export const StemMixerFixedWorkspace: Component<
                   <Show when={lp().lyricsSource() === 'none'}>
                     <button
                       class="sm-lyrics-upload-btn"
+                      data-tour="mixer.lyric-source"
                       onClick={(e) => {
                         e.stopPropagation()
                         props.triggerChangeFile()
