@@ -951,7 +951,7 @@ export function getCompletedWalkthroughCount(): number {
 export const GUIDE_SECTIONS: WalkthroughSection[] = [
   {
     id: 'practice',
-    title: 'Practice Tab',
+    title: 'Singing',
     description: 'Mic, playback controls, pitch display, and scoring',
   },
   {
@@ -961,7 +961,7 @@ export const GUIDE_SECTIONS: WalkthroughSection[] = [
   },
   {
     id: 'editor',
-    title: 'Editor Tab',
+    title: 'Compose',
     description: 'Build and edit melodies note by note',
   },
   {
@@ -1100,10 +1100,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 
   // ── Editor Section ──
   {
-    title: 'Editor Tab',
+    title: 'Compose tab',
     targetSelector: '[data-tour="compose.editor"]',
     description:
-      'The Editor tab lets you build and modify melodies. Click to switch here to explore.',
+      'The Compose tab lets you build and modify melodies. Click to switch here to explore.',
     placement: 'bottom',
     section: 'editor',
     requiredTab: TAB_COMPOSE,
@@ -1352,7 +1352,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Practice modes',
     description:
-      'Switch the Mode dropdown to unlock note quiz, ear training, CAGED shapes, chord progressions, melody transcription, adaptive jam and more — each turns the fretboard into a focused drill.',
+      'Switch the Mode dropdown to turn the fretboard into a focused drill — note quiz, ear training, CAGED and more.',
     targetSelector: '[data-tour="guitar.mode-select"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
@@ -1408,9 +1408,25 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_KARAOKE,
   },
   {
-    title: 'Lyric tools',
+    title: 'Get lyrics in',
     description:
-      'These buttons load lyrics (search online, upload, or paste), edit word timings, generate LRC sync during playback, mark repeat blocks (chorus/verse), and download a .lrc file.',
+      'Search lyrics online, upload an .lrc/.txt file, or paste them from your clipboard.',
+    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Sync the timing',
+    description:
+      'Edit word timings by hand, or generate an LRC live by tapping along as the song plays.',
+    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Organize & export',
+    description:
+      'Mark repeat blocks (chorus/verse) to reuse timings, then download the finished .lrc file.',
     targetSelector: '[data-tour="mixer.lyrics-actions"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
@@ -1424,10 +1440,25 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_KARAOKE,
   },
   {
-    title: 'Playlist, pitch & share',
+    title: 'Karaoke playlist',
+    description: 'Queue up a set of songs to sing back-to-back, party style.',
+    targetSelector: '[data-tour="mixer.playlist"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Pitch analysis',
     description:
-      'Build a karaoke playlist, open pitch analysis & settings, copy a share link, or enter full-screen focus mode.',
-    targetSelector: '[data-tour="mixer.header"]',
+      'Open denoising and pitch-detection settings to fine-tune how your singing is scored.',
+    targetSelector: '.sm-pitch-debug-btn',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Share & full-screen',
+    description:
+      'Copy a link to this mix to share it — or use the toggle beside it to enter full-screen karaoke focus mode.',
+    targetSelector: '.sm-share-btn',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
