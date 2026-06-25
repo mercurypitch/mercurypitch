@@ -4,10 +4,12 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_KARAOKE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
+import { hasPageTour, startPageTour, startTour, startWalkthrough as startSectionTour, STEM_MIXER_TOUR_STEPS, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
+import type { ActiveTab } from '@/types'
 import type { WalkthroughContent } from '@/types/walkthrough'
 import styles from './WalkthroughModal.module.css'
 
@@ -113,6 +115,36 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   const handleBackToList = () => {
     props.onBackToList?.()
+  }
+
+  // Bridge: a tutorial's tab -> its matching spotlight tour.
+  // Singing/Compose/Settings map to a legacy GUIDE_SECTIONS id.
+  const SECTION_FOR_TAB: Partial<Record<WalkthroughTab, string>> = {
+    [TAB_SINGING]: 'practice',
+    [TAB_COMPOSE]: 'editor',
+    [TAB_SETTINGS]: 'settings',
+  }
+
+  const tourAvailable = () => {
+    const tab = currentWalkthrough()?.tab
+    if (!tab) return false
+    if (tab === TAB_KARAOKE) return true
+    if (hasPageTour(tab as ActiveTab)) return true
+    return tab in SECTION_FOR_TAB
+  }
+
+  const handleTakeTour = () => {
+    const tab = currentWalkthrough()?.tab
+    if (!tab) return
+    props.onClose() // hand off cleanly to the spotlight overlay
+    if (tab === TAB_KARAOKE) {
+      startTour(STEM_MIXER_TOUR_STEPS)
+    } else if (hasPageTour(tab as ActiveTab)) {
+      startPageTour(tab as ActiveTab)
+    } else {
+      const section = SECTION_FOR_TAB[tab]
+      if (section !== undefined) startSectionTour([section])
+    }
   }
 
   // Lifecycle
@@ -239,6 +271,21 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 <p class={styles.walkthroughMainDesc}>
                   {currentWalkthrough()!.description}
                 </p>
+
+                <Show when={tourAvailable()}>
+                  <button
+                    class={styles.walkthroughTourBtn}
+                    onClick={handleTakeTour}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        fill="currentColor"
+                        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+                      />
+                    </svg>
+                    Take the interactive tour
+                  </button>
+                </Show>
 
                 <div
                   class={styles.walkthroughText}
