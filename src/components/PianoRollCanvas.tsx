@@ -179,7 +179,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   return (
     <div class={styles.pianoRollWrapper}>
-      <div ref={containerRef} class={styles.pianoRollContainer} />
+      <div
+        ref={containerRef}
+        class={styles.pianoRollContainer}
+        data-tour="compose.piano-roll"
+      />
     </div>
   )
 }

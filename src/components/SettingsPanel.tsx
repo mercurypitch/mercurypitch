@@ -308,7 +308,7 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Practice Aids Section */}
-        <div class={styles.settingsSection}>
+        <div class={styles.settingsSection} data-tour="settings.practice-aids">
           <h3 class={styles.settingsSectionTitle}>Practice Aids</h3>
           <div class={styles.settingsDivider} />
 

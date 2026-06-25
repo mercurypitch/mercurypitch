@@ -271,7 +271,7 @@ export const LibraryTab: Component = () => {
   })
 
   return (
-    <div class={styles.libraryTab}>
+    <div class={styles.libraryTab} data-tour="singing.library">
       <div class={styles.tabHeader}>
         <h3>Library</h3>
         <div class={styles.tabActions}>
