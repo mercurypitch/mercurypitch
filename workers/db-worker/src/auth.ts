@@ -463,6 +463,17 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
       )
         .bind(email, passwordHash, nowIso(), anon.id)
         .run()
+      // The anonymous user's profile already exists with a default
+      // "Singer-XXXX" name, so ensureProfile's INSERT OR IGNORE won't apply the
+      // chosen name — update it explicitly when one was provided.
+      const chosenName = body.displayName?.trim()
+      if (chosenName) {
+        await env.DB.prepare(
+          `UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?`,
+        )
+          .bind(chosenName, nowIso(), anon.id)
+          .run()
+      }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
       return issueSession(env, row, respond)
     }
