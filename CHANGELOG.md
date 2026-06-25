@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.3] - 2026-06-26
+
+### Fixed
+
+- Cloud accounts now work on mercurypitch.com — the production build was shipping without its API configuration, so accounts fell back to on-device storage.
+
 ## [0.4.2] - 2026-06-25
 
 ### Fixed
