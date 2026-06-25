@@ -159,10 +159,10 @@ Randomizes the order of notes each run.
     {
       id: 'editor-toolbar',
       tab: 'compose',
-      title: 'Editor Toolbar Overview',
+      title: 'Compose Toolbar Overview',
       description: 'Learn how to use the piano roll editor to compose melodies',
       content: `
-The Editor tab is your creative workspace for composing melodies. The toolbar provides essential tools for building, editing, and exporting your music.
+The Compose tab is your creative workspace for composing melodies. The toolbar provides essential tools for building, editing, and exporting your music.
 
 ## Essential Tools
 
@@ -177,7 +177,7 @@ The Editor tab is your creative workspace for composing melodies. The toolbar pr
 - **Select Tool**: Click and drag to select notes
 - **Delete Tool**: Remove unwanted notes
 
-## Editor Features
+## Compose Features
 
 - **Piano Roll Grid**: Visual representation of pitch vs time
 - **Octave Shift**: Change the default octave for new notes
@@ -282,10 +282,10 @@ MIDI files are a universal format for sharing music between applications. Mercur
     {
       id: 'editor-advanced',
       tab: 'compose',
-      title: 'Advanced Editor Features',
+      title: 'Advanced Compose Features',
       description: 'Tips and techniques for complex melodies',
       content: `
-The Editor offers several advanced features for creating sophisticated melodies.
+The Compose tab offers several advanced features for creating sophisticated melodies.
 
 ## Octave Management
 
