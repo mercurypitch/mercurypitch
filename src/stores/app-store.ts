@@ -1485,10 +1485,10 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_KARAOKE,
   },
   {
-    title: 'Share & full-screen',
+    title: 'Full-screen focus',
     description:
-      'Copy a link to this mix to share it — or use the toggle beside it to enter full-screen karaoke focus mode.',
-    targetSelector: '.sm-share-btn',
+      'Enter a distraction-free, full-screen karaoke view — just the lyrics and your pitch. Press Esc to exit.',
+    targetSelector: '[data-tour="mixer.focus"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },

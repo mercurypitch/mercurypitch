@@ -13,6 +13,7 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
+import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -1171,10 +1172,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <Show
                 when={playlist.isPlaylistActive() && playlist.currentSong()}
                 fallback={
-                  <span class="sm-session-id">
-                    karaoke-session-
-                    {props.sessionId.replace(/^.*-session-/, '')}
-                  </span>
+                  <Show when={audio.duration() > 0}>
+                    <span class="sm-session-id">
+                      {canvas.formatTime(audio.duration())}
+                    </span>
+                  </Show>
                 }
               >
                 <div class="sm-playlist-subtitle">
@@ -1259,22 +1261,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <Settings /> Pitch
             </button>
-            <button
-              class="sm-share-btn"
-              classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-              onClick={() => {
-                const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-                void navigator.clipboard.writeText(url).then(() => {
-                  setShareToast('Link copied to clipboard!')
-                  setTimeout(() => setShareToast(''), 2500)
-                })
-              }}
-              title="Copy share link"
-            >
-              <Share /> {shareToast() || 'Share'}
-            </button>
+            {/* Share links are only useful once songs are cloud-synced across
+                devices — gated behind the premium flag (off by default). */}
+            <Show when={PREMIUM_FEATURES}>
+              <button
+                class="sm-share-btn"
+                classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
+                onClick={() => {
+                  const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+                  void navigator.clipboard.writeText(url).then(() => {
+                    setShareToast('Link copied to clipboard!')
+                    setTimeout(() => setShareToast(''), 2500)
+                  })
+                }}
+                title="Copy share link"
+              >
+                <Share /> {shareToast() || 'Share'}
+              </button>
+            </Show>
             <button
               class="sm-btn sm-btn-secondary"
+              data-tour="mixer.focus"
               onClick={() => setKaraokeFocus((prev) => !prev)}
               title={
                 karaokeFocus()
