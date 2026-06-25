@@ -1726,6 +1726,10 @@ export const StemMixerStyles: string = `
 }
 
 .sm-session-id {
+  /* Flex child in a column — only as wide as its content, not stretched to the
+     song-title width above it. */
+  align-self: flex-start;
+  max-width: 100%;
   font-size: 0.7rem;
   color: var(--fg-tertiary, #484f58);
   background: var(--bg-tertiary, #21262d);
