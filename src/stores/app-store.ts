@@ -1440,24 +1440,24 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Get lyrics in',
     description:
-      'Search lyrics online, upload an .lrc/.txt file, or paste them from your clipboard.',
-    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+      'Start here to get lyrics: search online, or load an .lrc/.txt file (you can also paste from the clipboard).',
+    targetSelector: '[data-tour="mixer.lyric-source"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
   {
     title: 'Sync the timing',
     description:
-      'Edit word timings by hand, or generate an LRC live by tapping along as the song plays.',
-    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+      'Generate an LRC live by tapping along as the song plays (the pencil beside it edits word timings by hand).',
+    targetSelector: '[data-tour="mixer.lyric-sync"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
   {
     title: 'Organize & export',
     description:
-      'Mark repeat blocks (chorus/verse) to reuse timings, then download the finished .lrc file.',
-    targetSelector: '[data-tour="mixer.lyrics-actions"]',
+      'Download the finished .lrc file (use the list icon beside it to mark repeat blocks like chorus/verse and reuse their timings).',
+    targetSelector: '[data-tour="mixer.lyric-export"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
