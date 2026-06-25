@@ -114,8 +114,9 @@ export const StemMixerFixedWorkspace: Component<
               <div
                 class="sm-workspace-panel"
                 style={{ flex: '1', 'min-height': '0' }}
+                data-tour="mixer.lyrics"
               >
-                <div class="sm-panel-header">
+                <div class="sm-panel-header" data-tour="mixer.lyrics-actions">
                   Lyrics
                   <Show when={lp().lyricsSource() === 'api'}>
                     <span class="sm-lyrics-source">found</span>
@@ -439,6 +440,7 @@ export const StemMixerFixedWorkspace: Component<
                 class="sm-workspace-panel"
                 style={{ height: `${props.fixedPanelHeights().pitch}px` }}
                 data-fixed-panel="pitch"
+                data-tour="mixer.pitch"
               >
                 <div class="sm-panel-header">
                   Vocal Pitch
