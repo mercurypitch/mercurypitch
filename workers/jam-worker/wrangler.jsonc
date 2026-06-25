@@ -41,7 +41,11 @@
       },
       "migrations": [
         { "tag": "v1", "new_classes": ["JamRoom"] }
-      ]
+      ],
+      // Origin allowlist for WS upgrades / room creation (comma-separated).
+      "vars": {
+        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com"
+      }
     },
     "prod": {
       "name": "mercury-pitch-jam",
@@ -55,7 +59,11 @@
       },
       "migrations": [
         { "tag": "v1", "new_classes": ["JamRoom"] }
-      ]
+      ],
+      // Origin allowlist for WS upgrades / room creation (comma-separated).
+      "vars": {
+        "ALLOWED_ORIGINS": "https://mercurypitch.com"
+      }
     }
   }
 }

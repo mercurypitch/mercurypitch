@@ -70,7 +70,12 @@ export default {
       return new Response(null, { headers: CORS })
     }
 
-    if (!isOriginAllowed(request, env)) {
+    // Gate the security-relevant endpoints (WebSocket signaling upgrades and
+    // room creation) by Origin. These always carry an Origin header from a
+    // browser; the read-only GET room-info path is left ungated because a
+    // same-origin GET may legitimately omit Origin.
+    const isWsUpgrade = request.headers.get('Upgrade') === 'websocket'
+    if ((isWsUpgrade || request.method === 'POST') && !isOriginAllowed(request, env)) {
       return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
 
