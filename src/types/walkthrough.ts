@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { WalkthroughTab } from '@/features/tabs/constants'
+import { EXTENDED_WALKTHROUGHS } from './walkthrough-content-extended'
 
 export type { WalkthroughTab }
 
@@ -859,6 +860,7 @@ Use these professional practice techniques to get the most out of your sessions.
       thumbnail: 'sparkle',
     },
   ],
+  ...EXTENDED_WALKTHROUGHS,
 }
 
 export type WalkthroughProgress = Record<string, number> // walkthroughId -> completionTimestamp
