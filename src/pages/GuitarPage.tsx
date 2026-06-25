@@ -51,8 +51,6 @@ export function GuitarPage(props: GuitarPageProps) {
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm
   const setDrumBpm = ctx.setDrumBpm
-  const savedVol = props.volume
-  const setSavedVol = props.setVolume
   const handleFretNotePlayed = ctx.onFretNotePlayed
   const {
     guitarView,
@@ -94,9 +92,9 @@ export function GuitarPage(props: GuitarPageProps) {
         onPause={guitar.pauseGame}
         onResume={guitar.resumeGame}
         onStop={guitar.stopGame}
-        volume={savedVol}
+        volume={props.volume}
         onVolumeChange={(vol) => {
-          setSavedVol(vol)
+          props.setVolume(vol)
           audioEngine?.setVolume(vol / 100)
         }}
         speed={1}

@@ -23,6 +23,9 @@ interface PianoPageProps {
 
 /** Piano tab (TAB_PIANO): falling-notes game with toolbar + song picker. */
 export function PianoPage(props: PianoPageProps) {
+  // Stable controller created once in AppShell — aliasing it is safe (it never
+  // changes), so the reactive-prop warning is a false positive here.
+  // eslint-disable-next-line solid/reactivity
   const fallingNotes = props.fallingNotes
 
   // Mic feedback: "can't hear you" / "too quiet" while playing the game.
