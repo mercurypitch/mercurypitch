@@ -3,12 +3,18 @@
 // ============================================================
 
 import type { Accessor, Component, Setter } from 'solid-js'
+import { Show } from 'solid-js'
 
 export interface PitchCanvasToolbarProps {
   showNoteLabels: Accessor<boolean>
   setShowNoteLabels: Setter<boolean>
   showLyricLabels: Accessor<boolean>
   setShowLyricLabels: Setter<boolean>
+  // Mic-related toggles — only present in the StemMixer's Vocal Pitch panel.
+  showMicLine?: Accessor<boolean>
+  setShowMicLine?: Setter<boolean>
+  showUserNoteLabels?: Accessor<boolean>
+  setShowUserNoteLabels?: Setter<boolean>
 }
 
 export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
@@ -59,6 +65,55 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
         </svg>
         <span>Lyric Labels</span>
       </button>
+      <Show when={props.setShowMicLine}>
+        <button
+          class={`pitch-canvas-toggle${props.showMicLine?.() === true ? ' active' : ''}`}
+          onClick={() => props.setShowMicLine?.((prev) => !prev)}
+          title={
+            props.showMicLine?.() === true
+              ? 'Hide your mic pitch line'
+              : 'Show your mic pitch line (red)'
+          }
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#ff6b8a"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 14l4-5 4 4 4-8 4 6 4-3" />
+          </svg>
+          <span>My Pitch</span>
+        </button>
+      </Show>
+      <Show when={props.setShowUserNoteLabels}>
+        <button
+          class={`pitch-canvas-toggle${props.showUserNoteLabels?.() === true ? ' active' : ''}`}
+          onClick={() => props.setShowUserNoteLabels?.((prev) => !prev)}
+          title={
+            props.showUserNoteLabels?.() === true
+              ? 'Hide the notes you sang'
+              : 'Show the notes you sang on your outlines'
+          }
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="#ff6b8a"
+            stroke="none"
+          >
+            <ellipse cx="7" cy="19" rx="4" ry="3" />
+            <rect x="10" y="4" width="2.5" height="15" rx="1" />
+            <path d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z" />
+          </svg>
+          <span>My Notes</span>
+        </button>
+      </Show>
     </div>
   )
 }
