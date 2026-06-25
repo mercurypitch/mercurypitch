@@ -9,7 +9,7 @@ import type { WalkthroughStep } from '@/stores/app-store'
 import { walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
-import { activeTab, setActiveTab } from '@/stores/ui-store'
+import { activeTab, setActiveTab, setSidebarOpen } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
@@ -17,6 +17,8 @@ type Placement = 'top' | 'bottom' | 'left' | 'right'
 const TOOLTIP_GAP = 12
 const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
 const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
+const isMobile = () => window.innerWidth <= 768
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export const Walkthrough: Component = () => {
   let highlightRef: HTMLDivElement | undefined
@@ -241,45 +243,37 @@ export const Walkthrough: Component = () => {
     tooltipRef.dataset.placement = placement
   }
 
-  createEffect(() => {
-    if (walkthroughActive()) {
-      updateHighlight()
-      updateTooltip()
-      window.addEventListener('resize', () => {
-        updateHighlight()
-        updateTooltip()
-      })
-      window.addEventListener(
-        'scroll',
-        () => {
-          updateHighlight()
-          updateTooltip()
-        },
-        true,
-      )
-    }
-  })
+  // Single stable handler so add/remove pair up (the previous anonymous-fn
+  // versions never detached, leaking a listener per step). Reposition on
+  // resize, orientation change (mobile), and scroll while the tour is active.
+  const reposition = () => {
+    updateHighlight()
+    updateTooltip()
+  }
 
-  onCleanup(() => {
-    window.removeEventListener('resize', () => {
-      updateHighlight()
-      updateTooltip()
+  createEffect(() => {
+    if (!walkthroughActive()) return
+    reposition()
+    window.addEventListener('resize', reposition)
+    window.addEventListener('orientationchange', reposition)
+    window.addEventListener('scroll', reposition, true)
+    onCleanup(() => {
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('orientationchange', reposition)
+      window.removeEventListener('scroll', reposition, true)
     })
-    window.removeEventListener(
-      'scroll',
-      () => {
-        updateHighlight()
-        updateTooltip()
-      },
-      true,
-    )
   })
 
-  // Wait for target element to be in the DOM before positioning highlight/tooltip
-  // This is critical when a tab switch occurs — the new tab's DOM takes
-  // at least one frame to render, so we poll until the element appears.
-  createEffect(() => {
-    walkthroughStep()
+  // Prepare a step's UI before highlighting: open the mobile sidebar if the
+  // target lives there, then click through any `navigate` selectors (sub-tabs,
+  // sub-views, dropdowns) to reveal the target. Each click is polled-for and
+  // awaited, so a single tour can walk through nested UI to reach any element.
+  // A generation token cancels a stale preparation when the step changes mid-run.
+  let prepGen = 0
+  let tourOpenedSidebar = false
+
+  const prepareAndPosition = async (): Promise<void> => {
+    const gen = ++prepGen
     const step = currentStep()
     if (
       step === undefined ||
@@ -288,17 +282,53 @@ export const Walkthrough: Component = () => {
     )
       return
 
-    waitForTarget(step.targetSelector).then((found) => {
-      if (found) {
-        // Scroll element into view if needed (Settings often has overflow)
-        scrollToTargetIfNeeded()
-        // Position highlight/tooltip after any scroll settles
-        requestAnimationFrame(() => {
-          updateHighlight()
-          updateTooltip()
-        })
+    // Mobile: open the off-canvas sidebar only for sidebar-anchored steps.
+    if (isMobile()) {
+      const want = step.inSidebar === true
+      setSidebarOpen(want)
+      if (want) tourOpenedSidebar = true
+      // Give the drawer a frame to slide in before measuring.
+      await wait(want ? 240 : 0)
+    }
+
+    // Click through the navigation path (sub-tabs, sub-views, dropdowns).
+    if (step.navigate) {
+      for (const sel of step.navigate) {
+        if (gen !== prepGen) return
+        const ok = await waitForTarget(sel)
+        if (gen !== prepGen) return
+        const el = ok ? document.querySelector(sel) : null
+        if (el instanceof HTMLElement) {
+          el.click()
+          await wait(140) // let the revealed sub-view render
+        }
       }
+    }
+
+    if (gen !== prepGen) return
+    const found = await waitForTarget(step.targetSelector)
+    if (gen !== prepGen || !found) return
+    scrollToTargetIfNeeded()
+    requestAnimationFrame(() => {
+      updateHighlight()
+      updateTooltip()
     })
+  }
+
+  // Re-prepare whenever the step changes while the tour is active.
+  createEffect(() => {
+    walkthroughStep()
+    if (!walkthroughActive()) return
+    void prepareAndPosition()
+  })
+
+  // Close any sidebar the tour opened once it ends (mobile only). Guarded by a
+  // flag so we never fight a sidebar the user opened themselves.
+  createEffect(() => {
+    if (!walkthroughActive() && tourOpenedSidebar) {
+      setSidebarOpen(false)
+      tourOpenedSidebar = false
+    }
   })
 
   // Count steps in current section

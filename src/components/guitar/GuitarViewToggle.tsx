@@ -10,6 +10,7 @@ export const GuitarViewToggle: Component<GuitarViewToggleProps> = (props) => {
     <div class="gp-view-toggle">
       <button
         class="gp-view-tab"
+        data-tour="guitar.view-fretboard"
         classList={{
           'gp-view-tab-active': props.activeView() === 'interactive',
         }}
