@@ -16,3 +16,30 @@ export function colorForString(
 ): string {
   return colors[stringIndex % colors.length] ?? '#ffffff'
 }
+
+function parseHex(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ]
+}
+
+/** Perceived brightness 0–255 of a `#rrggbb` colour. */
+export function luminance(hex: string): number {
+  const [r, g, b] = parseHex(hex)
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
+/** Move a colour toward white by `amt` (0–1); returns rgb(...). */
+export function lighten(hex: string, amt: number): string {
+  const [r, g, b] = parseHex(hex)
+  const k = Math.min(1, Math.max(0, amt))
+  return `rgb(${Math.round(r + (255 - r) * k)}, ${Math.round(g + (255 - g) * k)}, ${Math.round(b + (255 - b) * k)})`
+}
+
+/** Readable label colour for text drawn on top of `bg`. */
+export function labelInk(bg: string): string {
+  return luminance(bg) > 140 ? '#0a0a12' : '#ffffff'
+}
