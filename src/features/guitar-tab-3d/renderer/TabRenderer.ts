@@ -6,6 +6,7 @@
 // today (and is the fallback for browsers without WebGPU); a WebGPU/TypeGPU
 // backend will slot in behind the same interface later.
 
+import type { CameraState } from './camera'
 import { Canvas2dTabRenderer } from './canvas2d/Canvas2dTabRenderer'
 import { isWebGpuSupported } from './webgpu/webgpu-device'
 
@@ -65,6 +66,8 @@ export interface TabRenderer {
   mount(canvas: HTMLCanvasElement): void | Promise<void>
   /** Draw one frame. */
   render(scene: TabScene): void
+  /** Update the orbit camera (yaw/pitch/zoom/pan). */
+  setCamera(camera: CameraState): void
   /** Resize the drawing surface (CSS pixels + device pixel ratio). */
   resize(width: number, height: number, dpr: number): void
   /** Release all resources. */

@@ -15,6 +15,8 @@
 // Coordinates: +X right, +Y up, +Z toward viewer (depth into screen = −Z).
 
 import { mat4 } from 'wgpu-matrix'
+import type { CameraState } from '../camera'
+import { cameraEye, DEFAULT_CAMERA } from '../camera'
 import { beatsToDepth } from '../projection'
 import type { TabRenderer, TabScene, TabSceneNote } from '../TabRenderer'
 import { colorForString, labelInk, lighten, withAlpha } from './color'
@@ -28,9 +30,7 @@ const FLOOR_DEPTH = 44 // highway depth: Z 0 (at the wall) → −44 (far)
 const STR_MARGIN = 0.3 // string inset from wall top/bottom
 const FRET_MARGIN = 0.4 // fret-0/last inset from wall sides
 
-// ── Camera (numerically verified) ──────────────────────────
-const EYE: [number, number, number] = [0, 6, 9]
-const TARGET: [number, number, number] = [0, 1, -12]
+// ── Camera (orbit; defaults reproduce the verified fixed view) ─────
 const UP: [number, number, number] = [0, 1, 0]
 const FOVY = (55 * Math.PI) / 180
 const NEAR = 0.1
@@ -60,12 +60,19 @@ export class Canvas2dTabRenderer implements TabRenderer {
   private vp: Float32Array = new Float32Array(16)
   private vpW = 0
   private vpH = 0
+  private camera: CameraState = DEFAULT_CAMERA
+  private cameraDirty = true
 
   mount(canvas: HTMLCanvasElement): void {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.cssWidth = canvas.clientWidth
     this.cssHeight = canvas.clientHeight
+  }
+
+  setCamera(camera: CameraState): void {
+    this.camera = camera
+    this.cameraDirty = true
   }
 
   resize(width: number, height: number, dpr: number): void {
@@ -78,13 +85,21 @@ export class Canvas2dTabRenderer implements TabRenderer {
   }
 
   private ensureCamera(): void {
-    if (this.vpW === this.cssWidth && this.vpH === this.cssHeight) return
+    if (
+      !this.cameraDirty &&
+      this.vpW === this.cssWidth &&
+      this.vpH === this.cssHeight
+    )
+      return
     const aspect = this.cssHeight > 0 ? this.cssWidth / this.cssHeight : 1
-    const view = mat4.lookAt(EYE, TARGET, UP)
+    const eye = cameraEye(this.camera)
+    const target = this.camera.target as [number, number, number]
+    const view = mat4.lookAt(eye, target, UP)
     const proj = mat4.perspective(FOVY, aspect, NEAR, FAR)
     this.vp = mat4.multiply(proj, view) as Float32Array
     this.vpW = this.cssWidth
     this.vpH = this.cssHeight
+    this.cameraDirty = false
   }
 
   private project(x: number, y: number, z: number): Projected {

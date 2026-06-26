@@ -9,12 +9,18 @@
 // TabRenderer interface.
 
 import type { Accessor } from 'solid-js'
-import { onCleanup, onMount } from 'solid-js'
+import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { CameraState } from './renderer/camera'
+import { cameraBasis, clampCamera, DEFAULT_CAMERA } from './renderer/camera'
 import type { TabRenderer, TabScene } from './renderer/TabRenderer'
 import { DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
+import { NavGizmo } from './ui/NavGizmo'
+
+const ORBIT_SENS = 0.008 // radians per pixel dragged
+const ZOOM_SENS = 0.0012 // per wheel delta unit
 
 /** Standard guitar; widened automatically if a tab uses more strings. */
 const MIN_STRING_COUNT = 6
@@ -36,6 +42,34 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   let canvas: HTMLCanvasElement | undefined
   let renderer: TabRenderer | null = null
   let rafId = 0
+  const [camera, setCamera] = createSignal<CameraState>(DEFAULT_CAMERA)
+
+  const orbit = (dx: number, dy: number) =>
+    setCamera((c) =>
+      clampCamera({
+        ...c,
+        yaw: c.yaw - dx * ORBIT_SENS,
+        pitch: c.pitch - dy * ORBIT_SENS,
+      }),
+    )
+  const zoom = (deltaY: number) =>
+    setCamera((c) =>
+      clampCamera({ ...c, radius: c.radius * Math.exp(deltaY * ZOOM_SENS) }),
+    )
+  const pan = (dx: number, dy: number) =>
+    setCamera((c) => {
+      const { right, up } = cameraBasis(c)
+      const s = c.radius * 0.0016
+      return clampCamera({
+        ...c,
+        target: [
+          c.target[0] - right[0] * dx * s + up[0] * dy * s,
+          c.target[1] - right[1] * dx * s + up[1] * dy * s,
+          c.target[2] - right[2] * dx * s + up[2] * dy * s,
+        ],
+      })
+    })
+  const resetCamera = () => setCamera(DEFAULT_CAMERA)
 
   const buildScene = (): TabScene => {
     const source = props.fallingNotes()
@@ -88,6 +122,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         lastH = rect.height
         r.resize(rect.width, rect.height, window.devicePixelRatio)
       }
+      r.setCamera(camera())
       r.render(buildScene())
     }
 
@@ -100,6 +135,52 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     }
 
     rafId = requestAnimationFrame(loop)
+
+    // Direct camera control on the canvas: drag to orbit, shift/right-drag to
+    // pan, wheel to zoom (mirrors the corner gizmo).
+    let dragMode: 'orbit' | 'pan' | null = null
+    let lastX = 0
+    let lastY = 0
+    const onPointerDown = (e: PointerEvent) => {
+      dragMode = e.button === 2 || e.shiftKey ? 'pan' : 'orbit'
+      lastX = e.clientX
+      lastY = e.clientY
+      hw.setPointerCapture(e.pointerId)
+      e.preventDefault()
+    }
+    const onPointerMove = (e: PointerEvent) => {
+      if (dragMode === null) return
+      const dx = e.clientX - lastX
+      const dy = e.clientY - lastY
+      lastX = e.clientX
+      lastY = e.clientY
+      if (dragMode === 'pan') pan(dx, dy)
+      else orbit(dx, dy)
+    }
+    const onPointerUp = (e: PointerEvent) => {
+      dragMode = null
+      hw.releasePointerCapture?.(e.pointerId)
+    }
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      zoom(e.deltaY)
+    }
+    const onContextMenu = (e: Event) => e.preventDefault()
+    hw.addEventListener('pointerdown', onPointerDown)
+    hw.addEventListener('pointermove', onPointerMove)
+    hw.addEventListener('pointerup', onPointerUp)
+    hw.addEventListener('pointercancel', onPointerUp)
+    hw.addEventListener('wheel', onWheel, { passive: false })
+    hw.addEventListener('contextmenu', onContextMenu)
+
+    onCleanup(() => {
+      hw.removeEventListener('pointerdown', onPointerDown)
+      hw.removeEventListener('pointermove', onPointerMove)
+      hw.removeEventListener('pointerup', onPointerUp)
+      hw.removeEventListener('pointercancel', onPointerUp)
+      hw.removeEventListener('wheel', onWheel)
+      hw.removeEventListener('contextmenu', onContextMenu)
+    })
   })
 
   onCleanup(() => {
@@ -121,7 +202,20 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     >
       <canvas
         ref={canvas}
-        style={{ display: 'block', width: '100%', height: '100%' }}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          cursor: 'grab',
+          'touch-action': 'none',
+        }}
+      />
+      <NavGizmo
+        camera={camera}
+        onOrbit={orbit}
+        onPan={pan}
+        onZoom={zoom}
+        onReset={resetCamera}
       />
     </div>
   )
