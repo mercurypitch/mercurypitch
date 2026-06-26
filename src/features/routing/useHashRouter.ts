@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -36,6 +36,11 @@ export interface UseHashRouterDeps {
 
 export function useHashRouter(deps: UseHashRouterDeps): void {
   let hashSyncing = false
+  // The state→hash sync effects must not run until the initial route has been
+  // restored from the URL on mount — otherwise the default tab (singing) would
+  // overwrite the preserved hash (e.g. #/piano) before it's read, sending every
+  // reload back to Singing.
+  const [initialized, setInitialized] = createSignal(false)
 
   const dispatchRoute = (route: HashRoute) => {
     hashSyncing = true
@@ -90,6 +95,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   onMount(() => {
     dispatchRoute(parseHash(window.location.hash))
+    setInitialized(true)
     window.addEventListener('hashchange', onHashChange)
   })
 
@@ -99,7 +105,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   // Sync activeTab + UvrPanel state → URL hash
   createEffect(() => {
-    if (hashSyncing) return
+    if (!initialized() || hashSyncing) return
     if (
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
@@ -132,7 +138,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   // Sync walkthrough/guide state → URL hash
   createEffect(() => {
-    if (hashSyncing) return
+    if (!initialized() || hashSyncing) return
     if (deps.walkthroughModalOpen() && deps.selectedWalkthrough() !== null) {
       const id = deps.selectedWalkthrough()!
       const expectedHash = `#/learn/${id}`

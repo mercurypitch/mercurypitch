@@ -27,6 +27,12 @@ describe('parseHash', () => {
       type: 'tab',
       tab: 'challenges',
     })
+    // Regression: exercises/guitar/piano/jam must round-trip so a reload on
+    // those tabs restores them instead of falling back to singing.
+    expect(parseHash('#/exercises')).toEqual({ type: 'tab', tab: 'exercises' })
+    expect(parseHash('#/guitar')).toEqual({ type: 'tab', tab: 'guitar' })
+    expect(parseHash('#/piano')).toEqual({ type: 'tab', tab: 'piano' })
+    expect(parseHash('#/jam')).toEqual({ type: 'tab', tab: 'jam' })
     // #/uvr is treated as uvr-upload by the router, not tab:uvr
     // Test separately in UVR routes below
   })
