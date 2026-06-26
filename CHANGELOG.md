@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.4] - 2026-06-26
+
+### Fixed
+
+- Changing your display name on a cloud account now works — it was failing with an error because the app tried to update a leaderboard table that's no longer there. The leaderboard already picks up your new name automatically.
+
 ## [0.4.3] - 2026-06-26
 
 ### Fixed
