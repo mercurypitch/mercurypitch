@@ -12,7 +12,6 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -84,11 +83,6 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'arpeggio-jumper') {
-      showCelebration({
-        score: r.score,
-        exerciseType: r.type,
-        metrics: r.metrics,
-      })
       untrack(() => {
         recordExerciseResult({
           type: r.type,

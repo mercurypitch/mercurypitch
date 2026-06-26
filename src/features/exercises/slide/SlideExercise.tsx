@@ -10,7 +10,6 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_SLIDE } from '../types'
@@ -74,11 +73,6 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'slide') {
-      showCelebration({
-        score: r.score,
-        exerciseType: r.type,
-        metrics: r.metrics,
-      })
       untrack(() => {
         recordExerciseResult({
           type: r.type,

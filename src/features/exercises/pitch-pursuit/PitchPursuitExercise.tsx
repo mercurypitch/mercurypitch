@@ -7,7 +7,6 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
-import { showCelebration } from '@/stores/ui-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -72,11 +71,6 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'pitch-pursuit') {
-      showCelebration({
-        score: r.score,
-        exerciseType: r.type,
-        metrics: r.metrics,
-      })
       untrack(() => {
         recordExerciseResult({
           type: r.type,

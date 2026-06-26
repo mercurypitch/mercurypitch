@@ -12,7 +12,6 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { showCelebration } from '@/stores/ui-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -85,11 +84,6 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'drone-intonation') {
-      showCelebration({
-        score: r.score,
-        exerciseType: r.type,
-        metrics: r.metrics,
-      })
       untrack(() => {
         recordExerciseResult({
           type: r.type,

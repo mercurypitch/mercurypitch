@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Readability: lifted dark-theme `--text-secondary` (`#8b949e → #a8b3bf`) and `--text-muted` (`#484f58 → #6e7681`); bumped tiny font sizes and set explicit colors on `.badge-tier`/`.badge-name`/`.achievement-desc`/`.achievement-points`; `.exercise-result-label` now uses a fixed light color (it sits on the always-dark result overlay) at a larger size.
+- Exercise completion flow: removed the per-exercise `showCelebration(...)` modal and the `ExerciseShell` result overlay. A finished run now returns to the idle (selector + Start) state — `complete` is treated as idle-like and the Start button calls `onTryAgain` (reset + start). Recent scores render via a new `ExerciseScoreHistory` chip (top-right of the canvas, reads `exerciseHistory()`/`getExerciseStats()`), most-recent highlighted, with Best. `recordExerciseResult`/`updateDifficultyFromEma` still run in each component's result effect.
+- Exercise idle layout: Start + note pills + timer toggle moved into a centred `.exercise-idle-center` beneath the description (was a bottom strip). Added a spacebar shortcut in `ExerciseShell` (start when idle, stop when active, try-again when complete; ignored while a form control/button is focused).
+- Readability: lifted dark-theme `--text-secondary` (`#8b949e → #a8b3bf`) and `--text-muted` (`#484f58 → #6e7681`); bumped tiny font sizes and set explicit colors on `.badge-tier`/`.badge-name`/`.achievement-desc`/`.achievement-points`.
 - Auto-zoom (`PitchOverTimeCanvas`): when the sung range is small, the view now targets ~1 octave + ~4 semitones headroom (floored at 0.5 oct half-range) instead of forcing 2 octaves, with exponential smoothing of the log bounds between frames to avoid jumpiness.
 
 ### Fixed

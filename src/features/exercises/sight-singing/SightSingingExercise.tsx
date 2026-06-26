@@ -11,7 +11,6 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyName, scaleType } from '@/stores/app-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { currentScale } from '@/stores/melody-store'
-import { showCelebration } from '@/stores/ui-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_SIGHT_SINGING } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -130,11 +129,6 @@ const SightSingingExercise: Component<Props> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'sight-singing') {
-      showCelebration({
-        score: r.score,
-        exerciseType: r.type,
-        metrics: r.metrics,
-      })
       untrack(() =>
         recordExerciseResult({
           type: r.type,

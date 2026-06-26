@@ -468,6 +468,70 @@
   min-width: 200px;
 }
 
+/* ── ExerciseShell: recent-scores chip (canvas corner) ─────── */
+
+.exercise-score-history {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.exercise-score-history-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.exercise-score-history-scores {
+  display: flex;
+  gap: 4px;
+}
+
+.exercise-score-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 6px;
+  opacity: 0.55;
+}
+
+.exercise-score-chip.latest {
+  opacity: 1;
+}
+
+.exercise-score-chip-good {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.exercise-score-chip-ok {
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.exercise-score-chip-poor {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.exercise-score-history-best {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+}
+
 .exercise-active-controls {
   display: flex;
   align-items: center;
