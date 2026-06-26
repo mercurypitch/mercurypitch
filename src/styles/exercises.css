@@ -396,7 +396,7 @@
   height: 30px;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
@@ -415,7 +415,7 @@
   padding: 14px 16px;
   border-radius: 12px;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   font-size: 0.85rem;
   line-height: 1.55;
   color: var(--text-secondary);
@@ -469,7 +469,7 @@
 .exercise-timer-toggle {
   display: inline-flex;
   border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   background: var(--bg-card);
   overflow: hidden;
 }
@@ -486,7 +486,7 @@
 }
 
 .exercise-timer-segment + .exercise-timer-segment {
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border);
 }
 
 .exercise-timer-segment:hover {

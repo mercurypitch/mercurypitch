@@ -181,7 +181,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         <Show when={isComplete() && props.resultScore() != null}>
           <div class="exercise-result-overlay">
             <div class={`exercise-result-score ${scoreClass()}`}>
-              {props.resultScore()}%
+              {props.resultScore() ?? 0}%
             </div>
             <div class="exercise-result-label">{props.resultSummary}</div>
             <button
