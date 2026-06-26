@@ -263,3 +263,13 @@ export function IconList(p: IconProps): JSX.Element {
     </svg>
   )
 }
+
+export function IconQuestion(p: IconProps): JSX.Element {
+  return (
+    <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12" y2="17" />
+    </svg>
+  )
+}

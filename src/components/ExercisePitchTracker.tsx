@@ -13,6 +13,8 @@ interface ExercisePitchTrackerProps {
   }>
   isActive: () => boolean
   targetNoteMidi?: () => number | undefined
+  /** Optional moving guide frequency (Hz) for glide drills. */
+  movingTarget?: () => number | null
 }
 
 export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
@@ -55,6 +57,7 @@ export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
             isDetecting={props.isActive}
             visibleWindowSeconds={10}
             targetNoteMidi={props.targetNoteMidi}
+            movingTarget={props.movingTarget}
           />
         </div>
       </Show>

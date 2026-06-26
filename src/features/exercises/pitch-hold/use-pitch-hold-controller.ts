@@ -1,6 +1,7 @@
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -53,7 +54,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
       const pitch = base.currentPitch()
       if (pitch && pitch.freq > 0) {
         totalFrames++
-        const midi = 12 * Math.log2(pitch.freq / 440) + 69
+        const midi = freqToExactMidi(pitch.freq)
         const cents = (midi - targetMidi) * 100
         if (Math.abs(cents) <= zoneRadius) {
           inZoneFrames++

@@ -6,6 +6,25 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2026-06-26
+
+### Added
+
+- `ExerciseShell` (`src/features/exercises/ExerciseShell.tsx`): shared chrome for all 18 exercise components — header with a top-left "?" help toggle + collapsible panel, idle area with the Start button placed beneath the description/settings, a single result action (one "Try Again" in the overlay; "Change Target" in the controls), and an optional auto-score timer. All 18 `XxxExercise.tsx` components migrated to it; per-exercise canvas/metrics/idle content passed via slots. Celebration `createEffect`, controllers, autoStart, and `onCleanup` preserved per component.
+- `exercise-help.ts`: `Record<ExerciseType, { summary; body }>` beginner help text; `IconQuestion` added to `exercise-icons.tsx`.
+- Timed auto-score mode for the continuous-hold drills (long-note, vibrato, pitch-hold) via the shell's `autoTimer` prop (presets 5/15/30s). The timer arms only on the `active` transition so the `autoStart` path and the transient `count-in` state never trigger a premature stop.
+- Moving target guide in `PitchOverTimeCanvas` (`movingTarget?: () => number | null`, forwarded through `ExercisePitchTracker`): an amber guide line + glowing dot that moves vertically. Driven by `SlideExercise` as a looping triangle-wave glide between the from/to notes.
+
+### Changed
+
+- Readability: lifted dark-theme `--text-secondary` (`#8b949e → #a8b3bf`) and `--text-muted` (`#484f58 → #6e7681`); bumped tiny font sizes and set explicit colors on `.badge-tier`/`.badge-name`/`.achievement-desc`/`.achievement-points`; `.exercise-result-label` now uses a fixed light color (it sits on the always-dark result overlay) at a larger size.
+- Auto-zoom (`PitchOverTimeCanvas`): when the sung range is small, the view now targets ~1 octave + ~4 semitones headroom (floored at 0.5 oct half-range) instead of forcing 2 octaves, with exponential smoothing of the log bounds between frames to avoid jumpiness.
+
+### Fixed
+
+- `detectVibrato` (`src/lib/vocal-analyzer.ts`): the FFT assumed uniformly-spaced samples, but the live pitch stream is non-uniform (samples emitted only on confident frames at variable rAF timing), so vibrato was mis-rated or undetected. It now resamples MIDI onto a uniform time grid via the `time` field, applies a Hann window, and derives `binWidth` from the resampled rate. The vibrato controller analyzes a trailing ~4s window. Added a non-uniform/lossy-sampling regression test.
+- Time-window scoring bug across controllers: `siren`, `drone-intonation`, `staccato-precision`, `routine-runner` selected the recent window via `slice(-floor(windowMs/50))` (a wrong 50ms/sample assumption). Replaced with a shared `trailingSamplesByTime(history, windowMs)` helper that filters by the `time` field. `interval-trainer` now averages cents deviation via `freqToExactMidi` (was custom MIDI math + single best sample); `pitch-hold` uses `freqToExactMidi`; `sight-singing` scores each note over its real on-screen window (recorded `_getElapsed()` boundaries) instead of an assumed `i * 2000ms` grid.
+
 ## [0.4.4] - 2026-06-26
 
 ### Fixed

@@ -3,7 +3,7 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { detectSlides } from '@/lib/vocal-analyzer'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SIREN } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -120,9 +120,7 @@ export function useSirenController(
   function evaluateRound(): void {
     const round = rounds[roundIndex]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(
-      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
-    )
+    const recentSamples = trailingSamplesByTime(history, MATCH_WINDOW_MS)
 
     // Score how close user got to the target end note
     let roundScore = 0

@@ -3,7 +3,7 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -116,9 +116,7 @@ export function useDroneIntonationController(
     const interval = rounds[roundIndex]
     const targetMidi = droneMidi + interval.semitones
     const history = base.pitchHistory()
-    const recentSamples = history.slice(
-      -Math.max(1, Math.floor(matchWindowMs / 50)),
-    )
+    const recentSamples = trailingSamplesByTime(history, matchWindowMs)
 
     let roundScore = 0
     if (recentSamples.length > 0) {

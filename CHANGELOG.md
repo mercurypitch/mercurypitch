@@ -3,6 +3,25 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.5] - 2026-06-26
+
+### Added
+
+- **Beginner help on every exercise**: a "?" button in the top-left explains, in plain words, what each exercise is (what a long note, slide, or vibrato actually is), how to do it, and what's being scored.
+- **Timed auto-score mode** for the held-note exercises (Long Note, Vibrato, Pitch Hold): pick a 5s, 15s or 30s timer and the exercise scores itself when the time is up — no need to reach for Stop.
+- **A guide dot for slides**: the Slide exercise now shows a dot that glides up and down so you can follow the pitch path with your voice.
+
+### Changed
+
+- **Clearer exercise screens**: the Start button now sits beneath the exercise description, and after you finish there's a single, obvious next action instead of two competing "Try Again" buttons.
+- **Easier-to-read text**: lightened the faint gray text on the Challenges tab and the exercise score panel so labels, badges and results are legible.
+- **Smarter pitch tracker zoom**: when you sing within about one octave, the tracker now zooms in to that octave instead of showing three or four, so your pitch line is easier to follow.
+
+### Fixed
+
+- **Vibrato is now detected properly**: the Vibrato exercise (and the Vocal Analysis vibrato readout) often failed to recognize a real vibrato; it now reads your pitch correctly and scores it.
+- **More accurate exercise scoring**: several exercises (Siren, Drone, Staccato, Interval Trainer, Sight-Singing, Routine Runner, Pitch Hold) measured the recent part of your take using a wrong assumption about timing, which could skew scores — they now use the real timeline.
+
 ## [0.4.4] - 2026-06-26
 
 ### Fixed
