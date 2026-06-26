@@ -396,10 +396,16 @@ export function melodyToGuitarNotes(
     duration: number
     targetFreq?: number
     id?: string
+    /** Explicit fingering (Guitar Pro imports); auto-placed when omitted. */
+    stringIndex?: number
+    fret?: number
   }>,
 ): GuitarNote[] {
   return items.map((item, index) => {
-    const { stringIndex, fret } = assignGuitarString(item.midi)
+    const { stringIndex, fret } =
+      item.stringIndex !== undefined && item.fret !== undefined
+        ? { stringIndex: item.stringIndex, fret: item.fret }
+        : assignGuitarString(item.midi)
     return {
       id: item.id ?? `note-${index}-${item.startBeat}-${item.midi}`,
       midi: item.midi,

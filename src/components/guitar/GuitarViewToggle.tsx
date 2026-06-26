@@ -1,8 +1,8 @@
 import type { Component } from 'solid-js'
 
 export interface GuitarViewToggleProps {
-  activeView: () => 'interactive' | 'hero'
-  onViewChange: (view: 'interactive' | 'hero') => void
+  activeView: () => 'interactive' | 'hero' | '3d'
+  onViewChange: (view: 'interactive' | 'hero' | '3d') => void
 }
 
 export const GuitarViewToggle: Component<GuitarViewToggleProps> = (props) => {
@@ -24,6 +24,13 @@ export const GuitarViewToggle: Component<GuitarViewToggleProps> = (props) => {
         onClick={() => props.onViewChange('hero')}
       >
         Practice
+      </button>
+      <button
+        class="gp-view-tab"
+        classList={{ 'gp-view-tab-active': props.activeView() === '3d' }}
+        onClick={() => props.onViewChange('3d')}
+      >
+        3D
       </button>
     </div>
   )

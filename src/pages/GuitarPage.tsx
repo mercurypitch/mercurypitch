@@ -12,6 +12,8 @@ import { MicInsightHint } from '@/components/MicInsightHint'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
+import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
+import { PracticeLoopBar } from '@/features/guitar-tab-3d/ui/PracticeLoopBar'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -601,22 +603,53 @@ export function GuitarPage(props: GuitarPageProps) {
         <Show
           when={guitarView() === 'interactive'}
           fallback={
-            <GuitarFretboardCanvas
-              fallingNotes={guitar.fallingNotes}
-              gameState={guitar.gameState}
-              playheadBeat={guitar.playheadBeat}
-              hitResults={guitar.hitResults}
-              combo={guitar.combo}
-              score={guitar.score}
-              visibleBeatWindow={guitar.visibleBeatWindow}
-              showNoteLabels={guitar.showNoteLabels}
-              songBpm={guitar.songBpm}
-              isActive={() => activeTab() === TAB_GUITAR}
-              detectedMidi={guitar.detectedMidi}
-              detectedClarity={guitar.detectedClarity}
-              showUserNotes={guitar.showUserNotes}
-              onStrum={guitar.strumString}
-            />
+            <Show
+              when={guitarView() === '3d'}
+              fallback={
+                <GuitarFretboardCanvas
+                  fallingNotes={guitar.fallingNotes}
+                  gameState={guitar.gameState}
+                  playheadBeat={guitar.playheadBeat}
+                  hitResults={guitar.hitResults}
+                  combo={guitar.combo}
+                  score={guitar.score}
+                  visibleBeatWindow={guitar.visibleBeatWindow}
+                  showNoteLabels={guitar.showNoteLabels}
+                  songBpm={guitar.songBpm}
+                  isActive={() => activeTab() === TAB_GUITAR}
+                  detectedMidi={guitar.detectedMidi}
+                  detectedClarity={guitar.detectedClarity}
+                  showUserNotes={guitar.showUserNotes}
+                  onStrum={guitar.strumString}
+                />
+              }
+            >
+              <PracticeLoopBar
+                playbackRate={guitar.playbackRate}
+                setPlaybackRate={guitar.setPlaybackRate}
+                loopEnabled={guitar.loopEnabled}
+                loopStartBeat={guitar.loopStartBeat}
+                setLoopStartBeat={guitar.setLoopStartBeat}
+                loopEndBeat={guitar.loopEndBeat}
+                setLoopEndBeat={guitar.setLoopEndBeat}
+                rampEnabled={guitar.rampEnabled}
+                setRampEnabled={guitar.setRampEnabled}
+                startingRate={guitar.startingRate}
+                setStartingRate={guitar.setStartingRate}
+                stepRate={guitar.stepRate}
+                setStepRate={guitar.setStepRate}
+                startPracticeLoop={guitar.startPracticeLoop}
+                stopPracticeLoop={guitar.stopPracticeLoop}
+                playheadBeat={guitar.playheadBeat}
+              />
+              <GuitarTab3DView
+                fallingNotes={guitar.fallingNotes}
+                playheadBeat={guitar.playheadBeat}
+                visibleBeatWindow={guitar.visibleBeatWindow}
+                showNoteLabels={guitar.showNoteLabels}
+                isActive={() => activeTab() === TAB_GUITAR}
+              />
+            </Show>
           }
         >
           <InteractiveGuitarFretboardCanvas

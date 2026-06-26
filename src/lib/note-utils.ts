@@ -34,6 +34,11 @@ export function midiToNoteName(midi: number): string {
   return NOTE_NAMES[midi % 12]
 }
 
+/** Note name with scientific-pitch octave, e.g. 60 -> "C4", 48 -> "C3". */
+export function midiToNoteNameOctave(midi: number): string {
+  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+}
+
 export function noteColor(midi: number): string {
   return NOTE_COLORS[midiToNoteName(midi)] ?? '#8b949e'
 }

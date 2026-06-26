@@ -69,3 +69,6 @@ package-lock.json
 
 # Local-only working notes / scratch (not for the public repo)
 assets/local/
+
+# Local Guitar Pro sample tabs (copyrighted — never commit)
+assets/gp-samples/

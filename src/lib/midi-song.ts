@@ -11,6 +11,10 @@ export interface MidiSongNote {
   midi: number
   startBeat: number
   duration: number
+  /** Original tab fingering (Guitar Pro imports only): 0-based, high string first. */
+  stringIndex?: number
+  /** Original tab fret (Guitar Pro imports only). */
+  fret?: number
 }
 
 /** One playable track (drum channels are filtered out). */
@@ -162,6 +166,11 @@ const GM_INSTRUMENTS = [
   'Applause',
   'Gunshot',
 ]
+
+/** General MIDI program (0–127) → instrument name. */
+export function gmInstrumentName(program: number): string {
+  return GM_INSTRUMENTS[program] ?? `Program ${program}`
+}
 
 const DRUM_CHANNEL = 9
 

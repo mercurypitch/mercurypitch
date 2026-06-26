@@ -31,8 +31,8 @@ import { KEY_OFFSETS, SCALE_DEFINITIONS } from '@/lib/scale-data'
 import { activeTab as activeTabSignal } from '@/stores'
 
 export interface GuitarFretboardState {
-  guitarView: Accessor<'interactive' | 'hero'>
-  setGuitarView: Setter<'interactive' | 'hero'>
+  guitarView: Accessor<'interactive' | 'hero' | '3d'>
+  setGuitarView: Setter<'interactive' | 'hero' | '3d'>
   fretboardKey: Accessor<string>
   setFretboardKey: Setter<string>
   fretboardScale: Accessor<string>
@@ -84,9 +84,9 @@ export function GuitarProvider(props: { children: JSX.Element }) {
 
   const guitar = useGuitarPracticeController(audioEngine)
 
-  const [guitarView, setGuitarView] = createSignal<'interactive' | 'hero'>(
-    'hero',
-  )
+  const [guitarView, setGuitarView] = createSignal<
+    'interactive' | 'hero' | '3d'
+  >('hero')
   const [fretboardKey, setFretboardKey] = createSignal('C')
   const [fretboardScale, setFretboardScale] = createSignal('major')
   const [lastPlayedNote, setLastPlayedNote] = createSignal<{
