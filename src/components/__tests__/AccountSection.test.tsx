@@ -149,11 +149,10 @@ describe('AccountSection', () => {
         expect.any(String),
         { displayName: 'MercuryMaff' },
       )
-      // Existing leaderboard rows are renamed to match
-      expect(dbMocks.leaderboardRepo.update).toHaveBeenCalledWith('lb1', {
-        displayName: 'MercuryMaff',
-      })
     })
+    // The leaderboard is server-derived from the profile, so the client must
+    // not touch the (no-longer-exposed) leaderboardEntries table.
+    expect(dbMocks.leaderboardRepo.update).not.toHaveBeenCalled()
   })
 
   it('disables saving an unchanged or empty display name', async () => {

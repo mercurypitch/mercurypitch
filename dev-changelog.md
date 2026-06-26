@@ -6,6 +6,12 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-06-26
+
+### Fixed
+
+- Display-name save failed on cloud accounts with `404 Unknown entity: leaderboardEntries`. `AccountSection.saveDisplayName` still client-wrote the `leaderboardEntries` table, but the db-worker no longer exposes it (`workers/db-worker/src/tables.ts`) — the leaderboard is server-derived from `sessionRecords` and reads names from `userProfiles` (`COALESCE(p."displayName", ...)`). Dropped the dead leaderboard-rename block and the unused `LeaderboardEntry` import; updating `userProfiles.displayName` is sufficient. Only surfaced on cloud accounts (the local Dexie table is directly writable). Added a regression test asserting the leaderboard repo is not written.
+
 ## [0.4.3] - 2026-06-26
 
 ### Fixed
