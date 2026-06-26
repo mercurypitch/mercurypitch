@@ -11,8 +11,10 @@
 // metrics, idle placeholder and result summary.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
+import { MicButton } from '@/components/MicButton'
+import { EngineContext } from '@/contexts/EngineContext'
 import { EXERCISE_HELP } from './exercise-help'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import type { ExerciseStatus, ExerciseType } from './types'
@@ -73,6 +75,32 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // A finished run drops straight back to the selector + Start screen (with the
   // latest score now in the corner chip) — there is no separate result screen.
   const isIdleLike = () => status() === 'idle' || status() === 'complete'
+
+  // ── Mic toggle (header) ──
+  // The mic is normally started by the exercise on Start, but a header toggle
+  // lets the singer turn it on early to check input (the button shows a live
+  // level fill) and off when done. Reads the shared engine so no per-exercise
+  // wiring is needed; the exercise reuses an already-on mic when it starts.
+  // useContext (not useEngines) so the shell still renders without an
+  // EngineProvider, e.g. in unit tests — the mic button is simply omitted then.
+  const engines = useContext(EngineContext)
+  const practiceEngine = engines?.practiceEngine ?? null
+  const [micOn, setMicOn] = createSignal(practiceEngine?.isMicActive() ?? false)
+  onMount(() => {
+    if (!practiceEngine) return
+    const id = setInterval(() => setMicOn(practiceEngine.isMicActive()), 200)
+    onCleanup(() => clearInterval(id))
+  })
+  const toggleMic = (): void => {
+    if (!practiceEngine) return
+    if (practiceEngine.isMicActive()) {
+      practiceEngine.stopMic()
+      setMicOn(false)
+    } else {
+      void practiceEngine.startMic()
+      setMicOn(true)
+    }
+  }
 
   // ── Auto-timer: count down once the run is active, then auto-stop ──
   let timerHandle: ReturnType<typeof setInterval> | undefined
@@ -188,9 +216,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           </button>
         </div>
         <h2 class="exercise-title">{props.title}</h2>
-        <span class="exercise-score-display">
-          {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
-        </span>
+        <div class="exercise-header-right">
+          <Show when={engines}>
+            <MicButton active={micOn()} onClick={toggleMic} />
+          </Show>
+          <span class="exercise-score-display">
+            {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
+          </span>
+        </div>
       </div>
 
       <Show when={helpOpen()}>
