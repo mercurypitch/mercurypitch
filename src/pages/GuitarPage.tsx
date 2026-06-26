@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
@@ -38,6 +38,8 @@ export function GuitarPage(props: GuitarPageProps) {
   const { audioEngine } = useEngines()
   const ctx = useGuitar()
   const guitar = ctx.guitar
+  // Bottom fretboard reference panel in the 3D view (toggle).
+  const [show3dFretboard, setShow3dFretboard] = createSignal(true)
 
   // Mic feedback: "can't hear you" / "too quiet" while playing along. Gate on
   // 'playing' only — during the count-in the user is waiting, not playing, so a
@@ -641,12 +643,15 @@ export function GuitarPage(props: GuitarPageProps) {
                 startPracticeLoop={guitar.startPracticeLoop}
                 stopPracticeLoop={guitar.stopPracticeLoop}
                 playheadBeat={guitar.playheadBeat}
+                showFretboard={show3dFretboard}
+                setShowFretboard={setShow3dFretboard}
               />
               <GuitarTab3DView
                 fallingNotes={guitar.fallingNotes}
                 playheadBeat={guitar.playheadBeat}
                 visibleBeatWindow={guitar.visibleBeatWindow}
                 showNoteLabels={guitar.showNoteLabels}
+                showFretboard={show3dFretboard}
                 isActive={() => activeTab() === TAB_GUITAR}
               />
             </Show>

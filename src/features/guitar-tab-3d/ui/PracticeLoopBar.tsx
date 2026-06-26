@@ -25,6 +25,8 @@ export interface PracticeLoopBarProps {
   startPracticeLoop: () => void
   stopPracticeLoop: () => void
   playheadBeat: Accessor<number>
+  showFretboard: Accessor<boolean>
+  setShowFretboard: (on: boolean) => void
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -111,9 +113,24 @@ export function PracticeLoopBar(props: PracticeLoopBarProps) {
         onInc={() => props.setStepRate(clamp(props.stepRate() + 0.05, 0.05, 1))}
       />
 
+      <label
+        style={{
+          display: 'flex',
+          'align-items': 'center',
+          gap: '4px',
+          'margin-left': 'auto',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={props.showFretboard()}
+          onChange={(e) => props.setShowFretboard(e.currentTarget.checked)}
+        />
+        Fretboard
+      </label>
+
       <button
         class="gp-btn"
-        style={{ 'margin-left': 'auto' }}
         onClick={() =>
           props.loopEnabled()
             ? props.stopPracticeLoop()

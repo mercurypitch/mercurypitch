@@ -11,26 +11,12 @@
 import type { HighwayLayout } from '../projection'
 import { beatsToDepth, DEFAULT_LAYOUT, laneU, nearLaneWidth, projectBoardPoint, } from '../projection'
 import type { TabRenderer, TabScene, TabSceneNote } from '../TabRenderer'
+import { colorForString, withAlpha } from './color'
 
 /** Depth just behind the hit line where passed notes are culled. */
 const MIN_DEPTH = -0.06
 /** Beats-window either side of the hit line counted as "active" (playing now). */
 const ACTIVE_BEATS = 0.09
-
-function withAlpha(hex: string, alpha: number): string {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
-
-function colorForString(
-  colors: readonly string[],
-  stringIndex: number,
-): string {
-  return colors[stringIndex % colors.length] ?? '#ffffff'
-}
 
 export class Canvas2dTabRenderer implements TabRenderer {
   private canvas: HTMLCanvasElement | null = null
