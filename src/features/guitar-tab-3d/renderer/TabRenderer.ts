@@ -49,8 +49,14 @@ export interface TabScene {
   /** How many beats ahead are visible (depth of the highway). */
   visibleBeatWindow: number
   stringCount: number
+  /** Open-string MIDI per string index (0 = highest), for the neck note names. */
+  openMidi: readonly number[]
+  /** Highest fret to lay out on the neck. */
+  maxFret: number
   /** Show note names on blocks instead of fret numbers. */
   showNoteLabels: boolean
+  /** Draw the neck (fretboard) at the hit line. */
+  showFretboard: boolean
   display: DisplaySettings
 }
 
