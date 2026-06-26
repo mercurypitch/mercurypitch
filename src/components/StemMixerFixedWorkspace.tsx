@@ -509,10 +509,6 @@ export const StemMixerFixedWorkspace: Component<
                       Transcribe
                     </button>
                   </Show>
-                  <MicInsightHint
-                    message={props.micMessage}
-                    style={{ 'margin-left': 'auto', 'font-size': '0.7rem' }}
-                  />
                   <PitchCanvasToolbar
                     showNoteLabels={props.showNoteLabels}
                     setShowNoteLabels={props.setShowNoteLabels}
@@ -531,6 +527,21 @@ export const StemMixerFixedWorkspace: Component<
                   onPointerDown={(e) => props.handleCanvasPointerDown(e)}
                   onPointerMove={(e) => props.handleCanvasPointerMove(e)}
                   onPointerUp={(e) => props.handleCanvasPointerUp(e)}
+                />
+                {/* Overlay the mic hint on the canvas (not in the fixed-height
+                    header) so a long message can't balloon the header on
+                    narrow panels. pointer-events:none lets canvas edits pass. */}
+                <MicInsightHint
+                  message={props.micMessage}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: '10px',
+                    transform: 'translateX(-50%)',
+                    'max-width': 'calc(100% - 16px)',
+                    'font-size': '0.7rem',
+                    'z-index': '4',
+                  }}
                 />
                 <div
                   class="sm-resize-handle"
