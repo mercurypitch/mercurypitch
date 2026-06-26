@@ -7,9 +7,13 @@ interface NotePillSelectorProps {
   onChange: (note: string) => void
   label?: string
   class?: string
+  /** Notes to render greyed-out and non-selectable (e.g. the other endpoint). */
+  disabledNotes?: string[]
 }
 
 export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
+  const isDisabled = (note: string): boolean =>
+    props.disabledNotes?.includes(note) ?? false
   return (
     <div class={`note-pill-selector ${props.class ?? ''}`}>
       {props.label != null && (
@@ -21,7 +25,10 @@ export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
             <button
               type="button"
               class={`note-pill${note === props.selected ? ' note-pill-selected' : ''}`}
-              onClick={() => props.onChange(note)}
+              disabled={isDisabled(note)}
+              onClick={() => {
+                if (!isDisabled(note)) props.onChange(note)
+              }}
               aria-pressed={note === props.selected}
             >
               {note}
