@@ -17,7 +17,7 @@ interface EngineContextValue {
   ready: () => boolean
 }
 
-const EngineContext = createContext<EngineContextValue | null>(null)
+export const EngineContext = createContext<EngineContextValue | null>(null)
 
 export function EngineProvider(props: { children: JSX.Element }) {
   const [ready, setReady] = createSignal(false)

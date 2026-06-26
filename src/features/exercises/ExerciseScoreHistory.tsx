@@ -30,19 +30,25 @@ export const ExerciseScoreHistory: Component<{ type: ExerciseType }> = (
   return (
     <Show when={recent().length > 0}>
       <div class="exercise-score-history" aria-label="Your recent scores">
-        <span class="exercise-score-history-title">Recent</span>
-        <div class="exercise-score-history-scores">
-          <For each={recent()}>
-            {(entry, i) => (
-              <span
-                class={`exercise-score-chip exercise-score-chip-${scoreTier(entry.score)}`}
-                classList={{ latest: i() === 0 }}
-              >
-                {entry.score}%
-              </span>
-            )}
-          </For>
-        </div>
+        <span class="exercise-score-history-title">Last score</span>
+        <span
+          class={`exercise-score-latest exercise-score-chip-${scoreTier(recent()[0]!.score)}`}
+        >
+          {recent()[0]!.score}%
+        </span>
+        <Show when={recent().length > 1}>
+          <div class="exercise-score-history-scores">
+            <For each={recent().slice(1)}>
+              {(entry) => (
+                <span
+                  class={`exercise-score-chip exercise-score-chip-${scoreTier(entry.score)}`}
+                >
+                  {entry.score}%
+                </span>
+              )}
+            </For>
+          </div>
+        </Show>
         <span class="exercise-score-history-best">Best {best()}%</span>
       </div>
     </Show>
