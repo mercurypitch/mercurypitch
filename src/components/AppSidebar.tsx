@@ -16,7 +16,7 @@ import { StatsBars } from '@/components/StatsBars'
 import { StreakCalendar } from '@/components/StreakCalendar'
 import { CalendarHeatmap } from '@/features/practice-intelligence/components/CalendarHeatmap'
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, hasPageTour, sessionResults, setActiveTab, showNotification, startPageTour, } from '@/stores'
@@ -84,6 +84,20 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   }
   const isPracticeOrSettingsTab = () =>
     ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
+
+  // Mic device + sensitivity controls apply to every tab that drives pitch
+  // detection through the shared practice engine (not just Singing). Karaoke
+  // and Jam use their own mic pipelines, so they're intentionally excluded.
+  const isMicTab = () =>
+    (
+      [
+        TAB_SINGING,
+        TAB_SETTINGS,
+        TAB_GUITAR,
+        TAB_PIANO,
+        TAB_EXERCISES,
+      ] as string[]
+    ).includes(activeTab())
 
   // Live score derived from noteResults — updates as each note is played.
   const liveScore = createMemo(() => {
@@ -394,8 +408,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </div>
       </Show>
 
-      {/* Mic & sensitivity quick presets (practice/singing) */}
-      <Show when={isPracticeOrSettingsTab()}>
+      {/* Mic & sensitivity controls — on every pitch-detection tab. */}
+      <Show when={isMicTab()}>
         <div class={styles.sidebarSection}>
           <h2 class={styles.panelTitle}>Mic &amp; Sensitivity</h2>
           <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
