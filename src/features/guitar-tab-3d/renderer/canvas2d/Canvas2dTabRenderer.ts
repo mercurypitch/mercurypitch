@@ -1,38 +1,39 @@
 // ============================================================
-// Canvas2dTabRenderer — tilted 3D fretboard, notes fall onto cells
+// Canvas2dTabRenderer — falling-note highway onto a fretboard
 // ============================================================
 //
-// The neck is a perspective plane receding to a vanishing point: strings are
-// stacked horizontal lines (low-E near/bottom, high-e far/top), frets fan up as
-// gray lines with numbers at the near edge, and notes descend from the
-// vanishing point onto their exact (string, fret) cell — the Rocksmith/ToneLib
-// look. Pure Canvas 2D; the WebGPU backend will slot in behind TabRenderer.
+// A receding highway (frets are the columns, time is the depth) down which
+// notes fall toward the player, landing on a flat fretboard at the near edge:
+// 6 stacked strings + vertical fret wires + fret numbers. A note travels down
+// its fret column and lands on its string row at hit time — the Rocksmith/
+// ToneLib layout. Pure Canvas 2D; the WebGPU backend slots in behind TabRenderer.
 
 import { beatsToDepth, perspectiveScale } from '../projection'
 import type { TabRenderer, TabScene, TabSceneNote } from '../TabRenderer'
 import { colorForString, withAlpha } from './color'
 import { cellKey, cellNoteName, isDoubleFretMarker, isFretMarker, } from './FretboardStrip'
 
-/** Perspective strength for the note descent (time → vanishing point). */
-const DEPTH = 4.5
-/** Gentle perspective for the string rows so the neck isn't crammed. */
-const STRING_DEPTH = 1.3
+/** Perspective strength for the time depth (note descent / horizon). */
+const DEPTH = 4
 /** Beats either side of the hit line counted as "now playing". */
 const ACTIVE_BEATS = 0.1
-/** Open-string label gutter (px) at the near edge. */
-const LEFT_GUTTER = 22
 
-interface NeckGeom {
+interface HighwayGeom {
   vpX: number
   vpY: number
-  /** Perspective factor for a string row (0 = high-e far, last = low-E near). */
-  scaleOf: (s: number) => number
-  yOf: (s: number) => number
-  xOf: (fret: number, s: number) => number
-  /** Fret-cell width at a string row. */
-  colWOf: (s: number) => number
+  bandTop: number
+  bandBottom: number
+  colW: number
   stringCount: number
   maxFret: number
+  /** X of a fret column at the near (band-bottom) edge. */
+  colBottomX: (fret: number) => number
+  /** Screen Y of a string row on the near fretboard band. */
+  stringY: (s: number) => number
+  /** Cell centre (string, fret) on the fretboard band. */
+  cellX: (s: number, fret: number) => number
+  /** Fret-cell width at a given screen Y (perspective). */
+  colWAt: (y: number) => number
 }
 
 export class Canvas2dTabRenderer implements TabRenderer {
@@ -57,26 +58,39 @@ export class Canvas2dTabRenderer implements TabRenderer {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
-  private buildGeom(scene: TabScene): NeckGeom {
+  private buildGeom(scene: TabScene): HighwayGeom {
     const W = this.cssWidth
     const H = this.cssHeight
     const N = Math.max(1, scene.stringCount)
     const maxFret = scene.maxFret
     const vpX = W / 2
-    const vpY = H * 0.06
-    const nearY = H * 0.87
-    const nearHalfW = W * 0.46
-    // Depth of a string row: low-E (last index) is nearest, high-e farthest.
-    const depthOf = (s: number) => (N > 1 ? (N - 1 - s) / (N - 1) : 0)
-    const scaleOf = (s: number) => perspectiveScale(depthOf(s), STRING_DEPTH)
-    const yOf = (s: number) => vpY + (nearY - vpY) * scaleOf(s)
-    const halfWOf = (s: number) => nearHalfW * scaleOf(s)
-    const xOf = (fret: number, s: number) => {
-      const frac = maxFret > 0 ? fret / maxFret : 0.5
-      return vpX + (frac - 0.5) * 2 * halfWOf(s)
+    const vpY = H * 0.07
+    const bandTop = H * 0.66
+    const bandBottom = H * 0.93
+    const leftPad = 30
+    const rightPad = 12
+    const colW = (W - leftPad - rightPad) / (maxFret + 1)
+    const colBottomX = (f: number) => leftPad + (f + 0.5) * colW
+    const stringY = (s: number) =>
+      bandTop + (N > 1 ? s / (N - 1) : 0.5) * (bandBottom - bandTop)
+    // Parameter along a fret column (0 = vanishing point, 1 = near band edge).
+    const pAt = (y: number) => (y - vpY) / (bandBottom - vpY)
+    const cellX = (s: number, f: number) =>
+      vpX + (colBottomX(f) - vpX) * pAt(stringY(s))
+    const colWAt = (y: number) => colW * pAt(y)
+    return {
+      vpX,
+      vpY,
+      bandTop,
+      bandBottom,
+      colW,
+      stringCount: N,
+      maxFret,
+      colBottomX,
+      stringY,
+      cellX,
+      colWAt,
     }
-    const colWOf = (s: number) => (2 * halfWOf(s)) / (maxFret + 1)
-    return { vpX, vpY, scaleOf, yOf, xOf, colWOf, stringCount: N, maxFret }
   }
 
   render(scene: TabScene): void {
@@ -96,7 +110,8 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     }
 
-    if (scene.showFretboard) this.drawNeck(ctx, scene, g, active)
+    this.drawHighwayGrid(ctx, scene, g)
+    if (scene.showFretboard) this.drawFretboard(ctx, scene, g, active)
 
     const beatWindow = Math.max(1, scene.visibleBeatWindow)
     const visible = scene.notes
@@ -124,85 +139,113 @@ export class Canvas2dTabRenderer implements TabRenderer {
     ctx.clearRect(0, 0, W, H)
     const grad = ctx.createLinearGradient(0, 0, 0, H)
     grad.addColorStop(0, '#05050a')
-    grad.addColorStop(1, '#0e0e16')
+    grad.addColorStop(1, '#0d0d15')
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, W, H)
   }
 
-  private drawNeck(
+  // Faint receding grid above the fretboard: fret columns + beat rungs.
+  private drawHighwayGrid(
     ctx: CanvasRenderingContext2D,
     scene: TabScene,
-    g: NeckGeom,
+    g: HighwayGeom,
+  ): void {
+    ctx.strokeStyle = 'rgba(120,150,220,0.10)'
+    ctx.lineWidth = 1
+    for (let f = 0; f <= g.maxFret; f++) {
+      ctx.beginPath()
+      ctx.moveTo(g.vpX, g.vpY)
+      ctx.lineTo(g.colBottomX(f), g.bandBottom)
+      ctx.stroke()
+    }
+
+    // Beat rungs receding to the horizon.
+    const beatWindow = Math.max(1, scene.visibleBeatWindow)
+    const startBeat = Math.ceil(scene.playheadBeat)
+    for (
+      let beat = startBeat;
+      beat <= scene.playheadBeat + beatWindow;
+      beat++
+    ) {
+      const t = beatsToDepth(beat - scene.playheadBeat, beatWindow)
+      if (t < 0 || t > 1) continue
+      const a = perspectiveScale(t, DEPTH)
+      const lx = g.vpX + (g.colBottomX(0) - g.vpX) * a
+      const rx = g.vpX + (g.colBottomX(g.maxFret) - g.vpX) * a
+      const y = g.vpY + (g.bandBottom - g.vpY) * a
+      ctx.beginPath()
+      ctx.moveTo(lx, y)
+      ctx.lineTo(rx, y)
+      ctx.strokeStyle = 'rgba(120,150,220,0.07)'
+      ctx.stroke()
+    }
+  }
+
+  // The flat fretboard at the near edge: strings, fret wires, numbers, inlays.
+  private drawFretboard(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    g: HighwayGeom,
     active: ReadonlySet<string>,
   ): void {
     const { stringCount: N, maxFret } = g
-    const nearS = N - 1
-    const farS = 0
 
-    // Fret wires (fan from the near low-E edge up to the far high-e edge).
+    // Fret wires within the band.
     for (let f = 0; f <= maxFret + 1; f++) {
       const fr = Math.min(f, maxFret)
-      // Draw at column boundaries: shift by half a cell.
       const off = f - fr - 0.5
-      const xNear = g.xOf(fr, nearS) + off * g.colWOf(nearS)
-      const xFar = g.xOf(fr, farS) + off * g.colWOf(farS)
+      const topX = g.cellX(0, fr) + off * g.colWAt(g.stringY(0))
+      const botX = g.cellX(N - 1, fr) + off * g.colWAt(g.stringY(N - 1))
       ctx.beginPath()
-      ctx.moveTo(xNear, g.yOf(nearS))
-      ctx.lineTo(xFar, g.yOf(farS))
+      ctx.moveTo(topX, g.stringY(0))
+      ctx.lineTo(botX, g.stringY(N - 1))
       ctx.strokeStyle =
-        f === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.1)'
+        f === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.16)'
       ctx.lineWidth = f === 0 ? 2.5 : 1
       ctx.stroke()
     }
 
-    // Inlay markers down the centre of the neck.
+    // Inlay markers.
+    const midS = (N - 1) / 2
+    const midY = g.stringY(midS)
     for (let f = 1; f <= maxFret; f++) {
       if (!isFretMarker(f)) continue
-      const midS = (N - 1) / 2
-      const cx = g.xOf(f, midS)
+      const cx = g.cellX(midS, f)
       const dots = isDoubleFretMarker(f)
-        ? [-g.colWOf(midS) * 0.6, g.colWOf(midS) * 0.6]
+        ? [-g.colWAt(midY) * 0.5, g.colWAt(midY) * 0.5]
         : [0]
       for (const dy of dots) {
         ctx.beginPath()
-        ctx.arc(cx, g.yOf(midS) + dy, 2.5, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(255,255,255,0.16)'
+        ctx.arc(cx, midY + dy, 2.5, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255,255,255,0.2)'
         ctx.fill()
       }
     }
 
-    // Strings (coloured, stacked, receding) + open-string labels.
+    // Strings + open-string labels + optional per-cell note names.
     for (let s = 0; s < N; s++) {
-      const y = g.yOf(s)
+      const y = g.stringY(s)
       const color = colorForString(scene.display.stringColors, s)
       ctx.beginPath()
-      ctx.moveTo(g.xOf(0, s), y)
-      ctx.lineTo(g.xOf(maxFret, s), y)
-      ctx.strokeStyle = withAlpha(color, 0.65)
-      ctx.lineWidth = Math.max(1, (1 + (N - 1 - s) * 0.3) * g.scaleOf(s))
+      ctx.moveTo(g.cellX(s, 0), y)
+      ctx.lineTo(g.cellX(s, maxFret), y)
+      ctx.strokeStyle = withAlpha(color, 0.7)
+      ctx.lineWidth = 1 + (N - 1 - s) * 0.3
       ctx.stroke()
       const open = scene.openMidi[s] ?? 40
-      ctx.fillStyle = withAlpha(color, 0.9)
-      ctx.font = `600 ${Math.max(8, 12 * g.scaleOf(s))}px ui-sans-serif, system-ui, sans-serif`
+      ctx.fillStyle = withAlpha(color, 0.95)
+      ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'middle'
-      ctx.fillText(cellNoteName(open, 0), g.xOf(0, s) - LEFT_GUTTER * 0.3, y)
-    }
+      ctx.fillText(cellNoteName(open, 0), g.cellX(s, 0) - 8, y)
 
-    // Optional per-cell note names.
-    if (scene.showNoteLabels) {
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      for (let s = 0; s < N; s++) {
-        const open = scene.openMidi[s] ?? 40
-        const colW = g.colWOf(s)
-        if (colW < 13) continue
-        const y = g.yOf(s)
+      if (scene.showNoteLabels && g.colWAt(y) >= 13) {
+        ctx.textAlign = 'center'
+        ctx.font = '9px ui-sans-serif, system-ui, sans-serif'
         for (let f = 0; f <= maxFret; f++) {
           if (active.has(cellKey(s, f))) continue
-          ctx.fillStyle = 'rgba(255,255,255,0.28)'
-          ctx.font = `${Math.max(7, 9 * g.scaleOf(s))}px ui-sans-serif, system-ui, sans-serif`
-          ctx.fillText(cellNoteName(open, f), g.xOf(f, s), y)
+          ctx.fillStyle = 'rgba(255,255,255,0.3)'
+          ctx.fillText(cellNoteName(open, f), g.cellX(s, f), y)
         }
       }
     }
@@ -210,57 +253,54 @@ export class Canvas2dTabRenderer implements TabRenderer {
     // Active cells.
     for (let s = 0; s < N; s++) {
       const open = scene.openMidi[s] ?? 40
-      const y = g.yOf(s)
+      const y = g.stringY(s)
       const color = colorForString(scene.display.stringColors, s)
       for (let f = 0; f <= maxFret; f++) {
         if (!active.has(cellKey(s, f))) continue
-        const cx = g.xOf(f, s)
+        const cx = g.cellX(s, f)
         ctx.fillStyle = color
         ctx.beginPath()
-        ctx.arc(cx, y, Math.max(5, g.colWOf(s) * 0.4), 0, Math.PI * 2)
+        ctx.arc(cx, y, Math.max(5, g.colWAt(y) * 0.42), 0, Math.PI * 2)
         ctx.fill()
         ctx.fillStyle = 'rgba(10,10,16,0.95)'
-        ctx.font = `700 ${Math.max(8, 10 * g.scaleOf(s))}px ui-sans-serif, system-ui, sans-serif`
+        ctx.font = '700 10px ui-sans-serif, system-ui, sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(cellNoteName(open, f), cx, y)
       }
     }
 
-    // Fret numbers at the near edge.
+    // Fret numbers below the near edge.
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    const numY = g.yOf(nearS) + 20
+    const numY = g.bandBottom + 16
     for (let f = 0; f <= maxFret; f++) {
       ctx.fillStyle = isFretMarker(f)
         ? 'rgba(120,170,255,0.85)'
-        : 'rgba(255,255,255,0.32)'
+        : 'rgba(255,255,255,0.35)'
       ctx.font = `${isFretMarker(f) ? '600 ' : ''}11px ui-sans-serif, system-ui, sans-serif`
-      ctx.fillText(String(f), g.xOf(f, nearS), numY)
+      ctx.fillText(String(f), g.colBottomX(f), numY)
     }
   }
 
   private drawNote(
     ctx: CanvasRenderingContext2D,
     scene: TabScene,
-    g: NeckGeom,
+    g: HighwayGeom,
     note: TabSceneNote,
     t0: number,
     t1: number,
   ): void {
     const color = colorForString(scene.display.stringColors, note.stringIndex)
     const baseAlpha = note.isBacking ? 0.4 : 1
-    const cellX = g.xOf(note.fret, note.stringIndex)
-    const cellY = g.yOf(note.stringIndex)
-    const cellW = g.colWOf(note.stringIndex)
+    const cx = g.cellX(note.stringIndex, note.fret)
+    const cy = g.stringY(note.stringIndex)
+    const cellW = g.colWAt(cy)
 
+    // The note travels down its fret column from the vanishing point to the cell.
     const at = (t: number) => {
       const a = perspectiveScale(t, DEPTH)
-      return {
-        x: g.vpX + (cellX - g.vpX) * a,
-        y: g.vpY + (cellY - g.vpY) * a,
-        a,
-      }
+      return { x: g.vpX + (cx - g.vpX) * a, y: g.vpY + (cy - g.vpY) * a, a }
     }
     const head = at(Math.max(t0, -0.03))
 
@@ -278,7 +318,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
       ctx.fill()
     }
 
-    const w = Math.max(4, cellW * 0.78 * head.a)
+    const w = Math.max(4, cellW * 0.82 * head.a)
     const h = w * 0.66
     const isActive =
       !note.isBacking &&
