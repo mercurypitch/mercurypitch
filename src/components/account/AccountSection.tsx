@@ -10,7 +10,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
 import { getDb } from '@/db'
-import type { LeaderboardEntry, UserProfile } from '@/db/entities'
+import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
@@ -41,9 +41,9 @@ export const AccountSection: Component = () => {
   createEffect(() => setNameDraft(profileName()))
 
   /**
-   * Persist the display name to the cloud profile and rename the
-   * user's existing leaderboard entries to match. Google sign-in has
-   * no name prompt, so this editor is how Google users pick one.
+   * Persist the display name to the cloud profile. The leaderboard reads
+   * names from the profile, so no separate update is needed. Google sign-in
+   * has no name prompt, so this editor is how Google users pick one.
    */
   async function saveDisplayName(): Promise<void> {
     const name = nameDraft().trim()
@@ -65,14 +65,9 @@ export const AccountSection: Component = () => {
           currentStreak: 0,
         })
       }
-      const leaderboard =
-        db.getRepository<LeaderboardEntry>('leaderboardEntries')
-      const mine = await leaderboard.findAll({ where: { userId } })
-      await Promise.all(
-        mine.map((entry) =>
-          leaderboard.update(entry.id, { displayName: name }),
-        ),
-      )
+      // The leaderboard is server-derived from sessionRecords and pulls the
+      // display name from userProfiles, so updating the profile above is
+      // enough — there is no client-writable leaderboardEntries table.
       await refreshMe()
       showNotification('Display name updated', 'info')
     } catch (err) {
