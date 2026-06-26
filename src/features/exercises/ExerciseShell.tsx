@@ -11,7 +11,7 @@
 // metrics, idle placeholder and result summary.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, For, on, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
 import { EXERCISE_HELP } from './exercise-help'
 import type { ExerciseStatus, ExerciseType } from './types'
@@ -62,9 +62,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [remainingMs, setRemainingMs] = createSignal(0)
 
   const help = () => EXERCISE_HELP[props.type]
-  const isIdle = () => props.status() === 'idle'
-  const isActive = () => props.status() === 'active'
-  const isComplete = () => props.status() === 'complete'
+  // Memoize the status string. props.status() reads base.state(), which is
+  // replaced every animation frame (elapsedMs), so reading it directly in the
+  // auto-timer `on(...)` below would fire the effect ~60x/sec and perpetually
+  // re-arm the timer. The memo only notifies when the status value changes.
+  const status = createMemo(() => props.status())
+  const isIdle = () => status() === 'idle'
+  const isActive = () => status() === 'active'
+  const isComplete = () => status() === 'complete'
 
   const scoreClass = (): string => {
     const s = props.resultScore() ?? 0
@@ -82,9 +87,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // Arm only on the 'active' transition so the autoStart path and the
   // transient 'count-in' state never trigger a premature stop.
   createEffect(
-    on([() => props.status(), timerMode], ([status, mode]) => {
+    on([status, timerMode], ([statusValue, mode]) => {
       clearTimer()
-      if (!props.autoTimer || status !== 'active' || typeof mode !== 'number') {
+      if (
+        !props.autoTimer ||
+        statusValue !== 'active' ||
+        typeof mode !== 'number'
+      ) {
         return
       }
       const end = performance.now() + mode * 1000
