@@ -57,6 +57,9 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   // isn't driving the range, so it re-initializes cleanly on the next entry.
   let smoothedLogMin: number | null = null
   let smoothedLogMax: number | null = null
+  // Trail of recent moving-target (guide) positions so it draws a snake-like
+  // line, not just a dot. Keyed to the sample timeline for x-alignment.
+  let guideTrail: Array<{ time: number; freq: number }> = []
 
   const [internalZoomLevel, setInternalZoomLevel] = createSignal(1)
   const [internalAutoZoom, setInternalAutoZoom] = createSignal(true)
@@ -392,26 +395,50 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   ) => {
     if (!ctx) return
     const freq = props.movingTarget?.()
-    if (freq == null || freq <= 0) return
-    const y = freqToY(freq, h, logMin, logRange)
-    if (y < 4 || y > h - 4) return
-
-    // Amber guide line at the target height the singer should be on now.
-    ctx.strokeStyle = 'rgba(219,109,40,0.45)'
-    ctx.lineWidth = 1.2
-    ctx.setLineDash([4, 5])
-    ctx.beginPath()
-    ctx.moveTo(MARGIN, y)
-    ctx.lineTo(w - MARGIN, y)
-    ctx.stroke()
-    ctx.setLineDash([])
-
-    // Glowing guide dot at the "now" line (where the latest sample sits).
+    if (freq == null || freq <= 0) {
+      guideTrail = []
+      return
+    }
     const samples = props.samples()
     if (samples.length === 0) return
     const nowTime = samples[samples.length - 1]!.time
+
+    // Record the guide head against the sample timeline. Update in place while
+    // "now" hasn't advanced (silence) so the trail doesn't spike vertically.
+    const last = guideTrail[guideTrail.length - 1]
+    if (last !== undefined && last.time === nowTime) {
+      last.freq = freq
+    } else {
+      guideTrail.push({ time: nowTime, freq })
+    }
+    const cutoff = nowTime - visibleWindow()
+    while (guideTrail.length > 0 && guideTrail[0]!.time < cutoff) {
+      guideTrail.shift()
+    }
+
+    // Trail: a snake-like line along the path the guide has taken.
+    ctx.strokeStyle = 'rgba(219,109,40,0.6)'
+    ctx.lineWidth = 2.5
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    let started = false
+    for (const g of guideTrail) {
+      const gx = sampleToX(g.time, nowTime, w)
+      const gy = freqToY(g.freq, h, logMin, logRange)
+      if (!started) {
+        ctx.moveTo(gx, gy)
+        started = true
+      } else {
+        ctx.lineTo(gx, gy)
+      }
+    }
+    if (started) ctx.stroke()
+
+    // Glowing guide dot at the head.
+    const y = freqToY(freq, h, logMin, logRange)
     const x = sampleToX(nowTime, nowTime, w)
-    if (x < MARGIN || x > w - MARGIN) return
+    if (y < 4 || y > h - 4 || x < MARGIN || x > w - MARGIN) return
     const grad = ctx.createRadialGradient(x, y, 0, x, y, GLOW_RADIUS)
     grad.addColorStop(0, 'rgba(219,109,40,0.85)')
     grad.addColorStop(1, 'rgba(219,109,40,0)')

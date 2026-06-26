@@ -32,12 +32,31 @@ const CLASSIFICATION_LABELS: Record<number, string> = {
 }
 
 const SlideExercise: Component<SlideExerciseProps> = (props) => {
-  const [fromNote, setFromNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
-  )
-  const [toNote, setToNote] = createSignal(
-    untrack(() => getDefaultNote(vocalRangePreset())),
-  )
+  // Default to two distinct, in-range notes a few semitones apart for the
+  // user's voice type (getNoteOptions is chromatic, so index == semitones).
+  const slideDefaults = untrack(() => {
+    const preset = vocalRangePreset()
+    const opts = getNoteOptions(preset)
+    const from = getDefaultNote(preset)
+    const fromIdx = Math.max(0, opts.indexOf(from))
+    let toIdx = fromIdx + 3
+    if (toIdx > opts.length - 1) toIdx = fromIdx - 3
+    toIdx = Math.max(0, Math.min(opts.length - 1, toIdx))
+    return { from: opts[fromIdx] ?? from, to: opts[toIdx] ?? from }
+  })
+  const [fromNote, setFromNoteRaw] = createSignal(slideDefaults.from)
+  const [toNote, setToNote] = createSignal(slideDefaults.to)
+
+  // 'from' and 'to' must differ: moving 'from' onto the current 'to' bumps
+  // 'to' to an adjacent in-range note instead.
+  const setFromNote = (note: string): void => {
+    setFromNoteRaw(note)
+    if (note === untrack(toNote)) {
+      const opts = getNoteOptions(untrack(vocalRangePreset))
+      const i = opts.indexOf(note)
+      setToNote(opts[i + 1] ?? opts[i - 1] ?? note)
+    }
+  }
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
@@ -53,6 +72,8 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
   const controller = useSlideController(base)
 
   const handleStart = async () => {
+    // Guard: a slide needs two different notes.
+    if (fromNote() === toNote()) return
     controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
     await base.start()
     controller.startLoop()
@@ -108,14 +129,18 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
     return freqToExactMidi(p.freq)
   }
 
-  const pitchPosPct = () => {
-    const midi = currentMidi()
-    if (midi === 0) return 50
-    const from = noteToMidi(fromNote())
-    const to = noteToMidi(toNote())
-    const range = to - from
-    if (range === 0) return 50
-    return Math.max(5, Math.min(95, ((midi - from) / range) * 90 + 5))
+  const fromMidi = () => noteToMidi(fromNote())
+  const toMidi = () => noteToMidi(toNote())
+
+  // Vertical position (% from the top) for a midi value on the slide ladder:
+  // the lower note sits near the bottom, the higher note near the top, so the
+  // user's pitch dot travels up/down as they glide.
+  const topPctFor = (midi: number): number => {
+    const lo = Math.min(fromMidi(), toMidi())
+    const hi = Math.max(fromMidi(), toMidi())
+    const span = hi - lo || 1
+    const fromBottom = ((midi - lo) / span) * 80 + 10 // 10..90 from bottom
+    return 100 - Math.max(2, Math.min(98, fromBottom))
   }
 
   return (
@@ -148,6 +173,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
             notes={getNoteOptions(vocalRangePreset())}
             selected={toNote()}
             onChange={setToNote}
+            disabledNotes={[fromNote()]}
           />
         </>
       }
@@ -167,16 +193,28 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
             <span>{toNote()}</span>
           </div>
           <div class="slide-viz">
-            <div class="slide-target-start" style="left:10%;top:50%" />
-            <div class="slide-target-end" style="left:90%;top:50%" />
-            <div class="slide-pitch-trace">
-              <div class="slide-pitch-dot" style={`left:${pitchPosPct()}%`} />
-              <Show when={currentMidi() > 0}>
-                <div class="slide-pitch-label" style={`left:${pitchPosPct()}%`}>
-                  {midiToNoteName(Math.round(currentMidi()))}
-                </div>
-              </Show>
+            <div
+              class="slide-target slide-target-start"
+              style={`top:${topPctFor(fromMidi())}%`}
+            >
+              <span class="slide-target-label">{fromNote()}</span>
             </div>
+            <div
+              class="slide-target slide-target-end"
+              style={`top:${topPctFor(toMidi())}%`}
+            >
+              <span class="slide-target-label">{toNote()}</span>
+            </div>
+            <Show when={currentMidi() > 0}>
+              <div
+                class="slide-pitch-dot"
+                style={`top:${topPctFor(currentMidi())}%`}
+              >
+                <span class="slide-pitch-label">
+                  {midiToNoteName(Math.round(currentMidi()))}
+                </span>
+              </div>
+            </Show>
           </div>
           <div class="slide-metrics">
             <div class="slide-metric">
