@@ -436,6 +436,25 @@
 
 /* ── ExerciseShell: idle / active control groups ───────────── */
 
+/* Idle: description + settings + Start grouped and centred in the panel. */
+.exercise-idle-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+}
+
+/* Inside the centred idle group the description shouldn't claim full height. */
+.exercise-idle-center .exercise-idle-placeholder {
+  min-height: 0;
+  height: auto;
+  padding: 0;
+}
+
 .exercise-idle-controls {
   display: flex;
   flex-direction: column;

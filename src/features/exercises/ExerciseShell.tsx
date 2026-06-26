@@ -11,7 +11,7 @@
 // metrics, idle placeholder and result summary.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
 import { EXERCISE_HELP } from './exercise-help'
 import type { ExerciseStatus, ExerciseType } from './types'
@@ -112,6 +112,39 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   )
   onCleanup(clearTimer)
 
+  // Spacebar starts/stops the exercise (and restarts from the result screen),
+  // ignoring presses while a form control or button is focused so it doesn't
+  // hijack note pickers, selects, or typing.
+  onMount(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== ' ' && e.code !== 'Space') return
+      const el = e.target as HTMLElement | null
+      const tag = el?.tagName
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        el?.isContentEditable === true
+      ) {
+        return
+      }
+      const s = status()
+      if (s === 'idle') {
+        e.preventDefault()
+        props.onStart()
+      } else if (s === 'active') {
+        e.preventDefault()
+        props.onStop()
+      } else if (s === 'complete') {
+        e.preventDefault()
+        props.onTryAgain()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    onCleanup(() => window.removeEventListener('keydown', onKey))
+  })
+
   const TimerToggle = (): JSX.Element => (
     <div
       class="exercise-timer-toggle"
@@ -173,16 +206,35 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
 
       <div class="exercise-canvas-area">
         <Show when={isIdle()}>
-          <Show
-            when={props.idlePlaceholder}
-            fallback={
-              <div class="exercise-idle-placeholder">
-                <p>{help().summary}</p>
-              </div>
-            }
-          >
-            {props.idlePlaceholder}
-          </Show>
+          {/* Description + settings + Start live together in the centre of the
+              panel before the run; they slide out of view once it's active. */}
+          <div class="exercise-idle-center">
+            <Show
+              when={props.idlePlaceholder}
+              fallback={
+                <div class="exercise-idle-placeholder">
+                  <p>{help().summary}</p>
+                </div>
+              }
+            >
+              {props.idlePlaceholder}
+            </Show>
+            <div class="exercise-idle-controls">
+              <Show when={props.idleSettings}>{props.idleSettings}</Show>
+              <Show when={props.autoTimer}>
+                <TimerToggle />
+              </Show>
+              <Show when={props.error?.() != null}>
+                <div class="exercise-error">{props.error!()}</div>
+              </Show>
+              <button
+                class="exercise-btn exercise-btn-primary exercise-idle-start"
+                onClick={() => props.onStart()}
+              >
+                {props.startLabel ?? 'Start'}
+              </button>
+            </div>
+          </div>
         </Show>
 
         <Show when={isActive()}>{props.activeContent}</Show>
@@ -204,24 +256,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        <Show when={isIdle()}>
-          <div class="exercise-idle-controls">
-            <Show when={props.idleSettings}>{props.idleSettings}</Show>
-            <Show when={props.autoTimer}>
-              <TimerToggle />
-            </Show>
-            <Show when={props.error?.() != null}>
-              <div class="exercise-error">{props.error!()}</div>
-            </Show>
-            <button
-              class="exercise-btn exercise-btn-primary exercise-idle-start"
-              onClick={() => props.onStart()}
-            >
-              {props.startLabel ?? 'Start'}
-            </button>
-          </div>
-        </Show>
-
         <Show when={isActive()}>
           <div class="exercise-active-controls">
             <Show when={props.autoTimer && typeof timerMode() === 'number'}>
