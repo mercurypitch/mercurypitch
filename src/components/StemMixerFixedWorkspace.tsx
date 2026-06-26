@@ -68,6 +68,9 @@ interface StemMixerFixedWorkspaceProps {
 
   // Mic-feedback message, shown in the Vocal Pitch panel header.
   micMessage: Accessor<string>
+  // Live mic input level 0–1 (drives the "fill" meter) + whether mic is on.
+  micLevel: Accessor<number>
+  micActive: Accessor<boolean>
 
   // Whisper alignment
   whisperStatus: Accessor<string>
@@ -456,6 +459,16 @@ export const StemMixerFixedWorkspace: Component<
               >
                 <div class="sm-panel-header">
                   Vocal Pitch
+                  <Show when={props.micActive()}>
+                    <div
+                      class="sm-mic-meter"
+                      title="Mic input level"
+                      aria-hidden="true"
+                      style={{ '--mic-level': String(props.micLevel()) }}
+                    >
+                      <div class="sm-mic-meter-fill" />
+                    </div>
+                  </Show>
                   <Show when={props.whisperStatus() === 'loading'}>
                     <span class="pitch-alignment-stats whisper-processing">
                       Loading whisper

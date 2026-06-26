@@ -665,7 +665,9 @@ export const useStemMixerAudioController = (
       if (deps.micActive()) {
         const micAnalyser = deps.getMicAnalyserNode()
         if (micAnalyser) {
-          const micData = new Float32Array(PITCH_FFT_SIZE)
+          // Buffer size follows the global setting (mic analyser fftSize), so
+          // read its current size rather than a fixed constant.
+          const micData = new Float32Array(micAnalyser.fftSize)
           micAnalyser.getFloatTimeDomainData(micData)
           const micPd = deps.getMicPitchDetector()
           const mp = micPd!.detect(micData)

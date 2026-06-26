@@ -3,11 +3,13 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
+import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -47,6 +49,8 @@ export interface StemMixerMicController {
   micActive: Accessor<boolean>
   micPitch: Accessor<DetectedPitch | null>
   setMicPitch: Setter<DetectedPitch | null>
+  /** Live input level 0–1 (for the volume "fill" meter). */
+  micLevel: Accessor<number>
   micError: Accessor<string>
   /** Mic monitoring — routes the mic to the speakers so the singer hears
    *  themselves over the backing track (true karaoke). Off by default to avoid
@@ -85,6 +89,7 @@ export const useStemMixerMicController = (
   const [micEnabled, setMicEnabled] = createSignal(false)
   const [micActive, setMicActive] = createSignal(false)
   const [micPitch, setMicPitch] = createSignal<DetectedPitch | null>(null)
+  const [micLevel, setMicLevel] = createSignal(0)
   const [micError, setMicError] = createSignal('')
   const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>(
     [],
@@ -110,6 +115,38 @@ export const useStemMixerMicController = (
   let monitorGainNode: GainNode | null = null
   let micPitchDetector: PitchDetector | null = null
   let micPitchHistory: PitchNote[] = []
+
+  // Apply the global pitch settings to the live mic detector so Karaoke matches
+  // the Singing pipeline (algorithm, buffer size, sensitivity, thresholds) and
+  // the sidebar "Mic & Sensitivity" controls take effect here too.
+  const applyDetectorSettings = (): void => {
+    const algo = pitchAlgorithm()
+    const buf = pitchBufferSize()
+    const s = settings()
+    if (!micPitchDetector || !micAnalyserNode) return
+    micAnalyserNode.fftSize = buf
+    micPitchDetector.setAlgorithm(algo)
+    micPitchDetector.setSensitivity(s.sensitivity)
+    micPitchDetector.setMinConfidence(s.minConfidence)
+    micPitchDetector.setMinAmplitude(s.minAmplitude)
+  }
+  // Re-apply whenever the global settings change while the mic is live.
+  createEffect(applyDetectorSettings)
+
+  // Drive the input-level "fill" meter from the mic analyser while active.
+  createEffect(() => {
+    if (!micActive()) {
+      setMicLevel(0)
+      return
+    }
+    let raf = 0
+    const loop = (): void => {
+      setMicLevel(Math.min(1, rmsOfAnalyser(micAnalyserNode) * 4))
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    onCleanup(() => cancelAnimationFrame(raf))
+  })
 
   /** Wire or unwire the monitor branch (micGain → monitorGain → destination)
    *  based on the enabled flag. Safe to call repeatedly. */
@@ -218,7 +255,7 @@ export const useStemMixerMicController = (
         micGainNode = ctx.createGain()
         micGainNode.gain.value = 1.0
         micAnalyserNode = ctx.createAnalyser()
-        micAnalyserNode.fftSize = PITCH_FFT_SIZE
+        micAnalyserNode.fftSize = pitchBufferSize()
         micAnalyserNode.smoothingTimeConstant = 0.3
         source.connect(micGainNode)
         micGainNode.connect(micAnalyserNode)
@@ -228,10 +265,12 @@ export const useStemMixerMicController = (
 
         micPitchDetector = new PitchDetector({
           sampleRate: ctx.sampleRate,
-          bufferSize: PITCH_FFT_SIZE,
-          minConfidence: 0.35,
-          minAmplitude: 0.01,
+          bufferSize: pitchBufferSize(),
+          algorithm: pitchAlgorithm(),
         })
+        // Apply sensitivity/confidence/amplitude via the setters (which carry
+        // the correct 1–10 → RMS scaling), matching the Singing pipeline.
+        applyDetectorSettings()
 
         micPitchHistory = []
         setComparisonData([])
@@ -268,6 +307,7 @@ export const useStemMixerMicController = (
     micActive,
     micPitch,
     setMicPitch,
+    micLevel,
     micError,
     micMonitorEnabled,
     setMicMonitor,

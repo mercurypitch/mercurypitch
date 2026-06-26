@@ -1562,6 +1562,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showUserNoteLabels={showUserNoteLabels}
           setShowUserNoteLabels={setShowUserNoteLabels}
           micMessage={micInsights.message}
+          micLevel={mic.micLevel}
+          micActive={mic.micActive}
           showWaveform={showWaveform}
           showPitch={showPitch}
           showLyrics={showLyrics}
@@ -2025,6 +2027,24 @@ export const StemMixerStyles: string = `
 
 .sm-panel-header:active {
   cursor: grabbing;
+}
+
+/* Live mic input-level "fill" meter in the Vocal Pitch header. */
+.sm-mic-meter {
+  width: 48px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sm-mic-meter-fill {
+  height: 100%;
+  width: calc(var(--mic-level, 0) * 100%);
+  background: var(--accent, #58a6ff);
+  transition: width 0.06s linear;
 }
 
 /* Mic monitor (hear yourself) — sidebar control */
