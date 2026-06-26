@@ -13,7 +13,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
-- **Clearer exercise screens**: the Start button now sits beneath the exercise description, and after you finish there's a single, obvious next action instead of two competing "Try Again" buttons.
+- **Smoother exercise flow**: the Start button and options sit centred beneath the exercise description, and you can start/stop with the spacebar. Finishing no longer pops up a score modal — your last few scores now live quietly in the corner of the panel and the screen returns straight to Start so you can go again.
 - **Easier-to-read text**: lightened the faint gray text on the Challenges tab and the exercise score panel so labels, badges and results are legible.
 - **Smarter pitch tracker zoom**: when you sing within about one octave, the tracker now zooms in to that octave instead of showing three or four, so your pitch line is easier to follow.
 

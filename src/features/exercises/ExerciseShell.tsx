@@ -14,6 +14,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
 import { EXERCISE_HELP } from './exercise-help'
+import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import type { ExerciseStatus, ExerciseType } from './types'
 
 export interface AutoTimerConfig {
@@ -67,16 +68,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // auto-timer `on(...)` below would fire the effect ~60x/sec and perpetually
   // re-arm the timer. The memo only notifies when the status value changes.
   const status = createMemo(() => props.status())
-  const isIdle = () => status() === 'idle'
   const isActive = () => status() === 'active'
   const isComplete = () => status() === 'complete'
-
-  const scoreClass = (): string => {
-    const s = props.resultScore() ?? 0
-    if (s >= 80) return 'exercise-result-score-good'
-    if (s >= 50) return 'exercise-result-score-ok'
-    return 'exercise-result-score-poor'
-  }
+  // A finished run drops straight back to the selector + Start screen (with the
+  // latest score now in the corner chip) — there is no separate result screen.
+  const isIdleLike = () => status() === 'idle' || status() === 'complete'
 
   // ── Auto-timer: count down once the run is active, then auto-stop ──
   let timerHandle: ReturnType<typeof setInterval> | undefined
@@ -193,7 +189,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </div>
         <h2 class="exercise-title">{props.title}</h2>
         <span class="exercise-score-display">
-          {isIdle() ? '—' : `${Math.round(props.currentScore())}%`}
+          {isActive() ? `${Math.round(props.currentScore())}%` : '—'}
         </span>
       </div>
 
@@ -205,9 +201,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       </Show>
 
       <div class="exercise-canvas-area">
-        <Show when={isIdle()}>
+        <Show when={isIdleLike()}>
+          <ExerciseScoreHistory type={props.type} />
           {/* Description + settings + Start live together in the centre of the
-              panel before the run; they slide out of view once it's active. */}
+              panel before the run; they slide out of view once it's active. A
+              finished run returns here with the score now in the corner chip. */}
           <div class="exercise-idle-center">
             <Show
               when={props.idlePlaceholder}
@@ -229,7 +227,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               </Show>
               <button
                 class="exercise-btn exercise-btn-primary exercise-idle-start"
-                onClick={() => props.onStart()}
+                onClick={() =>
+                  isComplete() ? props.onTryAgain() : props.onStart()
+                }
               >
                 {props.startLabel ?? 'Start'}
               </button>
@@ -238,21 +238,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </Show>
 
         <Show when={isActive()}>{props.activeContent}</Show>
-
-        <Show when={isComplete() && props.resultScore() != null}>
-          <div class="exercise-result-overlay">
-            <div class={`exercise-result-score ${scoreClass()}`}>
-              {props.resultScore() ?? 0}%
-            </div>
-            <div class="exercise-result-label">{props.resultSummary}</div>
-            <button
-              class="exercise-btn exercise-btn-primary"
-              onClick={() => props.onTryAgain()}
-            >
-              Try Again
-            </button>
-          </div>
-        </Show>
       </div>
 
       <div class="exercise-controls">
@@ -270,15 +255,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               {props.stopLabel ?? 'Stop & Score'}
             </button>
           </div>
-        </Show>
-
-        <Show when={isComplete()}>
-          <button
-            class="exercise-btn exercise-btn-secondary"
-            onClick={() => props.onChangeTarget()}
-          >
-            {props.changeTargetLabel ?? 'Change Target'}
-          </button>
         </Show>
       </div>
     </div>
