@@ -408,8 +408,10 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     // Glowing guide dot at the "now" line (where the latest sample sits).
     const samples = props.samples()
-    const nowTime = samples.length > 0 ? samples[samples.length - 1]!.time : 0
+    if (samples.length === 0) return
+    const nowTime = samples[samples.length - 1]!.time
     const x = sampleToX(nowTime, nowTime, w)
+    if (x < MARGIN || x > w - MARGIN) return
     const grad = ctx.createRadialGradient(x, y, 0, x, y, GLOW_RADIUS)
     grad.addColorStop(0, 'rgba(219,109,40,0.85)')
     grad.addColorStop(1, 'rgba(219,109,40,0)')
