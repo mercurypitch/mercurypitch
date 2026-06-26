@@ -30,8 +30,8 @@
   --bg-card: #1c2128;
   --border: #30363d;
   --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
+  --text-secondary: #a8b3bf;
+  --text-muted: #6e7681;
   --surface: var(--bg-tertiary);
   --accent: #58a6ff;
   --accent-dim: rgba(88, 166, 255, 0.15);
@@ -1318,9 +1318,11 @@ input:checked + .settings-slider:before {
 
 .badge-name {
   font-size: 0.72rem;
+  color: var(--text-primary);
 }
 .badge-tier {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
 }
 
 .badge-check {
@@ -1387,9 +1389,11 @@ input:checked + .settings-slider:before {
 .achievement-desc {
   font-size: 0.72rem;
   margin-bottom: 4px;
+  color: var(--text-secondary);
 }
 .achievement-points {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
 }
 
 .achievement-progress {

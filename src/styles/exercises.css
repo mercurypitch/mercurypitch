@@ -380,6 +380,124 @@
   max-width: 360px;
 }
 
+/* ── ExerciseShell: header help toggle ─────────────────────── */
+
+.exercise-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.exercise-help-btn:hover,
+.exercise-help-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.exercise-help-panel {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.exercise-help-panel p {
+  margin: 0 0 8px 0;
+}
+
+.exercise-help-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.exercise-help-summary {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── ExerciseShell: idle / active control groups ───────────── */
+
+.exercise-idle-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+/* Start sits on its own row beneath the settings/description. */
+.exercise-idle-start {
+  min-width: 200px;
+}
+
+.exercise-active-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.exercise-timer-countdown {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  min-width: 42px;
+  text-align: right;
+}
+
+/* ── ExerciseShell: auto-score timer toggle ────────────────── */
+
+.exercise-timer-toggle {
+  display: inline-flex;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.exercise-timer-segment {
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.exercise-timer-segment + .exercise-timer-segment {
+  border-left: 1px solid var(--border-color);
+}
+
+.exercise-timer-segment:hover {
+  color: var(--text-primary);
+}
+
+.exercise-timer-segment.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .exercise-target-selector {
   display: flex;
   gap: 8px;
@@ -894,8 +1012,10 @@
 }
 
 .exercise-result-label {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+  font-size: 0.88rem;
+  /* Always on the dark result overlay (rgba(0,0,0,0.75)) regardless of
+     theme, so use a fixed light color rather than a theme token. */
+  color: #d6dde5;
   margin-bottom: 8px;
   text-align: center;
   line-height: 1.5;

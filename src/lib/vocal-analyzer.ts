@@ -605,6 +605,17 @@ function scoreSlide(
 
 // ── Phase 2.1: Vibrato Detection ──────────────────────────────
 
+/** Uniform sample rate (Hz) the pitch stream is resampled to before FFT. */
+const VIBRATO_RESAMPLE_HZ = 100
+
+const NO_VIBRATO: VibratoResult = {
+  rateHz: 0,
+  depthCents: 0,
+  classification: 'none',
+  detected: false,
+  confidence: 0,
+}
+
 /**
  * Detect vibrato from a continuous pitch stream.
  *
@@ -612,50 +623,70 @@ function scoreSlide(
  * ±25-50 cents depth. We run an FFT on the pitch time series
  * (in cents, relative to a smoothed baseline) to find the dominant
  * modulation frequency.
+ *
+ * The live pitch stream is NOT uniformly spaced — samples are only emitted
+ * on confident frames, at variable rAF timing. An FFT assumes a uniform
+ * sample rate, so we first resample the series onto an even time grid using
+ * each sample's `time` field; otherwise the frequency axis is distorted and
+ * vibrato is mis-rated or missed entirely. The `sampleRateEstimate` argument
+ * is now only a legacy hint and is ignored in favor of the resampled rate.
  */
 export function detectVibrato(
   pitchSamples: Array<{ time: number; freq: number; midi: number }>,
-  sampleRateEstimate = 100, // approximate Hz of pitch sample stream
+  _sampleRateEstimate = 100,
 ): VibratoResult {
-  if (pitchSamples.length < sampleRateEstimate * 0.25) {
-    return {
-      rateHz: 0,
-      depthCents: 0,
-      classification: 'none',
-      detected: false,
-      confidence: 0,
-    }
+  const sorted = pitchSamples
+    .filter((p) => Number.isFinite(p.time) && Number.isFinite(p.midi))
+    .sort((a, b) => a.time - b.time)
+  if (sorted.length < 4) return NO_VIBRATO
+
+  const t0 = sorted[0]!.time
+  const tN = sorted[sorted.length - 1]!.time
+  const span = tN - t0
+  if (span < 0.25) return NO_VIBRATO
+
+  // Resample MIDI onto a uniform grid via linear interpolation.
+  const sampleRate = VIBRATO_RESAMPLE_HZ
+  const count = Math.max(4, Math.round(span * sampleRate) + 1)
+  const midiGrid = new Float64Array(count)
+  let si = 0
+  for (let i = 0; i < count; i++) {
+    const t = t0 + (count > 1 ? (i / (count - 1)) * span : 0)
+    while (si < sorted.length - 2 && sorted[si + 1]!.time < t) si++
+    const a = sorted[si]!
+    const b = sorted[si + 1] ?? a
+    const dt = b.time - a.time
+    const frac = dt > 1e-9 ? Math.max(0, Math.min(1, (t - a.time) / dt)) : 0
+    midiGrid[i] = a.midi + (b.midi - a.midi) * frac
   }
 
-  // Convert to cents around a smoothed baseline
-  const cents: number[] = []
+  // Convert to cents around the baseline (mean), then remove residual DC.
   let baselineSum = 0
-  for (const p of pitchSamples) {
-    baselineSum += p.midi
+  for (let i = 0; i < count; i++) baselineSum += midiGrid[i]!
+  const baselineMidi = baselineSum / count
+  const centered = new Float64Array(count)
+  let dcSum = 0
+  for (let i = 0; i < count; i++) {
+    centered[i] = (midiGrid[i]! - baselineMidi) * 100
+    dcSum += centered[i]!
   }
-  const baselineMidi = baselineSum / pitchSamples.length
+  const dc = dcSum / count
+  for (let i = 0; i < count; i++) centered[i] -= dc
 
-  for (const p of pitchSamples) {
-    cents.push((p.midi - baselineMidi) * 100)
-  }
-
-  // Remove DC offset
-  const dcOffset = cents.reduce((a, b) => a + b, 0) / cents.length
-  const centered = cents.map((c) => c - dcOffset)
-
-  // Compute FFT on the pitch modulation signal
-  // Use radix-2, zero-padded
-  const n = nextPow2(centered.length)
+  // FFT with a Hann window to reduce spectral leakage.
+  const n = nextPow2(count)
   const real = new Float64Array(n)
   const imag = new Float64Array(n)
-  for (let i = 0; i < centered.length; i++) {
-    real[i] = centered[i]
+  for (let i = 0; i < count; i++) {
+    const w =
+      count > 1 ? 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (count - 1)) : 1
+    real[i] = centered[i]! * w
   }
 
   fft64(real, imag, n, false)
 
   // Find dominant frequency in 3-10 Hz range (vibrato band)
-  const binWidth = sampleRateEstimate / n
+  const binWidth = sampleRate / n
   const minBin = Math.max(1, Math.round(3 / binWidth))
   const maxBin = Math.min(n / 2 - 1, Math.round(10 / binWidth))
 
@@ -673,17 +704,17 @@ export function detectVibrato(
   const rateHz = maxBinIdx * binWidth
 
   // Measure depth: peak-to-peak cents of the modulation
-  const depthCents = measureVibratoDepth(centered, rateHz, sampleRateEstimate)
+  const depthCents = measureVibratoDepth(centered, rateHz, sampleRate)
 
   // Determine if vibrato is present
   // Significance: peak magnitude relative to mean magnitude in band
   let meanMag = 0
-  let count = 0
+  let binCount = 0
   for (let i = minBin; i <= maxBin; i++) {
     meanMag += Math.sqrt(real[i] * real[i] + imag[i] * imag[i])
-    count++
+    binCount++
   }
-  meanMag /= count
+  meanMag /= binCount
 
   const significance = meanMag > 0 ? maxMag / meanMag : 0
   const detected = significance > 2.0 && depthCents > 10
@@ -713,7 +744,7 @@ export function detectVibrato(
 }
 
 function measureVibratoDepth(
-  cents: number[],
+  cents: ArrayLike<number>,
   rateHz: number,
   sampleRate: number,
 ): number {

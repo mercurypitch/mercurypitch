@@ -17,6 +17,9 @@ interface PitchOverTimeCanvasProps {
   autoZoom?: boolean
   onAutoZoomChange?: (enabled: boolean) => void
   targetNoteMidi?: () => number | undefined
+  /** Optional guide frequency (Hz) that moves over time — drawn as a vertical
+   *  sliding dot so the singer can follow a glide up/down. */
+  movingTarget?: () => number | null
 }
 
 const Y_AXIS_NOTES = [
@@ -49,6 +52,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let resizeObserver: ResizeObserver | null = null
+  // Smoothed auto-zoom bounds (log2 Hz) carried between frames so the view
+  // eases into a new range instead of snapping. Reset to null when auto-zoom
+  // isn't driving the range, so it re-initializes cleanly on the next entry.
+  let smoothedLogMin: number | null = null
+  let smoothedLogMax: number | null = null
 
   const [internalZoomLevel, setInternalZoomLevel] = createSignal(1)
   const [internalAutoZoom, setInternalAutoZoom] = createSignal(true)
@@ -161,20 +169,34 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
         if (recentFreqs.length >= 3) {
           const minF = Math.min(...recentFreqs)
           const maxF = Math.max(...recentFreqs)
-          const rangeSemitones = 12 * Math.log2(maxF / minF)
+          const rangeOct = Math.log2(maxF / minF)
           const centerLog = (Math.log2(minF) + Math.log2(maxF)) / 2
-          let halfRange: number
-          if (rangeSemitones < 12) {
-            halfRange = 1.0 // 2 octaves total (1 octave each side)
-          } else if (rangeSemitones < 24) {
-            halfRange = rangeSemitones / 12 + 0.5 // range + 1 octave padding
-          } else {
-            halfRange = rangeSemitones / 12 + 0.5
-          }
-          effLogMin = Math.max(LOG_MIN, centerLog - halfRange)
-          effLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+          // Zoom to roughly one octave when the singer stays within a small
+          // range: half the sung range plus ~4 semitones (0.33 oct) of
+          // headroom each side, floored at 0.5 oct so the minimum view is
+          // ~1 octave total (keeps the line off the edges).
+          const halfRange = Math.max(0.5, rangeOct / 2 + 0.33)
+          const targetLogMin = Math.max(LOG_MIN, centerLog - halfRange)
+          const targetLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+          // Ease toward the target bounds to avoid jumpiness frame-to-frame.
+          const SMOOTH = 0.15
+          smoothedLogMin =
+            smoothedLogMin == null
+              ? targetLogMin
+              : smoothedLogMin + (targetLogMin - smoothedLogMin) * SMOOTH
+          smoothedLogMax =
+            smoothedLogMax == null
+              ? targetLogMax
+              : smoothedLogMax + (targetLogMax - smoothedLogMax) * SMOOTH
+          effLogMin = smoothedLogMin
+          effLogMax = smoothedLogMax
+        } else {
+          smoothedLogMin = null
+          smoothedLogMax = null
         }
       } else {
+        smoothedLogMin = null
+        smoothedLogMax = null
         const zoom = currentZoom()
         if (zoom > 1) {
           let centerFreq = 440
@@ -200,6 +222,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawScaleGridLines(w, h, effLogMin, effLogRange)
       drawTargetLine(w, h, effLogMin, effLogRange)
+      drawMovingTarget(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
       drawSamples(w, h, effLogMin, effLogRange)
 
@@ -359,6 +382,45 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(label, pillX + pillW / 2, y)
+  }
+
+  const drawMovingTarget = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
+    if (!ctx) return
+    const freq = props.movingTarget?.()
+    if (freq == null || freq <= 0) return
+    const y = freqToY(freq, h, logMin, logRange)
+    if (y < 4 || y > h - 4) return
+
+    // Amber guide line at the target height the singer should be on now.
+    ctx.strokeStyle = 'rgba(219,109,40,0.45)'
+    ctx.lineWidth = 1.2
+    ctx.setLineDash([4, 5])
+    ctx.beginPath()
+    ctx.moveTo(MARGIN, y)
+    ctx.lineTo(w - MARGIN, y)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Glowing guide dot at the "now" line (where the latest sample sits).
+    const samples = props.samples()
+    const nowTime = samples.length > 0 ? samples[samples.length - 1]!.time : 0
+    const x = sampleToX(nowTime, nowTime, w)
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, GLOW_RADIUS)
+    grad.addColorStop(0, 'rgba(219,109,40,0.85)')
+    grad.addColorStop(1, 'rgba(219,109,40,0)')
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.arc(x, y, GLOW_RADIUS, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#f0a868'
+    ctx.beginPath()
+    ctx.arc(x, y, DOT_RADIUS + 1, 0, Math.PI * 2)
+    ctx.fill()
   }
 
   const drawTimeLabels = (w: number, h: number) => {

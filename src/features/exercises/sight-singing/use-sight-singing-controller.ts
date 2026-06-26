@@ -24,6 +24,10 @@ export function useSightSingingController(base: BaseExerciseController) {
   let sequence: SightSingingNote[] = []
   let currentIndex = 0
   let noteStartTime = 0
+  // Actual elapsed-ms (same clock as history `time * 1000`) when each note was
+  // presented. setInterval drifts, so scoring windows must use these real
+  // boundaries rather than assuming an exact i * NOTE_DURATION_MS grid.
+  let noteStartMs: number[] = []
   let noteTimer: ReturnType<typeof setInterval> | undefined
   let noteScores: number[] = []
 
@@ -54,6 +58,7 @@ export function useSightSingingController(base: BaseExerciseController) {
     sequence = generateSequence(scale)
     currentIndex = 0
     noteScores = []
+    noteStartMs = []
   }
 
   function startRounds(): void {
@@ -70,6 +75,7 @@ export function useSightSingingController(base: BaseExerciseController) {
     const note = sequence[idx]
     base._setTargetPitch(note.midi)
     noteStartTime = performance.now()
+    noteStartMs[idx] = base._getElapsed()
 
     // Move to next note after duration
     clearInterval(noteTimer)
@@ -111,12 +117,14 @@ export function useSightSingingController(base: BaseExerciseController) {
       }
     }
 
-    // Score each note by checking pitch accuracy during its time window
+    // Score each note over the window when it was actually on screen. Use the
+    // recorded start times; fall back to the nominal grid for any note that
+    // was never presented (e.g. the user stopped early).
     const scored: number[] = []
     for (let i = 0; i < sequence.length; i++) {
       const note = sequence[i]
-      const windowStart = i * NOTE_DURATION_MS
-      const windowEnd = windowStart + NOTE_DURATION_MS
+      const windowStart = noteStartMs[i] ?? i * NOTE_DURATION_MS
+      const windowEnd = noteStartMs[i + 1] ?? windowStart + NOTE_DURATION_MS
 
       const samples = history.filter(
         (p) =>

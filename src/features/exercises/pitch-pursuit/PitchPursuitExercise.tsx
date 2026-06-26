@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
@@ -8,6 +8,8 @@ import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { showCelebration } from '@/stores/ui-store'
+import { ExerciseShell } from '../ExerciseShell'
+import { EXERCISE_PITCH_PURSUIT } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
 
@@ -98,7 +100,6 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   })
 
   const isActive = () => base.state().status === 'active'
-  const isComplete = () => base.state().status === 'complete'
   const met = () => base.state().metrics
 
   const currentNote = () => {
@@ -163,186 +164,117 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   })
 
   return (
-    <div class="exercise-runner">
-      <div class="exercise-runner-header">
-        <button class="back-btn" onClick={() => props.onBack?.()}>
-          ← Back
-        </button>
-        <h2 class="exercise-title">Pitch Pursuit</h2>
-        <span class="exercise-score-display">
-          {base.state().status === 'idle'
-            ? '—'
-            : `${Math.round(base.state().currentScore)}%`}
-        </span>
-      </div>
-
-      <div class="exercise-canvas-area">
-        <Show when={base.state().status === 'idle'}>
-          <div class="exercise-idle-placeholder">
-            <span class="idle-icon">
-              <IconGame size={56} />
-            </span>
-            <p>Notes fall from above.</p>
-            <p>Sing the matching pitch before they reach the target line.</p>
-            <span class="idle-hint">12 notes · Hit within ±50 cents</span>
+    <ExerciseShell
+      type={EXERCISE_PITCH_PURSUIT}
+      title="Pitch Pursuit"
+      status={() => base.state().status}
+      currentScore={() => base.state().currentScore}
+      resultScore={() => base.result()?.score ?? null}
+      error={() => base.error()}
+      onBack={() => props.onBack?.()}
+      idlePlaceholder={
+        <div class="exercise-idle-placeholder">
+          <span class="idle-icon">
+            <IconGame size={56} />
+          </span>
+          <p>Notes fall from above.</p>
+          <p>Sing the matching pitch before they reach the target line.</p>
+          <span class="idle-hint">12 notes · Hit within ±50 cents</span>
+        </div>
+      }
+      onStart={() => void handleStart()}
+      startLabel="Start Game"
+      stopLabel="Stop"
+      onStop={handleStop}
+      activeContent={
+        <>
+          <ExercisePitchTracker
+            pitchHistory={base.pitchHistory}
+            isActive={isActive}
+          />
+          <div class="pursuit-hud">
+            <div style="display:flex;gap:16px">
+              <span style="color:#22c55e">
+                <IconCheck size={14} /> {met().hits ?? 0}
+              </span>
+              <span style="color:#ef4444">
+                <IconCross size={14} /> {met().misses ?? 0}
+              </span>
+            </div>
+            <div class="pursuit-combo-text" classList={{ pulse: comboPulse() }}>
+              {met().combo ?? 0}x
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary)">
+              {(() => {
+                const n = currentNote()
+                return n ? (
+                  <>
+                    <IconMic size={14} /> {n.name}
+                  </>
+                ) : (
+                  '...'
+                )
+              })()}
+            </div>
           </div>
-        </Show>
 
-        <Show when={isActive()}>
-          <>
-            <ExercisePitchTracker
-              pitchHistory={base.pitchHistory}
-              isActive={isActive}
-            />
-            <div class="pursuit-hud">
-              <div style="display:flex;gap:16px">
-                <span style="color:#22c55e">
-                  <IconCheck size={14} /> {met().hits ?? 0}
-                </span>
-                <span style="color:#ef4444">
-                  <IconCross size={14} /> {met().misses ?? 0}
-                </span>
-              </div>
-              <div
-                class="pursuit-combo-text"
-                classList={{ pulse: comboPulse() }}
-              >
-                {met().combo ?? 0}x
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary)">
-                {(() => {
-                  const n = currentNote()
-                  return n ? (
-                    <>
-                      <IconMic size={14} /> {n.name}
-                    </>
-                  ) : (
-                    '...'
-                  )
-                })()}
-              </div>
-            </div>
-
-            <div class="pursuit-track">
-              <div class="pursuit-target-zone" />
-              <div
-                class="pursuit-target-line"
-                style={`top:${TARGET_ZONE_FRAC * 100}%`}
-              />
-
-              <For each={notesView()}>
-                {(note) => (
-                  <div
-                    class={`pursuit-note-bar ${note.noteClass}`}
-                    style={{
-                      top: `${note.yPct}%`,
-                      opacity: note.scored ? (note.hit ? 0 : 0.3) : 1,
-                    }}
-                  >
-                    {note.noteName}
-                  </div>
-                )}
-              </For>
-
-              <For each={scorePops()}>
-                {(pop) => (
-                  <div
-                    class="pursuit-score-pop"
-                    style={{
-                      left: `${pop.x}%`,
-                      top: `${pop.y}%`,
-                      color: pop.color,
-                    }}
-                  >
-                    {pop.text}
-                  </div>
-                )}
-              </For>
-            </div>
-
-            <div style="text-align:center;padding:4px 8px;font-size:0.75rem;color:var(--text-secondary)">
-              {met().totalNotes ?? 0} / 12 notes
-            </div>
-          </>
-        </Show>
-
-        <Show when={isComplete() && base.result()}>
-          <div class="exercise-result-overlay">
+          <div class="pursuit-track">
+            <div class="pursuit-target-zone" />
             <div
-              class="exercise-result-score"
-              classList={{
-                'exercise-result-score-good': base.result()!.score >= 80,
-                'exercise-result-score-ok':
-                  base.result()!.score >= 50 && base.result()!.score < 80,
-                'exercise-result-score-poor': base.result()!.score < 50,
-              }}
-            >
-              {base.result()!.score}%
-            </div>
-            <div class="exercise-result-label">
-              Hits: {base.result()!.metrics.hits}/
-              {base.result()!.metrics.totalNotes} · Accuracy:{' '}
-              {base.result()!.metrics.accuracy}% · Best Combo:{' '}
-              {base.result()!.metrics.maxCombo}x
-            </div>
-            <button
-              class="exercise-btn exercise-btn-primary"
-              onClick={() => {
-                base.reset()
-                void handleStart()
-              }}
-            >
-              Play Again
-            </button>
-          </div>
-        </Show>
-      </div>
+              class="pursuit-target-line"
+              style={`top:${TARGET_ZONE_FRAC * 100}%`}
+            />
 
-      <div class="exercise-controls">
-        <Show when={base.state().status === 'idle'}>
-          <>
-            <Show when={base.error() != null}>
-              <div class="exercise-error">{base.error()}</div>
-            </Show>
-            <button
-              class="exercise-btn exercise-btn-primary"
-              onClick={() => void handleStart()}
-            >
-              Start Game
-            </button>
-          </>
-        </Show>
-        <Show when={isActive()}>
-          <button
-            class="exercise-btn exercise-btn-secondary"
-            onClick={handleStop}
-          >
-            Stop
-          </button>
-        </Show>
-        <Show when={isComplete()}>
-          <>
-            <button
-              class="exercise-btn exercise-btn-primary"
-              onClick={() => {
-                base.reset()
-                void handleStart()
-              }}
-            >
-              Play Again
-            </button>
-            <button
-              class="exercise-btn exercise-btn-secondary"
-              onClick={() => {
-                base.reset()
-              }}
-            >
-              Back
-            </button>
-          </>
-        </Show>
-      </div>
-    </div>
+            <For each={notesView()}>
+              {(note) => (
+                <div
+                  class={`pursuit-note-bar ${note.noteClass}`}
+                  style={{
+                    top: `${note.yPct}%`,
+                    opacity: note.scored ? (note.hit ? 0 : 0.3) : 1,
+                  }}
+                >
+                  {note.noteName}
+                </div>
+              )}
+            </For>
+
+            <For each={scorePops()}>
+              {(pop) => (
+                <div
+                  class="pursuit-score-pop"
+                  style={{
+                    left: `${pop.x}%`,
+                    top: `${pop.y}%`,
+                    color: pop.color,
+                  }}
+                >
+                  {pop.text}
+                </div>
+              )}
+            </For>
+          </div>
+
+          <div style="text-align:center;padding:4px 8px;font-size:0.75rem;color:var(--text-secondary)">
+            {met().totalNotes ?? 0} / 12 notes
+          </div>
+        </>
+      }
+      resultSummary={
+        <>
+          Hits: {base.result()?.metrics.hits}/
+          {base.result()?.metrics.totalNotes} · Accuracy:{' '}
+          {base.result()?.metrics.accuracy}% · Best Combo:{' '}
+          {base.result()?.metrics.maxCombo}x
+        </>
+      }
+      onTryAgain={() => {
+        base.reset()
+        void handleStart()
+      }}
+      onChangeTarget={() => base.reset()}
+      changeTargetLabel="Back"
+    />
   )
 }
 

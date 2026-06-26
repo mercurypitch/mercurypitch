@@ -458,6 +458,35 @@ describe('detectVibrato', () => {
     expect(result.detected).toBe(false)
     expect(result.classification).toBe('none')
   })
+
+  it('detects vibrato from non-uniformly sampled, lossy input', () => {
+    // Mirrors the live exercise stream: samples arrive at jittered intervals
+    // and some frames are dropped (low clarity). The detector must resample
+    // onto a uniform grid using the `time` field, not assume even spacing.
+    const samples: Array<{ time: number; freq: number; midi: number }> = []
+    const vibratoRate = 5.5 // Hz
+    const vibratoDepth = 0.5 // semitones peak-to-peak
+    let t = 0
+    // Deterministic pseudo-jitter (no Math.random — keeps the test stable).
+    for (let i = 0; i < 260; i++) {
+      const jitter = 0.006 + 0.004 * Math.sin(i * 1.7) // ~6-10ms, avg ~100Hz
+      t += jitter
+      // Drop ~1 in 5 frames to simulate clarity gaps.
+      if (i % 5 === 0) continue
+      const modulation =
+        (Math.sin(2 * Math.PI * vibratoRate * t) * vibratoDepth) / 2
+      samples.push({
+        time: t,
+        freq: 440 * Math.pow(2, modulation / 12),
+        midi: 60 + modulation,
+      })
+    }
+
+    const result = detectVibrato(samples)
+    expect(result.detected).toBe(true)
+    expect(result.rateHz).toBeGreaterThanOrEqual(4)
+    expect(result.rateHz).toBeLessThanOrEqual(7)
+  })
 })
 
 // ── Phase 2.2: computeHarmonicRichness ─────────────────────────

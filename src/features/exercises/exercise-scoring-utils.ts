@@ -18,6 +18,24 @@ interface PitchSample {
 }
 
 /**
+ * Return the trailing `windowMs` of samples selected by their `time` field.
+ *
+ * The pitch loop runs on requestAnimationFrame (~16ms) and only emits a sample
+ * on confident frames, so history is non-uniformly spaced. Selecting a recent
+ * window by slicing a guessed sample count (e.g. `windowMs / 50`) is wrong;
+ * always filter by elapsed time instead.
+ */
+export function trailingSamplesByTime<T extends { time: number }>(
+  history: readonly T[],
+  windowMs: number,
+): T[] {
+  if (history.length === 0) return []
+  const windowSec = windowMs / 1000
+  const latest = history[history.length - 1]!.time
+  return history.filter((p) => latest - p.time <= windowSec)
+}
+
+/**
  * Convert frequency (Hz) to an exact (non-rounded) MIDI number.
  *
  * Unlike `freqToMidi` in scale-data.ts (which rounds to the nearest

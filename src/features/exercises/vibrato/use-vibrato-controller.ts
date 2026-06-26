@@ -15,6 +15,30 @@ const SCORE_RATE_WEIGHT = 0.4
 const SCORE_DEPTH_WEIGHT = 0.3
 const SCORE_CONSISTENCY_WEIGHT = 0.3
 const METRIC_UPDATE_MS = 1500
+/** Analyze only the most recent few seconds so a vibrato that starts mid-note
+ *  isn't diluted by the steady onset that precedes it. */
+const ANALYSIS_WINDOW_SEC = 4
+
+type PitchSample = { freq: number; time: number; cents: number }
+
+/** Keep the trailing `windowSec` of samples (by their time field). */
+function trailingWindow(
+  history: readonly PitchSample[],
+  windowSec: number,
+): PitchSample[] {
+  if (history.length === 0) return []
+  const cutoff = history[history.length - 1]!.time - windowSec
+  const start = history.findIndex((p) => p.time >= cutoff)
+  return start <= 0 ? [...history] : history.slice(start)
+}
+
+function toVibSamples(history: readonly PitchSample[]) {
+  return history.map((p) => ({
+    time: p.time,
+    freq: p.freq,
+    midi: freqToExactMidi(p.freq),
+  }))
+}
 
 /**
  * Tighten an acceptance window around its center by the difficulty factor.
@@ -41,22 +65,12 @@ export function useVibratoController(base: BaseExerciseController) {
   function startLoop(): void {
     metricTimer = setInterval(() => {
       if (!base._isRunning()) return
-      const history = base.pitchHistory()
+      const history = trailingWindow(base.pitchHistory(), ANALYSIS_WINDOW_SEC)
       if (history.length < 10) return
 
-      const vibSamples = history.map((p) => ({
-        time: p.time,
-        freq: p.freq,
-        midi: freqToExactMidi(p.freq),
-      }))
-
-      const lastTime = vibSamples[vibSamples.length - 1]!.time
-      const firstTime = vibSamples[0]!.time
-      const durationSec = lastTime - firstTime
-      if (durationSec <= 0) return
-
-      const sampleRate = Math.round(history.length / durationSec)
-      const vibResult = detectVibrato(vibSamples, sampleRate)
+      // detectVibrato resamples onto a uniform grid internally, so the
+      // sample-rate hint is unused; pass a nominal value.
+      const vibResult = detectVibrato(toVibSamples(history), 100)
 
       if (!vibResult.detected) return
 
@@ -109,7 +123,7 @@ export function useVibratoController(base: BaseExerciseController) {
   }
 
   function computeResult(): ExerciseResult {
-    const history = base.pitchHistory()
+    const history = trailingWindow(base.pitchHistory(), ANALYSIS_WINDOW_SEC)
 
     if (history.length < 10) {
       return {
@@ -125,17 +139,7 @@ export function useVibratoController(base: BaseExerciseController) {
       }
     }
 
-    const vibSamples = history.map((p) => ({
-      time: p.time,
-      freq: p.freq,
-      midi: freqToExactMidi(p.freq),
-    }))
-
-    const sampleRate = Math.round(
-      history.length /
-        (history[history.length - 1].time - history[0].time || 1),
-    )
-    const vibResult = detectVibrato(vibSamples, sampleRate)
+    const vibResult = detectVibrato(toVibSamples(history), 100)
 
     if (!vibResult.detected) {
       return {

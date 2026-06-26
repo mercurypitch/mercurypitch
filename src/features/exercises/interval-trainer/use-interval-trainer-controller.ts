@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -134,23 +135,17 @@ export function useIntervalTrainerController(
       return t >= matchStartTime - 100 && t <= now
     })
 
-    // Score each note by finding best match for each target
+    // Score each note by the average cents deviation across the window.
+    // Averaging (rather than taking the single best sample) keeps the score
+    // stable when only a few samples land in the window.
     function scoreNote(target: number): number {
-      if (recentSamples.length === 0) return 0
-      const best = recentSamples
-        .filter((p) => p.freq > 0)
-        .reduce(
-          (best, p) => {
-            const freq = 440 * Math.pow(2, (target - 69) / 12)
-            const error = Math.abs(p.freq - freq)
-            return error < best.error
-              ? { error, cents: Math.log2(p.freq / freq) * 1200 }
-              : best
-          },
-          { error: Infinity, cents: 0 },
-        )
-      if (best.error === Infinity) return 0
-      return Math.round(Math.max(0, 100 - Math.abs(best.cents) * centsPenalty))
+      const valid = recentSamples.filter((p) => p.freq > 0)
+      if (valid.length < 3) return 0
+      const deviations = valid.map((p) =>
+        Math.abs((freqToExactMidi(p.freq) - target) * 100),
+      )
+      const avg = deviations.reduce((a, b) => a + b, 0) / deviations.length
+      return Math.round(Math.max(0, 100 - avg * centsPenalty))
     }
 
     const note1Score = scoreNote(target1)

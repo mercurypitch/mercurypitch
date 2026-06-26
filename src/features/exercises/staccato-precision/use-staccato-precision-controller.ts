@@ -2,7 +2,7 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_STACCATO } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -103,9 +103,7 @@ export function useStaccatoPrecisionController(
   function evaluateRound(): void {
     const targetMidi = targetNotes[roundIndex]
     const history = base.pitchHistory()
-    const recentSamples = history.slice(
-      -Math.max(1, Math.floor(matchWindowMs / 50)),
-    )
+    const recentSamples = trailingSamplesByTime(history, matchWindowMs)
 
     let roundScore = 0
     let attackPrecision = 0

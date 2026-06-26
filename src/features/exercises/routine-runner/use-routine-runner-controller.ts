@@ -4,7 +4,7 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
-import { freqToExactMidi, scoreNoteAccuracy } from '../exercise-scoring-utils'
+import { freqToExactMidi, scoreNoteAccuracy, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -152,9 +152,7 @@ export function useRoutineRunnerController(
 
   function collectCheckpoint(): void {
     const history = base.pitchHistory()
-    const recentSamples = history.slice(
-      -Math.max(1, Math.floor(MATCH_WINDOW_MS / 50)),
-    )
+    const recentSamples = trailingSamplesByTime(history, MATCH_WINDOW_MS)
     const claritySamples = recentSamples
       .filter((p) => p.freq > 0 && p.clarity !== undefined)
       .map((p) => ({ freq: p.freq, clarity: p.clarity! }))
