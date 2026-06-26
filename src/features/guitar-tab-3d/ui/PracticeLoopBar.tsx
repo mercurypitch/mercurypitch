@@ -92,7 +92,10 @@ export function PracticeLoopBar(props: PracticeLoopBarProps) {
         <input
           type="checkbox"
           checked={props.rampEnabled()}
-          onChange={(e) => props.setRampEnabled(e.currentTarget.checked)}
+          onChange={(e) => {
+            props.setRampEnabled(e.currentTarget.checked)
+            e.currentTarget.blur()
+          }}
         />
         Speed ramp
       </label>
@@ -124,18 +127,21 @@ export function PracticeLoopBar(props: PracticeLoopBarProps) {
         <input
           type="checkbox"
           checked={props.showFretboard()}
-          onChange={(e) => props.setShowFretboard(e.currentTarget.checked)}
+          onChange={(e) => {
+            props.setShowFretboard(e.currentTarget.checked)
+            e.currentTarget.blur()
+          }}
         />
         Fretboard
       </label>
 
       <button
         class="gp-btn"
-        onClick={() =>
-          props.loopEnabled()
-            ? props.stopPracticeLoop()
-            : props.startPracticeLoop()
-        }
+        onClick={(e) => {
+          if (props.loopEnabled()) props.stopPracticeLoop()
+          else props.startPracticeLoop()
+          e.currentTarget.blur()
+        }}
       >
         {props.loopEnabled() ? 'Exit Loop' : 'Start Loop'}
       </button>
@@ -155,20 +161,35 @@ function Stepper(props: StepperProps) {
   return (
     <div style={{ display: 'flex', 'align-items': 'center', gap: '4px' }}>
       <span style={{ opacity: '0.7' }}>{props.label}</span>
-      <button class="gp-btn" onClick={props.onDec}>
+      <button
+        class="gp-btn"
+        onClick={(e) => {
+          props.onDec()
+          e.currentTarget.blur()
+        }}
+      >
         -
       </button>
       <span style={{ 'min-width': '42px', 'text-align': 'center' }}>
         {props.value}
       </span>
-      <button class="gp-btn" onClick={props.onInc}>
+      <button
+        class="gp-btn"
+        onClick={(e) => {
+          props.onInc()
+          e.currentTarget.blur()
+        }}
+      >
         +
       </button>
       {props.onSet !== undefined && (
         <button
           class="gp-btn"
           title="Set to current playhead"
-          onClick={props.onSet}
+          onClick={(e) => {
+            props.onSet?.()
+            e.currentTarget.blur()
+          }}
         >
           Set
         </button>
