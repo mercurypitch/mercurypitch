@@ -1,0 +1,372 @@
+.uvrProcessControl {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 1rem;
+}
+
+.processHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.processIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--bg-primary);
+  border-radius: 50%;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.processIconWrapper svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.processInfo h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.processInfo p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+}
+
+.processSessionId {
+  display: inline-block !important;
+  margin: 0.25rem 0 0 !important;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6rem !important;
+  font-family: monospace;
+  color: var(--fg-tertiary) !important;
+  background: var(--bg-primary);
+  border-radius: 0.25rem;
+  letter-spacing: 0.02em;
+  cursor: default;
+  max-width: fit-content;
+}
+
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progressBarContainer {
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--progress-color, var(--accent));
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.progressBarIndeterminate {
+  width: 100% !important;
+  background: linear-gradient(
+    90deg,
+    var(--progress-color, var(--accent)) 0%,
+    var(--progress-color, var(--accent)) 30%,
+    rgba(255, 255, 255, 0.3) 40%,
+    var(--progress-color, var(--accent)) 50%,
+    var(--progress-color, var(--accent)) 100%
+  );
+  background-size: 200% 100%;
+  animation: indeterminate-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.progressBarContainer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progressText {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+}
+
+.progressRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+  color: var(--fg-secondary);
+}
+
+.progressPct {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTimes {
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.progressSep {
+  color: var(--fg-tertiary);
+}
+
+.progressEstimate {
+  color: var(--fg-tertiary);
+}
+
+.progressChunks {
+  color: var(--fg-tertiary);
+  font-size: 0.75rem;
+}
+
+.stageIndicators {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.stageItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--fg-tertiary);
+}
+
+.stageItem.active {
+  color: var(--fg-primary);
+}
+
+.stageIcon {
+  font-size: 1rem;
+}
+
+.stageIcon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.stageLabel {
+  font-size: 0.7rem;
+}
+
+.errorSection {
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid var(--error);
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--error);
+}
+
+.processActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Vertical layout buttons wrapper when error happens */
+.processActions:has(.processBtnIcon) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+/* Custom override for Cancel/Complete buttons */
+.processBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.processBtn svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.processBtnDanger {
+  background: var(--bg-primary) !important;
+  color: var(--error) !important;
+  border: 1px solid rgba(239, 68, 68, 0.1) !important;
+}
+
+.processBtnDanger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Error action buttons — vertical icon + label layout override */
+.processBtnIcon {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.75rem 0.5rem !important;
+  border-radius: 0.6rem !important;
+  height: auto !important;
+  white-space: normal !important;
+}
+
+.processBtnIconSvg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.processBtnIconSvg svg {
+  width: 26px;
+  height: 26px;
+}
+
+.processBtnIconLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Retry — primary fill */
+.processBtnRetry {
+  background: var(--accent) !important;
+  color: var(--bg-primary) !important;
+  border: 1px solid transparent !important;
+}
+
+.processBtnRetry:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.processBtnRetry .processBtnIconLabel {
+  color: var(--bg-primary);
+  opacity: 0.9;
+}
+
+/* New Session — outlined neutral */
+.processBtnNew {
+  background: transparent !important;
+  color: var(--fg-primary) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.processBtnNew:hover:not(:disabled) {
+  background: var(--bg-hover) !important;
+  border-color: var(--fg-tertiary) !important;
+  transform: translateY(-1px);
+}
+
+.processBtnNew .processBtnIconLabel {
+  color: var(--fg-secondary);
+}
+
+/* Delete & New — subtle ghost */
+.processBtnDelete {
+  background: transparent !important;
+  color: var(--fg-tertiary) !important;
+  border: 1px solid transparent !important;
+}
+
+.processBtnDelete:hover:not(:disabled) {
+  color: var(--error) !important;
+  background: rgba(239, 68, 68, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+.processBtnDelete .processBtnIconLabel {
+  color: var(--fg-tertiary);
+}
+
+.processMetaInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.statusProvider {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.providerIcon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  color: var(--fg-secondary);
+}
+
+.providerIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.providerIcon.providerGpu {
+  color: var(--accent);
+}
+
+.pulseSpinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}

@@ -1,5 +1,6 @@
 import type { Component, JSX } from 'solid-js'
 import { splitProps } from 'solid-js'
+import styles from './SafeSelect.module.css'
 
 /**
  * SafeSelect — Drop-in replacement for native `<select>` that documents
@@ -49,7 +50,7 @@ import { splitProps } from 'solid-js'
 export const SafeSelect: Component<
   JSX.SelectHTMLAttributes<HTMLSelectElement>
 > = (props) => {
-  const [local, selectProps] = splitProps(props, ['ref'])
+  const [local, selectProps] = splitProps(props, ['ref', 'class', 'classList'])
 
   const checkAncestorTransform = (el: HTMLSelectElement) => {
     // Forward the ref if provided
@@ -89,5 +90,12 @@ export const SafeSelect: Component<
     }
   }
 
-  return <select ref={(el) => checkAncestorTransform(el)} {...selectProps} />
+  return (
+    <select
+      ref={(el) => checkAncestorTransform(el)}
+      class={[styles.select, local.class].filter(Boolean).join(' ')}
+      classList={local.classList}
+      {...selectProps}
+    />
+  )
 }

@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { For } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { getUvrInstrumentalIntensity, getUvrMode, getUvrSmoothing, getUvrVocalIntensity, setUvrInstrumentalIntensity, setUvrMode, setUvrSmoothing, setUvrVocalIntensity, } from '@/stores/app-store'
+import styles from './UvrSettings.module.css'
 
 // ============================================================
 // SVG Icons
@@ -132,28 +133,28 @@ export const UvrSettings: Component<{
   }
 
   return (
-    <div class="uvr-settings">
-      <div class="uvr-header">
+    <div class={styles.uvrSettings}>
+      <div class={styles.uvrHeader}>
         <h3>Vocal Separation (UVR)</h3>
-        <p class="uvr-description">
+        <p class={styles.uvrDescription}>
           Control how vocals and instrumental tracks are processed during
           playback
         </p>
       </div>
 
       {/* Mode Selection */}
-      <div class="uvr-mode-selection">
+      <div class={styles.uvrModeSelection}>
         <label>Separation Mode</label>
-        <div class="mode-grid">
+        <div class={styles.modeGrid}>
           <For each={modeOptions}>
             {(option) => (
               <button
-                class={`mode-card ${mode() === option.value ? 'active' : ''}`}
+                class={`${styles.modeCard} ${mode() === option.value ? styles.active : ''}`}
                 onClick={() => handleModeChange(option.value)}
                 title={option.description}
               >
-                <span class="mode-icon">{option.icon}</span>
-                <span class="mode-label">{option.label}</span>
+                <span class={styles.modeIcon}>{option.icon}</span>
+                <span class={styles.modeLabel}>{option.label}</span>
               </button>
             )}
           </For>
@@ -162,18 +163,18 @@ export const UvrSettings: Component<{
 
       {/* Intensity Controls */}
       <Show when={mode() !== 'instrumental'}>
-        <div class="uvr-intensity-controls">
-          <div class="intensity-group">
-            <div class="intensity-header">
-              <span class="intensity-label">
+        <div class={styles.uvrIntensityControls}>
+          <div class={styles.intensityGroup}>
+            <div class={styles.intensityHeader}>
+              <span class={styles.intensityLabel}>
                 <IconVocal />
                 Vocal
               </span>
-              <span class="intensity-value">{vocalIntensity()}%</span>
+              <span class={styles.intensityValue}>{vocalIntensity()}%</span>
             </div>
             <input
               type="range"
-              class="intensity-slider"
+              class={styles.intensitySlider}
               min="0"
               max="100"
               value={vocalIntensity()}
@@ -184,19 +185,21 @@ export const UvrSettings: Component<{
           </div>
 
           <Show when={mode() === 'separate'}>
-            <div class="intensity-divider" />
+            <div class={styles.intensityDivider} />
 
-            <div class="intensity-group">
-              <div class="intensity-header">
-                <span class="intensity-label">
+            <div class={styles.intensityGroup}>
+              <div class={styles.intensityHeader}>
+                <span class={styles.intensityLabel}>
                   <IconMusic />
                   Instrumental
                 </span>
-                <span class="intensity-value">{instrumentalIntensity()}%</span>
+                <span class={styles.intensityValue}>
+                  {instrumentalIntensity()}%
+                </span>
               </div>
               <input
                 type="range"
-                class="intensity-slider"
+                class={styles.intensitySlider}
                 min="0"
                 max="100"
                 value={instrumentalIntensity()}
@@ -213,17 +216,17 @@ export const UvrSettings: Component<{
       </Show>
 
       {/* Smoothing Control */}
-      <div class="uvr-smoothing">
-        <div class="smoothing-header">
-          <span class="smoothing-label">
+      <div class={styles.uvrSmoothing}>
+        <div class={styles.smoothingHeader}>
+          <span class={styles.smoothingLabel}>
             <IconWaveform />
             Transition Smoothness
           </span>
-          <span class="smoothing-value">{smoothing()}%</span>
+          <span class={styles.smoothingValue}>{smoothing()}%</span>
         </div>
         <input
           type="range"
-          class="smoothing-slider"
+          class={styles.smoothingSlider}
           min="0"
           max="100"
           value={smoothing()}
@@ -235,9 +238,9 @@ export const UvrSettings: Component<{
 
       {/* Stem Denoise Toggle */}
       <Show when={props.onStemDenoiseChange}>
-        <div class="uvr-smoothing">
-          <div class="smoothing-header">
-            <span class="smoothing-label">
+        <div class={styles.uvrSmoothing}>
+          <div class={styles.smoothingHeader}>
+            <span class={styles.smoothingLabel}>
               <IconWaveform />
               Stem Denoise for Matching
             </span>
@@ -266,14 +269,14 @@ export const UvrSettings: Component<{
       </Show>
 
       {/* Info Box */}
-      <div class="uvr-info">
-        <div class="info-header">
-          <span class="info-icon">
+      <div class={styles.uvrInfo}>
+        <div class={styles.infoHeader}>
+          <span class={styles.infoIcon}>
             <IconInfo />
           </span>
           <span>Pro Tips</span>
         </div>
-        <ul class="info-list">
+        <ul class={styles.infoList}>
           <li>
             <strong>Separate Mode:</strong> Best for practice - hear both vocals
             and instrumental
@@ -294,9 +297,9 @@ export const UvrSettings: Component<{
       </div>
 
       {/* Keyboard Shortcuts */}
-      <div class="uvr-info uvr-shortcuts">
-        <div class="info-header">
-          <span class="info-icon">
+      <div class={`${styles.uvrInfo} ${styles.uvrShortcuts}`}>
+        <div class={styles.infoHeader}>
+          <span class={styles.infoIcon}>
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -311,12 +314,12 @@ export const UvrSettings: Component<{
           </span>
           <span>Stem Mixer Shortcuts</span>
         </div>
-        <div class="shortcuts-grid">
-          <div class="shortcut-item">
+        <div class={styles.shortcutsGrid}>
+          <div class={styles.shortcutItem}>
             <kbd>Space</kbd>
             <span>Play / Pause</span>
           </div>
-          <div class="shortcut-item">
+          <div class={styles.shortcutItem}>
             <kbd>H</kbd>
             <span>Toggle sidebar</span>
           </div>

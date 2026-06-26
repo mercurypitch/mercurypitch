@@ -1,0 +1,346 @@
+.uvrSettings {
+  margin-top: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.uvrHeader {
+  margin-bottom: 20px;
+}
+
+.uvrHeader h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.uvrDescription {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.uvrModeSelection label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.modeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.modeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modeCard:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.modeCard.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.modeIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--text-primary);
+}
+
+.modeIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.modeLabel {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.uvrIntensityControls {
+  margin: 16px 0;
+}
+
+.intensityGroup {
+  margin-bottom: 12px;
+}
+
+.intensityDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.intensityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.intensityLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.intensityLabel svg {
+  width: 16px;
+  height: 16px;
+}
+
+.intensityValue {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.intensitySlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+  cursor: pointer;
+}
+
+.intensitySlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.intensitySlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.intensitySlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.intensitySlider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+}
+
+.uvrSmoothing {
+  margin: 16px 0;
+}
+
+.smoothingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.smoothingLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.smoothingLabel svg {
+  width: 16px;
+  height: 16px;
+}
+
+.smoothingValue {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.smoothingSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+  cursor: pointer;
+}
+
+.smoothingSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.smoothingSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.smoothingSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.smoothingSlider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+}
+
+.uvrInfo {
+  margin-top: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.infoHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.infoHeader svg {
+  width: 18px;
+  height: 18px;
+}
+
+.infoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.infoIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.infoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.infoList li {
+  padding-left: 14px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.infoList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.infoList strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Keyboard Shortcuts */
+.shortcutsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcutItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.shortcutItem kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.uvrShortcuts {
+  /* Extra overrides for shortcuts panel if needed */
+}

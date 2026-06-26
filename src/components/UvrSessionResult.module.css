@@ -1,0 +1,568 @@
+.uvrSessionResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 0.6rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.uvrSessionResult.disabled {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  pointer-events: none;
+}
+
+.uvrSessionResult:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0;
+}
+
+.sessionIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: var(--bg-primary);
+  border-radius: 50%;
+  color: var(--fg-primary);
+  flex-shrink: 0;
+}
+
+.sessionIconWrapper svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.sessionTitleArea {
+  flex: 1;
+  min-width: 0;
+}
+
+.sessionTitleArea h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--fg-primary);
+}
+
+.sessionFilename {
+  margin: 0.1rem 0 0;
+  font-size: 0.7rem;
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionIdPill {
+  display: inline-block;
+  margin: 0.1rem 0 0;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6rem;
+  font-family: monospace;
+  color: var(--fg-tertiary);
+  background: var(--bg-primary);
+  border-radius: 0.25rem;
+  letter-spacing: 0.02em;
+  cursor: default;
+  max-width: fit-content;
+}
+
+.sessionDeleteBtn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--fg-tertiary) !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  opacity: 0;
+}
+
+.uvrSessionResult:hover .sessionDeleteBtn {
+  opacity: 1;
+}
+
+.sessionDeleteBtn:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: var(--error) !important;
+}
+
+.sessionDeleteBtn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sessionShareBtn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--fg-tertiary) !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.uvrSessionResult:hover .sessionShareBtn {
+  opacity: 1;
+}
+
+.sessionShareBtn:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  color: var(--accent) !important;
+}
+
+.sessionShareBtn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-primary);
+  border-radius: 0.4rem;
+  border-left: 3px solid var(--status-color, var(--fg-tertiary));
+  position: relative;
+  overflow: hidden;
+}
+
+.statusBar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--status-color, var(--fg-tertiary));
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.statusBar svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.statusIcon {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.statusText {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--fg-primary);
+  position: relative;
+}
+
+.statusTime {
+  font-size: 0.7rem;
+  color: var(--fg-tertiary);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: row;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  background: var(--bg-primary);
+  border-radius: 0.4rem;
+}
+
+.infoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+}
+
+.infoIcon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.infoLabel {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary);
+  margin-bottom: 0.1rem;
+}
+
+.infoValue {
+  font-size: 0.75rem;
+  color: var(--fg-primary);
+  font-weight: 500;
+}
+
+.outputsSection {
+  padding: 0.4rem;
+  background: var(--bg-primary);
+  border-radius: 0.4rem;
+}
+
+.outputsSection h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+  color: var(--fg-primary);
+}
+
+.stemPills {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 0.3rem;
+}
+
+.stemPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg-secondary);
+}
+
+.stemPill svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.stemPillVocal {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.stemPillVocal:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.stemPillInstrumental {
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.stemPillInstrumental:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.stemPillMidi {
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.stemPillMidi:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.stemPillDuration {
+  font-size: 0.65rem;
+  font-family: monospace;
+  opacity: 0.7;
+  margin-left: 0.1rem;
+}
+
+.stemPillShazam {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 2px;
+  letter-spacing: 0.3px;
+}
+
+.stemPillShazam svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+.stemPillReindex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: 2px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 3px;
+  color: #818cf8;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+}
+
+.stemPillReindex:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.stemPillReindex[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stemPillReindex svg {
+  width: 11px;
+  height: 11px;
+}
+
+.stemPillReindexing svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stemPillSelected {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+  filter: brightness(1.2);
+}
+
+.stemPillVocal.stemPillSelected {
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.stemPillInstrumental.stemPillSelected {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.stemPillMidi.stemPillSelected {
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+}
+
+.sessionResultActions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.sessionResultBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sessionResultBtn svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.sessionResultBtnMixer {
+  background: var(--bg-tertiary) !important;
+  color: var(--accent) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+}
+
+.sessionResultBtnMixer:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(139, 92, 246, 0.5) !important;
+}
+
+.deleteConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: confirm-overlay-in 0.15s ease;
+}
+
+@keyframes confirm-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.deleteConfirmDialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: confirm-dialog-in 0.2s ease;
+}
+
+@keyframes confirm-dialog-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.deleteConfirmDialog h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.deleteConfirmDialog p {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.sessionToast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 0.85rem;
+  color: var(--fg-primary);
+  z-index: 1001;
+  animation:
+    session-toast-in 0.25s ease,
+    session-toast-out 0.25s ease 2s forwards;
+}
+
+@keyframes session-toast-in {
+  from {
+    transform: translateX(-50%) translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes session-toast-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.sessionToastIcon {
+  display: flex;
+  align-items: center;
+  color: var(--success);
+}
+
+.sessionToastIcon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.statusProvider {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+}
+
+.providerIcon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  color: var(--fg-secondary);
+}
+
+.providerIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.providerIcon.providerGpu {
+  color: var(--accent);
+}

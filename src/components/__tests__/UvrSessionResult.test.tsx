@@ -5,6 +5,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrSessionResult } from '../UvrSessionResult'
+import styles from '../UvrSessionResult.module.css'
 
 // Mock icons
 vi.mock('../icons', () => ({
@@ -318,7 +319,7 @@ describe('UvrSessionResult Component', () => {
       fireEvent.click(vocalPill)
       // Vocal pill should now have the selected class
       const button = vocalPill.closest('button')
-      expect(button?.classList.contains('stem-pill-selected')).toBe(true)
+      expect(button?.classList.contains(styles.stemPillSelected)).toBe(true)
     })
 
     it('renders view results button for completed sessions', () => {
@@ -446,7 +447,9 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
+      const statusBar = document.querySelector(
+        `.${styles.statusBar}`,
+      ) as HTMLElement
       expect(statusBar).toBeTruthy()
       expect(statusBar.style.getPropertyValue('--status-color')).toBe(
         'var(--success)',
@@ -463,7 +466,9 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
+      const statusBar = document.querySelector(
+        `.${styles.statusBar}`,
+      ) as HTMLElement
       expect(statusBar).toBeTruthy()
       expect(statusBar.style.getPropertyValue('--status-color')).toBe(
         'var(--accent)',
@@ -481,7 +486,9 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
+      const statusBar = document.querySelector(
+        `.${styles.statusBar}`,
+      ) as HTMLElement
       expect(statusBar).toBeTruthy()
       expect(statusBar.style.getPropertyValue('--status-color')).toBe(
         'var(--error)',

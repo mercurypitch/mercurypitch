@@ -5,6 +5,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrProcessControl } from '../UvrProcessControl'
+import styles from '../UvrProcessControl.module.css'
 
 describe('UvrProcessControl Component', () => {
   beforeEach(() => {
@@ -45,7 +46,7 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
       const progressBar = document.querySelector(
-        '.progress-bar-fill',
+        `.${styles.progressBarFill}`,
       ) as HTMLElement
       expect(progressBar).toBeTruthy()
       expect(progressBar.style.width).toBe('45%')
@@ -96,12 +97,12 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...partialProps} />)
 
       // All stages render, but missing ones have no "active" class
-      const stages = document.querySelectorAll('.stage-item')
+      const stages = document.querySelectorAll(`.${styles.stageItem}`)
       expect(stages.length).toBe(4)
-      expect(stages[0]).toHaveClass('active') // Original File always active
-      expect(stages[1]).toHaveClass('active') // Vocal Stem present
-      expect(stages[2]).not.toHaveClass('active') // Instrumental missing
-      expect(stages[3]).not.toHaveClass('active') // Vocal MIDI missing
+      expect(stages[0]).toHaveClass(styles.active) // Original File always active
+      expect(stages[1]).toHaveClass(styles.active) // Vocal Stem present
+      expect(stages[2]).not.toHaveClass(styles.active) // Instrumental missing
+      expect(stages[3]).not.toHaveClass(styles.active) // Vocal MIDI missing
     })
   })
 
@@ -280,7 +281,7 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
       const iconWrapper = document.querySelector(
-        '.process-icon-wrapper',
+        `.${styles.processIconWrapper}`,
       ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--accent)')
@@ -292,7 +293,7 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...completedProps} />)
 
       const iconWrapper = document.querySelector(
-        '.process-icon-wrapper',
+        `.${styles.processIconWrapper}`,
       ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--success)')
@@ -308,7 +309,7 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...errorProps} />)
 
       const iconWrapper = document.querySelector(
-        '.process-icon-wrapper',
+        `.${styles.processIconWrapper}`,
       ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--error)')

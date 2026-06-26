@@ -5,6 +5,7 @@
 import { render, screen } from '@solidjs/testing-library'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { UvrPanel } from '../UvrPanel'
+import styles from '../UvrPanel.module.css'
 
 // Mock Worker and URL.createObjectURL
 beforeAll(() => {
@@ -140,12 +141,12 @@ describe('UvrPanel Component', () => {
       const gpuBtn = screen.getByTestId('uvr-device-gpu')
 
       gpuBtn.click()
-      expect(gpuBtn).toHaveClass('active')
-      expect(cpuBtn).not.toHaveClass('active')
+      expect(gpuBtn).toHaveClass(styles.active)
+      expect(cpuBtn).not.toHaveClass(styles.active)
 
       cpuBtn.click()
-      expect(cpuBtn).toHaveClass('active')
-      expect(gpuBtn).not.toHaveClass('active')
+      expect(cpuBtn).toHaveClass(styles.active)
+      expect(gpuBtn).not.toHaveClass(styles.active)
     })
   })
 })

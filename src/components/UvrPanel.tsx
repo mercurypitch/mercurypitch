@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
-import { FancyDivider } from '@/components/shared'
+import { Button, FancyDivider, SegmentedControl } from '@/components/shared'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -18,6 +18,7 @@ import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSe
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, Cpu, ImportFile, Music, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import styles from './UvrPanel.module.css'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -726,25 +727,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   return (
-    <div class="uvr-panel">
+    <div class={styles.uvrPanel}>
       <div
-        class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
+        class={`${styles.uvrPanelInner} ${currentView() !== 'mixer' ? styles.bounded : ''}`}
       >
         {/* Header */}
-        <div class="panel-header">
-          <div class="header-left">
+        <div class={styles.panelHeader}>
+          <div class={styles.headerLeft}>
             <div
               class="header-title-group"
               style="display: flex; align-items: center; gap: 0.5rem;"
             >
               <h3>Shazam Sing</h3>
             </div>
-            <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
-              <button
-                class="view-tab view-tab-sing"
-                classList={{
-                  active: currentView() === 'shazam-listen',
-                }}
+            <div class={styles.uvrViewTabs} style="margin-left: 0.5rem;">
+              <Button
+                variant="secondary"
+                design="glass"
+                size="xs"
+                class={styles.viewTabSing}
+                active={currentView() === 'shazam-listen'}
                 onClick={() => {
                   setCurrentView('shazam-listen')
                   props.onViewChange?.('shazam-listen')
@@ -753,13 +755,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 data-testid="uvr-tab-sing"
               >
                 <SingMic />
-                <span>Sing</span>
-              </button>
-              <button
-                class="view-tab"
-                classList={{
-                  active: currentView() === 'upload',
-                }}
+                Sing
+              </Button>
+              <Button
+                variant="secondary"
+                design="glass"
+                size="xs"
+                active={currentView() === 'upload'}
                 onClick={() => {
                   setCurrentView('upload')
                   props.onViewChange?.('upload')
@@ -768,14 +770,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 data-testid="uvr-tab-upload"
               >
                 <ImportFile />
-                <span>Upload</span>
-              </button>
+                Upload
+              </Button>
             </div>
           </div>
-          <div class="header-actions">
-            <div class="uvr-mode-toggle">
+          <div class={styles.headerActions}>
+            <div class={styles.uvrModeToggle}>
               <button
-                class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                class={`${styles.modeToggleBtn} ${styles.modeToggleBtnDisabled}`}
+                classList={{
+                  [styles.active]: uvrProcessingMode() === 'server',
+                }}
                 title="Processing: Server"
                 onClick={() =>
                   showNotification(
@@ -787,35 +792,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 Server
               </button>
               <button
-                class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+                class={styles.modeToggleBtn}
+                classList={{ [styles.active]: uvrProcessingMode() === 'local' }}
                 title="Processing: Browser"
                 onClick={() => setUvrProcessingMode('local')}
               >
                 Browser
               </button>
               <Show when={uvrProcessingMode() === 'local'}>
-                <div class="uvr-device-toggle">
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: !uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(false)}
-                    title="Use CPU (WASM) for vocal separation"
-                    data-testid="uvr-device-cpu"
-                  >
-                    <Cpu />
-                    <span>CPU</span>
-                  </button>
-                  <button
-                    class="device-toggle-btn"
-                    classList={{ active: uvrForceWebGpu() }}
-                    onClick={() => handleForceWebGpuToggle(true)}
-                    title="Use GPU (WebGPU) for vocal separation"
-                    data-testid="uvr-device-gpu"
-                  >
-                    <Zap />
-                    <span>GPU</span>
-                  </button>
-                </div>
+                <SegmentedControl<'cpu' | 'gpu'>
+                  options={[
+                    {
+                      value: 'cpu',
+                      label: 'CPU',
+                      icon: <Cpu />,
+                      title: 'Use CPU (WASM) for vocal separation',
+                      dataTestId: 'uvr-device-cpu',
+                    },
+                    {
+                      value: 'gpu',
+                      label: 'GPU',
+                      icon: <Zap />,
+                      title: 'Use GPU (WebGPU) for vocal separation',
+                      dataTestId: 'uvr-device-gpu',
+                    },
+                  ]}
+                  value={uvrForceWebGpu() ? 'gpu' : 'cpu'}
+                  onChange={(val) => handleForceWebGpuToggle(val === 'gpu')}
+                />
               </Show>
               <Show
                 when={
@@ -824,7 +828,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 }
               >
                 <span
-                  class={`model-status-badge model-status-${uvrModelStatus()}`}
+                  class={styles.modelStatusBadge}
+                  classList={{
+                    [styles.modelStatusLoading]: uvrModelStatus() === 'loading',
+                    [styles.modelStatusError]: uvrModelStatus() === 'error',
+                  }}
                   title={
                     uvrModelStatus() === 'error'
                       ? uvrModelError()
@@ -834,46 +842,50 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   }
                 >
                   <Show when={uvrModelStatus() === 'loading'}>
-                    <span class="model-loading-dot" />
+                    <span class={styles.modelLoadingDot} />
                   </Show>
                   <Show when={uvrModelStatus() === 'error'}>
-                    <span class="model-error-icon">!</span>
+                    <span class={styles.modelErrorIcon}>!</span>
                   </Show>
                 </span>
               </Show>
             </div>
-            <div class="uvr-view-tabs">
-              <button
-                class="view-tab"
-                classList={{ active: showGuide() }}
+            <div class={styles.uvrViewTabs}>
+              <Button
+                variant="secondary"
+                design="glass"
+                size="xs"
+                active={showGuide()}
                 onClick={() => setShowGuide(!showGuide())}
               >
                 <Music />
-                <span>Guide</span>
-              </button>
-              <button
-                class="view-tab"
-                classList={{ active: showSettings() }}
+                Guide
+              </Button>
+              <Button
+                variant="secondary"
+                design="glass"
+                size="xs"
+                active={showSettings()}
                 onClick={() => setShowSettings(!showSettings())}
               >
                 <Settings />
-                <span>Settings</span>
-              </button>
+                Settings
+              </Button>
             </div>
           </div>
         </div>
 
-        <FancyDivider class="uvr-header-divider" />
+        <FancyDivider class={styles.uvrHeaderDivider} />
 
         {/* Main Content */}
-        <div class="panel-content">
+        <div class={styles.panelContent}>
           {showGuide() && (
-            <div class="guide-modal">
-              <div class="guide-container">
-                <div class="guide-header">
+            <div class={styles.guideModal}>
+              <div class={styles.guideContainer}>
+                <div class={styles.guideHeader}>
                   <h3>Vocal Separation Guide</h3>
                   <button
-                    class="guide-close"
+                    class={styles.guideClose}
                     onClick={() => setShowGuide(false)}
                   >
                     <X />
@@ -885,12 +897,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           )}
 
           {showSettings() && (
-            <div class="guide-modal" onClick={() => setShowSettings(false)}>
-              <div class="guide-container" onClick={(e) => e.stopPropagation()}>
-                <div class="guide-header">
+            <div
+              class={styles.guideModal}
+              onClick={() => setShowSettings(false)}
+            >
+              <div
+                class={styles.guideContainer}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div class={styles.guideHeader}>
                   <h3>UVR Settings</h3>
                   <button
-                    class="guide-close"
+                    class={styles.guideClose}
                     onClick={() => setShowSettings(false)}
                   >
                     <X />
@@ -905,8 +923,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           )}
 
           <Show when={currentView() === 'upload'}>
-            <div class="view-section upload-section" data-testid="uvr-upload">
-              <div class="section-header">
+            <div
+              class={`${styles.viewSection} ${styles.uploadSection}`}
+              data-testid="uvr-upload"
+            >
+              <div class={styles.sectionHeader}>
                 <h4>Upload Audio</h4>
               </div>
 
@@ -922,30 +943,36 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 disabled={allSessions().some((s) => s.status === 'processing')}
               />
               <Show when={allSessions().length > 0}>
-                <div class="upload-divider">
-                  <span class="upload-divider-text">
+                <div class={styles.uploadDivider}>
+                  <span class={styles.uploadDividerText}>
                     or continue from existing session
                   </span>
                 </div>
-                <div class="section-header">
+                <div class={styles.sectionHeader}>
                   <h4>Recent Sessions</h4>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      class="delete-all-btn"
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      design="glass"
                       onClick={() => setShowClearStorageConfirm(true)}
                       title="Delete all sessions, stems, and uploaded files from database"
                     >
                       <Trash2 /> Clear Cached Songs
-                    </button>
-                    <button
-                      class="delete-all-btn"
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      design="glass"
                       onClick={() => setShowDeleteAllConfirm(true)}
                     >
                       <Trash2 /> Delete All
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                <div class="history-list history-list-inline">
+                <div
+                  class={`${styles.historyList} ${styles.historyListInline}`}
+                >
                   <For
                     each={allSessions().sort(
                       (a, b) => b.createdAt - a.createdAt,
@@ -991,8 +1018,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </Show>
 
           <Show when={currentView() === 'processing'}>
-            <div class="view-section processing-section">
-              <div class="section-header">
+            <div class={styles.viewSection}>
+              <div class={styles.sectionHeader}>
                 <h4>Processing Audio</h4>
               </div>
               {session() && (
@@ -1062,18 +1089,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </Show>
 
           <Show when={currentView() === 'results'}>
-            <div class="view-section results-section">
-              <div class="section-header">
+            <div class={styles.viewSection}>
+              <div class={styles.sectionHeader}>
                 <h4>
                   Processing Results for{' '}
                   {session()?.originalFile?.name ?? 'audio'}
                 </h4>
-                <button
-                  class="back-btn"
+                <Button
+                  variant="control"
+                  size="sm"
                   onClick={() => setCurrentView('upload')}
                 >
                   <ImportFile /> Back to Upload
-                </button>
+                </Button>
               </div>
               {session() && (
                 <UvrResultViewer
@@ -1098,7 +1126,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
           {/* Stem Mixer Inline */}
           <Show when={currentView() === 'mixer'}>
-            <div class="view-section mixer-section">
+            <div class={`${styles.viewSection} ${styles.mixerSection}`}>
               <StemMixer
                 stems={mixerStems()}
                 sessionId={mixerSessionId()}
@@ -1193,25 +1221,29 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         {/* Delete All Confirmation Modal */}
         <Show when={showDeleteAllConfirm()}>
           <div
-            class="delete-all-overlay"
+            class={styles.deleteAllOverlay}
             onClick={() => setShowDeleteAllConfirm(false)}
           >
-            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+            <div
+              class={styles.deleteAllDialog}
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4>Delete All Sessions</h4>
               <p>
                 This will remove all {allSessions().length} session
                 {allSessions().length !== 1 ? 's' : ''} from your history.
               </p>
-              <div class="delete-all-actions">
-                <button
-                  class="delete-all-cancel"
+              <div class={styles.deleteAllActions}>
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => setShowDeleteAllConfirm(false)}
                 >
                   Cancel
-                </button>
-                <button class="delete-all-confirm" onClick={handleDeleteAll}>
+                </Button>
+                <Button variant="danger" size="md" onClick={handleDeleteAll}>
                   <Trash2 /> Delete All
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1220,10 +1252,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         {/* Clear Storage Confirmation Modal */}
         <Show when={showClearStorageConfirm()}>
           <div
-            class="delete-all-overlay"
+            class={styles.deleteAllOverlay}
             onClick={() => setShowClearStorageConfirm(false)}
           >
-            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+            <div
+              class={styles.deleteAllDialog}
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4>Clear Cached Songs</h4>
               <p>
                 This will permanently remove all {allSessions().length} session
@@ -1231,16 +1266,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 uploaded mp3 files from your local database. This action cannot
                 be undone.
               </p>
-              <div class="delete-all-actions">
-                <button
-                  class="delete-all-cancel"
+              <div class={styles.deleteAllActions}>
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => setShowClearStorageConfirm(false)}
                 >
                   Cancel
-                </button>
-                <button class="delete-all-confirm" onClick={handleClearStorage}>
+                </Button>
+                <Button variant="danger" size="md" onClick={handleClearStorage}>
                   <Trash2 /> Clear Cached Songs
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1248,8 +1284,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* Delete All Toast */}
         <Show when={deleteAllToast()}>
-          <div class="history-toast">
-            <span class="history-toast-icon">
+          <div class={styles.historyToast}>
+            <span class={styles.historyToastIcon}>
               <CheckCircle />
             </span>
             {deleteAllToast()}
@@ -1258,8 +1294,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* MIDI Export Progress Toast */}
         <Show when={midiExporting()}>
-          <div class="history-toast">
-            <span class="history-toast-icon">
+          <div class={styles.historyToast}>
+            <span class={styles.historyToastIcon}>
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <circle
                   cx="12"

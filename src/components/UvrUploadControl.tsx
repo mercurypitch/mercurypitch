@@ -5,6 +5,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { FileUpload, ImportFile, MusicNote } from './icons'
+import { Button } from './shared/Button'
+import styles from './UvrUploadControl.module.css'
 
 interface UploadControlProps {
   onFileSelect?: (file: File) => void
@@ -113,21 +115,21 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
   return (
     <div
-      class={`uvr-upload-control ${props.disabled === true ? 'disabled' : ''}`}
+      class={`${styles.uvrUploadControl} ${props.disabled === true ? styles.disabled : ''}`}
     >
-      <div class="upload-header">
-        <div class="upload-icon-wrapper">
+      <div class={styles.uploadHeader}>
+        <div class={styles.uploadIconWrapper}>
           <MusicNote />
         </div>
         <h3>Select a Song</h3>
-        <p class="upload-subtitle">
+        <p class={styles.uploadSubtitle}>
           Upload an audio file to separate vocals and instruments
         </p>
       </div>
 
       {/* Upload Zone */}
       <label
-        class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled === true ? 'disabled' : ''}`}
+        class={`${styles.uploadZone} ${isDragging() ? styles.dragging : ''} ${props.disabled === true ? styles.disabled : ''}`}
         onDragEnter={() => props.disabled !== true && setIsDragging(true)}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setIsDragging(false)}
@@ -139,61 +141,65 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           type="file"
           accept={allowedTypes().join(',')}
           onChange={handleFileInput}
-          class="file-input"
+          class={styles.fileInput}
           disabled={props.disabled}
         />
 
         <Show when={!selectedFile()}>
-          <div class="upload-content">
-            <div class="upload-icon">
+          <div class={styles.uploadContent}>
+            <div class={styles.uploadIcon}>
               <FileUpload />
             </div>
-            <p class="upload-text">
+            <p class={styles.uploadText}>
               Drag & drop an audio file here, or{' '}
-              <span class="upload-text-highlight">click to browse</span>
+              <span class={styles.uploadTextHighlight}>click to browse</span>
             </p>
           </div>
         </Show>
 
         <Show when={selectedFile()}>
-          <div class="file-info">
-            <div class="file-preview">
-              <div class="file-icon">
+          <div class={styles.fileInfo}>
+            <div class={styles.filePreview}>
+              <div class={styles.fileIcon}>
                 <MusicNote />
               </div>
-              <div class="file-details">
-                <p class="file-name">{selectedFile()?.name ?? 'Unknown'}</p>
-                <p class="file-meta">
-                  {formatFileSize(selectedFile()?.size ?? 0)} •
+              <div class={styles.fileDetails}>
+                <p class={styles.fileName}>
+                  {selectedFile()?.name ?? 'Unknown'}
+                </p>
+                <p class={styles.fileMeta}>
+                  {formatFileSize(selectedFile()?.size ?? 0)} •{' '}
                   {selectedFile()?.type ?? 'Unknown type'}
                 </p>
               </div>
             </div>
 
             <Show when={props.processing}>
-              <div class="processing-indicator">
-                <div class="pulse-spinner" />
+              <div class={styles.processingIndicator}>
+                <div class={styles.pulseSpinner} />
                 <span>Processing...</span>
               </div>
             </Show>
 
             <Show when={!(props.processing ?? false)}>
-              <div class="upload-actions">
-                <button
-                  class="upload-btn upload-btn-secondary"
+              <div class={styles.uploadActions}>
+                <Button
+                  variant="secondary"
                   onClick={handleClear}
                   disabled={props.disabled}
+                  class={styles.uploadBtn}
                 >
                   Change File
-                </button>
-                <button
-                  class="upload-btn upload-btn-primary"
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={handleProcess}
                   disabled={!selectedFile() || props.disabled}
+                  class={`${styles.uploadBtn} ${styles.uploadBtnPrimary}`}
                 >
                   <ImportFile />
                   Process
-                </button>
+                </Button>
               </div>
             </Show>
           </div>
@@ -201,12 +207,12 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
       </label>
 
       {/* Supported Formats */}
-      <div class="supported-formats">
-        <div class="formats-list">
-          <span class="format-tag">MP3</span>
-          <span class="format-tag">WAV</span>
-          <span class="format-tag">FLAC</span>
-          <span class="format-tag format-tag-size">
+      <div class={styles.supportedFormats}>
+        <div class={styles.formatsList}>
+          <span class={styles.formatTag}>MP3</span>
+          <span class={styles.formatTag}>WAV</span>
+          <span class={styles.formatTag}>FLAC</span>
+          <span class={`${styles.formatTag} ${styles.formatTagSize}`}>
             {formatFileSize(maxSize())}
           </span>
         </div>

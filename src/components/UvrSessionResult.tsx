@@ -9,6 +9,8 @@ import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Button } from './shared/Button'
+import styles from './UvrSessionResult.module.css'
 
 interface SessionResultProps {
   sessionId: string
@@ -188,24 +190,24 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   return (
     <div
-      class={`uvr-session-result ${
+      class={`${styles.uvrSessionResult} ${
         props.disabled === true && session()?.status !== 'processing'
-          ? 'disabled'
+          ? styles.disabled
           : ''
       }`}
     >
       {/* Header */}
-      <div class="session-header">
-        <div class="session-icon-wrapper">
+      <div class={styles.sessionHeader}>
+        <div class={styles.sessionIconWrapper}>
           <Music />
         </div>
-        <div class="session-title-area">
+        <div class={styles.sessionTitleArea}>
           <h3>UVR Session</h3>
-          <p class="session-filename">
+          <p class={styles.sessionFilename}>
             {session()?.originalFile?.name ?? 'Unknown'}
           </p>
           <p
-            class="session-id-pill"
+            class={styles.sessionIdPill}
             title={
               (session()?.apiSessionId as string | undefined) ??
               session()?.sessionId ??
@@ -224,16 +226,18 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             })()}
           </p>
         </div>
-        <button
-          class="session-delete-btn"
+        <Button
+          variant="secondary"
+          class={styles.sessionDeleteBtn}
           onClick={handleDelete}
           aria-label="Delete session"
           disabled={props.disabled}
         >
           <Trash2 />
-        </button>
-        <button
-          class="session-share-btn"
+        </Button>
+        <Button
+          variant="secondary"
+          class={styles.sessionShareBtn}
           onClick={(e) => {
             void handleCopyLink(e)
           }}
@@ -241,20 +245,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           disabled={props.disabled}
         >
           <Share />
-        </button>
+        </Button>
       </div>
 
       {/* Status */}
       <div
-        class="status-bar"
+        class={styles.statusBar}
         style={{
           '--status-color': getStatusColor(session()?.status ?? 'idle'),
         }}
       >
-        <span class="status-icon">
+        <span class={styles.statusIcon}>
           {getStatusIcon(session()?.status ?? 'idle')}
         </span>
-        <span class="status-text">
+        <span class={styles.statusText}>
           {session()?.status === 'error'
             ? (session()?.error ?? 'Processing failed')
             : session()?.status === 'completed'
@@ -263,7 +267,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 ? `Processing... ${Math.round(session()?.progress ?? 0)}%`
                 : (session()?.status ?? 'Idle')}
         </span>
-        <span class="status-time">
+        <span class={styles.statusTime}>
           {(() => {
             const s = session() as UvrSession | null
             return s?.processingTime !== undefined
@@ -274,10 +278,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         <Show
           when={session()?.processingMode === 'server' || session()?.provider}
         >
-          <div class="status-provider">
+          <div class={styles.statusProvider}>
             <span
-              class="provider-icon"
-              classList={{ 'provider-gpu': session()?.provider === 'webgpu' }}
+              class={styles.providerIcon}
+              classList={{
+                [styles.providerGpu]: session()?.provider === 'webgpu',
+              }}
             >
               {session()?.processingMode === 'server' ? (
                 <Server />
@@ -295,31 +301,31 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           </div>
         </Show>
         <Show when={!session()}>
-          <span class="status-time">Idle</span>
+          <span class={styles.statusTime}>Idle</span>
         </Show>
       </div>
 
       {/* Info Grid */}
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-icon">
+      <div class={styles.infoGrid}>
+        <div class={styles.infoItem}>
+          <span class={styles.infoIcon}>
             <Calendar />
           </span>
-          <div class="info-content">
-            <span class="info-label">Created</span>
-            <span class="info-value">
+          <div class={styles.infoContent}>
+            <span class={styles.infoLabel}>Created</span>
+            <span class={styles.infoValue}>
               {formatDate(session()?.createdAt ?? 0)}
             </span>
           </div>
         </div>
         <Show when={session()?.originalFile}>
-          <div class="info-item">
-            <span class="info-icon">
+          <div class={styles.infoItem}>
+            <span class={styles.infoIcon}>
               <Box />
             </span>
-            <div class="info-content">
-              <span class="info-label">Size</span>
-              <span class="info-value">
+            <div class={styles.infoContent}>
+              <span class={styles.infoLabel}>Size</span>
+              <span class={styles.infoValue}>
                 {formatFileSize(session()!.originalFile!.size)}
               </span>
             </div>
@@ -329,12 +335,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
       {/* Outputs — compact multi-select stem pills */}
       <Show when={session()?.outputs}>
-        <div class="outputs-section">
+        <div class={styles.outputsSection}>
           <h4>Available Stems</h4>
-          <div class="stem-pills">
+          <div class={styles.stemPills}>
             <Show when={session()?.outputs?.vocal}>
               <button
-                class={`stem-pill stem-pill-vocal ${selectedStems().has('vocal') ? 'stem-pill-selected' : ''}`}
+                class={`${styles.stemPill} ${styles.stemPillVocal} ${selectedStems().has('vocal') ? styles.stemPillSelected : ''}`}
                 onClick={() => toggleStemSelection('vocal')}
                 title={
                   selectedStems().has('vocal')
@@ -346,7 +352,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 <span>Vocal</span>
                 <Show when={vocalFingerprinted()}>
                   <span
-                    class="stem-pill-shazam"
+                    class={styles.stemPillShazam}
                     title="Included in Shazam Sing matching"
                   >
                     <svg
@@ -365,8 +371,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                   </span>
                 </Show>
                 <span
-                  class="stem-pill-reindex"
-                  classList={{ 'stem-pill-reindexing': reindexing() }}
+                  class={styles.stemPillReindex}
+                  classList={{ [styles.stemPillReindexing]: reindexing() }}
                   onClick={handleReindex}
                   role="button"
                   tabindex={
@@ -384,7 +390,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 <Show
                   when={formatDuration(session()?.stemMeta?.vocal?.duration)}
                 >
-                  <span class="stem-pill-duration">
+                  <span class={styles.stemPillDuration}>
                     {formatDuration(session()?.stemMeta?.vocal?.duration)}
                   </span>
                 </Show>
@@ -392,7 +398,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.instrumental}>
               <button
-                class={`stem-pill stem-pill-instrumental ${selectedStems().has('instrumental') ? 'stem-pill-selected' : ''}`}
+                class={`${styles.stemPill} ${styles.stemPillInstrumental} ${selectedStems().has('instrumental') ? styles.stemPillSelected : ''}`}
                 onClick={() => toggleStemSelection('instrumental')}
                 title={
                   selectedStems().has('instrumental')
@@ -407,7 +413,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                     session()?.stemMeta?.instrumental?.duration,
                   )}
                 >
-                  <span class="stem-pill-duration">
+                  <span class={styles.stemPillDuration}>
                     {formatDuration(
                       session()?.stemMeta?.instrumental?.duration,
                     )}
@@ -417,7 +423,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.vocal}>
               <button
-                class={`stem-pill stem-pill-midi ${selectedStems().has('vocal-midi') ? 'stem-pill-selected' : ''}`}
+                class={`${styles.stemPill} ${styles.stemPillMidi} ${selectedStems().has('vocal-midi') ? styles.stemPillSelected : ''}`}
                 onClick={() => toggleStemSelection('vocal-midi')}
                 title={
                   selectedStems().has('vocal-midi')
@@ -441,15 +447,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           session()?.status === 'processing'
         }
       >
-        <div class="session-result-actions">
+        <div class={styles.sessionResultActions}>
           <Show
             when={
               session()?.status === 'completed' ||
               session()?.status === 'processing'
             }
           >
-            <button
-              class="session-result-btn session-result-btn-primary"
+            <Button
+              variant="primary"
+              class={styles.sessionResultBtn}
               disabled={
                 props.disabled === true && session()?.status !== 'processing'
               }
@@ -474,20 +481,22 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 </span>{' '}
                 View Progress
               </Show>
-            </button>
+            </Button>
             <Show when={session()?.status === 'completed' && hasSelection()}>
-              <button
-                class="session-result-btn session-result-btn-mixer"
+              <Button
+                variant="secondary"
+                class={`${styles.sessionResultBtn} ${styles.sessionResultBtnMixer}`}
                 disabled={props.disabled}
                 onClick={handleMixSelected}
               >
                 <SlidersHorizontal /> Mix Selected
-              </button>
+              </Button>
             </Show>
           </Show>
           <Show when={session()?.status === 'error' && session()?.originalFile}>
-            <button
-              class="session-result-btn session-result-btn-primary"
+            <Button
+              variant="primary"
+              class={styles.sessionResultBtn}
               disabled={props.disabled}
               onClick={(e) => {
                 e.stopPropagation()
@@ -495,7 +504,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               }}
             >
               <RotateCcw /> Retry
-            </button>
+            </Button>
           </Show>
         </div>
       </Show>
@@ -503,11 +512,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Delete Confirmation Modal */}
       <Show when={showDeleteConfirm()}>
         <div
-          class="delete-confirm-overlay"
+          class={styles.deleteConfirmOverlay}
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
-            class="delete-confirm-dialog"
+            class={styles.deleteConfirmDialog}
             onClick={(e) => e.stopPropagation()}
           >
             <h4>Delete Session</h4>
@@ -515,16 +524,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               This action cannot be undone. The session and all generated files
               will be permanently removed.
             </p>
-            <div class="delete-confirm-actions">
-              <button
-                class="delete-confirm-cancel"
+            <div class={styles.deleteConfirmActions}>
+              <Button
+                variant="secondary"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel
-              </button>
-              <button class="delete-confirm-delete" onClick={confirmDelete}>
+              </Button>
+              <Button variant="danger" onClick={confirmDelete}>
                 <Trash2 /> Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -532,8 +541,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
       {/* Toast Notification */}
       <Show when={toastMessage()}>
-        <div class="session-toast">
-          <span class="session-toast-icon">
+        <div class={styles.sessionToast}>
+          <span class={styles.sessionToastIcon}>
             <CheckCircle />
           </span>
           {toastMessage()}

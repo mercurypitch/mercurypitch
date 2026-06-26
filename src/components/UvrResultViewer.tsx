@@ -6,6 +6,8 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { Clock, Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { Button } from './shared/Button'
+import styles from './UvrResultViewer.module.css'
 
 interface StemMeta {
   duration?: number
@@ -62,16 +64,20 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     filename: string,
     stemKey?: string,
   ) => {
+    // Extract reactive values synchronously outside async callback
+    const vocalOutput = props.outputs?.vocal
+    const originalName = props.originalFileName
+
     // Handle MIDI stems — generate on-the-fly from vocal audio
     if (
       (url === undefined || url === '') &&
       stemKey === 'vocalMidi' &&
-      props.outputs?.vocal !== undefined
+      vocalOutput !== undefined
     ) {
       try {
         setMidiDownloading(true)
         setMidiDownloadProgress(0)
-        const midiBlob = await generateVocalMidi(props.outputs.vocal, (pct) =>
+        const midiBlob = await generateVocalMidi(vocalOutput, (pct) =>
           setMidiDownloadProgress(pct),
         )
         setMidiDownloading(false)
@@ -92,7 +98,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (props.originalFileName ?? 'audio')
+      const base = (originalName ?? 'audio')
         .replace(/\.[^.]+$/, '')
         .replace(/\s+/g, '_')
         .replace(/[^a-zA-Z0-9_-]/g, '')
@@ -110,7 +116,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/#/uvr/session/${props.sessionId ?? ''}/mixer`
+    // Extract reactive values synchronously outside async callback
+    const sessionId = props.sessionId ?? ''
+    const url = `${window.location.origin}/#/uvr/session/${sessionId}/mixer`
     try {
       await navigator.clipboard.writeText(url)
       setShareToast('Link copied to clipboard!')
@@ -209,59 +217,61 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   }
 
   return (
-    <div class="uvr-result-viewer">
+    <div class={styles.uvrResultViewer}>
       {/* Header */}
-      <div class="rv-header">
-        <div class="rv-header-left">
+      <div class={styles.rvHeader}>
+        <div class={styles.rvHeaderLeft}>
           <h3>Stems</h3>
           <Show when={props.processingTime}>
-            <span class="rv-processing-time">
-              <span class="rv-time-icon">
+            <span class={styles.rvProcessingTime}>
+              <span class={styles.rvTimeIcon}>
                 <Clock />
               </span>
               {Math.round(props.processingTime! / 1000)}s
             </span>
           </Show>
         </div>
-        <div class="rv-header-right">
-          <button
-            class="rv-share-btn"
+        <div class={styles.rvHeaderRight}>
+          <Button
+            variant="secondary"
+            class={styles.rvShareBtn}
             onClick={() => {
               void handleShare()
             }}
             title="Copy share link"
           >
             <Share /> Share
-          </button>
+          </Button>
           <Show when={props.onClose}>
-            <button
-              class="rv-close-btn"
+            <Button
+              variant="control"
+              class={styles.rvCloseBtn}
               onClick={() => props.onClose?.()}
               aria-label="Close"
             >
               <X />
-            </button>
+            </Button>
           </Show>
         </div>
       </div>
 
       {/* Stem Cards Grid */}
-      <div class="rv-stems-grid">
+      <div class={styles.rvStemsGrid}>
         <For each={stems()}>
           {(stem) => {
             const meta = props.stemMeta?.[stem.key]
             const isSelected = () => selectedKeys().has(stem.key)
             return (
               <div
-                class="rv-stem-card"
-                classList={{ 'rv-stem-card-selected': isSelected() }}
+                class={styles.rvStemCard}
+                classList={{ [styles.rvStemCardSelected]: isSelected() }}
                 style={{ '--stem-color': stem.color }}
                 onClick={() => toggleSelected(stem.key)}
               >
-                <div class="rv-stem-card-top">
+                <div class={styles.rvStemCardTop}>
                   <div
-                    class="rv-stem-select"
-                    classList={{ 'rv-stem-select-active': isSelected() }}
+                    class={styles.rvStemSelect}
+                    classList={{ [styles.rvStemSelectActive]: isSelected() }}
                   >
                     <Show
                       when={isSelected()}
@@ -297,20 +307,20 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                       </svg>
                     </Show>
                   </div>
-                  <div class="rv-stem-icon" style={{ color: stem.color }}>
+                  <div class={styles.rvStemIcon} style={{ color: stem.color }}>
                     {<stem.icon />}
                   </div>
-                  <div class="rv-stem-info">
-                    <span class="rv-stem-name">{stem.label}</span>
-                    <div class="rv-stem-meta">
-                      <span class="rv-stem-format">{stem.format}</span>
+                  <div class={styles.rvStemInfo}>
+                    <span class={styles.rvStemName}>{stem.label}</span>
+                    <div class={styles.rvStemMeta}>
+                      <span class={styles.rvStemFormat}>{stem.format}</span>
                       <Show when={formatDuration(meta?.duration)}>
-                        <span class="rv-stem-duration">
+                        <span class={styles.rvStemDuration}>
                           {formatDuration(meta?.duration)}
                         </span>
                       </Show>
                       <Show when={formatFileSize(meta?.size)}>
-                        <span class="rv-stem-size">
+                        <span class={styles.rvStemSize}>
                           {formatFileSize(meta?.size)}
                         </span>
                       </Show>
@@ -318,17 +328,19 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                   </div>
                 </div>
                 <div
-                  class="rv-stem-card-actions"
+                  class={styles.rvStemCardActions}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button
-                    class="rv-stem-btn rv-stem-btn-play"
+                  <Button
+                    variant="primary"
+                    class={`${styles.rvStemBtn} ${styles.rvStemBtnPlay}`}
                     onClick={() => handleStartPractice(stem.practiceMode)}
                   >
                     <Play /> Play
-                  </button>
-                  <button
-                    class="rv-stem-btn rv-stem-btn-download"
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    class={`${styles.rvStemBtn} ${styles.rvStemBtnDownload}`}
                     onClick={() => {
                       void handleDownload(
                         stem.url,
@@ -343,7 +355,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
-                        class="rv-circular-progress"
+                        class={styles.rvCircularProgress}
                       >
                         <circle
                           cx="12"
@@ -374,7 +386,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                     ) : (
                       <Download />
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )
@@ -389,56 +401,56 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           props.outputs?.instrumental !== undefined
         }
       >
-        <div class="rv-full-mix-card">
-          <div class="rv-full-mix-left">
-            <div class="rv-stem-icon" style={{ color: '#10b981' }}>
+        <div class={styles.rvFullMixCard}>
+          <div class={styles.rvFullMixLeft}>
+            <div class={styles.rvStemIcon} style={{ color: '#10b981' }}>
               <MusicBoard />
             </div>
-            <div class="rv-stem-info">
-              <span class="rv-stem-name">Full Mix</span>
-              <span class="rv-stem-format">Vocal + Instrumental</span>
+            <div class={styles.rvStemInfo}>
+              <span class={styles.rvStemName}>Full Mix</span>
+              <span class={styles.rvStemFormat}>Vocal + Instrumental</span>
             </div>
           </div>
-          <div class="rv-full-mix-actions">
-            <button
-              class="rv-stem-btn rv-stem-btn-play"
+          <div class={styles.rvFullMixActions}>
+            <Button
+              variant="primary"
+              class={`${styles.rvStemBtn} ${styles.rvStemBtnPlay}`}
               onClick={() => handleStartPractice('full')}
             >
               <Play /> Play
-            </button>
+            </Button>
           </div>
         </div>
       </Show>
 
       {/* Mix Selected — only when individual stems are checked */}
       <Show when={selectedCount() >= 2}>
-        <div class="rv-mix-selected-card">
-          <div class="rv-full-mix-left">
-            <div class="rv-stem-icon" style={{ color: '#8b5cf6' }}>
+        <div class={styles.rvMixSelectedCard}>
+          <div class={styles.rvFullMixLeft}>
+            <div class={styles.rvStemIcon} style={{ color: '#8b5cf6' }}>
               <SlidersHorizontal />
             </div>
-            <div class="rv-stem-info">
-              <span class="rv-stem-name">Mix Selected</span>
-              <span class="rv-stem-format">{selectedLabel()}</span>
+            <div class={styles.rvStemInfo}>
+              <span class={styles.rvStemName}>Mix Selected</span>
+              <span class={styles.rvStemFormat}>{selectedLabel()}</span>
             </div>
           </div>
-          <div class="rv-full-mix-actions">
-            <button
-              class="rv-stem-btn rv-stem-btn-play"
+          <div class={styles.rvFullMixActions}>
+            <Button
+              variant="primary"
+              class={`${styles.rvStemBtn} ${styles.rvStemBtnPlay}`}
               onClick={handleMixPlay}
             >
               <Play /> Play
-            </button>
+            </Button>
           </div>
         </div>
       </Show>
 
       {/* Share Toast */}
       <Show when={shareToast()}>
-        <div class="rv-toast">{shareToast()}</div>
+        <div class={styles.rvToast}>{shareToast()}</div>
       </Show>
     </div>
   )
 }
-
-// ============================================================

@@ -5,6 +5,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
+import { Button } from './shared/Button'
+import styles from './UvrProcessControl.module.css'
 
 interface ProcessControlProps {
   sessionId: string
@@ -146,36 +148,38 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   const displayId = createMemo(() => props.apiSessionId ?? props.sessionId)
 
   return (
-    <div class="uvr-process-control">
+    <div class={styles.uvrProcessControl}>
       {/* Status Header */}
-      <div class="process-header">
+      <div class={styles.processHeader}>
         <div
-          class="process-icon-wrapper"
+          class={styles.processIconWrapper}
           style={{ color: currentStage().color }}
         >
           <Show when={props.status === 'processing'}>
-            <div class="pulse-spinner" />
+            <div class={styles.pulseSpinner} />
           </Show>
           <Show when={props.status !== 'processing'}>
             {currentStage().icon}
           </Show>
         </div>
-        <div class="process-info">
+        <div class={styles.processInfo}>
           <h3>{currentStage().title}</h3>
           <Show when={currentStage().description}>
             <p>{currentStage().description}</p>
           </Show>
-          <div class="process-meta-info">
+          <div class={styles.processMetaInfo}>
             <Show when={props.processingMode}>
-              <div class="status-provider">
+              <div class={styles.statusProvider}>
                 {props.processingMode === 'server' ? 'Server' : 'Browser'}
               </div>
             </Show>
             <Show when={props.processingMode === 'server' || props.provider}>
-              <div class="status-provider">
+              <div class={styles.statusProvider}>
                 <span
-                  class="provider-icon"
-                  classList={{ 'provider-gpu': props.provider === 'webgpu' }}
+                  class={styles.providerIcon}
+                  classList={{
+                    [styles.providerGpu]: props.provider === 'webgpu',
+                  }}
                 >
                   {props.processingMode === 'server' ? (
                     <Server />
@@ -192,7 +196,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
                     : 'CPU (WASM)'}
               </div>
             </Show>
-            <p class="process-session-id" title={displayId()}>
+            <p class={styles.processSessionId} title={displayId()}>
               {displayId().length > 16 ? displayId().slice(-8) : displayId()}
             </p>
           </div>
@@ -201,12 +205,12 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
 
       {/* Progress Bar */}
       <Show when={props.status === 'processing'}>
-        <div class="progress-section">
-          <div class="progress-bar-container">
+        <div class={styles.progressSection}>
+          <div class={styles.progressBarContainer}>
             <div
-              class="progress-bar-fill"
+              class={styles.progressBarFill}
               classList={{
-                'progress-bar-indeterminate': props.indeterminate ?? false,
+                [styles.progressBarIndeterminate]: props.indeterminate ?? false,
               }}
               style={{
                 width:
@@ -220,33 +224,33 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <Show
             when={props.indeterminate ?? false}
             fallback={
-              <div class="progress-row">
-                <span class="progress-pct">
+              <div class={styles.progressRow}>
+                <span class={styles.progressPct}>
                   {formatPercentage(props.progress)}
                 </span>
-                <span class="progress-times">
+                <span class={styles.progressTimes}>
                   <span>{formatTime(displayTime())}</span>
-                  <span class="progress-sep">/</span>
-                  <span class="progress-estimate">
+                  <span class={styles.progressSep}>/</span>
+                  <span class={styles.progressEstimate}>
                     ~{formatTime(estimatedRemaining())}
                   </span>
                 </span>
                 <Show when={isLocal() && (props.numChunks ?? 0) > 1}>
-                  <span class="progress-chunks">
+                  <span class={styles.progressChunks}>
                     Chunk {currentChunk()} of {props.numChunks}
                   </span>
                 </Show>
               </div>
             }
           >
-            <div class="progress-text">Estimating...</div>
+            <div class={styles.progressText}>Estimating...</div>
           </Show>
         </div>
       </Show>
 
       {/* Stage Indicators */}
       <Show when={props.status === 'completed' && props.outputs}>
-        <div class="stage-indicators">
+        <div class={styles.stageIndicators}>
           <For
             each={[
               { label: 'Original File', icon: Music, active: true },
@@ -268,9 +272,11 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             ]}
           >
             {(stage) => (
-              <div class={`stage-item ${stage.active ? 'active' : ''}`}>
-                <span class="stage-icon">{stage.icon({})}</span>
-                <span class="stage-label">{stage.label}</span>
+              <div
+                class={`${styles.stageItem} ${stage.active ? styles.active : ''}`}
+              >
+                <span class={styles.stageIcon}>{stage.icon({})}</span>
+                <span class={styles.stageLabel}>{stage.label}</span>
               </div>
             )}
           </For>
@@ -279,54 +285,58 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
 
       {/* Error Message */}
       <Show when={props.status === 'error'}>
-        <div class="error-section">
-          <p class="error-text">{props.error}</p>
+        <div class={styles.errorSection}>
+          <p class={styles.errorText}>{props.error}</p>
         </div>
       </Show>
 
       {/* Action Buttons */}
-      <div class="process-actions">
+      <div class={styles.processActions}>
         <Show when={props.status === 'processing'}>
-          <button
-            class="process-btn process-btn-danger"
+          <Button
+            variant="danger"
+            class={`${styles.processBtn} ${styles.processBtnDanger}`}
             onClick={() => props.onCancel?.()}
           >
             Cancel
-          </button>
+          </Button>
         </Show>
         <Show when={props.status === 'error'}>
-          <button
-            class="process-btn-icon process-btn-retry"
+          <Button
+            variant="primary"
+            class={`${styles.processBtnIcon} ${styles.processBtnRetry}`}
             onClick={() => props.onRetry?.()}
           >
-            <span class="process-btn-icon-svg">
+            <span class={styles.processBtnIconSvg}>
               <RotateCcw />
             </span>
-            <span class="process-btn-icon-label">Retry</span>
-          </button>
-          <button
-            class="process-btn-icon process-btn-new"
+            <span class={styles.processBtnIconLabel}>Retry</span>
+          </Button>
+          <Button
+            variant="secondary"
+            class={`${styles.processBtnIcon} ${styles.processBtnNew}`}
             onClick={() => props.onNewSession?.()}
           >
-            <span class="process-btn-icon-svg">
+            <span class={styles.processBtnIconSvg}>
               <FilePlus />
             </span>
-            <span class="process-btn-icon-label">New Session</span>
-          </button>
-          <button
-            class="process-btn-icon process-btn-delete"
+            <span class={styles.processBtnIconLabel}>New Session</span>
+          </Button>
+          <Button
+            variant="secondary"
+            class={`${styles.processBtnIcon} ${styles.processBtnDelete}`}
             onClick={() => props.onDeleteAndNew?.()}
           >
-            <span class="process-btn-icon-svg">
+            <span class={styles.processBtnIconSvg}>
               <Trash2 />
             </span>
-            <span class="process-btn-icon-label">Delete & New</span>
-          </button>
+            <span class={styles.processBtnIconLabel}>Delete & New</span>
+          </Button>
         </Show>
         <Show when={props.status === 'completed'}>
-          <button class="process-btn process-btn-primary" disabled={true}>
+          <Button variant="primary" class={styles.processBtn} disabled={true}>
             <CheckCircle /> Complete
-          </button>
+          </Button>
         </Show>
       </div>
     </div>

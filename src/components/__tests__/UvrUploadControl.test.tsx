@@ -5,6 +5,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrUploadControl } from '../UvrUploadControl'
+import styles from '../UvrUploadControl.module.css'
 
 // Mock icons
 vi.mock('../icons', () => ({
@@ -136,29 +137,35 @@ describe('UvrUploadControl Component', () => {
     it('highlights zone when dragging over', async () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
+      const uploadZone = document.querySelector(
+        `.${styles.uploadZone}`,
+      ) as HTMLElement
       expect(uploadZone).toBeTruthy()
       fireEvent.dragEnter(uploadZone)
 
-      expect(uploadZone).toHaveClass('dragging')
+      expect(uploadZone).toHaveClass(styles.dragging)
     })
 
     it('clears highlight when leaving zone', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
+      const uploadZone = document.querySelector(
+        `.${styles.uploadZone}`,
+      ) as HTMLElement
       expect(uploadZone).toBeTruthy()
       fireEvent.dragEnter(uploadZone)
       fireEvent.dragLeave(uploadZone)
 
-      expect(uploadZone).not.toHaveClass('dragging')
+      expect(uploadZone).not.toHaveClass(styles.dragging)
     })
 
     it('calls onFileSelect with dropped file', () => {
       const testFile = new File(['test'], 'test.wav', { type: 'audio/wav' })
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
+      const uploadZone = document.querySelector(
+        `.${styles.uploadZone}`,
+      ) as HTMLElement
       expect(uploadZone).toBeTruthy()
 
       const mockEvent = {
