@@ -7,10 +7,13 @@ import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } fro
 import { IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { keyName, scaleType } from '@/stores/app-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { currentScale } from '@/stores/melody-store'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_SIGHT_SINGING } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -24,23 +27,54 @@ interface Props {
   autoStart?: boolean
 }
 
-// ── Staff rendering ──────────────────────────────────────────
+// ── Staff geometry (treble clef) ─────────────────────────────
+// The 5 lines are, bottom→top, E4 G4 B4 D5 F5; the spaces are F4 A4 C5 E5.
+// Notes are placed by diatonic step (letter), not by semitone, so sharps sit
+// on their natural's line/space with a ♯ to the left — like real notation.
 
-const STAFF_TOP = 20
-const LINE_SPACING = 10
+const STAFF_TOP = 56
+const LINE_SPACING = 14
+const HALF = LINE_SPACING / 2
 const STAFF_LINES = [0, 1, 2, 3, 4]
-const NOTE_RX = 9
-const NOTE_RY = 7
+const NOTE_RX = 8
+const NOTE_RY = 6
+const NOTE_SPACING = 60
+const STAFF_LEFT = 70
+const E4_STEP = 30 // diatonic step number of E4 (the bottom line)
+const STAFF_BOTTOM_Y = STAFF_TOP + 4 * LINE_SPACING
 
-/** MIDI → y offset from top staff line (C4 = middle C, one ledger line below) */
-function midiToStaffY(midi: number): number {
-  // MIDI 60 = C4 = middle C = 1 ledger line below the staff (treble clef)
-  // Staff bottom line is E4 (MIDI 64) → y = STAFF_TOP + 4 * LINE_SPACING
-  // Each semitone = LINE_SPACING / 2 pixels
-  // C4 (60) is 4 semitones below E4 (64), so it's at y + 2 * LINE_SPACING
-  const staffBottomY = STAFF_TOP + 4 * LINE_SPACING // E4
-  const semitonesFromE4 = midi - 64
-  return staffBottomY - (semitonesFromE4 * LINE_SPACING) / 2
+// pitch-class → diatonic step within an octave (C=0,D=1,…,B=6); sharps share.
+const PC_DIATONIC = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6]
+const PC_SHARP = [
+  false,
+  true,
+  false,
+  true,
+  false,
+  false,
+  true,
+  false,
+  true,
+  false,
+  true,
+  false,
+]
+
+const staffStepOf = (midi: number): number => {
+  const pc = ((midi % 12) + 12) % 12
+  const octave = Math.floor(midi / 12) - 1
+  return octave * 7 + PC_DIATONIC[pc]!
+}
+const stepToY = (step: number): number =>
+  STAFF_BOTTOM_Y - (step - E4_STEP) * HALF
+
+/** Line positions (even steps) needed to connect a note outside the staff. */
+const ledgerStepsFor = (step: number): number[] => {
+  const out: number[] = []
+  if (step < E4_STEP) for (let e = E4_STEP - 2; e >= step; e -= 2) out.push(e)
+  else if (step > E4_STEP + 8)
+    for (let e = E4_STEP + 10; e <= step; e += 2) out.push(e)
+  return out
 }
 
 function StaffNote(p: {
@@ -48,25 +82,39 @@ function StaffNote(p: {
   isActive: boolean
   x: number
 }) {
-  // eslint-disable-next-line solid/reactivity
-  const y = midiToStaffY(p.note.midi)
-  const needsLedgerLine = y > STAFF_TOP + 4 * LINE_SPACING + 2
+  /* eslint-disable solid/reactivity */
+  const step = staffStepOf(p.note.midi)
+  const y = stepToY(step)
+  const ledgers = ledgerStepsFor(step)
+  const isSharp = PC_SHARP[((p.note.midi % 12) + 12) % 12]
+  /* eslint-enable solid/reactivity */
 
   return (
     <>
-      {/* Ledger line for middle C */}
-      <Show when={needsLedgerLine}>
-        <line
-          x1={p.x - 12}
-          y1={STAFF_TOP + 5 * LINE_SPACING}
-          x2={p.x + 12}
-          y2={STAFF_TOP + 5 * LINE_SPACING}
-          stroke="currentColor"
-          stroke-width="1"
-          opacity="0.5"
-        />
+      <For each={ledgers}>
+        {(e) => (
+          <line
+            x1={p.x - 13}
+            y1={stepToY(e)}
+            x2={p.x + 13}
+            y2={stepToY(e)}
+            stroke="var(--text-secondary)"
+            stroke-width="1"
+            opacity="0.5"
+          />
+        )}
+      </For>
+      <Show when={isSharp}>
+        <text
+          x={p.x - 16}
+          y={y + 4}
+          text-anchor="middle"
+          font-size="15"
+          fill={p.isActive ? 'var(--accent)' : 'var(--text-primary)'}
+        >
+          ♯
+        </text>
       </Show>
-      {/* Note head */}
       <ellipse
         cx={p.x}
         cy={y}
@@ -76,16 +124,15 @@ function StaffNote(p: {
           p.isActive ? 'var(--accent, #6366f1)' : 'var(--text-primary, #fff)'
         }
         opacity={p.isActive ? 1 : 0.7}
-        transform={`rotate(-10, ${p.x}, ${y})`}
+        transform={`rotate(-12, ${p.x}, ${y})`}
       />
-      {/* Note name label */}
       <text
         x={p.x}
-        y={y + 28}
+        y={STAFF_BOTTOM_Y + 34}
         text-anchor="middle"
         font-size="10"
-        fill="var(--text-secondary)"
-        opacity="0.6"
+        fill={p.isActive ? 'var(--accent)' : 'var(--text-secondary)'}
+        opacity={p.isActive ? 0.95 : 0.55}
       >
         {p.note.name}
         {p.note.octave}
@@ -109,7 +156,8 @@ const SightSingingExercise: Component<Props> = (props) => {
   const handleStart = async () => {
     const scale = currentScale()
     if (scale.length < 3) return
-    controller.setScale(scale)
+    const range = getComfortableMidiRange(vocalRangePreset())
+    controller.setScale(scale, range.min, range.max)
     await base.start()
     controller.startRounds()
   }
@@ -141,18 +189,23 @@ const SightSingingExercise: Component<Props> = (props) => {
   })
 
   const isActive = () => base.state().status === 'active'
-  const currentIdx = () => controller.getCurrentIndex()
+  const metrics = () => base.state().metrics
+  const currentIdx = () => metrics().noteIndex ?? 0
+  const holdPct = () => metrics().holdPct ?? 0
+  const detectedMidi = () => metrics().detectedMidi ?? 0
+  const centsOff = () => metrics().centsOff ?? 0
   const sequence = () => controller.getSequence()
 
   const targetMidi = createMemo(() => {
     const seq = sequence()
     const idx = currentIdx()
     if (seq.length === 0 || idx < 0 || idx >= seq.length) return undefined
-    return seq[idx].midi
+    return seq[idx]!.midi
   })
 
-  const svgWidth = () => Math.max(300, (sequence().length || 5) * 52 + 40)
-  const svgHeight = 140
+  const svgWidth = () =>
+    Math.max(320, (sequence().length || 6) * NOTE_SPACING + 60)
+  const svgHeight = 180
 
   return (
     <ExerciseShell
@@ -166,12 +219,16 @@ const SightSingingExercise: Component<Props> = (props) => {
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <IconMusic size={48} />
-          <p>Read the notes on the staff and sing them — no audio preview.</p>
+          <p>
+            Read each note on the staff and sing it — the cursor advances once
+            you hold the right pitch. No audio preview.
+          </p>
           <p class="exercise-idle-target-note">
             Key:{' '}
             <strong>
               {keyName()} {scaleType()}
-            </strong>
+            </strong>{' '}
+            · in your range
           </p>
         </div>
       }
@@ -181,14 +238,12 @@ const SightSingingExercise: Component<Props> = (props) => {
       activeContent={
         <>
           <div class="sight-singing-staff-container">
-            {/* Musical staff */}
             <svg
               width={svgWidth()}
               height={svgHeight}
               viewBox={`0 0 ${svgWidth()} ${svgHeight}`}
               class="sight-singing-staff"
             >
-              {/* Staff lines */}
               <For each={STAFF_LINES}>
                 {(line) => (
                   <line
@@ -198,32 +253,44 @@ const SightSingingExercise: Component<Props> = (props) => {
                     y2={STAFF_TOP + line * LINE_SPACING}
                     stroke="var(--text-secondary, #888)"
                     stroke-width="1"
-                    opacity="0.3"
+                    opacity="0.35"
                   />
                 )}
               </For>
-              {/* Clef placeholder */}
+              {/* Treble clef */}
               <text
-                x={14}
-                y={STAFF_TOP + 2.5 * LINE_SPACING}
-                font-size="32"
+                x={18}
+                y={STAFF_BOTTOM_Y + 6}
+                font-size="62"
                 fill="var(--text-secondary, #888)"
-                opacity="0.25"
+                opacity="0.55"
                 font-family="serif"
               >
-                &
+                𝄞
               </text>
-              {/* Notes */}
               <For each={sequence()}>
                 {(note, i) => (
                   <StaffNote
                     note={note}
                     isActive={i() === currentIdx()}
-                    x={50 + i() * 52}
+                    x={STAFF_LEFT + i() * NOTE_SPACING}
                   />
                 )}
               </For>
             </svg>
+          </div>
+
+          {/* Hold-to-pass progress for the current note */}
+          <div class="sight-singing-hold">
+            <div class="sight-singing-hold-bar">
+              <div
+                class="sight-singing-hold-fill"
+                style={{ width: `${holdPct()}%` }}
+              />
+            </div>
+            <span class="sight-singing-hold-label">
+              Hold {midiToNoteName(targetMidi() ?? 0)} to continue
+            </span>
           </div>
 
           <ExercisePitchTracker
@@ -231,6 +298,17 @@ const SightSingingExercise: Component<Props> = (props) => {
             isActive={isActive}
             targetNoteMidi={targetMidi}
           />
+
+          {/* DEV-only pitch debug readout for testing recognition. */}
+          <Show when={import.meta.env.DEV}>
+            <div class="sight-singing-debug">
+              detected:{' '}
+              {detectedMidi() > 0
+                ? `${midiToNoteName(Math.round(detectedMidi()))} (${centsOff() >= 0 ? '+' : ''}${centsOff()}¢)`
+                : '—'}{' '}
+              · target: {midiToNoteName(targetMidi() ?? 0)} · hold {holdPct()}%
+            </div>
+          </Show>
 
           <div class="sight-singing-progress">
             <div class="sight-singing-progress-bar">
@@ -250,7 +328,7 @@ const SightSingingExercise: Component<Props> = (props) => {
       resultSummary={
         <>
           {base.result()?.metrics.notesScored} of{' '}
-          {base.result()?.metrics.notesAttempted} notes scored · Best:{' '}
+          {base.result()?.metrics.notesAttempted} notes hit · Best:{' '}
           {base.result()?.metrics.bestNote}%
         </>
       }
