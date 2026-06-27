@@ -17,6 +17,15 @@ const METRIC_UPDATE_MS = 1500
  *  isn't diluted by the steady onset that precedes it. */
 const ANALYSIS_WINDOW_SEC = 4
 
+/** detectVibrato classification → numeric metric (mirrors the UI labels). */
+const CLASSIFICATION_MAP: Record<string, number> = {
+  none: 0,
+  'slow-operatic': 1,
+  natural: 2,
+  nervous: 3,
+  wide: 4,
+}
+
 type PitchSample = { freq: number; time: number; cents: number }
 
 /** Keep the trailing `windowSec` of samples (by their time field). */
@@ -120,6 +129,7 @@ export function useVibratoController(base: BaseExerciseController) {
           rateHz: Math.round(vibResult.rateHz * 10) / 10,
           depthCents: Math.round(vibResult.depthCents),
           consistency: vibResult.confidence,
+          classification: CLASSIFICATION_MAP[vibResult.classification] ?? 0,
         })
         base._updateScore(currentScore)
       })
@@ -199,15 +209,6 @@ export function useVibratoController(base: BaseExerciseController) {
         consistencyScore * SCORE_CONSISTENCY_WEIGHT,
     )
 
-    // Map classification to numeric for metrics
-    const classificationMap: Record<string, number> = {
-      none: 0,
-      'slow-operatic': 1,
-      natural: 2,
-      nervous: 3,
-      wide: 4,
-    }
-
     return {
       type: EXERCISE_VIBRATO,
       score,
@@ -215,7 +216,7 @@ export function useVibratoController(base: BaseExerciseController) {
         rateHz: Math.round(vibResult.rateHz * 10) / 10,
         depthCents: Math.round(vibResult.depthCents),
         consistency: vibResult.confidence,
-        classification: classificationMap[vibResult.classification] ?? 0,
+        classification: CLASSIFICATION_MAP[vibResult.classification] ?? 0,
       },
       completedAt: Date.now(),
     }
