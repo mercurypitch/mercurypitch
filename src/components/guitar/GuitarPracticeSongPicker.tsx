@@ -4,14 +4,16 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { ChevronDownIcon } from '@/components/shared/midi-picker-icons'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackMixer } from '@/components/shared/MidiTrackMixer'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
+import { defaultScoreTrack } from '@/lib/midi-song'
+import { GP_FILE_EXTENSIONS, parseGuitarProFile } from '@/lib/tab/gp-import'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
-import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
+import { savedMidiSongs, saveMidiSong } from '@/stores/saved-midi-songs-store'
 import type { MelodyItem } from '@/types'
 
 export interface GuitarSongLoadData {
@@ -21,6 +23,9 @@ export interface GuitarSongLoadData {
   duration: number
   targetFreq?: number
   trackId?: string
+  /** Original tab fingering (Guitar Pro imports), preserved through load. */
+  stringIndex?: number
+  fret?: number
 }
 
 interface GuitarPracticeSongPickerProps {
@@ -65,6 +70,30 @@ export const GuitarPracticeSongPicker: Component<
       props.onSongLoaded(items, name, bpm, backing, muted, song),
   })
 
+  const [gpStatus, setGpStatus] = createSignal('')
+  let gpFileInput: HTMLInputElement | undefined
+
+  const handleGpFile = async (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (file === undefined) return
+    setGpStatus(`Loading ${file.name}…`)
+    try {
+      const { song, name } = await parseGuitarProFile(file)
+      const score = defaultScoreTrack(song)
+      const backing = song.tracks
+        .filter((t) => t.id !== score.id)
+        .map((t) => t.id)
+      const saved = saveMidiSong(name, song, score.id, backing)
+      picker.loadSavedSong(saved)
+      const count = song.tracks.length
+      setGpStatus(`Loaded ${name} (${count} track${count === 1 ? '' : 's'})`)
+    } catch (err) {
+      setGpStatus(err instanceof Error ? err.message : 'Failed to load tab')
+    }
+  }
+
   const formatTime = (t: number): string => {
     const mins = Math.floor(t / 60)
     const secs = Math.floor(t % 60)
@@ -94,11 +123,26 @@ export const GuitarPracticeSongPicker: Component<
         <button class="gp-btn" onClick={picker.importMidi}>
           Import MIDI
         </button>
+
+        <button class="gp-btn" onClick={() => gpFileInput?.click()}>
+          Import Guitar Pro
+        </button>
+        <input
+          ref={gpFileInput}
+          type="file"
+          accept={GP_FILE_EXTENSIONS}
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            void handleGpFile(e)
+          }}
+        />
       </div>
 
       {picker.importStatus() && (
         <div class="gp-import-status">{picker.importStatus()}</div>
       )}
+
+      {gpStatus() !== '' && <div class="gp-import-status">{gpStatus()}</div>}
 
       <Show when={props.currentSong()}>
         {(song) => (

@@ -805,9 +805,10 @@ const AppShell: Component<AppProps> = (props) => {
     guitar: {
       strumKeyboard: guitarCtx.guitar.strumKeyboard,
       togglePlayback: () => {
-        if (guitarCtx.fretboard.guitarView() === 'hero') {
-          guitarCtx.guitar.togglePlay()
-        } else {
+        // Only the interactive fretboard (jam) view owns the drum loop. The
+        // playback views (Practice/hero and 3D) toggle the tab/melody playback
+        // — i.e. the main toolbar play/pause.
+        if (guitarCtx.fretboard.guitarView() === 'interactive') {
           if (guitarCtx.drumMachine.playing) {
             guitarCtx.drumMachine.stop()
           } else {
@@ -815,6 +816,8 @@ const AppShell: Component<AppProps> = (props) => {
               void guitarCtx.drumMachine.start()
             })
           }
+        } else {
+          guitarCtx.guitar.togglePlay()
         }
       },
     },

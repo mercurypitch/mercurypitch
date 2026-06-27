@@ -3,6 +3,7 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { clampRate, rampedRate } from '@/features/guitar-practice/practice-rate'
 import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -67,6 +68,29 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     new Set(),
   )
   const [totalBeats, setTotalBeats] = createSignal(0)
+
+  // ── Transpose (real note shift; slides notes along the neck) ─────
+  // N semitones added to every note's pitch, then re-voiced onto the neck
+  // (same string when it fits, else the nearest string that can host it).
+  // Affects audio AND the tab. Bounds keep the whole song playable.
+  const [transpose, setTransposeSignal] = createSignal(0)
+  const [transposeBounds, setTransposeBounds] = createSignal<[number, number]>([
+    -12, 12,
+  ])
+  const setTranspose = (n: number) => {
+    const [lo, hi] = transposeBounds()
+    setTransposeSignal(Math.max(lo, Math.min(hi, Math.round(n))))
+  }
+  const transposeRatio = () => Math.pow(2, transpose() / 12)
+
+  // ── Practice playback rate + A/B loop (speed trainer) ────────────
+  const [playbackRate, setPlaybackRateSignal] = createSignal(1)
+  const [loopEnabled, setLoopEnabled] = createSignal(false)
+  const [loopStartBeat, setLoopStartBeat] = createSignal(0)
+  const [loopEndBeat, setLoopEndBeat] = createSignal(0)
+  const [rampEnabled, setRampEnabled] = createSignal(false)
+  const [startingRate, setStartingRate] = createSignal(0.5)
+  const [stepRate, setStepRate] = createSignal(0.1)
 
   const midiEngine = new MidiEngine()
 
@@ -217,6 +241,79 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     const combined = [...activeScoreNotes, ...otherVisibleNotes]
     combined.sort((a, b) => a.startBeat - b.startBeat)
 
+    // Transpose: shift every note's pitch by N semitones and re-voice it onto
+    // the neck (slide along the same string when it fits, else move to the
+    // nearest string that can host the pitch in [0, MAX_FRET]).
+    const MAX_FRET = 24
+    const DEFAULT_OPEN = [64, 59, 55, 50, 45, 40, 35, 30]
+    const openByString = new Map<number, number>()
+    for (const note of combined) {
+      if (!openByString.has(note.stringIndex)) {
+        openByString.set(note.stringIndex, note.midi - note.fret)
+      }
+    }
+    let stringCount = 6
+    for (const s of openByString.keys())
+      stringCount = Math.max(stringCount, s + 1)
+    const open: number[] = []
+    for (let s = 0; s < stringCount; s++) {
+      open[s] = openByString.get(s) ?? DEFAULT_OPEN[s] ?? 40
+    }
+
+    // Playable shift range: keep every note within the instrument's reach.
+    if (combined.length > 0) {
+      let instLow = Infinity
+      let instHigh = -Infinity
+      for (let s = 0; s < stringCount; s++) {
+        instLow = Math.min(instLow, open[s])
+        instHigh = Math.max(instHigh, open[s] + MAX_FRET)
+      }
+      let songLow = Infinity
+      let songHigh = -Infinity
+      for (const note of combined) {
+        songLow = Math.min(songLow, note.midi)
+        songHigh = Math.max(songHigh, note.midi)
+      }
+      setTransposeBounds([
+        Math.max(-24, Math.min(0, instLow - songLow)),
+        Math.min(24, Math.max(0, instHigh - songHigh)),
+      ])
+    }
+
+    const n = transpose()
+    if (n !== 0) {
+      const ratio = Math.pow(2, n / 12)
+      for (const note of combined) {
+        const target = note.midi + n
+        let s = note.stringIndex
+        let fret = target - open[s]
+        if (fret < 0 || fret > MAX_FRET) {
+          // Re-voice onto the nearest string that can host the pitch.
+          let bestCost = Infinity
+          for (let cand = 0; cand < stringCount; cand++) {
+            const f = target - open[cand]
+            if (f < 0 || f > MAX_FRET) continue
+            const cost = Math.abs(cand - note.stringIndex) * 100 + f
+            if (cost < bestCost) {
+              bestCost = cost
+              s = cand
+              fret = f
+            }
+          }
+          if (bestCost === Infinity) {
+            fret = Math.max(
+              0,
+              Math.min(MAX_FRET, target - open[note.stringIndex]),
+            )
+          }
+        }
+        note.stringIndex = s
+        note.fret = fret
+        note.midi = target
+        note.targetFreq *= ratio
+      }
+    }
+
     setFallingNotes(combined)
     setTotalNotes(activeScoreNotes.length)
   })
@@ -236,6 +333,41 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   // Stops itself when the game transitions to idle / finished so
   // we don't waste a requestAnimationFrame callback every frame.
 
+  // Playing advances at songBpm scaled by the practice playback rate. The
+  // anchor (gameStartTime) is recomputed whenever the rate, position, or loop
+  // bounds change so the mapping stays continuous.
+  const playingBeatsPerMs = () => (songBpm() / 60 / 1000) * playbackRate()
+
+  const anchorPlaying = (beat: number) => {
+    const bpms = playingBeatsPerMs()
+    gameStartTime = performance.now() - (bpms > 0 ? beat / bpms : 0)
+  }
+
+  const setPlaybackRate = (rate: number) => {
+    setPlaybackRateSignal(clampRate(rate))
+    if (gameState() === 'playing') anchorPlaying(playheadBeat())
+  }
+
+  // Reset which notes have been played/judged so a region replays cleanly.
+  const resetProgressTo = (target: number) => {
+    judgedIndices.clear()
+    audioJudgedIndices.clear()
+    playedIndices.clear()
+    playedBackingIndices.clear()
+    const notes = fallingNotes()
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i]
+      if (note.startBeat < target) playedIndices.add(note.id)
+      if (note.startBeat + note.duration < target) {
+        judgedIndices.add(note.id)
+        audioJudgedIndices.add(note.id)
+      }
+    }
+    for (let i = 0; i < backingNotes.length; i++) {
+      if (backingNotes[i].startBeat < target) playedBackingIndices.add(i)
+    }
+  }
+
   const startLoop = () => {
     if (animFrameId !== null) return // already running
     const loop = () => {
@@ -248,8 +380,25 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
         const elapsedBeats = (elapsedMs / 1000) * bps
 
         const countInBeats = countIn()
-        const newBeat =
-          state === 'countdown' ? elapsedBeats - countInBeats : elapsedBeats
+        let newBeat =
+          state === 'countdown'
+            ? elapsedBeats - countInBeats
+            : (now - gameStartTime) * playingBeatsPerMs()
+
+        // A/B loop: wrap at the end marker, ramping the rate each pass.
+        if (
+          state === 'playing' &&
+          loopEnabled() &&
+          loopEndBeat() > loopStartBeat() &&
+          newBeat >= loopEndBeat()
+        ) {
+          if (rampEnabled()) {
+            setPlaybackRateSignal(rampedRate(playbackRate(), stepRate()))
+          }
+          newBeat = loopStartBeat()
+          anchorPlaying(newBeat)
+          resetProgressTo(newBeat)
+        }
 
         setPlayheadBeat(newBeat)
 
@@ -349,7 +498,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
             continue
           }
           void audioEngine.playNote(
-            b.freq,
+            b.freq * transposeRatio(),
             Math.max(50, (b.duration / bps) * 1000),
           )
         }
@@ -589,6 +738,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
       duration: number
       targetFreq?: number
       trackId?: string
+      stringIndex?: number
+      fret?: number
     }>,
     name: string,
     bpm: number,
@@ -602,6 +753,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     songObj?: SavedMidiSong | null,
   ) => {
     stopGame()
+    setTransposeSignal(0) // a fresh song starts untransposed
     const notes = melodyToGuitarNotes(items)
     setFallingNotes(notes)
     setTotalNotes(notes.length)
@@ -634,40 +786,17 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   }
 
   const seekToBeat = (targetBeat: number) => {
-    const notes = fallingNotes()
-    const bps = songBpm() / 60
-
     const target = Math.max(0, Math.min(targetBeat, totalBeats()))
     setPlayheadBeat(target)
 
     if (gameState() === 'playing') {
-      gameStartTime = performance.now() - (target / bps) * 1000
+      anchorPlaying(target)
     } else if (gameState() === 'countdown') {
+      const bps = songBpm() / 60
       gameStartTime = performance.now() - ((target + countIn()) / bps) * 1000
     }
 
-    judgedIndices.clear()
-    audioJudgedIndices.clear()
-    playedIndices.clear()
-    playedBackingIndices.clear()
-
-    for (let i = 0; i < notes.length; i++) {
-      const note = notes[i]
-      if (note.startBeat < target) {
-        playedIndices.add(note.id)
-      }
-      const endBeats = note.startBeat + note.duration
-      if (endBeats < target) {
-        judgedIndices.add(note.id)
-        audioJudgedIndices.add(note.id)
-      }
-    }
-
-    for (let i = 0; i < backingNotes.length; i++) {
-      if (backingNotes[i].startBeat < target) {
-        playedBackingIndices.add(i)
-      }
-    }
+    resetProgressTo(target)
   }
 
   // ── Game controls ────────────────────────────────────────────
@@ -676,6 +805,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     const notes = fallingNotes()
     if (notes.length === 0) return
 
+    // Plain play runs the whole song; only the practice loop wraps a region.
+    setLoopEnabled(false)
     judgedIndices = new Set()
     audioJudgedIndices = new Set()
     playedIndices = new Set()
@@ -723,10 +854,29 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const resumeGame = () => {
     if (gameState() === 'paused') {
       setGameState('playing')
-      gameStartTime =
-        performance.now() - (playheadBeat() / (songBpm() / 60)) * 1000
+      anchorPlaying(playheadBeat())
       startLoop()
     }
+  }
+
+  // ── Practice loop (A/B + speed ramp) ─────────────────────────
+  const startPracticeLoop = () => {
+    if (loopEndBeat() <= loopStartBeat()) return
+    if (fallingNotes().length === 0) return
+    setLoopEnabled(true)
+    setPlaybackRateSignal(
+      clampRate(rampEnabled() ? startingRate() : playbackRate()),
+    )
+    const start = loopStartBeat()
+    setGameState('playing')
+    setPlayheadBeat(start)
+    anchorPlaying(start)
+    resetProgressTo(start)
+    startLoop()
+  }
+
+  const stopPracticeLoop = () => {
+    setLoopEnabled(false)
   }
 
   const togglePlay = () => {
@@ -784,5 +934,25 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     toggleTrackVisibility,
     totalBeats,
     seekToBeat,
+    // Transpose (real note shift)
+    transpose,
+    setTranspose,
+    transposeBounds,
+    // Practice playback rate + A/B loop (speed trainer)
+    playbackRate,
+    setPlaybackRate,
+    loopEnabled,
+    loopStartBeat,
+    setLoopStartBeat,
+    loopEndBeat,
+    setLoopEndBeat,
+    rampEnabled,
+    setRampEnabled,
+    startingRate,
+    setStartingRate,
+    stepRate,
+    setStepRate,
+    startPracticeLoop,
+    stopPracticeLoop,
   }
 }
