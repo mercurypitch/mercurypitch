@@ -1561,27 +1561,37 @@
 
 /* ── 3D tab HUD overlay (glass + accent glow) ─────────────── */
 
-.gp-hud-status {
+/* Glass surface shared by the status chip, rail and top bar. */
+.gp-hud-status,
+.gp-hud-rail,
+.gp-hud-bar,
+.gp-hud-loop {
   position: absolute;
-  top: 12px;
-  left: 12px;
   z-index: 5;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 52%;
-  padding: 8px 13px;
-  border-radius: 13px;
-  background: rgba(12, 14, 22, 0.55);
-  backdrop-filter: blur(10px) saturate(120%);
+  background: rgba(12, 14, 22, 0.58);
+  backdrop-filter: blur(12px) saturate(125%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  pointer-events: none;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   user-select: none;
 }
 
+.gp-hud-status {
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 52%;
+  padding: 6px 11px;
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
 .gp-hud-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 650;
   color: rgba(233, 237, 245, 0.95);
   white-space: nowrap;
@@ -1591,53 +1601,44 @@
 
 .gp-hud-stats {
   display: flex;
-  gap: 14px;
+  gap: 12px;
 }
 
 .gp-hud-stat {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
 }
 
 .gp-hud-stat-label {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(154, 163, 184, 0.85);
 }
 
 .gp-hud-stat-val {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--accent, #58a6ff);
   font-variant-numeric: tabular-nums;
 }
 
 .gp-hud-rail {
-  position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: 12px;
   transform: translateX(-50%);
-  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   max-width: calc(100% - 24px);
-  padding: 8px;
+  padding: 5px;
   border-radius: 999px;
-  background: rgba(12, 14, 22, 0.6);
-  backdrop-filter: blur(12px) saturate(125%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  opacity: 0.6;
+  opacity: 0.55;
   transition: opacity 160ms ease;
-  user-select: none;
 }
 
 .gp-hud-rail:hover,
@@ -1645,11 +1646,68 @@
   opacity: 1;
 }
 
+/* Top dock: lay the controls out after the song name. */
+.gp-hud-bar--top {
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 5px 5px 5px 10px;
+  border-radius: 14px;
+  opacity: 0.85;
+  transition: opacity 160ms ease;
+}
+
+.gp-hud-bar--top:hover,
+.gp-hud-bar--top:focus-within {
+  opacity: 1;
+}
+
+.gp-hud-bar-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 220px;
+}
+
+.gp-hud-grip {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: rgba(154, 163, 184, 0.7);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.gp-hud-grip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.gp-hud-grip:active {
+  cursor: grabbing;
+}
+
+.gp-hud-grip:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
 .gp-hud-hero {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   color: #fff;
   cursor: pointer;
@@ -1659,7 +1717,7 @@
     var(--accent-dim),
     rgba(12, 14, 22, 0.5)
   );
-  box-shadow: 0 0 16px var(--accent-glow);
+  box-shadow: 0 0 12px var(--accent-glow);
   transition:
     transform 120ms ease,
     box-shadow 160ms ease;
@@ -1667,7 +1725,7 @@
 
 .gp-hud-hero:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 24px var(--accent-glow);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .gp-hud-hero:focus-visible {
@@ -1678,21 +1736,21 @@
 .gp-hud-sep {
   width: 1px;
   align-self: stretch;
-  margin: 3px 1px;
+  margin: 2px 1px;
   background: rgba(255, 255, 255, 0.12);
 }
 
 .gp-hud-presets {
   display: flex;
-  gap: 4px;
+  gap: 3px;
 }
 
 .gp-pill {
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 11px;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1705,9 +1763,9 @@
 }
 
 .gp-pill-label {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(154, 163, 184, 0.85);
 }
@@ -1715,13 +1773,13 @@
 .gp-pill-ctrls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .gp-pill-val {
-  min-width: 32px;
+  min-width: 26px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -1729,9 +1787,9 @@
 .gp-step-btn {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
   color: rgba(233, 237, 245, 0.85);
@@ -1757,10 +1815,10 @@
 }
 
 .gp-chip {
-  height: 26px;
-  padding: 0 9px;
+  height: 22px;
+  padding: 0 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   background: rgba(255, 255, 255, 0.04);
@@ -1787,15 +1845,15 @@
 .gp-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(233, 237, 245, 0.82);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   transition:
     background 120ms ease,
@@ -1822,28 +1880,37 @@
 }
 
 .gp-hud-loop {
-  position: absolute;
   left: 50%;
-  bottom: 70px;
   transform: translateX(-50%);
-  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   max-width: calc(100% - 24px);
-  padding: 10px;
-  border-radius: 16px;
-  background: rgba(12, 14, 22, 0.72);
-  backdrop-filter: blur(12px) saturate(125%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.gp-hud-loop--bottom {
+  bottom: 58px;
+}
+
+.gp-hud-loop--top {
+  top: 60px;
+}
+
+.gp-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gp-hud-rail,
+  .gp-hud-bar--top,
   .gp-hud-hero,
+  .gp-hud-grip,
   .gp-step-btn,
   .gp-chip,
   .gp-toggle {

@@ -39,6 +39,8 @@ export function GuitarPage(props: GuitarPageProps) {
   const guitar = ctx.guitar
   // Bottom fretboard reference panel in the 3D view (toggle).
   const [show3dFretboard, setShow3dFretboard] = createSignal(true)
+  // Collapse the shared transport toolbar to reclaim vertical space.
+  const [toolbarHidden, setToolbarHidden] = createSignal(false)
 
   // Mic feedback: "can't hear you" / "too quiet" while playing along. Gate on
   // 'playing' only — during the count-in the user is waiting, not playing, so a
@@ -84,61 +86,64 @@ export function GuitarPage(props: GuitarPageProps) {
 
   return (
     <div id="guitar-practice-panel">
-      <SharedControlToolbar
-        activeTab={activeTab}
-        guitarTab={() => activeTab() === TAB_GUITAR}
-        isPlaying={() =>
-          guitar.gameState() === 'playing' || guitar.gameState() === 'countdown'
-        }
-        isPaused={() => guitar.gameState() === 'paused'}
-        onPlay={() => void guitar.startGame()}
-        onPause={guitar.pauseGame}
-        onResume={guitar.resumeGame}
-        onStop={guitar.stopGame}
-        volume={props.volume}
-        onVolumeChange={(vol) => {
-          props.setVolume(vol)
-          audioEngine?.setVolume(vol / 100)
-        }}
-        speed={1}
-        onSpeedChange={() => {}}
-        metronomeEnabled={() => false}
-        onMetronomeToggle={() => {}}
-        playMode={() => PLAYBACK_MODE_ONCE}
-        playModeChange={() => {}}
-        practiceCycles={() => 1}
-        onCyclesChange={() => {}}
-        currentCycle={() => 1}
-        practiceSubMode={() => 'all' as const}
-        onPracticeSubModeChange={() => {}}
-        isCountingIn={() => guitar.gameState() === 'countdown'}
-        countInBeat={() =>
-          guitar.playheadBeat() < 0 ? Math.ceil(-guitar.playheadBeat()) : 0
-        }
-        countInBeats={() => countIn()}
-        showNoteLabels={guitar.showNoteLabels}
-        onToggleNoteLabels={() => guitar.setShowNoteLabels((p) => !p)}
-        showUserNotes={guitar.showUserNotes}
-        onToggleUserNotes={() => guitar.setShowUserNotes((p) => !p)}
-        bpmValue={guitarView() === 'interactive' ? drumBpm : guitar.songBpm}
-        onBpmChange={
-          guitarView() === 'interactive'
-            ? (b: number) => {
-                drumMachine.setBpm(b)
-                setDrumBpm(b)
-              }
-            : () => {}
-        }
-        onMicToggle={() =>
-          guitar.isMicActive() ? guitar.stopMic() : void guitar.startMic()
-        }
-        onMidiToggle={() =>
-          guitar.midiConnected()
-            ? guitar.midiDisconnect()
-            : void guitar.midiConnect()
-        }
-        midiConnected={guitar.midiConnected}
-      />
+      <Show when={!toolbarHidden()}>
+        <SharedControlToolbar
+          activeTab={activeTab}
+          guitarTab={() => activeTab() === TAB_GUITAR}
+          isPlaying={() =>
+            guitar.gameState() === 'playing' ||
+            guitar.gameState() === 'countdown'
+          }
+          isPaused={() => guitar.gameState() === 'paused'}
+          onPlay={() => void guitar.startGame()}
+          onPause={guitar.pauseGame}
+          onResume={guitar.resumeGame}
+          onStop={guitar.stopGame}
+          volume={props.volume}
+          onVolumeChange={(vol) => {
+            props.setVolume(vol)
+            audioEngine?.setVolume(vol / 100)
+          }}
+          speed={1}
+          onSpeedChange={() => {}}
+          metronomeEnabled={() => false}
+          onMetronomeToggle={() => {}}
+          playMode={() => PLAYBACK_MODE_ONCE}
+          playModeChange={() => {}}
+          practiceCycles={() => 1}
+          onCyclesChange={() => {}}
+          currentCycle={() => 1}
+          practiceSubMode={() => 'all' as const}
+          onPracticeSubModeChange={() => {}}
+          isCountingIn={() => guitar.gameState() === 'countdown'}
+          countInBeat={() =>
+            guitar.playheadBeat() < 0 ? Math.ceil(-guitar.playheadBeat()) : 0
+          }
+          countInBeats={() => countIn()}
+          showNoteLabels={guitar.showNoteLabels}
+          onToggleNoteLabels={() => guitar.setShowNoteLabels((p) => !p)}
+          showUserNotes={guitar.showUserNotes}
+          onToggleUserNotes={() => guitar.setShowUserNotes((p) => !p)}
+          bpmValue={guitarView() === 'interactive' ? drumBpm : guitar.songBpm}
+          onBpmChange={
+            guitarView() === 'interactive'
+              ? (b: number) => {
+                  drumMachine.setBpm(b)
+                  setDrumBpm(b)
+                }
+              : () => {}
+          }
+          onMicToggle={() =>
+            guitar.isMicActive() ? guitar.stopMic() : void guitar.startMic()
+          }
+          onMidiToggle={() =>
+            guitar.midiConnected()
+              ? guitar.midiDisconnect()
+              : void guitar.midiConnect()
+          }
+          midiConnected={guitar.midiConnected}
+        />
+      </Show>
       <div class="gp-header-controls">
         <div class="gp-header-left" data-tour="guitar.song-picker">
           <GuitarPracticeSongPicker
@@ -195,6 +200,36 @@ export function GuitarPage(props: GuitarPageProps) {
               onViewChange={setGuitarView}
             />
           </div>
+          <button
+            class="gp-btn gp-toolbar-toggle"
+            title={
+              toolbarHidden()
+                ? 'Show transport controls'
+                : 'Hide transport controls'
+            }
+            aria-label={
+              toolbarHidden()
+                ? 'Show transport controls'
+                : 'Hide transport controls'
+            }
+            aria-pressed={toolbarHidden()}
+            onClick={() => setToolbarHidden((v) => !v)}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d={toolbarHidden() ? 'M6 9l6 6 6-6' : 'M6 15l6-6 6 6'} />
+            </svg>
+            {toolbarHidden() ? 'Show bar' : 'Hide bar'}
+          </button>
         </div>
       </div>
       <Show when={guitarView() === 'interactive'}>

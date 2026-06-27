@@ -2,10 +2,11 @@
 // Tab3DHud — glass control overlay for the 3D tab view
 // ============================================================
 //
-// Floating HUD rendered over the canvas (DOM, not painted in the renderer):
-// a status chip top-left and a control rail bottom-centre with the transport,
-// speed, transpose, display toggles, and a collapsible practice-loop panel.
-// Styling lives in guitar-practice.css (.gp-hud*, .gp-pill*, .gp-toggle*).
+// Floating HUD rendered over the canvas (DOM, not painted in the renderer).
+// Dockable to the top (laid out after the song name) or bottom-centre via the
+// grip handle: click toggles, drag snaps to the half you release in. The
+// transport, speed, transpose and display toggles live on the rail; the
+// practice loop opens as a popover. Styling: guitar-practice.css (.gp-hud*).
 
 import type { Accessor, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
@@ -40,6 +41,8 @@ export interface Tab3DControls {
   stopPracticeLoop: () => void
 }
 
+type Dock = 'top' | 'bottom'
+
 const round2 = (n: number) => Math.round(n * 100) / 100
 const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
@@ -49,6 +52,7 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
   // reactive accessors we actually read.
   // eslint-disable-next-line solid/reactivity
   const c = props.controls
+  const [dock, setDock] = createSignal<Dock>('bottom')
   const [loopOpen, setLoopOpen] = createSignal(false)
 
   const isPlaying = () => c.gameState() === 'playing'
@@ -62,103 +66,174 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
   const fmtSemi = (n: number) => (n > 0 ? `+${n}` : `${n}`)
   const bounds = () => c.transposeBounds()
 
+  // Grip: click toggles dock; drag snaps to the half you release in.
+  let downY = 0
+  let moved = false
+  let containerEl: HTMLElement | null = null
+  const onGripDown = (e: PointerEvent) => {
+    downY = e.clientY
+    moved = false
+    containerEl = (e.currentTarget as HTMLElement).closest(
+      '.gp-tab3d-container',
+    )
+    try {
+      ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    } catch {
+      /* synthetic events / no active pointer */
+    }
+    e.preventDefault()
+  }
+  const onGripMove = (e: PointerEvent) => {
+    if (Math.abs(e.clientY - downY) > 4) moved = true
+  }
+  const onGripUp = (e: PointerEvent) => {
+    ;(e.currentTarget as Element).releasePointerCapture?.(e.pointerId)
+    if (!moved) {
+      setDock((d) => (d === 'top' ? 'bottom' : 'top'))
+      return
+    }
+    const rect = containerEl?.getBoundingClientRect()
+    if (rect) setDock(e.clientY - rect.top < rect.height / 2 ? 'top' : 'bottom')
+  }
+
+  const grip = () => (
+    <button
+      class="gp-hud-grip"
+      title="Drag to move (top/bottom) · click to flip"
+      aria-label="Move control bar"
+      onPointerDown={onGripDown}
+      onPointerMove={onGripMove}
+      onPointerUp={onGripUp}
+      onPointerCancel={onGripUp}
+    >
+      <Glyph paths={GRIP} />
+    </button>
+  )
+
+  const statusBlock = () => (
+    <>
+      <span class="gp-hud-title">{c.songName() || 'Untitled tab'}</span>
+      <span class="gp-hud-stats">
+        <Stat label="Bar" value={barBeat()} />
+        <Stat label="BPM" value={String(effBpm())} />
+        <Show when={c.transpose() !== 0}>
+          <Stat label="Shift" value={`${fmtSemi(c.transpose())} st`} />
+        </Show>
+      </span>
+    </>
+  )
+
+  const railContent = () => (
+    <>
+      <button
+        class="gp-hud-hero"
+        classList={{ 'is-playing': isPlaying() }}
+        aria-label={isPlaying() ? 'Pause' : 'Play'}
+        title={isPlaying() ? 'Pause' : 'Play'}
+        onClick={(e) => {
+          c.togglePlay()
+          e.currentTarget.blur()
+        }}
+      >
+        {isPlaying() ? (
+          <Glyph paths={PAUSE} fill />
+        ) : (
+          <Glyph paths={PLAY} fill />
+        )}
+      </button>
+
+      <span class="gp-hud-sep" />
+
+      <Stepper
+        icon={GAUGE}
+        label="Speed"
+        value={fmtRate(rate())}
+        onDec={() => c.setPlaybackRate(clamp(round2(rate() - 0.05), 0.25, 2))}
+        onInc={() => c.setPlaybackRate(clamp(round2(rate() + 0.05), 0.25, 2))}
+        decDisabled={rate() <= 0.25}
+        incDisabled={rate() >= 2}
+      />
+      <div class="gp-hud-presets">
+        <For each={[0.5, 0.75, 1]}>
+          {(p) => (
+            <button
+              class="gp-chip"
+              classList={{ 'is-active': Math.abs(rate() - p) < 0.001 }}
+              onClick={(e) => {
+                c.setPlaybackRate(p)
+                e.currentTarget.blur()
+              }}
+            >
+              {fmtRate(p)}
+            </button>
+          )}
+        </For>
+      </div>
+
+      <Stepper
+        icon={TRANSPOSE}
+        label="Transpose"
+        value={fmtSemi(c.transpose())}
+        onDec={() => c.setTranspose(c.transpose() - 1)}
+        onInc={() => c.setTranspose(c.transpose() + 1)}
+        decDisabled={c.transpose() <= bounds()[0]}
+        incDisabled={c.transpose() >= bounds()[1]}
+        onDec2={() => c.setTranspose(c.transpose() - 12)}
+        onInc2={() => c.setTranspose(c.transpose() + 12)}
+        dec2Disabled={c.transpose() - 12 < bounds()[0]}
+        inc2Disabled={c.transpose() + 12 > bounds()[1]}
+      />
+
+      <span class="gp-hud-sep" />
+
+      <Toggle
+        icon={LABELS}
+        label="Names"
+        active={c.showNoteLabels()}
+        onClick={() => c.setShowNoteLabels(!c.showNoteLabels())}
+      />
+      <Toggle
+        icon={FRETS}
+        label="Neck"
+        active={c.showFretboard()}
+        onClick={() => c.setShowFretboard(!c.showFretboard())}
+      />
+      <Toggle
+        icon={LOOP}
+        label="Loop"
+        active={loopOpen() || c.loopEnabled()}
+        onClick={() => setLoopOpen((v) => !v)}
+      />
+    </>
+  )
+
   return (
     <>
-      <div class="gp-hud-status">
-        <span class="gp-hud-title">{c.songName() || 'Untitled tab'}</span>
-        <span class="gp-hud-stats">
-          <Stat label="Bar" value={barBeat()} />
-          <Stat label="BPM" value={String(effBpm())} />
-          <Show when={c.transpose() !== 0}>
-            <Stat label="Shift" value={`${fmtSemi(c.transpose())} st`} />
-          </Show>
-        </span>
-      </div>
-
-      <div class="gp-hud-rail">
-        <button
-          class="gp-hud-hero"
-          classList={{ 'is-playing': isPlaying() }}
-          aria-label={isPlaying() ? 'Pause' : 'Play'}
-          title={isPlaying() ? 'Pause' : 'Play'}
-          onClick={(e) => {
-            c.togglePlay()
-            e.currentTarget.blur()
-          }}
-        >
-          {isPlaying() ? (
-            <Glyph paths={PAUSE} fill />
-          ) : (
-            <Glyph paths={PLAY} fill />
-          )}
-        </button>
-
-        <span class="gp-hud-sep" />
-
-        <Stepper
-          icon={GAUGE}
-          label="Speed"
-          value={fmtRate(rate())}
-          onDec={() => c.setPlaybackRate(clamp(round2(rate() - 0.05), 0.25, 2))}
-          onInc={() => c.setPlaybackRate(clamp(round2(rate() + 0.05), 0.25, 2))}
-          decDisabled={rate() <= 0.25}
-          incDisabled={rate() >= 2}
-        />
-        <div class="gp-hud-presets">
-          <For each={[0.5, 0.75, 1]}>
-            {(p) => (
-              <button
-                class="gp-chip"
-                classList={{ 'is-active': Math.abs(rate() - p) < 0.001 }}
-                onClick={(e) => {
-                  c.setPlaybackRate(p)
-                  e.currentTarget.blur()
-                }}
-              >
-                {fmtRate(p)}
-              </button>
-            )}
-          </For>
+      <Show when={dock() === 'top'}>
+        <div class="gp-hud-bar gp-hud-bar--top">
+          <div class="gp-hud-bar-status">{statusBlock()}</div>
+          <span class="gp-hud-sep" />
+          {grip()}
+          {railContent()}
         </div>
+      </Show>
 
-        <Stepper
-          icon={TRANSPOSE}
-          label="Transpose"
-          value={fmtSemi(c.transpose())}
-          onDec={() => c.setTranspose(c.transpose() - 1)}
-          onInc={() => c.setTranspose(c.transpose() + 1)}
-          decDisabled={c.transpose() <= bounds()[0]}
-          incDisabled={c.transpose() >= bounds()[1]}
-          onDec2={() => c.setTranspose(c.transpose() - 12)}
-          onInc2={() => c.setTranspose(c.transpose() + 12)}
-          dec2Disabled={c.transpose() - 12 < bounds()[0]}
-          inc2Disabled={c.transpose() + 12 > bounds()[1]}
-        />
-
-        <span class="gp-hud-sep" />
-
-        <Toggle
-          icon={LABELS}
-          label="Names"
-          active={c.showNoteLabels()}
-          onClick={() => c.setShowNoteLabels(!c.showNoteLabels())}
-        />
-        <Toggle
-          icon={FRETS}
-          label="Neck"
-          active={c.showFretboard()}
-          onClick={() => c.setShowFretboard(!c.showFretboard())}
-        />
-        <Toggle
-          icon={LOOP}
-          label="Loop"
-          active={loopOpen() || c.loopEnabled()}
-          onClick={() => setLoopOpen((v) => !v)}
-        />
-      </div>
+      <Show when={dock() === 'bottom'}>
+        <div class="gp-hud-status">{statusBlock()}</div>
+        <div class="gp-hud-rail">
+          {grip()}
+          {railContent()}
+        </div>
+      </Show>
 
       <Show when={loopOpen()}>
-        <div class="gp-hud-loop">
+        <div
+          class="gp-hud-loop"
+          classList={{
+            'gp-hud-loop--top': dock() === 'top',
+            'gp-hud-loop--bottom': dock() === 'bottom',
+          }}
+        >
           <Stepper
             icon={MARK}
             label="A"
@@ -287,7 +362,7 @@ function Stepper(props: {
         </Show>
         <Show when={props.onSet}>
           <button
-            class="gp-step-btn gp-step-set"
+            class="gp-step-btn"
             title="Set to playhead"
             aria-label="Set to playhead"
             onClick={(e) => {
@@ -351,8 +426,8 @@ function Toggle(props: {
 function Glyph(props: { paths: string[]; fill?: boolean }): JSX.Element {
   return (
     <svg
-      width="15"
-      height="15"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill={props.fill === true ? 'currentColor' : 'none'}
       stroke={props.fill === true ? 'none' : 'currentColor'}
@@ -388,3 +463,11 @@ const LOOP = [
 ]
 const MARK = ['M6 3v18', 'M6 4h11l-2 3 2 3H6']
 const PIN = ['M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10z', 'M12 11h.01']
+const GRIP = [
+  'M9 6h.01',
+  'M9 12h.01',
+  'M9 18h.01',
+  'M15 6h.01',
+  'M15 12h.01',
+  'M15 18h.01',
+]
