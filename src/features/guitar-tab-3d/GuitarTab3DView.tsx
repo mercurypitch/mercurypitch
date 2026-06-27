@@ -20,6 +20,7 @@ import { createTabRenderer } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
 import type { Tab3DControls } from './ui/Tab3DHud'
 import { Tab3DHud } from './ui/Tab3DHud'
+import { Tab3DInputMonitor } from './ui/Tab3DInputMonitor'
 
 const ORBIT_SENS = 0.008 // radians per pixel dragged
 const ZOOM_SENS = 0.0012 // per wheel delta unit
@@ -282,6 +283,16 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       />
       <Show when={props.controls}>
         {(controls) => <Tab3DHud controls={controls()} />}
+      </Show>
+      <Show when={import.meta.env.DEV ? props.controls : null}>
+        {(controls) => (
+          <Tab3DInputMonitor
+            controls={controls()}
+            fallingNotes={props.fallingNotes}
+            playheadBeat={props.playheadBeat}
+            songBpm={controls().songBpm}
+          />
+        )}
       </Show>
     </div>
   )

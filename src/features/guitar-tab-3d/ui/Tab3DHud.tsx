@@ -61,6 +61,10 @@ export interface Tab3DControls {
   midiConnected: Accessor<boolean>
   midiConnect: () => void
   midiDisconnect: () => void
+  // For the dev input-signal monitor
+  inputMode: Accessor<'keyboard' | 'mic' | 'midi'>
+  getInputLevel: () => number
+  getInputTimeData: () => Float32Array | null
 }
 
 const scoreTier = (s: number): string =>
