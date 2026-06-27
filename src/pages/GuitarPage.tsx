@@ -714,6 +714,9 @@ export function GuitarPage(props: GuitarPageProps) {
                   recentScores,
                   startGame: () => void guitar.startGame(),
                   stopGame: guitar.stopGame,
+                  combo: guitar.combo,
+                  detectedMidi: guitar.detectedMidi,
+                  detectedClarity: guitar.detectedClarity,
                 }}
               />
             </Show>

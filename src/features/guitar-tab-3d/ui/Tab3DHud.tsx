@@ -10,6 +10,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
 
 export interface Tab3DControls {
   gameState: Accessor<string>
@@ -46,6 +47,10 @@ export interface Tab3DControls {
   recentScores: Accessor<number[]>
   startGame: () => void
   stopGame: () => void
+  // Live input scoring (mic/MIDI) while playing
+  combo: Accessor<number>
+  detectedMidi: Accessor<number | null>
+  detectedClarity: Accessor<number>
 }
 
 const scoreTier = (s: number): string =>
@@ -131,6 +136,15 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
     </button>
   )
 
+  const isLive = () => {
+    const s = c.gameState()
+    return s === 'playing' || s === 'countdown'
+  }
+  const detectedName = () => {
+    const m = c.detectedMidi()
+    return m === null ? null : midiToNoteNameOctave(m)
+  }
+
   const statusBlock = () => (
     <>
       <span class="gp-hud-title">{c.songName() || 'Untitled tab'}</span>
@@ -141,6 +155,15 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
           <Stat label="Shift" value={`${fmtSemi(c.transpose())} st`} />
         </Show>
       </span>
+      <Show when={isLive()}>
+        <span class="gp-hud-stats gp-hud-live">
+          <Stat label="Score" value={String(Math.floor(c.score()))} />
+          <Stat label="Combo" value={`${c.combo()}×`} />
+          <Show when={detectedName()}>
+            {(n) => <Stat label="You" value={n()} />}
+          </Show>
+        </span>
+      </Show>
     </>
   )
 
