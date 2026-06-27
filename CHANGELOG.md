@@ -21,6 +21,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Easier-to-read text**: lightened the faint gray text on the Challenges tab and the exercise score panel so labels, badges and results are legible.
 - **Smarter pitch tracker zoom**: when you sing within about one octave, the tracker now zooms in to that octave instead of showing three or four, so your pitch line is easier to follow.
 - **Exercises moved to the Practice group**: the Exercises tab now sits with Singing, Piano, Guitar and Karaoke (it was under Social), so all your practice modes are together.
+- **Easier top-bar navigation (desktop)**: scroll the tab bar left/right with your mouse wheel, or just click and drag it to pan — no more hunting for the right tab. Each tab group (Practice / Social / Advanced) can also be collapsed to a single tab by clicking its label; hover it to expand again. Your collapsed groups are remembered.
 
 ### Fixed
 

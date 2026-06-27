@@ -1,6 +1,7 @@
 import type { Component } from 'solid-js'
-import { createEffect } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { createPersistedSignal } from '@/lib/storage'
 import type { ActiveTab } from '@/types'
 
 export interface AppNavTabsProps {
@@ -33,10 +34,145 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     })
   })
 
+  // ── Group collapse (desktop): click a group label to collapse it down to
+  // just its active tab; hovering the collapsed group expands it inline.
+  // Persisted so the layout the user prefers survives reloads.
+  const [collapsed, setCollapsed] = createPersistedSignal<
+    Record<string, boolean>
+  >('mp.navCollapsedGroups', {})
+  const isCollapsed = (id: string): boolean => collapsed()[id] === true
+  const toggleGroup = (id: string): void => {
+    setCollapsed((c) => ({ ...c, [id]: c[id] !== true }))
+  }
+
+  const groupLabel = (id: string, label: string) => (
+    <button
+      type="button"
+      class="tab-group-label"
+      classList={{ collapsed: isCollapsed(id) }}
+      onClick={() => toggleGroup(id)}
+      aria-expanded={!isCollapsed(id)}
+      title={isCollapsed(id) ? `Expand ${label}` : `Collapse ${label}`}
+    >
+      {label}
+      <svg
+        class="tab-group-caret"
+        viewBox="0 0 24 24"
+        width="10"
+        height="10"
+        aria-hidden="true"
+      >
+        <path
+          d="M6 9l6 6 6-6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  )
+
+  // ── Horizontal navigation: the mouse wheel pans the bar left/right, and
+  // click-drag pans it too (mouse only — touch keeps native momentum scroll).
+  // `tabs-scrollable` drives the grab cursor only when there is overflow.
+  const [scrollable, setScrollable] = createSignal(false)
+  const updateScrollable = (): void => {
+    setScrollable(navRef.scrollWidth > navRef.clientWidth + 1)
+  }
+  createEffect(() => {
+    collapsed() // re-measure overflow when a group collapses/expands
+    requestAnimationFrame(updateScrollable)
+  })
+
+  onMount(() => {
+    const el = navRef
+    updateScrollable()
+
+    const onWheel = (e: WheelEvent): void => {
+      if (e.deltaY === 0) return
+      if (el.scrollWidth <= el.clientWidth) return
+      el.scrollLeft += e.deltaY
+      e.preventDefault()
+    }
+
+    let down = false
+    let dragged = false
+    let startX = 0
+    let startScroll = 0
+    const DRAG_THRESHOLD = 6
+    const onPointerDown = (e: PointerEvent): void => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return
+      down = true
+      dragged = false
+      startX = e.clientX
+      startScroll = el.scrollLeft
+    }
+    const onPointerMove = (e: PointerEvent): void => {
+      if (!down) return
+      const dx = e.clientX - startX
+      if (!dragged && Math.abs(dx) > DRAG_THRESHOLD) {
+        dragged = true
+        el.classList.add('dragging')
+        try {
+          el.setPointerCapture(e.pointerId)
+        } catch {
+          /* setPointerCapture can throw if the pointer was already released */
+        }
+      }
+      if (dragged) {
+        el.scrollLeft = startScroll - dx
+        e.preventDefault()
+      }
+    }
+    const endDrag = (): void => {
+      down = false
+      el.classList.remove('dragging')
+    }
+    // Swallow the click that fires after a drag so panning never activates a tab.
+    const onClickCapture = (e: MouseEvent): void => {
+      if (dragged) {
+        e.stopPropagation()
+        e.preventDefault()
+        dragged = false
+      }
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', endDrag)
+    el.addEventListener('pointercancel', endDrag)
+    el.addEventListener('click', onClickCapture, true)
+
+    const ro = new ResizeObserver(updateScrollable)
+    ro.observe(el)
+    window.addEventListener('resize', updateScrollable)
+
+    onCleanup(() => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('pointerdown', onPointerDown)
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerup', endDrag)
+      el.removeEventListener('pointercancel', endDrag)
+      el.removeEventListener('click', onClickCapture, true)
+      ro.disconnect()
+      window.removeEventListener('resize', updateScrollable)
+    })
+  })
+
   return (
-    <nav id="app-tabs" ref={navRef}>
-      <div class="tab-group">
-        <span class="tab-group-label">Practice</span>
+    <nav
+      id="app-tabs"
+      ref={navRef}
+      classList={{ 'tabs-scrollable': scrollable() }}
+    >
+      <div
+        class="tab-group collapsible"
+        classList={{ collapsed: isCollapsed('practice') }}
+      >
+        {groupLabel('practice', 'Practice')}
         <button
           id="tab-singing"
           class={`app-tab ${props.activeTab() === TAB_SINGING ? 'active' : ''}`}
@@ -186,8 +322,11 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         </button>
       </div>
 
-      <div class="tab-group">
-        <span class="tab-group-label">Social</span>
+      <div
+        class="tab-group collapsible"
+        classList={{ collapsed: isCollapsed('social') }}
+      >
+        {groupLabel('social', 'Social')}
         <button
           id="tab-community"
           class={`app-tab ${props.activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
@@ -259,8 +398,11 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         </button>
       </div>
 
-      <div class="tab-group">
-        <span class="tab-group-label">Advanced</span>
+      <div
+        class="tab-group collapsible"
+        classList={{ collapsed: isCollapsed('advanced') }}
+      >
+        {groupLabel('advanced', 'Advanced')}
         <button
           id="tab-compose"
           class={`app-tab ${props.activeTab() === TAB_COMPOSE ? 'active' : ''}`}
