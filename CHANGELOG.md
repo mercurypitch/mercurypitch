@@ -3,6 +3,15 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.8] - 2026-06-27
+
+### Added
+
+- **Play-along scoring in the 3D guitar view**: with a mic or MIDI instrument connected, the 3D view now scores you live — a Score and Combo readout while you play, plus your end-of-run result in the corner.
+- **Hit feedback on the neck**: each note you nail flashes on its cell, colour-coded by accuracy (perfect / great / good).
+- **Your note, live on the neck**: the pitch you're playing is marked on the fretboard in real time, turning green when it matches the note you're meant to hit.
+- **Mic and MIDI toggles in the 3D controls**: turn your input on or off right from the 3D control bar, so you don't need the main transport bar open.
+
 ## [0.4.7] - 2026-06-27
 
 ### Fixed

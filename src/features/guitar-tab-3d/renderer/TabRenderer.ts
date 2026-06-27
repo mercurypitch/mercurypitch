@@ -43,6 +43,25 @@ export interface TabSceneNote {
   isBacking: boolean
 }
 
+/** A scored hit to flash on its cell, coloured by accuracy. */
+export interface TabHit {
+  stringIndex: number
+  fret: number
+  timing: 'perfect' | 'great' | 'good'
+  /** Date.now() when the hit was recorded (for fade-out). */
+  at: number
+}
+
+/** The player's currently-detected input pitch, placed on the neck. */
+export interface TabDetected {
+  stringIndex: number
+  fret: number
+  /** True when the pitch matches a hittable target right now. */
+  matchesTarget: boolean
+  /** Detection confidence 0–1 (mic); 1 for MIDI. */
+  clarity: number
+}
+
 /** Everything a renderer needs for one frame. Pure data, no engine coupling. */
 export interface TabScene {
   notes: readonly TabSceneNote[]
@@ -58,6 +77,10 @@ export interface TabScene {
   showNoteLabels: boolean
   /** Draw the neck (fretboard) at the hit line. */
   showFretboard: boolean
+  /** Recent scored hits to flash on their cells (input scoring feedback). */
+  hits: readonly TabHit[]
+  /** The player's detected input note on the neck, or null. */
+  detected: TabDetected | null
   display: DisplaySettings
 }
 

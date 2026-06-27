@@ -10,6 +10,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import type { GuitarHitResult } from '@/features/guitar-practice/useGuitarPracticeController'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 
 export interface Tab3DControls {
@@ -51,6 +52,15 @@ export interface Tab3DControls {
   combo: Accessor<number>
   detectedMidi: Accessor<number | null>
   detectedClarity: Accessor<number>
+  hitResults: Accessor<GuitarHitResult[]>
+  showUserNotes: Accessor<boolean>
+  // Input toggles, so scoring is reachable without the transport bar
+  isMicActive: Accessor<boolean>
+  startMic: () => void
+  stopMic: () => void
+  midiConnected: Accessor<boolean>
+  midiConnect: () => void
+  midiDisconnect: () => void
 }
 
 const scoreTier = (s: number): string =>
@@ -247,6 +257,23 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
         label="Loop"
         active={loopOpen() || c.loopEnabled()}
         onClick={() => setLoopOpen((v) => !v)}
+      />
+
+      <span class="gp-hud-sep" />
+
+      <Toggle
+        icon={MIC}
+        label="Mic"
+        active={c.isMicActive()}
+        onClick={() => (c.isMicActive() ? c.stopMic() : c.startMic())}
+      />
+      <Toggle
+        icon={MIDI}
+        label="MIDI"
+        active={c.midiConnected()}
+        onClick={() =>
+          c.midiConnected() ? c.midiDisconnect() : c.midiConnect()
+        }
       />
     </>
   )
@@ -559,6 +586,19 @@ const LOOP = [
 ]
 const MARK = ['M6 3v18', 'M6 4h11l-2 3 2 3H6']
 const PIN = ['M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10z', 'M12 11h.01']
+const MIC = [
+  'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z',
+  'M5 11a7 7 0 0 0 14 0',
+  'M12 18v3',
+]
+const MIDI = [
+  'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+  'M8 10h.01',
+  'M16 10h.01',
+  'M9 14h.01',
+  'M15 14h.01',
+  'M12 15h.01',
+]
 const GRIP = [
   'M9 6h.01',
   'M9 12h.01',
