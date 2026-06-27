@@ -199,7 +199,10 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       style={{
         position: 'relative',
         width: '100%',
-        height: 'min(62vh, 560px)',
+        // Fill the available area; the parent (#guitar-fretboard-container)
+        // is flex:1, so the canvas scales with the window.
+        height: '100%',
+        'min-height': '0',
         'border-radius': '12px',
         overflow: 'hidden',
       }}

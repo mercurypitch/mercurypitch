@@ -24,7 +24,8 @@ export interface CameraState {
 export const DEFAULT_CAMERA: CameraState = {
   yaw: 0,
   pitch: 0.2338,
-  radius: 21.587,
+  // Framed to fill the view; same angle as the original fixed view, zoomed in.
+  radius: 18,
   target: [0, 1, -12],
 }
 
