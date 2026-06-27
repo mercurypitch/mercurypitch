@@ -24,9 +24,11 @@ export interface CameraState {
 export const DEFAULT_CAMERA: CameraState = {
   yaw: 0,
   pitch: 0.2338,
-  // Framed to fill the view; same angle as the original fixed view, zoomed in.
-  radius: 18,
-  target: [0, 1, -12],
+  // Same angle as the original view, framed so the whole neck (frets 0..max,
+  // incl. the fret numbers) sits above the bottom control bar with margin.
+  // The low target lifts the neck up out from behind the HUD.
+  radius: 19,
+  target: [0, -0.4, -12],
 }
 
 export const PITCH_MIN = -0.15 // ~ -9°: a hair below level
