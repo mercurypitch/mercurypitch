@@ -69,6 +69,20 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   )
   const [totalBeats, setTotalBeats] = createSignal(0)
 
+  // ── Transpose (real note shift; slides notes along the neck) ─────
+  // N semitones added to every note's pitch, then re-voiced onto the neck
+  // (same string when it fits, else the nearest string that can host it).
+  // Affects audio AND the tab. Bounds keep the whole song playable.
+  const [transpose, setTransposeSignal] = createSignal(0)
+  const [transposeBounds, setTransposeBounds] = createSignal<[number, number]>([
+    -12, 12,
+  ])
+  const setTranspose = (n: number) => {
+    const [lo, hi] = transposeBounds()
+    setTransposeSignal(Math.max(lo, Math.min(hi, Math.round(n))))
+  }
+  const transposeRatio = () => Math.pow(2, transpose() / 12)
+
   // ── Practice playback rate + A/B loop (speed trainer) ────────────
   const [playbackRate, setPlaybackRateSignal] = createSignal(1)
   const [loopEnabled, setLoopEnabled] = createSignal(false)
@@ -226,6 +240,79 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
 
     const combined = [...activeScoreNotes, ...otherVisibleNotes]
     combined.sort((a, b) => a.startBeat - b.startBeat)
+
+    // Transpose: shift every note's pitch by N semitones and re-voice it onto
+    // the neck (slide along the same string when it fits, else move to the
+    // nearest string that can host the pitch in [0, MAX_FRET]).
+    const MAX_FRET = 24
+    const DEFAULT_OPEN = [64, 59, 55, 50, 45, 40, 35, 30]
+    const openByString = new Map<number, number>()
+    for (const note of combined) {
+      if (!openByString.has(note.stringIndex)) {
+        openByString.set(note.stringIndex, note.midi - note.fret)
+      }
+    }
+    let stringCount = 6
+    for (const s of openByString.keys())
+      stringCount = Math.max(stringCount, s + 1)
+    const open: number[] = []
+    for (let s = 0; s < stringCount; s++) {
+      open[s] = openByString.get(s) ?? DEFAULT_OPEN[s] ?? 40
+    }
+
+    // Playable shift range: keep every note within the instrument's reach.
+    if (combined.length > 0) {
+      let instLow = Infinity
+      let instHigh = -Infinity
+      for (let s = 0; s < stringCount; s++) {
+        instLow = Math.min(instLow, open[s])
+        instHigh = Math.max(instHigh, open[s] + MAX_FRET)
+      }
+      let songLow = Infinity
+      let songHigh = -Infinity
+      for (const note of combined) {
+        songLow = Math.min(songLow, note.midi)
+        songHigh = Math.max(songHigh, note.midi)
+      }
+      setTransposeBounds([
+        Math.max(-24, Math.min(0, instLow - songLow)),
+        Math.min(24, Math.max(0, instHigh - songHigh)),
+      ])
+    }
+
+    const n = transpose()
+    if (n !== 0) {
+      const ratio = Math.pow(2, n / 12)
+      for (const note of combined) {
+        const target = note.midi + n
+        let s = note.stringIndex
+        let fret = target - open[s]
+        if (fret < 0 || fret > MAX_FRET) {
+          // Re-voice onto the nearest string that can host the pitch.
+          let bestCost = Infinity
+          for (let cand = 0; cand < stringCount; cand++) {
+            const f = target - open[cand]
+            if (f < 0 || f > MAX_FRET) continue
+            const cost = Math.abs(cand - note.stringIndex) * 100 + f
+            if (cost < bestCost) {
+              bestCost = cost
+              s = cand
+              fret = f
+            }
+          }
+          if (bestCost === Infinity) {
+            fret = Math.max(
+              0,
+              Math.min(MAX_FRET, target - open[note.stringIndex]),
+            )
+          }
+        }
+        note.stringIndex = s
+        note.fret = fret
+        note.midi = target
+        note.targetFreq *= ratio
+      }
+    }
 
     setFallingNotes(combined)
     setTotalNotes(activeScoreNotes.length)
@@ -411,7 +498,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
             continue
           }
           void audioEngine.playNote(
-            b.freq,
+            b.freq * transposeRatio(),
             Math.max(50, (b.duration / bps) * 1000),
           )
         }
@@ -666,6 +753,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     songObj?: SavedMidiSong | null,
   ) => {
     stopGame()
+    setTransposeSignal(0) // a fresh song starts untransposed
     const notes = melodyToGuitarNotes(items)
     setFallingNotes(notes)
     setTotalNotes(notes.length)
@@ -846,6 +934,10 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     toggleTrackVisibility,
     totalBeats,
     seekToBeat,
+    // Transpose (real note shift)
+    transpose,
+    setTranspose,
+    transposeBounds,
     // Practice playback rate + A/B loop (speed trainer)
     playbackRate,
     setPlaybackRate,

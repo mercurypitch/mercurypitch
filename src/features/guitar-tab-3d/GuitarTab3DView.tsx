@@ -9,7 +9,7 @@
 // TabRenderer interface.
 
 import type { Accessor } from 'solid-js'
-import { createSignal, onCleanup, onMount } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { CameraState } from './renderer/camera'
@@ -18,6 +18,8 @@ import type { TabRenderer, TabScene } from './renderer/TabRenderer'
 import { DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
+import type { Tab3DControls } from './ui/Tab3DHud'
+import { Tab3DHud } from './ui/Tab3DHud'
 
 const ORBIT_SENS = 0.008 // radians per pixel dragged
 const ZOOM_SENS = 0.0012 // per wheel delta unit
@@ -36,6 +38,8 @@ export interface GuitarTab3DViewProps {
   showFretboard: Accessor<boolean>
   /** Only animate while the guitar tab is the active view. */
   isActive: Accessor<boolean>
+  /** Playback/display controls; when provided, renders the HUD overlay. */
+  controls?: Tab3DControls
 }
 
 export function GuitarTab3DView(props: GuitarTab3DViewProps) {
@@ -217,6 +221,9 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         onZoom={zoom}
         onReset={resetCamera}
       />
+      <Show when={props.controls}>
+        {(controls) => <Tab3DHud controls={controls()} />}
+      </Show>
     </div>
   )
 }

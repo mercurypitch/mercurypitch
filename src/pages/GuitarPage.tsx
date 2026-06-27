@@ -13,7 +13,6 @@ import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
 import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
-import { PracticeLoopBar } from '@/features/guitar-tab-3d/ui/PracticeLoopBar'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -626,26 +625,6 @@ export function GuitarPage(props: GuitarPageProps) {
                 />
               }
             >
-              <PracticeLoopBar
-                playbackRate={guitar.playbackRate}
-                setPlaybackRate={guitar.setPlaybackRate}
-                loopEnabled={guitar.loopEnabled}
-                loopStartBeat={guitar.loopStartBeat}
-                setLoopStartBeat={guitar.setLoopStartBeat}
-                loopEndBeat={guitar.loopEndBeat}
-                setLoopEndBeat={guitar.setLoopEndBeat}
-                rampEnabled={guitar.rampEnabled}
-                setRampEnabled={guitar.setRampEnabled}
-                startingRate={guitar.startingRate}
-                setStartingRate={guitar.setStartingRate}
-                stepRate={guitar.stepRate}
-                setStepRate={guitar.setStepRate}
-                startPracticeLoop={guitar.startPracticeLoop}
-                stopPracticeLoop={guitar.stopPracticeLoop}
-                playheadBeat={guitar.playheadBeat}
-                showFretboard={show3dFretboard}
-                setShowFretboard={setShow3dFretboard}
-              />
               <GuitarTab3DView
                 fallingNotes={guitar.fallingNotes}
                 playheadBeat={guitar.playheadBeat}
@@ -653,6 +632,35 @@ export function GuitarPage(props: GuitarPageProps) {
                 showNoteLabels={guitar.showNoteLabels}
                 showFretboard={show3dFretboard}
                 isActive={() => activeTab() === TAB_GUITAR}
+                controls={{
+                  gameState: guitar.gameState,
+                  togglePlay: guitar.togglePlay,
+                  songName: guitar.selectedSongName,
+                  songBpm: guitar.songBpm,
+                  playheadBeat: guitar.playheadBeat,
+                  playbackRate: guitar.playbackRate,
+                  setPlaybackRate: guitar.setPlaybackRate,
+                  transpose: guitar.transpose,
+                  setTranspose: guitar.setTranspose,
+                  transposeBounds: guitar.transposeBounds,
+                  showNoteLabels: guitar.showNoteLabels,
+                  setShowNoteLabels: guitar.setShowNoteLabels,
+                  showFretboard: show3dFretboard,
+                  setShowFretboard: setShow3dFretboard,
+                  loopEnabled: guitar.loopEnabled,
+                  loopStartBeat: guitar.loopStartBeat,
+                  setLoopStartBeat: guitar.setLoopStartBeat,
+                  loopEndBeat: guitar.loopEndBeat,
+                  setLoopEndBeat: guitar.setLoopEndBeat,
+                  rampEnabled: guitar.rampEnabled,
+                  setRampEnabled: guitar.setRampEnabled,
+                  startingRate: guitar.startingRate,
+                  setStartingRate: guitar.setStartingRate,
+                  stepRate: guitar.stepRate,
+                  setStepRate: guitar.setStepRate,
+                  startPracticeLoop: guitar.startPracticeLoop,
+                  stopPracticeLoop: guitar.stopPracticeLoop,
+                }}
               />
             </Show>
           }
