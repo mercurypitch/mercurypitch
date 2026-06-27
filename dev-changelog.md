@@ -6,6 +6,23 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2026-06-27
+
+### Added
+
+- 3D guitar tab playback view (`src/features/guitar-tab-3d/`). Backend-agnostic `TabRenderer` seam with a Canvas2D perspective backend (`Canvas2dTabRenderer`, `wgpu-matrix` lookAt/perspective): an upright fretboard wall on Z=0, a highway receding into −Z, notes flying down each (string, fret) lane onto their exact cell. WebGPU/TypeGPU backend scaffolding (`renderer/webgpu/`) sits behind the same interface for later. Surfaced as a new `'3d'` guitar view in `GuitarPage` via `GuitarTab3DView`, fed the same `guitar.fallingNotes`/`playheadBeat` as the 2D view.
+- Readability layer in the renderer: imminence grading (near notes grow + glow, far fade to outlines, past fade out), chord spines binding notes within 1/16 beat, additive strike flash on landing, a "next to play" pulse on the nearest upcoming cell, decluttered per-cell labels, and luminance-adaptive label ink.
+- Guitar Pro import (`src/lib/tab/gp-import.ts`, `gp-to-midi-song.ts`): `.gp/.gp3/.gp4/.gp5/.gpx` via `@coderline/alphatab` (MPL-2.0), dynamically imported / code-split. `scoreToMidiSong` preserves `stringIndex` (convention-agnostic `tuning.indexOf(realValue-fret)`), fret and MIDI; drops percussion.
+- Orbit camera (`renderer/camera.ts`: yaw/pitch/radius/target, `cameraEye`/`cameraBasis`/`clampCamera`) driving the renderer via `setCamera`, plus a corner `NavGizmo` (axis cross drag-to-orbit, pan toggle, zoom, reset). Direct canvas control too: drag to orbit, shift/right-drag to pan, wheel to zoom.
+- Glass HUD overlay (`ui/Tab3DHud.tsx`): dockable top (after the song name) or bottom-centre via a grip handle (click flips, drag snaps); transport, speed stepper + 0.5/0.75/1x presets + effective BPM, display toggles, and a practice-loop popover (A/B markers + speed ramp). `GuitarPage` gains a Hide/Show toggle that collapses the shared `SharedControlToolbar`.
+- Transpose in `useGuitarPracticeController`: shifts every note's pitch by N semitones and re-voices it onto the neck (same string when in [0,24], else the nearest string that can host the pitch), affecting both synthesized audio (`targetFreq` scaled / backing freq × ratio) and the tab. Bounds computed from the instrument's reach so the whole song stays playable; octave = ±12; resets on song load. Exposed as `transpose`/`setTranspose`/`transposeBounds`.
+- End-of-run score as a non-blocking corner card in the 3D view (`Tab3DHud`), matching the Exercises score-history chip (latest % + grade + notes/combo + recent runs), with Play again / Dismiss. In-session recent-scores list recorded in `GuitarPage`.
+
+### Changed
+
+- `.gp-tab3d-container` is now `height: 100%` so it fills `#guitar-fretboard-container` and scales with the window (was a fixed `min(62vh, 560px)` that left the parent background showing). Default camera radius 21.6 → 18 so the scene fills ~80% width / the lower two-thirds.
+- The finished-run score modal (`.gp-score-overlay`) is suppressed for the `'3d'` view (still shown for the 2D/interactive views), replaced there by the corner card.
+
 ## [0.4.5] - 2026-06-26
 
 ### Added

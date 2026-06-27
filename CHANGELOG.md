@@ -3,6 +3,17 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.6] - 2026-06-27
+
+### Added
+
+- **3D guitar tab playback**: a new "3D" view for guitar tabs where notes fly down onto a 3D fretboard and land on the exact string and fret to play. Upcoming notes are emphasised, chords are grouped together, and each note flashes as it lands, so it's clear what to play next.
+- **Guitar Pro import**: open `.gp`, `.gp3`, `.gp4`, `.gp5` and `.gpx` files and play them in the 3D view, with the original fingering and tuning preserved.
+- **Move the camera**: orbit, pan and zoom the 3D view — drag to rotate, shift- or right-drag to pan, scroll to zoom — plus a small corner gizmo to rotate and reset the view.
+- **On-screen controls**: a glass control bar floats over the 3D view with play/pause, speed (quick 0.5/0.75/1x plus the resulting tempo), note-name and fretboard toggles, and a practice loop with A/B markers and a speed ramp. Drag the bar to the top or bottom, and hide the main transport bar for more room.
+- **Transpose the song**: shift the whole piece up or down by semitones or octaves — the tab re-fingers itself on the neck and the sound follows.
+- **Score in the corner**: finishing a run in the 3D view now shows your score, and your last few scores, quietly in the corner instead of a pop-up.
+
 ## [0.4.5] - 2026-06-26
 
 ### Added
