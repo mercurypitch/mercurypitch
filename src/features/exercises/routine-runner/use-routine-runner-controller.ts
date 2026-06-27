@@ -216,7 +216,7 @@ export function useRoutineRunnerController(
     // Fatigue analysis
     const fatigueResult = analyzeFatigue(fatigueCheckpoints)
     const fatigueScore = fatigueResult.fatigued
-      ? Math.max(0, 100 + fatigueResult.trends.hnrTrend * 2)
+      ? Math.min(100, Math.max(0, 100 + fatigueResult.trends.hnrTrend * 2))
       : 100
 
     // Richness from all clarity samples

@@ -115,7 +115,10 @@ export function useIntervalTrainerController(
 
   function startMatching(): void {
     if (_cancelled) return
-    matchStartTime = performance.now()
+    // Use the exercise-relative clock (same epoch as pitch sample `.time`,
+    // which is `elapsed/1000`). Mixing absolute performance.now() here would
+    // make the evaluateRound() window never match any samples → always 0.
+    matchStartTime = base._getElapsed()
     batch(() => {
       base._updateMetrics({ phase: 2 }) // matching phase
     })
@@ -129,7 +132,7 @@ export function useIntervalTrainerController(
   function evaluateRound(): void {
     const [target1, target2] = intervals[roundIndex]
     const history = base.pitchHistory()
-    const now = performance.now()
+    const now = base._getElapsed()
     const recentSamples = history.filter((p) => {
       const t = p.time * 1000
       return t >= matchStartTime - 100 && t <= now

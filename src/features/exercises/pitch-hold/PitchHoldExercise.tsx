@@ -123,6 +123,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
           <ExercisePitchTracker
             pitchHistory={base.pitchHistory}
             isActive={isActive}
+            targetNoteMidi={() => noteToMidi(targetNote())}
           />
           <div class="pitch-hold-header">
             <span class="target">{targetNote()}</span>

@@ -136,6 +136,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
           <ExercisePitchTracker
             pitchHistory={base.pitchHistory}
             isActive={isActive}
+            targetNoteMidi={() => base.state().metrics.currentMidi || undefined}
           />
           <div class="mirror-melody-phase">
             <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
