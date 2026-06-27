@@ -154,4 +154,26 @@ describe('useVibratoController', () => {
     expect(committed.length).toBe(1)
     expect(result.type).toBe(EXERCISE_VIBRATO)
   })
+
+  it('scores by the selected style (slow & wide rewarded under slow)', () => {
+    // A slow (~3.5 Hz), wide (~85 cent) oscillation — the beginner practice
+    // shape. It should score higher under the "slow" style than "fast".
+    const history: Array<{ freq: number; time: number; cents: number }> = []
+    const sampleRate = 100
+    for (let i = 0; i < sampleRate * 3; i++) {
+      const time = i / sampleRate
+      const cents = Math.sin(2 * Math.PI * 3.5 * time) * 85
+      history.push({ freq: midiToFreq(60 + cents / 100), time, cents })
+    }
+
+    const base = createMockBase({ pitchHistory: () => history })
+    const ctrl = useVibratoController(base)
+
+    ctrl.setStyle('fast')
+    const fastScore = ctrl.computeResult().score
+    ctrl.setStyle('slow')
+    const slowScore = ctrl.computeResult().score
+
+    expect(slowScore).toBeGreaterThan(fastScore)
+  })
 })

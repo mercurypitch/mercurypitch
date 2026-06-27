@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `exercise-help.ts`: `Record<ExerciseType, { summary; body }>` beginner help text; `IconQuestion` added to `exercise-icons.tsx`.
 - Timed auto-score mode for the continuous-hold drills (long-note, vibrato, pitch-hold) via the shell's `autoTimer` prop (presets 5/15/30s). The timer arms only on the `active` transition so the `autoStart` path and the transient `count-in` state never trigger a premature stop.
 - Moving target guide in `PitchOverTimeCanvas` (`movingTarget?: () => number | null`, forwarded through `ExercisePitchTracker`): an amber guide line + glowing dot that moves vertically. Driven by `SlideExercise` as a looping triangle-wave glide between the from/to notes.
+- Vibrato styles + guide: new `vibrato/vibrato-styles.ts` (slow/medium/fast presets with research-backed rate/depth windows + sine-guide params). `useVibratoController` gains `setStyle(id)` and scores against the chosen style's windows. `VibratoExercise` adds a target-note line (`targetNoteMidi`), a sine `movingTarget` the singer traces (style rate/depth, toggle via "Show the wave"), and a style picker. Help text updated; added a style-scoring regression test.
+- Exercise mic toggle: `ExerciseShell` renders the shared `MicButton` (via `EngineContext`, read with `useContext` so it no-ops without a provider in tests) to start/stop the mic and show input level.
+- Recent-scores chip enlarged: `ExerciseScoreHistory` now features the latest score prominently with the previous few + Best.
 
 ### Changed
 
