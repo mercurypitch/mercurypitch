@@ -45,6 +45,31 @@ const GLOW_RADIUS = 12
 
 const ZOOM_STEPS = [1, 2, 3, 5, 8]
 
+const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+]
+
+const noteNameFromMidi = (midi: number): string => {
+  const m = Math.round(midi)
+  return `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`
+}
+
+const noteNameFromFreq = (freq: number): string => {
+  if (!Number.isFinite(freq) || freq <= 0) return ''
+  return noteNameFromMidi(12 * Math.log2(freq / 440) + 69)
+}
+
 export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   props,
 ) => {
@@ -243,28 +268,40 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     if (!ctx) return
 
     const rightX = w - 8
-    for (const note of Y_AXIS_NOTES) {
-      const y = freqToY(note.freq, h, logMin, logRange)
+    const drawMark = (freq: number, label: string, faint: boolean): void => {
+      const y = freqToY(freq, h, logMin, logRange)
+      if (y < 4 || y > h - 4) return
+      ctx!.strokeStyle = faint ? 'rgba(48,54,61,0.4)' : 'rgba(48,54,61,0.7)'
+      ctx!.lineWidth = 1
+      ctx!.setLineDash([4, 6])
+      ctx!.beginPath()
+      ctx!.moveTo(MARGIN, y)
+      ctx!.lineTo(w - MARGIN, y)
+      ctx!.stroke()
+      ctx!.setLineDash([])
+      ctx!.fillStyle = faint ? '#3b424b' : '#6e7681'
+      ctx!.font = '10px sans-serif'
+      ctx!.textAlign = 'right'
+      ctx!.textBaseline = 'middle'
+      ctx!.fillText(label, rightX, y)
+    }
 
-      // Only draw labels within the visible area
-      if (y < 4 || y > h - 4) continue
-
-      // Grid line
-      ctx.strokeStyle = 'rgba(48,54,61,0.7)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 6])
-      ctx.beginPath()
-      ctx.moveTo(MARGIN, y)
-      ctx.lineTo(w - MARGIN, y)
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // Label
-      ctx.fillStyle = '#484f58'
-      ctx.font = '10px sans-serif'
-      ctx.textAlign = 'right'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(note.label, rightX, y)
+    // When wide, the octave C anchors are enough. When zoomed in (≤ ~2.6
+    // octaves) label individual notes so the singer can see exactly where they
+    // are — every semitone up close, every other one when a bit wider.
+    if (logRange > 2.6) {
+      for (const note of Y_AXIS_NOTES) drawMark(note.freq, note.label, false)
+      return
+    }
+    const step = logRange <= 1.4 ? 1 : 2
+    const midiOf = (l: number): number => 12 * (l - Math.log2(440)) + 69
+    const lo = Math.ceil(midiOf(logMin))
+    const hi = Math.floor(midiOf(logMin + logRange))
+    for (let m = lo; m <= hi; m++) {
+      if ((m - lo) % step !== 0) continue
+      const freq = 440 * 2 ** ((m - 69) / 12)
+      // Octave markers (C) a touch brighter for orientation.
+      drawMark(freq, noteNameFromMidi(m), m % 12 !== 0)
     }
   }
 
@@ -509,7 +546,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const nowTime = samples[samples.length - 1]!.time
 
     // Collect valid points for polyline
-    const validPoints: { x: number; y: number }[] = []
+    const validPoints: { x: number; y: number; freq: number }[] = []
 
     for (let i = 0; i < samples.length; i++) {
       const s = samples[i]!
@@ -525,7 +562,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
         // Clip dots to visible Y range
         if (y < -10 || y > h + 10) continue
 
-        validPoints.push({ x, y })
+        validPoints.push({ x, y, freq })
 
         // Opacity from clarity
         const alpha = 0.15 + Math.min(1, s.clarity ?? 0) * 0.7
@@ -581,10 +618,15 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.arc(latest.x, latest.y, DOT_RADIUS + 1, 0, Math.PI * 2)
       ctx.fill()
 
-      // Note name pill near latest dot
+      // Note name pill near latest dot. Prefer an explicit sample noteName
+      // (singing tab), else derive it from the dot's frequency so exercises —
+      // whose samples carry no noteName — still show where the singer is.
       const latestSample = samples[samples.length - 1]
-      const noteName = latestSample?.noteName
-      if (typeof noteName === 'string') {
+      const noteName =
+        (typeof latestSample?.noteName === 'string'
+          ? latestSample.noteName
+          : '') || noteNameFromFreq(latest.freq)
+      if (noteName !== '') {
         const nearRight = latest.x > w - 70
         const labelX = nearRight ? latest.x - 14 : latest.x + 14
         const labelY = latest.y - 10
