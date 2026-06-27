@@ -184,7 +184,12 @@ export function useCallResponseController(
       return {
         type: EXERCISE_CALL_RESPONSE,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          richnessScore: 0,
+        },
         completedAt: Date.now(),
       }
     }

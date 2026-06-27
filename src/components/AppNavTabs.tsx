@@ -145,6 +145,21 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
           {props.tabLabel(TAB_GUITAR)}
         </button>
         <button
+          id="tab-exercises"
+          class={`app-tab ${props.activeTab() === TAB_EXERCISES ? 'active' : ''}`}
+          onClick={() => void props.handleTabChange(TAB_EXERCISES)}
+          aria-current={ariaCurrent(TAB_EXERCISES)}
+          aria-label="Singing Exercises"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+            <path
+              fill="currentColor"
+              d="M12 14c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2s2 .9 2 2v8c0 1.1-.9 2-2 2zm-1 4h2v2h-2zm-4.5-7.5c.8-.8 2-.8 2.8 0l1.4 1.4c.8.8.8 2 0 2.8-.8.8-2 .8-2.8 0L7.5 10.5zM3 13c0 5 4 9 9 9s9-4 9-9h-2c0 3.9-3.1 7-7 7s-7-3.1-7-7H3z"
+            />
+          </svg>
+          {props.tabLabel(TAB_EXERCISES)}
+        </button>
+        <button
           id="tab-karaoke"
           class={`app-tab ${props.activeTab() === TAB_KARAOKE ? 'active' : ''}`}
           onClick={() => void props.handleTabChange(TAB_KARAOKE)}
@@ -217,21 +232,6 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
             />
           </svg>
           {props.tabLabel(TAB_CHALLENGES)}
-        </button>
-        <button
-          id="tab-exercises"
-          class={`app-tab ${props.activeTab() === TAB_EXERCISES ? 'active' : ''}`}
-          onClick={() => void props.handleTabChange(TAB_EXERCISES)}
-          aria-current={ariaCurrent(TAB_EXERCISES)}
-          aria-label="Singing Exercises"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
-            <path
-              fill="currentColor"
-              d="M12 14c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2s2 .9 2 2v8c0 1.1-.9 2-2 2zm-1 4h2v2h-2zm-4.5-7.5c.8-.8 2-.8 2.8 0l1.4 1.4c.8.8.8 2 0 2.8-.8.8-2 .8-2.8 0L7.5 10.5zM3 13c0 5 4 9 9 9s9-4 9-9h-2c0 3.9-3.1 7-7 7s-7-3.1-7-7H3z"
-            />
-          </svg>
-          {props.tabLabel(TAB_EXERCISES)}
         </button>
         <button
           id="tab-jam"

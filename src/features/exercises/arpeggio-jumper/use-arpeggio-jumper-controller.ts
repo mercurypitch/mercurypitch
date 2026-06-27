@@ -151,7 +151,12 @@ export function useArpeggioJumperController(
       return {
         type: EXERCISE_ARPEGGIO_JUMPER,
         score: 0,
-        metrics: { notesCompleted: 0, avgAccuracy: 0, bestNote: 0 },
+        metrics: {
+          notesCompleted: 0,
+          avgAccuracy: 0,
+          bestNote: 0,
+          richnessScore: 0,
+        },
         completedAt: Date.now(),
       }
     }

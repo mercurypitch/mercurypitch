@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vibrato styles + guide: new `vibrato/vibrato-styles.ts` (slow/medium/fast presets with research-backed rate/depth windows + sine-guide params). `useVibratoController` gains `setStyle(id)` and scores against the chosen style's windows. `VibratoExercise` adds a target-note line (`targetNoteMidi`), a sine `movingTarget` the singer traces (style rate/depth, toggle via "Show the wave"), and a style picker. Help text updated; added a style-scoring regression test.
 - Exercise mic toggle: `ExerciseShell` renders the shared `MicButton` (via `EngineContext`, read with `useContext` so it no-ops without a provider in tests) to start/stop the mic and show input level.
 - Recent-scores chip enlarged: `ExerciseScoreHistory` now features the latest score prominently with the previous few + Best.
+- Target-note line on every exercise: `targetNoteMidi` is now wired into `ExercisePitchTracker` for all remaining exercises (interval-trainer, scale-runner, arpeggio-jumper, drone-intonation, call-response, mirror-melody, chord-stacker, staccato-precision, dynamic-swell, routine-runner via `() => base.state().metrics.currentMidi || undefined`; pitch-hold via its selected note). Previously only long-note/vibrato/slide/siren/sight-singing drew it.
 
 ### Changed
 
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exercise idle layout: Start + note pills + timer toggle moved into a centred `.exercise-idle-center` beneath the description (was a bottom strip). Added a spacebar shortcut in `ExerciseShell` (start when idle, stop when active, try-again when complete; ignored while a form control/button is focused).
 - Readability: lifted dark-theme `--text-secondary` (`#8b949e → #a8b3bf`) and `--text-muted` (`#484f58 → #6e7681`); bumped tiny font sizes and set explicit colors on `.badge-tier`/`.badge-name`/`.achievement-desc`/`.achievement-points`.
 - Auto-zoom (`PitchOverTimeCanvas`): when the sung range is small, the view now targets ~1 octave + ~4 semitones headroom (floored at 0.5 oct half-range) instead of forcing 2 octaves, with exponential smoothing of the log bounds between frames to avoid jumpiness.
+- Nav grouping (`AppNavTabs.tsx`): moved the Exercises tab from the Social group into the Practice group, positioned before Karaoke (Karaoke remains last). No logic change — button markup relocated only.
 
 ### Fixed
 
@@ -34,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.exercise-card-grade` is now `inline-flex` + `align-items: center` so the grade icon centers with its label.
 - Exercise difficulty badge + filter (`ExerciseMenu.tsx`): added a curated intrinsic `EXERCISE_DIFFICULTY: Record<ExerciseType, 'easy'|'medium'|'hard'>` shown as a badge on every card, plus All/Easy/Medium/Hard filter pills (`visibleCards` memo). Replaced the per-card adaptive `DifficultyIndicator` (which hid itself at the default level 5, so it only appeared on practised exercises and read as a fixed rating) — the adaptive level still drives scoring via `launchDifficulty`/`difficulty-store`, it's just no longer the card badge. `DifficultyIndicator.tsx` is now unused.
 - Sight-Singing rewrite (`use-sight-singing-controller.ts` + `SightSingingExercise.tsx`): `setScale(scale, rangeMin, rangeMax)` generates notes only within `getComfortableMidiRange(preset)` (pitch-classes from the current scale), preferring stepwise motion. Replaced the fixed 2s `setInterval` auto-advance with a pitch-driven poll (`HOLD_TO_PASS_MS` in-tolerance hold, `MAX_NOTE_MS` timeout fallback) that scores each note at advance and emits live metrics (`holdPct`, `detectedMidi`, `centsOff`, `matched`). Staff now maps by diatonic step (lines E4-G4-B4-D5-F5), draws ledger lines + ♯ accidentals + a real treble clef glyph, and highlights the active note; added a hold bar and a DEV-only (`import.meta.env.DEV`) detected/target/hold readout.
+- Interval Trainer & Dynamic Swell scored ~0 regardless of performance: `evaluateRound()` set its window start (`matchStartTime`/`holdStartTime`) and bound from absolute `performance.now()`, but pitch samples store `time` as exercise-relative (`elapsed/1000`). The predicate `p.time*1000 >= start-100` was therefore always false → the window selected zero samples → score 0. Both now use `base._getElapsed()` (same relative epoch) for the window start and the upper bound. Added driven happy-path regression tests for both (the interval-trainer happy path was previously un-assertable for this exact reason).
+- Routine Runner score could exceed 100: `fatigueScore = fatigued ? max(0, 100 + hnrTrend*2) : 100` was unclamped, so a positive `hnrTrend` pushed the 30%-weighted term past 100. Now `min(100, max(0, …))`.
+- Stable exercise metric shapes: the empty/zero-result branches of `arpeggio-jumper` and `call-response` (missing `richnessScore`) and `dynamic-swell` (missing `dynamicRangeDb`/`avgDb`/`peakDb`) now emit the same key set as their populated branches (zeroed), so consumers see a consistent shape.
+
+### Tests
+
+- New controller unit tests (deterministic, via a shared `createMockBase`): `interval-trainer`, `scale-runner`, `arpeggio-jumper`, `drone-intonation`, `call-response`, `chord-stacker`, `staccato-precision`, `routine-runner`, `dynamic-swell`, `sight-singing`. Each covers the empty-history floor (score 0 + real metric keys), setup/generation (targets/sequences within the requested range and scale), and a synthetic happy path (fake-timer driven where a poll loop is involved). The sight-singing range test locks the "notes within `[rangeMin, rangeMax]`" regression; the interval-trainer/dynamic-swell happy paths lock the relative-clock window fix.
 
 ## [0.4.4] - 2026-06-26
 

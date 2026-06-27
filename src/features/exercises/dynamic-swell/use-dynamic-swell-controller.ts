@@ -80,7 +80,10 @@ export function useDynamicSwellController(
 
   function startHolding(): void {
     if (_cancelled) return
-    holdStartTime = performance.now()
+    // Exercise-relative clock (same epoch as pitch sample `.time`). Using
+    // absolute performance.now() here would make the hold window below select
+    // zero samples → every round scores 0.
+    holdStartTime = base._getElapsed()
     batch(() => base._updateMetrics({ phase: 2 })) // hold phase
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
@@ -90,7 +93,7 @@ export function useDynamicSwellController(
 
   function evaluateRound(): void {
     const targetMidi = targetNotes[roundIndex]
-    const now = performance.now()
+    const now = base._getElapsed()
     const history = base.pitchHistory()
     const holdSamples = history.filter((p) => {
       const t = p.time * 1000
@@ -142,7 +145,14 @@ export function useDynamicSwellController(
       return {
         type: EXERCISE_DYNAMIC_SWELL,
         score: 0,
-        metrics: { roundsCompleted: 0, avgAccuracy: 0, bestRound: 0 },
+        metrics: {
+          roundsCompleted: 0,
+          avgAccuracy: 0,
+          bestRound: 0,
+          dynamicRangeDb: 0,
+          avgDb: 0,
+          peakDb: 0,
+        },
         completedAt: Date.now(),
       }
     }
