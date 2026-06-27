@@ -248,7 +248,9 @@ function gradeClass(score: number): string {
   if (score >= 90) return 'exercise-grade-elite'
   if (score >= 80) return 'exercise-grade-great'
   if (score >= 65) return 'exercise-grade-good'
-  return 'exercise-grade-novice'
+  if (score >= 50) return 'exercise-grade-novice'
+  // Below 50 gradeLabel renders nothing, so emit no grade class to match.
+  return ''
 }
 
 function formatTime(ts: number): string {

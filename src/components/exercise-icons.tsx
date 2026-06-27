@@ -168,8 +168,10 @@ export function IconDiamond(p: IconProps): JSX.Element {
 }
 
 export function IconCircleFill(p: IconProps): JSX.Element {
+  // Solid disc (fill override after the spread) so it reads distinctly from
+  // IconCircleEmpty, which is an outline.
   return (
-    <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
+    <svg {...iconProps(p.size ?? 24)} class={p.class} fill="currentColor">
       <circle cx="12" cy="12" r="8" />
     </svg>
   )

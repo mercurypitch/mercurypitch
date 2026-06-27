@@ -67,9 +67,7 @@ export function scoreNoteAccuracy(
 ): number {
   if (history.length === 0) return 0
 
-  const windowSec = windowMs / 1000
-  const latest = history[history.length - 1].time
-  const recentSamples = history.filter((p) => latest - p.time <= windowSec)
+  const recentSamples = trailingSamplesByTime(history, windowMs)
 
   const deviations = recentSamples
     .filter((p) => p.freq > 0)

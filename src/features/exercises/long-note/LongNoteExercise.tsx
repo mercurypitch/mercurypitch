@@ -44,7 +44,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
     practiceEngine,
     config: {
       type: 'long-note',
-      targetNote: untrack(() => untrack(() => targetNote())),
+      targetNote: untrack(() => targetNote()),
     },
   })
 
@@ -143,7 +143,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
               </span>
               <div class="long-note-metric-bar">
                 <div
-                  class="long-note-metric-fill good"
+                  class={`long-note-metric-fill ${fillClass(Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2), [80, 50])}`}
                   style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`}
                 />
               </div>

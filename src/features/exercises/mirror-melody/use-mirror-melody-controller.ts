@@ -143,7 +143,13 @@ export function useMirrorMelodyController(
       return {
         type: EXERCISE_MIRROR_MELODY,
         score: 0,
-        metrics: { notesCompleted: 0, avgAccuracy: 0, bestNote: 0 },
+        metrics: {
+          notesCompleted: 0,
+          avgAccuracy: 0,
+          bestNote: 0,
+          consistency: 0,
+          richnessScore: 0,
+        },
         completedAt: Date.now(),
       }
     }
