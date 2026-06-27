@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In-scene scored-hit feedback: each successful hit flashes an additive ring on its cell coloured by accuracy (perfect/great/good), fading over `HIT_FLASH_MS`. Recent non-miss `hitResults` (Date.now timestamps) are mapped to cells in `buildScene` (`fret = midiNote - openMidi[string]`) and drawn in `Canvas2dTabRenderer.drawHits`. (`TabScene.hits`)
 - Detected-note marker on the neck: the player's current input pitch is placed on its cell — snapped to a hittable target of the same pitch-class near the hit line (green), else approximated to the lowest playable string (neutral) — pulsing, alpha by detection clarity. Computed in `buildScene`, drawn in `Canvas2dTabRenderer.drawDetected`. (`TabScene.detected`)
 - Mic + MIDI input toggles in the 3D control rail, so scoring is reachable with the shared transport bar hidden. (`Tab3DHud`, wired to `isMicActive`/`startMic`/`stopMic` and `midiConnected`/`midiConnect`/`midiDisconnect`)
+- Dev-only input-signal monitor (`Tab3DInputMonitor`, gated on `import.meta.env.DEV`): shows input mode, your detected note vs the nearest target note, whether they match (same rule the scorer uses — exact MIDI / pitch-class mic), the last hit timing, an input level bar, and a live mic waveform. Added `getInputTimeData` to the controller for the waveform.
 
 ## [0.4.7] - 2026-06-27
 

@@ -1912,6 +1912,91 @@
   gap: 5px;
 }
 
+/* ── 3D tab input-signal monitor (dev only) ──────────────── */
+
+.gp-tab3d-monitor {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 6;
+  width: 196px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(12, 14, 22, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+  color: rgba(233, 237, 245, 0.92);
+  user-select: none;
+  pointer-events: none;
+}
+
+.gp-tab3d-monitor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 184, 0.85);
+}
+
+.gp-tab3d-monitor-mode {
+  color: var(--accent, #58a6ff);
+}
+
+.gp-tab3d-monitor-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.gp-tab3d-monitor-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 184, 0.8);
+}
+
+.gp-tab3d-monitor-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.gp-tab3d-monitor-val.is-good {
+  color: #22c55e;
+}
+
+.gp-tab3d-monitor-val.is-bad {
+  color: #ef4444;
+}
+
+.gp-tab3d-monitor-meter {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.gp-tab3d-monitor-meter-fill {
+  height: 100%;
+  background: var(--accent, #58a6ff);
+  border-radius: 2px;
+  transition: width 60ms linear;
+}
+
+.gp-tab3d-monitor-wave {
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
 /* ── 3D tab end-of-run score (corner card, not a modal) ───── */
 
 .gp-tab3d-score {

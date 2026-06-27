@@ -941,6 +941,9 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     /** RMS mic input level (0–1) for mic-feedback insights; 0 when mic off. */
     getInputLevel: () =>
       micOn() ? rmsOfTimeData(audioEngine.getTimeData()) : 0,
+    /** Raw time-domain samples for the input-signal monitor; null when mic off. */
+    getInputTimeData: (): Float32Array | null =>
+      micOn() ? audioEngine.getTimeData() : null,
     midiConnect,
     midiDisconnect,
     midiConnected,

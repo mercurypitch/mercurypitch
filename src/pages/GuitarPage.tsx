@@ -725,6 +725,9 @@ export function GuitarPage(props: GuitarPageProps) {
                   midiConnected: guitar.midiConnected,
                   midiConnect: () => void guitar.midiConnect(),
                   midiDisconnect: guitar.midiDisconnect,
+                  inputMode: guitar.inputMode,
+                  getInputLevel: guitar.getInputLevel,
+                  getInputTimeData: guitar.getInputTimeData,
                 }}
               />
             </Show>
