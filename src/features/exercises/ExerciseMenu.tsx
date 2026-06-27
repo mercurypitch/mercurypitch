@@ -1,8 +1,7 @@
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
-import { DifficultyIndicator } from '@/features/practice-intelligence/components/DifficultyIndicator'
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
@@ -21,6 +20,45 @@ interface ExerciseCardDef {
   tags: string[]
   available: boolean
 }
+
+export type ExerciseDifficulty = 'easy' | 'medium' | 'hard'
+
+// Intrinsic difficulty of each drill (how hard the underlying skill is in
+// general) — drives the difficulty badge and the Easy/Medium/Hard filter.
+// This is separate from the per-user *adaptive* level that scales scoring.
+const EXERCISE_DIFFICULTY: Record<ExerciseType, ExerciseDifficulty> = {
+  [EXERCISE_LONG_NOTE]: 'easy',
+  [EXERCISE_PITCH_HOLD]: 'easy',
+  [EXERCISE_SIREN]: 'easy',
+  [EXERCISE_SLIDE]: 'medium',
+  [EXERCISE_PITCH_PURSUIT]: 'medium',
+  [EXERCISE_MIRROR_MELODY]: 'medium',
+  [EXERCISE_INTERVAL_TRAINER]: 'medium',
+  [EXERCISE_SCALE_RUNNER]: 'medium',
+  [EXERCISE_DRONE_INTONATION]: 'medium',
+  [EXERCISE_CALL_RESPONSE]: 'medium',
+  [EXERCISE_STACCATO]: 'medium',
+  [EXERCISE_ROUTINE_RUNNER]: 'medium',
+  [EXERCISE_VIBRATO]: 'hard',
+  [EXERCISE_ARPEGGIO_JUMPER]: 'hard',
+  [EXERCISE_DYNAMIC_SWELL]: 'hard',
+  [EXERCISE_CHORD_STACKER]: 'hard',
+  [EXERCISE_SIGHT_SINGING]: 'hard',
+}
+
+const DIFFICULTY_LABEL: Record<ExerciseDifficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+}
+
+type DifficultyFilter = 'all' | ExerciseDifficulty
+const DIFFICULTY_FILTERS: { id: DifficultyFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'easy', label: 'Easy' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'hard', label: 'Hard' },
+]
 
 const CARDS: ExerciseCardDef[] = [
   {
@@ -238,6 +276,13 @@ const STARTER_TYPES = [
 const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
   const recentEntries = createMemo(() => exerciseHistory().slice(0, 5))
 
+  const [diffFilter, setDiffFilter] = createSignal<DifficultyFilter>('all')
+  const visibleCards = createMemo(() =>
+    diffFilter() === 'all'
+      ? CARDS
+      : CARDS.filter((c) => EXERCISE_DIFFICULTY[c.type] === diffFilter()),
+  )
+
   // Pick a starter once on mount so the suggestion doesn't shuffle each render.
   const starter =
     CARDS.find(
@@ -276,6 +321,25 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         </span>
       </div>
 
+      <div
+        class="exercise-filter"
+        role="group"
+        aria-label="Filter by difficulty"
+      >
+        <For each={DIFFICULTY_FILTERS}>
+          {(f) => (
+            <button
+              type="button"
+              class="exercise-filter-pill"
+              classList={{ active: diffFilter() === f.id }}
+              onClick={() => setDiffFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          )}
+        </For>
+      </div>
+
       {/* Practice intel: suggestions (or a getting-started nudge), then recent
           sessions — always shows something so the area is never empty. */}
       <Show when={exerciseHistory().length > 0} fallback={gettingStarted()}>
@@ -310,7 +374,7 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
       </Show>
 
       <div class="exercises-grid">
-        <For each={CARDS}>
+        <For each={visibleCards()}>
           {(card) => {
             const stats = createMemo(() => getExerciseStats(card.type))
             return (
@@ -326,7 +390,11 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                   <span class="exercise-card-icon">{card.icon()}</span>
                   <h3>
                     {card.title}
-                    <DifficultyIndicator exerciseType={card.type} />
+                    <span
+                      class={`exercise-card-difficulty diff-${EXERCISE_DIFFICULTY[card.type]}`}
+                    >
+                      {DIFFICULTY_LABEL[EXERCISE_DIFFICULTY[card.type]]}
+                    </span>
                   </h3>
                 </div>
                 <p>{card.description}</p>
