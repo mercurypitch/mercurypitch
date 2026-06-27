@@ -1,5 +1,6 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, For, Show } from 'solid-js'
+import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
@@ -41,6 +42,8 @@ export function GuitarPage(props: GuitarPageProps) {
   const [show3dFretboard, setShow3dFretboard] = createSignal(true)
   // Collapse the shared transport toolbar to reclaim vertical space.
   const [toolbarHidden, setToolbarHidden] = createSignal(false)
+  // Audio input/output device picker panel.
+  const [devicesOpen, setDevicesOpen] = createSignal(false)
   // Recent run scores (%), most-recent-first, for the 3D corner score card.
   const [recentScores, setRecentScores] = createSignal<number[]>([])
   let prevGameState = guitar.gameState()
@@ -243,8 +246,43 @@ export function GuitarPage(props: GuitarPageProps) {
             </svg>
             {toolbarHidden() ? 'Show bar' : 'Hide bar'}
           </button>
+          <button
+            class="gp-btn gp-toolbar-toggle"
+            title="Audio input/output devices"
+            aria-label="Audio input/output devices"
+            aria-pressed={devicesOpen()}
+            onClick={() => setDevicesOpen((v) => !v)}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 10v4h4l5 4V6l-5 4z" />
+              <path d="M16 8a5 5 0 0 1 0 8" />
+            </svg>
+            Devices
+          </button>
         </div>
       </div>
+      <Show when={devicesOpen()}>
+        <AudioDeviceSettings
+          inputDeviceId={guitar.inputDeviceId}
+          setInputDevice={(id) => void guitar.setInputDevice(id)}
+          outputDeviceId={guitar.outputDeviceId}
+          setOutputDevice={(id) => void guitar.setOutputDevice(id)}
+          outputSupported={guitar.outputDeviceSupported()}
+          getInputLevel={guitar.getInputLevel}
+          isMicActive={guitar.isMicActive}
+          startMic={() => void guitar.startMic()}
+        />
+      </Show>
       <Show when={guitarView() === 'interactive'}>
         <KeyScaleSelector
           selectedKey={fretboardKey}

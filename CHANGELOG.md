@@ -11,6 +11,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Hit feedback on the neck**: each note you nail flashes on its cell, colour-coded by accuracy (perfect / great / good).
 - **Your note, live on the neck**: the pitch you're playing is marked on the fretboard in real time, turning green when it matches the note you're meant to hit.
 - **Mic and MIDI toggles in the 3D controls**: turn your input on or off right from the 3D control bar, so you don't need the main transport bar open.
+- **Choose your audio input/output**: a Devices panel on the Guitar page lets you pick which input to listen to — for example your audio interface's instrument input with a guitar plugged in — plus an output device (where the browser supports it), with a live signal meter so you can confirm your guitar is coming through.
 
 ## [0.4.7] - 2026-06-27
 
