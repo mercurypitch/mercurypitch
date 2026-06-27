@@ -6,6 +6,15 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2026-06-27
+
+### Added
+
+- Live input scoring surfaced in the 3D guitar view. The scoring engine already ran in any view (it scores mic/MIDI input against the falling notes while playing); this wires it into the 3D HUD: a Score/Combo readout + detected-note name while a run is playing, alongside the existing end-of-run corner card. (`Tab3DHud`, `GuitarPage`)
+- In-scene scored-hit feedback: each successful hit flashes an additive ring on its cell coloured by accuracy (perfect/great/good), fading over `HIT_FLASH_MS`. Recent non-miss `hitResults` (Date.now timestamps) are mapped to cells in `buildScene` (`fret = midiNote - openMidi[string]`) and drawn in `Canvas2dTabRenderer.drawHits`. (`TabScene.hits`)
+- Detected-note marker on the neck: the player's current input pitch is placed on its cell — snapped to a hittable target of the same pitch-class near the hit line (green), else approximated to the lowest playable string (neutral) — pulsing, alpha by detection clarity. Computed in `buildScene`, drawn in `Canvas2dTabRenderer.drawDetected`. (`TabScene.detected`)
+- Mic + MIDI input toggles in the 3D control rail, so scoring is reachable with the shared transport bar hidden. (`Tab3DHud`, wired to `isMicActive`/`startMic`/`stopMic` and `midiConnected`/`midiConnect`/`midiDisconnect`)
+
 ## [0.4.7] - 2026-06-27
 
 ### Fixed

@@ -717,6 +717,14 @@ export function GuitarPage(props: GuitarPageProps) {
                   combo: guitar.combo,
                   detectedMidi: guitar.detectedMidi,
                   detectedClarity: guitar.detectedClarity,
+                  hitResults: guitar.hitResults,
+                  showUserNotes: guitar.showUserNotes,
+                  isMicActive: guitar.isMicActive,
+                  startMic: () => void guitar.startMic(),
+                  stopMic: guitar.stopMic,
+                  midiConnected: guitar.midiConnected,
+                  midiConnect: () => void guitar.midiConnect(),
+                  midiDisconnect: guitar.midiDisconnect,
                 }}
               />
             </Show>

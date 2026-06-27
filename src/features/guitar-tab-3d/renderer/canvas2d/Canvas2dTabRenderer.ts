@@ -42,6 +42,7 @@ const FLASH_IN = 0.05 // strike flash starts just before the hit
 const FLASH_OUT = 0.3 // and fades out this many beats after
 const CHORD_TOL = 0.0625 // notes within 1/16 beat = a chord
 const BEATS_PER_BAR = 4 // for downbeat emphasis (assume 4/4)
+const HIT_FLASH_MS = 500 // scored-hit ring fade duration
 
 interface Projected {
   x: number
@@ -208,6 +209,8 @@ export class Canvas2dTabRenderer implements TabRenderer {
         bucketKey,
         upcomingCells,
       )
+      this.drawHits(ctx, scene, N, maxFret)
+      this.drawDetected(ctx, scene, N, maxFret)
     }
 
     const visible = scene.notes
@@ -573,6 +576,75 @@ export class Canvas2dTabRenderer implements TabRenderer {
       ctx.fillStyle = labelInk(color)
       ctx.fillText(label, head.x, head.y)
     }
+  }
+
+  // Scored-hit feedback: an expanding ring + core on the cell, coloured by
+  // accuracy, fading over HIT_FLASH_MS. Input scoring (mic/MIDI).
+  private drawHits(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    n: number,
+    maxFret: number,
+  ): void {
+    if (scene.hits.length === 0) return
+    const now = Date.now()
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    for (const h of scene.hits) {
+      const age = now - h.at
+      if (age < 0 || age > HIT_FLASH_MS) continue
+      const k = 1 - age / HIT_FLASH_MS
+      const x = this.fretX(h.fret, maxFret)
+      const y = this.stringY(h.stringIndex, n)
+      const p = this.project(x, y, 0)
+      if (p.w <= NEAR) continue
+      const color =
+        h.timing === 'perfect'
+          ? '#22c55e'
+          : h.timing === 'great'
+            ? '#4ade80'
+            : '#eab308'
+      const baseR = Math.max(7, this.cellPx(x, y, 0, maxFret) * 0.5)
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, baseR * (1 + (1 - k) * 1.6), 0, Math.PI * 2)
+      ctx.strokeStyle = withAlpha(color, 0.85 * k)
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, baseR * 0.55, 0, Math.PI * 2)
+      ctx.fillStyle = withAlpha(color, 0.5 * k)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+
+  // The player's detected input note, marked on its neck cell (green when it
+  // matches the current target, else neutral); pulses, alpha by confidence.
+  private drawDetected(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    n: number,
+    maxFret: number,
+  ): void {
+    const d = scene.detected
+    if (d === null) return
+    const x = this.fretX(d.fret, maxFret)
+    const y = this.stringY(d.stringIndex, n)
+    const p = this.project(x, y, 0)
+    if (p.w <= NEAR) return
+    const r = Math.max(8, this.cellPx(x, y, 0, maxFret) * 0.55)
+    const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 180)
+    const color = d.matchesTarget ? '#22c55e' : '#e8ecf5'
+    const alpha = Math.min(1, 0.4 + d.clarity * 0.6) * pulse
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
+    ctx.strokeStyle = withAlpha(color, alpha)
+    ctx.lineWidth = 2.5
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2)
+    ctx.fillStyle = withAlpha(color, Math.min(1, 0.6 + d.clarity * 0.4))
+    ctx.fill()
   }
 
   dispose(): void {

@@ -14,7 +14,7 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA } from './renderer/camera'
-import type { TabRenderer, TabScene } from './renderer/TabRenderer'
+import type { TabDetected, TabRenderer, TabScene } from './renderer/TabRenderer'
 import { DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
@@ -89,6 +89,60 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     for (let i = 0; i < stringCount; i++) {
       openMidi[i] = observedOpen[i] ?? DEFAULT_OPEN[i] ?? 40
     }
+    const laidMaxFret = Math.min(24, Math.max(12, maxFret))
+    const clampFret = (f: number) => Math.max(0, Math.min(laidMaxFret, f))
+    const ph = props.playheadBeat()
+    const ctrls = props.controls
+
+    // Input scoring feedback (mic/MIDI): recent successful-hit flashes + the
+    // player's detected note placed on the neck.
+    const now = Date.now()
+    const hits = (ctrls?.hitResults() ?? [])
+      .filter((h) => h.timing !== 'miss' && now - h.timestamp < 600)
+      .map((h) => ({
+        stringIndex: h.stringIndex,
+        fret: clampFret(h.midiNote - (openMidi[h.stringIndex] ?? 40)),
+        timing: h.timing as 'perfect' | 'great' | 'good',
+        at: h.timestamp,
+      }))
+
+    let detected: TabDetected | null = null
+    const dMidi = ctrls?.detectedMidi() ?? null
+    if (dMidi !== null && (ctrls?.showUserNotes() ?? true)) {
+      // Snap to a hittable target of the same pitch-class near the hit line.
+      const matched = source.find(
+        (n) =>
+          (n.isBacking ?? false) === false &&
+          n.startBeat - ph <= 0.35 &&
+          n.startBeat + n.duration - ph >= -0.35 &&
+          dMidi % 12 === n.midi % 12,
+      )
+      const clarity = ctrls?.detectedClarity() ?? 1
+      if (matched) {
+        detected = {
+          stringIndex: matched.stringIndex,
+          fret: clampFret(matched.fret),
+          matchesTarget: true,
+          clarity,
+        }
+      } else {
+        // Approximate a lane: first string that can play the pitch (low fret).
+        let lane = stringCount - 1
+        for (let s = 0; s < stringCount; s++) {
+          if (dMidi >= openMidi[s] && dMidi - openMidi[s] <= laidMaxFret) {
+            lane = s
+            break
+          }
+        }
+        detected = {
+          stringIndex: lane,
+          fret: clampFret(dMidi - openMidi[lane]),
+          matchesTarget: false,
+          clarity,
+        }
+      }
+    }
+
     return {
       notes: source.map((n) => ({
         stringIndex: n.stringIndex,
@@ -99,13 +153,15 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         noteName: midiToNoteNameOctave(n.midi),
         isBacking: n.isBacking ?? false,
       })),
-      playheadBeat: props.playheadBeat(),
+      playheadBeat: ph,
       visibleBeatWindow: Math.max(1, props.visibleBeatWindow()),
       stringCount,
       openMidi,
-      maxFret: Math.min(24, Math.max(12, maxFret)),
+      maxFret: laidMaxFret,
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
+      hits,
+      detected,
       display: DEFAULT_DISPLAY,
     }
   }
