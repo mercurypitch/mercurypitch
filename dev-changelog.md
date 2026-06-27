@@ -6,6 +6,13 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2026-06-27
+
+### Fixed
+
+- 3D view default framing: `DEFAULT_CAMERA` reframed (radius 18→19, target y 1→-0.4) so the fixed-width neck plus the fret numbers sit above the bottom HUD with margin. The reset button uses the same constant, so it restores this framing. (`renderer/camera.ts`)
+- Transpose now applies to ALL guitar sources, not just imported (`currentSong`-backed) songs. The re-voicing previously lived inside the combine `createEffect` gated on `currentSong()`, so app melodies loaded via `loadSong` with `songObj = null` (which set `fallingNotes` directly) were never transposed. Refactor: a new `baseNotes` signal holds the untransposed notes (set by both `loadSong` and the combine effect), and a dedicated effect derives `fallingNotes = revoiceNotes(baseNotes(), transpose())` and recomputes `transposeBounds`. The transpose helpers (`deriveOpenTuning`, `computeTransposeBounds`, `revoiceNotes`) were extracted to pure, non-mutating module functions (clone-on-shift), so the source melody/import is never altered and resetting transpose to 0 returns the exact original notes. (`useGuitarPracticeController.ts`)
+
 ## [0.4.6] - 2026-06-27
 
 ### Added

@@ -28,6 +28,92 @@ const PERFECT_MS = 30
 const GREAT_MS = 75
 const GOOD_MS = 150
 
+// ── Transpose helpers (shared by app melodies + imported songs) ──
+// Pure, non-mutating: re-voice a note's pitch onto the neck without changing
+// the source notes (so the original melody/import is never altered).
+const TRANSPOSE_MAX_FRET = 24
+const TRANSPOSE_DEFAULT_OPEN = [64, 59, 55, 50, 45, 40, 35, 30]
+
+/** Open-string MIDI per string index, derived from the notes (std fallback). */
+function deriveOpenTuning(notes: readonly GuitarNote[]): number[] {
+  const byString = new Map<number, number>()
+  let stringCount = 6
+  for (const note of notes) {
+    if (!byString.has(note.stringIndex)) {
+      byString.set(note.stringIndex, note.midi - note.fret)
+    }
+    stringCount = Math.max(stringCount, note.stringIndex + 1)
+  }
+  const open: number[] = []
+  for (let s = 0; s < stringCount; s++) {
+    open[s] = byString.get(s) ?? TRANSPOSE_DEFAULT_OPEN[s] ?? 40
+  }
+  return open
+}
+
+/** Semitone range that keeps every note on the playable neck [0, MAX_FRET]. */
+function computeTransposeBounds(
+  notes: readonly GuitarNote[],
+  open: number[],
+): [number, number] {
+  if (notes.length === 0) return [-12, 12]
+  let instLow = Infinity
+  let instHigh = -Infinity
+  for (const o of open) {
+    instLow = Math.min(instLow, o)
+    instHigh = Math.max(instHigh, o + TRANSPOSE_MAX_FRET)
+  }
+  let songLow = Infinity
+  let songHigh = -Infinity
+  for (const note of notes) {
+    songLow = Math.min(songLow, note.midi)
+    songHigh = Math.max(songHigh, note.midi)
+  }
+  return [
+    Math.max(-24, Math.min(0, instLow - songLow)),
+    Math.min(24, Math.max(0, instHigh - songHigh)),
+  ]
+}
+
+/** Shift pitch by N semitones, re-voicing onto the neck. Returns a new array
+ * (the input is never mutated); returns the input as-is when N is 0. */
+function revoiceNotes(
+  notes: readonly GuitarNote[],
+  n: number,
+  open: number[],
+): GuitarNote[] {
+  if (n === 0) return notes as GuitarNote[]
+  const ratio = Math.pow(2, n / 12)
+  return notes.map((note) => {
+    const target = note.midi + n
+    let s = note.stringIndex
+    let fret = target - open[s]
+    if (fret < 0 || fret > TRANSPOSE_MAX_FRET) {
+      let bestCost = Infinity
+      for (let cand = 0; cand < open.length; cand++) {
+        const f = target - open[cand]
+        if (f < 0 || f > TRANSPOSE_MAX_FRET) continue
+        const cost = Math.abs(cand - note.stringIndex) * 100 + f
+        if (cost < bestCost) {
+          bestCost = cost
+          s = cand
+          fret = f
+        }
+      }
+      if (bestCost === Infinity) {
+        fret = Math.max(0, Math.min(TRANSPOSE_MAX_FRET, target - open[s]))
+      }
+    }
+    return {
+      ...note,
+      stringIndex: s,
+      fret,
+      midi: target,
+      targetFreq: note.targetFreq * ratio,
+    }
+  })
+}
+
 export interface GuitarHitResult {
   itemIndex: string
   midiNote: number
@@ -40,6 +126,8 @@ export interface GuitarHitResult {
 
 export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const [fallingNotes, setFallingNotes] = createSignal<GuitarNote[]>([])
+  // Untransposed source notes; `fallingNotes` is derived from these + transpose.
+  const [baseNotes, setBaseNotes] = createSignal<GuitarNote[]>([])
   const [gameState, setGameState] = createSignal<keyof GuitarGameState>('idle')
   const [playheadBeat, setPlayheadBeat] = createSignal(0)
   const [hitResults, setHitResults] = createSignal<GuitarHitResult[]>([])
@@ -241,81 +329,19 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     const combined = [...activeScoreNotes, ...otherVisibleNotes]
     combined.sort((a, b) => a.startBeat - b.startBeat)
 
-    // Transpose: shift every note's pitch by N semitones and re-voice it onto
-    // the neck (slide along the same string when it fits, else move to the
-    // nearest string that can host the pitch in [0, MAX_FRET]).
-    const MAX_FRET = 24
-    const DEFAULT_OPEN = [64, 59, 55, 50, 45, 40, 35, 30]
-    const openByString = new Map<number, number>()
-    for (const note of combined) {
-      if (!openByString.has(note.stringIndex)) {
-        openByString.set(note.stringIndex, note.midi - note.fret)
-      }
-    }
-    let stringCount = 6
-    for (const s of openByString.keys())
-      stringCount = Math.max(stringCount, s + 1)
-    const open: number[] = []
-    for (let s = 0; s < stringCount; s++) {
-      open[s] = openByString.get(s) ?? DEFAULT_OPEN[s] ?? 40
-    }
-
-    // Playable shift range: keep every note within the instrument's reach.
-    if (combined.length > 0) {
-      let instLow = Infinity
-      let instHigh = -Infinity
-      for (let s = 0; s < stringCount; s++) {
-        instLow = Math.min(instLow, open[s])
-        instHigh = Math.max(instHigh, open[s] + MAX_FRET)
-      }
-      let songLow = Infinity
-      let songHigh = -Infinity
-      for (const note of combined) {
-        songLow = Math.min(songLow, note.midi)
-        songHigh = Math.max(songHigh, note.midi)
-      }
-      setTransposeBounds([
-        Math.max(-24, Math.min(0, instLow - songLow)),
-        Math.min(24, Math.max(0, instHigh - songHigh)),
-      ])
-    }
-
-    const n = transpose()
-    if (n !== 0) {
-      const ratio = Math.pow(2, n / 12)
-      for (const note of combined) {
-        const target = note.midi + n
-        let s = note.stringIndex
-        let fret = target - open[s]
-        if (fret < 0 || fret > MAX_FRET) {
-          // Re-voice onto the nearest string that can host the pitch.
-          let bestCost = Infinity
-          for (let cand = 0; cand < stringCount; cand++) {
-            const f = target - open[cand]
-            if (f < 0 || f > MAX_FRET) continue
-            const cost = Math.abs(cand - note.stringIndex) * 100 + f
-            if (cost < bestCost) {
-              bestCost = cost
-              s = cand
-              fret = f
-            }
-          }
-          if (bestCost === Infinity) {
-            fret = Math.max(
-              0,
-              Math.min(MAX_FRET, target - open[note.stringIndex]),
-            )
-          }
-        }
-        note.stringIndex = s
-        note.fret = fret
-        note.midi = target
-        note.targetFreq *= ratio
-      }
-    }
-
-    setFallingNotes(combined)
+    setBaseNotes(combined)
     setTotalNotes(activeScoreNotes.length)
+  })
+
+  // Derive the displayed/played notes from the base notes + transpose. Runs for
+  // BOTH app melodies (base set directly in loadSong) and imported songs (base
+  // set by the combine effect above), so transpose works everywhere.
+  createEffect(() => {
+    const base = baseNotes()
+    const n = transpose()
+    const open = deriveOpenTuning(base)
+    setTransposeBounds(computeTransposeBounds(base, open))
+    setFallingNotes(revoiceNotes(base, n, open))
   })
 
   // Backing tracks (from multi-track MIDI imports): played as audio when
@@ -755,7 +781,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     stopGame()
     setTransposeSignal(0) // a fresh song starts untransposed
     const notes = melodyToGuitarNotes(items)
-    setFallingNotes(notes)
+    setBaseNotes(notes) // fallingNotes is derived from base + transpose
     setTotalNotes(notes.length)
     setSelectedSongName(name)
     setSongBpm(bpm)

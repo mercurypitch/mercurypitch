@@ -3,6 +3,13 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.7] - 2026-06-27
+
+### Fixed
+
+- **3D guitar view starts framed right**: the default (and "reset") camera now shows the whole neck — every fret plus the fret numbers — above the control bar, instead of cutting off the bottom of the fretboard.
+- **Transpose works for the built-in songs too**: shifting a piece up or down by semitones or octaves previously only affected imported Guitar Pro / MIDI files. It now transposes the app's own scales and melodies as well — and it's non-destructive, so setting transpose back to 0 restores the song exactly.
+
 ## [0.4.6] - 2026-06-27
 
 ### Added
