@@ -207,7 +207,7 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
       }
       resultSummary={
         <>
-          Avg Accuracy: {base.result()?.metrics.avgAccuracy}% · Best Note:{' '}
+          Avg Accuracy: {base.result()?.metrics.avgAccuracy}% · Best Round:{' '}
           {base.result()?.metrics.bestRound}% · Rounds:{' '}
           {base.result()?.metrics.roundsCompleted}
         </>

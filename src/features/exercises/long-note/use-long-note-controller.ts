@@ -94,7 +94,7 @@ export function useLongNoteController(base: BaseExerciseController) {
           pitchStabilityCents: 0,
           maxDriftCents: 0,
           steadyZonePct: 0,
-          volumeConsistency: 100,
+          volumeConsistency: 0,
         },
         completedAt: Date.now(),
       }
@@ -118,7 +118,7 @@ export function useLongNoteController(base: BaseExerciseController) {
           pitchStabilityCents: 0,
           maxDriftCents: 0,
           steadyZonePct: 0,
-          volumeConsistency: 100,
+          volumeConsistency: 0,
         },
         completedAt: Date.now(),
       }

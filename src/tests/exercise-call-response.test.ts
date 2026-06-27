@@ -80,26 +80,32 @@ describe('useCallResponseController', () => {
     }
   })
 
-  it('scores high when the singer reproduces every phrase note', async () => {
+  it('scores high when the singer reproduces every phrase note (relative-clock window)', async () => {
     vi.useFakeTimers()
     try {
-      // Capture every note the call phrase announces via currentMidi, then
-      // feed back a pitch history covering all of them in the response window.
+      // Make the absolute clock (performance.now) large and DISTINCT from the
+      // exercise-relative clock. This is the regression lock for the epoch bug:
+      // a controller filtering samples by performance.now() instead of
+      // base._getElapsed() would select zero samples here and score 0.
+      vi.advanceTimersByTime(500_000)
+      const startPerf = performance.now()
+
+      // Capture every note the call phrase announces via currentMidi, then feed
+      // back a pitch history (on the relative clock) covering all of them.
       const announced: number[] = []
       const base = createMockBase({
+        _getElapsed: () => performance.now() - startPerf,
         _updateMetrics: (m) => {
           if (typeof m.currentMidi === 'number') announced.push(m.currentMidi)
         },
         pitchHistory: () => {
-          const nowSec = performance.now() / 1000
+          const nowMs = performance.now() - startPerf
           const samples: Array<{ freq: number; time: number; cents: number }> =
             []
-          let t = nowSec - 2
           for (const midi of new Set(announced)) {
             const freq = midiToFrequency(midi)
             for (let i = 0; i < 10; i++) {
-              samples.push({ freq, time: t, cents: 0 })
-              t += 0.02
+              samples.push({ freq, time: (nowMs - i * 20) / 1000, cents: 0 })
             }
           }
           return samples
@@ -115,9 +121,9 @@ describe('useCallResponseController', () => {
       expect(result.metrics.roundsCompleted).toBe(5)
       expect(result.metrics.avgAccuracy).toBe(100)
       expect(result.metrics.bestRound).toBe(100)
-      // avgAccuracy*0.5 + bestRound*0.25 + richness*0.25; richness is 0 with no
-      // clarity samples, so score caps at 75 here. Well above the threshold.
-      expect(result.score).toBeGreaterThan(40)
+      // avgAccuracy*0.5 + bestRound*0.25 + richness*0.25; richness is 0 without
+      // clarity samples, so a perfect run caps at 75 here.
+      expect(result.score).toBeGreaterThan(70)
     } finally {
       vi.useRealTimers()
     }

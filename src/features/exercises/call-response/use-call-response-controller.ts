@@ -112,7 +112,10 @@ export function useCallResponseController(
 
   function startMatching(): void {
     if (_cancelled) return
-    matchStartTime = performance.now()
+    // Exercise-relative clock (same epoch as pitch sample `.time` = elapsed/1000).
+    // Absolute performance.now() here would make evaluateRound()'s window select
+    // zero samples -> every round scores 0.
+    matchStartTime = base._getElapsed()
     batch(() => {
       base._updateMetrics({ phase: 2 }) // response phase
     })
@@ -126,7 +129,7 @@ export function useCallResponseController(
   function evaluateRound(): void {
     const phrase = phrases[roundIndex]
     const history = base.pitchHistory()
-    const now = performance.now()
+    const now = base._getElapsed()
     const recentSamples = history.filter((p) => {
       const t = p.time * 1000
       return t >= matchStartTime - 100 && t <= now
