@@ -1604,6 +1604,12 @@
   gap: 12px;
 }
 
+.gp-hud-live {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .gp-hud-stat {
   display: flex;
   align-items: baseline;
