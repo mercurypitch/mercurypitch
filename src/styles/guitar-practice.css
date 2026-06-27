@@ -1912,6 +1912,131 @@
   gap: 5px;
 }
 
+/* ── Guitar signal-flow map (glass + accent glow) ────────── */
+
+.gp-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(12, 14, 22, 0.55);
+  backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.gp-flow-node {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(233, 237, 245, 0.9);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    background 200ms ease;
+}
+
+.gp-flow-node.is-active {
+  border-color: var(--accent, #58a6ff);
+  box-shadow: 0 0 14px var(--accent-glow, rgba(88, 166, 255, 0.3));
+  background: var(--accent-dim, rgba(88, 166, 255, 0.12));
+}
+
+.gp-flow-node.is-accent {
+  border-color: #22c55e;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.gp-flow-ico {
+  display: inline-flex;
+  color: rgba(154, 163, 184, 0.85);
+}
+
+.gp-flow-node.is-active .gp-flow-ico {
+  color: var(--accent, #58a6ff);
+}
+
+.gp-flow-node.is-accent .gp-flow-ico {
+  color: #22c55e;
+}
+
+.gp-flow-eyebrow {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 184, 0.8);
+}
+
+.gp-flow-val {
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.gp-flow-link {
+  display: flex;
+  align-items: center;
+  width: 34px;
+  flex: 0 0 auto;
+  color: rgba(154, 163, 184, 0.4);
+  transition: color 200ms ease;
+}
+
+.gp-flow-link.is-active {
+  color: var(--accent, #58a6ff);
+}
+
+.gp-flow-link svg {
+  width: 100%;
+  height: 12px;
+  overflow: visible;
+}
+
+.gp-flow-link-line {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.gp-flow-link.is-active .gp-flow-link-line {
+  animation: gp-flow-dash 0.7s linear infinite;
+}
+
+.gp-flow-link-head {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes gp-flow-dash {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-flow-link.is-active .gp-flow-link-line {
+    animation: none;
+  }
+}
+
 /* ── Audio device picker (guitar page) ───────────────────── */
 
 .gp-devices {

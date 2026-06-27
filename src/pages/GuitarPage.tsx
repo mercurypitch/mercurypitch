@@ -6,6 +6,7 @@ import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
 import { GuitarFretboardModeTabs } from '@/components/guitar/GuitarFretboardModeTabs'
 import { GuitarPracticeSongPicker } from '@/components/guitar/GuitarPracticeSongPicker'
+import { GuitarSignalFlow } from '@/components/guitar/GuitarSignalFlow'
 import { GuitarViewToggle } from '@/components/guitar/GuitarViewToggle'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
@@ -279,6 +280,15 @@ export function GuitarPage(props: GuitarPageProps) {
         </div>
       </div>
       <Show when={devicesOpen()}>
+        <GuitarSignalFlow
+          inputMode={guitar.inputMode}
+          detectedMidi={guitar.detectedMidi}
+          isPlaying={() =>
+            guitar.gameState() === 'playing' ||
+            guitar.gameState() === 'countdown'
+          }
+          combo={guitar.combo}
+        />
         <AudioDeviceSettings
           inputDeviceId={guitar.inputDeviceId}
           setInputDevice={(id) => void guitar.setInputDevice(id)}
