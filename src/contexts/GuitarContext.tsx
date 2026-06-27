@@ -229,23 +229,13 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       transcriptionTrainer.stop()
     }
 
-    // Hero / 3D playback: mic only during active gameplay with input enabled.
-    // Both are scoring views that run the mic, so the 3D view must be included
-    // here — otherwise its "not a hero view" branch tears down the shared mic
-    // on every gameState change (i.e. when Play is pressed).
-    const view = guitarView()
-    const heroActive =
-      activeTab() === TAB_GUITAR && (view === 'hero' || view === '3d')
-    const heroState = guitar.gameState()
-    if (
-      heroActive &&
-      guitar.isMicActive() &&
-      (heroState === 'playing' || heroState === 'countdown')
-    ) {
-      void practiceEngine.startMic()
-    } else if (!guitar.isMicActive() || !heroActive) {
-      practiceEngine.stopMic()
-    }
+    // Hero / 3D playback views manage the mic directly through the guitar
+    // controller (guitar.startMic/stopMic, backed by the shared MicManager) —
+    // driven by the toolbar / 3D-overlay toggle. We deliberately do NOT drive
+    // practiceEngine's mic here: it wraps the same AudioEngine, and toggling it
+    // on gameState changes tore the shared mic down when Play was pressed. One
+    // owner for the guitar mic avoids that fight. (singToFretboard above is the
+    // only mode that legitimately needs practiceEngine's own mic.)
   })
 
   onCleanup(() => drumMachine.dispose())

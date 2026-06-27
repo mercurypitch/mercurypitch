@@ -863,8 +863,11 @@ const AppShell: Component<AppProps> = (props) => {
           guitarCtx.guitar.stopGame()
         }
 
-        // 4. Stop guitar mic if active
+        // 4. Stop guitar mic if active. The guitar controller owns its mic
+        // (shared MicManager), so stop it directly; practiceEngine.stopMic()
+        // covers the singToFretboard mode's own mic.
         if (prevTab === TAB_GUITAR) {
+          guitarCtx.guitar.stopMic()
           practiceEngine.stopMic()
         }
 
