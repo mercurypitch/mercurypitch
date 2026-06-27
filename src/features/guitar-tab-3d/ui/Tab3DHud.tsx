@@ -39,7 +39,28 @@ export interface Tab3DControls {
   setStepRate: (rate: number) => void
   startPracticeLoop: () => void
   stopPracticeLoop: () => void
+  // End-of-run score (shown as a corner card instead of a modal)
+  score: Accessor<number>
+  totalNotes: Accessor<number>
+  maxCombo: Accessor<number>
+  recentScores: Accessor<number[]>
+  startGame: () => void
+  stopGame: () => void
 }
+
+const scoreTier = (s: number): string =>
+  s >= 80 ? 'good' : s >= 50 ? 'ok' : 'poor'
+
+const gradeLabel = (pct: number): string =>
+  pct >= 90
+    ? 'Pitch perfect!'
+    : pct >= 80
+      ? 'Excellent!'
+      : pct >= 65
+        ? 'Good!'
+        : pct >= 50
+          ? 'Okay!'
+          : 'Keep practicing!'
 
 type Dock = 'top' | 'bottom'
 
@@ -292,6 +313,58 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
             {c.loopEnabled() ? 'Exit loop' : 'Start loop'}
           </button>
         </div>
+      </Show>
+
+      <Show when={c.gameState() === 'finished'}>
+        {(() => {
+          const pct = () => {
+            const t = c.totalNotes()
+            return t > 0 ? Math.round((c.score() / (t * 100)) * 100) : 0
+          }
+          return (
+            <div class="gp-tab3d-score" aria-label="Session score">
+              <span class="gp-tab3d-score-title">Complete</span>
+              <span class={`gp-tab3d-score-pct is-${scoreTier(pct())}`}>
+                {pct()}%
+              </span>
+              <span class="gp-tab3d-score-grade">{gradeLabel(pct())}</span>
+              <span class="gp-tab3d-score-detail">
+                {c.totalNotes()} notes · {c.maxCombo()}× combo
+              </span>
+              <Show when={c.recentScores().length > 1}>
+                <div class="gp-tab3d-score-history">
+                  <For each={c.recentScores().slice(1)}>
+                    {(s) => (
+                      <span class={`gp-tab3d-score-chip is-${scoreTier(s)}`}>
+                        {s}%
+                      </span>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <div class="gp-tab3d-score-actions">
+                <button
+                  class="gp-chip"
+                  onClick={(e) => {
+                    c.startGame()
+                    e.currentTarget.blur()
+                  }}
+                >
+                  Play again
+                </button>
+                <button
+                  class="gp-chip"
+                  onClick={(e) => {
+                    c.stopGame()
+                    e.currentTarget.blur()
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )
+        })()}
       </Show>
     </>
   )

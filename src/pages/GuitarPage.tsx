@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
@@ -41,6 +41,19 @@ export function GuitarPage(props: GuitarPageProps) {
   const [show3dFretboard, setShow3dFretboard] = createSignal(true)
   // Collapse the shared transport toolbar to reclaim vertical space.
   const [toolbarHidden, setToolbarHidden] = createSignal(false)
+  // Recent run scores (%), most-recent-first, for the 3D corner score card.
+  const [recentScores, setRecentScores] = createSignal<number[]>([])
+  let prevGameState = guitar.gameState()
+  createEffect(() => {
+    const state = guitar.gameState()
+    if (state === 'finished' && prevGameState !== 'finished') {
+      const total = guitar.totalNotes()
+      const pct =
+        total > 0 ? Math.round((guitar.score() / (total * 100)) * 100) : 0
+      setRecentScores((prev) => [pct, ...prev].slice(0, 4))
+    }
+    prevGameState = state
+  })
 
   // Mic feedback: "can't hear you" / "too quiet" while playing along. Gate on
   // 'playing' only — during the count-in the user is waiting, not playing, so a
@@ -695,6 +708,12 @@ export function GuitarPage(props: GuitarPageProps) {
                   setStepRate: guitar.setStepRate,
                   startPracticeLoop: guitar.startPracticeLoop,
                   stopPracticeLoop: guitar.stopPracticeLoop,
+                  score: guitar.score,
+                  totalNotes: guitar.totalNotes,
+                  maxCombo: guitar.maxCombo,
+                  recentScores,
+                  startGame: () => void guitar.startGame(),
+                  stopGame: guitar.stopGame,
                 }}
               />
             </Show>
@@ -745,7 +764,7 @@ export function GuitarPage(props: GuitarPageProps) {
       >
         <DrumMachinePanel drumMachine={drumMachine} />
       </Show>
-      <Show when={guitar.gameState() === 'finished'}>
+      <Show when={guitar.gameState() === 'finished' && guitarView() !== '3d'}>
         <div class="gp-score-overlay">
           <div class="gp-score-card">
             <h2>Complete!</h2>

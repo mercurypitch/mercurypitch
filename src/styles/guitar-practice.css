@@ -1906,6 +1906,88 @@
   gap: 5px;
 }
 
+/* ── 3D tab end-of-run score (corner card, not a modal) ───── */
+
+.gp-tab3d-score {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 132px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(12, 14, 22, 0.72);
+  backdrop-filter: blur(10px) saturate(125%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+
+.gp-tab3d-score-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 184, 0.85);
+}
+
+.gp-tab3d-score-pct {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-tab3d-score-grade {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(233, 237, 245, 0.92);
+}
+
+.gp-tab3d-score-detail {
+  font-size: 10.5px;
+  color: rgba(154, 163, 184, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-tab3d-score-history {
+  display: flex;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.gp-tab3d-score-chip {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 0.85;
+}
+
+.gp-tab3d-score .is-good {
+  color: #22c55e;
+}
+
+.gp-tab3d-score .is-ok {
+  color: #eab308;
+}
+
+.gp-tab3d-score .is-poor {
+  color: #ef4444;
+}
+
+.gp-tab3d-score-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gp-hud-rail,
   .gp-hud-bar--top,
