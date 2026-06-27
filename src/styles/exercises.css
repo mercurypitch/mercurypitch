@@ -478,6 +478,42 @@
   min-width: 200px;
 }
 
+/* Vibrato style picker + guide toggle (idle settings). */
+.vibrato-style-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vibrato-style-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vibrato-style-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 320px;
+}
+
+.exercise-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.exercise-toggle-row input {
+  cursor: pointer;
+}
+
 /* ── ExerciseShell: recent-scores chip (canvas corner) ─────── */
 
 .exercise-score-history {

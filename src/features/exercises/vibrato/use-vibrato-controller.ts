@@ -6,11 +6,9 @@ import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_VIBRATO } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { VibratoStyle, VibratoStyleId } from './vibrato-styles'
+import { DEFAULT_VIBRATO_STYLE, VIBRATO_STYLES } from './vibrato-styles'
 
-const IDEAL_RATE_MIN = 4
-const IDEAL_RATE_MAX = 7
-const IDEAL_DEPTH_MIN = 10
-const IDEAL_DEPTH_MAX = 50
 const SCORE_RATE_WEIGHT = 0.4
 const SCORE_DEPTH_WEIGHT = 0.3
 const SCORE_CONSISTENCY_WEIGHT = 0.3
@@ -57,6 +55,12 @@ function scaleWindow(
 
 export function useVibratoController(base: BaseExerciseController) {
   let metricTimer: ReturnType<typeof setInterval> | undefined
+  // The selected practice style sets the accepted rate/depth windows.
+  let style: VibratoStyle = VIBRATO_STYLES[DEFAULT_VIBRATO_STYLE]
+
+  function setStyle(id: VibratoStyleId): void {
+    style = VIBRATO_STYLES[id]
+  }
   base._registerDispose(() => {
     clearInterval(metricTimer)
     metricTimer = undefined
@@ -76,8 +80,8 @@ export function useVibratoController(base: BaseExerciseController) {
 
       // Tighten acceptance windows with adaptive difficulty (harder = narrower).
       const difficulty = launchDifficulty(EXERCISE_VIBRATO)
-      const rateWin = scaleWindow(IDEAL_RATE_MIN, IDEAL_RATE_MAX, difficulty)
-      const depthWin = scaleWindow(IDEAL_DEPTH_MIN, IDEAL_DEPTH_MAX, difficulty)
+      const rateWin = scaleWindow(style.rateMin, style.rateMax, difficulty)
+      const depthWin = scaleWindow(style.depthMin, style.depthMax, difficulty)
 
       // Rate score
       let rateScore: number
@@ -157,8 +161,8 @@ export function useVibratoController(base: BaseExerciseController) {
 
     // Tighten acceptance windows with adaptive difficulty (harder = narrower).
     const difficulty = launchDifficulty(EXERCISE_VIBRATO)
-    const rateWin = scaleWindow(IDEAL_RATE_MIN, IDEAL_RATE_MAX, difficulty)
-    const depthWin = scaleWindow(IDEAL_DEPTH_MIN, IDEAL_DEPTH_MAX, difficulty)
+    const rateWin = scaleWindow(style.rateMin, style.rateMax, difficulty)
+    const depthWin = scaleWindow(style.depthMin, style.depthMax, difficulty)
 
     // Rate score: best inside the (scaled) rate window, penalty outside
     let rateScore: number
@@ -225,5 +229,5 @@ export function useVibratoController(base: BaseExerciseController) {
     return result
   }
 
-  return { startLoop, computeResult, stopAndCompute }
+  return { startLoop, computeResult, stopAndCompute, setStyle }
 }

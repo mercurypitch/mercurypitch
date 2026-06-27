@@ -1,10 +1,11 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconWave } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NotePillSelector } from '@/components/NotePillSelector'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
@@ -13,6 +14,8 @@ import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_VIBRATO } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
+import type { VibratoStyleId } from './vibrato-styles'
+import { DEFAULT_VIBRATO_STYLE, VIBRATO_STYLE_ORDER, VIBRATO_STYLES, } from './vibrato-styles'
 
 interface VibratoExerciseProps {
   audioEngine: AudioEngine
@@ -33,6 +36,10 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal(
     getDefaultNote(vocalRangePreset()),
   )
+  const [styleId, setStyleId] = createSignal<VibratoStyleId>(
+    DEFAULT_VIBRATO_STYLE,
+  )
+  const [showGuide, setShowGuide] = createSignal(true)
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
@@ -43,6 +50,22 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   })
 
   const controller = useVibratoController(base)
+  // Keep the controller's scoring windows in sync with the chosen style.
+  createEffect(() => controller.setStyle(styleId()))
+
+  const targetMidi = () => noteToMidi(targetNote())
+  const currentStyle = () => VIBRATO_STYLES[styleId()]
+
+  // A sine the singer traces: oscillates around the target note at the style's
+  // rate/depth. Drawn by the pitch tracker as a moving guide + trail.
+  const movingTarget = (): number | null => {
+    if (!isActive() || !showGuide()) return null
+    const s = currentStyle()
+    const t = base.state().elapsedMs / 1000
+    const cents = s.guideDepthCents * Math.sin(2 * Math.PI * s.guideRateHz * t)
+    const midi = targetMidi() + cents / 100
+    return 440 * 2 ** ((midi - 69) / 12)
+  }
 
   const handleStart = async () => {
     await base.start()
@@ -96,18 +119,50 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
         <div class="exercise-idle-placeholder">
           <IconWave size={48} />
           <p>
-            Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents
-            depth.
+            Sustain <strong>{targetNote()}</strong> and let it gently pulse
+            above and below. Follow the wave to find the swing.
           </p>
         </div>
       }
       idleSettings={
-        <NotePillSelector
-          label="Target"
-          notes={getNoteOptions(vocalRangePreset())}
-          selected={targetNote()}
-          onChange={setTargetNote}
-        />
+        <>
+          <NotePillSelector
+            label="Target"
+            notes={getNoteOptions(vocalRangePreset())}
+            selected={targetNote()}
+            onChange={setTargetNote}
+          />
+          <div class="vibrato-style-row">
+            <span class="vibrato-style-label">Style</span>
+            <div
+              class="exercise-timer-toggle"
+              role="group"
+              aria-label="Vibrato style"
+            >
+              <For each={VIBRATO_STYLE_ORDER}>
+                {(id) => (
+                  <button
+                    type="button"
+                    class="exercise-timer-segment"
+                    classList={{ active: styleId() === id }}
+                    onClick={() => setStyleId(id)}
+                  >
+                    {VIBRATO_STYLES[id].label}
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
+          <p class="vibrato-style-hint">{currentStyle().hint}</p>
+          <label class="exercise-toggle-row">
+            <input
+              type="checkbox"
+              checked={showGuide()}
+              onChange={(e) => setShowGuide(e.currentTarget.checked)}
+            />
+            Show the wave to follow
+          </label>
+        </>
       }
       onStart={() => void handleStart()}
       stopLabel="Stop & Score"
@@ -118,6 +173,8 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
           <ExercisePitchTracker
             pitchHistory={base.pitchHistory}
             isActive={isActive}
+            targetNoteMidi={targetMidi}
+            movingTarget={movingTarget}
           />
           <div class="vibrato-current-note">{currentNote()}</div>
           <div class="vibrato-metrics">
