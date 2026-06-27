@@ -229,8 +229,13 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       transcriptionTrainer.stop()
     }
 
-    // Hero mode: mic only during active gameplay with audio input enabled
-    const heroActive = activeTab() === TAB_GUITAR && guitarView() === 'hero'
+    // Hero / 3D playback: mic only during active gameplay with input enabled.
+    // Both are scoring views that run the mic, so the 3D view must be included
+    // here — otherwise its "not a hero view" branch tears down the shared mic
+    // on every gameState change (i.e. when Play is pressed).
+    const view = guitarView()
+    const heroActive =
+      activeTab() === TAB_GUITAR && (view === 'hero' || view === '3d')
     const heroState = guitar.gameState()
     if (
       heroActive &&
