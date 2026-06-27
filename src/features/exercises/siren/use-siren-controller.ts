@@ -20,22 +20,42 @@ interface SirenRound {
   endMidi: number
 }
 
-function generateSirens(baseMidi: number, difficulty: number): SirenRound[] {
-  const intervals = [4, 5, 7, 8, 12, 16]
+/**
+ * Build the siren glides centred on `baseMidi`, alternating up/down, keeping
+ * BOTH endpoints inside the singer's comfortable range [rangeMin, rangeMax].
+ * The whole interval is shifted into range (never clamped end-by-end, which
+ * previously distorted spans and could yield sub-audible notes like "G0").
+ */
+export function generateSirens(
+  baseMidi: number,
+  difficulty: number,
+  rangeMin: number,
+  rangeMax: number,
+): SirenRound[] {
+  // Singable glide spans (semitones), up to roughly an octave.
+  const intervals = [3, 5, 7, 9, 12, 7]
   const rounds: SirenRound[] = []
-  // Widen the glide span when harder: (2 - factor) is 1.0 at d5 (unchanged),
-  // >1 when factor<1 (harder, wider), <1 when factor>1 (easier, narrower).
+  // Widen the glide a little when harder (1.0 at d5).
   const spanScale = 2 - difficultyFactor(difficulty)
+  const span = Math.max(1, rangeMax - rangeMin)
 
   for (let i = 0; i < ROUNDS; i++) {
-    const interval = Math.max(
-      1,
-      Math.round(intervals[i % intervals.length] * spanScale),
-    )
+    let interval = Math.round(intervals[i % intervals.length] * spanScale)
+    interval = Math.max(2, Math.min(12, Math.min(interval, span)))
     const direction = i % 2 === 0 ? 1 : -1
-    const start = baseMidi - (direction === 1 ? 5 : interval + 5)
-    const end = start + direction * interval
-    rounds.push({ startMidi: Math.max(36, start), endMidi: Math.min(84, end) })
+    // Centre the glide on the base note, then shift the pair into range.
+    let start =
+      direction === 1
+        ? baseMidi - Math.floor(interval / 2)
+        : baseMidi + Math.ceil(interval / 2)
+    let end = start + direction * interval
+    const lo = Math.min(start, end)
+    const hi = Math.max(start, end)
+    const shift =
+      lo < rangeMin ? rangeMin - lo : hi > rangeMax ? rangeMax - hi : 0
+    start += shift
+    end += shift
+    rounds.push({ startMidi: start, endMidi: end })
   }
 
   return rounds
@@ -57,10 +77,10 @@ export function useSirenController(
   })
   let _cancelled = false
 
-  function setBase(baseMidi: number): void {
+  function setBase(baseMidi: number, rangeMin: number, rangeMax: number): void {
     _cancelled = false
     difficulty = launchDifficulty(EXERCISE_SIREN)
-    rounds = generateSirens(baseMidi, difficulty)
+    rounds = generateSirens(baseMidi, difficulty, rangeMin, rangeMax)
     roundIndex = 0
     roundScores = []
   }
@@ -80,6 +100,8 @@ export function useSirenController(
       base._updateMetrics({
         round: roundIndex,
         totalRounds: rounds.length,
+        startMidi: round.startMidi,
+        endMidi: round.endMidi,
         currentMidi: round.startMidi,
         phase: 1, // listening
       })

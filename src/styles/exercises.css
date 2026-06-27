@@ -123,6 +123,9 @@
 }
 
 .exercise-card-grade {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 1px 6px;
   border-radius: 3px;
   font-weight: 600;

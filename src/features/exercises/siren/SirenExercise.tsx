@@ -9,7 +9,7 @@ import { launchTargetNote } from '@/features/practice-intelligence/launch-overri
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
@@ -50,7 +50,8 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
-    controller.setBase(noteToMidi(startNote()))
+    const range = getComfortableMidiRange(vocalRangePreset())
+    controller.setBase(noteToMidi(startNote()), range.min, range.max)
     await base.start()
     controller.startRounds()
   }
@@ -99,6 +100,25 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
 
   const posY = () => 50 - (currentCents() / 100) * 50
 
+  const startMidi = () => base.state().metrics.startMidi ?? 0
+  const endMidi = () => base.state().metrics.endMidi ?? 0
+
+  // While matching, show the end note as a target line and a guide dot that
+  // glides start↔end so the singer can see the path to trace.
+  const SIREN_GUIDE_PERIOD_MS = 2500
+  const targetMidi = () => (phase() === 2 ? endMidi() : startMidi())
+  const movingTarget = (): number | null => {
+    if (!isActive() || phase() !== 2) return null
+    const from = startMidi()
+    const to = endMidi()
+    if (from === 0 || to === 0) return null
+    const ph =
+      (base.state().elapsedMs % SIREN_GUIDE_PERIOD_MS) / SIREN_GUIDE_PERIOD_MS
+    const tri = ph < 0.5 ? ph * 2 : (1 - ph) * 2
+    const midi = from + (to - from) * tri
+    return 440 * 2 ** ((midi - 69) / 12)
+  }
+
   return (
     <ExerciseShell
       type={EXERCISE_SIREN}
@@ -136,17 +156,20 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
           <ExercisePitchTracker
             pitchHistory={base.pitchHistory}
             isActive={isActive}
+            targetNoteMidi={targetMidi}
+            movingTarget={movingTarget}
           />
           <div class="mirror-melody-phase">
             <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
               {phase() === 1 ? (
                 <>
-                  <IconMusic size={16} /> Listen to the two notes...
+                  <IconMusic size={16} /> Listen: {midiToNoteName(startMidi())}{' '}
+                  → {midiToNoteName(endMidi())}
                 </>
               ) : (
                 <>
-                  <IconMic size={16} /> Glide to {midiToNoteName(currentMidi())}
-                  !
+                  <IconMic size={16} /> Glide {midiToNoteName(startMidi())} →{' '}
+                  {midiToNoteName(endMidi())} — follow the dot!
                 </>
               )}
             </span>
