@@ -218,15 +218,22 @@ export class MicManager {
   }
 
   private async openDevice(): Promise<MediaStream> {
-    const constraints = this.buildConstraints()
     try {
-      return await navigator.mediaDevices.getUserMedia(constraints)
+      return await navigator.mediaDevices.getUserMedia(this.buildConstraints())
     } catch (err) {
+      // A saved device that's no longer present (interface unplugged, or a
+      // different machine): the `exact` deviceId can't be satisfied. Drop it
+      // and fall back to the system default instead of failing to open.
+      const name = (err as { name?: string } | null)?.name
+      if (name === 'OverconstrainedError' && this.preferredDeviceId !== null) {
+        this.preferredDeviceId = null
+        return navigator.mediaDevices.getUserMedia(this.buildConstraints())
+      }
       // Retry once when the device is transiently busy (a previous handle that
       // is still releasing); other errors propagate immediately.
       if (classifyError(err).kind === 'device-busy') {
         await delay(BUSY_RETRY_DELAY_MS)
-        return navigator.mediaDevices.getUserMedia(constraints)
+        return navigator.mediaDevices.getUserMedia(this.buildConstraints())
       }
       throw err
     }
