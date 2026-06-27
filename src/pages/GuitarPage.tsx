@@ -100,6 +100,13 @@ export function GuitarPage(props: GuitarPageProps) {
     adaptiveJam,
   } = ctx.modes
 
+  // The 3D view carries its own transport/input controls in its overlay, so the
+  // shared toolbar would just duplicate them — hide it there by default (still
+  // toggleable via "Show bar"). Other views always show it.
+  createEffect(() => {
+    setToolbarHidden(guitarView() === '3d')
+  })
+
   return (
     <div id="guitar-practice-panel">
       <Show when={!toolbarHidden()}>
