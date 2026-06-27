@@ -8,10 +8,12 @@ import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
+import { micManager } from '@/lib/mic-manager'
 import { MidiEngine } from '@/lib/midi-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToFreq } from '@/lib/scale-data'
+import { createPersistedSignal } from '@/lib/storage'
 import { countIn, setMicActive } from '@/stores'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { updateMidiSongSelection } from '@/stores/saved-midi-songs-store'
@@ -157,6 +159,21 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   )
   const [totalBeats, setTotalBeats] = createSignal(0)
 
+  // ── Audio I/O device routing (e.g. an audio interface's instrument in) ──
+  const [inputDeviceId, setInputDeviceIdSignal] = createPersistedSignal(
+    'mp.guitarInputDevice',
+    '',
+  )
+  const [outputDeviceId, setOutputDeviceIdSignal] = createPersistedSignal(
+    'mp.guitarOutputDevice',
+    '',
+  )
+  // Apply the saved selections at startup.
+  void micManager.setPreferredDevice(inputDeviceId() || null)
+  if (outputDeviceId() !== '') {
+    void audioEngine.setOutputDevice(outputDeviceId())
+  }
+
   // ── Transpose (real note shift; slides notes along the neck) ─────
   // N semitones added to every note's pitch, then re-voiced onto the neck
   // (same string when it fits, else the nearest string that can host it).
@@ -216,6 +233,22 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setMicOn(false)
     setMicActive(false)
     if (inputMode() === 'mic') setInputMode('keyboard')
+  }
+
+  // Choose the audio input device (e.g. an interface's instrument input). If the
+  // mic is live, restart it so the engine re-wires onto the new device.
+  const setInputDevice = async (deviceId: string): Promise<void> => {
+    setInputDeviceIdSignal(deviceId)
+    await micManager.setPreferredDevice(deviceId || null)
+    if (micOn()) {
+      stopMic()
+      await startMic()
+    }
+  }
+
+  const setOutputDevice = async (deviceId: string): Promise<void> => {
+    setOutputDeviceIdSignal(deviceId)
+    await audioEngine.setOutputDevice(deviceId || null)
   }
 
   const midiConnect = async (): Promise<boolean> => {
@@ -944,6 +977,12 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     /** Raw time-domain samples for the input-signal monitor; null when mic off. */
     getInputTimeData: (): Float32Array | null =>
       micOn() ? audioEngine.getTimeData() : null,
+    // Audio I/O device routing
+    inputDeviceId,
+    setInputDevice,
+    outputDeviceId,
+    setOutputDevice,
+    outputDeviceSupported: () => audioEngine.outputDeviceSupported(),
     midiConnect,
     midiDisconnect,
     midiConnected,

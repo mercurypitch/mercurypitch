@@ -764,6 +764,31 @@ export class AudioEngine {
     // Note: analyser stays active for visualization
   }
 
+  /** True when the AudioContext can route output to a chosen device. */
+  outputDeviceSupported(): boolean {
+    const ctx = this.audioCtx as
+      | (AudioContext & { setSinkId?: (id: string) => Promise<void> })
+      | null
+    return ctx !== null && typeof ctx.setSinkId === 'function'
+  }
+
+  /** Route playback to a specific output device ('' / null = system default).
+   *  No-op (returns false) where AudioContext.setSinkId is unsupported. */
+  async setOutputDevice(deviceId: string | null): Promise<boolean> {
+    await this.init()
+    const ctx = this.audioCtx as
+      | (AudioContext & { setSinkId?: (id: string) => Promise<void> })
+      | null
+    if (ctx === null || typeof ctx.setSinkId !== 'function') return false
+    try {
+      await ctx.setSinkId(deviceId ?? '')
+      return true
+    } catch (err) {
+      console.warn('[AudioEngine] setOutputDevice failed:', err)
+      return false
+    }
+  }
+
   isMicActive(): boolean {
     return this.isRecording
   }

@@ -93,10 +93,26 @@ function classifyError(err: unknown): MicError {
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+/** Audio input devices (mics, line/instrument inputs e.g. an audio interface).
+ *  Labels are only populated once mic permission has been granted. */
+export async function listAudioInputs(): Promise<MediaDeviceInfo[]> {
+  if (typeof navigator.mediaDevices?.enumerateDevices !== 'function') return []
+  const devices = await navigator.mediaDevices.enumerateDevices()
+  return devices.filter((d) => d.kind === 'audioinput')
+}
+
+/** Audio output devices, for routing playback (where supported). */
+export async function listAudioOutputs(): Promise<MediaDeviceInfo[]> {
+  if (typeof navigator.mediaDevices?.enumerateDevices !== 'function') return []
+  const devices = await navigator.mediaDevices.enumerateDevices()
+  return devices.filter((d) => d.kind === 'audiooutput')
+}
+
 export class MicManager {
   private stream: MediaStream | null = null
   private readonly consumers = new Set<string>()
   private error: MicError | null = null
+  private preferredDeviceId: string | null = null
   private readonly listeners = new Set<Listener>()
   // Serialises acquire/release so a teardown fully settles before the next
   // open — the core guard against the re-open race.
@@ -124,6 +140,35 @@ export class MicManager {
 
   getConsumers(): readonly string[] {
     return [...this.consumers]
+  }
+
+  getPreferredDevice(): string | null {
+    return this.preferredDeviceId
+  }
+
+  /**
+   * Choose which audio input device to capture from (e.g. a Focusrite
+   * instrument input). Pass null/'' for the system default. If the device
+   * changes while open, the current handle is dropped so the next acquire
+   * reopens on the new device — consumers must re-acquire to re-wire (the
+   * guitar controller restarts the mic for this).
+   */
+  async setPreferredDevice(deviceId: string | null): Promise<void> {
+    const next = deviceId !== null && deviceId !== '' ? deviceId : null
+    if (this.preferredDeviceId === next) return
+    this.preferredDeviceId = next
+    await this.enqueue(async () => {
+      this.teardown()
+    })
+  }
+
+  private buildConstraints(): MediaStreamConstraints {
+    const base = ANALYSIS_CONSTRAINTS.audio as MediaTrackConstraints
+    const audio: MediaTrackConstraints =
+      this.preferredDeviceId !== null
+        ? { ...base, deviceId: { exact: this.preferredDeviceId } }
+        : { ...base }
+    return { audio }
   }
 
   /**
@@ -173,14 +218,15 @@ export class MicManager {
   }
 
   private async openDevice(): Promise<MediaStream> {
+    const constraints = this.buildConstraints()
     try {
-      return await navigator.mediaDevices.getUserMedia(ANALYSIS_CONSTRAINTS)
+      return await navigator.mediaDevices.getUserMedia(constraints)
     } catch (err) {
       // Retry once when the device is transiently busy (a previous handle that
       // is still releasing); other errors propagate immediately.
       if (classifyError(err).kind === 'device-busy') {
         await delay(BUSY_RETRY_DELAY_MS)
-        return navigator.mediaDevices.getUserMedia(ANALYSIS_CONSTRAINTS)
+        return navigator.mediaDevices.getUserMedia(constraints)
       }
       throw err
     }
