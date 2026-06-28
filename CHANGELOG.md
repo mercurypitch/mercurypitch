@@ -3,6 +3,18 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.4.9] - 2026-06-28
+
+### Added
+
+- **Show or hide the 3D overlays**: the 3D guitar control bar now has "Signal" and "Axes" toggles, so you can turn the input-signal monitor and the orientation gizmo on or off yourself. Your choice is remembered per device.
+
+### Fixed
+
+- **3D view fits the screen on phones**: the control bar now defaults to the top on touch devices and lays its controls out in a single scrollable row, so it no longer wraps and covers the fretboard. It also always stays above the other overlays.
+- **Touch the 3D fretboard**: orbit, pan and zoom the 3D view directly with touch gestures.
+- **Consistent navigation**: the nav tabs now follow the same order everywhere, and the app no longer scrolls sideways on mobile. The Community and Leaderboard pages also lay out properly on small screens.
+
 ## [0.4.8] - 2026-06-27
 
 ### Added

@@ -6,6 +6,21 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.9] - 2026-06-28
+
+### Added
+
+- HUD rail toggles in the 3D guitar view for the input-signal monitor ("Signal") and the orientation gizmo ("Axes"); both overlays are now user-controllable rather than the monitor being dev-only and the gizmo always on. Each toggle persists per device. Defaults: gizmo on (desktop) / off (small/touch); input monitor on in dev-desktop, off for players and on small/touch screens. (`Tab3DHud`, `Tab3DInputMonitor`, `GuitarTab3DView`)
+
+### Changed
+
+- The 3D control bar is raised above the other 3D-view overlays (input monitor, score card, nav gizmo) so it is never covered, hovered or not. (`Tab3DHud`)
+- The 3D tab HUD dock now defaults to top on small/touch screens (bottom on desktop) and persists the user's choice locally (`gp-tab3d-hud-dock`). On small/touch screens the rail, top bar and loop popover lay out as a single horizontally-scrollable row so the bottom dock no longer wraps tall enough to cover the canvas. (`Tab3DHud`, `guitar-practice.css`)
+
+### Fixed
+
+- Unified tab order across the nav (covered by `tab-order.test.ts`), added touch gestures (orbit/pan/zoom) to the 3D view, and removed horizontal scroll on mobile. Community and leaderboard layouts are now phone-friendly. (`AppNavTabs`, `App`, `GuitarTab3DView`, `vocal-analysis.css`, `restored-legacy.css`)
+
 ## [0.4.8] - 2026-06-27
 
 ### Added
