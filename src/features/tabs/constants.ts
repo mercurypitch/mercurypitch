@@ -36,6 +36,44 @@ export type ActiveTab =
 /** Default tab when the app loads. */
 export const DEFAULT_TAB = TAB_SINGING
 
+// ── Canonical tab order & grouping ──────────────────────────────────
+// SINGLE source of truth for the order tabs appear in. Both the visible
+// tab bar (`AppNavTabs`) and the mobile swipe navigation (`App.tsx`) derive
+// their order from here, so swapping two tabs is a one-line change that keeps
+// the bar and the swipe gesture in sync — they can no longer drift apart.
+
+export interface TabGroupDef {
+  readonly id: string
+  readonly label: string
+  readonly tabs: readonly ActiveTab[]
+}
+
+export const TAB_GROUPS: readonly TabGroupDef[] = [
+  {
+    id: 'practice',
+    label: 'Practice',
+    tabs: [TAB_SINGING, TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_KARAOKE],
+  },
+  {
+    id: 'social',
+    label: 'Social',
+    tabs: [TAB_COMMUNITY, TAB_LEADERBOARD, TAB_CHALLENGES, TAB_JAM],
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    tabs: [TAB_COMPOSE, TAB_ANALYSIS, TAB_SETTINGS],
+  },
+]
+
+/**
+ * Flattened canonical tab order. The mobile swipe gesture steps through this
+ * list, so a left/right swipe always follows the visual order of the tab bar.
+ */
+export const TAB_ORDER: readonly ActiveTab[] = TAB_GROUPS.flatMap((g) => [
+  ...g.tabs,
+])
+
 // ── PlaybackMode constants ──────────────────────────────────────────
 // These are separate from tab IDs. `PLAYBACK_MODE_SESSION` is the
 // string 'practice' which was previously overloaded as both a

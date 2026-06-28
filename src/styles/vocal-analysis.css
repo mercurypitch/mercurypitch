@@ -407,6 +407,7 @@
   width: 100%;
   height: 100%;
   padding: 20px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -414,6 +415,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 24px;
 }
 
@@ -670,7 +673,9 @@
 /* Melodies Grid */
 .melodies-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* min(280px, 100%) keeps cards from forcing a track wider than the viewport
+     on narrow phones (which caused horizontal overflow). */
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -1754,7 +1759,14 @@
   width: 100%;
   height: 100%;
   padding: 20px;
+  overflow-x: hidden;
   overflow-y: auto;
+  /* Override the centered placeholder layout (app.css) so content fills the
+     width and lays out from the top instead of being centered — centering a
+     too-wide child clipped it on both edges under overflow-x: hidden. */
+  align-items: stretch;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .leaderboard-header {
@@ -2006,9 +2018,10 @@
 .podium-section {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
-  padding: 24px 0;
+  padding: 24px 12px;
   background: var(--bg-secondary);
   border-radius: 16px;
 }
@@ -2017,6 +2030,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Share the row evenly and allow shrinking so the three medals stay on one
+     horizontal row even on a phone-width screen. */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 180px;
   padding: 12px;
   border-radius: 12px;
   transition: all 0.2s ease;
@@ -2472,10 +2490,6 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
-  .podium-section {
-    flex-direction: column;
-    align-items: center;
-  }
   .challenge-card {
     grid-template-columns: 50px 1fr;
     gap: 12px;
@@ -2530,6 +2544,34 @@
   .leaderboard-panel {
     padding: 10px;
   }
+  /* Keep the gold/silver/bronze podium on a single horizontal row, just
+     tighter, so it never stacks or spills past the screen edge. */
+  .podium-section {
+    gap: 6px;
+    padding: 16px 6px;
+  }
+  .podium-item {
+    padding: 8px 4px;
+  }
+  .podium-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+  .podium-rank {
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+  .podium-name {
+    font-size: 0.8rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .podium-score-display {
+    font-size: 1.15rem;
+  }
 }
 
 /* ============================================================
@@ -2540,6 +2582,7 @@
   width: 100%;
   height: 100%;
   padding: 20px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -2650,7 +2693,9 @@
 
 .challenges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* min(280px, 100%) keeps cards from forcing a track wider than the
+     viewport on narrow phones (which caused horizontal overflow). */
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }

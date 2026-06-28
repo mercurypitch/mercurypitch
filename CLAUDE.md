@@ -3,9 +3,14 @@
 ## Git Workflow
 
 - Always work on feature branches, never push directly to `main`
+- Name branches with a `feat/` prefix (e.g. `feat/mobile-nav`). Never use a
+  `claude/` prefix
 - Commit and push after every task
 - Use `gh` CLI for issues and PRs (not WebFetch)
 - Never force push
+- Never add "Generated with Claude Code" or any Claude attribution (including
+  `Co-Authored-By` / `Claude-Session` trailers) to commit messages, PR
+  descriptions, or any other artifact
 
 ## Code Quality
 
