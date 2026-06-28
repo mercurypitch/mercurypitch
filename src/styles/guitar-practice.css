@@ -1948,6 +1948,40 @@
   top: 60px;
 }
 
+/* Small / touch screens: the rail has too many controls to wrap. Keep it a
+   single horizontally-scrollable row so the absolute overlay stays short
+   instead of stacking into rows that swallow the canvas. */
+@media (max-width: 768px), (pointer: coarse) {
+  .gp-hud-rail,
+  .gp-hud-bar--top,
+  .gp-hud-loop {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: calc(100% - 16px);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .gp-hud-rail::-webkit-scrollbar,
+  .gp-hud-bar--top::-webkit-scrollbar,
+  .gp-hud-loop::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Items keep their size; the row scrolls rather than squeezing them. */
+  .gp-hud-rail > *,
+  .gp-hud-bar--top > *,
+  .gp-hud-loop > * {
+    flex: 0 0 auto;
+  }
+
+  .gp-hud-bar-status {
+    max-width: 150px;
+  }
+}
+
 .gp-toolbar-toggle {
   display: inline-flex;
   align-items: center;
