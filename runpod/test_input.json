@@ -1,0 +1,9 @@
+{
+  "input": {
+    "audio_url": "https://file-examples.com/storage/f...replace-with-a-real-audio-url.mp3",
+    "filename": "sample.mp3",
+    "model": "UVR-MDX-NET-Inst_HQ_3",
+    "output_format": "FLAC",
+    "stems": ["vocal", "instrumental"]
+  }
+}
