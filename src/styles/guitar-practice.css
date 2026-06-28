@@ -568,6 +568,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Wrap controls onto extra rows instead of overflowing (and being clipped
+     by the panel's overflow-x: hidden) on narrow screens. */
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.gp-header-right {
+  justify-content: flex-end;
 }
 
 /* ── Instrument selector ──────────────────────────────────── */
@@ -839,6 +847,38 @@
   .gp-key-scale-select {
     font-size: 0.7rem;
     padding: 3px 6px;
+  }
+
+  /* Stack the header so the song picker and the control cluster each get a
+     full row, and let the cluster wrap so every button (Sound, 2D/3D view
+     toggle, Show bar, Devices) stays reachable on a phone-width screen. */
+  .gp-header-controls {
+    gap: 8px;
+  }
+
+  .gp-header-left,
+  .gp-header-right {
+    width: 100%;
+    gap: 8px;
+    row-gap: 8px;
+  }
+
+  .gp-header-right {
+    justify-content: flex-start;
+  }
+
+  .gp-instrument-selector {
+    flex-wrap: wrap;
+  }
+
+  /* Trim button padding/size so the row fits in fewer wraps. */
+  .gp-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .gp-instrument-btn {
+    padding: 4px 10px;
   }
 }
 
