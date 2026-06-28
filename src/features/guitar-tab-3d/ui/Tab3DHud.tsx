@@ -12,6 +12,7 @@ import type { Accessor, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { GuitarHitResult } from '@/features/guitar-practice/useGuitarPracticeController'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { createPersistedSignal } from '@/lib/storage'
 
 export interface Tab3DControls {
   gameState: Accessor<string>
@@ -83,6 +84,19 @@ const gradeLabel = (pct: number): string =>
 
 type Dock = 'top' | 'bottom'
 
+const isDock = (v: unknown): v is Dock => v === 'top' || v === 'bottom'
+
+// Touch / small screens default to the top dock: the bottom-centre rail sits
+// under the thumbs and, on narrow widths, wraps tall enough to cover the
+// canvas. Desktop keeps the centred bottom rail. The user's explicit choice is
+// persisted (local, per-device) and always wins next session.
+const HUD_DOCK_KEY = 'gp-tab3d-hud-dock'
+const prefersTopDock = (): boolean => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function')
+    return false
+  return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches
+}
+
 const round2 = (n: number) => Math.round(n * 100) / 100
 const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
@@ -92,7 +106,11 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
   // reactive accessors we actually read.
   // eslint-disable-next-line solid/reactivity
   const c = props.controls
-  const [dock, setDock] = createSignal<Dock>('bottom')
+  const [dock, setDock] = createPersistedSignal<Dock>(
+    HUD_DOCK_KEY,
+    prefersTopDock() ? 'top' : 'bottom',
+    { validator: isDock },
+  )
   const [loopOpen, setLoopOpen] = createSignal(false)
 
   const isPlaying = () => c.gameState() === 'playing'
