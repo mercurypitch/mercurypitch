@@ -66,6 +66,12 @@ export interface Tab3DControls {
   inputMode: Accessor<'keyboard' | 'mic' | 'midi'>
   getInputLevel: () => number
   getInputTimeData: () => Float32Array | null
+  // Input signal monitor overlay (You/Target/Match + level + waveform)
+  showInputMonitor: Accessor<boolean>
+  setShowInputMonitor: (on: boolean) => void
+  // Orientation gizmo (X/Y/Z axes, camera navigation)
+  showGizmo: Accessor<boolean>
+  setShowGizmo: (on: boolean) => void
 }
 
 const scoreTier = (s: number): string =>
@@ -275,6 +281,12 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
         onClick={() => c.setShowFretboard(!c.showFretboard())}
       />
       <Toggle
+        icon={GIZMO}
+        label="Axes"
+        active={c.showGizmo()}
+        onClick={() => c.setShowGizmo(!c.showGizmo())}
+      />
+      <Toggle
         icon={LOOP}
         label="Loop"
         active={loopOpen() || c.loopEnabled()}
@@ -296,6 +308,12 @@ export function Tab3DHud(props: { controls: Tab3DControls }) {
         onClick={() =>
           c.midiConnected() ? c.midiDisconnect() : c.midiConnect()
         }
+      />
+      <Toggle
+        icon={SIGNAL}
+        label="Signal"
+        active={c.showInputMonitor()}
+        onClick={() => c.setShowInputMonitor(!c.showInputMonitor())}
       />
     </>
   )
@@ -621,6 +639,8 @@ const MIDI = [
   'M15 14h.01',
   'M12 15h.01',
 ]
+const SIGNAL = ['M2 12h4l2-6 3 12 2-6h7']
+const GIZMO = ['M12 12V4', 'M12 12l7 4', 'M12 12l-7 4']
 const GRIP = [
   'M9 6h.01',
   'M9 12h.01',

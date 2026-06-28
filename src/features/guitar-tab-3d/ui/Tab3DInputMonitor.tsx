@@ -1,12 +1,12 @@
 // ============================================================
-// Tab3DInputMonitor — dev-only input signal monitor
+// Tab3DInputMonitor — input signal monitor overlay
 // ============================================================
 //
-// A small debug overlay (bottom-left of the 3D view) for confirming that the
-// guitar input is being detected and matched: input mode, your detected note,
-// the nearest target note, whether they match (same rule the scorer uses), the
-// last hit timing, a level bar, and a live mic waveform. Gated on DEV by the
-// caller, so it never ships to players.
+// A small overlay (bottom-left of the 3D view) for confirming that the guitar
+// input is being detected and matched: input mode, your detected note, the
+// nearest target note, whether they match (same rule the scorer uses), the
+// last hit timing, a level bar, and a live mic waveform. Toggled from the HUD
+// rail (the "Signal" toggle); defaults on in dev, off for players.
 
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
@@ -108,7 +108,7 @@ export function Tab3DInputMonitor(props: {
   })
 
   return (
-    <div class="gp-tab3d-monitor" aria-label="Input signal monitor (dev)">
+    <div class="gp-tab3d-monitor" aria-label="Input signal monitor">
       <div class="gp-tab3d-monitor-head">
         <span>Input monitor</span>
         <span class="gp-tab3d-monitor-mode">{c.inputMode()}</span>
