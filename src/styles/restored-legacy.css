@@ -5791,3 +5791,16 @@ select option.custom-scale-option {
   height: 100%;
   overflow-y: auto;
 }
+
+/* The community tab wraps a full-height, self-scrolling .community-share-tab.
+   Override the centered placeholder styling (from app.css) so the panel is a
+   plain full-size container and the inner tab owns the single scroll — avoids
+   the doubled vertical scrollbar and stray horizontal scroll on mobile. */
+.community-panel {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 0;
+  min-height: 0;
+  text-align: left;
+  overflow: hidden;
+}

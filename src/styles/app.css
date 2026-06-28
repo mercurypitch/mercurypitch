@@ -199,7 +199,12 @@ select option:disabled {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  /* Scroll vertically only — never let a too-wide child turn into a
+     page-level horizontal scrollbar on mobile. Panels that genuinely need
+     horizontal scrolling (e.g. the leaderboard table) own their own
+     scroll container. */
+  overflow-x: hidden;
+  overflow-y: auto;
   height: 100%;
   padding-bottom: 40px;
 }
