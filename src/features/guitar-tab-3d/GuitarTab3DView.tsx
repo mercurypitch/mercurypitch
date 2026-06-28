@@ -61,6 +61,10 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     setCamera((c) =>
       clampCamera({ ...c, radius: c.radius * Math.exp(deltaY * ZOOM_SENS) }),
     )
+  // Pinch zoom: multiply the orbit radius directly by a ratio (fingers
+  // spreading apart → factor < 1 → camera moves closer).
+  const zoomBy = (factor: number) =>
+    setCamera((c) => clampCamera({ ...c, radius: c.radius * factor }))
   const pan = (dx: number, dy: number) =>
     setCamera((c) => {
       const { right, up } = cameraBasis(c)
@@ -197,19 +201,58 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
     rafId = requestAnimationFrame(loop)
 
-    // Direct camera control on the canvas: drag to orbit, shift/right-drag to
-    // pan, wheel to zoom (mirrors the corner gizmo).
+    // Direct camera control on the canvas. Pointer Events unify mouse, touch
+    // and pen:
+    //   • one pointer  → drag to orbit (shift / right-drag pans, mouse only)
+    //   • two pointers → pinch to zoom and drag to pan (touch gestures)
+    //   • wheel        → zoom (mirrors the corner gizmo)
+    const pointers = new Map<number, { x: number; y: number }>()
     let dragMode: 'orbit' | 'pan' | null = null
     let lastX = 0
     let lastY = 0
+    // Two-finger gesture baseline (distance + centroid) carried between moves.
+    let pinchDist = 0
+    let pinchCx = 0
+    let pinchCy = 0
+
+    const beginPinch = () => {
+      const [a, b] = [...pointers.values()]
+      if (a === undefined || b === undefined) return
+      pinchDist = Math.hypot(a.x - b.x, a.y - b.y)
+      pinchCx = (a.x + b.x) / 2
+      pinchCy = (a.y + b.y) / 2
+    }
+
     const onPointerDown = (e: PointerEvent) => {
-      dragMode = e.button === 2 || e.shiftKey ? 'pan' : 'orbit'
-      lastX = e.clientX
-      lastY = e.clientY
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
       hw.setPointerCapture(e.pointerId)
       e.preventDefault()
+      if (pointers.size === 1) {
+        dragMode = e.button === 2 || e.shiftKey ? 'pan' : 'orbit'
+        lastX = e.clientX
+        lastY = e.clientY
+      } else if (pointers.size === 2) {
+        // A second finger switches from orbit to pinch-zoom / two-finger pan.
+        dragMode = null
+        beginPinch()
+      }
     }
     const onPointerMove = (e: PointerEvent) => {
+      if (!pointers.has(e.pointerId)) return
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pointers.size >= 2) {
+        const [a, b] = [...pointers.values()]
+        if (a === undefined || b === undefined) return
+        const dist = Math.hypot(a.x - b.x, a.y - b.y)
+        const cx = (a.x + b.x) / 2
+        const cy = (a.y + b.y) / 2
+        if (pinchDist > 0 && dist > 0) zoomBy(pinchDist / dist)
+        pan(cx - pinchCx, cy - pinchCy)
+        pinchDist = dist
+        pinchCx = cx
+        pinchCy = cy
+        return
+      }
       if (dragMode === null) return
       const dx = e.clientX - lastX
       const dy = e.clientY - lastY
@@ -219,8 +262,21 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       else orbit(dx, dy)
     }
     const onPointerUp = (e: PointerEvent) => {
-      dragMode = null
+      pointers.delete(e.pointerId)
       hw.releasePointerCapture?.(e.pointerId)
+      if (pointers.size === 1) {
+        // Dropped back to one finger: resume orbiting from its position.
+        const [p] = [...pointers.values()]
+        if (p !== undefined) {
+          lastX = p.x
+          lastY = p.y
+        }
+        dragMode = 'orbit'
+      } else if (pointers.size >= 2) {
+        beginPinch()
+      } else {
+        dragMode = null
+      }
     }
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()

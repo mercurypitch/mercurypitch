@@ -1754,6 +1754,7 @@
   width: 100%;
   height: 100%;
   padding: 20px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -2540,6 +2541,7 @@
   width: 100%;
   height: 100%;
   padding: 20px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -2650,7 +2652,9 @@
 
 .challenges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* min(280px, 100%) keeps cards from forcing a track wider than the
+     viewport on narrow phones (which caused horizontal overflow). */
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }

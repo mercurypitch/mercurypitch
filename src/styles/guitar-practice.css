@@ -11,7 +11,9 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 

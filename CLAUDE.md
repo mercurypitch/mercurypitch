@@ -6,6 +6,9 @@
 - Commit and push after every task
 - Use `gh` CLI for issues and PRs (not WebFetch)
 - Never force push
+- Never add "Generated with Claude Code" or any Claude attribution (including
+  `Co-Authored-By` / `Claude-Session` trailers) to commit messages, PR
+  descriptions, or any other artifact
 
 ## Code Quality
 
