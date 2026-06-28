@@ -4,6 +4,7 @@
 
 export { TransportControls } from './TransportControls'
 export { AppNavTabs } from './AppNavTabs'
+export { SupportBadge } from './SupportBadge'
 export { PianoRollCanvas } from './PianoRollCanvas'
 export { PitchDisplay } from './PitchDisplay'
 export { PitchCanvas } from './PitchCanvas'

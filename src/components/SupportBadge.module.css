@@ -1,0 +1,71 @@
+/* Support Badge — double-pill (version | heart) for the header right slot */
+
+.badge {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.version {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.support {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.32rem 0.55rem;
+  border-left: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.support:hover,
+.support:focus-visible {
+  color: var(--red, #f85149);
+  background: color-mix(in srgb, var(--red, #f85149) 14%, transparent);
+}
+
+.support:focus-visible {
+  outline: 2px solid var(--red, #f85149);
+  outline-offset: 1px;
+}
+
+.heart {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.support:hover .heart,
+.support:focus-visible .heart {
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support,
+  .heart {
+    transition: none;
+  }
+
+  .support:hover .heart,
+  .support:focus-visible .heart {
+    transform: none;
+  }
+}
