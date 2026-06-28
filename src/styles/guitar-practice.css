@@ -1609,7 +1609,9 @@
 .gp-hud-bar,
 .gp-hud-loop {
   position: absolute;
-  z-index: 5;
+  /* Always above the other 3D-view overlays (input monitor, score card and
+     nav gizmo): the control bar must never be covered, hovered or not. */
+  z-index: 10;
   background: rgba(12, 14, 22, 0.58);
   backdrop-filter: blur(12px) saturate(125%);
   border: 1px solid rgba(255, 255, 255, 0.1);

@@ -330,17 +330,23 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
           'touch-action': 'none',
         }}
       />
-      <NavGizmo
-        camera={camera}
-        onOrbit={orbit}
-        onPan={pan}
-        onZoom={zoom}
-        onReset={resetCamera}
-      />
+      <Show when={props.controls === undefined || props.controls.showGizmo()}>
+        <NavGizmo
+          camera={camera}
+          onOrbit={orbit}
+          onPan={pan}
+          onZoom={zoom}
+          onReset={resetCamera}
+        />
+      </Show>
       <Show when={props.controls}>
         {(controls) => <Tab3DHud controls={controls()} />}
       </Show>
-      <Show when={import.meta.env.DEV ? props.controls : null}>
+      <Show
+        when={
+          props.controls?.showInputMonitor() === true ? props.controls : null
+        }
+      >
         {(controls) => (
           <Tab3DInputMonitor
             controls={controls()}

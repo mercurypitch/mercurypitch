@@ -19,7 +19,15 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
+import { createPersistedSignal } from '@/lib/storage'
 import { activeTab, countIn } from '@/stores'
+
+// Small / touch screens hide the 3D-view overlays (input monitor + nav gizmo)
+// by default; the user can still toggle them on and the choice is persisted.
+const isSmallScreen = (): boolean =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(max-width: 768px), (pointer: coarse)').matches
 
 interface GuitarPageProps {
   /** Shared volume signal (owned by AppShell, used across tabs). */
@@ -41,6 +49,20 @@ export function GuitarPage(props: GuitarPageProps) {
   const guitar = ctx.guitar
   // Bottom fretboard reference panel in the 3D view (toggle).
   const [show3dFretboard, setShow3dFretboard] = createSignal(true)
+  // Input signal monitor overlay in the 3D view (toggle); persisted per device.
+  // Defaults on in dev, off for players, and off on small / touch screens.
+  const [showInputMonitor, setShowInputMonitor] = createPersistedSignal(
+    'gp-tab3d-input-monitor',
+    import.meta.env.DEV && !isSmallScreen(),
+    { validator: (v): v is boolean => typeof v === 'boolean' },
+  )
+  // Orientation gizmo (X/Y/Z axes) overlay in the 3D view (toggle); persisted
+  // per device, shown by default on desktop, hidden on small / touch screens.
+  const [showGizmo, setShowGizmo] = createPersistedSignal(
+    'gp-tab3d-gizmo',
+    !isSmallScreen(),
+    { validator: (v): v is boolean => typeof v === 'boolean' },
+  )
   // Collapse the shared transport toolbar to reclaim vertical space.
   const [toolbarHidden, setToolbarHidden] = createSignal(false)
   // Audio input/output device picker panel.
@@ -783,6 +805,10 @@ export function GuitarPage(props: GuitarPageProps) {
                   inputMode: guitar.inputMode,
                   getInputLevel: guitar.getInputLevel,
                   getInputTimeData: guitar.getInputTimeData,
+                  showInputMonitor,
+                  setShowInputMonitor,
+                  showGizmo,
+                  setShowGizmo,
                 }}
               />
             </Show>
