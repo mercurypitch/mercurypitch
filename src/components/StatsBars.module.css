@@ -19,25 +19,25 @@
 :global(#stats-bars) {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
 }
 
 .statRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .statLabel {
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   color: var(--text-secondary);
-  width: 68px;
+  width: 56px;
   flex-shrink: 0;
 }
 
 .statBarBg {
   flex: 1;
-  height: 5px;
+  height: 4px;
   background: var(--bg-tertiary);
   border-radius: 3px;
   overflow: hidden;
@@ -67,9 +67,9 @@
 }
 
 .statCount {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 600;
-  min-width: 16px;
+  min-width: 14px;
   text-align: right;
   color: var(--text-secondary);
 }
