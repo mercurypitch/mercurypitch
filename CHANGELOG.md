@@ -3,6 +3,33 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.5.0] - 2026-06-30
+
+### Added
+
+- **Reworked Singing practice screen**: the pitch view, score, and live mic monitor now float as glass cards over a full-bleed canvas, like the 3D guitar view. A floating control bar replaces the old toolbar — drag it to the top or bottom, or hide it for more room. A top-left chip shows the current scale/melody, tempo and position, and session scores sit in a top-right scoreboard. The pitch view auto-fits to your melody with clear note-name labels, and the overlays fade back during playback so the notes stay front and centre.
+- **Consistent controls across tabs**: Piano, Guitar and Compose now use the same sleek glass control bar as Singing, so transport, tempo, volume and the rest behave the same everywhere.
+- **Practice context in the header**: Singing, Piano and Guitar show a small pill with what you're practising, plus the loaded melody and character.
+- **Tidier Compose editor**: the Piano Roll / Session Editor switch is now a clean tab strip, with the playback controls tucked into the same row.
+- **Karaoke playlists tidy-up**: friendlier empty states, and deleting a playlist now asks for confirmation first so you can't remove one by accident.
+- **Tabbed Settings**: settings are grouped into General, Practice, and Display & Controls tabs, alongside a polished account card.
+- **Clear just your karaoke data**: a new Settings → Danger Zone button removes only your separated songs, stems, lyrics and karaoke playlists, leaving your melodies, practice history and settings untouched.
+- **Pricing & support**: a redesigned pricing page with animated tier cards and checkout, plus a one-tap support button and an app-version pill in the header.
+- **Let it ring on guitar**: Guitar Pro tabs with let-ring now sustain notes the way the tab intends during playback.
+- **Direct links to exercises**: `/exercises/<name>` links open straight to that exercise's setup screen.
+- **Faster stem separation**: optional GPU and CPU cloud tiers for splitting songs into stems.
+
+### Changed
+
+- **Sidebar**: reorganised into collapsible sections so it's easier to scan.
+
+### Fixed
+
+- **Works without the backend**: if the cloud isn't reachable, the app now loads and runs on your local data instead of erroring out — it warns quietly and carries on.
+- **Deep links load correctly**: shared links to specific pages resolve their assets properly instead of falling back to the home screen.
+- **Guided tours fixed up**: several tour steps that pointed at the wrong place after recent layout changes — the Settings sub-tabs, the singing transport, and a few mobile steps — now highlight the right control, and per-page "take a tour" offers no longer stack up.
+- **"Reset to Factory Defaults" fully resets**: it now clears all local app data instead of leaving some behind, and clearing karaoke storage no longer leaves orphaned files.
+
 ## [0.4.9] - 2026-06-28
 
 ### Added
