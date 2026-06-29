@@ -5,19 +5,16 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
 import { IconDiamond } from '@/components/exercise-icons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
-import { PitchDisplay } from '@/components/PitchDisplay'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import { StatsBars } from '@/components/StatsBars'
 import { StreakCalendar } from '@/components/StreakCalendar'
 import { CalendarHeatmap } from '@/features/practice-intelligence/components/CalendarHeatmap'
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
-import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, hasPageTour, sessionResults, setActiveTab, showNotification, startPageTour, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
@@ -99,17 +96,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         TAB_KARAOKE,
       ] as string[]
     ).includes(activeTab())
-
-  // Live score derived from noteResults — updates as each note is played.
-  const liveScore = createMemo(() => {
-    const results = props.noteResults()
-    if (results.length === 0) return null
-    let total = 0
-    for (const r of results) {
-      total += ratingToScore(r.rating)
-    }
-    return Math.round(total / results.length)
-  })
 
   return (
     <aside
@@ -520,62 +506,41 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <StreakCalendar />
       </div>
 
-      {/* Stats panel */}
-      <Show when={isPracticeOrSettingsTab() && showStats()}>
+      {/* Session history — practice tab only. The live Accuracy and Pitch
+          panels now render as overlays on the singing canvas (SingingCanvasHud). */}
+      <Show when={isPracticeOrSettingsTab() && sessionResults().length > 0}>
         <div class={styles.sidebarSection}>
-          <div class={styles.statsPanel}>
-            <h3>Accuracy</h3>
-            <StatsBars noteResults={props.noteResults} />
-            <div class={styles.scoreDisplay} data-testid="score-display">
-              <span class={styles.scoreLabel} data-testid="score-label">
-                Score:
-              </span>
-              <span class={styles.scoreValue} data-testid="score-value">
-                {liveScore() !== null ? `${liveScore()}%` : '--'}
-              </span>
+          <div id="session-history-panel" class={styles.sessionHistoryPanel}>
+            <h3>Sessions</h3>
+            <div id="session-history-list" class={styles.sessionHistoryList}>
+              <For each={sessionResults()}>
+                {(entry) => (
+                  <div
+                    class={styles.sessionHistoryEntry}
+                    data-testid="session-history-entry"
+                  >
+                    <span class={styles.sessionHistoryName}>
+                      {entry.sessionName}
+                    </span>
+                    <span
+                      class={[
+                        styles.sessionHistoryScore,
+                        entry.score >= 80
+                          ? styles.scoreHigh
+                          : entry.score >= 50
+                            ? styles.scoreMid
+                            : styles.scoreLow,
+                      ].join(' ')}
+                    >
+                      {entry.score}%
+                    </span>
+                  </div>
+                )}
+              </For>
             </div>
-
-            {/* Session history — practice tab only */}
-            <Show when={sessionResults().length > 0}>
-              <div
-                id="session-history-panel"
-                class={styles.sessionHistoryPanel}
-              >
-                <h3>Sessions</h3>
-                <div
-                  id="session-history-list"
-                  class={styles.sessionHistoryList}
-                >
-                  <For each={sessionResults()}>
-                    {(entry) => (
-                      <div
-                        class={styles.sessionHistoryEntry}
-                        data-testid="session-history-entry"
-                      >
-                        <span class={styles.sessionHistoryName}>
-                          {entry.sessionName}
-                        </span>
-                        <span
-                          class={[
-                            styles.sessionHistoryScore,
-                            entry.score >= 80
-                              ? styles.scoreHigh
-                              : entry.score >= 50
-                                ? styles.scoreMid
-                                : styles.scoreLow,
-                          ].join(' ')}
-                        >
-                          {entry.score}%
-                        </span>
-                      </div>
-                    )}
-                  </For>
-                </div>
-                <div class={styles.heatmapWrapper}>
-                  <CalendarHeatmap weeks={8} />
-                </div>
-              </div>
-            </Show>
+            <div class={styles.heatmapWrapper}>
+              <CalendarHeatmap weeks={8} />
+            </div>
           </div>
         </div>
       </Show>
@@ -591,15 +556,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             noteResults={props.noteResults}
             isPlaying={props.isPlaying}
           />
-        </div>
-      </Show>
-
-      {/* Pitch display (bottom-anchored) */}
-      <Show when={isPracticeOrSettingsTab() && showPitchDisplay()}>
-        <div
-          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
-        >
-          <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>
     </aside>

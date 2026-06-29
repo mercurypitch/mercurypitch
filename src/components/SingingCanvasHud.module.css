@@ -1,0 +1,94 @@
+/* ============================================================
+   SingingCanvasHud — floating glass overlays in the singing
+   canvas corner. Mirrors the Guitar 3D HUD aesthetic (frosted
+   translucent cards, soft shadow, hairline border) but stays
+   theme-adaptive by deriving its surface from --bg-card.
+   ============================================================ */
+
+.hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+  max-width: 46%;
+  /* Display-only HUD — let canvas drags / clicks pass straight through. */
+  pointer-events: none;
+}
+
+.card {
+  /* Frosted glass. Solid fallback first for engines without color-mix. */
+  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 11px 13px;
+  user-select: none;
+  animation: hudIn 180ms ease both;
+}
+
+@keyframes hudIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card header — matches the muted, upper-cased labels used elsewhere. */
+.cardTitle {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 0 0 8px;
+}
+
+/* Live score row under the accuracy bars. */
+.scoreRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.scoreLabel {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scoreValue {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The pitch monitor brings its own card chrome for the sidebar; strip it
+   so it blends into the glass card instead of nesting a second panel. */
+.card :global(#pitch-reference) {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
