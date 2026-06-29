@@ -18,6 +18,7 @@ import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { SingingControlOverlay } from '@/components/singing/SingingControlOverlay'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 
@@ -1457,46 +1458,6 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
                   {/* Practice panel */}
                   <div id="practice-panel">
-                    {/* Shared control toolbar with practice-specific options */}
-                    <SharedControlToolbar
-                      activeTab={() => activeTab()}
-                      singingTab={() => activeTab() === TAB_SINGING}
-                      editorTab={() => activeTab() === TAB_COMPOSE}
-                      isPlaying={isPlaying}
-                      isPaused={isPaused}
-                      onPlay={handlePracticePlay}
-                      onPause={handlePause}
-                      onResume={handleResume}
-                      onStop={() => void handleStop()}
-                      volume={savedVol}
-                      onVolumeChange={(vol) => {
-                        setSavedVol(vol)
-                        audioEngine?.setVolume(vol / 100)
-                      }}
-                      speed={playbackSpeed()}
-                      onSpeedChange={setPlaybackSpeed}
-                      metronomeEnabled={() => metronomeEnabled()}
-                      onMetronomeToggle={() =>
-                        setMetronomeEnabled(metronomeEnabled() === false)
-                      }
-                      playMode={() => playMode()}
-                      playModeChange={handlePracticeModeChange}
-                      practiceCycles={() => repeatCycles()}
-                      onCyclesChange={setRepeatCycles}
-                      currentCycle={() => currentRepeat()}
-                      practiceSubMode={() => practiceSubMode()}
-                      onPracticeSubModeChange={setPracticeSubMode}
-                      spacedRestMode={spacedRestMode}
-                      onSpacedRestModeChange={setSpacedRestMode}
-                      isCountingIn={() => isCountingIn()}
-                      countInBeat={() => countInBeat()}
-                      countInBeats={() => countIn()}
-                      onMicToggle={() => {
-                        void handleMicToggle()
-                      }}
-                      onWaveToggle={toggleMicWaveVisible}
-                    />
-
                     <Show when={sessionActive()}>
                       <div style={{ position: 'relative' }}>
                         <SessionPlayer
@@ -1546,6 +1507,46 @@ const AppShell: Component<AppProps> = (props) => {
                         targetNoteName={targetNoteName}
                         liveScore={liveScore}
                       />
+                      <SingingControlOverlay>
+                        <SharedControlToolbar
+                          activeTab={() => activeTab()}
+                          singingTab={() => activeTab() === TAB_SINGING}
+                          editorTab={() => activeTab() === TAB_COMPOSE}
+                          isPlaying={isPlaying}
+                          isPaused={isPaused}
+                          onPlay={handlePracticePlay}
+                          onPause={handlePause}
+                          onResume={handleResume}
+                          onStop={() => void handleStop()}
+                          volume={savedVol}
+                          onVolumeChange={(vol) => {
+                            setSavedVol(vol)
+                            audioEngine?.setVolume(vol / 100)
+                          }}
+                          speed={playbackSpeed()}
+                          onSpeedChange={setPlaybackSpeed}
+                          metronomeEnabled={() => metronomeEnabled()}
+                          onMetronomeToggle={() =>
+                            setMetronomeEnabled(metronomeEnabled() === false)
+                          }
+                          playMode={() => playMode()}
+                          playModeChange={handlePracticeModeChange}
+                          practiceCycles={() => repeatCycles()}
+                          onCyclesChange={setRepeatCycles}
+                          currentCycle={() => currentRepeat()}
+                          practiceSubMode={() => practiceSubMode()}
+                          onPracticeSubModeChange={setPracticeSubMode}
+                          spacedRestMode={spacedRestMode}
+                          onSpacedRestModeChange={setSpacedRestMode}
+                          isCountingIn={() => isCountingIn()}
+                          countInBeat={() => countInBeat()}
+                          countInBeats={() => countIn()}
+                          onMicToggle={() => {
+                            void handleMicToggle()
+                          }}
+                          onWaveToggle={toggleMicWaveVisible}
+                        />
+                      </SingingControlOverlay>
                     </div>
 
                     <PitchAccuracyHeatmap
