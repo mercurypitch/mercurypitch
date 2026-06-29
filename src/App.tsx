@@ -19,6 +19,7 @@ import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SingingControlOverlay } from '@/components/singing/SingingControlOverlay'
+import { SingingStatusChip } from '@/components/singing/SingingStatusChip'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 
@@ -1506,6 +1507,15 @@ const AppShell: Component<AppProps> = (props) => {
                         pitch={currentPitch}
                         targetNoteName={targetNoteName}
                         liveScore={liveScore}
+                      />
+                      <SingingStatusChip
+                        keyName={keyNameSignal}
+                        scaleType={scaleTypeSignal}
+                        melodyName={() =>
+                          melodyStore.currentMelody()?.name ?? null
+                        }
+                        bpm={bpm}
+                        currentBeat={currentBeat}
                       />
                       <SingingControlOverlay>
                         <SharedControlToolbar
