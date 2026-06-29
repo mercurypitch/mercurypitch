@@ -54,13 +54,20 @@ export async function fetchPricing(base?: string): Promise<Pricing | null> {
   return (await res.json()) as Pricing
 }
 
-/** Signed-in user's credit balance + entitlements. Null when no API. */
+/** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */
 export async function fetchBillingMe(base?: string): Promise<BillingMe | null> {
   const b = apiBase(base)
   if (b === '') return null
-  const res = await fetch(`${b}/api/billing/me`, { headers: getAuthHeaders() })
-  if (!res.ok) throw new Error(`Failed to load billing: ${res.statusText}`)
-  return (await res.json()) as BillingMe
+  try {
+    const res = await fetch(`${b}/api/billing/me`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) return null
+    return (await res.json()) as BillingMe
+  } catch {
+    // Backend unreachable — degrade to "no billing info" instead of throwing.
+    return null
+  }
 }
 
 /** Start checkout for a pack; returns the Stripe-hosted URL to redirect to. */
