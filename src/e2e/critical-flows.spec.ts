@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchTab } from '@/e2e/helpers/ui'
+import { dismissOverlays, switchSettingsTab, switchTab } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
@@ -525,6 +525,7 @@ test.describe('Critical Flows — GH #121', () => {
     test('ADSR sliders change values and persist', async ({ page }) => {
       await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
+      await switchSettingsTab(page, 'singing')
 
       const attack = page.locator('#adsr-attack')
       const decay = page.locator('#adsr-decay')
@@ -557,6 +558,7 @@ test.describe('Critical Flows — GH #121', () => {
     test('Reverb controls change settings', async ({ page }) => {
       await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
+      await switchSettingsTab(page, 'singing')
 
       const reverbType = page.locator('#reverb-type')
       const reverbWetness = page.locator('#reverb-wetness')
@@ -600,6 +602,7 @@ test.describe('Critical Flows — GH #121', () => {
       // Set specific ADSR values
       await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
+      await switchSettingsTab(page, 'singing')
 
       await page.locator('#adsr-attack').fill('750')
       await page.locator('#adsr-decay').fill('350')
@@ -614,6 +617,7 @@ test.describe('Critical Flows — GH #121', () => {
       // Go to settings
       await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
+      await switchSettingsTab(page, 'singing')
 
       // Values should be persisted
       const attackVal = await page.locator('#adsr-attack').inputValue()
@@ -700,6 +704,9 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(page.locator('#settings-panel')).toBeVisible({
         timeout: 5000,
       })
+
+      // About section lives under the Account & App sub-tab
+      await switchSettingsTab(page, 'account')
 
       // Title should be visible
       await expect(page.locator('[data-testid="settings-title"]')).toBeVisible()
