@@ -12,7 +12,7 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
-import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
+import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
@@ -679,6 +679,25 @@ export const SettingsPanel: Component = () => {
                 <span class={styles.settingsSlider} />
               </label>
               <small>Show live pitch tracker (Practice tab)</small>
+            </div>
+
+            <div class={styles.settingsRow}>
+              <label for="vis-history">History Panel</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="vis-history"
+                  checked={showHistoryPanel()}
+                  onChange={(e) => {
+                    setShowHistoryPanel(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Show the live frequency / waveform history bars below the canvas
+                (Practice tab). Off by default.
+              </small>
             </div>
 
             <div class={styles.settingsRow}>

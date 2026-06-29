@@ -98,7 +98,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { fontFamily, showHistoryPanel, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -1562,13 +1562,15 @@ const AppShell: Component<AppProps> = (props) => {
                       }}
                     />
 
-                    <div id="history-container">
-                      <HistoryCanvas
-                        frequencyData={frequencyData}
-                        waveformData={waveformData}
-                        liveScore={liveScore}
-                      />
-                    </div>
+                    <Show when={showHistoryPanel()}>
+                      <div id="history-container">
+                        <HistoryCanvas
+                          frequencyData={frequencyData}
+                          waveformData={waveformData}
+                          liveScore={liveScore}
+                        />
+                      </div>
+                    </Show>
                   </div>
                 </TabErrorBoundary>
               </Show>
