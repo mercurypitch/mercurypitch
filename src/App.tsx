@@ -1753,62 +1753,73 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_COMPOSE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
-                  <ControlOverlay static idPrefix="compose">
-                    <ComposeControlBar
-                      isPlaying={editorIsPlaying}
-                      isPaused={editorIsPaused}
-                      onPlay={() => void handleEditorPlay()}
-                      onPause={handleEditorPause}
-                      onResume={handleEditorResume}
-                      onStop={handleEditorStop}
-                      volume={savedVol}
-                      onVolumeChange={(vol) => {
-                        setSavedVol(vol)
-                        audioEngine?.setVolume(vol / 100)
-                      }}
-                      speed={playbackSpeed}
-                      onSpeedChange={setPlaybackSpeed}
-                      metronomeEnabled={() => metronomeEnabled()}
-                      onMetronomeToggle={() =>
-                        setMetronomeEnabled(metronomeEnabled() === false)
-                      }
-                      isRecording={() => recording.isRecording()}
-                      onRecordToggle={() => void recording.handleRecordToggle()}
-                      onShareMelody={handleCopyShareLink}
-                      onMicToggle={() => {
-                        void handleMicToggle()
-                      }}
-                    />
-                  </ControlOverlay>
+                  <div class={styles.composeToolbar}>
+                    <div
+                      class={styles.editorTabs}
+                      role="tablist"
+                      aria-label="Editor view"
+                      data-tour="compose.editor"
+                    >
+                      <button
+                        type="button"
+                        role="tab"
+                        class={styles.editorTab}
+                        classList={{
+                          [styles.editorTabActive]:
+                            editorView() === 'piano-roll',
+                        }}
+                        aria-selected={editorView() === 'piano-roll'}
+                        onClick={() => setEditorView('piano-roll')}
+                        title="Piano Roll"
+                      >
+                        <MusicBoard /> Piano Roll
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        class={styles.editorTab}
+                        classList={{
+                          [styles.editorTabActive]:
+                            editorView() === 'session-editor',
+                        }}
+                        aria-selected={editorView() === 'session-editor'}
+                        data-testid="view-session-editor"
+                        onClick={() => setEditorView('session-editor')}
+                        title="Session Editor"
+                      >
+                        <SlidersHorizontal /> Session Editor
+                      </button>
+                    </div>
 
-                  <div
-                    class={styles.editorViewToggle}
-                    data-tour="compose.editor"
-                  >
-                    <button
-                      class={styles.viewBtn}
-                      classList={{
-                        [styles.activeViewBtn]: editorView() === 'piano-roll',
-                      }}
-                      onClick={() => setEditorView('piano-roll')}
-                      aria-label="Piano Roll"
-                      title="Piano Roll"
-                    >
-                      <MusicBoard /> Piano Roll
-                    </button>
-                    <button
-                      class={styles.viewBtn}
-                      classList={{
-                        [styles.activeViewBtn]:
-                          editorView() === 'session-editor',
-                      }}
-                      data-testid="view-session-editor"
-                      onClick={() => setEditorView('session-editor')}
-                      aria-label="Session Editor"
-                      title="Session Editor"
-                    >
-                      <SlidersHorizontal /> Session Editor
-                    </button>
+                    <ControlOverlay static inline idPrefix="compose">
+                      <ComposeControlBar
+                        isPlaying={editorIsPlaying}
+                        isPaused={editorIsPaused}
+                        onPlay={() => void handleEditorPlay()}
+                        onPause={handleEditorPause}
+                        onResume={handleEditorResume}
+                        onStop={handleEditorStop}
+                        volume={savedVol}
+                        onVolumeChange={(vol) => {
+                          setSavedVol(vol)
+                          audioEngine?.setVolume(vol / 100)
+                        }}
+                        speed={playbackSpeed}
+                        onSpeedChange={setPlaybackSpeed}
+                        metronomeEnabled={() => metronomeEnabled()}
+                        onMetronomeToggle={() =>
+                          setMetronomeEnabled(metronomeEnabled() === false)
+                        }
+                        isRecording={() => recording.isRecording()}
+                        onRecordToggle={() =>
+                          void recording.handleRecordToggle()
+                        }
+                        onShareMelody={handleCopyShareLink}
+                        onMicToggle={() => {
+                          void handleMicToggle()
+                        }}
+                      />
+                    </ControlOverlay>
                   </div>
 
                   <Show when={editorView() === 'session-editor'}>

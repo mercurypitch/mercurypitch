@@ -63,20 +63,32 @@ interface ControlOverlayProps {
    * canvas (Guitar fretboard, Compose). The host owns show/hide.
    */
   static?: boolean
+  /**
+   * Static-only: drop the centring/flow wrapper and render the bare glass card,
+   * so the host can place it inline in a row (e.g. Compose: tabs + bar in one
+   * row). No effect unless `static`.
+   */
+  inline?: boolean
 }
 
 export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
   // Static per mount — safe to read once for the persist keys / test-ids.
   const prefix = props.idPrefix ?? 'singing' // eslint-disable-line solid/reactivity
+  const isStatic = props.static === true // eslint-disable-line solid/reactivity
+  const isInline = props.inline === true // eslint-disable-line solid/reactivity
 
-  // Static mode: a plain centred glass card in flow. No dock/hide chrome.
-  if (props.static === true) {
-    return (
-      <div class={`${styles.overlayWrap} ${styles.staticWrap}`}>
-        <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
-          <div class={styles.toolbarSlot}>{props.children}</div>
-        </div>
+  // Static mode: a plain glass card in flow. No dock/hide chrome. `inline`
+  // drops the centring wrapper so the host can place the card in a row.
+  if (isStatic) {
+    const card = (
+      <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
+        <div class={styles.toolbarSlot}>{props.children}</div>
       </div>
+    )
+    return isInline ? (
+      card
+    ) : (
+      <div class={`${styles.overlayWrap} ${styles.staticWrap}`}>{card}</div>
     )
   }
 
