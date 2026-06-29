@@ -1,5 +1,5 @@
 import type { WalkthroughStep } from '@/stores'
-import { removeNotification, showActionNotification, startTour } from '@/stores'
+import { removeNotification, showActionNotification, startTour, TOUR_OFFER_CHANNEL, } from '@/stores'
 
 /**
  * Offer a contextual spotlight tour exactly once, the first time its host view
@@ -21,11 +21,18 @@ export function offerTourOnce(
     // localStorage unavailable (private mode) — offer once per session instead.
   }
 
-  const id = showActionNotification(message, 'info', {
-    label: 'Start tour',
-    onClick: () => {
-      removeNotification(id)
-      startTour(steps)
+  const id = showActionNotification(
+    message,
+    'info',
+    {
+      label: 'Start tour',
+      onClick: () => {
+        removeNotification(id)
+        startTour(steps)
+      },
     },
-  })
+    // Share the single tour-offer slot so a contextual (e.g. stem-mixer) offer
+    // and a per-page offer never stack on top of each other.
+    { channel: TOUR_OFFER_CHANNEL },
+  )
 }

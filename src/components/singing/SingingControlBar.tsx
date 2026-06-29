@@ -75,7 +75,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       />
 
       {/* Transport */}
-      <div class={styles.transport}>
+      <div class={styles.transport} data-tour="transport.essential">
         <Show when={stopped()}>
           <button
             type="button"

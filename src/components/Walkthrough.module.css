@@ -276,8 +276,13 @@
     padding: 8px 12px;
   }
 
+  /* Let the four action controls wrap instead of overflowing the tooltip on
+     the very smallest screens — "Skip Tour" drops to its own row above the
+     Back / Skip Section / Next group. */
   .walkthroughActions {
+    flex-wrap: wrap;
     gap: 4px;
+    row-gap: 6px;
   }
 
   .walkthroughActionsCenter {

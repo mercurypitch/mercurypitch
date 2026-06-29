@@ -227,6 +227,23 @@ export async function deletePlaylist(id: string): Promise<void> {
   if (activePlaylistId() === id) stopPlaylist()
 }
 
+/** Delete every saved playlist (cache + DB). Used by the karaoke data reset. */
+export async function deleteAllPlaylists(): Promise<void> {
+  const existing = _playlists()
+  _setPlaylists([])
+  bump()
+  stopPlaylist()
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<KaraokePlaylistRecord>(REPO)
+    for (const pl of existing) {
+      await repo.delete(pl.id)
+    }
+  } catch (err) {
+    if (IS_DEV) console.warn('[KaraokePlaylistStore] deleteAll failed:', err)
+  }
+}
+
 function mutateItems(
   id: string,
   fn: (items: KaraokePlaylistItem[]) => KaraokePlaylistItem[],
