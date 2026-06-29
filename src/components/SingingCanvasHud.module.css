@@ -5,7 +5,8 @@
    theme-adaptive by deriving its surface from --bg-card.
    ============================================================ */
 
-.hud {
+/* Live accuracy score — top-right. */
+.accuracyHud {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -16,6 +17,17 @@
   width: 220px;
   max-width: 46%;
   /* Display-only HUD — let canvas drags / clicks pass straight through. */
+  pointer-events: none;
+}
+
+/* Pitch monitor — bottom-left, mirroring the Guitar 3D input monitor. */
+.pitchHud {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 6;
+  width: 200px;
+  max-width: 44%;
   pointer-events: none;
 }
 
