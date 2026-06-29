@@ -19,6 +19,14 @@
   pointer-events: none;
 }
 
+/* Static placement (Guitar fretboard / Compose): glass card in normal flow,
+   centred, no docking. Overrides .overlayWrap's absolute positioning. */
+.staticWrap {
+  position: static;
+  z-index: auto;
+  margin-bottom: 8px;
+}
+
 .top {
   top: 12px;
 }
