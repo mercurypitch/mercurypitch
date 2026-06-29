@@ -28,7 +28,11 @@ CREATE TABLE IF NOT EXISTS users (
   -- increments this so older tokens fail the `getAuth` version check.
   -- Required by createUser/issueSession/getAuth — a fresh DB without it
   -- breaks register/login (table has no column named tokenVersion).
-  tokenVersion INTEGER NOT NULL DEFAULT 1
+  tokenVersion INTEGER NOT NULL DEFAULT 1,
+  -- Stripe customer id, set on first checkout (see billing.ts). NULL until
+  -- the user starts a purchase. Existing DBs: see
+  -- scripts/migrate-users-add-stripeCustomerId.sql.
+  stripeCustomerId TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider
@@ -273,6 +277,69 @@ CREATE TABLE IF NOT EXISTS userSurveyResponses (
 );
 
 CREATE INDEX IF NOT EXISTS idx_userSurveyResponses_userId ON userSurveyResponses(userId);
+
+-- ── Billing: pricing, credits, entitlements (see src/billing.ts) ─────
+-- Pricing is DB-driven so prices/tiers change without a deploy and no price
+-- lives in the repo. `amount` is in minor units (e.g. cents); NULL renders
+-- as "Soon" on the client and disables purchase. Seed rows (null amounts)
+-- live in seed-pricing.sql.
+CREATE TABLE IF NOT EXISTS pricingPlans (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  kind TEXT NOT NULL,              -- 'tier' | 'pack'
+  label TEXT NOT NULL,
+  description TEXT,
+  unit TEXT,                       -- e.g. 'song' (tiers)
+  amount INTEGER,                  -- minor units; NULL = price not set ("Soon")
+  currency TEXT NOT NULL DEFAULT 'eur',
+  credits INTEGER,                 -- credits granted (packs)
+  stripePriceId TEXT,              -- wired in Stripe later
+  badge TEXT,                      -- e.g. 'Default', 'Beta 2x'
+  sortOrder INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_pricingPlans_kind ON pricingPlans(kind);
+
+-- Append-only credit ledger; a user's balance is SUM(delta). `delta` is
+-- positive for grants (purchase) and negative for debits (a paid job).
+-- idempotencyKey makes grants/debits safe to retry (webhook redelivery,
+-- job retries) — a duplicate key is ignored, never double-counted.
+CREATE TABLE IF NOT EXISTS creditLedger (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  delta INTEGER NOT NULL,
+  reason TEXT,
+  jobRef TEXT,
+  idempotencyKey TEXT UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_creditLedger_userId ON creditLedger(userId);
+
+-- Per-user feature grants (e.g. a subscription entitlement), mirrored from
+-- Stripe webhooks. expiresAt NULL = no expiry.
+CREATE TABLE IF NOT EXISTS entitlements (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  feature TEXT NOT NULL,
+  source TEXT,
+  expiresAt TEXT,
+  UNIQUE(userId, feature)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entitlements_userId ON entitlements(userId);
+
+-- Processed Stripe event ids — webhook idempotency. An event id already
+-- present here is acknowledged and skipped (Stripe retries deliveries).
+CREATE TABLE IF NOT EXISTS billingEvents (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  type TEXT
+);
 
 -- ── Auth rate limiting ───────────────────────────────────────────────
 -- Per-IP, per-endpoint counters for the auth POST endpoints (see auth.ts).

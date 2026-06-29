@@ -701,3 +701,45 @@ input:checked + .settingsSlider:before {
 .settingsTierSelector .tierDesc {
   font-size: 0.65rem;
 }
+
+/* ── Settings tabs ─────────────────────────────────────────────────
+   Group the (long) settings into a few tabs; the row scrolls
+   horizontally on narrow screens rather than wrapping. */
+.settingsTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settingsTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.settingsTab {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.settingsTab:hover {
+  color: var(--text-primary);
+}
+
+.settingsTabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
