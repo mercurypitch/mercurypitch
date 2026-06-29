@@ -55,4 +55,29 @@ describe('scoreToMidiSong', () => {
     expect(song.bpm).toBe(95)
     expect(song.tracks[0].noteCount).toBe(2)
   })
+
+  it('lets a let-ring note ring until the next note on the same string', () => {
+    // Eighth let-ring on string 3, an eighth rest, then a quarter back on
+    // string 3 — the let-ring note should sustain from beat 0 to beat 1.
+    const song = scoreToMidiSong(
+      scoreFromTex('\\tempo 120 . 3.3{lr}.8 r.8 5.3.4'),
+    )
+    const notes = song.tracks[0].notes
+    expect(notes.length).toBe(2)
+    expect(notes[0].letRing).toBe(true)
+    expect(notes[0].stringIndex).toBe(2)
+    expect(notes[0].duration).toBeCloseTo(1) // extended from the 0.5 eighth
+    expect(notes[1].startBeat).toBeCloseTo(1)
+    expect(notes[1].letRing).toBeUndefined()
+  })
+
+  it('keeps a let-ring note at its notated length with no later same-string note', () => {
+    // Let-ring on string 3, then a note on string 4 — string 3 is never
+    // re-struck, so the duration stays the notated eighth.
+    const song = scoreToMidiSong(scoreFromTex('\\tempo 120 . 3.3{lr}.8 5.4.4'))
+    const notes = song.tracks[0].notes
+    expect(notes[0].letRing).toBe(true)
+    expect(notes[0].stringIndex).toBe(2)
+    expect(notes[0].duration).toBeCloseTo(0.5)
+  })
 })

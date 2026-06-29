@@ -15,6 +15,13 @@ export interface MidiSongNote {
   stringIndex?: number
   /** Original tab fret (Guitar Pro imports only). */
   fret?: number
+  /**
+   * Guitar Pro "let ring": the note keeps sounding past its notated length
+   * until the same string is struck again. Realised at import by extending
+   * `duration` to the next same-string note (see gp-to-midi-song.ts); the flag
+   * is preserved for a future visual cue / honor-toggle.
+   */
+  letRing?: boolean
 }
 
 /** One playable track (drum channels are filtered out). */

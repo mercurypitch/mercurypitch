@@ -42,11 +42,13 @@ function trackToMidiSongTrack(
             // unambiguously; otherwise leave it for auto-placement downstream.
             const fret = note.fret
             const stringIndex = fret >= 0 ? tuning.indexOf(midi - fret) : -1
-            if (stringIndex >= 0) {
-              notes.push({ midi, startBeat, duration, stringIndex, fret })
-            } else {
-              notes.push({ midi, startBeat, duration })
-            }
+            const out: MidiSongNote =
+              stringIndex >= 0
+                ? { midi, startBeat, duration, stringIndex, fret }
+                : { midi, startBeat, duration }
+            // Let-ring is exposed per-note and per-beat by alphaTab.
+            if (note.isLetRing || beat.isLetRing) out.letRing = true
+            notes.push(out)
           }
         }
       }
@@ -55,6 +57,7 @@ function trackToMidiSongTrack(
 
   if (notes.length === 0) return null
   notes.sort((a, b) => a.startBeat - b.startBeat)
+  applyLetRing(notes)
 
   const program = info?.program ?? 0
   const instrumentName = gmInstrumentName(program)
@@ -65,6 +68,28 @@ function trackToMidiSongTrack(
     instrumentName,
     noteCount: notes.length,
     notes,
+  }
+}
+
+/**
+ * Realise Guitar Pro "let ring": a flagged note keeps sounding until the same
+ * string is struck again, so we extend its duration to the onset of the next
+ * note on that string. This flows through the existing duration-respecting
+ * playback + falling-notes rendering, so no audio-engine change is needed.
+ * Notes with no resolved stringIndex, or with no later same-string note, keep
+ * their notated duration. `notes` must already be sorted by startBeat.
+ */
+function applyLetRing(notes: MidiSongNote[]): void {
+  // The pending let-ring note awaiting its next strike, keyed by string.
+  const pending = new Map<number, MidiSongNote>()
+  for (const n of notes) {
+    if (n.stringIndex === undefined) continue
+    const prev = pending.get(n.stringIndex)
+    if (prev !== undefined && n.startBeat > prev.startBeat) {
+      prev.duration = n.startBeat - prev.startBeat
+      pending.delete(n.stringIndex)
+    }
+    if (n.letRing === true) pending.set(n.stringIndex, n)
   }
 }
 
