@@ -14,6 +14,24 @@ import styles from './PricingPanel.module.css'
 
 const KOFI_URL = 'https://ko-fi.com/chaosmatters'
 
+// Distinct, subtle per-card accent hues, cycled by card position. Drive the
+// gradient tint, colored outline and animated sheen; kept theme-adaptive via
+// color-mix() against the surface in PricingPanel.module.css.
+const CARD_ACCENTS = [
+  '#5b8def', // blue
+  '#28c2a8', // teal
+  '#b57bf0', // violet
+  '#f2a64d', // amber
+  '#ef6f9b', // rose
+  '#5fc97a', // green
+]
+
+const cardVars = (index: number, offset = 0): Record<string, string> => ({
+  '--card-accent': CARD_ACCENTS[(index + offset) % CARD_ACCENTS.length],
+  // Negative stagger so the row's sheen ripples left → right from the start.
+  '--sheen-delay': `${-index * 0.9}s`,
+})
+
 export const PricingPanel: Component = () => {
   const [pricing] = createResource(() => fetchPricing())
 
@@ -57,8 +75,12 @@ export const PricingPanel: Component = () => {
               <h4 class={styles.heading}>Separation speed</h4>
               <div class={styles.grid}>
                 <For each={p().tiers}>
-                  {(tier) => (
-                    <div class={styles.card} data-testid="pricing-tier">
+                  {(tier, i) => (
+                    <div
+                      class={styles.card}
+                      data-testid="pricing-tier"
+                      style={cardVars(i())}
+                    >
                       <div class={styles.cardHead}>
                         <span class={styles.label}>{tier.label}</span>
                         <Show when={hasBadge(tier.badge)}>
@@ -93,8 +115,12 @@ export const PricingPanel: Component = () => {
               <h4 class={styles.heading}>Credit packs</h4>
               <div class={styles.grid}>
                 <For each={p().packs}>
-                  {(pack) => (
-                    <div class={styles.card} data-testid="pricing-pack">
+                  {(pack, i) => (
+                    <div
+                      class={styles.card}
+                      data-testid="pricing-pack"
+                      style={cardVars(i(), 3)}
+                    >
                       <div class={styles.cardHead}>
                         <span class={styles.label}>{pack.label}</span>
                         <Show when={hasBadge(pack.badge)}>
@@ -129,13 +155,30 @@ export const PricingPanel: Component = () => {
         )}
       </Show>
 
-      <p class={styles.support}>
-        Want to support development now?{' '}
-        <a href={KOFI_URL} target="_blank" rel="noopener noreferrer">
-          Buy me a coffee on Ko-fi
+      <div class={styles.supportRow}>
+        <a
+          class={styles.supportBtn}
+          href={KOFI_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="pricing-support"
+          aria-label="Support development on Ko-fi"
+        >
+          <svg
+            class={styles.supportHeart}
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            />
+          </svg>
+          <span>Support development</span>
         </a>
-        .
-      </p>
+      </div>
     </div>
   )
 }
