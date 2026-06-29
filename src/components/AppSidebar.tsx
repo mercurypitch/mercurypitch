@@ -7,6 +7,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { IconDiamond } from '@/components/exercise-icons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
@@ -230,11 +231,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
       />
 
+      {/* Library — right after the character icons. */}
+      <div class={styles.sidebarSection}>
+        <LibraryTab />
+      </div>
+
       {/* Playback Setup section */}
       <Show when={showPlaybackSetupInfo()}>
-        <div class={styles.sidebarSection}>
-          <h2 class={styles.panelTitle}>Playback Setup</h2>
-
+        <CollapsibleSection
+          title="Playback Setup"
+          storageKey="sidebar-playback-open"
+        >
           <div class={styles.scaleInfo} data-tour="singing.key-scale">
             <SafeSelect
               class={['dropdown-select-style', styles.keySelect].join(' ')}
@@ -392,108 +399,18 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               Custom
             </button>
           </div>
-        </div>
+        </CollapsibleSection>
       </Show>
 
       {/* Mic & sensitivity controls — on every pitch-detection tab. */}
       <Show when={isMicTab()}>
-        <div class={styles.sidebarSection}>
-          <h2 class={styles.panelTitle}>Mic &amp; Sensitivity</h2>
+        <CollapsibleSection
+          title="Mic & Sensitivity"
+          storageKey="sidebar-mic-open"
+        >
           <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
-        </div>
+        </CollapsibleSection>
       </Show>
-
-      {/* Quick visibility toggles — compact 2x3 grid */}
-      <div class={[styles.sidebarSection, styles.visGrid].join(' ')}>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Ball</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={showPlaybackBall()}
-              onChange={(e) => {
-                const v = e.currentTarget.checked
-                setShowPlaybackBall(v)
-                if (!v && !showPlayhead()) setShowPlayhead(true)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Playhead</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={showPlayhead()}
-              onChange={(e) => {
-                const v = e.currentTarget.checked
-                setShowPlayhead(v)
-                if (!v && !showPlaybackBall()) setShowPlaybackBall(true)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Grid</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={gridLinesVisible()}
-              onChange={(e) => {
-                setGridLinesVisible(e.currentTarget.checked)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Notes</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={showSidebarNoteList()}
-              onChange={(e) => {
-                setShowSidebarNoteList(e.currentTarget.checked)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Stats</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={showStats()}
-              onChange={(e) => {
-                setShowStats(e.currentTarget.checked)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-        <div class={styles.visGridCell}>
-          <span class={styles.visGridLabel}>Pitch</span>
-          <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
-            <input
-              type="checkbox"
-              checked={showPitchDisplay()}
-              onChange={(e) => {
-                setShowPitchDisplay(e.currentTarget.checked)
-              }}
-            />
-            <span class="settings-slider" />
-          </label>
-        </div>
-      </div>
-      <div class={styles.fancyDivider} />
-
-      {/* Library */}
-      <div class={styles.sidebarSection}>
-        <LibraryTab />
-      </div>
 
       {/* Daily Routine */}
       <div class={styles.sidebarSection}>
@@ -501,10 +418,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
 
       {/* Streak Calendar */}
-      <div class={styles.sidebarSection}>
-        <h3 class={styles.panelTitle}>Activity</h3>
+      <CollapsibleSection title="Activity" storageKey="sidebar-activity-open">
         <StreakCalendar />
-      </div>
+      </CollapsibleSection>
 
       {/* Session history — practice tab only. The live Accuracy and Pitch
           panels now render as overlays on the singing canvas (SingingCanvasHud). */}
@@ -558,6 +474,94 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           />
         </div>
       </Show>
+
+      {/* Display & visibility toggles — last; collapsible. */}
+      <CollapsibleSection title="Display" storageKey="sidebar-display-open">
+        <div class={styles.visGrid}>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Ball</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={showPlaybackBall()}
+                onChange={(e) => {
+                  const v = e.currentTarget.checked
+                  setShowPlaybackBall(v)
+                  if (!v && !showPlayhead()) setShowPlayhead(true)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Playhead</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={showPlayhead()}
+                onChange={(e) => {
+                  const v = e.currentTarget.checked
+                  setShowPlayhead(v)
+                  if (!v && !showPlaybackBall()) setShowPlaybackBall(true)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Grid</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={gridLinesVisible()}
+                onChange={(e) => {
+                  setGridLinesVisible(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Notes</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={showSidebarNoteList()}
+                onChange={(e) => {
+                  setShowSidebarNoteList(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Stats</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={showStats()}
+                onChange={(e) => {
+                  setShowStats(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+          <div class={styles.visGridCell}>
+            <span class={styles.visGridLabel}>Pitch</span>
+            <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
+              <input
+                type="checkbox"
+                checked={showPitchDisplay()}
+                onChange={(e) => {
+                  setShowPitchDisplay(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+          </div>
+        </div>
+      </CollapsibleSection>
     </aside>
   )
 }
