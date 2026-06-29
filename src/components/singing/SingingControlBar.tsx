@@ -287,6 +287,51 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         </div>
       </Show>
 
+      {/* Session sub-mode (session) / spaced rest (once) — kept next to the
+          play-mode toggle since they're mode-related. */}
+      <Show when={props.playMode() === PLAYBACK_MODE_SESSION}>
+        <div class={styles.field}>
+          <IconRest />
+          <SafeSelect
+            id="practice-sub-mode"
+            class={styles.select}
+            value={props.practiceSubMode()}
+            aria-label="Session mode"
+            onChange={(e) =>
+              props.onPracticeSubModeChange(
+                e.currentTarget.value as PracticeSubMode,
+              )
+            }
+          >
+            <option value="all">All Notes</option>
+            <option value="random">Random (50%)</option>
+            <option value="focus">Focus Errors</option>
+            <option value="reverse">Reverse</option>
+          </SafeSelect>
+        </div>
+      </Show>
+      <Show when={props.playMode() === PLAYBACK_MODE_ONCE}>
+        <div class={styles.field}>
+          <IconRest />
+          <SafeSelect
+            id="spaced-rest-mode"
+            class={styles.select}
+            value={props.spacedRestMode()}
+            aria-label="Spaced rest"
+            onChange={(e) =>
+              props.onSpacedRestModeChange(
+                e.currentTarget.value as SpacedRestMode,
+              )
+            }
+          >
+            <option value="none">None</option>
+            <option value="fourth">Fourth rest</option>
+            <option value="half">Half rest</option>
+            <option value="full">Full bar rest</option>
+          </SafeSelect>
+        </div>
+      </Show>
+
       {/* Quick toggles: precount, anchor, metronome, wave */}
       <PrecCountButton />
       <button
@@ -430,50 +475,6 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
               <option value="2">2x</option>
             </SafeSelect>
           </div>
-
-          {/* Rest — contextual: sub-mode (session) or spaced rest (once) */}
-          <Show when={props.playMode() === PLAYBACK_MODE_SESSION}>
-            <div class={styles.field}>
-              <IconRest />
-              <SafeSelect
-                id="practice-sub-mode"
-                class={styles.select}
-                value={props.practiceSubMode()}
-                aria-label="Session mode"
-                onChange={(e) =>
-                  props.onPracticeSubModeChange(
-                    e.currentTarget.value as PracticeSubMode,
-                  )
-                }
-              >
-                <option value="all">All Notes</option>
-                <option value="random">Random (50%)</option>
-                <option value="focus">Focus Errors</option>
-                <option value="reverse">Reverse</option>
-              </SafeSelect>
-            </div>
-          </Show>
-          <Show when={props.playMode() === PLAYBACK_MODE_ONCE}>
-            <div class={styles.field}>
-              <IconRest />
-              <SafeSelect
-                id="spaced-rest-mode"
-                class={styles.select}
-                value={props.spacedRestMode()}
-                aria-label="Spaced rest"
-                onChange={(e) =>
-                  props.onSpacedRestModeChange(
-                    e.currentTarget.value as SpacedRestMode,
-                  )
-                }
-              >
-                <option value="none">None</option>
-                <option value="fourth">Fourth rest</option>
-                <option value="half">Half rest</option>
-                <option value="full">Full bar rest</option>
-              </SafeSelect>
-            </div>
-          </Show>
         </div>
       </div>
     </div>

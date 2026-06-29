@@ -97,38 +97,39 @@ export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
     <>
       <Show when={!hidden()}>
         <div
-          class={styles.overlay}
+          class={styles.overlayWrap}
           classList={{
             [styles.top]: dock() === 'top',
             [styles.bottom]: dock() === 'bottom',
           }}
-          data-testid="singing-control-overlay"
         >
-          <div class={styles.chrome}>
-            <button
-              type="button"
-              class={styles.grip}
-              title="Drag to move (top / bottom) · click to flip"
-              aria-label="Move control bar"
-              onPointerDown={onGripDown}
-              onPointerMove={onGripMove}
-              onPointerUp={onGripUp}
-              onPointerCancel={onGripUp}
-            >
-              <GripIcon />
-            </button>
-            <button
-              type="button"
-              class={styles.iconBtn}
-              title="Hide controls"
-              aria-label="Hide controls"
-              data-testid="singing-control-hide"
-              onClick={() => setHidden(true)}
-            >
-              <Chevron dir={dock() === 'top' ? 'up' : 'down'} />
-            </button>
+          <div class={styles.overlay} data-testid="singing-control-overlay">
+            <div class={styles.chrome}>
+              <button
+                type="button"
+                class={styles.grip}
+                title="Drag to move (top / bottom) · click to flip"
+                aria-label="Move control bar"
+                onPointerDown={onGripDown}
+                onPointerMove={onGripMove}
+                onPointerUp={onGripUp}
+                onPointerCancel={onGripUp}
+              >
+                <GripIcon />
+              </button>
+              <button
+                type="button"
+                class={styles.iconBtn}
+                title="Hide controls"
+                aria-label="Hide controls"
+                data-testid="singing-control-hide"
+                onClick={() => setHidden(true)}
+              >
+                <Chevron dir={dock() === 'top' ? 'up' : 'down'} />
+              </button>
+            </div>
+            <div class={styles.toolbarSlot}>{props.children}</div>
           </div>
-          <div class={styles.toolbarSlot}>{props.children}</div>
         </div>
       </Show>
 
