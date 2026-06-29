@@ -18,6 +18,7 @@ import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 
 const SessionBrowser = lazy(async () =>
@@ -1538,6 +1539,12 @@ const AppShell: Component<AppProps> = (props) => {
                         }
                         noteResults={noteResults}
                         countInBeats={() => countIn()}
+                      />
+                      <SingingCanvasHud
+                        noteResults={noteResults}
+                        pitch={currentPitch}
+                        targetNoteName={targetNoteName}
+                        liveScore={liveScore}
                       />
                     </div>
 
