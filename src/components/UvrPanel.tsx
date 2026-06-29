@@ -22,7 +22,7 @@ import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -1214,6 +1214,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </Show>
                 </div>
               </div>
+
+              <Show when={sessionGalleryOpen() && allSessions().length === 0}>
+                <div class="empty-state">
+                  <span class="empty-icon">
+                    <Music />
+                  </span>
+                  <h3>No songs yet</h3>
+                  <p>Upload a song to split it into stems you can sing over.</p>
+                  <label class="primary-btn" for="uvr-file-input">
+                    <FilePlus /> Start uploading
+                  </label>
+                </div>
+              </Show>
 
               <Show when={sessionGalleryOpen() && allSessions().length > 0}>
                 <div class="uvr-session-search">

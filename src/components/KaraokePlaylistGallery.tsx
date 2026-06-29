@@ -9,9 +9,9 @@ import type { KaraokePlaylistRecord } from '@/db'
 import { exportKaraokePlaylists } from '@/db/services/session-export-service'
 import { createPersistedSignal } from '@/lib/storage'
 import { getGroupsReactive } from '@/stores/app-store'
-import { deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, SlidersHorizontal, Trash2, X, } from './icons'
+import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Playlist, Plus, SlidersHorizontal, Trash2, X, } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistGallery.module.css'
 
@@ -61,22 +61,44 @@ export const KaraokePlaylistGallery: Component = () => {
     setEditingId(null)
   }
 
+  const handleCreate = () => {
+    void createPlaylist('New Playlist').then((pl) => {
+      // Drop straight into inline rename so the user names it immediately.
+      setEditingId(pl.id)
+      setEditName(pl.name)
+    })
+  }
+
   const hasPlaylists = createMemo(() => playlists().length > 0)
 
   return (
-    <Show when={hasPlaylists()}>
-      <div class={styles.gallery}>
-        <button class={styles.sectionHeader} onClick={() => setOpen(!open())}>
-          <span class={styles.sectionTitle}>
-            Karaoke Playlists
-            <span class={styles.badge}>{playlists().length}</span>
-          </span>
-          <Show when={open()} fallback={<ChevronDown size={18} />}>
-            <ChevronUp />
-          </Show>
-        </button>
+    <div class={styles.gallery}>
+      <button class={styles.sectionHeader} onClick={() => setOpen(!open())}>
+        <span class={styles.sectionTitle}>
+          Karaoke Playlists
+          <span class={styles.badge}>{playlists().length}</span>
+        </span>
+        <Show when={open()} fallback={<ChevronDown size={18} />}>
+          <ChevronUp />
+        </Show>
+      </button>
 
-        <Show when={open()}>
+      <Show when={open()}>
+        <Show
+          when={hasPlaylists()}
+          fallback={
+            <div class="empty-state">
+              <span class="empty-icon">
+                <Playlist />
+              </span>
+              <h3>No playlists yet</h3>
+              <p>Create a playlist to line up songs for a karaoke set.</p>
+              <button class="primary-btn" onClick={handleCreate}>
+                <Plus /> Create playlist
+              </button>
+            </div>
+          }
+        >
           <div class={styles.cards}>
             <For each={playlists()}>
               {(pl) => (
@@ -209,7 +231,7 @@ export const KaraokePlaylistGallery: Component = () => {
             </For>
           </div>
         </Show>
-      </div>
-    </Show>
+      </Show>
+    </div>
   )
 }
