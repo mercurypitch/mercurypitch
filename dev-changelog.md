@@ -6,14 +6,29 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-06-30
 
 ### Added
 
-- **Settings → Danger Zone: "Clear Karaoke & Vocal Separation Data"** — a new button that deletes only UVR/karaoke data (separated songs, stems, lyrics, fingerprints, whisper transcriptions, session groups, and saved playlists) while keeping melodies, practice history, and settings. (`SettingsPanel`, `deleteAllSessionGroups`, `deleteAllPlaylists`, `deleteAllTranscriptionsFromDb`)
+- Singing practice reworked into a canvas-overlay layout mirroring the 3D guitar view: pitch score + live mic monitor float as glass HUD cards (`SingingCanvasHud`, `SingingStatusChip`), a dockable/hideable glass control bar (`SingingControlBar` inside the generalized `ControlOverlay`), a top-left status chip (scale/melody + tempo + position), a top-right session scoreboard, melody-fit pitch viewport with explicit note-name labels, side-by-side HUD cards, and playback-time decluttering wired to the live `isPlaying` controller signal.
+- Shared glass control-bar system: extracted reusable primitives (`control-bar/icons`, `NumberStepper`) and a generic dockable `ControlOverlay` (`static` + `inline` modes), then migrated Piano (`PianoControlBar`), Guitar (`GuitarControlBar`) and Compose (`ComposeControlBar`) onto bespoke bars; removed `SharedControlToolbar`.
+- Header practice-context pill on Singing/Piano/Guitar and a dynamic header sub-title showing the loaded melody + character.
+- Compose editor view switch reworked into a settings-style tab strip (`editorTab`/`editorTabActive`) with the control bar inlined in the same row via `ControlOverlay`'s new `inline` mode.
+- Reusable `ConfirmDialog` (reuses the `.delete-confirm-*` styles + `useFocusTrap`); wired into karaoke playlist delete from both the gallery and sidebar. Karaoke empty states use a compact variant (`empty-state-compact`).
+- Tabbed Settings (General / Practice / Display & Controls) with a polished account card; header account pill (username + sign-out) and a version + Ko-fi support double-pill.
+- **Settings → Danger Zone: "Clear Karaoke & Vocal Separation Data"** — a button that deletes only UVR/karaoke data (separated songs, stems, lyrics, fingerprints, whisper transcriptions, session groups, and saved playlists) while keeping melodies, practice history, and settings. (`SettingsPanel`, `deleteAllSessionGroups`, `deleteAllPlaylists`, `deleteAllTranscriptionsFromDb`)
+- DB-driven pricing with Stripe checkout/portal/webhook and animated pricing cards; RunPod serverless GPU + CPU separation tiers via an extracted, testable request bridge.
+- Guitar Pro let-ring honored in tab playback (`applyLetRing` in `gp-to-midi-song`, `letRing` on `MidiSongNote`).
+- `/exercises/<slug>` marketing deep-links that land on the exercise setup screen.
+
+### Changed
+
+- Sidebar reordered into collapsible sections.
 
 ### Fixed
 
+- Backend-unreachable now degrades gracefully instead of crashing: cloud reads return empty, `fetchMe`/billing return null, and the global error handler downgrades network errors to warnings (warn-once).
+- Deep-link routing uses an absolute asset base so first-load assets resolve (no SPA-shell fallback), and exercise deep-links no longer auto-start.
 - **Singing guide tour: broken "Play / Pause / Stop" step.** The step targeted `[data-tour="transport.essential"]`, which existed on no element after recent relayouts, so the spotlight failed to highlight and the tooltip floated centred. Added the hook to the transport control group. (`SingingControlBar`)
 - **Settings guide tour broken by the sub-tab relayout.** Settings is now split into General / Practice / Display sub-tabs, but five guide steps (Pitch Detection, Practice Aids, Accuracy Bands, Theme & Appearance, Reverb & ADSR) target controls under a non-default sub-tab; the tour only switched to the Settings tab (which opens on General), so the targets weren't in the DOM. Each step now uses `navigate[]` to open the correct sub-tab first. (`WALKTHROUGH_STEPS`)
 - **Per-page "take a tour" toasts stacked.** A first-time user switching tabs piled up one offer toast per page. All tour-offer toasts now share a single notification channel — a new offer replaces the previous one, and leaving a tab retires the standing offer, so only the latest is shown. (`notifications-store`, `usePageTourOffer`, `offerTourOnce`)
