@@ -3,7 +3,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchTab } from './helpers/ui'
+import { dismissOverlays, openSingingControls, switchTab } from './helpers/ui'
 
 test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -120,6 +120,7 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await page.waitForTimeout(500)
 
     // Verify practice sub-mode select exists
+    await openSingingControls(page)
     const subModeSelect = page.locator('#practice-sub-mode')
     await expect(subModeSelect).toBeVisible()
   })

@@ -83,6 +83,22 @@ export async function switchSettingsTab(
   })
 }
 
+/**
+ * Pin open the Singing control bar's "more" group (tempo / volume / speed /
+ * rest), which is collapsed by default. Idempotent. Call before interacting
+ * with #tempo, #bpm-input, #speed-select, #practice-sub-mode, #spaced-rest-mode.
+ */
+export async function openSingingControls(page: Page) {
+  const toggle = page.locator('[data-testid="singing-more-toggle"]')
+  if ((await toggle.count()) === 0) return
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true', {
+      timeout: 5000,
+    })
+  }
+}
+
 export async function goToAndWait(page: Page, url: string) {
   await page.goto(url)
   await page.waitForLoadState('networkidle')
