@@ -120,6 +120,13 @@ export default {
       if (shareResp) return shareResp
     }
 
+    // Unmatched /api/* must 404 as JSON, not fall through to the SPA shell
+    // below — with not_found_handling=single-page-application the asset binding
+    // returns index.html for any unknown path, which would be wrong for an API.
+    if (url.pathname.startsWith('/api/')) {
+      return json({ error: 'Not found' }, 404)
+    }
+
     // All other requests (static assets, SPA routes) are served by the assets
     // binding. Security headers (CSP-Report-Only, X-Content-Type-Options,
     // Referrer-Policy, HSTS) are applied to asset/document responses via
