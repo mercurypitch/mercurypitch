@@ -89,6 +89,7 @@ export function PianoPage(props: PianoPageProps) {
         <ControlOverlay
           idPrefix="piano"
           containerSelector="#falling-notes-canvas-container"
+          defaultDock="top"
         >
           <PianoControlBar
             isPlaying={props.isPlaying}
