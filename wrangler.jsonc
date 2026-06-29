@@ -22,7 +22,15 @@
     "command": "pnpm run build"
   },
   "assets": {
-    "directory": "dist"
+    "directory": "dist",
+    // `binding` exposes env.ASSETS to the Worker so its non-/api fallthrough
+    // (src/worker.ts) can serve assets. Required: without it env.ASSETS is
+    // undefined and any non-asset path (e.g. /exercises/<slug>) 500s.
+    "binding": "ASSETS",
+    // Serve index.html for non-asset paths (e.g. /exercises/<slug> marketing
+    // deep-links) so the SPA shell loads instead of a 404. /api/* is matched
+    // in src/worker.ts before the asset fallthrough, so APIs are unaffected.
+    "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [
     "nodejs_compat"

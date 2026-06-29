@@ -53,6 +53,7 @@ import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-ser
 import { initSettingsSync } from '@/db/services/settings-service'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
+import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
@@ -305,6 +306,47 @@ const AppShell: Component<AppProps> = (props) => {
     // launch passes no config, which clears any stale override.
     setLaunchOverride(type, config)
     setSelectedExercise(type)
+    setAutoStartExercise(true)
+  }
+
+  // Apply a marketing deep-link slug (`/exercises/<slug>`, see slug-map.ts) to
+  // a launch intent: open a tab, or select + auto-start a pre-configured
+  // exercise. Unknown slugs warn and fall through to the default tab — never
+  // throw, so a stale/mistyped link still loads a usable app.
+  const applyExerciseSlug = (slug: string) => {
+    // `Object.hasOwn` (not `EXERCISE_SLUGS[slug]` truthiness) so an unknown
+    // slug that collides with a prototype key (e.g. `constructor`) still
+    // resolves to "not found" rather than an inherited value.
+    if (!Object.hasOwn(EXERCISE_SLUGS, slug)) {
+      showNotification('Exercise not found', 'warning')
+      return
+    }
+    const launch = EXERCISE_SLUGS[slug]
+    if (launch.kind === 'tab') {
+      setActiveTab(launch.tab)
+      return
+    }
+    // Resolve the target notes: explicit list wins, otherwise derive them from
+    // the named seeded scale melody (its note names, in order).
+    const notes =
+      launch.notes && launch.notes.length > 0
+        ? launch.notes
+        : launch.scaleId !== undefined
+          ? melodyStore
+              .getMelody(launch.scaleId)
+              ?.items.map((it) => `${it.note.name}${it.note.octave}`)
+          : undefined
+    setActiveTab(TAB_EXERCISES)
+    setSelectedExercise(launch.exercise)
+    setLaunchOverride(launch.exercise, {
+      type: launch.exercise,
+      ...(notes && notes.length > 0
+        ? { targetNote: notes[0], targetNotes: notes }
+        : {}),
+      ...(launch.difficulty !== undefined
+        ? { difficulty: launch.difficulty }
+        : {}),
+    })
     setAutoStartExercise(true)
   }
 
@@ -1361,6 +1403,18 @@ const AppShell: Component<AppProps> = (props) => {
           key: sharedData.key,
         })
       }
+    }
+
+    // Marketing exercise deep-links: /exercises/<slug> (see slug-map.ts). The
+    // worker serves index.html for these paths (not_found_handling =
+    // single-page-application), so the slug arrives here on a fresh load.
+    // Runs after seedDefaultSession() above so scaleId-based slugs resolve.
+    const slugMatch = window.location.pathname.match(EXERCISE_SLUG_PATH)
+    if (slugMatch) {
+      applyExerciseSlug(slugMatch[1])
+      // Clean the deep path so a reload/share doesn't re-trigger the launch;
+      // the hash router takes over the URL (e.g. #/exercises) from here.
+      history.replaceState(null, '', '/')
     }
 
     // Saved volume
