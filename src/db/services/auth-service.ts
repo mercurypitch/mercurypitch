@@ -318,13 +318,19 @@ export function logout(): void {
   }
 }
 
-/** Current user + profile, or null when not authenticated. */
+/** Current user + profile, or null when not authenticated / unreachable. */
 export async function fetchMe(): Promise<MeResponse | null> {
   const token = getAuthToken()
   if (token == null || token === '') return null
-  const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) return null
-  return (await res.json()) as MeResponse
+  try {
+    const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    return (await res.json()) as MeResponse
+  } catch {
+    // Backend unreachable (offline / CORS / down) — treat as unauthenticated
+    // so the account UI degrades gracefully instead of leaking a NetworkError.
+    return null
+  }
 }
