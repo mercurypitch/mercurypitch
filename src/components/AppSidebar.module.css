@@ -399,67 +399,8 @@
   color: var(--text-primary);
 }
 
-/* ============================================================
-   Session History Panel (sidebar)
-   ============================================================ */
-
-.sessionHistoryPanel {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.sessionHistoryPanel h3 {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin: 0 0 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.sessionHistoryList {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.sessionHistoryEntry {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 5px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  font-size: 0.7rem;
-}
-
-.sessionHistoryName {
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 90px;
-}
-
-.sessionHistoryScore {
-  font-weight: 600;
-  font-size: 0.7rem;
-}
-
-.scoreHigh {
-  color: var(--green);
-}
-
-.scoreMid {
-  color: var(--yellow);
-}
-
-.scoreLow {
-  color: var(--red);
-}
-
-/* Practice activity heatmap in sidebar */
+/* Practice activity heatmap in sidebar (nested under Activity). Recent-session
+   scores moved to the top-right canvas scoreboard (SingingCanvasHud). */
 .heatmapWrapper {
   margin-top: 10px;
   padding-top: 8px;
