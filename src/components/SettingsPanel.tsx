@@ -110,7 +110,7 @@ export const SettingsPanel: Component = () => {
             onClick={() => setActiveTab('account')}
             data-testid="settings-tab-account"
           >
-            Account &amp; App
+            General
           </button>
           <button
             type="button"
@@ -123,7 +123,7 @@ export const SettingsPanel: Component = () => {
             onClick={() => setActiveTab('singing')}
             data-testid="settings-tab-singing"
           >
-            Singing
+            Practice
           </button>
           <button
             type="button"
