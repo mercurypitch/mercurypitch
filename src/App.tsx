@@ -310,9 +310,9 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // Apply a marketing deep-link slug (`/exercises/<slug>`, see slug-map.ts) to
-  // a launch intent: open a tab, or select + auto-start a pre-configured
-  // exercise. Unknown slugs warn and fall through to the default tab — never
-  // throw, so a stale/mistyped link still loads a usable app.
+  // a launch intent: open a tab, or open a pre-configured exercise on its setup
+  // screen (the user presses Start). Unknown slugs warn and fall through to the
+  // default tab — never throw, so a stale/mistyped link still loads a usable app.
   const applyExerciseSlug = (slug: string) => {
     // `Object.hasOwn` (not `EXERCISE_SLUGS[slug]` truthiness) so an unknown
     // slug that collides with a prototype key (e.g. `constructor`) still
@@ -347,7 +347,12 @@ const AppShell: Component<AppProps> = (props) => {
         ? { difficulty: launch.difficulty }
         : {}),
     })
-    setAutoStartExercise(true)
+    // Intentionally do NOT auto-start. Starting acquires the mic, which
+    // browsers only grant from a user gesture; a fresh deep-link load has none,
+    // so an auto-start would stall on a blank count-in screen waiting for a
+    // prompt that never fires. The pre-configured setup screen (target note
+    // filled in) renders immediately and its Start button is that gesture.
+    setAutoStartExercise(false)
   }
 
   // Auto-launch exercise drill from challenge "Practice" button.

@@ -6,8 +6,9 @@
 // buttons to clean deep-link URLs of the form
 // `https://mercurypitch.com/exercises/<slug>`. Each slug maps to a launch
 // intent the app applies on startup (see `applyExerciseSlug` in App.tsx):
-// open a top-level tab, or select + auto-start an exercise pre-configured
-// with target notes.
+// open a top-level tab, or open an exercise on its setup screen pre-configured
+// with target notes (the user presses Start — see the note there on why we
+// don't auto-start).
 //
 // Slugs are lowercase kebab-case (`[a-z0-9-]+`). Add new ones freely — the
 // landing just needs the agreed string and the app maps it to an action here.
@@ -19,7 +20,7 @@ import { EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/ex
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
-/** Select an exercise, configure it, and auto-start it. */
+/** Open an exercise on its setup screen, pre-configured (the user presses Start). */
 export interface ExerciseLaunch {
   kind: 'exercise'
   exercise: ExerciseType
