@@ -69,6 +69,12 @@ interface ControlOverlayProps {
    * row). No effect unless `static`.
    */
   inline?: boolean
+  /**
+   * Initial dock side before the user has chosen one (the choice persists per
+   * device). Defaults to bottom on desktop / top on small/touch. Piano sets
+   * this to 'top' so the bar doesn't sit over the keyboard at the canvas foot.
+   */
+  defaultDock?: Dock
 }
 
 export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
@@ -96,7 +102,7 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
 
   const [dock, setDock] = createPersistedSignal<Dock>(
     `mp-${prefix}-control-dock`,
-    prefersTopDock() ? 'top' : 'bottom',
+    props.defaultDock ?? (prefersTopDock() ? 'top' : 'bottom'),
     { validator: isDock },
   )
   const [hidden, setHidden] = createPersistedSignal<boolean>(
