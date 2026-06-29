@@ -26,7 +26,7 @@ import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from
 import { bpm, enterFocusMode, micActive, micWaveVisible, setBpm, settings, toggleMicWaveVisible, } from '@/stores'
 import { setTonicAnchor } from '@/stores/settings-store'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
-import { ChevronDown, SlidersHorizontal } from '../icons'
+import { SlidersHorizontal } from '../icons'
 import styles from './SingingControlBar.module.css'
 
 interface SingingControlBarProps {
@@ -150,6 +150,54 @@ const IconRest = () => (
   </Svg>
 )
 
+// Tiny caret for the custom number stepper (the native blue spin button is
+// hidden — see .numInput in the stylesheet).
+const Caret = (p: { up?: boolean }) => (
+  <svg
+    viewBox="0 0 10 6"
+    width="9"
+    height="6"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d={p.up === true ? 'M1 5l4-4 4 4' : 'M1 1l4 4 4-4'} />
+  </svg>
+)
+
+// Neutral, theme-coloured up/down stepper that replaces the native (blue)
+// number spinner. The bare <input type=number> keeps its keyboard stepping.
+const NumberStepper = (p: {
+  value: () => number
+  min: number
+  max: number
+  onChange: (v: number) => void
+}) => (
+  <div class={styles.stepper}>
+    <button
+      type="button"
+      class={styles.stepBtn}
+      tabindex="-1"
+      aria-label="Increase"
+      onClick={() => p.onChange(Math.min(p.max, p.value() + 1))}
+    >
+      <Caret up />
+    </button>
+    <button
+      type="button"
+      class={styles.stepBtn}
+      tabindex="-1"
+      aria-label="Decrease"
+      onClick={() => p.onChange(Math.max(p.min, p.value() - 1))}
+    >
+      <Caret />
+    </button>
+  </div>
+)
+
 export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
   const [pinned, setPinned] = createSignal(false)
   const stopped = () => !props.isPlaying() && !props.isPaused()
@@ -264,20 +312,31 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       {/* Cycles — repeat mode only */}
       <Show when={props.playMode() === PLAYBACK_MODE_REPEAT}>
         <div class={styles.cyclesGroup}>
-          <input
-            id="cycles"
-            class={styles.cyclesInput}
-            type="number"
-            min="2"
-            max="100"
-            value={props.practiceCycles()}
-            aria-label="Repeat cycles"
-            onInput={(e) =>
-              props.onCyclesChange(
-                Math.max(2, Math.min(100, Number(e.currentTarget.value) || 2)),
-              )
-            }
-          />
+          <div class={styles.numWrap}>
+            <input
+              id="cycles"
+              class={styles.cyclesInput}
+              type="number"
+              min="2"
+              max="100"
+              value={props.practiceCycles()}
+              aria-label="Repeat cycles"
+              onInput={(e) =>
+                props.onCyclesChange(
+                  Math.max(
+                    2,
+                    Math.min(100, Number(e.currentTarget.value) || 2),
+                  ),
+                )
+              }
+            />
+            <NumberStepper
+              value={props.practiceCycles}
+              min={2}
+              max={100}
+              onChange={props.onCyclesChange}
+            />
+          </div>
           <span
             class={styles.cyclesProgress}
             data-testid="cycle-progress-value"
@@ -387,43 +446,47 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         </div>
       </Show>
 
-      {/* Expand group — secondary controls (hover or pin to reveal) */}
+      {/* Expand group — secondary controls (click the toggle to reveal).
+          The sliders button lights up (.active) while the group is open, so
+          it doubles as the open/closed indicator — no separate chevron. */}
       <div class={styles.moreWrap} classList={{ [styles.pinned]: pinned() }}>
         <button
           type="button"
           class={styles.btn}
           classList={{ [styles.active]: pinned() }}
           data-testid="singing-more-toggle"
-          title="More controls"
-          aria-label="More controls"
+          title={pinned() ? 'Hide extra controls' : 'More controls'}
+          aria-label={pinned() ? 'Hide extra controls' : 'More controls'}
           aria-expanded={pinned()}
           onClick={() => setPinned((v) => !v)}
         >
           <SlidersHorizontal />
-          <ChevronDown size={13} />
         </button>
 
         <div class={styles.moreGroup}>
           {/* Tempo (keeps the BPM number box + slider) */}
           <div class={styles.field} data-testid="tempo-group">
             <IconClock />
-            <input
-              id="bpm-input"
-              class={styles.numInput}
-              type="number"
-              min="40"
-              max="280"
-              value={bpm()}
-              aria-label="BPM"
-              onInput={(e) =>
-                setBpm(
-                  Math.max(
-                    40,
-                    Math.min(280, Number(e.currentTarget.value) || 40),
-                  ),
-                )
-              }
-            />
+            <div class={styles.numWrap}>
+              <input
+                id="bpm-input"
+                class={styles.numInput}
+                type="number"
+                min="40"
+                max="280"
+                value={bpm()}
+                aria-label="BPM"
+                onInput={(e) =>
+                  setBpm(
+                    Math.max(
+                      40,
+                      Math.min(280, Number(e.currentTarget.value) || 40),
+                    ),
+                  )
+                }
+              />
+              <NumberStepper value={bpm} min={40} max={280} onChange={setBpm} />
+            </div>
             <input
               id="tempo"
               class={styles.slider}
