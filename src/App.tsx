@@ -18,8 +18,8 @@ import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
-import { SingingControlOverlay } from '@/components/singing/SingingControlOverlay'
 import { SingingStatusChip } from '@/components/singing/SingingStatusChip'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
@@ -1689,7 +1689,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentBeat={currentBeat}
                         isPlaying={isPlaying}
                       />
-                      <SingingControlOverlay>
+                      <ControlOverlay>
                         <SingingControlBar
                           isPlaying={isPlaying}
                           isPaused={isPaused}
@@ -1723,7 +1723,7 @@ const AppShell: Component<AppProps> = (props) => {
                             void handleMicToggle()
                           }}
                         />
-                      </SingingControlOverlay>
+                      </ControlOverlay>
                     </div>
 
                     <PitchAccuracyHeatmap
