@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Per-page "take a tour" toasts stacked.** A first-time user switching tabs piled up one offer toast per page. All tour-offer toasts now share a single notification channel — a new offer replaces the previous one, and leaving a tab retires the standing offer, so only the latest is shown. (`notifications-store`, `usePageTourOffer`, `offerTourOnce`)
 - **"Reset to Factory Defaults" left state behind.** It only cleared `pitchperfect_*` localStorage keys, leaving sidebar collapse state (`sidebar-*`), karaoke UI prefs (`km-*`), the anonymous identity/auth token (`mp:*`), and the dev pitch-test flag. It now clears all localStorage + sessionStorage (alongside the model cache and IndexedDB) for a true factory wipe. (`SettingsPanel`)
 - **Clearing all UVR sessions orphaned IndexedDB rows.** `deleteAllUvrSessions()` deleted only session records + lyrics, leaving stem audio blobs, fingerprints, and whisper transcriptions behind. It now wipes those too, so the existing in-app "clear storage" action no longer leaks rows. (`app-store`)
+- **Mobile: "Choose your character!" guide step pointed off-screen.** The step targets `#character-icons`, which lives in the off-canvas sidebar, but lacked `inSidebar: true`, so the drawer never opened on mobile. Added the flag. (`WALKTHROUGH_STEPS`)
+- **Mobile/narrow: toolbar guide steps could highlight an off-screen control.** The control bar scrolls horizontally, but the tour only scrolled targets into view vertically, so BPM / Volume / Play-mode (and Compose Record) steps could sit off to the side. The spotlight now also scrolls horizontally-clipped targets into view. (`Walkthrough`)
+- **Mobile: spotlight tooltip action row could overflow at ≤360px.** The four controls now wrap. (`Walkthrough.module.css`)
 
 ## [0.4.9] - 2026-06-28
 

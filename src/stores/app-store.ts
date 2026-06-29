@@ -1008,10 +1008,12 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Choose your character!',
     targetSelector: '#character-icons',
     description:
-      'Connect with your inner singer by choosing what suites you best!',
+      'Connect with your inner singer by choosing what suits you best!',
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    // Character picker lives in the sidebar — open the mobile drawer to reach it.
+    inSidebar: true,
   },
   {
     title: 'Scale & Key',

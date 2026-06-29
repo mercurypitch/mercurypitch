@@ -112,11 +112,43 @@ IndexedDB. It now routes through `deleteAllUvrSessionsFromDb()` and also clears
 transcriptions, so the existing in-app "clear storage" action no longer leaks
 rows either.
 
+## Mobile pass
+
+A second pass focused on phones/narrow viewports.
+
+- **"Choose your character!" failed on mobile.** The step targets
+  `#character-icons`, which renders only inside the off-canvas sidebar, but it
+  lacked `inSidebar: true` — so on mobile the drawer never opened and the
+  spotlight pointed at an off-screen element. Added `inSidebar: true` (matching
+  the Scale & Key / Load Melody / Editor Toolbar steps).
+- **Toolbar steps could highlight an off-screen control.** The shared control
+  bar (`control-bar.module.css .bar`) is `overflow-x: auto` and scrolls
+  horizontally on narrow screens, but the tour's `scrollToTargetIfNeeded()`
+  only checked **vertical** bounds — so BPM / Volume / Play-mode steps (and the
+  Compose Record button) could sit scrolled off to the side and never be
+  reeled in. The helper now also detects horizontal clipping and uses
+  `scrollIntoView({ inline: 'center' })`, which scrolls the right scroll
+  ancestor into view. Benefits narrow desktop too.
+- **Tooltip action row on the smallest screens.** Added `flex-wrap` to the
+  spotlight tooltip's action row at `≤360px` so the four controls (Skip Tour /
+  Back / Skip Section / Next) wrap instead of overflowing.
+
+The four learning-flow overlays (`Walkthrough`, `GuideSelection`,
+`WalkthroughSelection`, `WalkthroughModal`) were reviewed and are already
+mobile-responsive (`max-width`/`vw` constraints, `max-height` + scroll, and
+`≤480/≤360px` breakpoints). On mobile, Learn/Guide/Tour are reached via the
+header hamburger → sidebar drawer (standard pattern); the drawer auto-opens for
+sidebar-anchored tour steps and closes again afterward.
+
 ## Files changed
 
 - `src/components/singing/SingingControlBar.tsx` — add `transport.essential` hook.
-- `src/stores/app-store.ts` — `navigate[]` on Settings tour steps; thorough
-  `deleteAllUvrSessions()`; new `deleteAllSessionGroups()`.
+- `src/stores/app-store.ts` — `navigate[]` on Settings tour steps; `inSidebar`
+  on the character step; thorough `deleteAllUvrSessions()`; new
+  `deleteAllSessionGroups()`.
+- `src/components/Walkthrough.tsx` — scroll horizontally-clipped targets into
+  view (`scrollToTargetIfNeeded`).
+- `src/components/Walkthrough.module.css` — wrap tooltip actions at `≤360px`.
 - `src/stores/notifications-store.ts` — notification `channel` support +
   `removeNotificationsByChannel` + `TOUR_OFFER_CHANNEL`.
 - `src/features/tours/usePageTourOffer.ts`, `src/features/tours/offerTourOnce.ts`
