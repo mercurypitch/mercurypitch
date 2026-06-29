@@ -1,0 +1,17 @@
+# ============================================================
+# RunPod serverless UVR worker — Python dependencies
+# (torch + onnxruntime-gpu are installed from CUDA wheels in the
+#  Dockerfile, not pinned here, so the right CUDA build is used.)
+# ============================================================
+
+# RunPod serverless SDK (handler runtime + local test loop)
+runpod>=1.6.0
+
+# Stem separation (same engine as the CPU FastAPI api.py)
+audio-separator>=0.18.0
+
+# Fetch audio_url inputs
+requests>=2.31.0
+
+# Upload stems to S3-compatible storage (Cloudflare R2)
+boto3>=1.34.0

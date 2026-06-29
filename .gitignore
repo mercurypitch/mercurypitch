@@ -60,6 +60,13 @@ uvr-api/uploads/
 uvr-api/models/
 uvr-api/__pycache__/
 
+# RunPod serverless worker (Python build/runtime artifacts)
+__pycache__/
+*.pyc
+runpod/models/
+runpod/jobs/
+.dev.vars
+
 # ONNX models for client-side UVR (download separately)
 public/models/
 package-lock.json

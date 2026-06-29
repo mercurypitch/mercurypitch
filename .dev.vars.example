@@ -1,0 +1,16 @@
+# Local secrets for `wrangler dev` (the main worker, src/worker.ts).
+# Copy to .dev.vars (gitignored) and fill in. Never commit real values.
+
+# App JWT secret — same value the db-worker signs tokens with. Gates
+# non-GET /api/uvr/* at the edge.
+JWT_SECRET=
+
+# RunPod serverless separation. With an API key + at least one tier endpoint,
+# the worker can dispatch opted-in /api/uvr/* requests to RunPod (see
+# docs/claude/RUNPOD.md). Two tiers: GPU (fast, default) and CPU (cheaper,
+# slower; opt-in via `runpod-cpu`). Leave blank to keep using the container.
+RUNPOD_API_KEY=
+RUNPOD_ENDPOINT_ID_GPU=
+RUNPOD_ENDPOINT_ID_CPU=
+# Optional — defaults to https://api.runpod.ai/v2
+# RUNPOD_BASE_URL=
