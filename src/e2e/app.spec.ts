@@ -65,12 +65,14 @@ test.describe('MercuryPitch App', () => {
       timeout: 5000,
     })
 
-    // Click Settings tab and verify its content
+    // Click Settings tab and verify its content. Assert the always-present
+    // panel title rather than a specific section heading — sections now live
+    // behind sub-tabs, so the title is the stable, tab-independent marker.
     await page.locator('#tab-settings').click()
     await page.waitForTimeout(500)
-    await expect(
-      page.locator('h3:has-text("Tone Envelope (ADSR)")'),
-    ).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="settings-title"]')).toBeVisible({
+      timeout: 5000,
+    })
 
     // Click Practice tab and verify its content
     await page.locator('#tab-singing').click()
