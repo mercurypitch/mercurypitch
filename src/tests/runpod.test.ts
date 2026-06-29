@@ -216,6 +216,18 @@ describe('mapStatusToResponse', () => {
     expect(res.files).toEqual([])
   })
 
+  it('maps a completed job with no stems to error (not a silent success)', () => {
+    expect(
+      mapStatusToResponse('rp_gpu_job1', { status: 'COMPLETED' }).status,
+    ).toBe('error')
+    const res = mapStatusToResponse('rp_gpu_job1', {
+      status: 'COMPLETED',
+      output: { stems: [] },
+    })
+    expect(res.status).toBe('error')
+    expect(res.error).toBe('RunPod job completed without output stems')
+  })
+
   it.each(['FAILED', 'CANCELLED', 'TIMED_OUT'])(
     'maps terminal state %s to error',
     (state) => {

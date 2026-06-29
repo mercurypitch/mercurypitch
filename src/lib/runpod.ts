@@ -268,6 +268,16 @@ export function mapStatusToResponse(
       }
     }
     const stems = out?.stems ?? []
+    if (stems.length === 0) {
+      // Completed but produced nothing — surface it instead of returning a
+      // silent empty success the client would treat as "done, no stems".
+      return {
+        session_id: sessionId,
+        status: 'error',
+        files: [],
+        error: 'RunPod job completed without output stems',
+      }
+    }
     const files: BridgeOutputFile[] = stems.map((s) => ({
       stem: s.stem,
       filename: s.filename,
