@@ -96,6 +96,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarOpen, showSelection, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
+import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -191,6 +192,44 @@ function filterMelodyForPractice(
 
   return melody
 }
+
+// Instrument glyphs for the header practice-context pill (Piano / Guitar).
+// Guitar path mirrors the nav-tab icon for continuity; the character avatar is
+// used instead on the Singing tab.
+const PianoGlyph = () => (
+  <svg
+    class="header-melody-glyph"
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.6"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M8 5v9M12 5v9M16 5v9" stroke-width="1.3" />
+  </svg>
+)
+const GuitarGlyph = () => (
+  <svg
+    class="header-melody-glyph"
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    aria-hidden="true"
+  >
+    <g transform="rotate(45 12 12)" fill="currentColor">
+      <path d="M10.7 1.6h2.6l.55 3.1h-3.7z" />
+      <path d="M11.05 5.4h1.9l.25 5.2h-2.4z" />
+      <path
+        fill-rule="evenodd"
+        d="M12 10.3c2.7 0 3.9 1.3 3.5 2.8-.2.9-.2 1.4.4 2.4 1 1.7.1 6.2-3.9 6.2s-4.9-4.5-3.9-6.2c.6-1 .6-1.5.4-2.4-.4-1.5.8-2.8 3.5-2.8zm0 2.7a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z"
+      />
+    </g>
+  </svg>
+)
 
 const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
@@ -721,6 +760,41 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
+
+  // ── Header practice-context pill ─────────────────────────────
+  // On the practice tabs the header sub-title becomes a contextual pill that
+  // reads each tab's OWN loaded song. Singing also shows the guide character
+  // (avatar + name); character playback is singing-only, so Piano/Guitar show
+  // an instrument glyph and no character. Returns null elsewhere (plain title).
+  const headerPracticeContext = (): {
+    tab: typeof TAB_SINGING | typeof TAB_PIANO | typeof TAB_GUITAR
+    name: string
+    character?: string
+    avatar?: string
+  } | null => {
+    const tab = activeTab()
+    if (tab === TAB_SINGING) {
+      const m = melodyStore.currentMelody()
+      if (m == null) return null
+      return {
+        tab: TAB_SINGING,
+        name: m.name ?? 'Untitled',
+        character: CHARACTER_INFO[selectedCharacter()].displayName,
+        avatar: `characters/${selectedCharacter()}_idle.svg`,
+      }
+    }
+    if (tab === TAB_PIANO) {
+      // selectedSongName covers built-in melodies AND imported MIDI (currentSong
+      // is set only for imported songs, so it would miss the built-ins).
+      const name = pianoSongName()
+      return name === '' ? null : { tab: TAB_PIANO, name }
+    }
+    if (tab === TAB_GUITAR) {
+      const name = guitarCtx.guitar.selectedSongName()
+      return name === '' ? null : { tab: TAB_GUITAR, name }
+    }
+    return null
+  }
 
   // Guitar-tab state (controller, drum machine, fretboard signals, 9 mode
   // states, handleFretNotePlayed, mode-lifecycle effect) lives in
@@ -1403,43 +1477,41 @@ const AppShell: Component<AppProps> = (props) => {
                 </span>
               </button>
               <Show
-                when={
-                  activeTab() === TAB_SINGING &&
-                  melodyStore.currentMelody() != null
-                }
+                when={headerPracticeContext()}
                 fallback={<p class="subtitle">Voice Pitch Practice</p>}
+                keyed
               >
-                {/* Dynamic practice context — the loaded melody + character.
-                    Own class (not .subtitle) so it stays visible on mobile. */}
-                <button
-                  class="header-melody-context"
-                  onClick={() => void handleTabChange(TAB_SINGING)}
-                  title={`Now loaded: ${melodyStore.currentMelody()?.name ?? 'Untitled'}`}
-                  style={{
-                    display: 'inline-block',
-                    'max-width': '240px',
-                    overflow: 'hidden',
-                    'white-space': 'nowrap',
-                    'text-overflow': 'ellipsis',
-                    background: 'none',
-                    border: 'none',
-                    padding: '0',
-                    cursor: 'pointer',
-                    'font-size': '0.78rem',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  <span
-                    style={{
-                      'font-weight': '600',
-                      color: 'var(--text-primary)',
-                    }}
+                {/* Dynamic practice context — each tab's loaded song (plus the
+                    guide character on Singing). Own class (not .subtitle) so it
+                    stays visible on mobile. */}
+                {(ctx) => (
+                  <div
+                    class="header-melody-context"
+                    title={
+                      ctx.character != null
+                        ? `Now loaded: ${ctx.name} · ${ctx.character}`
+                        : `Now loaded: ${ctx.name}`
+                    }
                   >
-                    {melodyStore.currentMelody()?.name ?? 'Untitled'}
-                  </span>
-                  {' · '}
-                  {CHARACTER_INFO[selectedCharacter()].displayName}
-                </button>
+                    <Show
+                      when={ctx.tab === TAB_SINGING}
+                      fallback={
+                        ctx.tab === TAB_PIANO ? <PianoGlyph /> : <GuitarGlyph />
+                      }
+                    >
+                      <img
+                        class="header-melody-avatar"
+                        src={ctx.avatar}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    </Show>
+                    <span class="header-melody-name">{ctx.name}</span>
+                    <Show when={ctx.character != null}>
+                      <span class="header-melody-char">{ctx.character}</span>
+                    </Show>
+                  </div>
+                )}
               </Show>
             </div>
             <div class="header-right">
