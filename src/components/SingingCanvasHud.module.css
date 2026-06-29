@@ -39,7 +39,8 @@
 /* Pitch monitor — bottom-left, mirroring the Guitar 3D input monitor. */
 .pitchHud {
   position: absolute;
-  bottom: 12px;
+  /* Sit above the canvas's 22px beat-ruler so it isn't occluded. */
+  bottom: 30px;
   left: 12px;
   z-index: 6;
   width: 200px;

@@ -24,7 +24,8 @@
 }
 
 .bottom {
-  bottom: 14px;
+  /* Sit above the canvas's 22px beat-ruler so it isn't occluded. */
+  bottom: 32px;
 }
 
 .overlay {
@@ -156,7 +157,7 @@
 }
 
 .showBtn.bottom {
-  bottom: 12px;
+  bottom: 30px;
 }
 
 .showBtn.bottom:hover {

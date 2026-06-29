@@ -866,6 +866,13 @@ input:checked + .settings-slider:before {
   .main-content > #practice-panel {
     overflow: hidden;
   }
+  /* The practice (singing) panel fills the viewport and doesn't scroll, so it
+     doesn't need .main-content's bottom safe-area padding — hand that 40px to
+     the canvas so it stretches fully, like the Guitar 3D view. Scrollable
+     panels (settings, leaderboard) and mobile keep their padding. */
+  .main-content:has(#practice-panel) {
+    padding-bottom: 0;
+  }
 }
 
 /* =====================================================================
