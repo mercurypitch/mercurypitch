@@ -39,11 +39,11 @@ import './components/AppHeader.css'
 import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
+import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
-import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
@@ -95,7 +95,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarOpen, showSelection, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -1754,44 +1754,33 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_COMPOSE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
-                  <SharedControlToolbar
-                    activeTab={() => activeTab()}
-                    editorTab={() => activeTab() === TAB_COMPOSE}
-                    isPlaying={editorIsPlaying}
-                    isPaused={editorIsPaused}
-                    onPlay={() => void handleEditorPlay()}
-                    onPause={handleEditorPause}
-                    onResume={handleEditorResume}
-                    onStop={handleEditorStop}
-                    volume={savedVol}
-                    onVolumeChange={(vol) => {
-                      setSavedVol(vol)
-                      audioEngine?.setVolume(vol / 100)
-                    }}
-                    speed={playbackSpeed()}
-                    onSpeedChange={setPlaybackSpeed}
-                    metronomeEnabled={() => metronomeEnabled()}
-                    onMetronomeToggle={() =>
-                      setMetronomeEnabled(metronomeEnabled() === false)
-                    }
-                    playMode={() => PLAYBACK_MODE_ONCE}
-                    playModeChange={() => {}}
-                    practiceCycles={() => 1}
-                    onCyclesChange={() => {}}
-                    currentCycle={() => currentRepeat()}
-                    practiceSubMode={() => 'all'}
-                    onPracticeSubModeChange={() => {}}
-                    isCountingIn={() => false}
-                    countInBeat={() => 0}
-                    countInBeats={() => countIn()}
-                    isRecording={() => recording.isRecording()}
-                    onRecordToggle={recording.handleRecordToggle}
-                    onShareMelody={handleCopyShareLink}
-                    onMicToggle={() => {
-                      void handleMicToggle()
-                    }}
-                    onWaveToggle={toggleMicWaveVisible}
-                  />
+                  <ControlOverlay static idPrefix="compose">
+                    <ComposeControlBar
+                      isPlaying={editorIsPlaying}
+                      isPaused={editorIsPaused}
+                      onPlay={() => void handleEditorPlay()}
+                      onPause={handleEditorPause}
+                      onResume={handleEditorResume}
+                      onStop={handleEditorStop}
+                      volume={savedVol}
+                      onVolumeChange={(vol) => {
+                        setSavedVol(vol)
+                        audioEngine?.setVolume(vol / 100)
+                      }}
+                      speed={playbackSpeed}
+                      onSpeedChange={setPlaybackSpeed}
+                      metronomeEnabled={() => metronomeEnabled()}
+                      onMetronomeToggle={() =>
+                        setMetronomeEnabled(metronomeEnabled() === false)
+                      }
+                      isRecording={() => recording.isRecording()}
+                      onRecordToggle={() => void recording.handleRecordToggle()}
+                      onShareMelody={handleCopyShareLink}
+                      onMicToggle={() => {
+                        void handleMicToggle()
+                      }}
+                    />
+                  </ControlOverlay>
 
                   <div
                     class={styles.editorViewToggle}
