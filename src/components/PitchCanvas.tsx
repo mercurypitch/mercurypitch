@@ -805,7 +805,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const midi = 69 + 12 * Math.log2(freq / 440)
     const pct =
       (midi - bounds.minMidi) / Math.max(1, bounds.maxMidi - bounds.minMidi)
-    const y = h - pct * (h - 40) - 20
+    // Reserve vertical insets so notes clear the corner overlays: more at the
+    // bottom for the control bar / bar-counter, a little at the top for the
+    // (now compact) status chip + accuracy HUD.
+    const TOP_INSET = 44
+    const BOTTOM_INSET = 78
+    const usableH = Math.max(1, h - TOP_INSET - BOTTOM_INSET)
+    const y = h - BOTTOM_INSET - pct * usableH
     return Number.isFinite(y) ? y : h / 2
   }
 

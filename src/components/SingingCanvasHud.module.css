@@ -14,9 +14,9 @@
   z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 220px;
-  max-width: 46%;
+  gap: 8px;
+  width: 196px;
+  max-width: 44%;
   /* Display-only HUD — let canvas drags / clicks pass straight through. */
   pointer-events: none;
 }
@@ -40,11 +40,11 @@
   -webkit-backdrop-filter: blur(12px) saturate(135%);
   border: 1px solid var(--border);
   border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow:
     0 8px 28px rgba(0, 0, 0, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: 11px 13px;
+  padding: 8px 11px;
   user-select: none;
   animation: hudIn 180ms ease both;
 }
@@ -62,12 +62,12 @@
 
 /* Card header — matches the muted, upper-cased labels used elsewhere. */
 .cardTitle {
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  margin: 0 0 8px;
+  margin: 0 0 5px;
 }
 
 /* Live score row under the accuracy bars. */
@@ -75,8 +75,8 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-top: 9px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
@@ -90,7 +90,7 @@
 }
 
 .scoreValue {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text-primary);
@@ -112,8 +112,8 @@
 .sessionList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 176px;
+  gap: 3px;
+  max-height: 148px;
   overflow-y: auto;
   pointer-events: auto;
   scrollbar-width: thin;
@@ -123,10 +123,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 7px;
+  padding: 3px 7px;
   border-radius: 6px;
   background: color-mix(in srgb, var(--text-primary) 5%, transparent);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
 }
 .sessionName {
   color: var(--text-secondary);
