@@ -1,0 +1,262 @@
+/* ============================================================
+   SingingControlBar — sleek glass control bar (Guitar-3D style).
+   Sits inside SingingControlOverlay, which provides the glass shell;
+   this lays the controls out transparently and scrolls horizontally
+   when they overflow (so nothing spills past the rounded glass).
+   ============================================================ */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── base glass button ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.14s ease;
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+  color: var(--text-primary);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Active / toggled-on — accent glow, mirroring the Guitar 3D HUD. */
+.active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.active:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.btnDisabled,
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── transport ─────────────────────────────────────────────── */
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+  transition:
+    filter 0.14s ease,
+    transform 0.14s ease;
+}
+.hero:hover {
+  filter: brightness(1.08);
+}
+.hero:active {
+  transform: scale(0.95);
+}
+.heroPlay {
+  background: var(--green, #3fb950);
+  box-shadow: 0 3px 12px
+    color-mix(in srgb, var(--green, #3fb950) 40%, transparent);
+}
+
+.stop {
+  color: var(--red, #f85149);
+}
+.stop:hover:not(.btnDisabled) {
+  background: color-mix(in srgb, var(--red, #f85149) 16%, transparent);
+  color: var(--red, #f85149);
+}
+
+/* ── segmented mode group ──────────────────────────────────── */
+.segment {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+.segBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+.segBtn:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+.segBtn.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: none;
+  border: none;
+}
+
+/* ── cycles ────────────────────────────────────────────────── */
+.cyclesGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.cyclesInput {
+  width: 42px;
+  height: 26px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.cyclesProgress {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── count-in badge ────────────────────────────────────────── */
+.countin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+/* ── expand group (hover or pin) ───────────────────────────── */
+.moreWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.moreGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  /* Unambiguously non-interactable while collapsed (hover or pin to use). */
+  pointer-events: none;
+  transition:
+    max-width 0.22s ease,
+    opacity 0.18s ease;
+}
+.moreWrap:hover .moreGroup,
+.moreWrap.pinned .moreGroup {
+  max-width: 720px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── inline value fields (icon + slider/select) ────────────── */
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+.numInput {
+  width: 38px;
+  height: 22px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.slider {
+  width: 76px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.select {
+  height: 24px;
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moreGroup {
+    transition: none;
+  }
+}

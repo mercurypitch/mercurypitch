@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchSettingsTab, switchTab } from '@/e2e/helpers/ui'
+import { dismissOverlays, openSingingControls, switchSettingsTab, switchTab, } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
@@ -161,6 +161,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('BPM slider changes tempo', async ({ page }) => {
+      await openSingingControls(page)
       const tempoSlider = page.locator('#tempo')
       const tempoValue = page.locator('#bpm-input')
 
@@ -176,6 +177,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Playback speed select changes speed', async ({ page }) => {
+      await openSingingControls(page)
       const speedSelect = page.locator('#speed-select')
       await expect(speedSelect).toBeVisible()
 
@@ -501,6 +503,7 @@ test.describe('Critical Flows — GH #121', () => {
       // Click Session mode button to reveal sub-mode selector
       await page.getByTestId('btn-session').click()
       await page.waitForTimeout(300)
+      await openSingingControls(page)
 
       const subModeSelect = page.locator('#practice-sub-mode')
       await expect(subModeSelect).toBeVisible()
@@ -858,6 +861,7 @@ test.describe('Critical Flows — GH #121', () => {
 
   test.describe('Playback Fixes (GH #184)', () => {
     test('BPM slider properly updates tempo', async ({ page }) => {
+      await openSingingControls(page)
       const tempoSlider = page.locator('#tempo')
       const tempoValue = page.locator('#bpm-input')
 
@@ -904,6 +908,7 @@ test.describe('Critical Flows — GH #121', () => {
     test('PlaybackRuntime BPM syncs correctly', async ({ page }) => {
       await switchTab(page, 'singing')
       await page.waitForTimeout(300)
+      await openSingingControls(page)
 
       const tempoSlider = page.locator('#tempo')
       const tempoValue = page.locator('#bpm-input')

@@ -18,6 +18,7 @@ import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
+import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingControlOverlay } from '@/components/singing/SingingControlOverlay'
 import { SingingStatusChip } from '@/components/singing/SingingStatusChip'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
@@ -1518,10 +1519,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentBeat={currentBeat}
                       />
                       <SingingControlOverlay>
-                        <SharedControlToolbar
-                          activeTab={() => activeTab()}
-                          singingTab={() => activeTab() === TAB_SINGING}
-                          editorTab={() => activeTab() === TAB_COMPOSE}
+                        <SingingControlBar
                           isPlaying={isPlaying}
                           isPaused={isPaused}
                           onPlay={handlePracticePlay}
@@ -1550,11 +1548,9 @@ const AppShell: Component<AppProps> = (props) => {
                           onSpacedRestModeChange={setSpacedRestMode}
                           isCountingIn={() => isCountingIn()}
                           countInBeat={() => countInBeat()}
-                          countInBeats={() => countIn()}
                           onMicToggle={() => {
                             void handleMicToggle()
                           }}
-                          onWaveToggle={toggleMicWaveVisible}
                         />
                       </SingingControlOverlay>
                     </div>

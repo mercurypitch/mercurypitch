@@ -3,7 +3,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchTab } from './helpers/ui'
+import { dismissOverlays, openSingingControls, switchTab } from './helpers/ui'
 
 test.describe('Practice Sessions', () => {
   test.beforeEach(async ({ page }) => {
@@ -479,6 +479,7 @@ test.describe('Practice Sessions', () => {
   test('BPM slider changes value', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
+    await openSingingControls(page)
 
     const tempoSlider = page.locator('#tempo')
     if ((await tempoSlider.count()) > 0) {
@@ -491,6 +492,7 @@ test.describe('Practice Sessions', () => {
   test('BPM value updates when slider changes', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
+    await openSingingControls(page)
 
     const tempoSlider = page.locator('#tempo')
     const tempoValue = page.locator('#bpm-input')
@@ -527,6 +529,7 @@ test.describe('Practice Sessions', () => {
   test('Playback speed can be adjusted', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
+    await openSingingControls(page)
 
     const playbackSpeedSelect = page.locator('#speed-select')
     if ((await playbackSpeedSelect.count()) > 0) {

@@ -5,7 +5,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openSingingControls } from './helpers/ui'
 
 test.describe('Metronome', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,6 +17,8 @@ test.describe('Metronome', () => {
     await dismissOverlays(page)
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
+    // BPM / tempo live in the control bar's collapsible "more" group.
+    await openSingingControls(page)
   })
 
   test('BPM input is visible on practice tab', async ({ page }) => {

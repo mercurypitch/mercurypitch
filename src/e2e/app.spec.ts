@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchSettingsTab } from '@/e2e/helpers/ui'
+import { dismissOverlays, openSingingControls, switchSettingsTab, } from '@/e2e/helpers/ui'
 
 test.describe('MercuryPitch App', () => {
   test.beforeEach(async ({ page }) => {
@@ -313,7 +313,8 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('app shows BPM control', async ({ page }) => {
-    // BPM control is in the practice tab content area
+    // BPM control lives in the control bar's collapsible "more" group.
+    await openSingingControls(page)
     await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible()
     await expect(page.locator('#tempo')).toBeVisible()
     await expect(page.locator('#bpm-input')).toBeVisible()
