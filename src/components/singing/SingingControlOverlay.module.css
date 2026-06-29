@@ -4,12 +4,31 @@
    Theme-adaptive glass matching SingingCanvasHud / the Guitar 3D HUD.
    ============================================================ */
 
-.overlay {
+/* Full-width positioning wrapper — centres the bar with flexbox instead of a
+   transform, so the <select>s inside don't sit under a transform-ed ancestor
+   (the iOS Safari select bug SafeSelect warns about). */
+.overlayWrap {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   /* Above the score/pitch HUD cards (z-index 6) so controls stay tappable. */
   z-index: 7;
+  display: flex;
+  justify-content: center;
+  /* Wrapper is click-through; the bar re-enables pointer events. */
+  pointer-events: none;
+}
+
+.top {
+  top: 12px;
+}
+
+.bottom {
+  bottom: 14px;
+}
+
+.overlay {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -27,25 +46,16 @@
     0 8px 30px rgba(0, 0, 0, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   pointer-events: auto;
+  /* Opacity-only fade so the bar never carries a transform. */
   animation: barIn 180ms ease both;
-}
-
-.top {
-  top: 12px;
-}
-
-.bottom {
-  bottom: 14px;
 }
 
 @keyframes barIn {
   from {
     opacity: 0;
-    transform: translate(-50%, 6px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
   }
 }
 
