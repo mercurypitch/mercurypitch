@@ -84,9 +84,9 @@ export async function switchSettingsTab(
 }
 
 /**
- * Pin open the Singing control bar's "more" group (tempo / volume / speed /
- * rest), which is collapsed by default. Idempotent. Call before interacting
- * with #tempo, #bpm-input, #speed-select, #practice-sub-mode, #spaced-rest-mode.
+ * Pin open the Singing control bar's "more" group (tempo / volume / speed),
+ * which is collapsed by default. Idempotent. Call before interacting with
+ * #tempo, #bpm-input, or #speed-select.
  */
 export async function openSingingControls(page: Page) {
   const toggle = page.locator('[data-testid="singing-more-toggle"]')
