@@ -6,7 +6,6 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
-import { isPlaying } from '@/stores'
 import styles from './SingingStatusChip.module.css'
 
 interface SingingStatusChipProps {
@@ -15,6 +14,8 @@ interface SingingStatusChipProps {
   melodyName: () => string | null
   bpm: () => number
   currentBeat: () => number
+  /** Live singing-playback signal (the controller's, not the dead store one). */
+  isPlaying: () => boolean
 }
 
 const titleCase = (s: string): string =>
@@ -31,7 +32,7 @@ export const SingingStatusChip: Component<SingingStatusChipProps> = (props) => {
   return (
     <div
       class={styles.chip}
-      classList={{ [styles.dimmed]: isPlaying() }}
+      classList={{ [styles.dimmed]: props.isPlaying() }}
       data-testid="singing-status-chip"
     >
       <div class={styles.primary} title={scaleLabel()}>

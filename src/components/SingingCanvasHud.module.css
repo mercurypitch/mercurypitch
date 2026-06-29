@@ -151,7 +151,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sessionScore {
+/* Scoped to .card so the weight beats the legacy global .session-history-score
+   (font-weight:600) marker class kept on the same span for e2e selectors. */
+.card .sessionScore {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;

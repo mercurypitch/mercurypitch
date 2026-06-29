@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { isPlaying, sessionResults, showPitchDisplay, showStats, } from '@/stores'
+import { sessionResults, showPitchDisplay, showStats } from '@/stores'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
 import styles from './SingingCanvasHud.module.css'
@@ -27,19 +27,21 @@ interface SingingCanvasHudProps {
   pitch: () => PitchResult | null
   targetNoteName: () => string | null
   liveScore: () => number | null
+  /** Live singing-playback signal (the controller's, not the dead store one). */
+  isPlaying: () => boolean
 }
 
 export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
   // The sessions scoreboard is history, not live feedback — auto-collapse it
   // during playback so the melody has room. The live HUDs stay but dim (see
   // the `dimmed` class) so the melody beneath reads through.
-  const showSessions = () => sessionResults().length > 0 && !isPlaying()
+  const showSessions = () => sessionResults().length > 0 && !props.isPlaying()
   return (
     <>
       <Show when={showStats() || showSessions()}>
         <div
           class={styles.accuracyHud}
-          classList={{ [styles.dimmed]: isPlaying() }}
+          classList={{ [styles.dimmed]: props.isPlaying() }}
           data-testid="singing-canvas-hud"
         >
           <Show when={showStats()}>
@@ -105,7 +107,7 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
       <Show when={showPitchDisplay()}>
         <div
           class={styles.pitchHud}
-          classList={{ [styles.dimmed]: isPlaying() }}
+          classList={{ [styles.dimmed]: props.isPlaying() }}
         >
           <div class={styles.card} data-testid="hud-pitch">
             <PitchDisplay

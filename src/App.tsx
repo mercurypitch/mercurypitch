@@ -1618,6 +1618,7 @@ const AppShell: Component<AppProps> = (props) => {
                         pitch={currentPitch}
                         targetNoteName={targetNoteName}
                         liveScore={liveScore}
+                        isPlaying={isPlaying}
                       />
                       <SingingStatusChip
                         keyName={keyNameSignal}
@@ -1627,6 +1628,7 @@ const AppShell: Component<AppProps> = (props) => {
                         }
                         bpm={bpm}
                         currentBeat={currentBeat}
+                        isPlaying={isPlaying}
                       />
                       <SingingControlOverlay>
                         <SingingControlBar
