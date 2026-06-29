@@ -1,0 +1,37 @@
+/* Neutral up/down stepper that replaces the native (blue) number spinner.
+   Sits flush-right of a bare <input type=number> (which keeps its keyboard
+   stepping); the input hides the native spinner via appearance:textfield. */
+.stepper {
+  display: inline-flex;
+  flex-direction: column;
+  width: 16px;
+}
+.stepBtn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.stepBtn:first-child {
+  border-radius: 0 6px 0 0;
+  border-bottom: none;
+}
+.stepBtn:last-child {
+  border-radius: 0 0 6px 0;
+}
+.stepBtn:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+.stepBtn:active {
+  background: color-mix(in srgb, var(--text-primary) 26%, transparent);
+}

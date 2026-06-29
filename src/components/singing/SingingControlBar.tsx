@@ -16,10 +16,12 @@
 //   plus btn-mic / btn-precount via MicButton / PrecCountButton.
 // ============================================================
 
-import type { Component, JSX } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
+import { IconAnchor, IconClock, IconFocus, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
+import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
@@ -56,147 +58,8 @@ interface SingingControlBarProps {
   onMicToggle: () => void
 }
 
-// --- inline glyphs (16px, lifted from the shared toolbar for continuity) ---
-const Svg = (p: { children: JSX.Element; fill?: boolean }) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    fill={p.fill === true ? 'currentColor' : 'none'}
-    stroke={p.fill === true ? 'none' : 'currentColor'}
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    {p.children}
-  </svg>
-)
-const IconPlay = () => (
-  <Svg fill>
-    <path d="M8 5v14l11-7z" />
-  </Svg>
-)
-const IconPause = () => (
-  <Svg fill>
-    <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-  </Svg>
-)
-const IconStop = () => (
-  <Svg fill>
-    <path d="M6 6h12v12H6z" />
-  </Svg>
-)
-const IconOnce = () => (
-  <Svg>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M10 9l2-2v10" />
-  </Svg>
-)
-const IconRepeat = () => (
-  <Svg>
-    <path d="M17 2l4 4-4 4" />
-    <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
-    <path d="M7 22l-4-4 4-4" />
-    <path d="M21 13v1a4 4 0 0 1-4 4H3" />
-  </Svg>
-)
-const IconSession = () => (
-  <Svg>
-    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-  </Svg>
-)
-const IconFocus = () => (
-  <Svg fill>
-    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-  </Svg>
-)
-const IconAnchor = () => (
-  <Svg fill>
-    <path d="M12 3l-8 13h16L12 3zm0 3.5L17.5 13h-11L12 6.5z" />
-    <circle cx="12" cy="14" r="1" />
-  </Svg>
-)
-const IconMetronome = () => (
-  <Svg fill>
-    <path d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z" />
-  </Svg>
-)
-const IconWave = () => (
-  <Svg fill>
-    <path d="M3 9h2v6H3zm4-3h2v12H7zm4 6h2v3h-2zm4-3h2v6h-2zm4-2h2v10h-2z" />
-  </Svg>
-)
-const IconClock = () => (
-  <Svg>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7.5V12l3 1.8" />
-  </Svg>
-)
-const IconVolume = () => (
-  <Svg>
-    <path d="M11 5L6 9H3v6h3l5 4z" fill="currentColor" stroke="none" />
-    <path d="M16 9a4 4 0 0 1 0 6" />
-  </Svg>
-)
-const IconSpeed = () => (
-  <Svg fill>
-    <path d="M4 5v14l8-7zM14 5v14l8-7z" />
-  </Svg>
-)
-const IconRest = () => (
-  <Svg>
-    <path d="M9 4v6M15 4v6M9 14v6M15 14v6" />
-  </Svg>
-)
-
-// Tiny caret for the custom number stepper (the native blue spin button is
-// hidden — see .numInput in the stylesheet).
-const Caret = (p: { up?: boolean }) => (
-  <svg
-    viewBox="0 0 10 6"
-    width="9"
-    height="6"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.7"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d={p.up === true ? 'M1 5l4-4 4 4' : 'M1 1l4 4 4-4'} />
-  </svg>
-)
-
-// Neutral, theme-coloured up/down stepper that replaces the native (blue)
-// number spinner. The bare <input type=number> keeps its keyboard stepping.
-const NumberStepper = (p: {
-  value: () => number
-  min: number
-  max: number
-  onChange: (v: number) => void
-}) => (
-  <div class={styles.stepper}>
-    <button
-      type="button"
-      class={styles.stepBtn}
-      tabindex="-1"
-      aria-label="Increase"
-      onClick={() => p.onChange(Math.min(p.max, p.value() + 1))}
-    >
-      <Caret up />
-    </button>
-    <button
-      type="button"
-      class={styles.stepBtn}
-      tabindex="-1"
-      aria-label="Decrease"
-      onClick={() => p.onChange(Math.max(p.min, p.value() - 1))}
-    >
-      <Caret />
-    </button>
-  </div>
-)
+// Glyphs + NumberStepper are shared across the per-tab bars — see
+// @/components/shared/control-bar/{icons,NumberStepper}.
 
 export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
   const [pinned, setPinned] = createSignal(false)
