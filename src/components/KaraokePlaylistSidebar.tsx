@@ -4,7 +4,9 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import type { KaraokePlaylistRecord } from '@/db'
 import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { ConfirmDialog } from './ConfirmDialog'
 import { CheckSmall, Mic, Pencil, Play, Trash2, X } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistSidebar.module.css'
@@ -21,6 +23,15 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
   const [newName, setNewName] = createSignal('')
   const [editingId, setEditingId] = createSignal<string | null>(null)
   const [editName, setEditName] = createSignal('')
+  // Playlist queued for deletion (drives the confirm modal).
+  const [pendingDelete, setPendingDelete] =
+    createSignal<KaraokePlaylistRecord | null>(null)
+
+  const confirmDelete = () => {
+    const pl = pendingDelete()
+    if (pl) void deletePlaylist(pl.id)
+    setPendingDelete(null)
+  }
 
   const handleCreate = () => {
     const name = newName().trim()
@@ -117,7 +128,7 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
                         <button
                           class={styles.iconBtn}
                           title="Delete playlist"
-                          onClick={() => void deletePlaylist(pl.id)}
+                          onClick={() => setPendingDelete(pl)}
                         >
                           <Trash2 />
                         </button>
@@ -160,6 +171,19 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
           <KaraokePlaylistEditor playlistId={selectedId()!} />
         </Show>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete() !== null}
+        title="Delete Playlist"
+        message={
+          <>
+            Delete <strong>{pendingDelete()?.name}</strong>? This only removes
+            the playlist — your songs and recordings stay in the library.
+          </>
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

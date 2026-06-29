@@ -1216,7 +1216,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
 
               <Show when={sessionGalleryOpen() && allSessions().length === 0}>
-                <div class="empty-state">
+                <div class="empty-state empty-state-compact">
                   <span class="empty-icon">
                     <Music />
                   </span>

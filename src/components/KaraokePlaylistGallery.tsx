@@ -11,6 +11,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { getGroupsReactive } from '@/stores/app-store'
 import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
+import { ConfirmDialog } from './ConfirmDialog'
 import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Playlist, Plus, SlidersHorizontal, Trash2, X, } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistGallery.module.css'
@@ -26,6 +27,15 @@ export const KaraokePlaylistGallery: Component = () => {
   const [exportingId, setExportingId] = createSignal<string | null>(null)
   // Which card has the full editor expanded below it.
   const [expandedId, setExpandedId] = createSignal<string | null>(null)
+  // Playlist queued for deletion (drives the confirm modal).
+  const [pendingDelete, setPendingDelete] =
+    createSignal<KaraokePlaylistRecord | null>(null)
+
+  const confirmDelete = () => {
+    const pl = pendingDelete()
+    if (pl) void deletePlaylist(pl.id)
+    setPendingDelete(null)
+  }
 
   const handleExport = (id: string) => {
     if (exportingId() !== null) return
@@ -87,7 +97,7 @@ export const KaraokePlaylistGallery: Component = () => {
         <Show
           when={hasPlaylists()}
           fallback={
-            <div class="empty-state">
+            <div class="empty-state empty-state-compact">
               <span class="empty-icon">
                 <Playlist />
               </span>
@@ -196,7 +206,7 @@ export const KaraokePlaylistGallery: Component = () => {
                             <button
                               class={styles.iconBtn}
                               title="Delete playlist"
-                              onClick={() => void deletePlaylist(pl.id)}
+                              onClick={() => setPendingDelete(pl)}
                             >
                               <Trash2 />
                             </button>
@@ -232,6 +242,19 @@ export const KaraokePlaylistGallery: Component = () => {
           </div>
         </Show>
       </Show>
+
+      <ConfirmDialog
+        open={pendingDelete() !== null}
+        title="Delete Playlist"
+        message={
+          <>
+            Delete <strong>{pendingDelete()?.name}</strong>? This only removes
+            the playlist — your songs and recordings stay in the library.
+          </>
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }
