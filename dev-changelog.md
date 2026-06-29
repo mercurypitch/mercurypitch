@@ -6,6 +6,20 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Settings → Danger Zone: "Clear Karaoke & Vocal Separation Data"** — a new button that deletes only UVR/karaoke data (separated songs, stems, lyrics, fingerprints, whisper transcriptions, session groups, and saved playlists) while keeping melodies, practice history, and settings. (`SettingsPanel`, `deleteAllSessionGroups`, `deleteAllPlaylists`, `deleteAllTranscriptionsFromDb`)
+
+### Fixed
+
+- **Singing guide tour: broken "Play / Pause / Stop" step.** The step targeted `[data-tour="transport.essential"]`, which existed on no element after recent relayouts, so the spotlight failed to highlight and the tooltip floated centred. Added the hook to the transport control group. (`SingingControlBar`)
+- **Settings guide tour broken by the sub-tab relayout.** Settings is now split into General / Practice / Display sub-tabs, but five guide steps (Pitch Detection, Practice Aids, Accuracy Bands, Theme & Appearance, Reverb & ADSR) target controls under a non-default sub-tab; the tour only switched to the Settings tab (which opens on General), so the targets weren't in the DOM. Each step now uses `navigate[]` to open the correct sub-tab first. (`WALKTHROUGH_STEPS`)
+- **Per-page "take a tour" toasts stacked.** A first-time user switching tabs piled up one offer toast per page. All tour-offer toasts now share a single notification channel — a new offer replaces the previous one, and leaving a tab retires the standing offer, so only the latest is shown. (`notifications-store`, `usePageTourOffer`, `offerTourOnce`)
+- **"Reset to Factory Defaults" left state behind.** It only cleared `pitchperfect_*` localStorage keys, leaving sidebar collapse state (`sidebar-*`), karaoke UI prefs (`km-*`), the anonymous identity/auth token (`mp:*`), and the dev pitch-test flag. It now clears all localStorage + sessionStorage (alongside the model cache and IndexedDB) for a true factory wipe. (`SettingsPanel`)
+- **Clearing all UVR sessions orphaned IndexedDB rows.** `deleteAllUvrSessions()` deleted only session records + lyrics, leaving stem audio blobs, fingerprints, and whisper transcriptions behind. It now wipes those too, so the existing in-app "clear storage" action no longer leaks rows. (`app-store`)
+
 ## [0.4.9] - 2026-06-28
 
 ### Added

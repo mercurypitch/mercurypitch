@@ -1,6 +1,6 @@
 import { createEffect } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
-import { hasPageTour, removeNotification, showActionNotification, startPageTour, } from '@/stores'
+import { hasPageTour, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, } from '@/stores'
 import type { ActiveTab } from '@/types'
 
 /**
@@ -8,10 +8,19 @@ import type { ActiveTab } from '@/types'
  * has one. Shows a dismissible "Start tour" toast (auto-dismisses); the choice
  * is remembered in localStorage so it never nags again. The tour is always
  * re-startable from the manual guide control.
+ *
+ * Only ever one offer toast is on screen: every tab change retires the previous
+ * offer, and all offers share TOUR_OFFER_CHANNEL so a new one replaces the old.
+ * A first-time user hopping across tabs no longer stacks a toast per page.
  */
 export function usePageTourOffer(activeTab: () => ActiveTab): void {
   createEffect(() => {
     const tab = activeTab()
+
+    // Leaving a tab (or arriving at one without a tour) retires the standing
+    // offer so toasts never pile up — only the current page's offer shows.
+    removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
+
     if (!hasPageTour(tab)) return
 
     const key = `pitchperfect_page_tour_offered_${tab}`
@@ -28,6 +37,7 @@ export function usePageTourOffer(activeTab: () => ActiveTab): void {
           startPageTour(tab)
         },
       },
+      { channel: TOUR_OFFER_CHANNEL },
     )
   })
 }

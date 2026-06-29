@@ -60,6 +60,23 @@ export async function loadTranscriptionFromDb(
   }
 }
 
+/** Delete every whisper transcription from IndexedDB (used by data resets). */
+export async function deleteAllTranscriptionsFromDb(): Promise<void> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<WhisperTranscriptionRecord>(
+      'whisperTranscriptions',
+    )
+    const all = await repo.findAll({})
+    for (const entry of all) {
+      await repo.delete(entry.id)
+    }
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[WhisperDB] deleteAllTranscriptionsFromDb failed:', err)
+  }
+}
+
 /** Delete whisper transcription for a session from IndexedDB. */
 export async function deleteTranscriptionFromDb(
   sessionId: string,

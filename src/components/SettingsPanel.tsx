@@ -13,7 +13,9 @@ import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
+import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
+import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
@@ -24,6 +26,7 @@ import styles from './SettingsPanel.module.css'
 export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
+  const [showClearUvrConfirm, setShowClearUvrConfirm] = createSignal(false)
   const [showFontReloadConfirm, setShowFontReloadConfirm] = createSignal(false)
   const [pendingFont, setPendingFont] = createSignal<FontFamily | null>(null)
   const [showChangelog, setShowChangelog] = createSignal(false)
@@ -60,12 +63,20 @@ export const SettingsPanel: Component = () => {
   }
 
   const handleResetStorage = async () => {
-    // Clear all pitchperfect_ keys
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('pitchperfect_')) {
-        localStorage.removeItem(key)
-      }
-    })
+    // Wipe ALL client-side state. Clearing only pitchperfect_* keys used to
+    // leave behind sidebar collapse state (sidebar-*), karaoke UI prefs (km-*),
+    // the anonymous identity / auth token (mp:*), and the dev pitch-test flag —
+    // so a "factory reset" wasn't truly factory. Clear everything instead.
+    try {
+      localStorage.clear()
+    } catch {
+      /* non-critical */
+    }
+    try {
+      sessionStorage.clear()
+    } catch {
+      /* non-critical */
+    }
 
     // Clear IndexedDB and model cache
     try {
@@ -84,6 +95,26 @@ export const SettingsPanel: Component = () => {
 
     // Navigate back to the default URL (removing any hashes)
     window.location.href = '/'
+  }
+
+  const handleClearKaraokeData = async () => {
+    setShowClearUvrConfirm(false)
+    try {
+      // Sessions + their stems, fingerprints, lyrics and transcriptions.
+      deleteAllUvrSessions()
+      // The groups and saved playlists built from those sessions.
+      await deleteAllSessionGroups()
+      await deleteAllPlaylists()
+      showNotification(
+        'Cleared all karaoke & vocal-separation data.',
+        'success',
+      )
+    } catch {
+      showNotification(
+        'Could not clear karaoke data — please try again.',
+        'error',
+      )
+    }
   }
 
   const [testCrash, setTestCrash] = createSignal(false)
@@ -1032,14 +1063,37 @@ export const SettingsPanel: Component = () => {
               Irreversible actions that affect all your data.
             </p>
 
+            {/* Clear only karaoke / vocal-separation data — keeps melodies,
+                practice history, and settings intact. */}
+            <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
+              <div class={styles.dangerContent}>
+                <label class={styles.dangerLabel}>
+                  Clear Karaoke &amp; Vocal Separation Data
+                </label>
+                <small class={styles.dangerDesc}>
+                  Delete all separated songs, stems, lyrics, and karaoke
+                  playlists. Your melodies, practice history, and settings are
+                  kept.
+                </small>
+              </div>
+              <button
+                class={styles.dangerBtn}
+                data-testid="danger-clear-uvr-btn"
+                onClick={() => setShowClearUvrConfirm(true)}
+              >
+                Clear
+              </button>
+            </div>
+
             <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
               <div class={styles.dangerContent}>
                 <label class={styles.dangerLabel}>
                   Reset to Factory Defaults
                 </label>
                 <small class={styles.dangerDesc}>
-                  Clear all stored data and reload the app with initial
-                  defaults.
+                  Erase everything stored on this device — melodies, sessions,
+                  karaoke files, settings, and sign-in — and reload the app with
+                  factory defaults.
                 </small>
               </div>
               <button
@@ -1050,6 +1104,42 @@ export const SettingsPanel: Component = () => {
                 Reset
               </button>
             </div>
+
+            {/* Clear Karaoke/UVR Confirmation Modal */}
+            <Show when={showClearUvrConfirm()}>
+              <div class={styles.dangerConfirmOverlay}>
+                <div
+                  class={styles.dangerConfirmBox}
+                  data-testid="danger-clear-uvr-box"
+                >
+                  <h4 class={styles.dangerConfirmTitle}>Clear Karaoke Data?</h4>
+                  <p class={styles.dangerConfirmText}>
+                    This permanently deletes every separated song, its stems and
+                    lyrics, and all karaoke playlists. Melodies, practice
+                    history, and settings are not affected. This cannot be
+                    undone.
+                  </p>
+                  <div class={styles.dangerConfirmActions}>
+                    <button
+                      class={styles.dangerBtnSecondary}
+                      data-testid="danger-clear-uvr-cancel-btn"
+                      onClick={() => setShowClearUvrConfirm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class={styles.dangerBtnPrimary}
+                      data-testid="danger-clear-uvr-confirm-btn"
+                      onClick={() => {
+                        void handleClearKaraokeData()
+                      }}
+                    >
+                      Clear Karaoke Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Show>
 
             {/* Reset Confirmation Modal */}
             <Show when={showResetConfirm()}>

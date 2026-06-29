@@ -3,6 +3,8 @@ import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
+import { deleteAllUvrSessionsFromDb } from '@/db/services/uvr-service'
+import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -741,34 +743,49 @@ export function deleteUvrSession(sessionId: string): void {
   }
 }
 
-/** Delete all UVR sessions (cache + DB) */
+/**
+ * Delete all UVR sessions and their dependent data (cache + DB).
+ *
+ * Removes the session records AND everything keyed off them — stem audio
+ * blobs, stem fingerprints, lyrics, and whisper transcriptions — so no
+ * orphaned rows are left behind in IndexedDB. Session *groups* are kept but
+ * emptied (use deleteAllSessionGroups to remove the groups themselves).
+ */
 export function deleteAllUvrSessions(): void {
   _setSessionsCache([])
   bumpSessions()
-  persistAllSessionsToDb([])
-  void deleteAllLyricsFromDb()
   setCurrentUvrSession(null)
-  // Clear sessionIds from all groups (cache + DB)
+  // Empty every group in the cache (the records stay; their members are gone).
   const clearedGroups = _groupsCache().map((g) => ({
     ...g,
     sessionIds: [] as string[],
   }))
   _setGroupsCache(clearedGroups)
   bumpGroups()
-  // Fire-and-forget: persist cleared groups to DB
+  // Fire-and-forget: wipe all session-scoped data from IndexedDB.
+  // deleteAllUvrSessionsFromDb also empties each group's sessionIds in the DB.
   void (async () => {
-    try {
-      const db = await getDb()
-      const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-      for (const g of clearedGroups) {
-        await repo.update(g.id, {
-          sessionIds: [],
-        } as Partial<SessionGroupRecord>)
-      }
-    } catch {
-      /* best-effort */
-    }
+    await deleteAllUvrSessionsFromDb()
+    await deleteAllLyricsFromDb()
+    await deleteAllTranscriptionsFromDb()
   })()
+}
+
+/** Delete every session group itself (cache + DB). Used by the karaoke reset. */
+export async function deleteAllSessionGroups(): Promise<void> {
+  const groups = _groupsCache()
+  _setGroupsCache([])
+  bumpGroups()
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    for (const g of groups) {
+      await repo.delete(g.id)
+    }
+  } catch (err) {
+    if (IS_DEV)
+      console.warn('[SessionStore] deleteAllSessionGroups failed:', err)
+  }
 }
 
 /** Get UVR session stats */
@@ -1184,6 +1201,9 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
+    // Pitch-detection controls live on the Settings "Practice" sub-tab; open it
+    // first so the target exists (the panel defaults to the General sub-tab).
+    navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
     title: 'Practice Aids',
@@ -1193,6 +1213,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
     title: 'Accuracy Bands',
@@ -1202,6 +1223,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
     title: 'Theme & Appearance',
@@ -1211,6 +1233,8 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
+    // Theme + appearance toggles live on the "Display & Controls" sub-tab.
+    navigate: ['[data-testid="settings-tab-display"]'],
   },
   {
     title: 'Reverb & ADSR',
@@ -1220,6 +1244,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
   },
 ]
 
