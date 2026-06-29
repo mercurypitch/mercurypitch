@@ -9,6 +9,8 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 
 - [ ] **Guitar practice page** (`feat/guitar-practice`)
 - [ ] **Vocal analysis enhancements** (`feature/vocal-analysis-enhancements`)
+- [ ] **Server-side RunPod separation** (`feat/runpods-server-rendering-8v2oxt`) — GPU + CPU tiers, off by default
+- [ ] **Header support badge** (`feat/support-badge`) — version + Ko-fi pill
 - [x] **Practice Intelligence** (`feat/practice-intelligence`) — adaptive difficulty engine, weakness drill generator, practice summary & trends dashboard
 
 ---
@@ -35,6 +37,19 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 - [ ] **Jam room chat & reactions** -- Text chat + floating emoji reactions in P2P Jam rooms
 - [ ] **Routine sharing via URL** -- Share custom routines as short URLs (reuses share-codec + KV)
 - [ ] **Exercise leaderboard filtering** -- Per-exercise-type + time-range filters on leaderboard
+
+---
+
+## Monetization & Billing
+
+On-device separation stays free forever; credits only ever cover real
+per-use server cost. See [docs/plans/premium.md](docs/plans/premium.md).
+
+- [x] **Server-side separation compute** -- RunPod serverless, GPU + CPU tiers (`feat/runpods-server-rendering-8v2oxt`)
+- [ ] **DB-driven pricing config** -- `pricingPlans` in db-worker + `GET /api/billing/pricing`; edit prices/tiers without a deploy, no prices in the repo
+- [ ] **Pricing / support page** -- renders tiers + packs from the pricing endpoint; "Coming soon" when price unset; Ko-fi support link until billing is live
+- [ ] **Stripe billing (prerequisite for live pricing)** -- checkout + webhooks (source of truth) + credit ledger + idempotency + VAT, plus the security/abuse work, before any price goes non-null
+- [ ] **Credit metering for separation** -- debit on job acceptance, refund on failure; GPU tier costs more credits than CPU
 
 ---
 
