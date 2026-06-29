@@ -55,7 +55,11 @@ export default defineConfig({
     solidPlugin(),
     removeWasmAssetsPlugin(),
   ],
-  base: './',
+  // Absolute base so asset URLs resolve from the site root. Required for
+  // path-based deep-links (e.g. /exercises/<slug>): a relative './' base would
+  // resolve ./assets/* against /exercises/, 404, and fall back to the SPA
+  // shell (text/html) — blocked by X-Content-Type-Options: nosniff.
+  base: '/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
