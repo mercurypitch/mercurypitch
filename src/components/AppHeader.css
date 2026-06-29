@@ -14,6 +14,16 @@ header {
   flex-shrink: 0;
 }
 
+/* Version + support double-pill: pin to the far right of the header row,
+   after the nav tabs (which don't flex-grow). */
+.header-support {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 header h1 {
   font-size: 1.2rem;
   font-weight: 700;

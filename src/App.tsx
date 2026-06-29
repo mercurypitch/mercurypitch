@@ -34,6 +34,7 @@ import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
+import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
@@ -99,7 +100,7 @@ import { fontFamily, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } 
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
-import { Walkthrough, WalkthroughControl } from './components'
+import { SupportBadge, Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
@@ -1416,6 +1417,13 @@ const AppShell: Component<AppProps> = (props) => {
               tabLabel={tabLabel}
               advancedFeaturesEnabled={advancedFeaturesEnabled}
             />
+
+            {/* Version + support (Ko-fi) double-pill, pinned to the far
+                right of the header row (after the nav tabs) */}
+            <div class="header-support">
+              <HeaderAccount />
+              <SupportBadge />
+            </div>
           </header>
 
           {/* Main layout: sidebar + content */}

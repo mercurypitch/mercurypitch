@@ -58,9 +58,11 @@ describe('computeWeeklyTrends', () => {
 
   it('groups sessions by week', () => {
     clearSessionHistory()
-    // Same week (today, yesterday)
+    // Two sessions on the same day always land in one ISO week. (Seeding
+    // "today" + "yesterday" was flaky on Mondays, where yesterday belongs to
+    // the previous ISO week and the two no longer group together.)
     seedSession(80, 0)
-    seedSession(90, 1)
+    seedSession(90, 0)
     const trends = computeWeeklyTrends()
     expect(trends.length).toBeGreaterThanOrEqual(1)
     const thisWeek = trends[trends.length - 1]

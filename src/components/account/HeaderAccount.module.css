@@ -1,0 +1,72 @@
+/* HeaderAccount — double-pill (username | sign-out) matching SupportBadge */
+
+.pill {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.nameBtn,
+.logoutBtn,
+.signInPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nameBtn {
+  padding: 0.32rem 0.6rem;
+}
+
+.nameBtn:hover {
+  color: var(--text-primary);
+}
+
+.name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutBtn {
+  padding: 0.32rem 0.5rem;
+  border-left: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.logoutBtn:hover {
+  color: var(--red, #f85149);
+  background: color-mix(in srgb, var(--red, #f85149) 14%, transparent);
+}
+
+/* Signed-out: a single pill that opens the account page. */
+.signInPill {
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.signInPill:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
