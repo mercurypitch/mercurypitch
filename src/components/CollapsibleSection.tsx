@@ -21,10 +21,9 @@ interface CollapsibleSectionProps {
 export const CollapsibleSection: Component<CollapsibleSectionProps> = (
   props,
 ) => {
-  // storageKey is a stable per-section constant, read once at init.
-  // eslint-disable-next-line solid/reactivity
   const [open, setOpen] = createPersistedSignal<boolean>(
-    props.storageKey,
+    // storageKey is a stable per-section constant; safe to read at init.
+    props.storageKey, // eslint-disable-line solid/reactivity
     props.defaultOpen ?? true,
   )
   return (

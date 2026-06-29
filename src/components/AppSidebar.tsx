@@ -17,13 +17,12 @@ import { CalendarHeatmap } from '@/features/practice-intelligence/components/Cal
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, hasPageTour, sessionResults, setActiveTab, showNotification, startPageTour, } from '@/stores'
+import { activeTab as appActiveTab, hasPageTour, sessionResults, showNotification, startPageTour, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { CHARACTER_INFO, selectedCharacter, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
+import { setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
-import appStyles from './App.module.css'
 import styles from './AppSidebar.module.css'
 import { MicSensitivityControls } from './MicSensitivityControls'
 
@@ -140,45 +139,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </svg>
       </button>
 
-      {/* Current melody indicator pill */}
-      <Show when={melodyStore.getCurrentMelody()}>
-        <button
-          class={appStyles.melodyIndicatorPill}
-          style={{
-            'margin-bottom': '8px',
-            'align-self': 'center',
-            'max-width': '100%',
-            'flex-shrink': 0,
-          }}
-          onClick={() => void setActiveTab(TAB_SINGING)}
-          title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
-        >
-          <svg
-            class={appStyles.melodyIndicatorIcon}
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="18" cy="16" r="3" />
-          </svg>
-          <span class={appStyles.melodyIndicatorInfo}>
-            <span class={appStyles.melodyIndicatorName}>
-              {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
-            </span>
-            <span class={appStyles.melodyIndicatorCharacter}>
-              {CHARACTER_INFO[selectedCharacter()].displayName}
-            </span>
-          </span>
-        </button>
-      </Show>
-
       {/* Learn + Guide buttons */}
       <div class={styles.walkthroughControlGroup}>
         <button
@@ -227,9 +187,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </Show>
       </div>
 
-      <CharacterIcons
-        onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
-      />
+      <CollapsibleSection title="Character" storageKey="sidebar-character-open">
+        <CharacterIcons
+          onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
+        />
+      </CollapsibleSection>
 
       {/* Library — right after the character icons. */}
       <div class={styles.sidebarSection}>
