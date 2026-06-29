@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { sessionResults, showPitchDisplay, showStats } from '@/stores'
+import { isPlaying, sessionResults, showPitchDisplay, showStats, } from '@/stores'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
 import styles from './SingingCanvasHud.module.css'
@@ -30,10 +30,18 @@ interface SingingCanvasHudProps {
 }
 
 export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
+  // The sessions scoreboard is history, not live feedback — auto-collapse it
+  // during playback so the melody has room. The live HUDs stay but dim (see
+  // the `dimmed` class) so the melody beneath reads through.
+  const showSessions = () => sessionResults().length > 0 && !isPlaying()
   return (
     <>
-      <Show when={showStats() || sessionResults().length > 0}>
-        <div class={styles.accuracyHud} data-testid="singing-canvas-hud">
+      <Show when={showStats() || showSessions()}>
+        <div
+          class={styles.accuracyHud}
+          classList={{ [styles.dimmed]: isPlaying() }}
+          data-testid="singing-canvas-hud"
+        >
           <Show when={showStats()}>
             <div class={styles.card} data-testid="hud-accuracy">
               <div class={styles.cardTitle}>Accuracy</div>
@@ -49,7 +57,7 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
             </div>
           </Show>
 
-          <Show when={sessionResults().length > 0}>
+          <Show when={showSessions()}>
             <div
               id="session-history-panel"
               class={styles.card}
@@ -95,7 +103,10 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
       </Show>
 
       <Show when={showPitchDisplay()}>
-        <div class={styles.pitchHud}>
+        <div
+          class={styles.pitchHud}
+          classList={{ [styles.dimmed]: isPlaying() }}
+        >
           <div class={styles.card} data-testid="hud-pitch">
             <PitchDisplay
               pitch={props.pitch}

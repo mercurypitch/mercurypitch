@@ -808,7 +808,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // Reserve vertical insets so notes clear the corner overlays: more at the
     // bottom for the control bar / bar-counter, a little at the top for the
     // (now compact) status chip + accuracy HUD.
-    const TOP_INSET = 44
+    const TOP_INSET = 34
     const BOTTOM_INSET = 78
     const usableH = Math.max(1, h - TOP_INSET - BOTTOM_INSET)
     const y = h - BOTTOM_INSET - pct * usableH

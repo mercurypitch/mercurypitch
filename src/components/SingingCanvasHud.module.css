@@ -12,13 +12,28 @@
   top: 12px;
   right: 40px;
   z-index: 6;
+  /* Accuracy + sessions sit side by side (wraps on a narrow canvas) so the
+     top-right stack stays short. */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
   gap: 8px;
-  width: 196px;
-  max-width: 44%;
+  width: auto;
+  max-width: 64%;
   /* Display-only HUD — let canvas drags / clicks pass straight through. */
   pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.accuracyHud > .card {
+  width: 184px;
+}
+
+/* Playback running: fade the display HUDs hard so the melody beneath gets
+   visual priority. Restores when paused / stopped. */
+.dimmed {
+  opacity: 0.26;
 }
 
 /* Pitch monitor — bottom-left, mirroring the Guitar 3D input monitor. */
@@ -30,6 +45,7 @@
   width: 200px;
   max-width: 44%;
   pointer-events: none;
+  transition: opacity 0.35s ease;
 }
 
 .card {

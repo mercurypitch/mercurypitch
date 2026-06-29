@@ -27,6 +27,12 @@
   /* Display-only — clicks pass through to the canvas. */
   pointer-events: none;
   user-select: none;
+  transition: opacity 0.35s ease;
+}
+
+/* Playback running: fade so the melody beneath gets visual priority. */
+.dimmed {
+  opacity: 0.26;
 }
 
 .primary {
