@@ -138,6 +138,21 @@ export const IconZoomOut = () => (
   </Svg>
 )
 
+// Editor (Compose) glyphs.
+export const IconRecord = () => (
+  <Svg fill>
+    <circle cx="12" cy="12" r="6" />
+  </Svg>
+)
+export const IconShare = () => (
+  <Svg>
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+  </Svg>
+)
+
 /** Tiny caret for the custom number stepper (native blue spinner is hidden). */
 export const Caret = (p: { up?: boolean }) => (
   <svg
