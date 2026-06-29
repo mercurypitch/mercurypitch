@@ -5,8 +5,8 @@
 // (tempo, volume, speed, rest) live in a group that expands on hover
 // or when pinned. No divider rulers; sliders have no number boxes
 // (except BPM); the mic-sensitivity control is gone (it's in the
-// sidebar). Reuses the existing App handlers — Compose/Piano/Guitar
-// keep SharedControlToolbar.
+// sidebar). Reuses the existing App handlers. Compose/Piano/Guitar
+// each have their own bespoke bar in the same shared glass style.
 //
 // Preserves every e2e test-id the singing suite depends on:
 //   play-btn, pause-btn, resume-btn, stop-btn, focus-btn,
@@ -24,10 +24,10 @@ import styles from '@/components/shared/control-bar/control-bar.module.css'
 import { IconAnchor, IconClock, IconFocus, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
 import { bpm, enterFocusMode, micActive, micWaveVisible, setBpm, settings, toggleMicWaveVisible, } from '@/stores'
 import { setTonicAnchor } from '@/stores/settings-store'
+import type { PracticeSubMode } from '@/types'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { SlidersHorizontal } from '../icons'
 
