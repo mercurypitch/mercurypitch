@@ -65,6 +65,24 @@ export async function switchTab(
   await expect(tabButton).toHaveClass(/active/, { timeout: 5000 })
 }
 
+/**
+ * Switch between the sub-tabs inside the Settings panel (Account & App /
+ * Singing / Display & Controls). The panel renders each sub-tab's content with
+ * a Solid `<Show>`, so elements only exist in the DOM while their sub-tab is
+ * active. Targets the stable `data-testid` + `aria-selected` on the tab button
+ * rather than its visible label.
+ */
+export async function switchSettingsTab(
+  page: Page,
+  tab: 'account' | 'singing' | 'display',
+) {
+  const tabButton = page.locator(`[data-testid="settings-tab-${tab}"]`)
+  await tabButton.click()
+  await expect(tabButton).toHaveAttribute('aria-selected', 'true', {
+    timeout: 5000,
+  })
+}
+
 export async function goToAndWait(page: Page, url: string) {
   await page.goto(url)
   await page.waitForLoadState('networkidle')

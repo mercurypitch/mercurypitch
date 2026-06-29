@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, switchSettingsTab } from '@/e2e/helpers/ui'
 
 test.describe('MercuryPitch App', () => {
   test.beforeEach(async ({ page }) => {
@@ -349,10 +349,7 @@ test.describe('MercuryPitch App', () => {
     // Click Settings tab button with force
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000) // Wait longer for SolidJS to re-render
-    // Check for settings-specific content
-    await expect(
-      page.locator('h3:has-text("Tone Envelope (ADSR)")'),
-    ).toBeVisible({ timeout: 10000 })
+    await switchSettingsTab(page, 'account')
     await expect(page.locator('[data-testid="about-name"]')).toContainText(
       'MercuryPitch',
     )
@@ -363,6 +360,7 @@ test.describe('MercuryPitch App', () => {
   }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'account')
     const githubLink = page.locator('[data-testid="about-link"]')
     await expect(githubLink).toBeVisible({ timeout: 10000 })
     await expect(githubLink).toContainText('View on GitHub')
@@ -372,6 +370,7 @@ test.describe('MercuryPitch App', () => {
   test('Settings panel shows ADSR envelope controls', async ({ page }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'singing')
     await expect(page.locator('#adsr-attack')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('#adsr-decay')).toBeVisible()
     await expect(page.locator('#adsr-sustain')).toBeVisible()
@@ -381,6 +380,7 @@ test.describe('MercuryPitch App', () => {
   test('Settings panel shows Reverb controls', async ({ page }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'singing')
     await expect(page.locator('#reverb-type')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('#reverb-wetness')).toBeVisible()
     // Verify reverb type options exist
@@ -398,6 +398,7 @@ test.describe('MercuryPitch App', () => {
   test('Reverb type can be changed', async ({ page }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'singing')
     const reverbType = page.locator('#reverb-type')
     await expect(reverbType).toBeVisible({ timeout: 10000 })
     await reverbType.selectOption('hall')
@@ -407,6 +408,7 @@ test.describe('MercuryPitch App', () => {
   test('ADSR controls can be adjusted', async ({ page }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'singing')
     const attackSlider = page.locator('#adsr-attack')
     await expect(attackSlider).toBeVisible({ timeout: 10000 })
     await attackSlider.fill('500')
@@ -416,6 +418,7 @@ test.describe('MercuryPitch App', () => {
   test('Accuracy bands settings exist', async ({ page }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
+    await switchSettingsTab(page, 'singing')
     await expect(page.locator('#band-perfect')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('#band-excellent')).toBeVisible()
     await expect(page.locator('#band-good')).toBeVisible()
