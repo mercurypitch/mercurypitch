@@ -60,6 +60,10 @@ export const SafeSelect: Component<
     // Dev-only: walk up the DOM tree and warn if any ancestor has transform
     if (import.meta.env.DEV) {
       const checkFn = () => {
+        // Deferred dev-only check: bail if the element was unmounted or the
+        // env (e.g. a test's jsdom) was torn down before this callback ran,
+        // so the leaked timer can't throw `window is not defined`.
+        if (typeof window === 'undefined' || !el.isConnected) return
         let current: HTMLElement | null = el.parentElement
         while (current) {
           const style = window.getComputedStyle(current)
