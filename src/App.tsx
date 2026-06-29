@@ -34,6 +34,7 @@ import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
+import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
@@ -1420,6 +1421,7 @@ const AppShell: Component<AppProps> = (props) => {
             {/* Version + support (Ko-fi) double-pill, pinned to the far
                 right of the header row (after the nav tabs) */}
             <div class="header-support">
+              <HeaderAccount />
               <SupportBadge />
             </div>
           </header>
