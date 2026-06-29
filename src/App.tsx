@@ -100,7 +100,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { fontFamily, showHistoryPanel, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { CHARACTER_INFO, fontFamily, selectedCharacter, showHistoryPanel, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -1402,7 +1402,45 @@ const AppShell: Component<AppProps> = (props) => {
                   MercuryPitch
                 </span>
               </button>
-              <p class="subtitle">Voice Pitch Practice</p>
+              <Show
+                when={
+                  activeTab() === TAB_SINGING &&
+                  melodyStore.currentMelody() != null
+                }
+                fallback={<p class="subtitle">Voice Pitch Practice</p>}
+              >
+                {/* Dynamic practice context — the loaded melody + character.
+                    Own class (not .subtitle) so it stays visible on mobile. */}
+                <button
+                  class="header-melody-context"
+                  onClick={() => void handleTabChange(TAB_SINGING)}
+                  title={`Now loaded: ${melodyStore.currentMelody()?.name ?? 'Untitled'}`}
+                  style={{
+                    display: 'inline-block',
+                    'max-width': '240px',
+                    overflow: 'hidden',
+                    'white-space': 'nowrap',
+                    'text-overflow': 'ellipsis',
+                    background: 'none',
+                    border: 'none',
+                    padding: '0',
+                    cursor: 'pointer',
+                    'font-size': '0.78rem',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <span
+                    style={{
+                      'font-weight': '600',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    {melodyStore.currentMelody()?.name ?? 'Untitled'}
+                  </span>
+                  {' · '}
+                  {CHARACTER_INFO[selectedCharacter()].displayName}
+                </button>
+              </Show>
             </div>
             <div class="header-right">
               {/* Current melody indicator pill */}
