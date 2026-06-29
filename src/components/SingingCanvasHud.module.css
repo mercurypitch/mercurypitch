@@ -104,3 +104,46 @@
   border-radius: 0;
   padding: 0;
 }
+
+/* Recent-session scoreboard (top-right, under the accuracy card). Caps at a
+   handful of rows and scrolls if there are more. The list re-enables pointer
+   events so it can be scrolled, while the rest of the HUD stays pass-through. */
+.sessionList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 176px;
+  overflow-y: auto;
+  pointer-events: auto;
+  scrollbar-width: thin;
+}
+.sessionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font-size: 0.72rem;
+}
+.sessionName {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sessionScore {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.scoreHigh {
+  color: var(--green);
+}
+.scoreMid {
+  color: var(--yellow);
+}
+.scoreLow {
+  color: var(--red);
+}

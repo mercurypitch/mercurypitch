@@ -17,7 +17,7 @@ import { CalendarHeatmap } from '@/features/practice-intelligence/components/Cal
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, hasPageTour, sessionResults, showNotification, startPageTour, } from '@/stores'
+import { activeTab as appActiveTab, hasPageTour, showNotification, startPageTour, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
@@ -379,49 +379,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <DailyRoutinePanel />
       </div>
 
-      {/* Streak Calendar */}
+      {/* Activity — streak calendar + practice heatmap. Recent-session scores
+          moved to the top-right canvas scoreboard (SingingCanvasHud). */}
       <CollapsibleSection title="Activity" storageKey="sidebar-activity-open">
         <StreakCalendar />
-      </CollapsibleSection>
-
-      {/* Session history — practice tab only. The live Accuracy and Pitch
-          panels now render as overlays on the singing canvas (SingingCanvasHud). */}
-      <Show when={isPracticeOrSettingsTab() && sessionResults().length > 0}>
-        <div class={styles.sidebarSection}>
-          <div id="session-history-panel" class={styles.sessionHistoryPanel}>
-            <h3>Sessions</h3>
-            <div id="session-history-list" class={styles.sessionHistoryList}>
-              <For each={sessionResults()}>
-                {(entry) => (
-                  <div
-                    class={styles.sessionHistoryEntry}
-                    data-testid="session-history-entry"
-                  >
-                    <span class={styles.sessionHistoryName}>
-                      {entry.sessionName}
-                    </span>
-                    <span
-                      class={[
-                        styles.sessionHistoryScore,
-                        entry.score >= 80
-                          ? styles.scoreHigh
-                          : entry.score >= 50
-                            ? styles.scoreMid
-                            : styles.scoreLow,
-                      ].join(' ')}
-                    >
-                      {entry.score}%
-                    </span>
-                  </div>
-                )}
-              </For>
-            </div>
-            <div class={styles.heatmapWrapper}>
-              <CalendarHeatmap weeks={8} />
-            </div>
-          </div>
+        <div class={styles.heatmapWrapper}>
+          <CalendarHeatmap weeks={8} />
         </div>
-      </Show>
+      </CollapsibleSection>
 
       {/* Note list (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
