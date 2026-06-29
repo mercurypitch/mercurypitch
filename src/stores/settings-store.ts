@@ -471,6 +471,14 @@ export const [showPitchDisplay, setShowPitchDisplay] =
   createPersistedSignal<boolean>(SHOW_PITCH_DISPLAY_KEY, true)
 
 /**
+ * Show the legacy live-history panel (frequency / waveform bars) below the
+ * practice canvas. Off by default — the in-canvas pitch monitor covers this
+ * now, and hiding it reclaims vertical space.
+ */
+export const [showHistoryPanel, setShowHistoryPanel] =
+  createPersistedSignal<boolean>('pitchperfect_show_history_panel', false)
+
+/**
  * Show the practice-result popup modal after a run completes
  * (once mode, repeat mode, or session). Off by default so the
  * overlay doesn't interrupt the user after every run.
