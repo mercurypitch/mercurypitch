@@ -161,45 +161,82 @@ export const AccountSection: Component = () => {
         <Switch>
           {/* Signed in with a real account */}
           <Match when={me() != null && isUpgraded()}>
-            <div class={styles.statusRow}>
-              <span class={styles.providerBadge}>{provider()}</span>
-              <span
-                class={styles.displayNamePill}
-                data-testid="account-display-name"
-              >
-                {profileName() !== '' ? profileName() : 'Signed in'}
+            <div class={styles.accountCard}>
+              <span class={styles.accountType}>
+                Signed in with {provider() === 'google' ? 'Google' : 'email'}
               </span>
-              <span class={styles.mutedNote} data-testid="account-email">
-                {me()?.user.email ?? ''}
-              </span>
-            </div>
-            <div class={styles.nameEditRow}>
-              <input
-                class={styles.authInput}
-                type="text"
-                placeholder="Display name"
-                aria-label="Display name"
-                autocomplete="nickname"
-                maxLength={40}
-                value={nameDraft()}
-                onInput={(e) => setNameDraft(e.currentTarget.value)}
-                data-testid="display-name-input"
-              />
-              <button
-                class={styles.authButton}
-                onClick={() => void saveDisplayName()}
-                disabled={
-                  busy() ||
-                  nameDraft().trim() === '' ||
-                  nameDraft().trim() === profileName()
-                }
-                data-testid="display-name-save"
-              >
-                Save
-              </button>
+              <div class={styles.accountIdentity}>
+                <span
+                  class={styles.displayNamePill}
+                  data-testid="account-display-name"
+                >
+                  {profileName() !== '' ? profileName() : 'Signed in'}
+                </span>
+                <div class={styles.identityRight}>
+                  <span class={styles.emailValue} data-testid="account-email">
+                    {me()?.user.email ?? ''}
+                  </span>
+                  <button
+                    class={styles.iconButton}
+                    onClick={handleLogout}
+                    data-testid="logout-button"
+                    aria-label="Sign out"
+                    title="Sign out"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H10c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H8v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class={styles.accountField}>
+                <label
+                  class={styles.fieldLabel}
+                  for="account-display-name-input"
+                >
+                  Display name
+                </label>
+                <div class={styles.nameEditRow}>
+                  <input
+                    id="account-display-name-input"
+                    class={styles.authInput}
+                    type="text"
+                    placeholder="Display name"
+                    aria-label="Display name"
+                    autocomplete="nickname"
+                    maxLength={40}
+                    value={nameDraft()}
+                    onInput={(e) => setNameDraft(e.currentTarget.value)}
+                    data-testid="display-name-input"
+                  />
+                  <button
+                    class={styles.authButtonPrimary}
+                    onClick={() => void saveDisplayName()}
+                    disabled={
+                      busy() ||
+                      nameDraft().trim() === '' ||
+                      nameDraft().trim() === profileName()
+                    }
+                    data-testid="display-name-save"
+                  >
+                    Save
+                  </button>
+                </div>
+                <p class={styles.fieldHint}>
+                  Shown on leaderboards and shared content.
+                </p>
+              </div>
             </div>
             <p class={styles.mutedNote}>
-              Your display name appears on leaderboards and shared content.
               Challenges, scores and leaderboard entries sync with this account.
               Karaoke audio stays on this device.
             </p>
@@ -208,15 +245,6 @@ export const AccountSection: Component = () => {
                 {error()}
               </p>
             </Show>
-            <div class={styles.buttonRow}>
-              <button
-                class={styles.authButton}
-                onClick={handleLogout}
-                data-testid="logout-button"
-              >
-                Sign out
-              </button>
-            </div>
           </Match>
 
           {/* Anonymous (or signed out) */}
