@@ -1,7 +1,7 @@
 /* ============================================================
    AppHeader — Global styles for header, toolbar, and tab bars
    All selectors use :global() because these target raw DOM
-   classes/elements rendered by App.tsx and SharedControlToolbar.tsx
+   classes/elements rendered by App.tsx and the per-tab control bars
    ============================================================ */
 
 /* Header */
