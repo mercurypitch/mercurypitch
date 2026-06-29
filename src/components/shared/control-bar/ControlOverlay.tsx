@@ -1,25 +1,21 @@
 // ============================================================
-// SingingControlOverlay — Guitar-3D-style floating chrome for the
-// practice control bar. Wraps the existing SharedControlToolbar
-// (passed as children, so every control + test-id is preserved) and
-// turns it into a canvas overlay that docks top or bottom-centre and
-// can be hidden. Dock + hidden state persist per device.
+// ControlOverlay — Guitar-3D-style floating chrome for a tab's control bar.
+// Wraps a bespoke control bar (as children) and turns it into a canvas overlay
+// that docks top or bottom-centre and can be hidden. Dock + hidden state
+// persist per device, per tab (keyed by `idPrefix`).
 //
-// Phase 1 of the singing redesign: the toolbar logic stays in
-// SharedControlToolbar (still used by Compose/Piano/Guitar); this only
-// adds the positioned glass shell around it on the Singing tab.
+// Generic across tabs: pass `containerSelector` (the positioning container used
+// for drag-snap) and `idPrefix` (persist-key + data-testid namespace). Defaults
+// match the Singing tab so it's a drop-in for the original SingingControlOverlay.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
-import styles from './SingingControlOverlay.module.css'
+import styles from './ControlOverlay.module.css'
 
 type Dock = 'top' | 'bottom'
 const isDock = (v: unknown): v is Dock => v === 'top' || v === 'bottom'
-
-const DOCK_KEY = 'mp-singing-control-dock'
-const HIDDEN_KEY = 'mp-singing-control-hidden'
 
 // Touch / small screens default to the top dock (the bottom rail sits under
 // the thumbs); desktop defaults to the centred bottom bar. Explicit choice wins.
@@ -55,15 +51,28 @@ const Chevron = (props: { dir: 'up' | 'down' }) => (
   </svg>
 )
 
-export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
-  props,
-) => {
+interface ControlOverlayProps {
+  children: JSX.Element
+  /** CSS selector of the positioning container used for drag-snap docking. */
+  containerSelector?: string
+  /** Persist-key + data-testid namespace, one per tab (e.g. 'singing', 'piano'). */
+  idPrefix?: string
+}
+
+export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
+  // Static per mount — safe to read once for the persist keys / test-ids.
+  const prefix = props.idPrefix ?? 'singing' // eslint-disable-line solid/reactivity
+  const containerSelector = props.containerSelector ?? '#canvas-container' // eslint-disable-line solid/reactivity
+
   const [dock, setDock] = createPersistedSignal<Dock>(
-    DOCK_KEY,
+    `mp-${prefix}-control-dock`,
     prefersTopDock() ? 'top' : 'bottom',
     { validator: isDock },
   )
-  const [hidden, setHidden] = createPersistedSignal<boolean>(HIDDEN_KEY, false)
+  const [hidden, setHidden] = createPersistedSignal<boolean>(
+    `mp-${prefix}-control-hidden`,
+    false,
+  )
 
   // Grip: click flips dock; drag snaps to the half it's released in.
   let downY = 0
@@ -72,7 +81,7 @@ export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
   const onGripDown = (e: PointerEvent) => {
     downY = e.clientY
     moved = false
-    containerEl = (e.currentTarget as HTMLElement).closest('#canvas-container')
+    containerEl = (e.currentTarget as HTMLElement).closest(containerSelector)
     try {
       ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
     } catch {
@@ -103,7 +112,7 @@ export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
             [styles.bottom]: dock() === 'bottom',
           }}
         >
-          <div class={styles.overlay} data-testid="singing-control-overlay">
+          <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
             <div class={styles.chrome}>
               <button
                 type="button"
@@ -122,7 +131,7 @@ export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
                 class={styles.iconBtn}
                 title="Hide controls"
                 aria-label="Hide controls"
-                data-testid="singing-control-hide"
+                data-testid={`${prefix}-control-hide`}
                 onClick={() => setHidden(true)}
               >
                 <Chevron dir={dock() === 'top' ? 'up' : 'down'} />
@@ -143,7 +152,7 @@ export const SingingControlOverlay: Component<{ children: JSX.Element }> = (
           }}
           title="Show controls"
           aria-label="Show controls"
-          data-testid="singing-control-show"
+          data-testid={`${prefix}-control-show`}
           onClick={() => setHidden(false)}
         >
           <Chevron dir={dock() === 'top' ? 'down' : 'up'} />
