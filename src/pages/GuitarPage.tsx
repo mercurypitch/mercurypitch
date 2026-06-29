@@ -3,6 +3,7 @@ import { createEffect, createSignal, For, Show } from 'solid-js'
 import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
+import { GuitarControlBar } from '@/components/guitar/GuitarControlBar'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
 import { GuitarFretboardModeTabs } from '@/components/guitar/GuitarFretboardModeTabs'
 import { GuitarPracticeSongPicker } from '@/components/guitar/GuitarPracticeSongPicker'
@@ -11,16 +12,16 @@ import { GuitarViewToggle } from '@/components/guitar/GuitarViewToggle'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { MicInsightHint } from '@/components/MicInsightHint'
-import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
 import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
-import { PLAYBACK_MODE_ONCE, TAB_GUITAR } from '@/features/tabs/constants'
+import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { createPersistedSignal } from '@/lib/storage'
-import { activeTab, countIn } from '@/stores'
+import { activeTab } from '@/stores'
 
 // Small / touch screens hide the 3D-view overlays (input monitor + nav gizmo)
 // by default; the user can still toggle them on and the choice is persisted.
@@ -133,62 +134,51 @@ export function GuitarPage(props: GuitarPageProps) {
   return (
     <div id="guitar-practice-panel">
       <Show when={!toolbarHidden()}>
-        <SharedControlToolbar
-          activeTab={activeTab}
-          guitarTab={() => activeTab() === TAB_GUITAR}
-          isPlaying={() =>
-            guitar.gameState() === 'playing' ||
-            guitar.gameState() === 'countdown'
-          }
-          isPaused={() => guitar.gameState() === 'paused'}
-          onPlay={() => void guitar.startGame()}
-          onPause={guitar.pauseGame}
-          onResume={guitar.resumeGame}
-          onStop={guitar.stopGame}
-          volume={props.volume}
-          onVolumeChange={(vol) => {
-            props.setVolume(vol)
-            audioEngine?.setVolume(vol / 100)
-          }}
-          speed={1}
-          onSpeedChange={() => {}}
-          metronomeEnabled={() => false}
-          onMetronomeToggle={() => {}}
-          playMode={() => PLAYBACK_MODE_ONCE}
-          playModeChange={() => {}}
-          practiceCycles={() => 1}
-          onCyclesChange={() => {}}
-          currentCycle={() => 1}
-          practiceSubMode={() => 'all' as const}
-          onPracticeSubModeChange={() => {}}
-          isCountingIn={() => guitar.gameState() === 'countdown'}
-          countInBeat={() =>
-            guitar.playheadBeat() < 0 ? Math.ceil(-guitar.playheadBeat()) : 0
-          }
-          countInBeats={() => countIn()}
-          showNoteLabels={guitar.showNoteLabels}
-          onToggleNoteLabels={() => guitar.setShowNoteLabels((p) => !p)}
-          showUserNotes={guitar.showUserNotes}
-          onToggleUserNotes={() => guitar.setShowUserNotes((p) => !p)}
-          bpmValue={guitarView() === 'interactive' ? drumBpm : guitar.songBpm}
-          onBpmChange={
-            guitarView() === 'interactive'
-              ? (b: number) => {
-                  drumMachine.setBpm(b)
-                  setDrumBpm(b)
-                }
-              : () => {}
-          }
-          onMicToggle={() =>
-            guitar.isMicActive() ? guitar.stopMic() : void guitar.startMic()
-          }
-          onMidiToggle={() =>
-            guitar.midiConnected()
-              ? guitar.midiDisconnect()
-              : void guitar.midiConnect()
-          }
-          midiConnected={guitar.midiConnected}
-        />
+        <ControlOverlay static idPrefix="guitar">
+          <GuitarControlBar
+            isPlaying={() =>
+              guitar.gameState() === 'playing' ||
+              guitar.gameState() === 'countdown'
+            }
+            isPaused={() => guitar.gameState() === 'paused'}
+            onPlay={() => void guitar.startGame()}
+            onPause={guitar.pauseGame}
+            onResume={guitar.resumeGame}
+            onStop={guitar.stopGame}
+            isCountingIn={() => guitar.gameState() === 'countdown'}
+            countInBeat={() =>
+              guitar.playheadBeat() < 0 ? Math.ceil(-guitar.playheadBeat()) : 0
+            }
+            volume={props.volume}
+            onVolumeChange={(vol) => {
+              props.setVolume(vol)
+              audioEngine?.setVolume(vol / 100)
+            }}
+            bpm={() =>
+              guitarView() === 'interactive' ? drumBpm() : guitar.songBpm()
+            }
+            onBpmChange={(b) => {
+              if (guitarView() === 'interactive') {
+                drumMachine.setBpm(b)
+                setDrumBpm(b)
+              }
+            }}
+            micActive={guitar.isMicActive}
+            onMicToggle={() =>
+              guitar.isMicActive() ? guitar.stopMic() : void guitar.startMic()
+            }
+            midiConnected={guitar.midiConnected}
+            onMidiToggle={() =>
+              guitar.midiConnected()
+                ? guitar.midiDisconnect()
+                : void guitar.midiConnect()
+            }
+            showNoteLabels={guitar.showNoteLabels}
+            onToggleNoteLabels={() => guitar.setShowNoteLabels((p) => !p)}
+            showUserNotes={guitar.showUserNotes}
+            onToggleUserNotes={() => guitar.setShowUserNotes((p) => !p)}
+          />
+        </ControlOverlay>
       </Show>
       <div class="gp-header-controls">
         <div class="gp-header-left" data-tour="guitar.song-picker">

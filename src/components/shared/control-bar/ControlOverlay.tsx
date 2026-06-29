@@ -57,11 +57,29 @@ interface ControlOverlayProps {
   containerSelector?: string
   /** Persist-key + data-testid namespace, one per tab (e.g. 'singing', 'piano'). */
   idPrefix?: string
+  /**
+   * Render the glass card in normal flow (centred), without docking/drag/hide
+   * chrome — for tabs whose bar lives in the panel layout rather than over a
+   * canvas (Guitar fretboard, Compose). The host owns show/hide.
+   */
+  static?: boolean
 }
 
 export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
   // Static per mount — safe to read once for the persist keys / test-ids.
   const prefix = props.idPrefix ?? 'singing' // eslint-disable-line solid/reactivity
+
+  // Static mode: a plain centred glass card in flow. No dock/hide chrome.
+  if (props.static === true) {
+    return (
+      <div class={`${styles.overlayWrap} ${styles.staticWrap}`}>
+        <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
+          <div class={styles.toolbarSlot}>{props.children}</div>
+        </div>
+      </div>
+    )
+  }
+
   const containerSelector = props.containerSelector ?? '#canvas-container' // eslint-disable-line solid/reactivity
 
   const [dock, setDock] = createPersistedSignal<Dock>(
