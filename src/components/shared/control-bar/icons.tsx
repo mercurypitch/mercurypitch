@@ -101,6 +101,43 @@ export const IconRest = () => (
   </Svg>
 )
 
+// Instrument-tab glyphs (Piano / Guitar).
+export const IconMidi = () => (
+  <Svg>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none" />
+    <circle cx="8.5" cy="10" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="10" r="1" fill="currentColor" stroke="none" />
+    <circle cx="9.5" cy="14" r="1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="14" r="1" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconLabels = () => (
+  <Svg>
+    <path d="M3 7h11l5 5-5 5H3z" />
+    <circle cx="7.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconNotes = () => (
+  <Svg>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="16" r="3" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconZoomIn = () => (
+  <Svg>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3M11 8v6M8 11h6" />
+  </Svg>
+)
+export const IconZoomOut = () => (
+  <Svg>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3M8 11h6" />
+  </Svg>
+)
+
 /** Tiny caret for the custom number stepper (native blue spinner is hidden). */
 export const Caret = (p: { up?: boolean }) => (
   <svg

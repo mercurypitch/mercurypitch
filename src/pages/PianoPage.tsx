@@ -3,11 +3,11 @@ import { Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from '@/components/FallingNotesSongPicker'
 import { MicInsightHint } from '@/components/MicInsightHint'
-import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import { PianoControlBar } from '@/components/piano/PianoControlBar'
+import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, TAB_PIANO, } from '@/features/tabs/constants'
-import { activeTab, countIn } from '@/stores'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
 
 type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
@@ -38,72 +38,6 @@ export function PianoPage(props: PianoPageProps) {
 
   return (
     <div id="falling-notes-panel">
-      <SharedControlToolbar
-        activeTab={activeTab}
-        pianoTab={() => activeTab() === TAB_PIANO}
-        isPlaying={props.isPlaying}
-        isPaused={props.isPaused}
-        onPlay={() => {
-          // Fresh user-triggered Play resets cycle counter
-          if (fallingNotes.gameState() !== 'paused') {
-            fallingNotes.setPianoCurrentCycle(1)
-          }
-          void fallingNotes.startGame()
-        }}
-        onPause={fallingNotes.pauseGame}
-        onResume={fallingNotes.resumeGame}
-        onStop={fallingNotes.resetGame}
-        volume={props.volume}
-        onVolumeChange={props.onVolumeChange}
-        speed={fallingNotes.speed()}
-        onSpeedChange={fallingNotes.setSpeed}
-        metronomeEnabled={() => false}
-        onMetronomeToggle={() => {}}
-        playMode={() =>
-          fallingNotes.pianoPlayMode() === 'repeat'
-            ? PLAYBACK_MODE_REPEAT
-            : PLAYBACK_MODE_ONCE
-        }
-        playModeChange={(mode) => {
-          fallingNotes.setPianoPlayMode(
-            mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
-          )
-          if (mode === PLAYBACK_MODE_REPEAT) {
-            fallingNotes.setPianoCurrentCycle(1)
-          }
-        }}
-        practiceCycles={() => fallingNotes.pianoRepeatCycles()}
-        onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
-        currentCycle={() => fallingNotes.pianoCurrentCycle()}
-        practiceSubMode={() => 'all' as const}
-        onPracticeSubModeChange={() => {}}
-        isCountingIn={() => fallingNotes.isCountingIn()}
-        countInBeat={() => fallingNotes.countInBeat()}
-        countInBeats={() => countIn()}
-        onMicToggle={() => {
-          if (fallingNotes.isMicActive()) {
-            fallingNotes.stopMic()
-          } else {
-            void fallingNotes.startMic()
-          }
-        }}
-        inputMode={fallingNotes.inputMode}
-        midiConnected={fallingNotes.midiConnected}
-        onMidiToggle={() => {
-          if (fallingNotes.midiConnected()) {
-            fallingNotes.midiDisconnect()
-          } else {
-            void fallingNotes.midiConnect()
-          }
-        }}
-        zoomLevel={fallingNotes.zoomPercent}
-        onZoomIn={fallingNotes.zoomIn}
-        onZoomOut={fallingNotes.zoomOut}
-        showNoteLabels={fallingNotes.showNoteLabels}
-        onToggleNoteLabels={fallingNotes.toggleNoteLabels}
-        bpmValue={fallingNotes.currentSongBpm}
-        onBpmChange={fallingNotes.setBpm}
-      />
       <div data-tour="piano.song-picker">
         <FallingNotesSongPicker
           onSongLoaded={fallingNotes.loadSong}
@@ -152,6 +86,70 @@ export function PianoPage(props: PianoPageProps) {
           onClickPianoOff={fallingNotes.clickPianoNoteOff}
           clickPianoEnabled={fallingNotes.clickPianoEnabled}
         />
+        <ControlOverlay
+          idPrefix="piano"
+          containerSelector="#falling-notes-canvas-container"
+        >
+          <PianoControlBar
+            isPlaying={props.isPlaying}
+            isPaused={props.isPaused}
+            onPlay={() => {
+              // Fresh user-triggered Play resets cycle counter.
+              if (fallingNotes.gameState() !== 'paused') {
+                fallingNotes.setPianoCurrentCycle(1)
+              }
+              void fallingNotes.startGame()
+            }}
+            onPause={fallingNotes.pauseGame}
+            onResume={fallingNotes.resumeGame}
+            onStop={fallingNotes.resetGame}
+            playMode={() =>
+              fallingNotes.pianoPlayMode() === 'repeat'
+                ? PLAYBACK_MODE_REPEAT
+                : PLAYBACK_MODE_ONCE
+            }
+            playModeChange={(mode) => {
+              fallingNotes.setPianoPlayMode(
+                mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
+              )
+              if (mode === PLAYBACK_MODE_REPEAT) {
+                fallingNotes.setPianoCurrentCycle(1)
+              }
+            }}
+            practiceCycles={() => fallingNotes.pianoRepeatCycles()}
+            onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
+            currentCycle={() => fallingNotes.pianoCurrentCycle()}
+            isCountingIn={() => fallingNotes.isCountingIn()}
+            countInBeat={() => fallingNotes.countInBeat()}
+            volume={props.volume}
+            onVolumeChange={props.onVolumeChange}
+            speed={fallingNotes.speed}
+            onSpeedChange={fallingNotes.setSpeed}
+            bpm={fallingNotes.currentSongBpm}
+            onBpmChange={fallingNotes.setBpm}
+            micActive={fallingNotes.isMicActive}
+            onMicToggle={() => {
+              if (fallingNotes.isMicActive()) {
+                fallingNotes.stopMic()
+              } else {
+                void fallingNotes.startMic()
+              }
+            }}
+            midiConnected={fallingNotes.midiConnected}
+            onMidiToggle={() => {
+              if (fallingNotes.midiConnected()) {
+                fallingNotes.midiDisconnect()
+              } else {
+                void fallingNotes.midiConnect()
+              }
+            }}
+            showNoteLabels={fallingNotes.showNoteLabels}
+            onToggleNoteLabels={fallingNotes.toggleNoteLabels}
+            zoomPercent={fallingNotes.zoomPercent}
+            onZoomIn={fallingNotes.zoomIn}
+            onZoomOut={fallingNotes.zoomOut}
+          />
+        </ControlOverlay>
       </div>
       {/* Score overlay for finished game */}
       <Show when={fallingNotes.gameState() === 'finished'}>
