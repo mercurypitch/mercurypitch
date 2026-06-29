@@ -910,6 +910,57 @@
   font-size: 1rem;
 }
 
+/* Empty-state call-to-action: compact, app-standard sizing with the icon
+   inline and aligned (the bare .primary-btn stays larger for other CTAs,
+   e.g. the CommunityShare empty states). Scoped to .empty-state-compact so
+   only the karaoke "Create playlist" / "Start uploading" prompts shrink. */
+.empty-state-compact .primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    filter 0.15s ease,
+    transform 0.1s ease;
+}
+
+.empty-state-compact .primary-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.empty-state-compact .primary-btn:hover {
+  filter: brightness(1.08);
+}
+
+.empty-state-compact .primary-btn:active {
+  transform: translateY(1px);
+}
+
+/* Tighter empty-state for stacked prompts (karaoke playlists + songs) so
+   they don't dominate the panel with the default 60px padding. */
+.empty-state.empty-state-compact {
+  padding: 28px 20px;
+}
+
+.empty-state.empty-state-compact .empty-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+}
+
+.empty-state.empty-state-compact h3 {
+  font-size: 1.05rem;
+}
+
+.empty-state.empty-state-compact p {
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+}
+
 /* Profile Styles */
 .profile-container {
   background: var(--bg-secondary);
