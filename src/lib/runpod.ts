@@ -8,16 +8,20 @@
 // contract by dispatching to a RunPod serverless endpoint instead of the
 // CPU container — the GPU "fast / quality" path from the go-to-market plan.
 //
-// It is deliberately STATELESS: the RunPod job id is encoded into the
-// session id we hand back (`rp_<jobId>`), so /status, /output and /session
-// calls route straight back to RunPod with no server-side session store.
+// It is deliberately STATELESS: the tier + RunPod job id are encoded into
+// the session id we hand back (`rp_<tier>_<jobId>`), so /status, /output and
+// /session calls route straight back to the right endpoint with no
+// server-side session store.
+//
+// Two tiers map to two RunPod endpoints: `gpu` (fast, the paid anchor) and
+// `cpu` (cheaper, slower). GPU is the default when a request opts into
+// server-side rendering; CPU is opt-in via `runpod-cpu`.
 //
 // Everything here is pure data-mapping plus thin fetch wrappers, so the
 // translation logic is unit-tested without a live endpoint (see
 // src/tests/runpod.test.ts).
 
-/** Prefix marking a session id as RunPod-backed. The remainder is the
- *  RunPod job id. */
+/** Prefix marking a session id as RunPod-backed. */
 export const RUNPOD_SESSION_PREFIX = 'rp_'
 
 export const RUNPOD_DEFAULT_MODEL = 'UVR-MDX-NET-Inst_HQ_3'
@@ -30,11 +34,17 @@ const RUNPOD_ESTIMATED_SECS = 180
 
 const RUNPOD_TERMINAL_ERROR = new Set(['FAILED', 'CANCELLED', 'TIMED_OUT'])
 
+/** Server-side separation tiers, each backed by its own RunPod endpoint. */
+export type RunpodTier = 'gpu' | 'cpu'
+
 // ── Config ──────────────────────────────────────────────────────
 
 export interface RunpodConfig {
   apiKey: string
-  endpointId: string
+  /** Endpoint id per tier; a tier is unavailable when its id is absent. */
+  endpoints: { gpu?: string; cpu?: string }
+  /** Tier used when a request opts in without naming one (GPU when present). */
+  defaultTier: RunpodTier
   /** Override for tests / self-hosting; defaults to RunPod's v2 API. */
   baseUrl: string
 }
@@ -42,58 +52,104 @@ export interface RunpodConfig {
 /** The subset of worker env this module reads. */
 export interface RunpodEnvLike {
   RUNPOD_API_KEY?: string
+  /** GPU endpoint. `RUNPOD_ENDPOINT_ID` is accepted as a legacy alias. */
+  RUNPOD_ENDPOINT_ID_GPU?: string
   RUNPOD_ENDPOINT_ID?: string
+  /** CPU endpoint (cheaper, slower). */
+  RUNPOD_ENDPOINT_ID_CPU?: string
   RUNPOD_BASE_URL?: string
 }
 
-/** Resolve RunPod config from env, or null when not fully configured.
- *  Null means "RunPod is off" — the worker then uses the container path. */
-export function getRunpodConfig(env: RunpodEnvLike): RunpodConfig | null {
-  const apiKey = env.RUNPOD_API_KEY
-  const endpointId = env.RUNPOD_ENDPOINT_ID
-  if (
-    apiKey === undefined ||
-    apiKey === '' ||
-    endpointId === undefined ||
-    endpointId === ''
-  ) {
-    return null
+function firstNonEmpty(...vals: (string | undefined)[]): string | undefined {
+  for (const v of vals) {
+    if (v !== undefined && v !== '') return v
   }
-  const baseUrl = (env.RUNPOD_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
-  return { apiKey, endpointId, baseUrl }
+  return undefined
 }
 
-// ── Session id <-> job id ───────────────────────────────────────
+/** Resolve RunPod config from env, or null when not fully configured.
+ *  Null means "RunPod is off" — the worker then uses the container path.
+ *  Requires an API key and at least one tier endpoint. */
+export function getRunpodConfig(env: RunpodEnvLike): RunpodConfig | null {
+  const apiKey = env.RUNPOD_API_KEY
+  if (apiKey === undefined || apiKey === '') return null
+
+  const gpu = firstNonEmpty(env.RUNPOD_ENDPOINT_ID_GPU, env.RUNPOD_ENDPOINT_ID)
+  const cpu = firstNonEmpty(env.RUNPOD_ENDPOINT_ID_CPU)
+  if (gpu === undefined && cpu === undefined) return null
+
+  const endpoints: { gpu?: string; cpu?: string } = {}
+  if (gpu !== undefined) endpoints.gpu = gpu
+  if (cpu !== undefined) endpoints.cpu = cpu
+
+  const baseUrl = (env.RUNPOD_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
+  // GPU is the default tier when configured (faster; the paid anchor).
+  const defaultTier: RunpodTier = gpu !== undefined ? 'gpu' : 'cpu'
+  return { apiKey, endpoints, defaultTier, baseUrl }
+}
+
+/** Endpoint id for a tier, or null when that tier isn't configured. */
+export function endpointFor(
+  cfg: RunpodConfig,
+  tier: RunpodTier,
+): string | null {
+  const id = cfg.endpoints[tier]
+  return id !== undefined && id !== '' ? id : null
+}
+
+/** Pick the tier to actually use: the requested one when configured,
+ *  otherwise fall back to the default tier. */
+export function resolveTier(
+  cfg: RunpodConfig,
+  requested: RunpodTier,
+): RunpodTier {
+  return endpointFor(cfg, requested) !== null ? requested : cfg.defaultTier
+}
+
+// ── Session id <-> {tier, job id} ───────────────────────────────
 
 export function isRunpodSessionId(sessionId: string): boolean {
   return sessionId.startsWith(RUNPOD_SESSION_PREFIX)
 }
 
-export function toSessionId(jobId: string): string {
-  return `${RUNPOD_SESSION_PREFIX}${jobId}`
+export function toSessionId(tier: RunpodTier, jobId: string): string {
+  return `${RUNPOD_SESSION_PREFIX}${tier}_${jobId}`
 }
 
-/** Recover the RunPod job id from a session id, or null if it isn't ours. */
-export function parseJobId(sessionId: string): string | null {
-  if (!sessionId.startsWith(RUNPOD_SESSION_PREFIX)) return null
-  const id = sessionId.slice(RUNPOD_SESSION_PREFIX.length)
-  return id === '' ? null : id
+/** Recover {tier, jobId} from a session id, or null if it isn't ours. */
+export function parseSession(
+  sessionId: string,
+): { tier: RunpodTier; jobId: string } | null {
+  const m = sessionId.match(/^rp_(gpu|cpu)_(.+)$/)
+  if (!m) return null
+  return { tier: m[1] as RunpodTier, jobId: m[2] }
 }
 
-/** True when a request explicitly opts into the RunPod path (header or
- *  query). Process requests must opt in; follow-up calls route by the
- *  `rp_` session id instead. */
-export function wantsRunpod(request: Request, url: URL): boolean {
-  return (
-    request.headers.get('x-uvr-provider')?.toLowerCase() === 'runpod' ||
-    url.searchParams.get('provider') === 'runpod'
-  )
+/** The tier a request opts into, or null when it doesn't want RunPod.
+ *  `runpod` / `runpod-gpu` → gpu, `runpod-cpu` → cpu. Process requests must
+ *  opt in; follow-up calls route by the `rp_<tier>_` session id instead. */
+export function requestedRunpodTier(
+  request: Request,
+  url: URL,
+): RunpodTier | null {
+  const raw = (
+    request.headers.get('x-uvr-provider') ??
+    url.searchParams.get('provider') ??
+    ''
+  ).toLowerCase()
+  if (raw === 'runpod' || raw === 'runpod-gpu') return 'gpu'
+  if (raw === 'runpod-cpu') return 'cpu'
+  return null
 }
 
 // ── URLs / headers ──────────────────────────────────────────────
 
-export function runpodEndpointUrl(cfg: RunpodConfig, path: string): string {
-  return `${cfg.baseUrl}/${cfg.endpointId}${path}`
+export function runpodEndpointUrl(
+  cfg: RunpodConfig,
+  endpointId: string,
+  path: string,
+): string {
+  return `${cfg.baseUrl}/${endpointId}${path}`
 }
 
 export function runpodHeaders(cfg: RunpodConfig): Record<string, string> {
@@ -288,9 +344,10 @@ export function bytesToBase64(bytes: Uint8Array): string {
 
 export async function submitJob(
   cfg: RunpodConfig,
+  endpointId: string,
   input: RunpodJobInput,
 ): Promise<RunpodRunResponse> {
-  const resp = await fetch(runpodEndpointUrl(cfg, '/run'), {
+  const resp = await fetch(runpodEndpointUrl(cfg, endpointId, '/run'), {
     method: 'POST',
     headers: runpodHeaders(cfg),
     body: JSON.stringify({ input }),
@@ -303,10 +360,11 @@ export async function submitJob(
 
 export async function fetchJobStatus(
   cfg: RunpodConfig,
+  endpointId: string,
   jobId: string,
 ): Promise<RunpodStatus> {
   const resp = await fetch(
-    runpodEndpointUrl(cfg, `/status/${encodeURIComponent(jobId)}`),
+    runpodEndpointUrl(cfg, endpointId, `/status/${encodeURIComponent(jobId)}`),
     { headers: runpodHeaders(cfg) },
   )
   if (!resp.ok) {
@@ -317,10 +375,14 @@ export async function fetchJobStatus(
 
 export async function cancelJob(
   cfg: RunpodConfig,
+  endpointId: string,
   jobId: string,
 ): Promise<void> {
-  await fetch(runpodEndpointUrl(cfg, `/cancel/${encodeURIComponent(jobId)}`), {
-    method: 'POST',
-    headers: runpodHeaders(cfg),
-  })
+  await fetch(
+    runpodEndpointUrl(cfg, endpointId, `/cancel/${encodeURIComponent(jobId)}`),
+    {
+      method: 'POST',
+      headers: runpodHeaders(cfg),
+    },
+  )
 }

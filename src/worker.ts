@@ -1,7 +1,7 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace } from '@cloudflare/workers-types'
-import type { RunpodConfig } from './lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, mapStatusToResponse, parseJobId, submitJob, toSessionId, wantsRunpod, } from './lib/runpod'
+import type { RunpodConfig, RunpodTier } from './lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, submitJob, toSessionId, } from './lib/runpod'
 import { verifyBearer } from './lib/verify-jwt'
 import { handleShareRequest } from './share-handler'
 
@@ -26,8 +26,12 @@ export interface Env {
   JWT_SECRET?: string
   /** RunPod serverless API key — `wrangler secret put RUNPOD_API_KEY`. */
   RUNPOD_API_KEY?: string
-  /** RunPod serverless endpoint id — `wrangler secret put RUNPOD_ENDPOINT_ID`. */
+  /** GPU-tier endpoint id (fast, the paid anchor; the default tier). */
+  RUNPOD_ENDPOINT_ID_GPU?: string
+  /** Legacy alias for the GPU endpoint id. */
   RUNPOD_ENDPOINT_ID?: string
+  /** CPU-tier endpoint id (cheaper, slower; opt-in via `runpod-cpu`). */
+  RUNPOD_ENDPOINT_ID_CPU?: string
   /** Optional RunPod API base override (defaults to https://api.runpod.ai/v2). */
   RUNPOD_BASE_URL?: string
 }
@@ -128,8 +132,8 @@ export default {
 /**
  * Bridge the app's /api/uvr/* contract to RunPod's serverless job API.
  * Returns a Response when it owns the request, or null to fall through to
- * the container path. Stateless: the RunPod job id is carried in the
- * session id (`rp_<jobId>`), so no session store is needed.
+ * the container path. Stateless: the tier + RunPod job id are carried in the
+ * session id (`rp_<tier>_<jobId>`), so no session store is needed.
  */
 async function handleRunpod(
   request: Request,
@@ -146,29 +150,38 @@ async function handleRunpod(
   const sessionId = match[2]
   const rest = match[3]
 
-  // POST /process — only when the caller explicitly opts into RunPod.
+  // POST /process — only when the caller explicitly opts into RunPod. The
+  // tier comes from the opt-in (gpu by default, cpu via `runpod-cpu`).
   if (route === 'process' && method === 'POST') {
-    if (!wantsRunpod(request, url)) return null
-    return startRunpodJob(request, cfg)
+    const requested = requestedRunpodTier(request, url)
+    if (requested === null) return null
+    const tier = resolveTier(cfg, requested)
+    const endpointId = endpointFor(cfg, tier)
+    if (endpointId === null) return null
+    return startRunpodJob(request, cfg, endpointId, tier)
   }
 
-  // Follow-up calls route to RunPod purely by the rp_ session id, so
+  // Follow-up calls route to RunPod by the rp_<tier>_ session id, so
   // container-origin (UUID) sessions are never intercepted here.
-  if (sessionId === undefined || !isRunpodSessionId(sessionId)) return null
-  const jobId = parseJobId(sessionId)
-  if (jobId === null) return null
+  if (sessionId === undefined) return null
+  const parsed = parseSession(sessionId)
+  if (parsed === null) return null
+  const endpointId = endpointFor(cfg, parsed.tier)
+  if (endpointId === null) {
+    return json({ error: `RunPod ${parsed.tier} tier not configured` }, 404)
+  }
 
   if (route === 'status' && method === 'GET') {
-    const status = await fetchJobStatus(cfg, jobId)
+    const status = await fetchJobStatus(cfg, endpointId, parsed.jobId)
     return json(mapStatusToResponse(sessionId, status))
   }
 
   if (route === 'output' && method === 'GET') {
-    return serveRunpodOutput(cfg, sessionId, jobId, rest)
+    return serveRunpodOutput(cfg, endpointId, sessionId, parsed.jobId, rest)
   }
 
   if (route === 'session' && method === 'DELETE') {
-    await cancelJob(cfg, jobId)
+    await cancelJob(cfg, endpointId, parsed.jobId)
     return json({
       status: 'success',
       message: `Session ${sessionId} cancelled`,
@@ -178,10 +191,13 @@ async function handleRunpod(
   return null
 }
 
-/** Submit the uploaded audio to RunPod and return a process response. */
+/** Submit the uploaded audio to a tier's RunPod endpoint and return a
+ *  process response whose session id encodes the tier. */
 async function startRunpodJob(
   request: Request,
   cfg: RunpodConfig,
+  endpointId: string,
+  tier: RunpodTier,
 ): Promise<Response> {
   const form = await request.formData()
   const file = form.get('file')
@@ -218,13 +234,13 @@ async function startRunpodJob(
     audioBase64,
   })
 
-  const res = await submitJob(cfg, input)
+  const res = await submitJob(cfg, endpointId, input)
   if (res.id === undefined || res.id === '') {
     return json({ error: res.error ?? 'RunPod did not return a job id' }, 502)
   }
 
   return json({
-    session_id: toSessionId(res.id),
+    session_id: toSessionId(tier, res.id),
     status: 'processing',
     message: 'Processing started',
     model: input.model,
@@ -236,11 +252,12 @@ async function startRunpodJob(
  *  base64 when the handler returned the bytes directly. */
 async function serveRunpodOutput(
   cfg: RunpodConfig,
+  endpointId: string,
   sessionId: string,
   jobId: string,
   rest: string | undefined,
 ): Promise<Response> {
-  const status = await fetchJobStatus(cfg, jobId)
+  const status = await fetchJobStatus(cfg, endpointId, jobId)
   if ((status.status ?? '').toUpperCase() !== 'COMPLETED') {
     return json({ error: 'Output not ready' }, 404)
   }

@@ -5,10 +5,12 @@
 # non-GET /api/uvr/* at the edge.
 JWT_SECRET=
 
-# RunPod serverless GPU separation. When both are set, the worker can
-# dispatch opted-in /api/uvr/* requests to RunPod (see docs/claude/RUNPOD.md).
-# Leave blank to keep using the CPU container path.
+# RunPod serverless separation. With an API key + at least one tier endpoint,
+# the worker can dispatch opted-in /api/uvr/* requests to RunPod (see
+# docs/claude/RUNPOD.md). Two tiers: GPU (fast, default) and CPU (cheaper,
+# slower; opt-in via `runpod-cpu`). Leave blank to keep using the container.
 RUNPOD_API_KEY=
-RUNPOD_ENDPOINT_ID=
+RUNPOD_ENDPOINT_ID_GPU=
+RUNPOD_ENDPOINT_ID_CPU=
 # Optional — defaults to https://api.runpod.ai/v2
 # RUNPOD_BASE_URL=

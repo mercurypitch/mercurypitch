@@ -1,17 +1,26 @@
 # RunPod Serverless — Deploy & Cost Runbook
 
-Server-side stem separation runs on a **RunPod serverless GPU endpoint**
-(scale-to-zero). It is the GPU "fast / quality" path: a mid-tier GPU
-separates a ~5-minute song in ~2–3 minutes vs the 10–30 minute on-device
-wait. The on-device (browser) separator stays free and unlimited; this only
-removes the wait.
+Server-side stem separation runs on **RunPod serverless endpoints**
+(scale-to-zero). It removes the 10–30 minute on-device wait. The on-device
+(browser) separator — CPU and WASM/WebGPU — stays free and unlimited; this is
+the paid "skip the wait" path.
+
+There are two server tiers, each its own RunPod endpoint:
+
+- **GPU** — fast (~2–3 min/song on a mid-tier GPU). The **default** when a
+  user with credits enables server-side rendering. Burns credits faster.
+- **CPU** — cheaper, slower. Opt-in via `runpod-cpu`. Lets a user trade speed
+  for a lower credit cost.
+
+So the full separation ladder is: on-device CPU → on-device WASM/WebGPU →
+RunPod CPU → RunPod GPU.
 
 The worker image lives in [`runpod/`](../../runpod/README.md). The web app
-reaches it through the Cloudflare worker, which bridges the app's existing
-`/api/uvr/*` contract to RunPod's job API (`src/lib/runpod.ts`).
+reaches both tiers through the Cloudflare worker, which bridges the app's
+existing `/api/uvr/*` contract to RunPod's job API (`src/lib/runpod.ts`).
 
 **Status: built, off by default.** Nothing changes until `RUNPOD_API_KEY` +
-`RUNPOD_ENDPOINT_ID` are set on the worker *and* a request opts in. With
+at least one tier endpoint are set on the worker *and* a request opts in. With
 RunPod unset, `/api/uvr/*` continues to hit the CPU container exactly as
 before.
 
@@ -20,17 +29,19 @@ before.
 ## How a request flows
 
 ```
-browser ──POST /api/uvr/process (X-UVR-Provider: runpod)──▶ Cloudflare worker
+browser ─POST /api/uvr/process (X-UVR-Provider: runpod | runpod-cpu)─▶ Cloudflare worker
+   worker picks the tier's endpoint (gpu default, cpu on opt-in)
    worker ──POST {endpoint}/run {input}──▶ RunPod  ──▶ {id}
-   worker returns session_id = "rp_<id>"
-browser ──GET /api/uvr/status/rp_<id>──▶ worker ──GET {endpoint}/status/<id>──▶ RunPod
-browser ──GET /api/uvr/output/rp_<id>/vocal──▶ worker ──302──▶ stem URL (R2/S3)
+   worker returns session_id = "rp_<tier>_<id>"   e.g. rp_gpu_abc / rp_cpu_abc
+browser ─GET /api/uvr/status/rp_<tier>_<id>─▶ worker ─GET {endpoint}/status/<id>─▶ RunPod
+browser ─GET /api/uvr/output/rp_<tier>_<id>/vocal─▶ worker ──302──▶ stem URL (R2/S3)
 ```
 
-The bridge is **stateless**: the RunPod job id is carried inside the session
-id (`rp_<id>`), so status/output/cancel route straight back to RunPod with no
-session store. Stems come back as object-storage URLs (the worker 302-redirects
-to them) or, for small local-test jobs, inline base64 the worker streams.
+The bridge is **stateless**: the tier + RunPod job id are carried inside the
+session id (`rp_<tier>_<id>`), so status/output/cancel route back to the right
+endpoint with no session store. Stems come back as object-storage URLs (the
+worker 302-redirects to them) or, for small local-test jobs, inline base64 the
+worker streams.
 
 ---
 
@@ -75,19 +86,23 @@ measurable for real — locally (`python handler.py`) or from a deployed job.
    docker build -t <registry>/mercurypitch-uvr-runpod:latest runpod/
    docker push  <registry>/mercurypitch-uvr-runpod:latest
    ```
-2. **Create the serverless endpoint** in the RunPod console with the settings
-   above; set the `S3_*` env vars (object storage for stem output — Cloudflare
-   R2 works). Note the **Endpoint ID** and create an **API key**.
+2. **Create the serverless endpoint(s)** in the RunPod console with the
+   settings above; set the `S3_*` env vars (object storage for stem output —
+   Cloudflare R2 works). Create a **GPU** endpoint, and optionally a **CPU**
+   endpoint (the same image runs on a CPU instance — the handler falls back to
+   `CPUExecutionProvider`). Note each **Endpoint ID** and create an **API key**.
 3. **Wire the Cloudflare worker** (per env):
    ```bash
-   wrangler secret put RUNPOD_API_KEY      --env prod
-   wrangler secret put RUNPOD_ENDPOINT_ID  --env prod
+   wrangler secret put RUNPOD_API_KEY         --env prod
+   wrangler secret put RUNPOD_ENDPOINT_ID_GPU --env prod
+   wrangler secret put RUNPOD_ENDPOINT_ID_CPU --env prod   # optional (cheaper tier)
    # optional override: RUNPOD_BASE_URL (defaults to https://api.runpod.ai/v2)
    ```
-   For local `wrangler dev`, put the same keys in `.dev.vars` (see
-   `.dev.vars.example`).
+   One API key covers both endpoints. `RUNPOD_ENDPOINT_ID` is accepted as a
+   legacy alias for the GPU endpoint. For local `wrangler dev`, put the same
+   keys in `.dev.vars` (see `.dev.vars.example`).
 4. **Measure cost-per-song** on a handful of real tracks (the printed/returned
-   `cost.usd`) before turning the paid path on for users.
+   `cost.usd`) for each tier before turning the paid path on for users.
 
 ---
 
@@ -96,15 +111,18 @@ measurable for real — locally (`python handler.py`) or from a deployed job.
 Today the front-end never sends the opt-in, so the RunPod path is dormant even
 when configured. To make it user-facing later:
 
-1. Add a `runpod` option to the UVR processing-mode selector (`app-store.ts`
-   `UvrProcessingMode`).
-2. Send `X-UVR-Provider: runpod` (or `?provider=runpod`) from
-   `src/lib/uvr-api.ts processAudio` when that mode is selected.
+1. Add server tiers to the UVR processing-mode selector (`app-store.ts`
+   `UvrProcessingMode` — e.g. `runpod-gpu` / `runpod-cpu`, GPU as the default
+   server option).
+2. Send `X-UVR-Provider: runpod` (GPU, the default) — or `runpod-cpu` for the
+   cheaper tier — from `src/lib/uvr-api.ts processAudio` when a server mode is
+   selected. (`?provider=…` works too.)
 3. Gate behind credits/entitlements once billing ships (see
    [`docs/plans/premium.md`](../plans/premium.md)).
 
 Everything downstream of `process` already works: the worker returns an
-`rp_`-prefixed session id, and status/output/cancel route to RunPod from there.
+`rp_<tier>_`-prefixed session id, and status/output/cancel route to the right
+endpoint from there.
 
 ---
 
@@ -112,7 +130,8 @@ Everything downstream of `process` already works: the worker returns an
 
 - `process` and `DELETE /session` stay behind the existing app-JWT edge gate in
   `src/worker.ts` (signature + expiry), same as the container path — anonymous
-  users can't spend GPU time or cancel jobs.
+  users can't spend GPU/CPU time or cancel jobs. (Credit/entitlement gating is
+  a separate billing-layer concern — see [`docs/plans/premium.md`](../plans/premium.md).)
 - `RUNPOD_API_KEY` is a worker **secret**, never shipped to the browser; the
   client only ever talks to `/api/uvr/*`.
 - Inline base64 input is capped (`RUNPOD_MAX_INLINE_BYTES`, 7 MB) to stay under

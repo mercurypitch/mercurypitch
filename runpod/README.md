@@ -1,10 +1,15 @@
 # RunPod Serverless — Vocal Separation Worker
 
-Server-side stem separation on RunPod serverless GPUs (scale-to-zero).
-This is the **fast / quality** separation path: a mid-tier GPU separates a
-~5-minute song in ~2–3 minutes, billed per second, with **zero idle cost**
-when no jobs are queued. The on-device (browser) separator stays free and
-unlimited; this exists to remove the long client-side wait.
+Server-side stem separation on RunPod serverless (scale-to-zero). This is the
+paid "skip the wait" path: a mid-tier GPU separates a ~5-minute song in ~2–3
+minutes, billed per second, with **zero idle cost** when no jobs are queued.
+The on-device (browser) separator stays free and unlimited.
+
+**One image, two tiers.** The same container runs on both serverless
+endpoints the app dispatches to: a **GPU** endpoint (fast, the default) and an
+optional **CPU** endpoint (cheaper, slower — runs the same handler on a CPU
+instance, falling back to `CPUExecutionProvider`). The tier is chosen by the
+caller; this image doesn't need to know which one it's running on.
 
 This directory is deployed independently of the web app — it is a container
 image, not part of the Vite/Cloudflare build.
@@ -131,7 +136,8 @@ before turning the paid path on.
 
 The Cloudflare worker (`src/worker.ts`) bridges the app's existing
 `/api/uvr/*` contract to RunPod's job API via `src/lib/runpod.ts`, so the
-front-end needs no new contract. It is **gated behind `RUNPOD_API_KEY` +
-`RUNPOD_ENDPOINT_ID` and an explicit opt-in**, and is off by default — the
-existing CPU-container path is unchanged until you switch it on. See
-`docs/claude/RUNPOD.md`.
+front-end needs no new contract. It is **gated behind `RUNPOD_API_KEY` + at
+least one tier endpoint (`RUNPOD_ENDPOINT_ID_GPU` / `RUNPOD_ENDPOINT_ID_CPU`)
+and an explicit opt-in** (`X-UVR-Provider: runpod` for GPU, `runpod-cpu` for
+CPU), and is off by default — the existing container path is unchanged until
+you switch it on. See `docs/claude/RUNPOD.md`.

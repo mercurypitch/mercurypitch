@@ -4,11 +4,12 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig, RunpodStatus } from '@/lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, contentTypeForFilename, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, mapStatusToResponse, parseJobId, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, wantsRunpod, } from '@/lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
-  endpointId: 'ep-abc',
+  endpoints: { gpu: 'ep-gpu', cpu: 'ep-cpu' },
+  defaultTier: 'gpu',
   baseUrl: 'https://api.runpod.ai/v2',
 }
 
@@ -19,72 +20,131 @@ beforeEach(() => {
 // ── getRunpodConfig ─────────────────────────────────────────────
 
 describe('getRunpodConfig', () => {
-  it('returns null when key or endpoint is missing', () => {
+  it('returns null without an api key or any endpoint', () => {
     expect(getRunpodConfig({})).toBeNull()
+    expect(getRunpodConfig({ RUNPOD_ENDPOINT_ID_GPU: 'g' })).toBeNull()
     expect(getRunpodConfig({ RUNPOD_API_KEY: 'k' })).toBeNull()
-    expect(getRunpodConfig({ RUNPOD_ENDPOINT_ID: 'e' })).toBeNull()
     expect(
-      getRunpodConfig({ RUNPOD_API_KEY: '', RUNPOD_ENDPOINT_ID: 'e' }),
+      getRunpodConfig({ RUNPOD_API_KEY: 'k', RUNPOD_ENDPOINT_ID_GPU: '' }),
     ).toBeNull()
   })
 
-  it('returns config when both are present, with the default base url', () => {
+  it('treats the legacy RUNPOD_ENDPOINT_ID as the GPU endpoint', () => {
     const cfg = getRunpodConfig({
       RUNPOD_API_KEY: 'k',
-      RUNPOD_ENDPOINT_ID: 'e',
+      RUNPOD_ENDPOINT_ID: 'g',
     })
     expect(cfg).toEqual({
       apiKey: 'k',
-      endpointId: 'e',
+      endpoints: { gpu: 'g' },
+      defaultTier: 'gpu',
       baseUrl: 'https://api.runpod.ai/v2',
     })
+  })
+
+  it('reads both tiers and defaults to gpu', () => {
+    const cfg = getRunpodConfig({
+      RUNPOD_API_KEY: 'k',
+      RUNPOD_ENDPOINT_ID_GPU: 'g',
+      RUNPOD_ENDPOINT_ID_CPU: 'c',
+    })
+    expect(cfg?.endpoints).toEqual({ gpu: 'g', cpu: 'c' })
+    expect(cfg?.defaultTier).toBe('gpu')
+  })
+
+  it('defaults to cpu when only the cpu endpoint is set', () => {
+    const cfg = getRunpodConfig({
+      RUNPOD_API_KEY: 'k',
+      RUNPOD_ENDPOINT_ID_CPU: 'c',
+    })
+    expect(cfg?.endpoints).toEqual({ cpu: 'c' })
+    expect(cfg?.defaultTier).toBe('cpu')
   })
 
   it('trims trailing slashes from an overridden base url', () => {
     const cfg = getRunpodConfig({
       RUNPOD_API_KEY: 'k',
-      RUNPOD_ENDPOINT_ID: 'e',
+      RUNPOD_ENDPOINT_ID_GPU: 'g',
       RUNPOD_BASE_URL: 'https://example.test/v2///',
     })
     expect(cfg?.baseUrl).toBe('https://example.test/v2')
   })
 })
 
-// ── session id <-> job id ───────────────────────────────────────
+// ── endpointFor / resolveTier ───────────────────────────────────
 
-describe('session id <-> job id', () => {
-  it('round-trips a job id through the session id', () => {
-    const sid = toSessionId('job-xyz')
-    expect(sid).toBe('rp_job-xyz')
-    expect(isRunpodSessionId(sid)).toBe(true)
-    expect(parseJobId(sid)).toBe('job-xyz')
+describe('endpointFor / resolveTier', () => {
+  it('returns the endpoint id for a configured tier, else null', () => {
+    expect(endpointFor(CFG, 'gpu')).toBe('ep-gpu')
+    expect(endpointFor(CFG, 'cpu')).toBe('ep-cpu')
+    expect(
+      endpointFor({ ...CFG, endpoints: { gpu: 'ep-gpu' } }, 'cpu'),
+    ).toBeNull()
   })
 
-  it('rejects non-RunPod and empty session ids', () => {
-    expect(isRunpodSessionId('abc')).toBe(false)
-    expect(parseJobId('abc')).toBeNull()
-    expect(parseJobId('rp_')).toBeNull()
+  it('falls back to the default tier when the requested one is absent', () => {
+    const gpuOnly: RunpodConfig = { ...CFG, endpoints: { gpu: 'ep-gpu' } }
+    expect(resolveTier(gpuOnly, 'cpu')).toBe('gpu')
+    expect(resolveTier(CFG, 'cpu')).toBe('cpu')
+    expect(resolveTier(CFG, 'gpu')).toBe('gpu')
   })
 })
 
-// ── wantsRunpod ─────────────────────────────────────────────────
+// ── session id <-> {tier, job id} ───────────────────────────────
 
-describe('wantsRunpod', () => {
-  it('detects the opt-in header (case-insensitive)', () => {
-    const req = new Request('https://x.test/api/uvr/process', {
+describe('session id <-> {tier, jobId}', () => {
+  it('round-trips tier + job id through the session id', () => {
+    expect(toSessionId('gpu', 'job-xyz')).toBe('rp_gpu_job-xyz')
+    expect(toSessionId('cpu', 'job-xyz')).toBe('rp_cpu_job-xyz')
+    expect(isRunpodSessionId('rp_gpu_job-xyz')).toBe(true)
+    expect(parseSession('rp_gpu_job-xyz')).toEqual({
+      tier: 'gpu',
+      jobId: 'job-xyz',
+    })
+    expect(parseSession('rp_cpu_a-b-c')).toEqual({
+      tier: 'cpu',
+      jobId: 'a-b-c',
+    })
+  })
+
+  it('rejects non-RunPod, untiered, and empty session ids', () => {
+    expect(isRunpodSessionId('abc')).toBe(false)
+    expect(parseSession('abc')).toBeNull()
+    expect(parseSession('rp_job-xyz')).toBeNull() // no tier segment
+    expect(parseSession('rp_gpu_')).toBeNull() // empty job id
+  })
+})
+
+// ── requestedRunpodTier ─────────────────────────────────────────
+
+describe('requestedRunpodTier', () => {
+  it('maps the opt-in header to a tier (case-insensitive)', () => {
+    const gpu = new Request('https://x.test/api/uvr/process', {
       headers: { 'X-UVR-Provider': 'RunPod' },
     })
-    expect(wantsRunpod(req, new URL(req.url))).toBe(true)
+    expect(requestedRunpodTier(gpu, new URL(gpu.url))).toBe('gpu')
+
+    const gpu2 = new Request('https://x.test/api/uvr/process', {
+      headers: { 'X-UVR-Provider': 'runpod-gpu' },
+    })
+    expect(requestedRunpodTier(gpu2, new URL(gpu2.url))).toBe('gpu')
+
+    const cpu = new Request('https://x.test/api/uvr/process', {
+      headers: { 'X-UVR-Provider': 'runpod-cpu' },
+    })
+    expect(requestedRunpodTier(cpu, new URL(cpu.url))).toBe('cpu')
   })
 
-  it('detects the opt-in query param', () => {
-    const req = new Request('https://x.test/api/uvr/process?provider=runpod')
-    expect(wantsRunpod(req, new URL(req.url))).toBe(true)
+  it('maps the opt-in query param to a tier', () => {
+    const req = new Request(
+      'https://x.test/api/uvr/process?provider=runpod-cpu',
+    )
+    expect(requestedRunpodTier(req, new URL(req.url))).toBe('cpu')
   })
 
-  it('is false without an opt-in signal', () => {
+  it('is null without an opt-in signal', () => {
     const req = new Request('https://x.test/api/uvr/process')
-    expect(wantsRunpod(req, new URL(req.url))).toBe(false)
+    expect(requestedRunpodTier(req, new URL(req.url))).toBeNull()
   })
 })
 
@@ -133,21 +193,21 @@ describe('mapStatusToResponse', () => {
         ],
       },
     }
-    const res = mapStatusToResponse('rp_job1', rp)
+    const res = mapStatusToResponse('rp_gpu_job1', rp)
     expect(res.status).toBe('completed')
     expect(res.progress).toBe(100)
     expect(res.files).toHaveLength(2)
     expect(res.files[0]).toEqual({
       stem: 'vocal',
       filename: 'v.flac',
-      path: '/api/uvr/output/rp_job1/vocal',
+      path: '/api/uvr/output/rp_gpu_job1/vocal',
       size: 10,
       duration: 200,
     })
   })
 
   it('maps a completed job whose handler reported an error to error', () => {
-    const res = mapStatusToResponse('rp_job1', {
+    const res = mapStatusToResponse('rp_gpu_job1', {
       status: 'COMPLETED',
       output: { error: 'separation produced no output stems' },
     })
@@ -159,7 +219,7 @@ describe('mapStatusToResponse', () => {
   it.each(['FAILED', 'CANCELLED', 'TIMED_OUT'])(
     'maps terminal state %s to error',
     (state) => {
-      const res = mapStatusToResponse('rp_job1', {
+      const res = mapStatusToResponse('rp_gpu_job1', {
         status: state,
         error: 'boom',
       })
@@ -169,22 +229,24 @@ describe('mapStatusToResponse', () => {
   )
 
   it('maps queued/running to processing with an estimate', () => {
-    const queued = mapStatusToResponse('rp_job1', { status: 'IN_QUEUE' })
+    const queued = mapStatusToResponse('rp_gpu_job1', { status: 'IN_QUEUE' })
     expect(queued.status).toBe('processing')
     expect(queued.estimated_total_secs).toBe(180)
     expect(queued.progress).toBeUndefined()
     expect(queued.message).toBe('Queued')
 
-    const running = mapStatusToResponse('rp_job1', { status: 'IN_PROGRESS' })
+    const running = mapStatusToResponse('rp_gpu_job1', {
+      status: 'IN_PROGRESS',
+    })
     expect(running.status).toBe('processing')
     expect(running.message).toBe('Processing')
   })
 
   it('treats an unknown state as still processing', () => {
-    expect(mapStatusToResponse('rp_job1', { status: 'WAT' }).status).toBe(
+    expect(mapStatusToResponse('rp_gpu_job1', { status: 'WAT' }).status).toBe(
       'processing',
     )
-    expect(mapStatusToResponse('rp_job1', {}).status).toBe('processing')
+    expect(mapStatusToResponse('rp_gpu_job1', {}).status).toBe('processing')
   })
 })
 
@@ -242,12 +304,12 @@ describe('bytesToBase64', () => {
 })
 
 describe('runpodEndpointUrl / runpodHeaders', () => {
-  it('builds endpoint urls', () => {
-    expect(runpodEndpointUrl(CFG, '/run')).toBe(
-      'https://api.runpod.ai/v2/ep-abc/run',
+  it('builds endpoint urls for a given endpoint id', () => {
+    expect(runpodEndpointUrl(CFG, 'ep-gpu', '/run')).toBe(
+      'https://api.runpod.ai/v2/ep-gpu/run',
     )
-    expect(runpodEndpointUrl(CFG, '/status/j1')).toBe(
-      'https://api.runpod.ai/v2/ep-abc/status/j1',
+    expect(runpodEndpointUrl(CFG, 'ep-cpu', '/status/j1')).toBe(
+      'https://api.runpod.ai/v2/ep-cpu/status/j1',
     )
   })
 
@@ -262,18 +324,22 @@ describe('runpodEndpointUrl / runpodHeaders', () => {
 // ── fetch wrappers ──────────────────────────────────────────────
 
 describe('fetch wrappers', () => {
-  it('submitJob posts the input and returns the job id', async () => {
+  it('submitJob posts the input to the given endpoint and returns the job id', async () => {
     const spy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: () => Promise.resolve({ id: 'job-1', status: 'IN_QUEUE' }),
     } as Response)
 
-    const res = await submitJob(CFG, buildJobInput({ audioBase64: 'AAAA' }))
+    const res = await submitJob(
+      CFG,
+      'ep-cpu',
+      buildJobInput({ audioBase64: 'AAAA' }),
+    )
     expect(res.id).toBe('job-1')
 
     const [calledUrl, init] = spy.mock.calls[0]
-    expect(calledUrl).toBe('https://api.runpod.ai/v2/ep-abc/run')
+    expect(calledUrl).toBe('https://api.runpod.ai/v2/ep-cpu/run')
     expect(init?.method).toBe('POST')
     expect(JSON.parse(init?.body as string)).toHaveProperty(
       'input.audio_base64',
@@ -288,7 +354,7 @@ describe('fetch wrappers', () => {
       statusText: 'Server Error',
     } as Response)
     await expect(
-      submitJob(CFG, buildJobInput({ audioBase64: 'A' })),
+      submitJob(CFG, 'ep-gpu', buildJobInput({ audioBase64: 'A' })),
     ).rejects.toThrow('RunPod submit failed: 500 Server Error')
   })
 
@@ -298,7 +364,7 @@ describe('fetch wrappers', () => {
       status: 404,
       statusText: 'Not Found',
     } as Response)
-    await expect(fetchJobStatus(CFG, 'job-1')).rejects.toThrow(
+    await expect(fetchJobStatus(CFG, 'ep-gpu', 'job-1')).rejects.toThrow(
       'RunPod status failed: 404 Not Found',
     )
   })
