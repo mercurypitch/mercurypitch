@@ -1,0 +1,160 @@
+/* ============================================================
+   SingingControlOverlay — floating glass shell for the practice
+   control bar, docked top or bottom-centre on the singing canvas.
+   Theme-adaptive glass matching SingingCanvasHud / the Guitar 3D HUD.
+   ============================================================ */
+
+.overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Above the score/pitch HUD cards (z-index 6) so controls stay tappable. */
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  border-radius: 16px;
+  /* Frosted glass — solid fallback first for engines without color-mix. */
+  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: auto;
+  animation: barIn 180ms ease both;
+}
+
+.top {
+  top: 12px;
+}
+
+.bottom {
+  bottom: 14px;
+}
+
+@keyframes barIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Grip + hide cluster on the left edge of the bar. */
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding-right: 6px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.grip,
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.grip {
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.grip:hover,
+.iconBtn:hover {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  color: var(--text-secondary);
+}
+
+.toolbarSlot {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Strip the inner toolbar's own bar chrome so it blends into the glass shell.
+   Targets the stable test-id rather than the hashed module class. */
+.overlay :global([data-testid='practice-header-bar']) {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* Collapsed affordance — a small glass pill to bring the bar back. */
+.showBtn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 22px;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.showBtn:hover {
+  color: var(--text-primary);
+}
+
+.showBtn.top {
+  top: 10px;
+}
+
+.showBtn.top:hover {
+  transform: translate(-50%, 1px);
+}
+
+.showBtn.bottom {
+  bottom: 12px;
+}
+
+.showBtn.bottom:hover {
+  transform: translate(-50%, -1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}
