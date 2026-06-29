@@ -16,6 +16,7 @@
 
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
+import { handleBilling } from './billing'
 import type { TableDef } from './tables'
 import { TABLES } from './tables'
 
@@ -605,6 +606,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   const authResponse = await handleAuth(request, env, url.pathname, respond)
   if (authResponse) return authResponse
+
+  const billingResponse = await handleBilling(request, env, url.pathname, respond)
+  if (billingResponse) return billingResponse
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
     return handleLeaderboard(url, await getAuth(request, env), env)

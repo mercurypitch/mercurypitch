@@ -46,4 +46,9 @@ export const TABLES: Record<string, TableDef> = {
   userSettings: { access: 'user' },
   follows: { access: 'user' },
   userSurveyResponses: { access: 'user', jsonCols: ['answersJson'] },
+  // Pricing config: public reads (the pricing page), writes require the
+  // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
+  // ledger, entitlements, and billing events are deliberately NOT here: only
+  // the server (billing webhook) may write them. See src/billing.ts.
+  pricingPlans: { access: 'admin', boolCols: ['active'] },
 }

@@ -26,6 +26,11 @@ export interface Env {
   ADMIN_KEY?: string
   /** Comma-separated extra app origins allowed as Google returnTo targets. */
   APP_ORIGINS?: string
+  /** Stripe secret key (sk_...). `wrangler secret put STRIPE_SECRET_KEY`.
+   *  When unset, checkout/portal return "not configured" and billing is inert. */
+  STRIPE_SECRET_KEY?: string
+  /** Stripe webhook signing secret (whsec_...) for /api/billing/webhook. */
+  STRIPE_WEBHOOK_SECRET?: string
 }
 
 export interface AuthUser {

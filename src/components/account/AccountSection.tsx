@@ -9,6 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { PricingPanel } from '@/components/billing/PricingPanel'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
@@ -33,6 +34,7 @@ export const AccountSection: Component = () => {
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
+  const [showPlans, setShowPlans] = createSignal(false)
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -362,6 +364,21 @@ export const AccountSection: Component = () => {
             </form>
           </Match>
         </Switch>
+      </Show>
+
+      {/* Plans & credits — server-side separation is the only paid axis;
+          on-device stays free. Pricing shows "Soon" until it's wired. */}
+      <div class={styles.buttonRow}>
+        <button
+          class={styles.authButton}
+          onClick={() => setShowPlans((v) => !v)}
+          data-testid="toggle-plans"
+        >
+          {showPlans() ? 'Hide plans' : 'Plans & credits'}
+        </button>
+      </div>
+      <Show when={showPlans()}>
+        <PricingPanel />
       </Show>
     </div>
   )
