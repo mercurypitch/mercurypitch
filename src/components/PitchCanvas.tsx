@@ -753,10 +753,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const scale = props.scale()
     const melody = props.melody()
 
+    // Fit the view to the MELODY's own notes (which already reflect the
+    // active key/scale/custom-scale), not the full scale grid — the scale
+    // often spans two octaves, which is what made the view over-wide. Fall
+    // back to the scale range only when no melody is loaded.
     let notesMidi: number[] = []
-    for (const note of scale) {
-      if (note.midi) notesMidi.push(note.midi)
-    }
     for (const item of melody) {
       if (
         item.isRest !== true &&
@@ -767,14 +768,22 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         notesMidi.push(item.note.midi)
       }
     }
+    if (notesMidi.length === 0) {
+      for (const note of scale) {
+        if (note.midi) notesMidi.push(note.midi)
+      }
+    }
     if (notesMidi.length === 0) notesMidi = [60] // fallback C4
 
     let minMidi = Math.min(...notesMidi)
     let maxMidi = Math.max(...notesMidi)
 
-    // Minimum span: 24 semitones (2 octaves)
-    if (maxMidi - minMidi < 24) {
-      const diff = 24 - (maxMidi - minMidi)
+    // Minimum visible span: keep short / single-note melodies from
+    // over-zooming, but otherwise fit tightly to the melody. (Was 24 = two
+    // octaves, which left the view far wider than most melodies need.)
+    const MIN_SPAN = 14
+    if (maxMidi - minMidi < MIN_SPAN) {
+      const diff = MIN_SPAN - (maxMidi - minMidi)
       minMidi -= Math.floor(diff / 2)
       maxMidi += Math.ceil(diff / 2)
     }

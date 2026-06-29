@@ -5,11 +5,12 @@
    theme-adaptive by deriving its surface from --bg-card.
    ============================================================ */
 
-/* Live accuracy score — top-right. */
+/* Live accuracy score + session scoreboard — top-right. Offset further from
+   the right edge so it clears the canvas's note-name labels (drawn at w-6). */
 .accuracyHud {
   position: absolute;
   top: 12px;
-  right: 12px;
+  right: 40px;
   z-index: 6;
   display: flex;
   flex-direction: column;
