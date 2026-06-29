@@ -23,6 +23,21 @@ export interface ServerAdapterConfig {
   headers?: Record<string, string> | (() => Record<string, string>)
 }
 
+// Cloud reads degrade to empty when the backend is unreachable so the app
+// always loads (offline-tolerant); warn once instead of spamming the console.
+let offlineWarned = false
+
+function warnCloudUnreachable(err: unknown): void {
+  if (offlineWarned) return
+  offlineWarned = true
+  console.warn(
+    '[db] cloud backend unreachable — serving empty cloud reads so the app ' +
+      'still loads. Start the dev worker (pnpm dev:db) or unset ' +
+      'VITE_API_BASE_URL for full local mode.',
+    err,
+  )
+}
+
 // ── ServerRepository ────────────────────────────────────────────
 
 class ServerRepository<T extends DbEntity> implements Repository<T> {
@@ -94,7 +109,8 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   async findById(id: string): Promise<T | null> {
     try {
       return await this.request<T>(`/${encodeURIComponent(id)}`)
-    } catch {
+    } catch (err) {
+      warnCloudUnreachable(err)
       return null
     }
   }
@@ -113,7 +129,12 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     if (opts?.limit !== undefined) params.set('limit', String(opts.limit))
     if (opts?.offset !== undefined) params.set('offset', String(opts.offset))
     const qs = params.toString()
-    return this.request<T[]>(qs ? `?${qs}` : '')
+    try {
+      return await this.request<T[]>(qs ? `?${qs}` : '')
+    } catch (err) {
+      warnCloudUnreachable(err)
+      return []
+    }
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
@@ -147,10 +168,15 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       }
     }
     const qs = params.toString()
-    const result = await this.request<{ count: number }>(
-      `/count${qs ? `?${qs}` : ''}`,
-    )
-    return result.count
+    try {
+      const result = await this.request<{ count: number }>(
+        `/count${qs ? `?${qs}` : ''}`,
+      )
+      return result.count
+    } catch (err) {
+      warnCloudUnreachable(err)
+      return 0
+    }
   }
 }
 
