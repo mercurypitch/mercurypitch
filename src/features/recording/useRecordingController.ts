@@ -50,10 +50,16 @@ interface Deps {
   audioEngine: AudioEngine
   playbackRuntime: PlaybackRuntime
   practiceEngine: PracticeEngine
+  /**
+   * Apply a committed take's merged melody. Routed through the editor's
+   * `applyMelody` so keeping a take is a single undo step; falls back to a
+   * plain store write when no editor is mounted.
+   */
+  applyTake: (merged: MelodyItem[]) => void
 }
 
 export function useRecordingController(deps: Deps): RecordingController {
-  const { audioEngine, playbackRuntime, practiceEngine } = deps
+  const { audioEngine, playbackRuntime, practiceEngine, applyTake } = deps
 
   const [isRecording, setIsRecording] = createSignal(false)
   const [recordedMelody, setRecordedMelody] = createSignal<MelodyItem[]>([])
@@ -132,7 +138,8 @@ export function useRecordingController(deps: Deps): RecordingController {
         ...item,
         id: pendingNoteId++,
       }))
-      melodyStore.setMelody(mergeRecordedItems(melodyStore.items(), renumbered))
+      // Apply through the editor so the pre-take melody becomes one undo step.
+      applyTake(mergeRecordedItems(melodyStore.items(), renumbered))
     }
     setPendingTake(null)
   }

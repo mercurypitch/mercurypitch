@@ -207,6 +207,60 @@ describe('PianoRollEditor', () => {
     expect(editor.getMelody()[0].note?.midi).toBe(72)
   })
 
+  it('applyMelody commits as a single undo step that restores the previous melody', () => {
+    const noteA = {
+      id: 1,
+      note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
+      startBeat: 0,
+      duration: 1,
+    }
+    const noteB = {
+      id: 1,
+      note: { midi: 67, freq: 392.0, name: 'G' as const, octave: 4 },
+      startBeat: 0,
+      duration: 2,
+    }
+
+    // setMelody is an external sync: it resets history.
+    editor.setMelody([noteA])
+    expect(editor.canUndo()).toBe(false)
+
+    // applyMelody (the take-commit path) snapshots the previous melody first.
+    editor.applyMelody([noteB])
+    expect(editor.getMelody()[0].note?.midi).toBe(67)
+    expect(editor.canUndo()).toBe(true)
+
+    // One undo restores the pre-take melody.
+    editor.undo()
+    expect(editor.getMelody()[0].note?.midi).toBe(60)
+    expect(editor.getMelody()[0].duration).toBe(1)
+  })
+
+  it('a value-equal setMelody round-trip after applyMelody does not wipe history', () => {
+    const noteA = {
+      id: 1,
+      note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
+      startBeat: 0,
+      duration: 1,
+    }
+    const noteB = {
+      id: 1,
+      note: { midi: 64, freq: 329.63, name: 'E' as const, octave: 4 },
+      startBeat: 0,
+      duration: 1,
+    }
+    editor.setMelody([noteA])
+    editor.applyMelody([noteB])
+    expect(editor.canUndo()).toBe(true)
+
+    // The store round-trip re-syncs the same melody (new ids, equal values).
+    // melodyEquals matches by value, so history must survive.
+    editor.setMelody([{ ...noteB, id: 999 }])
+    expect(editor.canUndo()).toBe(true)
+    editor.undo()
+    expect(editor.getMelody()[0].note?.midi).toBe(60)
+  })
+
   it('transposes notes downward multiple octaves', () => {
     const melody = [
       {
