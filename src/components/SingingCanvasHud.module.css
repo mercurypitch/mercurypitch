@@ -167,3 +167,49 @@
 .scoreLow {
   color: var(--red);
 }
+
+/* Mobile reveal toggle — on narrow screens the cards are hidden by default;
+   this small glass button (top-right) reveals/hides them. Only rendered on
+   narrow screens (see SingingCanvasHud). */
+.mobileToggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.mobileToggleOpen {
+  color: var(--accent);
+}
+
+/* Narrow screens: when revealed, drop the top-right cluster below the toggle
+   and cap widths so the cards don't overflow. */
+@media (max-width: 768px) {
+  .accuracyHud {
+    top: 50px;
+    right: 12px;
+    max-width: 78%;
+  }
+  .accuracyHud > .card {
+    width: 160px;
+  }
+  .pitchHud {
+    width: auto;
+    max-width: 62%;
+  }
+}
