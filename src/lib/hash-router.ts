@@ -42,10 +42,12 @@ const VALID_TABS: Set<string> = new Set([
   TAB_PITCH_ALGO,
 ])
 
+// Keep in sync with GUIDE_SECTIONS ids in app-store.ts.
 const VALID_GUIDE_SECTIONS: Set<string> = new Set([
   'practice',
   'toolbar',
   'editor',
+  'effects',
   'settings',
 ])
 

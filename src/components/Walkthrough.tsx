@@ -387,6 +387,11 @@ export const Walkthrough: Component = () => {
     const found = await waitForTarget(step.targetSelector)
     if (gen !== prepGen || !found) return
     scrollToTargetIfNeeded()
+    // Position immediately (scrollIntoView is synchronous) so the spotlight
+    // doesn't wait on a frame — and so it still lands when rAF is throttled,
+    // e.g. a backgrounded tab. The rAF below just refines once layout settles.
+    updateHighlight()
+    updateTooltip()
     requestAnimationFrame(() => {
       updateHighlight()
       updateTooltip()
