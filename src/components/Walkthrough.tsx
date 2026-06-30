@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
+import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
@@ -17,7 +18,6 @@ type Placement = 'top' | 'bottom' | 'left' | 'right'
 const TOOLTIP_GAP = 12
 const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
 const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
-const isMobile = () => window.innerWidth <= 768
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export const Walkthrough: Component = () => {
@@ -297,8 +297,8 @@ export const Walkthrough: Component = () => {
     )
       return
 
-    // Mobile: open the off-canvas sidebar only for sidebar-anchored steps.
-    if (isMobile()) {
+    // Narrow: open the off-canvas sidebar only for sidebar-anchored steps.
+    if (isNarrow()) {
       const want = step.inSidebar === true
       setSidebarOpen(want)
       if (want) tourOpenedSidebar = true

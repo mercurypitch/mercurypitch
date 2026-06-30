@@ -12,18 +12,11 @@
 import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
+import { isMobile } from '@/lib/use-viewport'
 import styles from './ControlOverlay.module.css'
 
 type Dock = 'top' | 'bottom'
 const isDock = (v: unknown): v is Dock => v === 'top' || v === 'bottom'
-
-// Touch / small screens default to the top dock (the bottom rail sits under
-// the thumbs); desktop defaults to the centred bottom bar. Explicit choice wins.
-const prefersTopDock = (): boolean => {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function')
-    return false
-  return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches
-}
 
 const GripIcon = () => (
   <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
@@ -102,7 +95,7 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
 
   const [dock, setDock] = createPersistedSignal<Dock>(
     `mp-${prefix}-control-dock`,
-    props.defaultDock ?? (prefersTopDock() ? 'top' : 'bottom'),
+    props.defaultDock ?? (isMobile() ? 'top' : 'bottom'),
     { validator: isDock },
   )
   const [hidden, setHidden] = createPersistedSignal<boolean>(
