@@ -173,7 +173,7 @@ export const SettingsPanel: Component = () => {
 
         <Show when={activeTab() === 'account'}>
           {/* Account Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.account">
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
             <AccountSection />
@@ -624,7 +624,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Visibility Toggles */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.visibility">
             <h3 class={styles.settingsSectionTitle}>Visibility</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>Show or hide interface elements.</p>
@@ -827,7 +827,10 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Visualization Section */}
-          <div class={styles.settingsSection}>
+          <div
+            class={styles.settingsSection}
+            data-tour="settings.visualization"
+          >
             <h3 class={styles.settingsSectionTitle}>Visualization</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
@@ -1001,7 +1004,7 @@ export const SettingsPanel: Component = () => {
 
         <Show when={activeTab() === 'display'}>
           {/* Keyboard Shortcuts Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.shortcuts">
             <h3 class={styles.settingsSectionTitle}>Keyboard Shortcuts</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
