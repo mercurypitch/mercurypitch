@@ -738,6 +738,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Pitch edit mode
     editMode: pitchAnalysis.editMode,
     editableNotes: pitchAnalysis.editableNotes,
+    baseNotes: pitchAnalysis.baseNotes,
+    pitchView: pitchAnalysis.pitchView,
     selectedNoteId: pitchAnalysis.selectedNoteId,
     onSelectNote: pitchAnalysis.setSelectedNoteId,
     onBeginEdit: pitchAnalysis.beginEdit,
@@ -761,6 +763,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pitchAnalysis.editMode()
     pitchAnalysis.selectedNoteId()
     pitchAnalysis.editableNotes()
+    pitchAnalysis.pitchView()
+    pitchAnalysis.baseNotes()
     canvas.queueCanvasRedraw()
   })
   updateCurrentLineForAudio = updateCurrentLine
@@ -1680,8 +1684,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           hasSelection={pitchAnalysis.selectedNoteId() !== null}
           hasEdits={pitchAnalysis.hasEdits()}
           onDeleteSelected={() => pitchAnalysis.deleteSelectedNote()}
+          onSplitSelected={() => pitchAnalysis.splitSelectedNote()}
+          onMergeSelected={() => pitchAnalysis.mergeSelectedWithNext()}
           onUndoEdit={() => pitchAnalysis.undoEdit()}
           onResetEdits={() => pitchAnalysis.resetEdits()}
+          pitchView={pitchAnalysis.pitchView()}
+          setPitchView={pitchAnalysis.setPitchView}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
