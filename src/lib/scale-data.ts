@@ -188,6 +188,57 @@ export function freqToNote(
 }
 
 // ============================================================
+// Scale membership / snapping (used by the finalize pitch pipeline)
+// ============================================================
+
+/** The set of in-scale pitch classes (0-11) for a key + scale type. */
+export function scaleDegreeSet(
+  keyName: string,
+  scaleType: string,
+): Set<number> {
+  const root = (((KEY_OFFSETS[keyName] ?? 0) % 12) + 12) % 12
+  const degrees = SCALE_DEFINITIONS[scaleType]?.degrees ?? MAJOR_SCALE_INTERVALS
+  const set = new Set<number>()
+  for (const d of degrees) set.add((((root + d) % 12) + 12) % 12)
+  return set
+}
+
+/**
+ * Snap a (possibly fractional) MIDI note to the nearest in-scale pitch, but
+ * only if that pitch is within `guardBandCents`. Outside the band the note is
+ * left at its rounded value and `flagged` (likely a chromatic note, or the
+ * singer was off-pitch). Finalize-only — never apply to the live preview.
+ */
+export function snapMidiToScale(
+  midi: number,
+  keyName: string,
+  scaleType: string,
+  guardBandCents = 60,
+): { midi: number; snapped: boolean; flagged: boolean } {
+  const set = scaleDegreeSet(keyName, scaleType)
+  const rounded = Math.round(midi)
+  const roundedPc = ((rounded % 12) + 12) % 12
+  const inScale = set.has(roundedPc)
+
+  let best = rounded
+  let bestDist = Infinity
+  for (let cand = rounded - 2; cand <= rounded + 2; cand++) {
+    const pc = ((cand % 12) + 12) % 12
+    if (!set.has(pc)) continue
+    const dist = Math.abs(cand - midi)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = cand
+    }
+  }
+
+  if (bestDist * 100 <= guardBandCents) {
+    return { midi: best, snapped: best !== rounded, flagged: !inScale }
+  }
+  return { midi: rounded, snapped: false, flagged: !inScale }
+}
+
+// ============================================================
 // Scale building
 // ============================================================
 

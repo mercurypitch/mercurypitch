@@ -70,6 +70,10 @@ export class PlaybackRuntime {
   private _durationBeats = 0
   private countInCompleteEmitted = false
   private _lastBpm = 120
+  // Open-ended mode: while true, playback never auto-stops at the end of the
+  // arrangement — used for free-form recording where the take length is
+  // whatever the user sings until they stop. Always cleared on stop().
+  private _openEnded = false
 
   private _getTotalBeats(melody: MelodyItem[]): number {
     let max = 0
@@ -228,11 +232,22 @@ export class PlaybackRuntime {
     this._startAnimationLoop()
   }
 
+  /**
+   * Enable/disable open-ended playback. While enabled, the animation loop will
+   * not auto-stop when the playhead passes the arrangement end — it keeps
+   * advancing until an explicit stop(). Used by free-form recording so the
+   * user records for as long as they like. Cleared automatically on stop().
+   */
+  setOpenEnded(openEnded: boolean): void {
+    this._openEnded = openEnded
+  }
+
   stop(): void {
     this._stopAnimationLoop()
     this.audioEngine.stopAllNotes()
     this.isPlaying = false
     this.isPaused = false
+    this._openEnded = false
 
     // Reset pause tracking so a fresh start() after stop isn't poisoned
     this.pauseStartTime = 0
@@ -536,7 +551,9 @@ export class PlaybackRuntime {
           this._durationBeats,
           this._getTotalBeats(melody),
         )
-        if (beat >= totalBeats) {
+        // In open-ended (recording) mode the playhead keeps advancing past the
+        // arrangement end until the user explicitly stops.
+        if (!this._openEnded && beat >= totalBeats) {
           this._emit({ type: 'complete' })
           this.stop()
           return

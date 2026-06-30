@@ -33,6 +33,10 @@ interface PianoRollCanvasProps {
   isScrolling?: () => boolean
   targetPitch?: () => number | null
   noteAccuracyMap?: () => Map<number, number>
+  /** Provisional notes captured live during recording (drawn dashed). */
+  previewMelody?: () => MelodyItem[]
+  /** Smoothed live pitch (fractional MIDI) for the recording needle. */
+  liveMidi?: () => number | null
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -157,6 +161,17 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       props.isRecording ?? null,
       props.getWaveform ?? null,
     )
+  })
+
+  // Propagate the live recording preview: provisional note blocks (drawn
+  // dashed) and the smoothed-pitch needle. These render on top of the grid
+  // in the existing playback redraw without touching the committed melody or
+  // its undo history.
+  createEffect(() => {
+    editor?.setPreviewNotes(props.previewMelody?.() ?? [])
+  })
+  createEffect(() => {
+    editor?.setLiveMidi(props.liveMidi?.() ?? null)
   })
 
   onCleanup(() => {

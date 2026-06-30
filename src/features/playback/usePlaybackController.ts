@@ -475,6 +475,9 @@ export function usePlaybackController(
     if (isRecording()) {
       playbackRuntime.setMelody([])
       playbackRuntime.setDurationBeats(Math.max(totalBeats(), 16))
+      // Free-form recording: don't auto-stop at the arrangement end. The take
+      // runs until the user stops; the grid grows to follow the playhead.
+      playbackRuntime.setOpenEnded(true)
     } else {
       let editorMelody = melodyStore.items()
       if (editorMelody.length === 0) {

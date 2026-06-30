@@ -40,6 +40,7 @@ import './components/TierSelector.css'
 import './components/SessionEditorTimeline.css'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
+import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
@@ -77,7 +78,8 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
-import { melodyIndicesAtBeat, melodyTotalBeats } from '@/lib/scale-data'
+import { segmentContourToMelody } from '@/lib/pitch-pipeline'
+import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -695,6 +697,76 @@ const AppShell: Component<AppProps> = (props) => {
     countInBeat,
     isCountingIn,
   } = practice
+
+  // ── Compose live recording preview (Phase 2) ───────────────
+  // Notes captured so far this take, plus the currently-held note growing with
+  // the playhead. Kept out of melodyStore until the take is finalized.
+  const liveRecordingMelody = createMemo<MelodyItem[]>(() => {
+    if (!recording.isRecording()) return []
+    const items = [...recording.recordedMelody()]
+    const prov = recording.provisionalNote()
+    if (prov != null) {
+      const dur = Math.max(0.05, currentBeat() - prov.startBeat)
+      const info = midiToNote(prov.midi)
+      items.push({
+        id: -1,
+        note: {
+          midi: prov.midi,
+          name: info.name,
+          octave: info.octave,
+          freq: midiToFreq(prov.midi),
+        },
+        duration: dur,
+        startBeat: prov.startBeat,
+      })
+    }
+    return items
+  })
+
+  // ── Take review (Phase 3) ──────────────────────────────────
+  // After a take stops, re-segment its retained contour at the chosen cleanup
+  // amount (gentle: as-sung -> strong: key-snapped + quantized). This drives
+  // both the on-roll preview and what Keep commits.
+  const [reviewAmount, setReviewAmount] = createSignal(0.5)
+  const reviewMelody = createMemo<MelodyItem[]>(() => {
+    const take = recording.pendingTake()
+    if (take === null) return []
+    return segmentContourToMelody(take.frames, {
+      bpm: bpm(),
+      key: keyNameSignal(),
+      scaleType: scaleTypeSignal(),
+      cleanupAmount: reviewAmount(),
+    })
+  })
+
+  // The piano roll's preview channel shows the live take while recording, then
+  // the re-segmented candidate while reviewing.
+  const previewMelody = createMemo<MelodyItem[]>(() =>
+    recording.isRecording() ? liveRecordingMelody() : reviewMelody(),
+  )
+
+  const commitTake = (): void => {
+    recording.commitTake(reviewMelody())
+  }
+
+  // During recording the grid grows to follow the playhead so the take is not
+  // capped at the default arrangement length (the old 16-beat stop); during
+  // review it stays large enough to show the whole take.
+  const composeTotalBeats = createMemo(() => {
+    const base = totalBeats()
+    const BEATS_PER_BAR = 4
+    if (recording.isRecording()) {
+      const grown =
+        (Math.floor((currentBeat() + 8) / BEATS_PER_BAR) + 1) * BEATS_PER_BAR
+      return Math.max(base, 16, grown)
+    }
+    const take = recording.pendingTake()
+    if (take !== null) {
+      const end = Math.ceil((take.endBeat + 4) / BEATS_PER_BAR) * BEATS_PER_BAR
+      return Math.max(base, 16, end)
+    }
+    return base
+  })
 
   // Track playNote IDs by melody index so noteEnd can stop individual notes
   const activeNoteIds = new Map<number, number>()
@@ -1818,9 +1890,17 @@ const AppShell: Component<AppProps> = (props) => {
                             setMetronomeEnabled(metronomeEnabled() === false)
                           }
                           isRecording={() => recording.isRecording()}
-                          onRecordToggle={() =>
-                            void recording.handleRecordToggle()
-                          }
+                          onRecordToggle={() => {
+                            // Stopping a take routes through the full editor
+                            // stop so playback halts (open-ended mode is
+                            // cleared) and the recording is finalized; starting
+                            // just arms the mic.
+                            if (recording.isRecording()) {
+                              handleEditorStop()
+                            } else {
+                              void recording.handleRecordToggle()
+                            }
+                          }}
                           onShareMelody={handleCopyShareLink}
                           onMicToggle={() => {
                             void handleMicToggle()
@@ -1843,49 +1923,66 @@ const AppShell: Component<AppProps> = (props) => {
                   drawRulerWithPlayhead / drawGridWithPlayhead.  See
                   PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
                   <Show when={editorView() === 'piano-roll'}>
-                    <PianoRollCanvas
-                      // FIXME: Check if playbck items or items should be sent
-                      melody={() => melodyStore.items()}
-                      scale={() => melodyStore.currentScale()}
-                      bpm={() => bpm()}
-                      totalBeats={() => totalBeats()}
-                      playbackState={editorPlaybackState}
-                      currentNoteIndex={() => melodyStore.currentNoteIndex()}
-                      currentBeat={currentBeat}
-                      countInBeats={() => countIn()}
-                      isPlaying={editorIsPlaying}
-                      isPaused={editorIsPaused}
-                      isScrolling={() => false}
-                      targetPitch={() => null}
-                      noteAccuracyMap={() => new Map()}
-                      onMelodyChange={(melody) => {
-                        debouncedAutoSave()
-                        melodyStore.setMelody(melody)
-                      }}
-                      onInstrumentChange={(instrument) => {
-                        // Update three things at once:
-                        //   1. App's primary AudioEngine (used during practice
-                        //      playback).
-                        //   2. The piano-roll's secondary AudioEngine (used
-                        //      for in-editor preview clicks). Without this
-                        //      fanout via the audioRegistry, changing the
-                        //      instrument dropdown wouldn't audibly affect
-                        //      the editor's playback because the secondary
-                        //      engine kept its default 'sine' instrument.
-                        //   3. The global `instrument` signal so EngineContext's
-                        //      reactive createEffect can re-sync any future
-                        //      engine that's registered later.
-                        audioEngine.setInstrument(instrument as InstrumentType)
-                        audioRegistry.setInstrumentAll(
-                          instrument as InstrumentType,
-                        )
-                        setInstrument(instrument as InstrumentType)
-                      }}
-                      onPlaybackStateChange={(_state) => {
-                        // editor playback state owned by playbackController now
-                      }}
-                      getWaveform={() => audioEngine?.getWaveformData() ?? null}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <Show when={recording.pendingTake() !== null}>
+                        <ComposeTakeReview
+                          amount={reviewAmount}
+                          onAmount={setReviewAmount}
+                          noteCount={() => reviewMelody().length}
+                          onCommit={commitTake}
+                          onDiscard={recording.discardTake}
+                        />
+                      </Show>
+                      <PianoRollCanvas
+                        melody={() => melodyStore.items()}
+                        previewMelody={previewMelody}
+                        liveMidi={recording.liveMidi}
+                        isRecording={recording.isRecording}
+                        scale={() => melodyStore.currentScale()}
+                        bpm={() => bpm()}
+                        totalBeats={composeTotalBeats}
+                        playbackState={editorPlaybackState}
+                        currentNoteIndex={() => melodyStore.currentNoteIndex()}
+                        currentBeat={currentBeat}
+                        countInBeats={() => countIn()}
+                        isPlaying={editorIsPlaying}
+                        isPaused={editorIsPaused}
+                        isScrolling={() => false}
+                        targetPitch={() => null}
+                        noteAccuracyMap={() => new Map()}
+                        onMelodyChange={(melody) => {
+                          debouncedAutoSave()
+                          melodyStore.setMelody(melody)
+                        }}
+                        onInstrumentChange={(instrument) => {
+                          // Update three things at once:
+                          //   1. App's primary AudioEngine (used during practice
+                          //      playback).
+                          //   2. The piano-roll's secondary AudioEngine (used
+                          //      for in-editor preview clicks). Without this
+                          //      fanout via the audioRegistry, changing the
+                          //      instrument dropdown wouldn't audibly affect
+                          //      the editor's playback because the secondary
+                          //      engine kept its default 'sine' instrument.
+                          //   3. The global `instrument` signal so EngineContext's
+                          //      reactive createEffect can re-sync any future
+                          //      engine that's registered later.
+                          audioEngine.setInstrument(
+                            instrument as InstrumentType,
+                          )
+                          audioRegistry.setInstrumentAll(
+                            instrument as InstrumentType,
+                          )
+                          setInstrument(instrument as InstrumentType)
+                        }}
+                        onPlaybackStateChange={(_state) => {
+                          // editor playback state owned by playbackController now
+                        }}
+                        getWaveform={() =>
+                          audioEngine?.getWaveformData() ?? null
+                        }
+                      />
+                    </div>
                   </Show>
                 </TabErrorBoundary>
               </Show>
