@@ -7,25 +7,43 @@
   overflow: hidden;
 }
 
-/* Compose toolbar — sleek view tabs (left) + the control bar (right) in one
-   row. Tabs mirror the Settings panel's underline-tab design. Wraps on narrow
-   screens so the control bar drops below the tabs. */
+/* Compose toolbar — sleek view tabs (left) + the control bar (centred) in one
+   row. Tabs mirror the Settings panel's underline-tab design. A 3-column grid
+   (1fr · auto · 1fr) keeps the bar centred in the toolbar with the tabs left.
+   The outer element is a size container so we can stack (tabs above, centred
+   bar below) when the toolbar itself is too narrow to centre without crowding
+   the tabs — independent of the sidebar width, which a viewport query can't
+   account for. */
+.composeToolbarOuter {
+  container-type: inline-size;
+}
+
 .composeToolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 6px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
 }
 
 .editorTabs {
   display: flex;
   gap: 4px;
-  /* Push the control bar to the far right of the row. */
-  margin-right: auto;
-  flex: 0 0 auto;
+  justify-self: start;
+  min-width: 0;
+}
+
+@container (max-width: 880px) {
+  .composeToolbar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .editorTabs {
+    justify-self: center;
+  }
 }
 
 .editorTab {
