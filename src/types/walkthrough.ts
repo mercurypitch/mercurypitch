@@ -226,6 +226,65 @@ Scroll horizontally for longer melodies, vertically for multiple octaves. The pl
       thumbnail: 'piano',
     },
     {
+      id: 'editor-effects',
+      tab: 'compose',
+      title: 'Note Effects & Slides',
+      description: 'Add expression to your melodies with the effect tools',
+      content: `
+Effects turn a flat sequence of notes into a performance. They live in the **Effects** group on the piano-roll toolbar, and they all follow one rule: **select a note (or two) with the Select tool first, then apply the effect** — by clicking its button or pressing its keyboard shortcut. The status bar always tells you how many notes the current effect needs.
+
+## Two-note effects (glides between pitches)
+
+Select **exactly two** notes, then:
+
+- **Slide up / down** (\`S\` / \`Shift+S\`): bends the pitch continuously from the first note into the second — the classic glide or "scoop".
+- **Ease in / out** (\`E\` / \`Shift+E\`): a gentler glide that holds level at one end before (or after) sliding, instead of bending the whole way. Great for a softer, more vocal transition.
+
+## Single-note effects (animate one note)
+
+These work on one or more selected notes — apply one to a whole phrase at once if you like:
+
+- **Vibrato** (\`V\`): wavers the pitch up and down. The popover sets the **depth** (how wide the wobble is).
+- **Tremolo** (\`T\`): pulses the **volume** rather than the pitch. The popover sets **rate** and **depth**.
+- **Trill** (\`Shift+T\`): rapidly alternates between the note and one a set interval above. The popover sets **rate** and **interval**.
+- **Staccato** (\`Shift+K\`): clips the note short for a crisp, detached articulation. The popover sets how short.
+- **Chord** (\`C\`): turns the note into a full chord — power, major, minor, diminished, augmented, sus2, sus4, or octave, chosen from the popover.
+
+## Tuning an effect
+
+After you apply vibrato, tremolo, trill, staccato, or chord, a small **popover** appears below the toolbar with that effect's parameters — adjust them and the change previews on the selected note(s). To remove an effect, apply it again to clear it.
+
+> **Tip:** A little goes a long way — a touch of vibrato on held notes and a slide into a phrase's first note read far better than effects on everything.
+      `,
+      steps: [
+        {
+          title: 'Select the notes',
+          description: 'Switch to the Select tool and pick a note (or two)',
+          action: 'Use the Select tool',
+          target: '.roll-tool-btn[data-tool="select"]',
+        },
+        {
+          title: 'Slides & ease',
+          description: 'Glide between two selected notes',
+          action: 'Apply a slide or ease',
+          target: '#roll-action-slide-up',
+        },
+        {
+          title: 'Vibrato, tremolo & trill',
+          description: 'Animate a single note',
+          action: 'Apply an oscillation effect',
+          target: '#roll-action-vibrato',
+        },
+        {
+          title: 'Staccato & chords',
+          description: 'Shorten a note, or turn it into a chord',
+          action: 'Apply staccato or chord',
+          target: '#roll-action-chord',
+        },
+      ],
+      thumbnail: 'music',
+    },
+    {
       id: 'editor-midi',
       tab: 'compose',
       title: 'Importing and Exporting MIDI',
