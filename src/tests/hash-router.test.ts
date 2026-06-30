@@ -101,15 +101,25 @@ describe('parseHash', () => {
     })
   })
 
-  it('parses guide section route for settings', () => {
-    expect(parseHash('#/guide/settings')).toEqual({
+  it('parses guide section routes for the per-tab settings tours', () => {
+    expect(parseHash('#/guide/settings-general')).toEqual({
       type: 'guide-start',
-      sectionId: 'settings',
+      sectionId: 'settings-general',
+    })
+    expect(parseHash('#/guide/settings-practice')).toEqual({
+      type: 'guide-start',
+      sectionId: 'settings-practice',
+    })
+    expect(parseHash('#/guide/settings-display')).toEqual({
+      type: 'guide-start',
+      sectionId: 'settings-display',
     })
   })
 
   it('returns unknown for invalid guide section', () => {
     expect(parseHash('#/guide/nonexistent')).toEqual({ type: 'unknown' })
+    // The old combined 'settings' guide id was split into per-tab tours.
+    expect(parseHash('#/guide/settings')).toEqual({ type: 'unknown' })
   })
 
   // Learn/guide take precedence over tab routes
