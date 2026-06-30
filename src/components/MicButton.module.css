@@ -19,6 +19,9 @@
   transition: all 0.12s ease;
   white-space: nowrap;
   line-height: 1;
+  /* The mic button is a fixed icon control — never let a tight control bar
+     shrink it (which collapsed the icon to 0 width on the Compose bar). */
+  flex-shrink: 0;
 }
 
 .micWave {
@@ -36,6 +39,8 @@
 .ctrlBtn :global(svg) {
   position: relative;
   z-index: 1;
+  /* Keep the glyph at its intrinsic size so it can't be flexed to 0 width. */
+  flex-shrink: 0;
 }
 
 .ctrlBtn:hover:not(:disabled) {
