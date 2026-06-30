@@ -3,6 +3,25 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.5.1] - 2026-07-01
+
+### Added
+
+- **Live pitch marker while you sing**: a green marker tracks your voice on the left edge of the practice canvas the moment the mic hears you — not just during playback — with a faint guide line across so you can read your pitch against the melody.
+- **Cleaner practice screen on phones**: the accuracy, sessions and pitch cards are now hidden by default on small screens so the melody has room. A small toggle brings them back whenever you want them.
+- **Keyboard controls for the guided tours**: on desktop, use the arrow keys (or Enter) to step through a tour and Esc to close it.
+- **Continue to the next section**: on the last step of a tour section, a button now offers to carry straight on into the next one.
+- **Deeper, better-organised tours**: the Effects and Settings walkthroughs cover far more, Settings is now three focused per-tab tours (General, Practice, Display & Controls), and new "Learn" articles explain note effects and the Display and General settings in depth.
+
+### Changed
+
+- **Tours adapt to your screen**: they respond to resizing and rotation, expand a collapsed control bar before pointing at a hidden control, let you click the progress dots to jump between steps, and have a cleaner, more compact tooltip.
+
+### Fixed
+
+- **Mic no longer sticks on**: leaving the Singing or Compose tab now stops the mic, so the mic button doesn't look active — or react to playback — when you come back.
+- **Mic button icon always shows**: the mic icon no longer collapses to nothing on a tight control bar.
+
 ## [0.5.0] - 2026-06-30
 
 ### Added

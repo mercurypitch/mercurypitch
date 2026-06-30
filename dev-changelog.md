@@ -6,6 +6,28 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-07-01
+
+### Added
+
+- Reactive viewport hook (`src/lib/use-viewport.ts`): app-lifetime `isMobile`/`isNarrow` matchMedia singletons replace the scattered, non-reactive `prefersTopDock`/`isSmallScreen` checks (`ControlOverlay`, `Tab3DHud`, `GuitarPage`, `Walkthrough`) so small-screen/touch state updates on resize and rotation.
+- Live on-canvas pitch marker (`PitchCanvas` `livePitch` prop, fed `currentPitch` from `App`): a left-anchored marker + dashed guide line driven by the mic whenever a note is detected, independent of playback (`pitchHistory` only fills during playback). The throttled rAF loop repaints on live-frequency change and once more on silence.
+- Mobile singing HUD toggle (`singingHudMobileOpen` in settings-store; `SingingCanvasHud` button): the accuracy/sessions/pitch cards are hidden by default when `isNarrow()` and revealed via a persisted opt-in toggle; desktop behaviour is unchanged.
+- Spotlight tour: desktop keyboard navigation (→/Enter advance, ← back, Esc close; ignores key-repeat, skips form fields/contenteditable, defers Enter to a focused button), clickable progress dots (`goToDot`), and a "continue to next section" button on a section's final step (`isLastInSection`/`goToNextSection`).
+- Tour `reveal` field — expands a collapsed control group (`aria-expanded`) before a step and collapses it again on exit; all four control bars expose `[data-testid="{singing,piano,guitar,compose}-more-toggle"]`.
+- Tour content: Effects section expanded (3 → 7 steps with per-effect `#roll-action-*` targets); the Settings spotlight split into three per-tab tours (`settings-general`/`settings-practice`/`settings-display`) anchored to full-width `.settingsSection` cards via `data-tour`; added editor + piano steps; enabled `#/guide/effects`. New Learn tutorials: Note Effects (compose), Display & Controls and General & Your Data (settings).
+
+### Changed
+
+- Spotlight tooltip redesign (`Walkthrough.module.css`): icon-only action buttons, a close (×) control, progress dots, and mobile breakpoints. `prepareAndPosition` now runs an immediate `updateHighlight()`/`updateTooltip()` before the rAF so steps anchor without waiting on a frame.
+- `ControlOverlay`: centre-anchored default with an `inline`-mode max-width fix so the inlined Compose control bar doesn't squeeze the mic icon.
+
+### Fixed
+
+- Mic lifecycle: leaving the Singing/Compose tab now calls `practiceEngine.stopMic()` so `micActive` doesn't stay stuck on — previously the mic button looked active and reacted to playback on the next visit (`App.tsx`).
+- Mic button icon no longer collapses to 0 width on a tight control bar (`flex-shrink: 0` on `.ctrlBtn` + svg, `MicButton.module.css`).
+- `VALID_GUIDE_SECTIONS` (`hash-router.ts`) kept in sync with `GUIDE_SECTIONS`: added the missing `effects` id and replaced `settings` with the three per-tab ids.
+
 ## [0.5.0] - 2026-06-30
 
 ### Added
