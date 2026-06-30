@@ -83,6 +83,16 @@ export function renderPluckWaveform(
   freq: number,
   params: PluckParams,
 ): Float32Array {
+  // Guard against an invalid frequency (0 / NaN / Infinity): otherwise
+  // sampleRate/freq is Infinity, N becomes Infinity and `new Float32Array(N)`
+  // throws — taking down the whole audio engine for a single bad note. Return
+  // a silent buffer of the normal length instead.
+  if (!Number.isFinite(freq) || freq <= 0) {
+    return new Float32Array(
+      Math.max(2, Math.floor(params.decaySeconds * sampleRate)),
+    )
+  }
+
   // The averaging lowpass adds 0.5 samples of delay; the allpass adds
   // `frac` more. Solve for the integer delay length N and fraction.
   const exactPeriod = sampleRate / freq - 0.5
