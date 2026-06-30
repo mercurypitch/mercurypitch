@@ -59,6 +59,13 @@
   animation: barIn 180ms ease both;
 }
 
+/* Inline (Compose-row) variant: the canvas-margin cap above is meant for the
+   docked/centred overlay; inline the bar must take its natural width so a tight
+   row can't squeeze its controls (which collapsed the mic icon to 0 width). */
+.inlineOverlay {
+  max-width: none;
+}
+
 @keyframes barIn {
   from {
     opacity: 0;

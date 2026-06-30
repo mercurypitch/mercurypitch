@@ -80,7 +80,11 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
   // drops the centring wrapper so the host can place the card in a row.
   if (isStatic) {
     const card = (
-      <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
+      <div
+        class={styles.overlay}
+        classList={{ [styles.inlineOverlay]: isInline }}
+        data-testid={`${prefix}-control-overlay`}
+      >
         <div class={styles.toolbarSlot}>{props.children}</div>
       </div>
     )
