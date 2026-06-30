@@ -184,29 +184,41 @@
 .walkthroughDots {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   flex-wrap: wrap;
-  row-gap: 4px;
+  row-gap: 2px;
   min-width: 0;
 }
 
+/* A dot is a button; content-box padding gives a tappable hit area while
+   background-clip keeps the visible dot small. Modifiers use background-color
+   (not the `background` shorthand) so the content-box clip survives. */
 .walkthroughDot {
+  box-sizing: content-box;
   width: 6px;
   height: 6px;
+  padding: 6px 3px;
+  border: none;
   border-radius: 999px;
-  background: var(--border);
+  background-color: var(--border);
+  background-clip: content-box;
+  cursor: pointer;
   transition:
     width 0.2s ease,
-    background 0.2s ease;
+    background-color 0.2s ease;
+}
+
+.walkthroughDot:hover {
+  background-color: var(--text-secondary);
 }
 
 .walkthroughDotDone {
-  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .walkthroughDotActive {
   width: 16px;
-  background: var(--accent);
+  background-color: var(--accent);
 }
 
 .walkthroughActionsCenter {

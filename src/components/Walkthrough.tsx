@@ -7,7 +7,7 @@ import { createEffect, createMemo, Index, onCleanup, Show } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
-import { walkthroughStep } from '@/stores/app-store'
+import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
 import { activeTab, setActiveTab, setSidebarOpen } from '@/stores/ui-store'
@@ -447,6 +447,25 @@ export const Walkthrough: Component = () => {
     return { current: walkthroughStep() + 1, total: steps().length }
   })
 
+  // Jump straight to a step by clicking its progress dot. Dots are
+  // section-scoped (full walkthrough), so map the dot index back to the step's
+  // overall position; the prepare effect re-runs nav/reveal for the new step.
+  const goToDot = (dotIndex: number) => {
+    const sec = currentSection()
+    if (!sec) {
+      setWalkthroughStep(dotIndex)
+      return
+    }
+    const overallIdx = steps().findIndex(
+      (s, idx) =>
+        s.section === sec.id &&
+        steps()
+          .slice(0, idx)
+          .filter((p) => p.section === sec.id).length === dotIndex,
+    )
+    if (overallIdx >= 0) setWalkthroughStep(overallIdx)
+  }
+
   return (
     <Show when={walkthroughActive()}>
       <div class={styles.walkthroughOverlay} onClick={endWalkthrough}>
@@ -479,18 +498,16 @@ export const Walkthrough: Component = () => {
           <p class={styles.walkthroughStepDesc}>{currentStep()?.description}</p>
 
           <div class={styles.walkthroughActions}>
-            {/* Progress dots */}
+            {/* Progress dots — click to jump to a step. */}
             <div
               class={styles.walkthroughDots}
-              role="progressbar"
-              aria-valuenow={dotProgress().current}
-              aria-valuemin={1}
-              aria-valuemax={dotProgress().total}
-              aria-label="Tour progress"
+              role="group"
+              aria-label="Tour steps"
             >
               <Index each={Array.from({ length: dotProgress().total })}>
                 {(_, i) => (
-                  <span
+                  <button
+                    type="button"
                     class={styles.walkthroughDot}
                     classList={{
                       [styles.walkthroughDotActive]:
@@ -498,6 +515,12 @@ export const Walkthrough: Component = () => {
                       [styles.walkthroughDotDone]:
                         i < dotProgress().current - 1,
                     }}
+                    onClick={() => goToDot(i)}
+                    title={`Step ${i + 1}`}
+                    aria-label={`Go to step ${i + 1}`}
+                    aria-current={
+                      i === dotProgress().current - 1 ? 'step' : undefined
+                    }
                   />
                 )}
               </Index>
