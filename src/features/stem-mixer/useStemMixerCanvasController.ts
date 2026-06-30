@@ -8,6 +8,7 @@ import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
+import type { EditableNote } from './pitch-edit-model'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -48,6 +49,11 @@ export interface StemMixerCanvasDeps {
   setLoopEnd: Setter<number>
   // Touch callbacks
   onCanvasVerticalPinch?: (canvasId: string, deltaY: number) => void
+  // Pitch edit mode
+  editMode?: Accessor<boolean>
+  editableNotes?: Accessor<EditableNote[]>
+  selectedNoteId?: Accessor<string | null>
+  onSelectNote?: (id: string | null) => void
 }
 
 export interface StemMixerCanvasController {
@@ -656,6 +662,26 @@ export const useStemMixerCanvasController = (
       }
     }
 
+    // Edit mode: outline every editable note (subtle) and the selected one
+    // (bright) so the user can see what's selectable / selected.
+    if (deps.editMode?.() === true) {
+      const selId = deps.selectedNoteId?.() ?? null
+      const editable = deps.editableNotes?.() ?? []
+      for (const note of editable) {
+        if (note.endBeat < winStart || note.startBeat > winEnd) continue
+        const pc = ((note.midi % 12) + 12) % 12
+        const x1 = Math.max(0, ((note.startBeat - winStart) / winDur) * w)
+        const x2 = Math.min(w, ((note.endBeat - winStart) / winDur) * w)
+        const yTop = (11 - pc) * rowH + rowH * 0.12
+        const selected = note.id === selId
+        ctx.strokeStyle = selected ? '#f59e0b' : 'rgba(245,158,11,0.4)'
+        ctx.lineWidth = selected ? 2 : 1
+        ctx.setLineDash(selected ? [] : [3, 2])
+        ctx.strokeRect(x1, yTop, Math.max(2, x2 - x1), rowH * 0.76)
+        ctx.setLineDash([])
+      }
+    }
+
     // Playhead
     const elapsedTime = deps.elapsed()
     if (elapsedTime >= winStart && elapsedTime <= winEnd) {
@@ -875,9 +901,46 @@ export const useStemMixerCanvasController = (
     return null
   }
 
+  /** Edit mode: the editable note under the pointer on the pitch lane, if any.
+   *  Matches by time span and pitch-class row (11 - midi%12). */
+  const getEditableNoteAtPoint = (
+    clientX: number,
+    clientY: number,
+    canvas: HTMLCanvasElement,
+  ): EditableNote | null => {
+    const editable = deps.editableNotes?.()
+    if (editable === undefined || editable.length === 0) return null
+    const rect = canvas.getBoundingClientRect()
+    const time = clientXToTime(clientX, canvas)
+    const rowH = rect.height / 13
+    const row = Math.floor((clientY - rect.top) / rowH)
+    for (const note of editable) {
+      if (time < note.startBeat || time > note.endBeat) continue
+      const pc = ((note.midi % 12) + 12) % 12
+      if (11 - pc === row) return note
+    }
+    return null
+  }
+
   const handleCanvasPointerDown = (e: PointerEvent) => {
     const canvas = e.currentTarget as HTMLCanvasElement
     if (!deps.duration()) return
+
+    // Pitch edit mode: click a note to select it; empty click deselects (then
+    // falls through to pan).
+    if (canvas === canvasRefs.pitch && deps.editMode?.() === true) {
+      const note = getEditableNoteAtPoint(e.clientX, e.clientY, canvas)
+      if (note !== null) {
+        deps.onSelectNote?.(note.id)
+        queueCanvasRedraw()
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
+      deps.onSelectNote?.(null)
+      queueCanvasRedraw()
+    }
+
     const isOverview = canvas === canvasRefs.overview
     const hit = isOverview ? getLoopMarkerAtX(e.clientX, canvas) : null
 

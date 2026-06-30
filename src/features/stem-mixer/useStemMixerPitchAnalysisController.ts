@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal } from 'solid-js'
+import { createEffect, createMemo, createSignal } from 'solid-js'
 import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
 import type { MergedNote } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
@@ -8,7 +8,9 @@ import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import type { OfflineSegmentSecondsFrame } from '@/lib/pitch-pipeline'
 import { segmentSecondsContourToMelody } from '@/lib/pitch-pipeline'
-import { freqToMidi } from '@/lib/scale-data'
+import { freqToMidi, midiToNote } from '@/lib/scale-data'
+import type { EditableNote, PitchEditLayer } from './pitch-edit-model'
+import { applyEditLayer, deleteNote, emptyEditLayer, isEditLayerEmpty, } from './pitch-edit-model'
 import type { PitchNote } from './types'
 
 // The pipeline's frame-count thresholds are tuned for the live ~10ms cadence;
@@ -58,6 +60,18 @@ export interface StemMixerPitchAnalysisController {
   setSongBpm: Setter<number>
   /** True once a contour has been captured this session (enables the slider). */
   contourReady: Accessor<boolean>
+
+  // ── Edit mode (manual note editing over the cleanup output) ────
+  editMode: Accessor<boolean>
+  setEditMode: Setter<boolean>
+  /** Effective notes (base cleanup output with the edit layer applied), seconds. */
+  editableNotes: Accessor<EditableNote[]>
+  selectedNoteId: Accessor<string | null>
+  setSelectedNoteId: Setter<string | null>
+  deleteSelectedNote: () => void
+  undoEdit: () => void
+  resetEdits: () => void
+  hasEdits: Accessor<boolean>
 
   algorithm: Accessor<PitchAlgorithm>
   setAlgorithm: Setter<PitchAlgorithm>
@@ -114,10 +128,44 @@ export const useStemMixerPitchAnalysisController = (
   const [songBpm, setSongBpm] = createSignal(120)
   const [contourReady, setContourReady] = createSignal(false)
 
+  // Edit-mode state. Notes are in SECONDS (EditableNote.startBeat == startSec).
+  const [editMode, setEditMode] = createSignal(false)
+  const [baseNotes, setBaseNotes] = createSignal<EditableNote[]>([])
+  const [editLayer, setEditLayer] =
+    createSignal<PitchEditLayer>(emptyEditLayer())
+  const [selectedNoteId, setSelectedNoteId] = createSignal<string | null>(null)
+  const hasEdits = createMemo(() => !isEditLayerEmpty(editLayer()))
+  // Snapshot stack for edit undo (separate from the editor's piano-roll undo).
+  let editUndo: PitchEditLayer[] = []
+
+  // Effective notes = the cleanup output (base) with manual edits applied.
+  const editableNotes = createMemo(() =>
+    applyEditLayer(baseNotes(), editLayer()),
+  )
+
   // Retained raw per-frame contour (incl. unvoiced frames) so the slider can
   // re-segment cheaply without re-decoding audio. In-memory only this turn;
   // not persisted, so the slider is disabled after reload until re-run.
   let rawContour: OfflineSegmentSecondsFrame[] = []
+
+  const baseToEditable = (notes: MergedNote[]): EditableNote[] =>
+    notes.map((m, i) => ({
+      id: `base-${i}`,
+      startBeat: m.startSec,
+      endBeat: m.endSec,
+      midi: m.midi,
+    }))
+
+  const editableToMerged = (notes: EditableNote[]): MergedNote[] =>
+    notes.map((e) => {
+      const info = midiToNote(e.midi)
+      return {
+        midi: e.midi,
+        noteName: `${info.name}${info.octave}`,
+        startSec: e.startBeat,
+        endSec: e.endBeat,
+      }
+    })
 
   /** Build the canvas pitch-history points from a list of (cleaned) notes. */
   const buildHistoryFromNotes = (notes: MergedNote[]): PitchNote[] => {
@@ -140,8 +188,8 @@ export const useStemMixerPitchAnalysisController = (
     return history
   }
 
-  /** Re-segment the retained contour at the current cleanup settings and push
-   *  the cleaned result to the canvas. Cheap — no re-detection. */
+  /** Re-segment the retained contour at the current cleanup settings into the
+   *  BASE note list. Cheap — no re-detection. Edits are reapplied reactively. */
   const resegment = (): MergedNote[] => {
     const items = segmentSecondsContourToMelody(rawContour, {
       bpm: songBpm(),
@@ -151,10 +199,7 @@ export const useStemMixerPitchAnalysisController = (
       pipeline: COARSE_HOP_PIPELINE,
     })
     const segMerged = melodyItemsToMergedNotes(items, songBpm())
-    setOfflineSegmentedNotes(segMerged)
-    const history = buildHistoryFromNotes(segMerged)
-    setOfflinePitchHistory(history)
-    deps.setPitchHistory(history)
+    setBaseNotes(baseToEditable(segMerged))
     return segMerged
   }
 
@@ -170,6 +215,46 @@ export const useStemMixerPitchAnalysisController = (
       resegment()
     }
   })
+
+  // Push the effective (base + edits) notes to the canvas whenever either
+  // the base regenerates or the edit layer changes.
+  createEffect(() => {
+    const merged = editableToMerged(editableNotes())
+    setOfflineSegmentedNotes(merged)
+    const history = buildHistoryFromNotes(merged)
+    setOfflinePitchHistory(history)
+    deps.setPitchHistory(history)
+  })
+
+  // ── Edit operations ───────────────────────────────────────────
+  const pushEditUndo = (): void => {
+    editUndo.push(editLayer())
+    if (editUndo.length > 100) editUndo.shift()
+  }
+
+  const deleteSelectedNote = (): void => {
+    const id = selectedNoteId()
+    if (id === null) return
+    const note = editableNotes().find((n) => n.id === id)
+    if (note === undefined) return
+    pushEditUndo()
+    setEditLayer(deleteNote(editLayer(), note))
+    setSelectedNoteId(null)
+  }
+
+  const undoEdit = (): void => {
+    const prev = editUndo.pop()
+    if (prev === undefined) return
+    setEditLayer(prev)
+    setSelectedNoteId(null)
+  }
+
+  const resetEdits = (): void => {
+    if (isEditLayerEmpty(editLayer())) return
+    pushEditUndo()
+    setEditLayer(emptyEditLayer())
+    setSelectedNoteId(null)
+  }
 
   const runAnalysis = async () => {
     const buffer = deps.vocalBuffer()
@@ -248,6 +333,11 @@ export const useStemMixerPitchAnalysisController = (
       )
       setOfflineMergedNotes(merged)
 
+      // A fresh analysis is a new starting point — drop edits from the old take.
+      setEditLayer(emptyEditLayer())
+      setSelectedNoteId(null)
+      editUndo = []
+
       // Retain the contour and run the shared denoise pipeline at the current
       // cleanup amount. The slider re-runs only this cheap step afterwards.
       rawContour = contour
@@ -266,7 +356,7 @@ export const useStemMixerPitchAnalysisController = (
         void savePitchAnalysisToDb(deps.sessionId, {
           mergedNotes: merged,
           segmentedNotes: segmentedMerged,
-          pitchHistory: offlinePitchHistory(),
+          pitchHistory: buildHistoryFromNotes(segmentedMerged),
         })
       }
     } catch (e) {
@@ -290,10 +380,14 @@ export const useStemMixerPitchAnalysisController = (
     }
 
     setOfflineMergedNotes(data.mergedNotes)
-    setOfflineSegmentedNotes(data.segmentedNotes)
-    setOfflinePitchHistory(data.pitchHistory)
+    // Seed the editable base from the cached cleaned notes so edit mode works
+    // on a reloaded session. The display effect (on editableNotes) then feeds
+    // offlineSegmentedNotes + the canvas history.
+    setEditLayer(emptyEditLayer())
+    setSelectedNoteId(null)
+    editUndo = []
+    setBaseNotes(baseToEditable(data.segmentedNotes))
     setPitchSourceMode('offline')
-    deps.setPitchHistory(data.pitchHistory)
 
     return true
   }
@@ -315,6 +409,15 @@ export const useStemMixerPitchAnalysisController = (
     songBpm,
     setSongBpm,
     contourReady,
+    editMode,
+    setEditMode,
+    editableNotes,
+    selectedNoteId,
+    setSelectedNoteId,
+    deleteSelectedNote,
+    undoEdit,
+    resetEdits,
+    hasEdits,
     algorithm,
     setAlgorithm,
     bufferSize,
