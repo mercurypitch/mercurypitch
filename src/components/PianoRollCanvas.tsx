@@ -37,6 +37,14 @@ interface PianoRollCanvasProps {
   previewMelody?: () => MelodyItem[]
   /** Smoothed live pitch (fractional MIDI) for the recording needle. */
   liveMidi?: () => number | null
+  /** Imperative bridge exposed once the editor is mounted. */
+  onEditorReady?: (api: PianoRollEditorApi) => void
+}
+
+/** Minimal imperative surface other features (e.g. take-commit) need. */
+export interface PianoRollEditorApi {
+  /** Replace the melody as a single undoable step. */
+  applyMelody: (melody: MelodyItem[]) => void
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -75,6 +83,13 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     ;(
       window as unknown as { pianoRollGenerateId: () => number }
     ).pianoRollGenerateId = () => Date.now()
+
+    // Imperative bridge for features that commit melodies through the editor's
+    // undo history (e.g. keeping a recorded take as one undo step).
+    const ed = editor
+    props.onEditorReady?.({
+      applyMelody: (melody) => ed.applyMelody(melody),
+    })
   })
 
   // Propagate melody changes to the editor

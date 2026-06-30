@@ -626,24 +626,44 @@ export class PianoRollEditor {
       return
     }
     this.clearHistory()
+    this.installMelody(melody)
+    this.draw()
+  }
 
-    // Always regenerate IDs so external sources (MIDI import, recording,
-    // copy-paste, etc.) can never introduce collisions. Incoming IDs are
-    // discarded — only position, note data, and effect metadata are kept.
+  /**
+   * Replace the melody as a SINGLE undoable step. Unlike setMelody (an external
+   * sync that resets history), this snapshots the current melody onto the undo
+   * stack first, so one undo restores the pre-replacement state — used when a
+   * recorded take is committed over an existing melody. Emits the change so the
+   * store/autosave stay in sync; the resulting setMelody round-trip is a no-op
+   * (melodyEquals matches by value), so history is not re-cleared.
+   */
+  applyMelody(melody: MelodyItem[]): void {
+    if (this.melodyEquals(melody)) {
+      return
+    }
+    this.pushHistory()
+    this.installMelody(melody)
+    this.draw()
+    this.emitMelodyChange()
+    this.updateUndoRedoButtons()
+  }
+
+  /**
+   * Install a new melody body: regenerate IDs (incoming IDs are discarded so
+   * external sources — MIDI import, recording, copy-paste — can't introduce
+   * collisions), re-seed ball physics, and GROW the octave row count to fit the
+   * MIDI span (never shrink). Shared by setMelody (history-clearing) and
+   * applyMelody (undoable).
+   */
+  private installMelody(melody: MelodyItem[]): void {
     this.melody = melody.map((item) => ({
       ...item,
       id: this.nextNoteId++,
     }))
 
-    // Initialize ball physics with new melody
     this.initializeBallPhysics()
 
-    // Auto-fit octave row count to the melody's MIDI span so notes
-    // outside the currently displayed range become visible. We only ever
-    // GROW the row count here — shrinking would surprise the user who
-    // has manually picked a row count. Mobile / tight layouts can still
-    // bring it back down via the toolbar's `−` button. Default minimum
-    // remains 2 (matches melodyStore default).
     if (melody.length > 0) {
       let minMidi = Infinity
       let maxMidi = -Infinity
@@ -661,8 +681,6 @@ export class PianoRollEditor {
         }
       }
     }
-
-    this.draw()
   }
 
   /**

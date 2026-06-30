@@ -14,6 +14,7 @@ import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { Notifications } from '@/components/Notifications'
+import type { PianoRollEditorApi } from '@/components/PianoRollCanvas'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
@@ -600,11 +601,24 @@ const AppShell: Component<AppProps> = (props) => {
     selectedWalkthrough,
   })
 
+  // Imperative bridge to the piano-roll editor, set once it mounts. Used to
+  // commit recorded takes through the editor's undo history so a take is a
+  // single undo step.
+  const [editorApi, setEditorApi] = createSignal<PianoRollEditorApi | null>(
+    null,
+  )
+  const applyTake = (merged: MelodyItem[]): void => {
+    const api = editorApi()
+    if (api !== null) api.applyMelody(merged)
+    else melodyStore.setMelody(merged)
+  }
+
   // ── Recording controller ────────────────────────────────────
   const recording = useRecordingController({
     audioEngine,
     playbackRuntime,
     practiceEngine,
+    applyTake,
   })
 
   // ── Playback controller ─────────────────────────────────────
@@ -1938,6 +1952,7 @@ const AppShell: Component<AppProps> = (props) => {
                         previewMelody={previewMelody}
                         liveMidi={recording.liveMidi}
                         isRecording={recording.isRecording}
+                        onEditorReady={setEditorApi}
                         scale={() => melodyStore.currentScale()}
                         bpm={() => bpm()}
                         totalBeats={composeTotalBeats}
