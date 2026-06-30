@@ -12,7 +12,7 @@
 // to avoid repeating key names across many items.
 // ============================================================
 
-import { midiToNote } from '@/lib/scale-data'
+import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
 // ── Payload types ─────────────────────────────────────────────
@@ -311,7 +311,10 @@ export function generateMelodyItemsFromCompact(
           midi,
           name: noteInfo.name,
           octave: noteInfo.octave,
-          freq: 0,
+          // Recompute from MIDI — the compact share format drops freq, and a
+          // freq of 0 makes the guitar pluck synth build a Float32Array of
+          // length sampleRate/0 = Infinity and throw.
+          freq: midiToFreq(midi),
         },
         startBeat,
         duration,
