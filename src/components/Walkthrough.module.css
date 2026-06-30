@@ -276,6 +276,45 @@
   background: #5850e0;
 }
 
+/* Last step of a section: a labeled "continue into the next section" button
+   that takes the place of the skip-section icon. Outlined accent so it reads
+   as a forward step without competing with the filled finish button. */
+.walkthroughNextSection {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 150px;
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(108, 99, 255, 0.5);
+  background: transparent;
+  color: #6c63ff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.walkthroughNextSection span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.walkthroughNextSection svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.walkthroughNextSection:hover {
+  background: rgba(108, 99, 255, 0.12);
+  border-color: #6c63ff;
+}
+
 /* Responsive: narrow viewports */
 @media (max-width: 480px) {
   .walkthroughTooltip {
