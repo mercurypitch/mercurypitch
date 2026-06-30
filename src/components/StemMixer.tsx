@@ -1633,6 +1633,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               }
             })
           }}
+          cleanupAmount={pitchAnalysis.cleanupAmount()}
+          setCleanupAmount={(n) => {
+            pitchAnalysis.setCleanupAmount(n)
+            canvas.queueCanvasRedraw()
+          }}
+          songKey={pitchAnalysis.songKey()}
+          setSongKey={(k) => {
+            pitchAnalysis.setSongKey(k)
+            canvas.queueCanvasRedraw()
+          }}
+          songScale={pitchAnalysis.songScale()}
+          setSongScale={(s) => {
+            pitchAnalysis.setSongScale(s)
+            canvas.queueCanvasRedraw()
+          }}
+          songBpm={pitchAnalysis.songBpm()}
+          setSongBpm={(b) => {
+            pitchAnalysis.setSongBpm(b)
+            canvas.queueCanvasRedraw()
+          }}
+          contourReady={pitchAnalysis.contourReady()}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>

@@ -14,6 +14,7 @@
 import { quantizeBeat } from '@/lib/quantize'
 import { midiToFreq, midiToNote, snapMidiToScale } from '@/lib/scale-data'
 import type { MelodyItem, NoteName } from '@/types'
+import type { LivePipelineOptions } from './live-pitch-pipeline'
 import { createLivePitchPipeline } from './live-pitch-pipeline'
 import { freqToMidiFloat } from './log-pitch'
 import { median } from './running-median'
@@ -37,6 +38,21 @@ export interface OfflineSegmentOptions {
   scaleType: string
   /** 0 = gentle (≈ what was heard live), 1 = strongly cleaned. */
   cleanupAmount: number
+  /**
+   * Pipeline overrides. Frame-count thresholds (debounce/offset/confirm) are
+   * tuned for the live ~10 ms cadence; a coarser-hop caller (e.g. the
+   * stem-mixer's 100 ms steps) should pass smaller frame counts so notes still
+   * register and break correctly.
+   */
+  pipeline?: LivePipelineOptions
+}
+
+/** A retained frame for seconds-native callers (e.g. the stem-mixer), which
+ *  have no musical beat. */
+export interface OfflineSegmentSecondsFrame {
+  timeSec: number
+  freq: number | null
+  clarity: number
 }
 
 /** 1/8-note grid (a beat is a quarter note). */
@@ -58,7 +74,7 @@ export function segmentContourToMelody(
 
   // 1. Base segmentation via the shared live pipeline so amount=0 reproduces
   //    exactly what the user saw while recording.
-  const pipeline = createLivePitchPipeline()
+  const pipeline = createLivePitchPipeline(opts.pipeline)
   const base: CompletedNote[] = []
   let lastBeat = frames[0].beat
   for (const f of frames) {
@@ -148,4 +164,24 @@ export function segmentContourToMelody(
     })
   }
   return melody
+}
+
+/**
+ * Seconds-native entry for callers without a musical beat (the stem-mixer's
+ * decoded-audio pitch contour). Derives `beat = timeSec * bpm/60` internally.
+ * `bpm` only matters when `cleanupAmount > 0` (key-snap/quantize); at amount 0
+ * the result is faithful "as-detected" notes regardless of bpm.
+ */
+export function segmentSecondsContourToMelody(
+  frames: OfflineSegmentSecondsFrame[],
+  opts: OfflineSegmentOptions,
+): MelodyItem[] {
+  const beatsPerSec = opts.bpm / 60
+  const withBeats: RawPitchFrame[] = frames.map((f) => ({
+    beat: f.timeSec * beatsPerSec,
+    timeSec: f.timeSec,
+    freq: f.freq,
+    clarity: f.clarity,
+  }))
+  return segmentContourToMelody(withBeats, opts)
 }

@@ -1,6 +1,17 @@
 import type { Component } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
+import { NOTE_NAMES } from '@/lib/scale-data'
+
+/** Scales offered for cleanup key-snapping. */
+const CLEANUP_SCALES: { value: string; label: string }[] = [
+  { value: 'major', label: 'Major' },
+  { value: 'natural-minor', label: 'Minor' },
+  { value: 'pentatonic-major', label: 'Pentatonic major' },
+  { value: 'pentatonic-minor', label: 'Pentatonic minor' },
+  { value: 'chromatic', label: 'Chromatic (no snap)' },
+]
 
 export interface StemMixerPitchAnalysisPanelProps {
   algorithm: PitchAlgorithm
@@ -19,13 +30,32 @@ export interface StemMixerPitchAnalysisPanelProps {
   setPitchSourceMode: (m: 'realtime' | 'offline') => void
   runAnalysis: () => void
   onClose: () => void
+  // Cleanup slider (re-segments the retained contour live).
+  cleanupAmount: number
+  setCleanupAmount: (n: number) => void
+  songKey: string
+  setSongKey: (k: string) => void
+  songScale: string
+  setSongScale: (s: string) => void
+  songBpm: number
+  setSongBpm: (b: number) => void
+  contourReady: boolean
 }
 
 export const StemMixerPitchAnalysisPanel: Component<
   StemMixerPitchAnalysisPanelProps
 > = (props) => {
+  // While the cleanup slider is dragged, fade the panel so the pitch view it
+  // overlaps stays visible — the user can judge how much cleanup looks right.
+  const [previewing, setPreviewing] = createSignal(false)
   return (
-    <div class="sm-pitch-analysis-panel sm-panel-content">
+    <div
+      class="sm-pitch-analysis-panel sm-panel-content"
+      style={{
+        opacity: previewing() ? '0.2' : '1',
+        transition: 'opacity 0.12s ease',
+      }}
+    >
       <div class="sm-pitch-analysis-header">
         <h3>Vocal Pitch Analysis</h3>
         <button class="sm-btn sm-btn-secondary" onClick={() => props.onClose()}>
@@ -120,6 +150,84 @@ export const StemMixerPitchAnalysisPanel: Component<
               ? `Analyzing... ${props.progress}%`
               : 'Run Offline Denoising'}
           </button>
+
+          <div
+            class="sm-pitch-cleanup"
+            style={{
+              display: 'flex',
+              'flex-direction': 'column',
+              gap: '0.5rem',
+              'margin-top': '1rem',
+              opacity: props.contourReady ? '1' : '0.5',
+            }}
+          >
+            <span style={{ 'font-size': '0.85rem', 'font-weight': '500' }}>
+              Cleanup
+            </span>
+            <label>
+              <span>
+                Amount ({Math.round(props.cleanupAmount * 100)}%) — as detected
+                to clean
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round(props.cleanupAmount * 100)}
+                disabled={!props.contourReady}
+                onInput={(e) =>
+                  props.setCleanupAmount(Number(e.currentTarget.value) / 100)
+                }
+                onPointerDown={() => setPreviewing(true)}
+                onPointerUp={() => setPreviewing(false)}
+                onPointerCancel={() => setPreviewing(false)}
+                onBlur={() => setPreviewing(false)}
+              />
+            </label>
+            <label>
+              <span>Key</span>
+              <SafeSelect
+                value={props.songKey}
+                disabled={!props.contourReady}
+                onChange={(e) => props.setSongKey(e.currentTarget.value)}
+              >
+                <For each={NOTE_NAMES}>
+                  {(k) => <option value={k}>{k}</option>}
+                </For>
+              </SafeSelect>
+            </label>
+            <label>
+              <span>Scale</span>
+              <SafeSelect
+                value={props.songScale}
+                disabled={!props.contourReady}
+                onChange={(e) => props.setSongScale(e.currentTarget.value)}
+              >
+                <For each={CLEANUP_SCALES}>
+                  {(s) => <option value={s.value}>{s.label}</option>}
+                </For>
+              </SafeSelect>
+            </label>
+            <label>
+              <span>Tempo (BPM)</span>
+              <input
+                type="number"
+                min="40"
+                max="280"
+                value={props.songBpm}
+                disabled={!props.contourReady}
+                onInput={(e) =>
+                  props.setSongBpm(Number(e.currentTarget.value) || 120)
+                }
+              />
+            </label>
+            <small style={{ color: 'var(--text-muted)' }}>
+              {props.contourReady
+                ? 'Drag to clean the detected notes. Key/scale drive snapping; tempo drives timing.'
+                : 'Run analysis to enable cleanup.'}
+            </small>
+          </div>
 
           <div
             style={{
