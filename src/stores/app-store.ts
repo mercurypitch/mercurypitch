@@ -1260,6 +1260,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_SETTINGS,
   },
   {
+    title: 'Account & sync',
+    targetSelector: '[data-tour="settings.account"]',
+    description:
+      'On the General tab: sign in to back up your melodies, scores, and settings and sync them across devices. Everything works signed-out too — your data just stays on this device.',
+    placement: 'bottom',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
+  {
     title: 'Reset & danger zone',
     targetSelector: '[data-testid="danger-reset-btn"]',
     description:
@@ -1331,11 +1341,31 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-display"]'],
   },
   {
-    title: 'On-canvas feedback',
-    targetSelector: '#vis-color-code',
+    title: 'Show or hide panels',
+    targetSelector: '[data-tour="settings.visibility"]',
     description:
-      'Choose what you see while singing: accuracy colour-coding, the live pitch tracker, the stats panel, the jumping ball, and more — turn off whatever you find distracting.',
+      'Pick what stays on screen while you sing — the live pitch tracker (the green line), the stats panel, the jumping ball and playhead, the history bars. Hide whatever distracts you; most are off by default.',
     placement: 'left',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-display"]'],
+  },
+  {
+    title: 'Visual effects',
+    targetSelector: '[data-tour="settings.visualization"]',
+    description:
+      'Add flair to playback: colour-code each note by accuracy, print a numeric accuracy %, set the active note on fire, and give every guide character its own instrument timbre.',
+    placement: 'left',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-display"]'],
+  },
+  {
+    title: 'Keyboard shortcuts',
+    targetSelector: '[data-tour="settings.shortcuts"]',
+    description:
+      'Every global shortcut is listed here — Space to play/pause, Esc to stop, Home to jump to the start, and arrow keys for speed. They work anywhere except while you are typing in a field.',
+    placement: 'top',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
