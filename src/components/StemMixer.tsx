@@ -1675,6 +1675,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             canvas.queueCanvasRedraw()
           }}
           contourReady={pitchAnalysis.contourReady()}
+          detectedKeyLabel={(() => {
+            const k = pitchAnalysis.detectedKey()
+            return k !== null
+              ? `${k.keyName} ${k.scaleType === 'major' ? 'major' : 'minor'}`
+              : ''
+          })()}
+          keyRegionCount={pitchAnalysis.keyRegions().length}
           editMode={pitchAnalysis.editMode()}
           onToggleEditMode={() => {
             pitchAnalysis.setEditMode((v) => !v)
