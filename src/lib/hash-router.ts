@@ -48,7 +48,9 @@ const VALID_GUIDE_SECTIONS: Set<string> = new Set([
   'toolbar',
   'editor',
   'effects',
-  'settings',
+  'settings-general',
+  'settings-practice',
+  'settings-display',
 ])
 
 function isValidTab(tab: string): tab is ActiveTab {

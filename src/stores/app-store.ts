@@ -995,9 +995,19 @@ export const GUIDE_SECTIONS: WalkthroughSection[] = [
     description: 'Create slides, vibrato, and note transitions',
   },
   {
-    id: 'settings',
-    title: 'Settings Tab',
-    description: 'Pitch detection, accuracy bands, and theme',
+    id: 'settings-general',
+    title: 'Settings: General',
+    description: 'Your account, sync, and resetting your data',
+  },
+  {
+    id: 'settings-practice',
+    title: 'Settings: Practice',
+    description: 'Mic presets, pitch detection, accuracy bands, and sound',
+  },
+  {
+    id: 'settings-display',
+    title: 'Settings: Display & Controls',
+    description: 'Theme, visibility, visual effects, and shortcuts',
   },
 ]
 
@@ -1249,23 +1259,23 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_COMPOSE,
   },
 
-  // ── Settings Section ──
+  // ── Settings · General Section ──
   {
-    title: 'Settings Tab',
+    title: 'The General tab',
     targetSelector: '#settings-panel',
     description:
-      "Settings is split into three tabs — General, Practice, and Display & Controls. Let's walk through the highlights of each.",
+      'Settings has three tabs — General, Practice, and Display & Controls — and each has its own short tour. This one covers General: your account and data.',
     placement: 'bottom',
-    section: 'settings',
+    section: 'settings-general',
     requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Account & sync',
     targetSelector: '[data-tour="settings.account"]',
     description:
-      'On the General tab: sign in to back up your melodies, scores, and settings and sync them across devices. Everything works signed-out too — your data just stays on this device.',
+      'Sign in to back up your melodies, scores, and settings and sync them across devices. Everything works signed-out too — your data just stays on this device.',
     placement: 'bottom',
-    section: 'settings',
+    section: 'settings-general',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-account"]'],
   },
@@ -1273,19 +1283,20 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Reset & danger zone',
     targetSelector: '[data-testid="danger-reset-btn"]',
     description:
-      'On the General tab: clear just your karaoke data, or reset everything to factory defaults. Both ask you to confirm first, so nothing happens by accident.',
+      'Clear just your karaoke data, or reset everything to factory defaults. Both ask you to confirm first, so nothing happens by accident.',
     placement: 'top',
-    section: 'settings',
+    section: 'settings-general',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-account"]'],
   },
+  // ── Settings · Practice Section ──
   {
     title: 'Quick presets',
     targetSelector: '#preset-select',
     description:
       'Start here on the Practice tab: pick the preset that matches your room — quiet, home, or noisy — to calibrate the mic in one click.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     // The Practice sub-tab; the panel defaults to General.
     navigate: ['[data-testid="settings-tab-singing"]'],
@@ -1296,7 +1307,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Fine-tune sensitivity, threshold, and confidence so the app hears you cleanly — lower sensitivity cuts false triggers in a noisy room. Just above, you can switch the detection algorithm (MPM handles harmonics better; YIN is the classic).',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
@@ -1306,7 +1317,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Tonic anchor plays a short reference tone before each run so you can lock into the key before you sing.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
@@ -1316,7 +1327,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Decide how many cents count as Perfect, Excellent, Good, and Okay. Tighten the bands as you improve to keep the challenge up.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
@@ -1326,17 +1337,18 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Shape playback: add reverb (room, hall, or cathedral) for a fuller sound, tweak the ADSR envelope for more natural notes, and set your default practice speed.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
+  // ── Settings · Display & Controls Section ──
   {
     title: 'Theme & appearance',
     targetSelector: '#vis-theme',
     description:
       'On Display & Controls: switch between light and dark, choose a font, and toggle the canvas grid lines.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-display',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
   },
@@ -1346,7 +1358,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Pick what stays on screen while you sing — the live pitch tracker (the green line), the stats panel, the jumping ball and playhead, the history bars. Hide whatever distracts you; most are off by default.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-display',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
   },
@@ -1356,7 +1368,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Add flair to playback: colour-code each note by accuracy, print a numeric accuracy %, set the active note on fire, and give every guide character its own instrument timbre.',
     placement: 'left',
-    section: 'settings',
+    section: 'settings-display',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
   },
@@ -1366,7 +1378,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description:
       'Every global shortcut is listed here — Space to play/pause, Esc to stop, Home to jump to the start, and arrow keys for speed. They work anywhere except while you are typing in a field.',
     placement: 'top',
-    section: 'settings',
+    section: 'settings-display',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
   },
