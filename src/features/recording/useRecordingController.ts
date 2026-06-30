@@ -2,6 +2,8 @@ import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type { RawPitchFrame } from '@/lib/pitch-pipeline'
+import { createLivePitchPipeline } from '@/lib/pitch-pipeline'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNote } from '@/lib/scale-data'
@@ -9,9 +11,27 @@ import { melodyStore } from '@/stores/melody-store'
 import * as uiStore from '@/stores/ui-store'
 import type { MelodyItem, MelodyNote, NoteName, PitchResult } from '@/types'
 
+/** The note currently being captured, before its boundary is committed. */
+export interface ProvisionalNote {
+  midi: number
+  startBeat: number
+}
+
+/** A finished take awaiting the user's raw<->cleaned review before commit. */
+export interface PendingTake {
+  frames: RawPitchFrame[]
+  endBeat: number
+}
+
 export interface RecordingController {
   isRecording: Accessor<boolean>
   recordedMelody: Accessor<MelodyItem[]>
+  /** The note currently being held (for the live tracking preview). */
+  provisionalNote: Accessor<ProvisionalNote | null>
+  /** Smoothed live pitch (fractional MIDI) for the low-latency needle. */
+  liveMidi: Accessor<number | null>
+  /** A finished take awaiting review (cleanup slider), or null. */
+  pendingTake: Accessor<PendingTake | null>
   handleRecordToggle: () => Promise<void>
   /** Called from the pitch animation loop. */
   processPitchFrame: (
@@ -20,6 +40,10 @@ export interface RecordingController {
     isEditorPlaying: boolean,
   ) => void
   finalizeRecording: (endBeat: number) => void
+  /** Merge the reviewed melody into the song and clear the pending take. */
+  commitTake: (items: MelodyItem[]) => void
+  /** Drop the pending take without committing. */
+  discardTake: () => void
 }
 
 interface Deps {
@@ -33,11 +57,18 @@ export function useRecordingController(deps: Deps): RecordingController {
 
   const [isRecording, setIsRecording] = createSignal(false)
   const [recordedMelody, setRecordedMelody] = createSignal<MelodyItem[]>([])
+  const [provisionalNote, setProvisionalNote] =
+    createSignal<ProvisionalNote | null>(null)
+  const [liveMidi, setLiveMidi] = createSignal<number | null>(null)
+  const [pendingTake, setPendingTake] = createSignal<PendingTake | null>(null)
 
-  // Mutable state for the in-progress note buffer
-  let silenceFrames = 0
-  let currentNoteStartBeat = -1
-  let currentNoteMidi = -1
+  // Shared denoise + note-segmentation pipeline (octave correction, median +
+  // One-Euro smoothing, hysteresis note on/off). Replaces the old per-frame
+  // round-and-compare that fragmented held notes on every octave glitch.
+  const pipeline = createLivePitchPipeline()
+  // Raw per-frame contour retained for the take so the review slider can
+  // re-segment it from gentle (as-sung) to strong (key-snapped + quantized).
+  let rawFrames: RawPitchFrame[] = []
   let pendingNoteId = 0
 
   const makeRecordedNote = (
@@ -80,24 +111,34 @@ export function useRecordingController(deps: Deps): RecordingController {
   }
 
   const finalizeRecording = (endBeat: number): void => {
-    let finalRecordedItems = recordedMelody()
-    if (currentNoteMidi > 0 && currentNoteStartBeat >= 0) {
-      finalRecordedItems = [
-        ...finalRecordedItems,
-        makeRecordedNote(currentNoteMidi, currentNoteStartBeat, endBeat),
-      ]
-    }
-    if (finalRecordedItems.length > 0) {
-      melodyStore.setMelody(
-        mergeRecordedItems(melodyStore.items(), finalRecordedItems),
-      )
-    }
+    pipeline.reset()
+    const frames = rawFrames
+    rawFrames = []
     setRecordedMelody([])
-    currentNoteMidi = -1
-    currentNoteStartBeat = -1
+    setProvisionalNote(null)
+    setLiveMidi(null)
     setIsRecording(false)
     audioEngine.setVolume(0.8)
     uiStore.setActiveTab(TAB_COMPOSE)
+    // Hand the take to the review flow instead of committing immediately. The
+    // App re-segments it at the chosen cleanup amount and calls commitTake.
+    const hasVoiced = frames.some((f) => f.freq !== null && f.freq > 0)
+    setPendingTake(hasVoiced ? { frames, endBeat } : null)
+  }
+
+  const commitTake = (items: MelodyItem[]): void => {
+    if (items.length > 0) {
+      const renumbered = items.map((item) => ({
+        ...item,
+        id: pendingNoteId++,
+      }))
+      melodyStore.setMelody(mergeRecordedItems(melodyStore.items(), renumbered))
+    }
+    setPendingTake(null)
+  }
+
+  const discardTake = (): void => {
+    setPendingTake(null)
   }
 
   const handleRecordToggle = async (): Promise<void> => {
@@ -106,10 +147,12 @@ export function useRecordingController(deps: Deps): RecordingController {
     } else {
       const micOk = await practiceEngine.startMic()
       if (!micOk) return
+      pipeline.reset()
+      rawFrames = []
+      setPendingTake(null)
       setRecordedMelody([])
-      currentNoteMidi = -1
-      currentNoteStartBeat = -1
-      silenceFrames = 0
+      setProvisionalNote(null)
+      setLiveMidi(null)
       setIsRecording(true)
       audioEngine.setVolume(0)
     }
@@ -122,37 +165,35 @@ export function useRecordingController(deps: Deps): RecordingController {
   ): void => {
     if (!isRecording() || !isEditorPlaying) return
 
-    if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
-      const midi = Math.round(69 + 12 * Math.log2(pitch.frequency / 440))
-      if (midi !== currentNoteMidi) {
-        if (currentNoteMidi > 0 && currentNoteStartBeat >= 0) {
-          setRecordedMelody((prev) => [
-            ...prev,
-            makeRecordedNote(currentNoteMidi, currentNoteStartBeat, beat),
-          ])
-        }
-        currentNoteMidi = midi
-        currentNoteStartBeat = beat
-      }
-      silenceFrames = 0
-    } else {
-      silenceFrames++
-      if (silenceFrames >= 10 && currentNoteMidi > 0) {
-        setRecordedMelody((prev) => [
-          ...prev,
-          makeRecordedNote(currentNoteMidi, currentNoteStartBeat, beat),
-        ])
-        currentNoteMidi = -1
-        currentNoteStartBeat = -1
-      }
+    const timeSec = performance.now() / 1000
+    const freq = pitch !== null && pitch.frequency > 0 ? pitch.frequency : null
+    const clarity = pitch?.clarity ?? 0
+    rawFrames.push({ beat, timeSec, freq, clarity })
+
+    const res = pipeline.push(freq, clarity, timeSec, beat)
+
+    if (res.completed.length > 0) {
+      setRecordedMelody((prev) => [
+        ...prev,
+        ...res.completed.map((c) =>
+          makeRecordedNote(c.midi, c.startBeat, c.endBeat),
+        ),
+      ])
     }
+    setProvisionalNote(res.open)
+    setLiveMidi(res.smoothedMidi)
   }
 
   return {
     isRecording,
     recordedMelody,
+    provisionalNote,
+    liveMidi,
+    pendingTake,
     handleRecordToggle,
     processPitchFrame,
     finalizeRecording,
+    commitTake,
+    discardTake,
   }
 }

@@ -517,6 +517,10 @@ export class PianoRollEditor {
   // Waveform props for recording visualization
   private isRecording: (() => boolean) | null = null
   private getWaveform: (() => Float32Array | null) | null = null
+  // Live recording preview: provisional notes (drawn dashed) + smoothed-pitch
+  // needle. These never enter `this.melody` / undo history.
+  private previewNotes: MelodyItem[] = []
+  private liveMidi: number | null = null
 
   // Interaction
   private selectedNoteIds: Set<number> = new Set()
@@ -889,6 +893,20 @@ export class PianoRollEditor {
   ): void {
     this.isRecording = isRecording
     this.getWaveform = getWaveform
+  }
+
+  /** Provisional notes captured live during recording, or the candidate take
+   *  during review (drawn dashed). Never enters the melody / undo history.
+   *  During playback the beat loop repaints; when stopped (review) we repaint
+   *  here so the cleanup slider updates immediately. */
+  setPreviewNotes(notes: MelodyItem[]): void {
+    this.previewNotes = notes
+    if (!this.isExternalPlayback) this.draw()
+  }
+
+  /** Smoothed live pitch (fractional MIDI) for the recording needle, or null. */
+  setLiveMidi(midi: number | null): void {
+    this.liveMidi = midi
   }
 
   /** Called by App to sync the editor's playhead animation to the melody engine's timeline.
@@ -3102,7 +3120,10 @@ export class PianoRollEditor {
 
   private findNoteAt(beat: number, row: number): MelodyItem | null {
     for (const note of this.melody) {
-      const noteRow = this.midiToRow(note.note.midi)
+      // Use the displayed row (via midiToY) so off-scale notes are hittable at
+      // the position they're actually drawn. For in-scale notes this equals
+      // midiToRow, so behaviour is unchanged.
+      const noteRow = Math.floor(this.midiToY(note.note.midi) / this.rowHeight)
       if (
         noteRow === row &&
         beat >= note.startBeat &&
@@ -3811,6 +3832,9 @@ export class PianoRollEditor {
     // Note blocks
     this.drawNoteBlocks(ctx, false)
 
+    // Live recording / take-review preview (provisional notes).
+    this.drawPreviewNotes(ctx, 0)
+
     // Box selection rectangle
     if (this.isBoxSelecting) {
       const bx = Math.min(this.boxStartX, this.boxEndX)
@@ -3886,6 +3910,9 @@ export class PianoRollEditor {
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true)
 
+    // Live recording preview — provisional notes captured this take.
+    this.drawPreviewNotes(ctx, countInOffset)
+
     const playheadX = countInOffset + currentBeat * this.beatWidth
 
     // Playhead line — always drawn during playback (including count-in)
@@ -3900,6 +3927,13 @@ export class PianoRollEditor {
     ctx.stroke()
     ctx.restore()
 
+    // Live pitch needle — where the singer is right now.
+    this.drawLiveNeedle(ctx, playheadX)
+
+    // During recording, scroll to keep the advancing playhead in view so long
+    // free-form takes don't run off the right edge.
+    this.followPlayheadWhileRecording(playheadX)
+
     // Draw ruler with playhead triangle (always show during playback)
     this.drawRulerWithPlayhead()
 
@@ -3907,6 +3941,66 @@ export class PianoRollEditor {
     // (The playhead is always visible now, so this is just for completeness)
     if (currentBeat < 0) {
       this.drawRuler()
+    }
+  }
+
+  /** Draw the provisional notes captured live during recording — dashed,
+   *  translucent blocks so they read as "in flight" vs committed notes. */
+  private drawPreviewNotes(
+    ctx: CanvasRenderingContext2D,
+    countInOffset: number,
+  ): void {
+    if (this.previewNotes.length === 0) return
+    ctx.save()
+    ctx.setLineDash([4, 3])
+    ctx.lineWidth = 1.5
+    for (const note of this.previewNotes) {
+      const rowIdx = this.midiToRow(note.note.midi)
+      const h = this.rowHeight - 2
+      const x = countInOffset + note.startBeat * this.beatWidth
+      // Off-scale (accidental) notes sit at their true interpolated pitch, not
+      // pinned to the top row — matches drawNoteBlocks.
+      const y =
+        (rowIdx < 0
+          ? this.midiToY(note.note.midi) - this.rowHeight / 2
+          : rowIdx * this.rowHeight) + 1
+      const w = note.duration * this.beatWidth
+      if (w < 1) continue
+      ctx.fillStyle = 'rgba(219,112,219,0.20)'
+      ctx.strokeStyle = 'rgba(219,112,219,0.85)'
+      ctx.fillRect(x, y, w, h)
+      ctx.strokeRect(x, y, w, h)
+    }
+    ctx.restore()
+  }
+
+  /** Draw the live-pitch needle: a dot at the playhead at the current
+   *  (smoothed, fractional) pitch height. */
+  private drawLiveNeedle(
+    ctx: CanvasRenderingContext2D,
+    playheadX: number,
+  ): void {
+    if (this.liveMidi === null) return
+    const y = this.midiToY(this.liveMidi)
+    ctx.save()
+    ctx.fillStyle = '#3fb950'
+    ctx.shadowColor = 'rgba(63,185,80,0.7)'
+    ctx.shadowBlur = 6
+    ctx.beginPath()
+    ctx.arc(playheadX, y, 5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+
+  /** While recording, keep the advancing playhead within view by scrolling
+   *  the grid forward (never backward) so long takes stay visible. */
+  private followPlayheadWhileRecording(playheadX: number): void {
+    if (this.isRecording?.() !== true) return
+    if (!this.gridContainer) return
+    const containerWidth = this.gridContainer.clientWidth
+    const target = playheadX - containerWidth * 0.5
+    if (target > this.gridContainer.scrollLeft) {
+      this.gridContainer.scrollLeft = target
     }
   }
 
@@ -3968,14 +4062,18 @@ export class PianoRollEditor {
     for (const note of this.melody) {
       const rowIdx = this.midiToRow(note.note.midi)
       const offScale = rowIdx < 0
-      // Clamp off-scale notes to the nearest visible edge so they remain
-      // selectable, draggable, and erasable rather than silently invisible.
-      const visibleRow = offScale ? 0 : rowIdx
 
       const x = countInOffset + note.startBeat * this.beatWidth
-      const y = visibleRow * this.rowHeight
-      const w = note.duration * this.beatWidth
       const h = this.rowHeight - 2
+      // Off-scale notes (accidentals not present as a scale-degree row) are
+      // positioned at their true interpolated pitch via midiToY — interpolated
+      // between adjacent degrees when in range, clamped only when genuinely
+      // above/below the grid. (Previously they were pinned to row 0, which made
+      // e.g. a slightly-sharp A#3 look like a high C6.)
+      const y = offScale
+        ? this.midiToY(note.note.midi) - this.rowHeight / 2
+        : rowIdx * this.rowHeight
+      const w = note.duration * this.beatWidth
       const ry = y + 1
 
       if (w < 2) continue
