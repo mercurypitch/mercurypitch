@@ -10,8 +10,11 @@ import type { OfflineSegmentSecondsFrame } from '@/lib/pitch-pipeline'
 import { segmentSecondsContourToMelody } from '@/lib/pitch-pipeline'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { EditableNote, PitchEditLayer } from './pitch-edit-model'
-import { applyEditLayer, deleteNote, emptyEditLayer, isEditLayerEmpty, } from './pitch-edit-model'
+import { applyEditLayer, deleteNote, editNote, emptyEditLayer, isEditLayerEmpty, } from './pitch-edit-model'
 import type { PitchNote } from './types'
+
+/** Fields a drag edit may change. */
+type EditPatch = Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>
 
 // The pipeline's frame-count thresholds are tuned for the live ~10ms cadence;
 // the stem-mixer detects at a coarse 100ms hop (WINDOW_STEP_SEC), so shrink the
@@ -72,6 +75,13 @@ export interface StemMixerPitchAnalysisController {
   undoEdit: () => void
   resetEdits: () => void
   hasEdits: Accessor<boolean>
+  /** Drag editing: snapshot at start, re-derive on preview, finish on end. */
+  beginEdit: () => void
+  previewEdit: (
+    note: EditableNote,
+    patch: Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>,
+  ) => void
+  endEdit: () => void
 
   algorithm: Accessor<PitchAlgorithm>
   setAlgorithm: Setter<PitchAlgorithm>
@@ -256,6 +266,34 @@ export const useStemMixerPitchAnalysisController = (
     setSelectedNoteId(null)
   }
 
+  // Drag editing: snapshot the layer once at drag start (single undo step),
+  // then re-derive the layer from that snapshot on each move so repeated
+  // previews don't accumulate.
+  let dragStartLayer: PitchEditLayer | null = null
+  let dragUndoPushed = false
+  const beginEdit = (): void => {
+    dragStartLayer = editLayer()
+    dragUndoPushed = false
+  }
+  const previewEdit = (note: EditableNote, patch: EditPatch): void => {
+    if (dragStartLayer === null) return
+    // Record undo only once the drag actually changes something (a plain click
+    // that selects without moving leaves no undo entry).
+    if (!dragUndoPushed) {
+      pushEditUndo()
+      dragUndoPushed = true
+    }
+    const next = editNote(dragStartLayer, note, patch)
+    setEditLayer(next)
+    // editNote appends the edited note; keep selection on it (its id changes
+    // from base-* to m-* the first time a base note is touched).
+    const added = next.manual[next.manual.length - 1]
+    if (added !== undefined) setSelectedNoteId(added.id)
+  }
+  const endEdit = (): void => {
+    dragStartLayer = null
+  }
+
   const runAnalysis = async () => {
     const buffer = deps.vocalBuffer()
     if (!buffer) {
@@ -418,6 +456,9 @@ export const useStemMixerPitchAnalysisController = (
     undoEdit,
     resetEdits,
     hasEdits,
+    beginEdit,
+    previewEdit,
+    endEdit,
     algorithm,
     setAlgorithm,
     bufferSize,

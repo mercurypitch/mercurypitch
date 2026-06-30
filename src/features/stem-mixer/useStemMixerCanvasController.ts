@@ -54,6 +54,12 @@ export interface StemMixerCanvasDeps {
   editableNotes?: Accessor<EditableNote[]>
   selectedNoteId?: Accessor<string | null>
   onSelectNote?: (id: string | null) => void
+  onBeginEdit?: () => void
+  onPreviewEdit?: (
+    note: EditableNote,
+    patch: Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>,
+  ) => void
+  onEndEdit?: () => void
 }
 
 export interface StemMixerCanvasController {
@@ -868,6 +874,17 @@ export const useStemMixerCanvasController = (
   let mousePanStartWin = 0
   let activePanCanvas: HTMLCanvasElement | null = null
 
+  // Pitch edit drag (move / resize / retune). `startTime` is the time under the
+  // pointer at drag start, used to compute the time delta for body moves.
+  const EDIT_EDGE_PX = 6
+  const EDIT_MIN_DUR = 0.05
+  let editDrag: {
+    note: EditableNote
+    zone: 'body' | 'start' | 'end'
+    startTime: number
+    startRow: number
+  } | null = null
+
   /** Convert clientX on the overview canvas to a time value. */
   const clientXToTime = (
     clientX: number,
@@ -926,12 +943,33 @@ export const useStemMixerCanvasController = (
     const canvas = e.currentTarget as HTMLCanvasElement
     if (!deps.duration()) return
 
-    // Pitch edit mode: click a note to select it; empty click deselects (then
-    // falls through to pan).
+    // Pitch edit mode: grab a note to select + drag it (move / resize /
+    // retune); empty click deselects (then falls through to pan).
     if (canvas === canvasRefs.pitch && deps.editMode?.() === true) {
       const note = getEditableNoteAtPoint(e.clientX, e.clientY, canvas)
       if (note !== null) {
+        const rect = canvas.getBoundingClientRect()
+        const winStart = deps.windowStart()
+        const winDur = deps.windowDuration()
+        const x1 =
+          rect.left + ((note.startBeat - winStart) / winDur) * rect.width
+        const x2 = rect.left + ((note.endBeat - winStart) / winDur) * rect.width
+        const zone: 'body' | 'start' | 'end' =
+          Math.abs(e.clientX - x1) <= EDIT_EDGE_PX
+            ? 'start'
+            : Math.abs(e.clientX - x2) <= EDIT_EDGE_PX
+              ? 'end'
+              : 'body'
+        const startRow = Math.floor((e.clientY - rect.top) / (rect.height / 13))
+        editDrag = {
+          note,
+          zone,
+          startTime: clientXToTime(e.clientX, canvas),
+          startRow,
+        }
         deps.onSelectNote?.(note.id)
+        deps.onBeginEdit?.()
+        canvas.setPointerCapture(e.pointerId)
         queueCanvasRedraw()
         e.preventDefault()
         e.stopPropagation()
@@ -964,6 +1002,38 @@ export const useStemMixerCanvasController = (
 
   const handleCanvasPointerMove = (e: PointerEvent) => {
     const canvas = e.currentTarget as HTMLCanvasElement
+
+    // Pitch edit drag in progress: live-preview move / resize / retune.
+    if (editDrag !== null) {
+      e.preventDefault()
+      const { note, zone, startTime, startRow } = editDrag
+      const time = clientXToTime(e.clientX, canvas)
+      if (zone === 'start') {
+        deps.onPreviewEdit?.(note, {
+          startBeat: Math.min(time, note.endBeat - EDIT_MIN_DUR),
+        })
+      } else if (zone === 'end') {
+        deps.onPreviewEdit?.(note, {
+          endBeat: Math.max(time, note.startBeat + EDIT_MIN_DUR),
+        })
+      } else {
+        // Body: move in time and retune by the number of lanes the pointer has
+        // moved (preserves the grab offset; same octave — the pitch-class lane
+        // can't represent octave changes).
+        const dt = time - startTime
+        const rect = canvas.getBoundingClientRect()
+        const row = Math.floor((e.clientY - rect.top) / (rect.height / 13))
+        const pc0 = ((note.midi % 12) + 12) % 12
+        const pc = Math.max(0, Math.min(11, pc0 - (row - startRow)))
+        const octave = Math.floor(note.midi / 12)
+        deps.onPreviewEdit?.(note, {
+          startBeat: note.startBeat + dt,
+          endBeat: note.endBeat + dt,
+          midi: octave * 12 + pc,
+        })
+      }
+      return
+    }
 
     if (loopDragTarget && canvas === canvasRefs.overview) {
       // Active drag — update loop boundary
@@ -1025,6 +1095,19 @@ export const useStemMixerCanvasController = (
 
   const handleCanvasPointerUp = (e: PointerEvent) => {
     const canvas = e.currentTarget as HTMLCanvasElement
+
+    // Finish a pitch edit drag.
+    if (editDrag !== null) {
+      editDrag = null
+      deps.onEndEdit?.()
+      try {
+        canvas.releasePointerCapture(e.pointerId)
+      } catch {
+        // pointer may already be released
+      }
+      e.preventDefault()
+      return
+    }
 
     if (loopDragTarget && canvas === canvasRefs.overview) {
       canvas.releasePointerCapture(e.pointerId)

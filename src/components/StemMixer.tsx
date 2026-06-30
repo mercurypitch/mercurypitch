@@ -740,6 +740,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     editableNotes: pitchAnalysis.editableNotes,
     selectedNoteId: pitchAnalysis.selectedNoteId,
     onSelectNote: pitchAnalysis.setSelectedNoteId,
+    onBeginEdit: pitchAnalysis.beginEdit,
+    onPreviewEdit: pitchAnalysis.previewEdit,
+    onEndEdit: pitchAnalysis.endEdit,
   })
 
   // Backfill mutable holders so audio controller can reach canvas + lyrics
