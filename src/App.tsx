@@ -952,9 +952,14 @@ const AppShell: Component<AppProps> = (props) => {
       (_newTab, prevTab) => {
         if (prevTab === undefined) return // Initial mount
 
-        // 1. Stop singing/compose playback
+        // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
+        // practice session but leaves the mic running, so without this the mic
+        // lingers after leaving and micActive stays stuck on — making the mic
+        // button look active (and react to playback) on the next visit. Mirrors
+        // the Piano/Guitar cleanup below.
         if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
           void resetPlaybackState()
+          if (micActive()) practiceEngine.stopMic()
         }
 
         // 2. Stop piano mic if active
