@@ -471,6 +471,16 @@ export const [showPitchDisplay, setShowPitchDisplay] =
   createPersistedSignal<boolean>(SHOW_PITCH_DISPLAY_KEY, true)
 
 /**
+ * On phones the singing HUD cards (accuracy / sessions / pitch monitor) are
+ * large enough to crowd the canvas, so they're hidden by default — only the
+ * compact status chip and the live on-canvas pitch line stay. This toggle lets
+ * the user reveal them; it has no effect on desktop, where the cards follow
+ * showStats / showPitchDisplay as before. Persisted per device.
+ */
+export const [singingHudMobileOpen, setSingingHudMobileOpen] =
+  createPersistedSignal<boolean>('pitchperfect_singing_hud_mobile', false)
+
+/**
  * Show the legacy live-history panel (frequency / waveform bars) below the
  * practice canvas. Off by default — the in-canvas pitch monitor covers this
  * now, and hiding it reclaims vertical space.

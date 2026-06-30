@@ -12,7 +12,8 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { sessionResults, showPitchDisplay, showStats } from '@/stores'
+import { isNarrow } from '@/lib/use-viewport'
+import { sessionResults, setSingingHudMobileOpen, showPitchDisplay, showStats, singingHudMobileOpen, } from '@/stores'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
 import styles from './SingingCanvasHud.module.css'
@@ -36,9 +37,41 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
   // during playback so the melody has room. The live HUDs stay but dim (see
   // the `dimmed` class) so the melody beneath reads through.
   const showSessions = () => sessionResults().length > 0 && !props.isPlaying()
+  // On narrow screens the cards crowd the canvas, so they're hidden by default
+  // and the user opts in via the toggle. Wider screens are unchanged.
+  const cardsShown = () => !isNarrow() || singingHudMobileOpen()
   return (
     <>
-      <Show when={showStats() || showSessions()}>
+      <Show when={isNarrow()}>
+        <button
+          type="button"
+          class={styles.mobileToggle}
+          classList={{ [styles.mobileToggleOpen]: singingHudMobileOpen() }}
+          data-testid="singing-hud-mobile-toggle"
+          title={
+            singingHudMobileOpen() ? 'Hide stats & pitch' : 'Show stats & pitch'
+          }
+          aria-label={
+            singingHudMobileOpen() ? 'Hide stats & pitch' : 'Show stats & pitch'
+          }
+          aria-pressed={singingHudMobileOpen()}
+          onClick={() => setSingingHudMobileOpen(!singingHudMobileOpen())}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <rect x="3" y="12" width="4" height="9" rx="1" />
+            <rect x="10" y="7" width="4" height="14" rx="1" />
+            <rect x="17" y="3" width="4" height="18" rx="1" />
+          </svg>
+        </button>
+      </Show>
+
+      <Show when={(showStats() || showSessions()) && cardsShown()}>
         <div
           class={styles.accuracyHud}
           classList={{ [styles.dimmed]: props.isPlaying() }}
@@ -104,7 +137,7 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
         </div>
       </Show>
 
-      <Show when={showPitchDisplay()}>
+      <Show when={showPitchDisplay() && cardsShown()}>
         <div
           class={styles.pitchHud}
           classList={{ [styles.dimmed]: props.isPlaying() }}
