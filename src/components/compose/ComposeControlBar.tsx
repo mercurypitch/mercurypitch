@@ -147,6 +147,7 @@ export const ComposeControlBar: Component<ComposeControlBarProps> = (props) => {
       <button
         type="button"
         class={styles.btn}
+        data-tour="compose.share"
         title="Copy shareable link"
         aria-label="Copy shareable link"
         onClick={() => props.onShareMelody()}

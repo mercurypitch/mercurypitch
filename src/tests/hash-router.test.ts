@@ -94,6 +94,13 @@ describe('parseHash', () => {
     })
   })
 
+  it('parses guide section route for effects', () => {
+    expect(parseHash('#/guide/effects')).toEqual({
+      type: 'guide-start',
+      sectionId: 'effects',
+    })
+  })
+
   it('parses guide section route for settings', () => {
     expect(parseHash('#/guide/settings')).toEqual({
       type: 'guide-start',

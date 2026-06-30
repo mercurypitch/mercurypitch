@@ -1165,31 +1165,85 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_COMPOSE,
     inSidebar: true,
   },
+  {
+    title: 'Session Editor',
+    targetSelector: '[data-testid="view-session-editor"]',
+    description:
+      'Switch to the Session Editor to line up a whole practice session — several melodies in sequence — instead of a single tune.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Share your melody',
+    targetSelector: '[data-tour="compose.share"]',
+    description:
+      'Copy a shareable link to your melody — anyone who opens it can listen and load it straight into their own editor.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
 
   // ── Effects & Slides Section ──
   {
-    title: 'Effect Tools',
+    title: 'Expressive effects',
     targetSelector: '.roll-group[data-name="Effects"]',
     description:
-      'Use effect buttons to add slides, ease, and vibrato to your notes. Hover over any button for a quick hint.',
-    placement: 'left',
+      'Bring a melody to life with effects. The recipe is always the same: pick a note (or two) with the Select tool, then click an effect — or press its keyboard shortcut.',
+    placement: 'bottom',
     section: 'effects',
     requiredTab: TAB_COMPOSE,
   },
   {
-    title: 'How Effects Work',
-    targetSelector: '#roll-note-info',
-    description:
-      'The status bar hints guide you. Select 2 notes for slides/ease, or 1+ notes for vibrato. Press S, E, or V keys as shortcuts.',
-    placement: 'top',
-    section: 'effects',
-    requiredTab: TAB_COMPOSE,
-  },
-  {
-    title: 'Multi-Select for Effects',
+    title: 'Select notes first',
     targetSelector: '.roll-tool-btn[data-tool="select"]',
     description:
-      'Click the Select tool, then click a note and Shift+click a second note to select both. Slides and ease effects work with exactly 2 selected notes.',
+      'Switch to the Select tool, click a note, and Shift+click a second one for two-note effects. The status bar always tells you how many notes the current effect needs.',
+    placement: 'bottom',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Slides',
+    targetSelector: '#roll-action-slide-up',
+    description:
+      'With two notes selected, Slide bends the pitch from one into the next — perfect for glides and scoops. Slide up or down with the S and Shift+S shortcuts.',
+    placement: 'bottom',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Ease in & out',
+    targetSelector: '#roll-action-ease-in',
+    description:
+      'Ease is a gentler glide that stays level at one end instead of sliding the whole way — a softer alternative to a slide. Shortcuts: E and Shift+E.',
+    placement: 'bottom',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Vibrato, tremolo & trill',
+    targetSelector: '#roll-action-vibrato',
+    description:
+      'These animate a single note: vibrato wavers the pitch, tremolo pulses the volume, and trill flutters between two pitches. After you apply one, a small popover lets you set its depth, rate or interval. Shortcuts: V, T and Shift+T.',
+    placement: 'bottom',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Staccato',
+    targetSelector: '#roll-action-staccato',
+    description:
+      'Staccato clips a note short for a crisp, detached feel — the popover controls just how short. Shortcut: Shift+K.',
+    placement: 'bottom',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Chords',
+    targetSelector: '#roll-action-chord',
+    description:
+      'Turn a single note into a full chord — power, major, minor, sus and more — then choose the type from the popover. Shortcut: C.',
     placement: 'bottom',
     section: 'effects',
     requiredTab: TAB_COMPOSE,
@@ -1200,63 +1254,91 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Settings Tab',
     targetSelector: '#settings-panel',
     description:
-      'Fine-tune pitch detection, accuracy scoring, and the app appearance. Click to switch to Settings.',
+      "Settings is split into three tabs — General, Practice, and Display & Controls. Let's walk through the highlights of each.",
     placement: 'bottom',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
   },
   {
-    title: 'Pitch Detection',
+    title: 'Reset & danger zone',
+    targetSelector: '[data-testid="danger-reset-btn"]',
+    description:
+      'On the General tab: clear just your karaoke data, or reset everything to factory defaults. Both ask you to confirm first, so nothing happens by accident.',
+    placement: 'top',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
+  {
+    title: 'Quick presets',
+    targetSelector: '#preset-select',
+    description:
+      'Start here on the Practice tab: pick the preset that matches your room — quiet, home, or noisy — to calibrate the mic in one click.',
+    placement: 'left',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
+    // The Practice sub-tab; the panel defaults to General.
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Pitch detection',
     targetSelector: '#set-sensitivity',
     description:
-      'Adjust sensitivity, threshold, and confidence to match your voice and environment. Lower sensitivity reduces false triggers.',
+      'Fine-tune sensitivity, threshold, and confidence so the app hears you cleanly — lower sensitivity cuts false triggers in a noisy room. Just above, you can switch the detection algorithm (MPM handles harmonics better; YIN is the classic).',
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
-    // Pitch-detection controls live on the Settings "Practice" sub-tab; open it
-    // first so the target exists (the panel defaults to the General sub-tab).
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
-    title: 'Practice Aids',
+    title: 'Practice aids',
     targetSelector: '[data-tour="settings.practice-aids"]',
     description:
-      'Tonic anchor gives a reference tone before singing, helping you stay in key.',
+      'Tonic anchor plays a short reference tone before each run so you can lock into the key before you sing.',
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
-    title: 'Accuracy Bands',
+    title: 'Accuracy bands',
     targetSelector: '#band-perfect',
     description:
-      'Customize the cent-threshold for each accuracy band. Tighter bands are more challenging.',
+      'Decide how many cents count as Perfect, Excellent, Good, and Okay. Tighten the bands as you improve to keep the challenge up.',
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
-    title: 'Theme & Appearance',
-    targetSelector: '#vis-theme',
+    title: 'Sound & feel',
+    targetSelector: '#reverb-type',
     description:
-      'Switch between light and dark themes, toggle grid lines, and adjust the visual style.',
+      'Shape playback: add reverb (room, hall, or cathedral) for a fuller sound, tweak the ADSR envelope for more natural notes, and set your default practice speed.',
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
-    // Theme + appearance toggles live on the "Display & Controls" sub-tab.
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Theme & appearance',
+    targetSelector: '#vis-theme',
+    description:
+      'On Display & Controls: switch between light and dark, choose a font, and toggle the canvas grid lines.',
+    placement: 'left',
+    section: 'settings',
+    requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-display"]'],
   },
   {
-    title: 'Reverb & ADSR',
-    targetSelector: '#reverb-type',
+    title: 'On-canvas feedback',
+    targetSelector: '#vis-color-code',
     description:
-      'Add reverb for a richer sound, or tweak ADSR envelope for more natural-sounding notes.',
+      'Choose what you see while singing: accuracy colour-coding, the live pitch tracker, the stats panel, the jumping ball, and more — turn off whatever you find distracting.',
     placement: 'left',
     section: 'settings',
     requiredTab: TAB_SETTINGS,
-    navigate: ['[data-testid="settings-tab-singing"]'],
+    navigate: ['[data-testid="settings-tab-display"]'],
   },
 ]
 
@@ -1442,6 +1524,14 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
       'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring.',
     targetSelector: '[data-tour="piano.canvas"]',
     placement: 'top',
+    requiredTab: TAB_PIANO,
+  },
+  {
+    title: 'Sing it or play it',
+    description:
+      'Turn on your mic to sing the falling notes, or connect a MIDI keyboard. The control bar also toggles note-name labels and MIDI input, so you can learn the keys as you go.',
+    targetSelector: '#btn-mic',
+    placement: 'bottom',
     requiredTab: TAB_PIANO,
   },
 ]
