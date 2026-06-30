@@ -1,6 +1,8 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal } from 'solid-js'
 import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
+import type { KeyEstimate, KeyNote, KeyRegion } from '@/lib/key-detection'
+import { detectKeyFromNotes, detectRegionalKeys } from '@/lib/key-detection'
 import type { MergedNote } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes, MIDI_NOTE_RANGE, WINDOW_STEP_SEC, } from '@/lib/midi-generator'
 import { melodyItemsToMergedNotes } from '@/lib/note-display-utils'
@@ -63,6 +65,12 @@ export interface StemMixerPitchAnalysisController {
   setSongBpm: Setter<number>
   /** True once a contour has been captured this session (enables the slider). */
   contourReady: Accessor<boolean>
+
+  // ── Detected key ───────────────────────────────────────────────
+  /** Global detected key for the vocal, or null. */
+  detectedKey: Accessor<KeyEstimate | null>
+  /** Per-region detected keys (the song may modulate). */
+  keyRegions: Accessor<KeyRegion[]>
 
   // ── Edit mode (manual note editing over the cleanup output) ────
   editMode: Accessor<boolean>
@@ -159,6 +167,28 @@ export const useStemMixerPitchAnalysisController = (
   >('edited')
   // Snapshot stack for edit undo (separate from the editor's piano-roll undo).
   let editUndo: PitchEditLayer[] = []
+
+  // Detected key (global) + per-region keys for the vocal.
+  const [detectedKey, setDetectedKey] = createSignal<KeyEstimate | null>(null)
+  const [keyRegions, setKeyRegions] = createSignal<KeyRegion[]>([])
+
+  /** Krumhansl-Schmuckler key detection over the cleaned notes. Sets the global
+   *  + per-region keys, and adopts the detected global key for the cleanup
+   *  snapping (the user can still override via the picker). */
+  const runKeyDetection = (notes: KeyNote[]): void => {
+    if (notes.length === 0) {
+      setDetectedKey(null)
+      setKeyRegions([])
+      return
+    }
+    const global = detectKeyFromNotes(notes)
+    setDetectedKey(global)
+    setKeyRegions(detectRegionalKeys(notes))
+    if (global.confidence > 0) {
+      setSongKey(global.keyName)
+      setSongScale(global.scaleType)
+    }
+  }
 
   // Effective notes = the cleanup output (base) with manual edits applied.
   const editableNotes = createMemo(() =>
@@ -266,6 +296,7 @@ export const useStemMixerPitchAnalysisController = (
         editableToMerged(applyEditLayer(base, editLayer())),
       ),
       editLayer: editLayer(),
+      keyRegions: keyRegions(),
     })
   }
   createEffect(() => {
@@ -448,8 +479,11 @@ export const useStemMixerPitchAnalysisController = (
       rawContour = contour
       setContourReady(true)
       const segmentedMerged = resegment()
+      // Detect the key from the cleaned notes (MergedNote is KeyNote-shaped) and
+      // adopt it for the cleanup snapping.
+      runKeyDetection(segmentedMerged)
       console.log(
-        `[PitchAnalysis] Raw merged: ${merged.length} notes, cleaned: ${segmentedMerged.length} notes`,
+        `[PitchAnalysis] Raw merged: ${merged.length} notes, cleaned: ${segmentedMerged.length} notes, key: ${detectedKey()?.keyName ?? '?'} ${detectedKey()?.scaleType ?? ''}`,
       )
 
       setPitchSourceMode('offline')
@@ -463,6 +497,7 @@ export const useStemMixerPitchAnalysisController = (
           segmentedNotes: segmentedMerged,
           pitchHistory: buildHistoryFromNotes(segmentedMerged),
           editLayer: editLayer(),
+          keyRegions: keyRegions(),
         })
       }
     } catch (e) {
@@ -493,6 +528,14 @@ export const useStemMixerPitchAnalysisController = (
     setSelectedNoteId(null)
     editUndo = []
     setBaseNotes(baseToEditable(data.segmentedNotes))
+    // Restore detected keys for display (don't re-adopt the key — the loaded
+    // notes are already the analysis-time result and the slider is disabled).
+    setKeyRegions(data.keyRegions ?? [])
+    setDetectedKey(
+      data.segmentedNotes.length > 0
+        ? detectKeyFromNotes(data.segmentedNotes)
+        : null,
+    )
     setPitchSourceMode('offline')
 
     return true
@@ -515,6 +558,8 @@ export const useStemMixerPitchAnalysisController = (
     songBpm,
     setSongBpm,
     contourReady,
+    detectedKey,
+    keyRegions,
     editMode,
     setEditMode,
     editableNotes,

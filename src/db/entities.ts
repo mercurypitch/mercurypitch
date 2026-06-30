@@ -333,6 +333,8 @@ export interface OfflinePitchAnalysisRecord extends DbEntity {
    *  backward-compat with rows written before edit mode. Non-indexed payload,
    *  so no Dexie schema bump is required. */
   editLayerJson?: string
+  /** JSON-serialized KeyRegion[] — detected per-region keys for the vocal. */
+  keyRegionsJson?: string
 }
 
 export interface WhisperTranscriptionRecord extends DbEntity {

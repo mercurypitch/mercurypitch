@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { NOTE_NAMES } from '@/lib/scale-data'
@@ -40,6 +40,10 @@ export interface StemMixerPitchAnalysisPanelProps {
   songBpm: number
   setSongBpm: (b: number) => void
   contourReady: boolean
+  /** Detected key label, e.g. 'C major', or '' if none. */
+  detectedKeyLabel: string
+  /** Number of detected per-region keys. */
+  keyRegionCount: number
   // Edit mode
   editMode: boolean
   onToggleEditMode: () => void
@@ -177,6 +181,14 @@ export const StemMixerPitchAnalysisPanel: Component<
             <span style={{ 'font-size': '0.85rem', 'font-weight': '500' }}>
               Cleanup
             </span>
+            <Show when={props.detectedKeyLabel !== ''}>
+              <small style={{ color: 'var(--text-muted)' }}>
+                Detected key: <strong>{props.detectedKeyLabel}</strong>
+                {props.keyRegionCount > 1
+                  ? ` · ${props.keyRegionCount} regions`
+                  : ''}
+              </small>
+            </Show>
             <label>
               <span>
                 Amount ({Math.round(props.cleanupAmount * 100)}%) — as detected

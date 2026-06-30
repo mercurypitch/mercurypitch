@@ -10,6 +10,7 @@ import type { OfflinePitchAnalysisRecord } from '@/db/entities'
 import type { PitchEditLayer } from '@/features/stem-mixer/pitch-edit-model'
 import type { PitchNote } from '@/features/stem-mixer/types'
 import { IS_DEV } from '@/lib/defaults'
+import type { KeyRegion } from '@/lib/key-detection'
 import type { MergedNote } from '@/lib/midi-generator'
 
 export interface SessionPitchData {
@@ -19,6 +20,8 @@ export interface SessionPitchData {
   pitchHistory: PitchNote[]
   /** The user's manual edit layer (applied on top of segmentedNotes). */
   editLayer?: PitchEditLayer
+  /** Detected per-region keys for the vocal. */
+  keyRegions?: KeyRegion[]
 }
 
 /** Save pitch analysis results for a session. */
@@ -49,6 +52,10 @@ export async function savePitchAnalysisToDb(
       editLayerJson:
         data.editLayer !== undefined
           ? JSON.stringify(data.editLayer)
+          : undefined,
+      keyRegionsJson:
+        data.keyRegions !== undefined
+          ? JSON.stringify(data.keyRegions)
           : undefined,
     })
 
@@ -86,13 +93,17 @@ export async function loadPitchAnalysisFromDb(
       entry.editLayerJson !== undefined && entry.editLayerJson !== ''
         ? (JSON.parse(entry.editLayerJson) as PitchEditLayer)
         : undefined
+    const keyRegions =
+      entry.keyRegionsJson !== undefined && entry.keyRegionsJson !== ''
+        ? (JSON.parse(entry.keyRegionsJson) as KeyRegion[])
+        : undefined
 
     if (IS_DEV)
       console.log(
         `[PitchDB] Loaded pitch analysis for session ${sessionId}: ${mergedNotes.length} merged, ${segmentedNotes.length} segmented`,
       )
 
-    return { mergedNotes, segmentedNotes, pitchHistory, editLayer }
+    return { mergedNotes, segmentedNotes, pitchHistory, editLayer, keyRegions }
   } catch (err) {
     if (IS_DEV) console.warn('[PitchDB] loadPitchAnalysisFromDb failed:', err)
     return null
