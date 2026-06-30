@@ -414,7 +414,11 @@ export const useStemMixerCanvasController = (
     ctx.font = '9px monospace'
     for (let i = 0; i < 12; i++) {
       const note = notes[11 - i]
-      ctx.fillText(note, 3, i * rowH + rowH * 0.65 + rowH)
+      // Align the lane label with the row its pills occupy. Pills/dots/lines
+      // are placed at `(11 - pitchClass) * rowH` (no extra row), so the label
+      // must not add one either — otherwise a natural A appears one lane up in
+      // the row labelled "A#".
+      ctx.fillText(note, 3, i * rowH + rowH * 0.65)
     }
 
     const winStart = deps.windowStart()
