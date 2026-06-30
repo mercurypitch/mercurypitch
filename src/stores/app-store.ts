@@ -943,6 +943,14 @@ export interface WalkthroughStep {
    */
   navigate?: string[]
   /**
+   * Selector of a collapse toggle (with aria-expanded) to expand before the
+   * step shows — e.g. the control-bar "more" toggle that hides BPM/volume.
+   * Idempotent: only clicked when currently collapsed, and collapsed back when
+   * the tour ends. Use this (not navigate) for stateful toggles so re-visiting
+   * a step doesn't toggle the group shut.
+   */
+  reveal?: string
+  /**
    * Ensure the (mobile, off-canvas) sidebar drawer is open for this step, so
    * sidebar-anchored targets are on-screen. No-op on desktop.
    */
@@ -1072,6 +1080,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    reveal: '[data-testid="singing-more-toggle"]',
   },
   {
     title: 'Volume & Speed',
@@ -1081,6 +1090,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    reveal: '[data-testid="singing-more-toggle"]',
   },
   {
     title: 'Play Modes',

@@ -286,6 +286,9 @@ export const Walkthrough: Component = () => {
   // A generation token cancels a stale preparation when the step changes mid-run.
   let prepGen = 0
   let tourOpenedSidebar = false
+  // Collapse toggles the tour expanded (via step.reveal) so we can restore
+  // them when it ends — mirrors tourOpenedSidebar.
+  const tourExpandedReveals = new Set<string>()
 
   const prepareAndPosition = async (): Promise<void> => {
     const gen = ++prepGen
@@ -320,6 +323,22 @@ export const Walkthrough: Component = () => {
       }
     }
 
+    // Expand a collapsed control group (e.g. the "more" panel that hides
+    // BPM/volume) so the target is visible. Idempotent — only when collapsed.
+    if (step.reveal !== undefined && step.reveal !== '') {
+      const ok = await waitForTarget(step.reveal)
+      if (gen !== prepGen) return
+      const toggle = ok ? document.querySelector(step.reveal) : null
+      if (
+        toggle instanceof HTMLElement &&
+        toggle.getAttribute('aria-expanded') === 'false'
+      ) {
+        toggle.click()
+        tourExpandedReveals.add(step.reveal)
+        await wait(240) // let the group expand (.moreGroup transition is 0.22s)
+      }
+    }
+
     if (gen !== prepGen) return
     const found = await waitForTarget(step.targetSelector)
     if (gen !== prepGen || !found) return
@@ -341,12 +360,26 @@ export const Walkthrough: Component = () => {
     void prepareAndPosition()
   })
 
-  // Close any sidebar the tour opened once it ends (mobile only). Guarded by a
-  // flag so we never fight a sidebar the user opened themselves.
+  // Restore what the tour changed once it ends: close any sidebar it opened
+  // (mobile only) and collapse any control groups it expanded. Guarded by flags
+  // so we never fight state the user set themselves.
   createEffect(() => {
-    if (!walkthroughActive() && tourOpenedSidebar) {
+    if (walkthroughActive()) return
+    if (tourOpenedSidebar) {
       setSidebarOpen(false)
       tourOpenedSidebar = false
+    }
+    if (tourExpandedReveals.size > 0) {
+      for (const sel of tourExpandedReveals) {
+        const toggle = document.querySelector(sel)
+        if (
+          toggle instanceof HTMLElement &&
+          toggle.getAttribute('aria-expanded') === 'true'
+        ) {
+          toggle.click()
+        }
+      }
+      tourExpandedReveals.clear()
     }
   })
 
