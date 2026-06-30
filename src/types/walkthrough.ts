@@ -620,6 +620,124 @@ Controls how much reverb vs dry signal:
       ],
       thumbnail: 'building',
     },
+    {
+      id: 'settings-display',
+      tab: 'settings',
+      title: 'Display & Controls',
+      description: 'Theme, on-canvas visuals, and keyboard shortcuts',
+      content: `
+The **Display & Controls** tab changes how the app *looks* and what's drawn on the practice canvas. None of it affects pitch detection, so experiment freely.
+
+## Appearance
+
+- **Font Family** — Inter (clean & modern), Outfit (creative), Plus Jakarta Sans, or your System Default. Changing the font reloads the page so the canvases redraw crisply.
+- **Theme** — Dark or Light mode.
+
+> **Tip:** Light mode is easier on the eyes in a bright room; Dark mode keeps the note colors vivid.
+
+## Visibility
+
+Toggle interface elements on or off to declutter the layout. Most are hidden by default for a focused playback view:
+
+- **Grid Lines** — horizontal/vertical reference lines on the canvas.
+- **Sidebar Note List** — the detailed note list in the Practice sidebar.
+- **Playback Setup** — the setup panel in the sidebar.
+- **Stats Panel** — accuracy stats on the Practice tab.
+- **Pitch Display** — the live pitch tracker (the green line that follows your voice).
+- **History Panel** — the frequency / waveform bars below the canvas.
+- **Practice Result Popup** — the score overlay after each run. Results are still saved to history when this is off.
+- **Jumping Ball** (Playback & Focus) and **Playhead** — the moving guides that show where you are in the melody.
+
+> **Info:** The Jumping Ball and Playhead can't both be off — turning one off forces the other on so you never lose your position.
+
+## Visualization
+
+Eye-candy and accuracy feedback drawn over the notes:
+
+- **Burning Notes** — animates the currently-playing note with a fire effect synced to playback.
+- **Accuracy Color Coding** — tints each played note by how close you were (Green = perfect, Teal = excellent…).
+- **Show Accuracy Percentage** — prints a numeric % on each note.
+- **Character Sounds** — each guide character plays a different timbre. Turn off to keep your manually-chosen instrument.
+
+## Keyboard Shortcuts
+
+A full reference table lives at the bottom of this tab. The essentials:
+
+| Key | Action |
+| --- | --- |
+| **Space** | Play / Pause / Resume |
+| **Esc** | Exit focus mode / Stop |
+| **Home** | Jump to the beginning |
+| **R / P / O** | Toggle Repeat / Practice / Once mode |
+| **↑ / ↓** | Faster / slower playback |
+
+> **Tip:** Shortcuts only fire when you're *not* typing in a text field, so renaming a melody won't accidentally trigger playback.
+      `,
+      steps: [
+        {
+          title: 'Pick your theme',
+          description: 'Switch between dark and light mode',
+          action: 'Choose a theme',
+          target: '#vis-theme',
+        },
+        {
+          title: 'Tune visibility',
+          description: 'Show or hide the live pitch tracker and other panels',
+          action: 'Toggle interface elements',
+          target: '#vis-pitch-display',
+        },
+        {
+          title: 'Accuracy color coding',
+          description: 'Color each note by how close you sang',
+          action: 'Toggle color coding',
+          target: '#vis-color-code',
+        },
+      ],
+      thumbnail: 'sparkle',
+    },
+    {
+      id: 'settings-general',
+      tab: 'settings',
+      title: 'General & Your Data',
+      description: 'Account sync and the irreversible data actions',
+      content: `
+The **General** tab holds your account and the permanent data actions — the things you touch rarely but should understand.
+
+## Account
+
+Sign in to sync your melodies, sessions, and settings across devices. When signed out, everything is stored locally on this device only.
+
+> **Tip:** Signing in is optional. The whole app works offline and on-device — an account just adds cloud backup and multi-device sync.
+
+## Danger Zone
+
+These actions are **permanent** and can't be undone, so each one asks for confirmation first.
+
+- **Clear Karaoke & Vocal Separation Data** — deletes every separated song, its stems, lyrics, and karaoke playlists. Your melodies, practice history, and settings are kept. Use this to reclaim storage after experimenting with vocal separation.
+- **Reset to Factory Defaults** — erases *everything* on this device (melodies, sessions, karaoke files, settings, and sign-in) and reloads the app fresh.
+
+> **Note:** "Clear Karaoke Data" is the surgical option; "Reset to Factory Defaults" is the nuclear one. Reach for the first when you just want storage back.
+
+## Before you reset
+
+If you're signed in, your data is also synced to the cloud — a factory reset on *this device* won't touch the synced copy, and signing back in restores it. Signed out? A reset is genuinely irreversible, so export anything you want to keep first.
+      `,
+      steps: [
+        {
+          title: 'Clear karaoke data',
+          description: 'Remove separated songs and stems, keep everything else',
+          action: 'Review the Clear button',
+          target: '[data-testid="danger-clear-uvr-btn"]',
+        },
+        {
+          title: 'Factory reset',
+          description: 'Wipe all local data and start fresh',
+          action: 'Review the Reset button',
+          target: '[data-testid="danger-reset-btn"]',
+        },
+      ],
+      thumbnail: 'refresh',
+    },
   ],
   study: [
     {
