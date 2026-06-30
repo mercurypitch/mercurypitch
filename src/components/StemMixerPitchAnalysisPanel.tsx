@@ -40,6 +40,15 @@ export interface StemMixerPitchAnalysisPanelProps {
   songBpm: number
   setSongBpm: (b: number) => void
   contourReady: boolean
+  // Edit mode
+  editMode: boolean
+  onToggleEditMode: () => void
+  canEdit: boolean
+  hasSelection: boolean
+  hasEdits: boolean
+  onDeleteSelected: () => void
+  onUndoEdit: () => void
+  onResetEdits: () => void
 }
 
 export const StemMixerPitchAnalysisPanel: Component<
@@ -226,6 +235,66 @@ export const StemMixerPitchAnalysisPanel: Component<
               {props.contourReady
                 ? 'Drag to clean the detected notes. Key/scale drive snapping; tempo drives timing.'
                 : 'Run analysis to enable cleanup.'}
+            </small>
+          </div>
+
+          <div
+            class="sm-pitch-edit"
+            style={{
+              display: 'flex',
+              'flex-direction': 'column',
+              gap: '0.5rem',
+              'margin-top': '1rem',
+              opacity: props.canEdit ? '1' : '0.5',
+            }}
+          >
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                class={`sm-btn ${props.editMode ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
+                style={{ flex: '1' }}
+                disabled={!props.canEdit}
+                onClick={() => props.onToggleEditMode()}
+              >
+                {props.editMode ? 'Editing notes…' : 'Edit notes'}
+              </button>
+            </div>
+            <div
+              style={{
+                display: props.editMode ? 'flex' : 'none',
+                gap: '0.5rem',
+              }}
+            >
+              <button
+                class="sm-btn sm-btn-secondary"
+                style={{ flex: '1' }}
+                disabled={!props.hasSelection}
+                onClick={() => props.onDeleteSelected()}
+              >
+                Delete
+              </button>
+              <button
+                class="sm-btn sm-btn-secondary"
+                style={{ flex: '1' }}
+                disabled={!props.hasEdits}
+                onClick={() => props.onUndoEdit()}
+              >
+                Undo
+              </button>
+              <button
+                class="sm-btn sm-btn-secondary"
+                style={{ flex: '1' }}
+                disabled={!props.hasEdits}
+                onClick={() => props.onResetEdits()}
+              >
+                Reset
+              </button>
+            </div>
+            <small style={{ color: 'var(--text-muted)' }}>
+              {!props.canEdit
+                ? 'Run analysis to enable editing.'
+                : props.editMode
+                  ? 'Click a note on the pitch lane to select it, then Delete.'
+                  : 'Manually clean up the detected notes.'}
             </small>
           </div>
 

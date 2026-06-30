@@ -735,6 +735,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         [canvasId]: Math.max(40, current + deltaY),
       })
     },
+    // Pitch edit mode
+    editMode: pitchAnalysis.editMode,
+    editableNotes: pitchAnalysis.editableNotes,
+    selectedNoteId: pitchAnalysis.selectedNoteId,
+    onSelectNote: pitchAnalysis.setSelectedNoteId,
   })
 
   // Backfill mutable holders so audio controller can reach canvas + lyrics
@@ -745,6 +750,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawPitchCanvas: canvas.drawPitchCanvas,
     drawMidiCanvas: canvas.drawMidiCanvas,
     isUserPanning: canvas.isUserPanning,
+  })
+
+  // Repaint the pitch canvas when edit-mode state changes (toggle, selection,
+  // or the effective notes after an edit).
+  createEffect(() => {
+    pitchAnalysis.editMode()
+    pitchAnalysis.selectedNoteId()
+    pitchAnalysis.editableNotes()
+    canvas.queueCanvasRedraw()
   })
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
@@ -1654,6 +1668,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             canvas.queueCanvasRedraw()
           }}
           contourReady={pitchAnalysis.contourReady()}
+          editMode={pitchAnalysis.editMode()}
+          onToggleEditMode={() => {
+            pitchAnalysis.setEditMode((v) => !v)
+            pitchAnalysis.setSelectedNoteId(null)
+          }}
+          canEdit={pitchAnalysis.editableNotes().length > 0}
+          hasSelection={pitchAnalysis.selectedNoteId() !== null}
+          hasEdits={pitchAnalysis.hasEdits()}
+          onDeleteSelected={() => pitchAnalysis.deleteSelectedNote()}
+          onUndoEdit={() => pitchAnalysis.undoEdit()}
+          onResetEdits={() => pitchAnalysis.resetEdits()}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
