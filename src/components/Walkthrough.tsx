@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, Index, onCleanup, Show } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
@@ -19,6 +19,50 @@ const TOOLTIP_GAP = 12
 const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
 const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+// Compact action-row glyphs (16px). Icon-only buttons keep the spotlight tight
+// on small screens; the label lives in title/aria-label.
+const IconClose = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="15"
+    height="15"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
+const IconSkipForward = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M5 5l9 7-9 7z" />
+    <rect x="15" y="5" width="3" height="14" rx="1" />
+  </svg>
+)
+const IconCheck = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 12l5 5L20 7" />
+  </svg>
+)
 
 export const Walkthrough: Component = () => {
   let highlightRef: HTMLDivElement | undefined
@@ -396,6 +440,13 @@ export const Walkthrough: Component = () => {
     }
   })
 
+  // Progress dots: scoped to the current section when sectioned (the full
+  // walkthrough), else the whole tour (page tours). `current` is 1-based.
+  const dotProgress = createMemo(() => {
+    if (currentSection()) return sectionStepCount()
+    return { current: walkthroughStep() + 1, total: steps().length }
+  })
+
   return (
     <Show when={walkthroughActive()}>
       <div class={styles.walkthroughOverlay} onClick={endWalkthrough}>
@@ -408,52 +459,82 @@ export const Walkthrough: Component = () => {
             e.stopPropagation()
           }}
         >
-          {/* Section header */}
+          {/* Skip the whole tour (sits like a dialog close). */}
+          <button
+            class={styles.walkthroughClose}
+            onClick={endWalkthrough}
+            title="Skip tour"
+            aria-label="Skip tour"
+          >
+            <IconClose />
+          </button>
+
           <Show when={currentSection()}>
             {(sec) => (
-              <div class={styles.walkthroughSectionHeader}>
-                <span class={styles.walkthroughSectionTitle}>
-                  {sec().title}
-                </span>
-                <span class={styles.walkthroughSectionSteps}>
-                  {sectionStepCount().current} / {sectionStepCount().total}
-                </span>
-              </div>
+              <div class={styles.walkthroughSectionTitle}>{sec().title}</div>
             )}
           </Show>
 
           <h3 class={styles.walkthroughStepTitle}>{currentStep()?.title}</h3>
           <p class={styles.walkthroughStepDesc}>{currentStep()?.description}</p>
+
           <div class={styles.walkthroughActions}>
-            <button class={styles.walkthroughSkip} onClick={endWalkthrough}>
-              Skip Tour
-            </button>
+            {/* Progress dots */}
+            <div
+              class={styles.walkthroughDots}
+              role="progressbar"
+              aria-valuenow={dotProgress().current}
+              aria-valuemin={1}
+              aria-valuemax={dotProgress().total}
+              aria-label="Tour progress"
+            >
+              <Index each={Array.from({ length: dotProgress().total })}>
+                {(_, i) => (
+                  <span
+                    class={styles.walkthroughDot}
+                    classList={{
+                      [styles.walkthroughDotActive]:
+                        i === dotProgress().current - 1,
+                      [styles.walkthroughDotDone]:
+                        i < dotProgress().current - 1,
+                    }}
+                  />
+                )}
+              </Index>
+            </div>
+
+            {/* Icon-only controls: back · skip section · next/finish */}
             <div class={styles.walkthroughActionsCenter}>
               <button
-                class={styles.walkthroughPrev}
+                class={styles.walkthroughIconBtn}
                 onClick={prevWalkthroughStep}
                 disabled={isFirst()}
+                title="Back"
+                aria-label="Back"
               >
-                <IconArrowLeft /> Back
+                <IconArrowLeft />
               </button>
-              <button
-                class={styles.walkthroughSkipSection}
-                onClick={skipSection}
-                title={`Skip ${currentSection()?.title} section`}
-              >
-                Skip Section
-              </button>
+              <Show when={currentSection()}>
+                {(sec) => (
+                  <button
+                    class={styles.walkthroughIconBtn}
+                    onClick={skipSection}
+                    title={`Skip ${sec().title} section`}
+                    aria-label="Skip section"
+                  >
+                    <IconSkipForward />
+                  </button>
+                )}
+              </Show>
               <button
                 class={styles.walkthroughNext}
                 onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
+                title={isLast() ? 'Finish' : 'Next'}
+                aria-label={isLast() ? 'Finish' : 'Next'}
               >
-                {isLast() ? (
-                  'Finish'
-                ) : (
-                  <>
-                    Next <IconArrowRight />
-                  </>
-                )}
+                <Show when={isLast()} fallback={<IconArrowRight />}>
+                  <IconCheck />
+                </Show>
               </button>
             </div>
           </div>
