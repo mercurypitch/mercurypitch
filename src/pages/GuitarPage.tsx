@@ -21,14 +21,12 @@ import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { createPersistedSignal } from '@/lib/storage'
+import { isMobile } from '@/lib/use-viewport'
 import { activeTab } from '@/stores'
 
 // Small / touch screens hide the 3D-view overlays (input monitor + nav gizmo)
-// by default; the user can still toggle them on and the choice is persisted.
-const isSmallScreen = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(max-width: 768px), (pointer: coarse)').matches
+// by default (isMobile); the user can still toggle them on, and the choice is
+// persisted per device.
 
 interface GuitarPageProps {
   /** Shared volume signal (owned by AppShell, used across tabs). */
@@ -54,14 +52,14 @@ export function GuitarPage(props: GuitarPageProps) {
   // Defaults on in dev, off for players, and off on small / touch screens.
   const [showInputMonitor, setShowInputMonitor] = createPersistedSignal(
     'gp-tab3d-input-monitor',
-    import.meta.env.DEV && !isSmallScreen(),
+    import.meta.env.DEV && !isMobile(),
     { validator: (v): v is boolean => typeof v === 'boolean' },
   )
   // Orientation gizmo (X/Y/Z axes) overlay in the 3D view (toggle); persisted
   // per device, shown by default on desktop, hidden on small / touch screens.
   const [showGizmo, setShowGizmo] = createPersistedSignal(
     'gp-tab3d-gizmo',
-    !isSmallScreen(),
+    !isMobile(),
     { validator: (v): v is boolean => typeof v === 'boolean' },
   )
   // Collapse the shared transport toolbar to reclaim vertical space.
