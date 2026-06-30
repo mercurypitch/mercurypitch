@@ -9,7 +9,7 @@ import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
-import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
+import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, startWalkthrough, } from '@/stores/app-store'
 import { activeTab, setActiveTab, setSidebarOpen } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
 
@@ -95,6 +95,44 @@ export const Walkthrough: Component = () => {
 
   const getPlacement = (): Placement => currentStep()?.placement ?? 'bottom'
 
+  // True when this is the final step of its section (the next step belongs to a
+  // different section, or there is no next step). In the full walkthrough this
+  // is where one section hands off to the next; in a single-section tour it
+  // coincides with isLast().
+  const isLastInSection = () => {
+    const sec = currentSection()
+    if (!sec) return false
+    const s = steps()
+    const i = walkthroughStep()
+    return i >= s.length - 1 || s[i + 1]?.section !== sec.id
+  }
+
+  // The guide section that follows the current step's, if any. Drives the
+  // "continue to the next section" affordance on a section's final step.
+  const nextSection = createMemo(() => {
+    const sec = currentSection()
+    if (!sec) return null
+    const i = GUIDE_SECTIONS.findIndex((s) => s.id === sec.id)
+    return i >= 0 && i < GUIDE_SECTIONS.length - 1
+      ? GUIDE_SECTIONS[i + 1]
+      : null
+  })
+
+  // Continue into the next section: jump to its first step if it's already in
+  // this tour (the full walkthrough), otherwise start it as its own tour.
+  const goToNextSection = () => {
+    const next = nextSection()
+    if (!next) return
+    const idx = steps().findIndex((s) => s.section === next.id)
+    if (idx >= 0) setWalkthroughStep(idx)
+    else startWalkthrough([next.id])
+  }
+
+  const advance = () => {
+    if (isLast()) endWalkthrough()
+    else nextWalkthroughStep()
+  }
+
   // Auto-switch tab when step has requiredTab
   // Only runs while tour is active — stops immediately when tour ends
   createEffect(() => {
@@ -106,6 +144,40 @@ export const Walkthrough: Component = () => {
         setActiveTab(tab)
       }
     }
+  })
+
+  // Keyboard navigation (desktop): →/Enter next, ← back, Esc closes. Skip when
+  // typing in a field, and let a focused tooltip button handle its own Enter.
+  createEffect(() => {
+    if (!walkthroughActive()) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return
+      const t = e.target as HTMLElement | null
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.tagName === 'SELECT' ||
+          t.isContentEditable)
+      )
+        return
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        endWalkthrough()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        prevWalkthroughStep()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        advance()
+      } else if (e.key === 'Enter') {
+        if (t && t.tagName === 'BUTTON') return
+        e.preventDefault()
+        advance()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    onCleanup(() => window.removeEventListener('keydown', onKey))
   })
 
   // Poll until a target element exists in the DOM
@@ -542,7 +614,8 @@ export const Walkthrough: Component = () => {
               >
                 <IconArrowLeft />
               </button>
-              <Show when={currentSection()}>
+              {/* Mid-section: skip the rest of this section. */}
+              <Show when={!isLastInSection() && currentSection()}>
                 {(sec) => (
                   <button
                     class={styles.walkthroughIconBtn}
@@ -554,9 +627,24 @@ export const Walkthrough: Component = () => {
                   </button>
                 )}
               </Show>
+              {/* Final step of a section: offer to carry on into the next one
+                  instead of just finishing. */}
+              <Show when={isLastInSection() ? nextSection() : null} keyed>
+                {(next) => (
+                  <button
+                    class={styles.walkthroughNextSection}
+                    onClick={goToNextSection}
+                    title={`Continue to ${next.title}`}
+                    aria-label={`Continue to ${next.title}`}
+                  >
+                    <span>{next.title}</span>
+                    <IconArrowRight />
+                  </button>
+                )}
+              </Show>
               <button
                 class={styles.walkthroughNext}
-                onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
+                onClick={advance}
                 title={isLast() ? 'Finish' : 'Next'}
                 aria-label={isLast() ? 'Finish' : 'Next'}
               >
