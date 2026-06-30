@@ -14,7 +14,7 @@ import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { freqToNote, melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
-import type { ChordType, EffectType, MelodyItem, NoteResult, PitchSample, ScaleDegree, } from '@/types'
+import type { ChordType, EffectType, MelodyItem, NoteResult, PitchResult, PitchSample, ScaleDegree, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 
 /** Short display label for each chord type (shown after the root note name). */
@@ -49,6 +49,10 @@ interface PitchCanvasProps {
   targetPitch?: () => number | null
   /** Additional target pitches for chord members (polyphonic playback). */
   targetPitches?: () => number[]
+  /** Live detected pitch from the mic — drives the left-anchored live pitch
+   *  marker, which (unlike pitchHistory) is active whenever the mic hears a
+   *  note, not only during playback. */
+  livePitch?: () => PitchResult | null
   noteAccuracyMap?: () => Map<number, number>
   isRecording?: () => boolean
   getWaveform?: () => Float32Array | null
@@ -140,6 +144,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let isSeeking = false
   let needsRedraw = true
   let lastPitchLength = 0
+  // Last live mic frequency we drew — lets the throttled loop repaint while the
+  // mic hears a pitch (even when not playing) and once more when it goes silent.
+  let lastLiveFreq = 0
   let audioEngine: AudioEngine | null = null
   // Double-click detection + trill visual feedback
   let clickTimer: ReturnType<typeof setTimeout> | null = null
@@ -569,6 +576,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const paused = props.isPaused?.() ?? false
       const hasMicData = (props.pitchHistory?.()?.length ?? 0) > 0
       const pitchLen = props.pitchHistory?.()?.length ?? 0
+      // Live mic pitch: keep repainting while the mic hears a note (so the
+      // left-anchored live marker tracks in real time, even when not playing),
+      // and force one final repaint when it falls silent to clear the marker.
+      const liveFreq = props.livePitch?.()?.frequency ?? 0
 
       if (
         needsRedraw ||
@@ -576,11 +587,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         paused ||
         hasMicData ||
         isSeeking ||
-        pitchLen !== lastPitchLength
+        pitchLen !== lastPitchLength ||
+        liveFreq > 0 ||
+        liveFreq !== lastLiveFreq
       ) {
         draw()
         needsRedraw = false
         lastPitchLength = pitchLen
+        lastLiveFreq = liveFreq
       }
 
       animFrameId = requestAnimationFrame(loop)
@@ -1585,6 +1599,56 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.arc(lx, ly, 2, 0, Math.PI * 2)
         ctx.fill()
       }
+    }
+
+    // Live pitch marker — a left-anchored "you are here" readout of the current
+    // detected pitch, active whenever the mic hears a note (independent of
+    // playback; pitchHistory only fills during playback). A faint guide line
+    // extends right so you can read your pitch against the scale + melody.
+    const live = props.livePitch?.()
+    if (live && live.frequency > 0) {
+      const ly = freqToY(live.frequency, h)
+      ctx.save()
+      ctx.strokeStyle = 'rgba(63,185,80,0.16)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 6])
+      ctx.beginPath()
+      ctx.moveTo(30, ly)
+      ctx.lineTo(w, ly)
+      ctx.stroke()
+      ctx.setLineDash([])
+      const grad = ctx.createRadialGradient(14, ly, 0, 14, ly, 13)
+      grad.addColorStop(0, 'rgba(63,185,80,0.5)')
+      grad.addColorStop(1, 'rgba(63,185,80,0)')
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.arc(14, ly, 13, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#3fb950'
+      ctx.beginPath()
+      ctx.arc(14, ly, 5.5, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#fff'
+      ctx.beginPath()
+      ctx.arc(14, ly, 2, 0, Math.PI * 2)
+      ctx.fill()
+      const label = `${live.noteName}${live.octave ?? ''}`
+      if (label.trim().length > 0) {
+        ctx.font = 'bold 12px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        const tw = ctx.measureText(label).width
+        const px = 25
+        const pad = 6
+        const ph = 18
+        ctx.fillStyle = 'rgba(13,17,23,0.8)'
+        ctx.beginPath()
+        ctx.roundRect(px, ly - ph / 2, tw + pad * 2, ph, 5)
+        ctx.fill()
+        ctx.fillStyle = '#3fb950'
+        ctx.fillText(label, px + pad, ly + 0.5)
+      }
+      ctx.restore()
     }
 
     // Yousician-style jumping ball — quadratic Bezier arcs between notes

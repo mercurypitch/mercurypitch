@@ -1663,6 +1663,7 @@ const AppShell: Component<AppProps> = (props) => {
                         isScrolling={() => true}
                         targetPitch={targetPitch}
                         targetPitches={targetPitches}
+                        livePitch={currentPitch}
                         noteAccuracyMap={noteAccuracyMap}
                         isRecording={recording.isRecording}
                         getWaveform={() =>
