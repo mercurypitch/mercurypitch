@@ -52,6 +52,9 @@ export interface StemMixerCanvasDeps {
   // Pitch edit mode
   editMode?: Accessor<boolean>
   editableNotes?: Accessor<EditableNote[]>
+  /** Original (algorithm) notes — drawn as a faded ghost in 'both' view. */
+  baseNotes?: Accessor<EditableNote[]>
+  pitchView?: Accessor<'edited' | 'original' | 'both'>
   selectedNoteId?: Accessor<string | null>
   onSelectNote?: (id: string | null) => void
   onBeginEdit?: () => void
@@ -666,6 +669,24 @@ export const useStemMixerCanvasController = (
           y + 4,
         )
       }
+    }
+
+    // 'Both' view: ghost the original (algorithm) notes behind the edited ones.
+    if (deps.pitchView?.() === 'both') {
+      const base = deps.baseNotes?.() ?? []
+      ctx.save()
+      ctx.strokeStyle = 'rgba(160,160,170,0.55)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([2, 2])
+      for (const note of base) {
+        if (note.endBeat < winStart || note.startBeat > winEnd) continue
+        const pc = ((note.midi % 12) + 12) % 12
+        const x1 = Math.max(0, ((note.startBeat - winStart) / winDur) * w)
+        const x2 = Math.min(w, ((note.endBeat - winStart) / winDur) * w)
+        const yTop = (11 - pc) * rowH + rowH * 0.16
+        ctx.strokeRect(x1, yTop, Math.max(2, x2 - x1), rowH * 0.68)
+      }
+      ctx.restore()
     }
 
     // Edit mode: outline every editable note (subtle) and the selected one

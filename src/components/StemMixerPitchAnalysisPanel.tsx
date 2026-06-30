@@ -47,8 +47,12 @@ export interface StemMixerPitchAnalysisPanelProps {
   hasSelection: boolean
   hasEdits: boolean
   onDeleteSelected: () => void
+  onSplitSelected: () => void
+  onMergeSelected: () => void
   onUndoEdit: () => void
   onResetEdits: () => void
+  pitchView: 'edited' | 'original' | 'both'
+  setPitchView: (v: 'edited' | 'original' | 'both') => void
 }
 
 export const StemMixerPitchAnalysisPanel: Component<
@@ -258,15 +262,45 @@ export const StemMixerPitchAnalysisPanel: Component<
                 {props.editMode ? 'Editing notes…' : 'Edit notes'}
               </button>
             </div>
+
+            {/* Show: original (algorithm) / edited / both. */}
+            <div
+              style={{
+                display: props.hasEdits ? 'flex' : 'none',
+                gap: '0.5rem',
+              }}
+            >
+              <For
+                each={
+                  [
+                    ['original', 'Original'],
+                    ['edited', 'Edited'],
+                    ['both', 'Both'],
+                  ] as const
+                }
+              >
+                {([value, label]) => (
+                  <button
+                    class={`sm-btn ${props.pitchView === value ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
+                    style={{ flex: '1' }}
+                    onClick={() => props.setPitchView(value)}
+                  >
+                    {label}
+                  </button>
+                )}
+              </For>
+            </div>
+
             <div
               style={{
                 display: props.editMode ? 'flex' : 'none',
+                'flex-wrap': 'wrap',
                 gap: '0.5rem',
               }}
             >
               <button
                 class="sm-btn sm-btn-secondary"
-                style={{ flex: '1' }}
+                style={{ flex: '1 1 30%' }}
                 disabled={!props.hasSelection}
                 onClick={() => props.onDeleteSelected()}
               >
@@ -274,7 +308,23 @@ export const StemMixerPitchAnalysisPanel: Component<
               </button>
               <button
                 class="sm-btn sm-btn-secondary"
-                style={{ flex: '1' }}
+                style={{ flex: '1 1 30%' }}
+                disabled={!props.hasSelection}
+                onClick={() => props.onSplitSelected()}
+              >
+                Split
+              </button>
+              <button
+                class="sm-btn sm-btn-secondary"
+                style={{ flex: '1 1 30%' }}
+                disabled={!props.hasSelection}
+                onClick={() => props.onMergeSelected()}
+              >
+                Merge next
+              </button>
+              <button
+                class="sm-btn sm-btn-secondary"
+                style={{ flex: '1 1 45%' }}
                 disabled={!props.hasEdits}
                 onClick={() => props.onUndoEdit()}
               >
@@ -282,18 +332,18 @@ export const StemMixerPitchAnalysisPanel: Component<
               </button>
               <button
                 class="sm-btn sm-btn-secondary"
-                style={{ flex: '1' }}
+                style={{ flex: '1 1 45%' }}
                 disabled={!props.hasEdits}
                 onClick={() => props.onResetEdits()}
               >
-                Reset
+                Reset edits
               </button>
             </div>
             <small style={{ color: 'var(--text-muted)' }}>
               {!props.canEdit
                 ? 'Run analysis to enable editing.'
                 : props.editMode
-                  ? 'Click a note on the pitch lane to select it, then Delete.'
+                  ? 'Click a note to select; drag to move/resize/retune; Delete/Split/Merge.'
                   : 'Manually clean up the detected notes.'}
             </small>
           </div>

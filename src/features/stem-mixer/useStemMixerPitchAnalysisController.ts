@@ -10,7 +10,7 @@ import type { OfflineSegmentSecondsFrame } from '@/lib/pitch-pipeline'
 import { segmentSecondsContourToMelody } from '@/lib/pitch-pipeline'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { EditableNote, PitchEditLayer } from './pitch-edit-model'
-import { applyEditLayer, deleteNote, editNote, emptyEditLayer, isEditLayerEmpty, } from './pitch-edit-model'
+import { applyEditLayer, deleteNote, editNote, emptyEditLayer, isEditLayerEmpty, mergeNotes, splitNote, } from './pitch-edit-model'
 import type { PitchNote } from './types'
 
 /** Fields a drag edit may change. */
@@ -69,9 +69,16 @@ export interface StemMixerPitchAnalysisController {
   setEditMode: Setter<boolean>
   /** Effective notes (base cleanup output with the edit layer applied), seconds. */
   editableNotes: Accessor<EditableNote[]>
+  /** The original (algorithm) notes, before edits — for the 'original'/'both' view. */
+  baseNotes: Accessor<EditableNote[]>
+  /** Which layer to show: 'edited' (effective), 'original', or 'both'. */
+  pitchView: Accessor<'edited' | 'original' | 'both'>
+  setPitchView: Setter<'edited' | 'original' | 'both'>
   selectedNoteId: Accessor<string | null>
   setSelectedNoteId: Setter<string | null>
   deleteSelectedNote: () => void
+  splitSelectedNote: () => void
+  mergeSelectedWithNext: () => void
   undoEdit: () => void
   resetEdits: () => void
   hasEdits: Accessor<boolean>
@@ -145,6 +152,11 @@ export const useStemMixerPitchAnalysisController = (
     createSignal<PitchEditLayer>(emptyEditLayer())
   const [selectedNoteId, setSelectedNoteId] = createSignal<string | null>(null)
   const hasEdits = createMemo(() => !isEditLayerEmpty(editLayer()))
+  // Which layer to display: the edited (effective) notes, the original
+  // (algorithm) notes, or both overlaid. The edit layer is always retained.
+  const [pitchView, setPitchView] = createSignal<
+    'edited' | 'original' | 'both'
+  >('edited')
   // Snapshot stack for edit undo (separate from the editor's piano-roll undo).
   let editUndo: PitchEditLayer[] = []
 
@@ -226,14 +238,42 @@ export const useStemMixerPitchAnalysisController = (
     }
   })
 
-  // Push the effective (base + edits) notes to the canvas whenever either
-  // the base regenerates or the edit layer changes.
+  // Push the displayed notes to the canvas whenever the base regenerates, the
+  // edit layer changes, or the view mode changes. 'original' shows the base;
+  // 'edited'/'both' show the effective notes (the base ghost for 'both' is
+  // drawn by the canvas).
   createEffect(() => {
-    const merged = editableToMerged(editableNotes())
+    const notes = pitchView() === 'original' ? baseNotes() : editableNotes()
+    const merged = editableToMerged(notes)
     setOfflineSegmentedNotes(merged)
     const history = buildHistoryFromNotes(merged)
     setOfflinePitchHistory(history)
     deps.setPitchHistory(history)
+  })
+
+  // Debounced persistence: store the original (base) notes and the user's edit
+  // layer separately so a reload can show original / edited / both.
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  const persistNow = (): void => {
+    const sid = deps.sessionId
+    if (sid == null || sid === '') return
+    const base = baseNotes()
+    if (base.length === 0) return
+    void savePitchAnalysisToDb(sid, {
+      mergedNotes: offlineMergedNotes(),
+      segmentedNotes: editableToMerged(base),
+      pitchHistory: buildHistoryFromNotes(
+        editableToMerged(applyEditLayer(base, editLayer())),
+      ),
+      editLayer: editLayer(),
+    })
+  }
+  createEffect(() => {
+    baseNotes()
+    editLayer()
+    if (deps.sessionId == null || deps.sessionId === '') return
+    if (saveTimer !== null) clearTimeout(saveTimer)
+    saveTimer = setTimeout(persistNow, 600)
   })
 
   // ── Edit operations ───────────────────────────────────────────
@@ -263,6 +303,33 @@ export const useStemMixerPitchAnalysisController = (
     if (isEditLayerEmpty(editLayer())) return
     pushEditUndo()
     setEditLayer(emptyEditLayer())
+    setSelectedNoteId(null)
+  }
+
+  const splitSelectedNote = (): void => {
+    const id = selectedNoteId()
+    if (id === null) return
+    const note = editableNotes().find((n) => n.id === id)
+    if (note === undefined) return
+    pushEditUndo()
+    setEditLayer(
+      splitNote(editLayer(), note, (note.startBeat + note.endBeat) / 2),
+    )
+    setSelectedNoteId(null)
+  }
+
+  const mergeSelectedWithNext = (): void => {
+    const id = selectedNoteId()
+    if (id === null) return
+    const notes = editableNotes()
+    const note = notes.find((n) => n.id === id)
+    if (note === undefined) return
+    const next = notes
+      .filter((n) => n.startBeat > note.startBeat)
+      .sort((a, b) => a.startBeat - b.startBeat)[0]
+    if (next === undefined) return
+    pushEditUndo()
+    setEditLayer(mergeNotes(editLayer(), note, next))
     setSelectedNoteId(null)
   }
 
@@ -395,6 +462,7 @@ export const useStemMixerPitchAnalysisController = (
           mergedNotes: merged,
           segmentedNotes: segmentedMerged,
           pitchHistory: buildHistoryFromNotes(segmentedMerged),
+          editLayer: editLayer(),
         })
       }
     } catch (e) {
@@ -418,10 +486,10 @@ export const useStemMixerPitchAnalysisController = (
     }
 
     setOfflineMergedNotes(data.mergedNotes)
-    // Seed the editable base from the cached cleaned notes so edit mode works
-    // on a reloaded session. The display effect (on editableNotes) then feeds
-    // offlineSegmentedNotes + the canvas history.
-    setEditLayer(emptyEditLayer())
+    // Seed the editable base from the cached original notes and restore the
+    // user's edit layer, so a reloaded session can show original / edited /
+    // both. The display effect then feeds offlineSegmentedNotes + the history.
+    setEditLayer(data.editLayer ?? emptyEditLayer())
     setSelectedNoteId(null)
     editUndo = []
     setBaseNotes(baseToEditable(data.segmentedNotes))
@@ -450,9 +518,14 @@ export const useStemMixerPitchAnalysisController = (
     editMode,
     setEditMode,
     editableNotes,
+    baseNotes,
+    pitchView,
+    setPitchView,
     selectedNoteId,
     setSelectedNoteId,
     deleteSelectedNote,
+    splitSelectedNote,
+    mergeSelectedWithNext,
     undoEdit,
     resetEdits,
     hasEdits,

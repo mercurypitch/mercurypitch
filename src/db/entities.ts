@@ -329,6 +329,10 @@ export interface OfflinePitchAnalysisRecord extends DbEntity {
   analysisResultsJson: string
   lrcLinesJson: string
   segmentedNotesJson: string
+  /** JSON-serialized PitchEditLayer (manual note edits). Optional for
+   *  backward-compat with rows written before edit mode. Non-indexed payload,
+   *  so no Dexie schema bump is required. */
+  editLayerJson?: string
 }
 
 export interface WhisperTranscriptionRecord extends DbEntity {

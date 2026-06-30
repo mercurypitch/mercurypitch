@@ -7,14 +7,18 @@
 
 import { getDb } from '@/db'
 import type { OfflinePitchAnalysisRecord } from '@/db/entities'
+import type { PitchEditLayer } from '@/features/stem-mixer/pitch-edit-model'
 import type { PitchNote } from '@/features/stem-mixer/types'
 import { IS_DEV } from '@/lib/defaults'
 import type { MergedNote } from '@/lib/midi-generator'
 
 export interface SessionPitchData {
-  mergedNotes: MergedNote[]
+  /** The original (algorithm) cleaned notes, before user edits. */
   segmentedNotes: MergedNote[]
+  mergedNotes: MergedNote[]
   pitchHistory: PitchNote[]
+  /** The user's manual edit layer (applied on top of segmentedNotes). */
+  editLayer?: PitchEditLayer
 }
 
 /** Save pitch analysis results for a session. */
@@ -42,6 +46,10 @@ export async function savePitchAnalysisToDb(
       analysisResultsJson: JSON.stringify(data.mergedNotes),
       lrcLinesJson: JSON.stringify(data.pitchHistory),
       segmentedNotesJson: JSON.stringify(data.segmentedNotes),
+      editLayerJson:
+        data.editLayer !== undefined
+          ? JSON.stringify(data.editLayer)
+          : undefined,
     })
 
     if (IS_DEV)
@@ -74,13 +82,17 @@ export async function loadPitchAnalysisFromDb(
     const mergedNotes = JSON.parse(entry.analysisResultsJson) as MergedNote[]
     const pitchHistory = JSON.parse(entry.lrcLinesJson) as PitchNote[]
     const segmentedNotes = JSON.parse(entry.segmentedNotesJson) as MergedNote[]
+    const editLayer =
+      entry.editLayerJson !== undefined && entry.editLayerJson !== ''
+        ? (JSON.parse(entry.editLayerJson) as PitchEditLayer)
+        : undefined
 
     if (IS_DEV)
       console.log(
         `[PitchDB] Loaded pitch analysis for session ${sessionId}: ${mergedNotes.length} merged, ${segmentedNotes.length} segmented`,
       )
 
-    return { mergedNotes, segmentedNotes, pitchHistory }
+    return { mergedNotes, segmentedNotes, pitchHistory, editLayer }
   } catch (err) {
     if (IS_DEV) console.warn('[PitchDB] loadPitchAnalysisFromDb failed:', err)
     return null
