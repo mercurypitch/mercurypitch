@@ -1551,6 +1551,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowLyricLabels={setShowLyricLabels}
           showLyricNoteLabels={showLyricNoteLabels}
           setShowLyricNoteLabels={setShowLyricNoteLabels}
+          melodyAudio={melodyAudio}
+          onToggleMelodyAudio={toggleMelodyAudio}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
           transcribeElapsed={transcribeElapsed}
@@ -1596,6 +1598,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setShowLyricLabels={setShowLyricLabels}
           showLyricNoteLabels={showLyricNoteLabels}
           setShowLyricNoteLabels={setShowLyricNoteLabels}
+          melodyAudio={melodyAudio}
+          onToggleMelodyAudio={toggleMelodyAudio}
           whisperStatus={whisperStatus}
           whisperProgress={whisperProgress}
           transcribeElapsed={transcribeElapsed}
@@ -1736,8 +1740,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           hasEdits={pitchAnalysis.hasEdits()}
           pitchView={pitchAnalysis.pitchView()}
           setPitchView={pitchAnalysis.setPitchView}
-          melodyAudio={melodyAudio()}
-          onToggleMelodyAudio={toggleMelodyAudio}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>

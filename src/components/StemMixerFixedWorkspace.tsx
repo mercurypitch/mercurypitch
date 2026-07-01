@@ -65,6 +65,8 @@ interface StemMixerFixedWorkspaceProps {
   setShowMicLine: Setter<boolean>
   showUserNoteLabels: Accessor<boolean>
   setShowUserNoteLabels: Setter<boolean>
+  melodyAudio?: Accessor<boolean>
+  onToggleMelodyAudio?: () => void
 
   // Mic-feedback message, shown in the Vocal Pitch panel header.
   micMessage: Accessor<string>
@@ -531,6 +533,8 @@ export const StemMixerFixedWorkspace: Component<
                     setShowMicLine={props.setShowMicLine}
                     showUserNoteLabels={props.showUserNoteLabels}
                     setShowUserNoteLabels={props.setShowUserNoteLabels}
+                    melodyAudio={props.melodyAudio}
+                    onToggleMelodyAudio={props.onToggleMelodyAudio}
                   />
                 </div>
                 <canvas

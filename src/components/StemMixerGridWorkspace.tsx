@@ -66,6 +66,8 @@ interface StemMixerGridWorkspaceProps {
   setShowLyricLabels: Setter<boolean>
   showLyricNoteLabels: Accessor<boolean>
   setShowLyricNoteLabels: Setter<boolean>
+  melodyAudio?: Accessor<boolean>
+  onToggleMelodyAudio?: () => void
 
   // Whisper alignment
   whisperStatus: Accessor<string>
@@ -281,6 +283,8 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 setShowNoteLabels={props.setShowNoteLabels}
                 showLyricLabels={props.showLyricLabels}
                 setShowLyricLabels={props.setShowLyricLabels}
+                melodyAudio={props.melodyAudio}
+                onToggleMelodyAudio={props.onToggleMelodyAudio}
               />
             </div>
             <canvas
