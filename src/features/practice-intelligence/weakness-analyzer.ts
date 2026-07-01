@@ -49,42 +49,49 @@ export function findWeakExercises(): WeakExercise[] {
   const entries = exerciseHistory()
   if (entries.length === 0) return []
 
-  const byType = new Map<ExerciseType, { recent: number[]; all: number[] }>()
+  // `exerciseHistory()` is newest-first, so this collects each type's
+  // scores in that same newest-first order.
+  const byType = new Map<ExerciseType, number[]>()
   for (const e of entries) {
-    const data = byType.get(e.type) ?? { recent: [], all: [] }
-    data.all.push(e.score)
-    if (data.recent.length < RECENT_WINDOW) {
-      data.recent.push(e.score)
-    }
-    byType.set(e.type, data)
+    const scores = byType.get(e.type) ?? []
+    scores.push(e.score)
+    byType.set(e.type, scores)
   }
 
   const results: WeakExercise[] = []
-  for (const [type, data] of byType) {
+  for (const [type, scores] of byType) {
+    // Disjoint windows: comparing "recent" against a superset that
+    // *contains* "recent" (e.g. all-time average) mutes the trend signal —
+    // for <= RECENT_WINDOW total plays they're the same set, so the trend
+    // could never be anything but 'stable'. Compare against the *next*
+    // window of older plays instead, matching trends-computer.ts.
+    const recent = scores.slice(0, RECENT_WINDOW)
+    const older = scores.slice(RECENT_WINDOW, RECENT_WINDOW * 2)
+
     const recentAvg =
-      data.recent.length > 0
-        ? Math.round(
-            data.recent.reduce((a, b) => a + b, 0) / data.recent.length,
-          )
+      recent.length > 0
+        ? Math.round(recent.reduce((a, b) => a + b, 0) / recent.length)
         : 0
 
     if (recentAvg < WEAK_EXERCISE_THRESHOLD) {
-      const allAvg =
-        data.all.length > 0
-          ? Math.round(data.all.reduce((a, b) => a + b, 0) / data.all.length)
-          : 0
+      const olderAvg =
+        older.length > 0
+          ? Math.round(older.reduce((a, b) => a + b, 0) / older.length)
+          : recentAvg
 
       const trend: WeakExercise['trend'] =
-        recentAvg > allAvg + 5
-          ? 'improving'
-          : recentAvg < allAvg - 5
-            ? 'declining'
-            : 'stable'
+        older.length === 0
+          ? 'stable'
+          : recentAvg > olderAvg + 5
+            ? 'improving'
+            : recentAvg < olderAvg - 5
+              ? 'declining'
+              : 'stable'
 
       results.push({
         type,
         recentAvg,
-        totalPlays: data.all.length,
+        totalPlays: scores.length,
         trend,
       })
     }

@@ -92,6 +92,29 @@ describe('findWeakExercises', () => {
     expect(results[0].type).toBe('long-note') // 30 < 60
     expect(results[1].type).toBe('vibrato')
   })
+
+  it('detects a declining trend that all-time-average dilution used to mask', () => {
+    // Previously "recent" (last 10) was compared against "all" (a superset
+    // that always contains those same last 10), which muted real trends.
+    // Here recentAvg(60) vs the true all-time average(65) doesn't clear the
+    // +-5 threshold, so the old code called this 'stable' even though the
+    // last 10 plays are a clear step down from the 10 before them.
+    clearAll()
+    for (let i = 0; i < 10; i++) seedExercise('long-note', 70) // older plays
+    for (let i = 0; i < 10; i++) seedExercise('long-note', 60) // recent plays
+
+    const results = findWeakExercises()
+    expect(results.length).toBe(1)
+    expect(results[0].recentAvg).toBe(60)
+    expect(results[0].trend).toBe('declining')
+  })
+
+  it('stays stable when there is no older window to compare against', () => {
+    clearAll()
+    for (let i = 0; i < 10; i++) seedExercise('long-note', 40)
+    const results = findWeakExercises()
+    expect(results[0].trend).toBe('stable')
+  })
 })
 
 describe('findWeakPitches', () => {
