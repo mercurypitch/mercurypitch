@@ -45,6 +45,12 @@ describe('MIDI/Frequency Conversion', () => {
     expect(middleC.octave).toBe(4)
   })
 
+  it('does not produce "undefined" for negative MIDI values', () => {
+    // -1 % 12 === -1 in JS, which used to index NOTE_NAMES[-1] === undefined
+    expect(midiToNote(-1).name).toBe('B')
+    expect(midiToNote(-1).octave).toBe(-2)
+  })
+
   it('calculates cents deviation correctly', () => {
     // 440 Hz is exactly A4 (0 cents)
     const note = freqToNote(440)

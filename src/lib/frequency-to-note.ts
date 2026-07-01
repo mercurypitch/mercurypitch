@@ -30,8 +30,9 @@ export function frequenciesToNoteName(frequency: number): string {
   // Convert MIDI note to octave
   const octave = Math.floor(midiNote / 12) - 1
 
-  // Calculate semitone offset from C
-  const semitone = midiNote % 12
+  // Calculate semitone offset from C (normalized so negative MIDI notes
+  // don't produce a negative array index)
+  const semitone = ((midiNote % 12) + 12) % 12
 
   const noteNames: NoteName[] = [
     'C',
@@ -79,7 +80,7 @@ export function midiToNoteName(midi: number): string {
     'A#',
     'B',
   ]
-  const noteIndex = rounded % 12
+  const noteIndex = ((rounded % 12) + 12) % 12
   const octave = Math.floor(rounded / 12) - 1
   return `${noteNames[noteIndex]}${octave}`
 }
@@ -102,8 +103,10 @@ export function noteToMidi(note: string): number {
     'A#',
     'B',
   ]
-  const name = note.slice(0, -1)
-  const octave = parseInt(note.slice(-1))
+  const match = /^([A-G]#?)(-?\d+)$/.exec(note)
+  if (!match) return NaN
+  const [, name, octaveStr] = match
+  const octave = parseInt(octaveStr, 10)
   return noteNames.indexOf(name as NoteName) + (octave + 1) * 12
 }
 

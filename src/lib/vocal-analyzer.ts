@@ -1432,6 +1432,6 @@ function midiToNoteName(midi: number): string {
     'B',
   ]
   const octave = Math.floor(midi / 12) - 1
-  const noteIndex = midi % 12
+  const noteIndex = ((midi % 12) + 12) % 12
   return `${noteNames[noteIndex]}${octave}`
 }
