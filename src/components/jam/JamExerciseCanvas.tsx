@@ -23,9 +23,6 @@ export interface InternalScore {
   color: string
   peerId: string
 }
-let lastComputedScores: InternalScore[] = []
-let wasPlaying = false
-
 interface JamExerciseCanvasProps {
   myPeerId: () => string | null
 }
@@ -35,6 +32,11 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let resizeObserver: ResizeObserver | null = null
+  // Component-local (not module-level) so a remount (e.g. leaving and
+  // rejoining a jam room) doesn't inherit stale scores/playback state from
+  // a previous mount.
+  let lastComputedScores: InternalScore[] = []
+  let wasPlaying = false
 
   const peerColorMap = createMemo(() => {
     const history = jamPitchHistory()
