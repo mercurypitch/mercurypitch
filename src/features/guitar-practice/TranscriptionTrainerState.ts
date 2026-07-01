@@ -52,14 +52,17 @@ export function createTranscriptionTrainer(
     const ctx = audioEngine.audioCtx
     if (!ctx) return
     if (sourceNode && phase() === 'playing') {
-      const elapsed =
-        (ctx.currentTime - startTime) * playbackRate() + pauseOffset
+      let elapsed = (ctx.currentTime - startTime) * playbackRate() + pauseOffset
       const dur = duration()
       if (loopEnabled() && elapsed >= loopEnd()) {
-        // Jump back to loop start
+        // The AudioBufferSourceNode is already looping natively (loop /
+        // loopStart / loopEnd, set in restartSource()) — the audio has
+        // already wrapped seamlessly. Re-sync this side's elapsed-time
+        // bookkeeping to match instead of tearing down and recreating the
+        // source, which used to cause an audible glitch/double-jump.
+        startTime = ctx.currentTime
         pauseOffset = loopStart()
-        restartSource()
-        return
+        elapsed = loopStart()
       }
       setCurrentTime(Math.min(elapsed, dur))
     }
