@@ -57,12 +57,23 @@ export function useChordStackerController(
   let noteScores: number[] = []
   let allRoundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  let baseMidi = 60
+  let _cancelled = false
+  // Guards against a double-invoked startRounds() (e.g. a double-click on
+  // Start racing base.start()'s own async guard) kicking off a second,
+  // concurrent round/timer chain that stomps on the same shared state.
+  let _active = false
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
     phaseTimer = undefined
+    // reset()/_setRunning(false) can fire while playChordNotes() is
+    // awaiting playTone()/delay() — those await points are real async
+    // gaps, so without this the continuation would resume with
+    // _cancelled still false and keep playing/scheduling on an
+    // already-torn-down exercise.
+    _cancelled = true
+    _active = false
   })
-  let baseMidi = 60
-  let _cancelled = false
   // Adaptive timing for this session's chord set, set when it is generated.
   let notePlayDurationMs = NOTE_PLAY_DURATION_BASE_MS
   let matchWindowMs = MATCH_WINDOW_BASE_MS
@@ -82,6 +93,11 @@ export function useChordStackerController(
   }
 
   function startRounds(): void {
+    if (_active) {
+      console.warn('[chord-stacker] startRounds() called while already active')
+      return
+    }
+    _active = true
     playRound()
   }
 
@@ -109,6 +125,16 @@ export function useChordStackerController(
     playChordNotes()
   }
 
+  // Tracked via `phaseTimer` (like every other scheduled delay in this
+  // controller) so stopRounds()/reset() can cancel an inter-note gap
+  // immediately instead of leaving an untracked native timer to fire on
+  // an already-stopped exercise.
+  function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      phaseTimer = setTimeout(resolve, ms)
+    })
+  }
+
   async function playChordNotes(): Promise<void> {
     if (_cancelled) return
     for (let i = 0; i < chordNotes.length; i++) {
@@ -117,13 +143,13 @@ export function useChordStackerController(
       await audioEngine.playTone(midiToFreq(midi), notePlayDurationMs)
       if (_cancelled) return
       if (i < chordNotes.length - 1) {
-        await new Promise((r) => setTimeout(r, GAP_BETWEEN_NOTES_MS))
+        await delay(GAP_BETWEEN_NOTES_MS)
         if (_cancelled) return
       }
     }
 
     // Short gap then start matching
-    await new Promise((r) => setTimeout(r, 400))
+    await delay(400)
     if (_cancelled) return
     noteIndex = 0
     startMatchingNote()
@@ -203,6 +229,7 @@ export function useChordStackerController(
   }
 
   function finish(): void {
+    _active = false
     const result = computeResult()
     base._completeWithResult(result)
   }
