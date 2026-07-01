@@ -152,6 +152,17 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   function stop(): void {
     running = false
     cancelAnimationFrame(animId)
+    // Clear controller timers registered via _registerDispose — mirrors
+    // reset()/_setRunning(false) so a caller using stop() doesn't leak
+    // pending setInterval/setTimeout chains from the exercise controller.
+    for (const fn of disposeFns) {
+      try {
+        fn()
+      } catch {
+        /* ignore */
+      }
+    }
+    disposeFns = []
     const finalElapsed = performance.now() - startTime
     setState((s) => ({ ...s, status: 'complete', elapsedMs: finalElapsed }))
   }

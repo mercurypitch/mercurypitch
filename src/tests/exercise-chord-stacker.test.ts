@@ -148,4 +148,60 @@ describe('useChordStackerController', () => {
 
     expect(completed.length).toBe(1)
   })
+
+  it('a stale playChordNotes() continuation does not resume after base.reset() fires mid-flight', async () => {
+    // reset()/_setRunning(false) (not just stopRounds()) must be able to
+    // cancel an in-flight playTone() await, or the chord-arpeggio loop
+    // keeps playing/scheduling notes on an already-torn-down exercise.
+    let disposer: (() => void) | undefined
+    let resolvePlayTone: (() => void) | undefined
+    const metricsCalls: Array<Record<string, number>> = []
+    const base = createMockBase({
+      _registerDispose: (fn) => {
+        disposer = fn
+      },
+      _updateMetrics: (m) => metricsCalls.push(m),
+    })
+    const audioEngine = {
+      playTone: () =>
+        new Promise<void>((resolve) => {
+          resolvePlayTone = resolve
+        }),
+    }
+    const ctrl = useChordStackerController(base, audioEngine)
+
+    ctrl.setBase(60)
+    ctrl.startRounds() // fires playTone() for the first chord note
+
+    metricsCalls.length = 0 // clear the round-start metrics
+
+    // Simulate base.reset() running while playTone() is still in flight.
+    disposer?.()
+
+    resolvePlayTone?.()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The continuation should have bailed out instead of continuing to
+    // play/schedule the rest of the chord.
+    expect(metricsCalls.length).toBe(0)
+  })
+
+  it('startRounds ignores a second call while already active', () => {
+    const metricsCalls: Array<Record<string, number>> = []
+    const base = createMockBase({
+      _updateMetrics: (m) => metricsCalls.push(m),
+    })
+    const ctrl = useChordStackerController(base, audioEngineMock)
+
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    ctrl.startRounds() // double-invoke, e.g. a double-clicked Start button
+
+    const roundAnnouncements = metricsCalls.filter(
+      (m) => m.totalRounds !== undefined,
+    )
+    expect(roundAnnouncements.length).toBe(1)
+  })
 })

@@ -162,4 +162,61 @@ describe('useRoutineRunnerController', () => {
     expect(running).toContain(false)
     expect(committed.length).toBe(1)
   })
+
+  it('a stale playTone().then() does not re-arm a timer after base.reset() fires mid-flight', async () => {
+    // reset()/_setRunning(false) (not just stopRoutine()) must be able to
+    // cancel an in-flight playTone().then() continuation, or it silently
+    // schedules a new timer on an already-torn-down exercise.
+    let disposer: (() => void) | undefined
+    let resolvePlayTone: (() => void) | undefined
+    const metricsCalls: Array<Record<string, number>> = []
+    const base = createMockBase({
+      _registerDispose: (fn) => {
+        disposer = fn
+      },
+      _updateMetrics: (m) => metricsCalls.push(m),
+    })
+    const audioEngine = {
+      playTone: () =>
+        new Promise<void>((resolve) => {
+          resolvePlayTone = resolve
+        }),
+    }
+    const ctrl = useRoutineRunnerController(base, audioEngine)
+
+    ctrl.setBase(60)
+    ctrl.startRoutine() // fires playTone() for the first note, awaiting resolution
+
+    metricsCalls.length = 0 // clear the initial phase-start metrics
+
+    // Simulate base.reset() running while playTone() is still in flight.
+    disposer?.()
+
+    // Now the tone "finishes" — its .then() continuation runs after reset.
+    resolvePlayTone?.()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The continuation should have bailed out via _cancelled instead of
+    // scheduling startMatching()'s metrics update.
+    expect(metricsCalls.some((m) => m.phase === 2)).toBe(false)
+  })
+
+  it('startRoutine ignores a second call while already active', () => {
+    const metricsCalls: Array<Record<string, number>> = []
+    const base = createMockBase({
+      _updateMetrics: (m) => metricsCalls.push(m),
+    })
+    const audioEngine = { playTone: async () => {} }
+    const ctrl = useRoutineRunnerController(base, audioEngine)
+
+    ctrl.setBase(60)
+    ctrl.startRoutine()
+    ctrl.startRoutine() // double-invoke, e.g. a double-clicked Start button
+
+    const phaseAnnouncements = metricsCalls.filter(
+      (m) => m.totalPhases !== undefined,
+    )
+    expect(phaseAnnouncements.length).toBe(1)
+  })
 })

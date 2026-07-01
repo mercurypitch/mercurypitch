@@ -35,11 +35,24 @@ export function useRoutineRunnerController(
   let allScores: number[] = []
   let fatigueCheckpoints: FatigueCheckpoint[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  let _cancelled = false
+  // Guards against a double-invoked startRoutine() (e.g. a double-click on
+  // Start racing base.start()'s own async guard) kicking off a second,
+  // concurrent phase/timer chain that stomps on the same shared state.
+  let _active = false
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
     phaseTimer = undefined
+    // reset()/_setRunning(false) can fire while a playTone(...).then() is
+    // in-flight (playTone is a real, non-instant promise) — this only
+    // clears whatever timer happens to be pending *right now*, not any
+    // continuation an in-flight promise schedules later. Flipping
+    // _cancelled here (not just in stopRoutine()) makes that later
+    // continuation's own guard check see it and bail out instead of
+    // re-arming an untracked timer on an already-torn-down exercise.
+    _cancelled = true
+    _active = false
   })
-  let _cancelled = false
   // Difficulty-scaled rest between phases; difficultyFactor(5) === 1 → 500ms.
   let phaseRestMs = PHASE_REST_MS
 
@@ -54,6 +67,13 @@ export function useRoutineRunnerController(
   }
 
   function startRoutine(): void {
+    if (_active) {
+      console.warn(
+        '[routine-runner] startRoutine() called while already active',
+      )
+      return
+    }
+    _active = true
     startPhase()
   }
 
@@ -109,6 +129,9 @@ export function useRoutineRunnerController(
           if (_cancelled) return
           startMatching(noteIndex)
         }, GAP_BETWEEN_NOTES_MS)
+      })
+      .catch((err: unknown) => {
+        console.warn('[routine-runner] playTone failed:', err)
       })
   }
 
@@ -186,6 +209,7 @@ export function useRoutineRunnerController(
   }
 
   function finish(): void {
+    _active = false
     const result = computeResult()
     base._completeWithResult(result)
   }

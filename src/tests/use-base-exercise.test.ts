@@ -122,4 +122,29 @@ describe('useBaseExercise', () => {
       dispose()
     })
   })
+
+  it('stop() disposes controller timers registered via _registerDispose', () => {
+    // Previously stop() skipped disposeFns entirely (unlike reset() and
+    // _setRunning(false)), so a controller's setInterval/setTimeout chain
+    // would keep running/leak if a caller ever used stop() instead of
+    // reset() to end the exercise.
+    createRoot((dispose) => {
+      const audioEngine = createMockAudioEngine()
+      const practiceEngine = createMockPracticeEngine()
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'long-note', targetNote: 'A3' },
+      })
+
+      const cleanup = vi.fn()
+      base._registerDispose(cleanup)
+
+      base.stop()
+
+      expect(cleanup).toHaveBeenCalledOnce()
+
+      dispose()
+    })
+  })
 })
