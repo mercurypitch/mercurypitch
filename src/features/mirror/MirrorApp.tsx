@@ -468,7 +468,7 @@ const MicLevelBar: Component<{ level: () => number }> = (props) => {
 
 const Landing: Component<{ onStart: () => void }> = (props) => (
   <section class="mirror-panel mirror-landing">
-    <p class="mirror-wordmark">MERCURYPITCH</p>
+    <p class="mirror-wordmark">MercuryPitch</p>
     <h1>See your voice. 60 seconds.</h1>
     <p>
       Sing three short tasks and get your vocal range, pitch accuracy and
@@ -581,7 +581,7 @@ const Results: Component<{
           href={props.appUrl}
           onClick={() => trackFunnel('cta_app_click')}
         >
-          Train it in MercuryPitch
+          Train in MercuryPitch
         </a>
       </div>
       <Show when={props.shareStatus}>

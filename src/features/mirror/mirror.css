@@ -13,6 +13,12 @@
   --mirror-accent: #8fa3ff;
   --mirror-gold: #ffe9a8;
   --mirror-green: #8be9b8;
+  /* Brand wordmark gradient — the app header's --accent/--purple (dark
+     theme values; the mirror is always dark). Keep in sync with
+     .logo-btn .app-title in src/components/AppHeader.css and the canvas
+     wordmark in card-renderer.ts. */
+  --mirror-brand-a: #58a6ff;
+  --mirror-brand-b: #bc8cff;
 }
 
 * {
@@ -74,10 +80,18 @@ body {
 }
 
 .mirror-wordmark {
-  letter-spacing: 0.32em;
   font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--mirror-dim);
+  font-size: 1.3rem;
+  line-height: 1.2;
+  margin: 0 0 4px;
+  background: linear-gradient(
+    135deg,
+    var(--mirror-brand-a),
+    var(--mirror-brand-b)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .mirror-trust {
