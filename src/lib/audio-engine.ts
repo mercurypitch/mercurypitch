@@ -1795,10 +1795,14 @@ export class AudioEngine {
 
     const sampleRate = 44100
     const beatDuration = 60 / bpm // seconds per beat
-    const totalBeats = Math.max(
-      ...melody.map((item) => item.startBeat + item.duration),
-      4,
-    )
+    // Avoid Math.max(...spread): a large melody (thousands of notes, e.g.
+    // from a long MIDI import) can exceed the engine's max call-argument
+    // count and throw a RangeError.
+    let totalBeats = 4
+    for (const item of melody) {
+      const end = item.startBeat + item.duration
+      if (end > totalBeats) totalBeats = end
+    }
     const totalDuration = totalBeats * beatDuration + 0.5 // +0.5s tail for release
     const totalSamples = Math.ceil(totalDuration * sampleRate)
 
@@ -1812,16 +1816,19 @@ export class AudioEngine {
     const prevInstrument = this.currentInstrument
     if (instrument) this.currentInstrument = instrument
 
-    // TODO: Check if we need this! Validate melody items before rendering
-    const hasValidFreq = melody.some(
-      (item) => item.note !== null && item.note.freq !== null,
+    // Filter out items with a missing/non-finite frequency (e.g. from a
+    // malformed MIDI import) instead of only gating on whether *any* item
+    // in the melody has a valid one — a stray invalid item used to still
+    // get scheduled with a garbage frequency.
+    const validMelody = melody.filter(
+      (item) => item.note != null && Number.isFinite(item.note.freq),
     )
-    if (!hasValidFreq) {
+    if (validMelody.length === 0) {
       return null
     }
 
     // Schedule all notes
-    for (const item of melody) {
+    for (const item of validMelody) {
       const freq = item.note.freq
       const startTime = item.startBeat * beatDuration
       const durationMs = item.duration * beatDuration * 1000

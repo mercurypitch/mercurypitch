@@ -639,6 +639,58 @@ describe('AudioEngine', () => {
       expect(blob).toBeInstanceOf(Blob)
     })
 
+    it('does not crash computing duration for a melody large enough to overflow Math.max(...spread)', async () => {
+      await engine.init()
+      // Previously `Math.max(...melody.map(...))` spread every element as a
+      // call argument, which throws "RangeError: too many arguments" once
+      // the array is large enough (200k comfortably exceeds the ~65k-125k
+      // engine-dependent argument limit). Every item has an invalid freq so
+      // the (unrelated, and comparatively expensive) per-note render loop
+      // never runs — this test is only exercising the duration/size calc.
+      const melody: MelodyItem[] = Array.from({ length: 200_000 }, (_, i) => ({
+        id: i,
+        note: { name: 'C', octave: 4, midi: 60, freq: NaN },
+        startBeat: i,
+        duration: 1,
+      }))
+
+      await expect(engine.renderMelodyToWAV(melody, 120)).resolves.toBeNull()
+    })
+
+    it('skips only the items with a non-finite frequency, not the whole melody', async () => {
+      await engine.init()
+      const melody: MelodyItem[] = [
+        {
+          id: 1,
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
+          startBeat: 0,
+          duration: 1,
+        },
+        {
+          id: 2,
+          note: { name: 'D', octave: 4, midi: 62, freq: NaN },
+          startBeat: 1,
+          duration: 1,
+        },
+        {
+          id: 3,
+          note: { name: 'E', octave: 4, midi: 64, freq: 329.63 },
+          startBeat: 2,
+          duration: 1,
+        },
+      ]
+
+      const blob = await engine.renderMelodyToWAV(melody, 120)
+      expect(blob).toBeInstanceOf(Blob)
+
+      // Only the two valid-freq items should have created an oscillator on
+      // the offline render context.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const instances = (global.OfflineAudioContext as any).mock.instances
+      const lastOfflineCtx = instances[instances.length - 1]
+      expect(lastOfflineCtx.createOscillator).toHaveBeenCalledTimes(2)
+    })
+
     it('handles very high BPM for export', async () => {
       await engine.init()
       const melody: MelodyItem[] = [
