@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Mirror — See Your Voice in 60 Seconds | MercuryPitch</title>
+    <meta name="description" content="Free in-browser voice snapshot: sing for 45 seconds and get your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Your audio never leaves your device.">
+    <meta name="keywords" content="vocal range test, tone deaf test, pitch accuracy test, voice type, singing test, free vocal test">
+    <meta name="author" content="MercuryPitch">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mercurypitch.com/mirror">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Voice Mirror — See Your Voice in 60 Seconds">
+    <meta property="og:description" content="Sing for 45 seconds, get your vocal range, accuracy and steadiness as a shareable voiceprint. Analyzed entirely in your browser.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mercurypitch.com/mirror">
+    <meta property="og:image" content="https://mercurypitch.com/og-image.png">
+    <meta property="og:site_name" content="MercuryPitch">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Voice Mirror — See Your Voice in 60 Seconds">
+    <meta name="twitter:description" content="Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <meta name="theme-color" content="#0b1026">
+
+    <!-- FAQ structured data (spec §9) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is my vocal range?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Your vocal range is the span from the lowest to the highest note you can comfortably sing. Voice Mirror measures it in under a minute by analyzing a low-to-high siren glide directly in your browser."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Am I tone deaf?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "True tone deafness (amusia) is rare. Most people who worry about it simply haven't trained pitch matching. Voice Mirror measures how close you sing to five reference notes, in cents, so you get a real number instead of a label."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How accurate is a browser pitch test?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Modern pitch detection (YIN/MPM) running on raw, unprocessed microphone input resolves pitch to within a few cents — far finer than a semitone. Voice Mirror disables echo cancellation and noise suppression so the detector sees your true voice."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Voice Mirror needs JavaScript — your voice is analyzed right here in your browser, and never uploaded.</noscript>
+    <script type="module" src="/src/features/mirror/main.tsx"></script>
+  </body>
+</html>

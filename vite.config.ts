@@ -35,6 +35,37 @@ try {
   }
 }
 
+// The Cloudflare worker rewrites /mirror (+ SEO aliases) to mirror.html in
+// production; dev and preview servers have no worker, so mirror the rewrite
+// here or the WelcomeScreen link would land on the SPA shell instead.
+const MIRROR_PATHS = new Set(['/mirror', '/vocal-range-test', '/tone-deaf-test'])
+
+function mirrorRewritePlugin() {
+  const rewrite = (server: {
+    middlewares: {
+      use: (
+        fn: (
+          req: { url?: string },
+          res: unknown,
+          next: () => void,
+        ) => void,
+      ) => void
+    }
+  }) => {
+    server.middlewares.use((req, _res, next) => {
+      if (req.url !== undefined && MIRROR_PATHS.has(req.url.split('?')[0])) {
+        req.url = '/mirror.html'
+      }
+      next()
+    })
+  }
+  return {
+    name: 'mirror-path-rewrite',
+    configureServer: rewrite,
+    configurePreviewServer: rewrite,
+  }
+}
+
 function removeWasmAssetsPlugin() {
   return {
     name: 'remove-wasm-assets',
@@ -53,6 +84,7 @@ export default defineConfig({
     isDev ? ssl() : [],
     qrcode(),
     solidPlugin(),
+    mirrorRewritePlugin(),
     removeWasmAssetsPlugin(),
   ],
   // Absolute base so asset URLs resolve from the site root. Required for
@@ -107,11 +139,31 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       external: [/.*\.wasm$/],
+      // Voice Mirror is a second, standalone entry (mirror.html) so its
+      // bundle stays tiny — it must not pull in the app shell or ONNX.
+      input: {
+        index: resolve(__dirname, 'index.html'),
+        mirror: resolve(__dirname, 'mirror.html'),
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('onnxruntime')) return undefined
+            // solid-js gets its own chunk so the standalone mirror entry
+            // (which uses nothing else from node_modules) doesn't drag the
+            // whole app vendor bundle onto mobile 4G.
+            if (id.includes('solid-js')) return 'vendor-solid'
             return 'vendor'
+          }
+          // Small pitch/mic modules shared by the app and the mirror entry.
+          // Without this, Rollup co-locates them with app chunks and the
+          // mirror transitively loads the whole app vendor bundle.
+          if (
+            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note)/.test(
+              id,
+            )
+          ) {
+            return 'pitch-core'
           }
           if (
             id.includes('CommunityShare') ||

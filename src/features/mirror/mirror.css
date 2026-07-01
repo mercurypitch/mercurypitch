@@ -1,0 +1,275 @@
+/* ============================================================
+   Voice Mirror — standalone styles (deep-space theme).
+   Self-contained: the mirror entry does not import the app's
+   stylesheets, keeping its bundle small and fast on mobile.
+   ============================================================ */
+
+:root {
+  --mirror-bg-top: #0b1026;
+  --mirror-bg-mid: #141033;
+  --mirror-bg-bottom: #090714;
+  --mirror-text: #f4f0ff;
+  --mirror-dim: #9b93c0;
+  --mirror-accent: #8fa3ff;
+  --mirror-gold: #ffe9a8;
+  --mirror-green: #8be9b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: linear-gradient(
+    180deg,
+    var(--mirror-bg-top) 0%,
+    var(--mirror-bg-mid) 55%,
+    var(--mirror-bg-bottom) 100%
+  );
+  background-attachment: fixed;
+  color: var(--mirror-text);
+  font-family:
+    'Plus Jakarta Sans',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+}
+
+.mirror-shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mirror-panel {
+  text-align: center;
+}
+
+.mirror-panel h1 {
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.15;
+  margin: 0.4em 0;
+}
+
+.mirror-panel h2 {
+  font-size: 1.7rem;
+  margin: 0.3em 0;
+}
+
+.mirror-panel h3 {
+  font-size: 1.15rem;
+  margin: 0 0 0.3em;
+  color: var(--mirror-gold);
+}
+
+.mirror-wordmark {
+  letter-spacing: 0.32em;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--mirror-dim);
+}
+
+.mirror-trust {
+  color: var(--mirror-dim);
+  font-size: 0.92rem;
+  max-width: 42ch;
+  margin: 1.2em auto 0;
+}
+
+.mirror-dim {
+  color: var(--mirror-dim);
+}
+
+.mirror-error {
+  color: #ff9c9c;
+}
+
+.mirror-cta {
+  display: inline-block;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 34px;
+  margin-top: 18px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #0b1026;
+  background: linear-gradient(135deg, var(--mirror-gold), #ffc46b);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.mirror-cta:hover {
+  transform: translateY(-1px);
+}
+
+.mirror-cta-secondary {
+  background: transparent;
+  color: var(--mirror-accent);
+  border: 1.5px solid var(--mirror-accent);
+}
+
+.mirror-progress {
+  color: var(--mirror-dim);
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mirror-stage {
+  margin-top: 22px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.mirror-countdown {
+  font-size: 4.4rem;
+  font-weight: 700;
+  color: var(--mirror-gold);
+}
+
+.mirror-listening {
+  font-size: 1.6rem;
+  color: var(--mirror-accent);
+  animation: mirror-pulse 1s ease-in-out infinite;
+}
+
+@keyframes mirror-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.mirror-liveviz {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: 14px;
+  background: rgba(10, 8, 26, 0.55);
+  border: 1px solid rgba(143, 163, 255, 0.18);
+}
+
+.mirror-timebar {
+  width: 100%;
+  max-width: 640px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(143, 163, 255, 0.15);
+  overflow: hidden;
+}
+
+.mirror-timebar-fill {
+  height: 100%;
+  background: var(--mirror-accent);
+  transition: width 0.1s linear;
+}
+
+.mirror-results {
+  padding-top: 24px;
+}
+
+.mirror-voiceprint {
+  margin: 0 auto 18px;
+  max-width: 420px;
+}
+
+.mirror-voiceprint-canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.45);
+}
+
+.mirror-hero {
+  margin-bottom: 0.15em;
+}
+
+.mirror-hero-sub {
+  font-size: 0.55em;
+  font-weight: 500;
+  color: var(--mirror-dim);
+}
+
+.mirror-chip {
+  display: inline-block;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 163, 255, 0.55);
+  background: rgba(143, 163, 255, 0.14);
+  color: #cfd6ff;
+  font-size: 0.9rem;
+}
+
+.mirror-delta {
+  color: var(--mirror-green);
+  font-weight: 600;
+}
+
+.mirror-stat {
+  margin-top: 26px;
+}
+
+.mirror-stat p {
+  color: var(--mirror-dim);
+  max-width: 46ch;
+  margin: 0.4em auto 0;
+}
+
+.mirror-pips {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.mirror-pip {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--mirror-accent);
+  background: transparent;
+}
+
+.mirror-pip-bullseye {
+  background: var(--mirror-gold);
+  border-color: var(--mirror-gold);
+  box-shadow: 0 0 10px rgba(255, 233, 168, 0.7);
+}
+
+.mirror-pip-hit {
+  background: var(--mirror-accent);
+}
+
+.mirror-pip-close {
+  background: rgba(143, 163, 255, 0.4);
+}
+
+.mirror-pip-miss,
+.mirror-pip-no-voice {
+  border-color: rgba(143, 163, 255, 0.35);
+}
+
+.mirror-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}

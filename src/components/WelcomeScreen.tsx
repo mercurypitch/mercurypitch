@@ -121,6 +121,15 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </button>
         </div>
 
+        {/* Voice Mirror teaser */}
+        <p style="text-align: center; font-size: 0.8rem; margin: -8px 0 16px; color: var(--text-secondary);">
+          New here?{' '}
+          <a href="/mirror" style="color: var(--text-secondary);">
+            Get your free 60-second voiceprint
+          </a>{' '}
+          — range, accuracy and steadiness, analyzed in your browser.
+        </p>
+
         {/* Mic Permission */}
         <div
           class={styles.welcomeMicSection}
