@@ -192,11 +192,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     setDragSourceIndex(-1)
   }
 
-  const handleContextMenu = (e: MouseEvent, itemId: string) => {
-    e.preventDefault()
-    props.onDeleteItem(itemId)
-  }
-
   const getRestDuration = (restMs: number) => {
     if (restMs < 1000) return `${Math.round(restMs / 100)}s`
     if (restMs < 60000) return `${Math.round(restMs / 1000)}s`
@@ -262,7 +257,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                     onDragOver={(e) => handleDragOver(e, index())}
                     onDrop={(e) => handleDrop(e, index())}
                     onDragEnd={handleDragEnd}
-                    onContextMenu={(e) => handleContextMenu(e, item.id)}
                   >
                     <div class="item-header">
                       <span class="item-type-icon">
@@ -396,7 +390,10 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   item.beats !== undefined &&
                   item.beats > 0
                 ) {
-                  return acc + (item.beats / 4) * (120 / (bpm() || 120))
+                  // Duration in ms for `beats` beats at the current BPM
+                  // (60,000ms per beat at 1 BPM), matching restMs's units
+                  // so the whole sum can be divided by 1000 once below.
+                  return acc + item.beats * (60000 / (bpm() || 120))
                 }
                 return acc
               }, 0) / 1000}{' '}

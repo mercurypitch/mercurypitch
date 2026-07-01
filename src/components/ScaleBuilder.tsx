@@ -160,8 +160,14 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
       if (parts.length >= 3) {
         setScaleName(parts[1])
         setCustomNotes(new Set(parts[2].split(',')))
+        return
       }
     }
+    // No active custom scale (or a built-in scale is active) — reset to
+    // defaults instead of leaving stale note selections from a previous
+    // open/session visible.
+    setScaleName('My Scale')
+    setCustomNotes(new Set<string>())
   }
 
   createEffect(() => {

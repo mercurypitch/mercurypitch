@@ -316,8 +316,19 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     else fadeOutPause()
   }
 
+  const isTypingTarget = (target: EventTarget | null): boolean => {
+    if (!(target instanceof HTMLElement)) return false
+    const tag = target.tagName
+    return (
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      tag === 'SELECT' ||
+      target.isContentEditable
+    )
+  }
+
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.code === 'Space') {
+    if (e.code === 'Space' && !isTypingTarget(e.target)) {
       e.preventDefault()
       togglePlayback()
     }
