@@ -192,43 +192,45 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ).pitchCanvasAudioEngine = audioEngine
 
     // Mouse handlers for dragging the playhead
-    canvasRef.addEventListener('mousedown', (e) => {
+    const onMouseDown = (e: MouseEvent) => {
       isSeeking = true
       handleSeek(e)
-    })
-    document.addEventListener('mousemove', (e) => {
+    }
+    const onMouseMove = (e: MouseEvent) => {
       if (isSeeking) handleSeek(e)
-    })
-    document.addEventListener('mouseup', () => {
+    }
+    const onMouseUp = () => {
       isSeeking = false
-    })
+    }
+    canvasRef.addEventListener('mousedown', onMouseDown)
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
 
     // Click-to-play: single-click plays the note, double-click plays a trill.
-    canvasRef.addEventListener('click', (e) => {
+    const onClick = (e: MouseEvent) => {
       if (props.isPlaying() || props.isPaused()) return
       if (trillActive()) return
       handleNoteSingleClick(e)
-    })
-    canvasRef.addEventListener('dblclick', (e) => {
+    }
+    const onDblClick = (e: MouseEvent) => {
       if (props.isPlaying() || props.isPaused()) return
       if (trillActive()) return
       handleNoteDoubleClick(e)
-    })
+    }
+    canvasRef.addEventListener('click', onClick)
+    canvasRef.addEventListener('dblclick', onDblClick)
 
     // Ctrl+scroll to zoom visible beat window
-    canvasRef.addEventListener(
-      'wheel',
-      (e) => {
-        if (!e.ctrlKey && !e.metaKey) return
-        e.preventDefault()
-        const step = e.deltaY > 0 ? 2 : -2
-        visibleBeatWindow = Math.max(
-          WINDOW_MIN,
-          Math.min(WINDOW_MAX, visibleBeatWindow + step),
-        )
-      },
-      { passive: false },
-    )
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const step = e.deltaY > 0 ? 2 : -2
+      visibleBeatWindow = Math.max(
+        WINDOW_MIN,
+        Math.min(WINDOW_MAX, visibleBeatWindow + step),
+      )
+    }
+    canvasRef.addEventListener('wheel', onWheel, { passive: false })
 
     const ro = new ResizeObserver(() => {
       resizeCanvas()
@@ -240,6 +242,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     onCleanup(() => {
       ro.disconnect()
+      canvasRef.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+      canvasRef.removeEventListener('click', onClick)
+      canvasRef.removeEventListener('dblclick', onDblClick)
+      canvasRef.removeEventListener('wheel', onWheel)
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
       if (clickTimer !== null) clearTimeout(clickTimer)
       trillTimerIds.forEach((id) => clearTimeout(id))

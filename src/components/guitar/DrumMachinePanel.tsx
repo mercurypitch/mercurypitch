@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, untrack } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, untrack } from 'solid-js'
 import type { DrumMachine } from '@/lib/guitar/drum-machine'
 import type { DrumPattern, DrumSound, PresetName, } from '@/lib/guitar/drum-machine'
 import { DRUM_SOUNDS } from '@/lib/guitar/drum-machine'
@@ -50,7 +50,10 @@ export const DrumMachinePanel: Component<DrumMachinePanelProps> = (props) => {
       setBpm(dm.bpm)
       setVolumes({ ...dm.volumes })
     })
-    return unsub
+    // `createEffect`'s return value is passed as the `prev` arg to its
+    // next run, not treated as a cleanup — the subscription needs an
+    // explicit onCleanup or it leaks on every re-run/unmount.
+    onCleanup(unsub)
   })
 
   const handleToggleStep = (sound: DrumSound, step: number) => {
