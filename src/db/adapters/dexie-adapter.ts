@@ -50,19 +50,6 @@ class DexieDatabase extends DexieDB {
     // v4: userSurveyResponses (onboarding survey). Incremental.
     this.version(4).stores({ userSurveyResponses: 'id, userId' })
   }
-
-  /** Add a new table at the next schema version. */
-  addTable(name: string, schema: string): void {
-    if (this.tables.some((t) => t.name === name)) return
-    const currentVersion = this.verno
-    this.close()
-    const newStores: Record<string, string> = {}
-    for (const t of this.tables) {
-      newStores[t.name] = t.schema.primKey.name
-    }
-    newStores[name] = schema
-    this.version(currentVersion + 1).stores(newStores)
-  }
 }
 
 // ── DexieRepository implementation ──────────────────────────────
@@ -274,9 +261,21 @@ export class DexieAdapter implements DatabaseAdapter {
   }
 
   async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {
-    return this.db.transaction('rw', this.db.tables, async () => {
+    // Dexie.transaction()'s scope-callback type (TXWithTables<this>) maps
+    // over every member of whatever class it's called on, and — a known
+    // Dexie+TypeScript limitation with subclassed databases — resolving
+    // that across its 1-5-table-plus-array overload set can blow TS's
+    // instantiation-depth limit depending incidentally on exactly which
+    // other methods exist on the subclass. The callback below ignores its
+    // argument, so none of that per-table typing is actually needed; the
+    // `any` here is a narrow, deliberate escape from that overload
+    // resolution, not a loss of real type safety (the outer generic still
+    // types the return value).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.db as any
+    return db.transaction('rw', db.tables, async () => {
       return fn(this)
-    })
+    }) as Promise<R>
   }
 
   async destroy(): Promise<void> {
