@@ -1,0 +1,390 @@
+// ============================================================
+// Voice Mirror metrics — unit tests on synthetic tracks (§10):
+// perfect sweep (range), sine + 5.5 Hz vibrato (steadiness),
+// falling SNR (confidence gating), octave-glitched sweep
+// (median filter), plus accuracy folding/locking/banding.
+// ============================================================
+
+import { describe, expect, it } from 'vitest'
+import type { F0Frame } from './metrics'
+import { computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, hzToCents, matchScore, medianFilter, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
+
+const HOP = 0.016
+
+const midiToHz = (midi: number): number => 440 * 2 ** ((midi - 69) / 12)
+const centsToHz = (cents: number): number => 440 * 2 ** ((cents - 6900) / 1200)
+
+interface ToneOpts {
+  offsetCents?: number
+  driftCentsPerSec?: number
+  vibratoHz?: number
+  vibratoCents?: number
+  conf?: number
+  tStart?: number
+}
+
+/** Synthetic voiced tone at `midi`, with optional offset/drift/vibrato. */
+function tone(
+  midi: number,
+  durationSec: number,
+  opts: ToneOpts = {},
+): F0Frame[] {
+  const {
+    offsetCents = 0,
+    driftCentsPerSec = 0,
+    vibratoHz = 0,
+    vibratoCents = 0,
+    conf = 0.95,
+    tStart = 0,
+  } = opts
+  const frames: F0Frame[] = []
+  for (let t = 0; t < durationSec; t += HOP) {
+    const cents =
+      midi * 100 +
+      offsetCents +
+      driftCentsPerSec * t +
+      vibratoCents * Math.sin(2 * Math.PI * vibratoHz * t)
+    frames.push({ t: tStart + t, f0: centsToHz(cents), conf })
+  }
+  return frames
+}
+
+/**
+ * Synthetic siren glide: brief hold at the starting note, linear sweep, brief
+ * hold at the ending note — like a real singer parking on their extremes.
+ */
+function glide(
+  fromMidi: number,
+  toMidi: number,
+  sweepSec = 7.2,
+  holdSec = 0.4,
+): F0Frame[] {
+  const frames: F0Frame[] = []
+  const total = holdSec + sweepSec + holdSec
+  for (let t = 0; t < total; t += HOP) {
+    let cents: number
+    if (t < holdSec) {
+      cents = fromMidi * 100
+    } else if (t < holdSec + sweepSec) {
+      const progress = (t - holdSec) / sweepSec
+      cents = (fromMidi + (toMidi - fromMidi) * progress) * 100
+    } else {
+      cents = toMidi * 100
+    }
+    frames.push({ t, f0: centsToHz(cents), conf: 0.95 })
+  }
+  return frames
+}
+
+/** Deterministic pseudo-random source for the target picker. */
+function seededRandom(seed: number): () => number {
+  let state = seed
+  return () => {
+    state = (state * 1664525 + 1013904223) % 2 ** 32
+    return state / 2 ** 32
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+describe('hzToCents / foldCents', () => {
+  it('maps A4 (440 Hz) to 6900 MIDI-cents', () => {
+    expect(hzToCents(440)).toBeCloseTo(6900, 6)
+  })
+
+  it('maps C4 to 6000 MIDI-cents', () => {
+    expect(hzToCents(midiToHz(60))).toBeCloseTo(6000, 6)
+  })
+
+  it('folds octave errors into [-600, 600)', () => {
+    expect(foldCents(1200)).toBeCloseTo(0)
+    expect(foldCents(-2400)).toBeCloseTo(0)
+    expect(foldCents(1225)).toBeCloseTo(25)
+    expect(foldCents(-575)).toBeCloseTo(-575)
+    expect(foldCents(650)).toBeCloseTo(-550)
+  })
+})
+
+describe('medianFilter', () => {
+  it('kills single-sample spikes', () => {
+    expect(medianFilter([1, 100, 1, 1, 1], 5)).toEqual([1, 1, 1, 1, 1])
+  })
+
+  it('preserves a constant signal', () => {
+    expect(medianFilter([5, 5, 5], 5)).toEqual([5, 5, 5])
+  })
+})
+
+describe('preprocess', () => {
+  it('does not smear pitch across an unvoiced gap (breath, consonant)', () => {
+    // A3 hold, 0.5 s of silence, then C4: the first C4 frames must not be
+    // median-pulled toward the pre-gap A3 pitch.
+    const before = tone(57, 0.3)
+    const after = tone(60, 0.3, { tStart: 0.8 })
+    const frames = preprocess([...before, ...after])
+    const secondRun = frames.filter((f) => f.t >= 0.8)
+    for (const frame of secondRun) {
+      expect(frame.cents).toBeCloseTo(6000, 0)
+    }
+  })
+})
+
+// ── §4.1 Range ───────────────────────────────────────────────
+
+describe('computeRange', () => {
+  it('recovers E2–G4 · 27 semitones from a perfect up+down sweep', () => {
+    const range = computeRange([glide(40, 67), glide(67, 40)])
+    expect(range).not.toBeNull()
+    expect(range?.lowNote).toBe('E2')
+    expect(range?.highNote).toBe('G4')
+    expect(range?.semitones).toBe(27)
+  })
+
+  it('is immune to single-frame octave glitches (median filter)', () => {
+    const glitched = [glide(40, 67), glide(67, 40)].map((frames) =>
+      frames.map((f, i) => (i % 17 === 0 ? { ...f, f0: f.f0 * 2 } : f)),
+    )
+    const range = computeRange(glitched)
+    expect(range?.lowNote).toBe('E2')
+    expect(range?.highNote).toBe('G4')
+  })
+
+  it('ignores low-confidence frames (falling SNR tail)', () => {
+    // Clean sweep, then a noisy tail where confidence collapses while the
+    // detector reports garbage way above the real range.
+    const clean = glide(48, 67)
+    const lastT = clean[clean.length - 1].t
+    const noisyTail: F0Frame[] = Array.from({ length: 120 }, (_, i) => ({
+      t: lastT + (i + 1) * HOP,
+      f0: midiToHz(96) * (1 + 0.3 * Math.sin(i)),
+      conf: 0.2,
+    }))
+    const range = computeRange([[...clean, ...noisyTail], glide(67, 48)])
+    expect(range?.lowNote).toBe('C3')
+    expect(range?.highNote).toBe('G4')
+  })
+
+  it('returns null when everything is unvoiced', () => {
+    const silent: F0Frame[] = Array.from({ length: 100 }, (_, i) => ({
+      t: i * HOP,
+      f0: 0,
+      conf: 0,
+    }))
+    expect(computeRange([silent])).toBeNull()
+  })
+
+  it('requires 150 ms of dwell for a bin to qualify', () => {
+    // 80 ms at C3 is not enough for the C3 bin; 1 s at E3 qualifies.
+    const brief = tone(48, 0.08)
+    const held = tone(52, 1, { tStart: 0.2 })
+    const range = computeRange([[...brief, ...held]])
+    expect(range?.lowNote).toBe('E3')
+  })
+})
+
+describe('voiceTypeHint', () => {
+  it('matches a G2–G4 range to Baritone', () => {
+    expect(voiceTypeHint(43, 67)).toBe('Baritone')
+  })
+
+  it('matches a C4–C6 range to Soprano', () => {
+    expect(voiceTypeHint(60, 84)).toBe('Soprano')
+  })
+})
+
+// ── §4.2 Accuracy ────────────────────────────────────────────
+
+describe('scoreMatchTake', () => {
+  it('scores a perfect take as a bullseye at 100', () => {
+    const take = scoreMatchTake(tone(57, 2), 57)
+    expect(take.locked).toBe(true)
+    expect(take.band).toBe('bullseye')
+    expect(take.score).toBe(100)
+    expect(take.deviationCents).toBeLessThan(1)
+  })
+
+  it('treats a different octave as correct (folding)', () => {
+    const take = scoreMatchTake(tone(45, 2), 57) // sings A2 against A3
+    expect(take.band).toBe('bullseye')
+    expect(take.score).toBe(100)
+  })
+
+  it('scores a +25 c take in the hit band with the piecewise value', () => {
+    const take = scoreMatchTake(tone(57, 2, { offsetCents: 25 }), 57)
+    expect(take.band).toBe('hit')
+    expect(take.deviationCents).toBeCloseTo(25, 0)
+    expect(take.score).toBeCloseTo(matchScore(25), 5)
+    expect(take.score).toBeGreaterThan(80)
+    expect(take.score).toBeLessThan(86)
+  })
+
+  it('reports no-voice when the take is silent', () => {
+    const silent: F0Frame[] = Array.from({ length: 200 }, (_, i) => ({
+      t: i * HOP,
+      f0: 0,
+      conf: 0,
+    }))
+    const take = scoreMatchTake(silent, 57)
+    expect(take.locked).toBe(false)
+    expect(take.band).toBe('no-voice')
+    expect(take.score).toBe(0)
+  })
+
+  it('never locks when the singer stays outside ±60 c', () => {
+    const take = scoreMatchTake(tone(57, 2, { offsetCents: 80 }), 57)
+    expect(take.locked).toBe(false)
+    expect(take.band).toBe('no-voice')
+  })
+
+  it('scores post-lock frames only: lock then drift lands in miss', () => {
+    const locked = tone(57, 0.3)
+    const drifted = tone(57, 2, { offsetCents: 90, tStart: 0.3 })
+    const take = scoreMatchTake([...locked, ...drifted], 57)
+    expect(take.locked).toBe(true)
+    expect(take.band).toBe('miss')
+    expect(take.deviationCents).toBeCloseTo(90, 0)
+    expect(take.score).toBeCloseTo(20, 0)
+  })
+})
+
+describe('matchScore', () => {
+  it('follows the piecewise anchors', () => {
+    expect(matchScore(12)).toBe(100)
+    expect(matchScore(35)).toBeCloseTo(70)
+    expect(matchScore(60)).toBeCloseTo(40)
+    expect(matchScore(120)).toBeCloseTo(0)
+    expect(matchScore(200)).toBe(0)
+  })
+})
+
+describe('computeAccuracy', () => {
+  it('averages the per-note scores', () => {
+    const takes = [100, 70, 40, 0, 90].map((score) => ({
+      targetMidi: 57,
+      locked: score > 0,
+      deviationCents: score > 0 ? 10 : null,
+      band: 'hit' as const,
+      score,
+    }))
+    expect(computeAccuracy(takes)?.score).toBe(60)
+  })
+
+  it('returns null for an empty take list', () => {
+    expect(computeAccuracy([])).toBeNull()
+  })
+})
+
+describe('pickMatchTargets', () => {
+  it('picks 5 shuffled targets inside the 25th–75th percentile, spaced 2–4', () => {
+    for (const seed of [1, 7, 42, 1234]) {
+      const targets = pickMatchTargets(40, 67, seededRandom(seed))
+      expect(targets).toHaveLength(5)
+      const sorted = [...targets].sort((a, b) => a - b)
+      const p25 = Math.round(40 + 27 * 0.25)
+      const p75 = Math.round(67 - 27 * 0.25)
+      expect(sorted[0]).toBeGreaterThanOrEqual(p25)
+      expect(sorted[4]).toBeLessThanOrEqual(p75)
+      for (let i = 1; i < sorted.length; i++) {
+        const gap = sorted[i] - sorted[i - 1]
+        expect(gap).toBeGreaterThanOrEqual(2)
+        expect(gap).toBeLessThanOrEqual(4)
+      }
+    }
+  })
+
+  it('degrades gracefully on a narrow range, keeping targets distinct', () => {
+    const targets = pickMatchTargets(57, 63, seededRandom(3))
+    expect(targets).toHaveLength(5)
+    expect(new Set(targets).size).toBe(5)
+    for (const t of targets) {
+      expect(t).toBeGreaterThanOrEqual(57)
+      expect(t).toBeLessThanOrEqual(63)
+    }
+  })
+})
+
+// ── §4.3 Steadiness ──────────────────────────────────────────
+
+describe('computeSteadiness', () => {
+  it('measures 5.5 Hz ±30 c vibrato as ~21 c of wobble with no drift', () => {
+    const result = computeSteadiness(
+      tone(57, 6, { vibratoHz: 5.5, vibratoCents: 30 }),
+    )
+    expect(result).not.toBeNull()
+    // SD of a sine is amplitude/√2 ≈ 21.2 c.
+    expect(result?.wobbleSdCents).toBeGreaterThan(18)
+    expect(result?.wobbleSdCents).toBeLessThan(24)
+    expect(Math.abs(result?.driftCentsPerSec ?? 99)).toBeLessThan(1)
+    expect(result?.score).toBeGreaterThan(60)
+    expect(result?.score).toBeLessThan(75)
+  })
+
+  it('reports pure drift in the slope, not the wobble', () => {
+    const result = computeSteadiness(tone(57, 6, { driftCentsPerSec: -4 }))
+    expect(result?.driftCentsPerSec).toBeCloseTo(-4, 1)
+    expect(result?.wobbleSdCents).toBeLessThan(2)
+    expect(result?.score).toBeGreaterThanOrEqual(95)
+  })
+
+  it('references the singer’s own note, not any target', () => {
+    const result = computeSteadiness(tone(50, 6, { offsetCents: 40 }))
+    expect(result?.referenceNote).toBe('D3')
+    expect(result?.wobbleSdCents).toBeLessThan(2)
+    expect(result?.score).toBeGreaterThanOrEqual(95)
+  })
+
+  it('trims the onset scoop before scoring', () => {
+    // 300 ms scoop from −80 c, then a clean hold: the trim removes it.
+    const scoop = tone(57, 0.3, { offsetCents: -80, driftCentsPerSec: 240 })
+    const hold = tone(57, 5, { tStart: 0.3 })
+    const result = computeSteadiness([...scoop, ...hold])
+    expect(result?.wobbleSdCents).toBeLessThan(4)
+  })
+
+  it('returns null when the hold is too short to trim', () => {
+    expect(computeSteadiness(tone(57, 0.5))).toBeNull()
+  })
+})
+
+describe('steadinessScore', () => {
+  it('follows the piecewise anchors', () => {
+    expect(steadinessScore(0)).toBe(100)
+    expect(steadinessScore(8)).toBeCloseTo(95)
+    expect(steadinessScore(20)).toBeCloseTo(70)
+    expect(steadinessScore(40)).toBeCloseTo(40)
+    expect(steadinessScore(70)).toBeCloseTo(10)
+    expect(steadinessScore(200)).toBe(0)
+  })
+})
+
+// ── Aggregate + baseline delta ───────────────────────────────
+
+describe('computeMirrorResult / summarize / computeDelta', () => {
+  it('produces the full result from raw task frames', () => {
+    const result = computeMirrorResult({
+      glides: [glide(43, 67), glide(67, 43)],
+      hold: tone(55, 6),
+      matches: [50, 53, 55, 58, 60].map((targetMidi) => ({
+        targetMidi,
+        frames: tone(targetMidi, 2, { offsetCents: 10 }),
+      })),
+    })
+    expect(result.range?.lowNote).toBe('G2')
+    expect(result.range?.voiceHint).toBe('Baritone')
+    expect(result.accuracy?.score).toBe(100)
+    expect(result.steadiness?.score).toBeGreaterThanOrEqual(95)
+
+    const summary = summarize(result)
+    expect(summary.semitones).toBe(24)
+
+    const later = { ...summary, semitones: 26, accuracy: 100, steadiness: 99 }
+    const delta = computeDelta(summary, later)
+    expect(delta.semitones).toBe(2)
+  })
+
+  it('summarizes missing sections as nulls and deltas them as null', () => {
+    const empty = summarize({ range: null, accuracy: null, steadiness: null })
+    expect(empty.semitones).toBeNull()
+    expect(computeDelta(empty, empty).accuracy).toBeNull()
+  })
+})

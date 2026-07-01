@@ -36,6 +36,15 @@ export interface Env {
   RUNPOD_BASE_URL?: string
 }
 
+// Paths that serve the Voice Mirror entry (mirror.html): the canonical path
+// plus the SEO alias landings. Keep in sync with the dev-server rewrite in
+// vite.config.ts.
+const MIRROR_PATHS = new Set([
+  '/mirror',
+  '/vocal-range-test',
+  '/tone-deaf-test',
+])
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -125,6 +134,18 @@ export default {
     // returns index.html for any unknown path, which would be wrong for an API.
     if (url.pathname.startsWith('/api/')) {
       return json({ error: 'Not found' }, 404)
+    }
+
+    // Voice Mirror — the standalone entry (mirror.html) is served for its
+    // path on the main domain, the SEO alias landings, and the root of the
+    // mirror.* subdomain. Hashed /assets/* requests fall through untouched.
+    const isMirrorPath =
+      MIRROR_PATHS.has(url.pathname) ||
+      (url.hostname.startsWith('mirror.') && url.pathname === '/')
+    if (isMirrorPath && method === 'GET') {
+      const mirrorUrl = new URL(request.url)
+      mirrorUrl.pathname = '/mirror.html'
+      return env.ASSETS.fetch(new Request(mirrorUrl.toString(), request))
     }
 
     // All other requests (static assets, SPA routes) are served by the assets
