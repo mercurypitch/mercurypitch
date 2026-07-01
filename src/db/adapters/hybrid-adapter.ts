@@ -24,7 +24,11 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   'userBadges',
   'achievements',
   'userAchievements',
-  'leaderboardEntries',
+  // leaderboardEntries is intentionally NOT here: the worker's TABLES
+  // allowlist no longer exposes it (the leaderboard is server-derived from
+  // sessionRecords — see workers/db-worker/src/tables.ts), so routing it to
+  // the cloud would silently 404 on every access. It stays a local-only
+  // Dexie table (STORE_SCHEMAS in dexie-adapter.ts) for seed/dev data.
   'sharedMelodies',
   'sharedSessions',
   'featureFlags',

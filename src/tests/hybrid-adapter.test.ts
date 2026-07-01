@@ -50,12 +50,20 @@ describe('HybridAdapter', () => {
       'melodyRecords',
       'sessionTemplates',
       'playlistRecords',
+      // The worker's TABLES allowlist no longer exposes this entity (the
+      // leaderboard is server-derived from sessionRecords) — it must stay
+      // local-only or every access silently 404s against the cloud worker.
+      'leaderboardEntries',
     ]
     for (const entity of localEntities) {
       hybrid.getRepository(entity)
     }
     expect(local.seen).toEqual(localEntities)
     expect(cloud.seen).toEqual([])
+  })
+
+  it('does not route leaderboardEntries to the cloud', () => {
+    expect(CLOUD_ENTITIES.has('leaderboardEntries')).toBe(false)
   })
 
   it('destroys both adapters', async () => {

@@ -110,4 +110,17 @@ describe('DexieAdapter', () => {
     const repo = adapter.getRepository<Rec>('sessionRecords')
     expect(await repo.findById('nope')).toBeNull()
   })
+
+  it('transaction runs the callback against a real transaction and returns its result', async () => {
+    const result = await adapter.transaction(async (db) => {
+      const repo = db.getRepository<Rec>('sessionRecords')
+      const created = await repo.create({ userId: 'tx', score: 1 })
+      return created.userId
+    })
+    expect(result).toBe('tx')
+
+    // The write actually committed.
+    const repo = adapter.getRepository<Rec>('sessionRecords')
+    expect(await repo.count({ where: { userId: 'tx' } })).toBe(1)
+  })
 })
