@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { NOTE_NAMES } from '@/lib/scale-data'
@@ -44,17 +45,12 @@ export interface StemMixerPitchAnalysisPanelProps {
   detectedKeyLabel: string
   /** Number of detected per-region keys. */
   keyRegionCount: number
-  // Edit mode
+  // Edit mode — entering it collapses this panel in favour of the floating
+  // StemMixerEditToolbar, which owns the per-note actions.
   editMode: boolean
   onToggleEditMode: () => void
   canEdit: boolean
-  hasSelection: boolean
   hasEdits: boolean
-  onDeleteSelected: () => void
-  onSplitSelected: () => void
-  onMergeSelected: () => void
-  onUndoEdit: () => void
-  onResetEdits: () => void
   pitchView: 'edited' | 'original' | 'both'
   setPitchView: (v: 'edited' | 'original' | 'both') => void
 }
@@ -65,18 +61,51 @@ export const StemMixerPitchAnalysisPanel: Component<
   // While the cleanup slider is dragged, fade the panel so the pitch view it
   // overlaps stays visible — the user can judge how much cleanup looks right.
   const [previewing, setPreviewing] = createSignal(false)
+  // Escape closes the panel.
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') props.onClose()
+  }
+  onMount(() => window.addEventListener('keydown', onKey))
+  onCleanup(() => window.removeEventListener('keydown', onKey))
   return (
     <div
       class="sm-pitch-analysis-panel sm-panel-content"
       style={{
         opacity: previewing() ? '0.2' : '1',
         transition: 'opacity 0.12s ease',
+        // Never grow past the viewport; scroll instead so the close button
+        // (sticky header, below) is always reachable.
+        'max-height': '85vh',
+        'overflow-y': 'auto',
       }}
     >
-      <div class="sm-pitch-analysis-header">
-        <h3>Vocal Pitch Analysis</h3>
-        <button class="sm-btn sm-btn-secondary" onClick={() => props.onClose()}>
-          Close
+      <div
+        class="sm-pitch-analysis-header"
+        style={{
+          position: 'sticky',
+          top: '0',
+          'z-index': '2',
+          background: 'var(--bg-secondary, #161b22)',
+          display: 'flex',
+          'align-items': 'center',
+          'justify-content': 'space-between',
+          gap: '0.5rem',
+          padding: '0.5rem 0',
+        }}
+      >
+        <h3 style={{ margin: '0' }}>Vocal Pitch Analysis</h3>
+        <button
+          class="sm-btn sm-btn-secondary"
+          title="Close"
+          aria-label="Close"
+          style={{
+            display: 'inline-flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+          }}
+          onClick={() => props.onClose()}
+        >
+          <X />
         </button>
       </div>
 
@@ -303,60 +332,10 @@ export const StemMixerPitchAnalysisPanel: Component<
               </For>
             </div>
 
-            <div
-              style={{
-                display: props.editMode ? 'flex' : 'none',
-                'flex-wrap': 'wrap',
-                gap: '0.5rem',
-              }}
-            >
-              <button
-                class="sm-btn sm-btn-secondary"
-                style={{ flex: '1 1 30%' }}
-                disabled={!props.hasSelection}
-                onClick={() => props.onDeleteSelected()}
-              >
-                Delete
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                style={{ flex: '1 1 30%' }}
-                disabled={!props.hasSelection}
-                onClick={() => props.onSplitSelected()}
-              >
-                Split
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                style={{ flex: '1 1 30%' }}
-                disabled={!props.hasSelection}
-                onClick={() => props.onMergeSelected()}
-              >
-                Merge next
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                style={{ flex: '1 1 45%' }}
-                disabled={!props.hasEdits}
-                onClick={() => props.onUndoEdit()}
-              >
-                Undo
-              </button>
-              <button
-                class="sm-btn sm-btn-secondary"
-                style={{ flex: '1 1 45%' }}
-                disabled={!props.hasEdits}
-                onClick={() => props.onResetEdits()}
-              >
-                Reset edits
-              </button>
-            </div>
             <small style={{ color: 'var(--text-muted)' }}>
               {!props.canEdit
                 ? 'Run analysis to enable editing.'
-                : props.editMode
-                  ? 'Click a note to select; drag to move/resize/retune; Delete/Split/Merge.'
-                  : 'Manually clean up the detected notes.'}
+                : 'Manually clean up the detected notes — a toolbar appears while editing.'}
             </small>
           </div>
 

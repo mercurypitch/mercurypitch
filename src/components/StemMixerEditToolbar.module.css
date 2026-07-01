@@ -1,0 +1,142 @@
+.bar {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(22, 27, 34, 0.96);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  color: #c9d1d9;
+  font-size: 12px;
+  max-width: 94vw;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: #30363d;
+}
+
+/* Segmented view control */
+.segment {
+  display: inline-flex;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segment button {
+  border: none;
+  background: transparent;
+  color: #8b949e;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segment button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9d1d9;
+}
+
+.segment button.active {
+  background: #1f6feb;
+  color: #fff;
+}
+
+/* Icon buttons */
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #c9d1d9;
+  cursor: pointer;
+}
+
+.iconBtn :global(svg) {
+  width: 18px;
+  height: 18px;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #30363d;
+}
+
+.iconBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.5);
+  color: #ff7b72;
+}
+
+.textBtn {
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: transparent;
+  color: #c9d1d9;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.textBtn:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.5);
+  color: #ff7b72;
+}
+
+.textBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.done {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid #2ea043;
+  border-radius: 8px;
+  background: #238636;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.done :global(svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.done:hover {
+  background: #2ea043;
+}
+
+.hint {
+  color: #8b949e;
+  font-size: 11px;
+  padding: 0 4px;
+}
