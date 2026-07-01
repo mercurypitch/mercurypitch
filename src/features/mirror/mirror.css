@@ -166,6 +166,22 @@ body {
   border: 1px solid rgba(143, 163, 255, 0.18);
 }
 
+.mirror-miclevel {
+  width: 100%;
+  max-width: 320px;
+  height: 8px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: rgba(143, 163, 255, 0.15);
+  overflow: hidden;
+}
+
+.mirror-miclevel-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--mirror-green), var(--mirror-gold));
+  transition: width 0.08s linear;
+}
+
 .mirror-timebar {
   width: 100%;
   max-width: 640px;

@@ -32,6 +32,10 @@ const HOLD_SEC = 6
 const REFERENCE_SEC = 1
 const MATCH_TAKE_SEC = 3
 const MIC_CONSUMER_ID = 'voice-mirror'
+// A live mic never reads exactly zero (room noise floors around 1e-3); dead
+// zeros mean the capture graph itself is broken (the iOS WebKit case) or the
+// mic is muted at the OS level.
+const SILENCE_RMS = 1e-6
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -72,6 +76,8 @@ export const MirrorApp: Component = () => {
   const [remaining, setRemaining] = createSignal(0)
   const [taskKey, setTaskKey] = createSignal(0)
   const [micError, setMicError] = createSignal<string | null>(null)
+  const [micChecking, setMicChecking] = createSignal(false)
+  const [micSilent, setMicSilent] = createSignal(false)
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
@@ -130,6 +136,63 @@ export const MirrorApp: Component = () => {
     return f0?.takeFrames() ?? []
   }
 
+  /**
+   * Measure the loudest input over a short window. Distinguishes a live mic
+   * (room noise alone registers well above zero) from the dead-zero output
+   * WebKit produces when the audio graph is broken.
+   */
+  async function probeLevel(ms: number): Promise<number> {
+    if (!f0) return 0
+    f0.startTask()
+    await sleep(ms)
+    f0.takeFrames()
+    return f0?.maxLevel() ?? 0
+  }
+
+  /**
+   * Rebuild the audio graph with a fresh AudioContext created AFTER capture
+   * is live. On iOS WebKit, createMediaStreamSource outputs pure silence
+   * when the context sample rate doesn't match the mic route (the context
+   * pre-dates getUserMedia, so it locked to the output rate); a context
+   * created while the mic is capturing picks up the session rate.
+   */
+  async function rebuildAudio(): Promise<void> {
+    const stream = micManager.getStream()
+    f0?.dispose()
+    f0 = null
+    await audioContext?.close().catch(() => undefined)
+    audioContext = new AudioContext()
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume().catch(() => undefined)
+    }
+    if (stream) f0 = createF0Stream(audioContext, stream)
+  }
+
+  /** Silence check with one automatic graph rebuild (the iOS WebKit fix). */
+  async function probeMic(): Promise<boolean> {
+    setMicChecking(true)
+    try {
+      if ((await probeLevel(900)) > SILENCE_RMS) return true
+      await rebuildAudio()
+      return (await probeLevel(900)) > SILENCE_RMS
+    } finally {
+      setMicChecking(false)
+    }
+  }
+
+  function beginFlow(): void {
+    setMicSilent(false)
+    dispatch({ type: 'mic-granted' })
+    void runFlow()
+  }
+
+  /** Re-test from the warning screen — the tap gives WebKit a fresh user
+   *  gesture, so a suspended context can resume here. */
+  async function retryMicCheck(): Promise<void> {
+    await rebuildAudio()
+    if (await probeMic()) beginFlow()
+  }
+
   /** The scariest moment is the biggest trust moment: mic + audio context are
    *  created inside this tap handler (required by iOS Safari). */
   async function start(): Promise<void> {
@@ -141,8 +204,13 @@ export const MirrorApp: Component = () => {
       f0 = createF0Stream(audioContext, stream)
       trackFunnel('mic_granted')
       setMicError(null)
-      dispatch({ type: 'mic-granted' })
-      void runFlow()
+      if (await probeMic()) {
+        beginFlow()
+      } else {
+        // Stay on the mic panel and tell the user instead of running the
+        // whole flow against a dead input.
+        setMicSilent(true)
+      }
     } catch (err) {
       // Without this, every denied attempt leaks an AudioContext and the
       // browser's hardware-context cap eventually blocks 'Try again'.
@@ -200,12 +268,23 @@ export const MirrorApp: Component = () => {
 
   function finishRun(state: MirrorSessionState): void {
     teardownAudio()
-    trackFunnel('results_view')
     const result = state.result
-    if (!result) return
+    if (!result) {
+      trackFunnel('results_view')
+      return
+    }
 
     // Delta vs. the previous visit is read before this run replaces it.
     const summary = summarize(result)
+    // The funnel's results_view carries the derived numbers (never audio),
+    // so the db can answer "who did the mirror and what did they measure".
+    trackFunnel('results_view', {
+      lowMidi: summary.lowMidi,
+      highMidi: summary.highMidi,
+      semitones: summary.semitones,
+      accuracy: summary.accuracy,
+      steadiness: summary.steadiness,
+    })
     const previous = deltaVsBaseline(localStorage, summary)
     const line = previous ? formatDeltaLine(previous.delta, previous.since) : ''
     setDeltaLine(line !== '' ? line : null)
@@ -266,7 +345,31 @@ export const MirrorApp: Component = () => {
               Try again
             </button>
           </Show>
-          <Show when={micError() === null}>
+          <Show when={micError() === null && micChecking()}>
+            <p class="mirror-dim">Checking your microphone — say "ahh"…</p>
+            <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
+          </Show>
+          <Show when={micError() === null && micSilent() && !micChecking()}>
+            <p class="mirror-error">
+              We're not hearing anything from your microphone.
+            </p>
+            <p class="mirror-dim">
+              Close other apps that might be using the mic, check the microphone
+              permission in your phone's browser settings, then test again.
+            </p>
+            <div class="mirror-actions">
+              <button class="mirror-cta" onClick={() => void retryMicCheck()}>
+                Test again
+              </button>
+              <button
+                class="mirror-cta mirror-cta-secondary"
+                onClick={() => beginFlow()}
+              >
+                Continue anyway
+              </button>
+            </div>
+          </Show>
+          <Show when={micError() === null && !micChecking() && !micSilent()}>
             <p class="mirror-dim">Waiting for microphone permission…</p>
           </Show>
         </section>
@@ -312,6 +415,7 @@ export const MirrorApp: Component = () => {
                 }
                 resetKey={taskKey()}
               />
+              <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
               <div class="mirror-timebar">
                 <div
                   class="mirror-timebar-fill"
@@ -338,6 +442,26 @@ export const MirrorApp: Component = () => {
           }}
         />
       </Show>
+    </div>
+  )
+}
+
+/** Live input-level bar — visible proof the mic is (or isn't) being heard. */
+const MicLevelBar: Component<{ level: () => number }> = (props) => {
+  const [percent, setPercent] = createSignal(0)
+  let rafId = 0
+  onMount(() => {
+    const tick = (): void => {
+      rafId = requestAnimationFrame(tick)
+      // Full scale around 0.12 RMS — loud-but-not-clipping singing.
+      setPercent(Math.min(100, (props.level() / 0.12) * 100))
+    }
+    tick()
+  })
+  onCleanup(() => cancelAnimationFrame(rafId))
+  return (
+    <div class="mirror-miclevel" title="Microphone input level">
+      <div class="mirror-miclevel-fill" style={{ width: `${percent()}%` }} />
     </div>
   )
 }
