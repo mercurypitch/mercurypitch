@@ -30,7 +30,7 @@ import { startTour, STEM_MIXER_TOUR_STEPS } from '@/stores/app-store'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
-import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, Volume2, VolumeX, X, } from './icons'
+import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
@@ -1307,19 +1307,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <Settings /> Pitch
             </button>
-            <button
-              class={`sm-btn ${melodyAudio() ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
-              onClick={toggleMelodyAudio}
-              title={
-                melodyAudio()
-                  ? 'Mute the detected melody'
-                  : 'Hear the detected melody as notes during playback'
-              }
-              aria-pressed={melodyAudio()}
-              style={{ gap: '0.4rem' }}
-            >
-              {melodyAudio() ? <Volume2 /> : <VolumeX />} Melody
-            </button>
             {/* Share links are only useful once songs are cloud-synced across
                 devices — gated behind the premium flag (off by default). */}
             <Show when={PREMIUM_FEATURES}>
@@ -1749,6 +1736,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           hasEdits={pitchAnalysis.hasEdits()}
           pitchView={pitchAnalysis.pitchView()}
           setPitchView={pitchAnalysis.setPitchView}
+          melodyAudio={melodyAudio()}
+          onToggleMelodyAudio={toggleMelodyAudio}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
       </Show>
