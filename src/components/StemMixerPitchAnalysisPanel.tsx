@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
-import { X } from '@/components/icons'
+import { Volume2, VolumeX, X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { NOTE_NAMES } from '@/lib/scale-data'
@@ -53,6 +53,9 @@ export interface StemMixerPitchAnalysisPanelProps {
   hasEdits: boolean
   pitchView: 'edited' | 'original' | 'both'
   setPitchView: (v: 'edited' | 'original' | 'both') => void
+  /** Whether the detected melody is audible during playback. */
+  melodyAudio: boolean
+  onToggleMelodyAudio: () => void
 }
 
 export const StemMixerPitchAnalysisPanel: Component<
@@ -101,25 +104,56 @@ export const StemMixerPitchAnalysisPanel: Component<
         }}
       >
         <h3 style={{ margin: '0' }}>Vocal Pitch Analysis</h3>
-        <button
-          class="sm-btn sm-btn-secondary"
-          title="Close"
-          aria-label="Close"
-          style={{
-            display: 'inline-flex',
-            'align-items': 'center',
-            'justify-content': 'center',
-            background: 'transparent',
-            border: '1px solid var(--border, #30363d)',
-            'border-radius': '6px',
-            color: 'var(--text-secondary, #a8b3bf)',
-            padding: '4px 6px',
-            cursor: 'pointer',
-          }}
-          onClick={() => props.onClose()}
+        <div
+          style={{ display: 'flex', 'align-items': 'center', gap: '0.4rem' }}
         >
-          <X />
-        </button>
+          <button
+            title={
+              props.melodyAudio
+                ? 'Mute the detected melody'
+                : 'Hear the detected melody as notes during playback'
+            }
+            aria-label="Toggle melody playback"
+            aria-pressed={props.melodyAudio}
+            style={{
+              display: 'inline-flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              background: props.melodyAudio
+                ? 'var(--accent-dim, rgba(88,166,255,0.15))'
+                : 'transparent',
+              border: `1px solid ${props.melodyAudio ? 'var(--accent, #58a6ff)' : 'var(--border, #30363d)'}`,
+              'border-radius': '6px',
+              color: props.melodyAudio
+                ? 'var(--accent, #58a6ff)'
+                : 'var(--text-secondary, #a8b3bf)',
+              padding: '4px 6px',
+              cursor: 'pointer',
+            }}
+            onClick={() => props.onToggleMelodyAudio()}
+          >
+            {props.melodyAudio ? <Volume2 /> : <VolumeX />}
+          </button>
+          <button
+            class="sm-btn sm-btn-secondary"
+            title="Close"
+            aria-label="Close"
+            style={{
+              display: 'inline-flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              background: 'transparent',
+              border: '1px solid var(--border, #30363d)',
+              'border-radius': '6px',
+              color: 'var(--text-secondary, #a8b3bf)',
+              padding: '4px 6px',
+              cursor: 'pointer',
+            }}
+            onClick={() => props.onClose()}
+          >
+            <X />
+          </button>
+        </div>
       </div>
 
       <div
