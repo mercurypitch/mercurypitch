@@ -6,6 +6,7 @@ import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -29,7 +30,7 @@ import { startTour, STEM_MIXER_TOUR_STEPS } from '@/stores/app-store'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
-import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
+import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, Volume2, VolumeX, X, } from './icons'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
@@ -768,6 +769,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pitchAnalysis.baseNotes()
     canvas.queueCanvasRedraw()
   })
+
+  // ── Melody audition synth ──────────────────────────────────────
+  // Optionally sound the detected notes as a monophonic synth, following the
+  // playhead, so the user can hear how the cleaned melody sounds.
+  const [melodyAudio, setMelodyAudio] = createSignal(false)
+  const melodySynth = createMelodySynth()
+  onCleanup(() => melodySynth.dispose())
+  createEffect(() => {
+    const on = melodyAudio() && audio.playing()
+    const t = audio.elapsed()
+    if (!on) {
+      melodySynth.setNote(null)
+      return
+    }
+    const notes = pitchAnalysis.offlineSegmentedNotes()
+    const active = notes.find((n) => t >= n.startSec && t < n.endSec)
+    melodySynth.setNote(active !== undefined ? active.midi : null)
+  })
+  const toggleMelodyAudio = (): void => {
+    const next = !melodyAudio()
+    setMelodyAudio(next)
+    if (next) melodySynth.resume()
+  }
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
 
@@ -1282,6 +1306,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               style={{ gap: '0.4rem' }}
             >
               <Settings /> Pitch
+            </button>
+            <button
+              class={`sm-btn ${melodyAudio() ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
+              onClick={toggleMelodyAudio}
+              title={
+                melodyAudio()
+                  ? 'Mute the detected melody'
+                  : 'Hear the detected melody as notes during playback'
+              }
+              aria-pressed={melodyAudio()}
+              style={{ gap: '0.4rem' }}
+            >
+              {melodyAudio() ? <Volume2 /> : <VolumeX />} Melody
             </button>
             {/* Share links are only useful once songs are cloud-synced across
                 devices — gated behind the premium flag (off by default). */}

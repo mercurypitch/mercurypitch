@@ -2296,6 +2296,30 @@ input[type='range'] {
   cursor: not-allowed;
 }
 
+/* Text / number inputs in the panel — match the app's dark input style so the
+   tempo field looks like the key/scale selects. */
+.sm-pitch-analysis-controls input[type='number'],
+.sm-pitch-analysis-controls input[type='text'] {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.sm-pitch-analysis-controls input[type='number']:focus,
+.sm-pitch-analysis-controls input[type='text']:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sm-pitch-analysis-controls input[type='number']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Karaoke Focus Mode ──────────────────────────────────────────── */
 
 .stem-mixer--focus {
