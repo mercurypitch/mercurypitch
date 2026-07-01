@@ -5,7 +5,7 @@
 import { createSignal } from 'solid-js'
 import type { MelodyItem, PlaybackSession, SessionTemplate } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
-import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST, } from './melody-store'
+import { melodyStore, STORAGE_KEY_SESSION_HIST } from './melody-store'
 
 // ── Reactive UI state ──────────────────────────────────────────
 
@@ -384,10 +384,12 @@ export function deleteSession(id: string): boolean {
   return false
 }
 
-/** Reset all sessions (clear localStorage) */
+/** Reset all sessions (clear localStorage and the in-memory library) */
 export function resetAllSessions(): void {
-  // Clear the unified library which will remove sessions
-  localStorage.removeItem(STORAGE_KEY_LIBRARY)
+  // Clear the unified library which will remove sessions. `melodyStore` is
+  // the source of truth the UI reads from — clearing localStorage alone
+  // leaves the in-memory signal (and anything rendered from it) stale.
+  melodyStore.resetMelodyLibrary()
   localStorage.removeItem(STORAGE_KEY_SESSION_HIST)
 }
 

@@ -1405,41 +1405,51 @@ export function playPlaylist(playlistId: string): void {
   const playlist = getPlaylist(playlistId)
   if (playlist == null) return
 
-  const library = melodyLibrarySignal()
   let currentIndex = 0
 
   // Play melodies one by one
   const playNextMelody = () => {
+    if (currentIndex >= playlist.melodyKeys.length) return
+
+    // Re-read the library fresh each time so edits/deletions made after
+    // playback started (e.g. by loadMelody's own play-count update) are
+    // reflected, instead of a snapshot captured once at playlist start.
     const playlistItem = playlist.melodyKeys[currentIndex]
-    const melody = library.melodies[playlistItem]
+    const melody = melodyLibrarySignal().melodies[playlistItem]
+    currentIndex++
 
-    if (melody != null) {
-      // Load the melody
-      melodyStore.loadMelody(melody.id)
-
-      // Update play count for each melody
-      const playCount = 'playCount' in melody ? melody.playCount : 0
-      const updatedMelody = {
-        ...melody,
-        playCount: (playCount ?? 0) + 1,
-        lastPlayed: Date.now(),
-      }
-      setMelodyLibrary((prev) => ({
-        ...prev,
-        melodies: {
-          ...prev.melodies,
-          [melody.id]: updatedMelody,
-        },
-        meta: { ...prev.meta, lastUpdated: Date.now() },
-      }))
-      _saveLibraryToStorage()
-
-      // Increment index and continue to next melody
-      currentIndex++
+    if (melody == null) {
+      // Skip missing/deleted melodies instead of silently stalling the
+      // rest of the playlist.
       if (currentIndex < playlist.melodyKeys.length) {
-        // Play next melody after current one completes
-        setTimeout(playNextMelody, 3000)
+        playNextMelody()
       }
+      return
+    }
+
+    // Load the melody
+    melodyStore.loadMelody(melody.id)
+
+    // Update play count for each melody
+    const playCount = 'playCount' in melody ? melody.playCount : 0
+    const updatedMelody = {
+      ...melody,
+      playCount: (playCount ?? 0) + 1,
+      lastPlayed: Date.now(),
+    }
+    setMelodyLibrary((prev) => ({
+      ...prev,
+      melodies: {
+        ...prev.melodies,
+        [melody.id]: updatedMelody,
+      },
+      meta: { ...prev.meta, lastUpdated: Date.now() },
+    }))
+    _saveLibraryToStorage()
+
+    if (currentIndex < playlist.melodyKeys.length) {
+      // Play next melody after current one completes
+      setTimeout(playNextMelody, 3000)
     }
   }
 

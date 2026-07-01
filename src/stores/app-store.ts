@@ -871,6 +871,7 @@ export function updateUvrSessionOutputs(
     vocal: session.outputs?.vocal ?? '',
     instrumental: session.outputs?.instrumental ?? '',
     vocalMidi: session.outputs?.vocalMidi ?? '',
+    instrumentalMidi: session.outputs?.instrumentalMidi ?? '',
   }
   const meta: Record<string, { duration?: number; size?: number }> = {}
 

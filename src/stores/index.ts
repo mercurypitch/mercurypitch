@@ -69,14 +69,7 @@ export const appStore = {
   ...walkthroughStore,
   ...playbackStateStore,
 
-  startPracticeSession: (session: PlaybackSession) => {
-    practiceStore.setPracticeSession(session)
-    practiceStore.setSessionMode(true)
-    practiceStore.setSessionActive(true)
-    practiceStore.setPracticeResults([])
-    practiceStore.setSessionItemIndex(0)
-    practiceStore.setSessionItemRepeat(0)
-  },
+  startPracticeSession,
   // Session loading & melody selection
   loadSession,
   getSelectedMelodyIds,
