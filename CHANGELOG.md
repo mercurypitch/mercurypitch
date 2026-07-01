@@ -3,6 +3,25 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.0] - 2026-07-01
+
+### Added
+
+- **Cleaner recorded melodies**: recording a melody in Compose now removes octave jumps and stray, flickering notes automatically, so what you sing turns into logical, well-formed notes instead of a jittery mess.
+- **See your pitch as you record**: while recording in Compose, your voice is drawn live on the piano roll — provisional notes and a moving pitch marker — so you can watch the melody take shape in real time.
+- **Record for as long as you like**: recording no longer stops after a fixed number of bars. It keeps going until you stop it, and the grid grows to follow along.
+- **Tidy up a take before you keep it**: after recording, a simple "As sung ↔ Clean" slider lets you dial in how much cleanup to apply, previewing the result, before you Keep or Discard the take.
+- **Recording over a melody is one undo**: laying down a new take over an existing melody can now be undone in a single step, so you never lose the previous version.
+- **Clean up the karaoke vocal line**: the Vocal Pitch panel in Karaoke gets the same cleanup slider, turning a noisy detected vocal into clear notes — with the key, scale and tempo adjustable.
+- **Edit the detected vocal notes**: a new edit mode lets you select, move, resize, retune, delete, split and merge the vocal notes from a floating toolbar. Your edits are saved separately from the automatic detection, so you can switch between the original, your edited version, or both — and your edits survive a reload.
+- **Automatic key detection**: the vocal line's musical key is detected for you — for the whole song and per section, so songs that change key are handled correctly.
+- **Hear the detected melody**: a "Melody" toggle in the Vocal Pitch panel plays the detected notes as a soft synth that follows along during playback, so you can hear how the cleaned-up line sounds.
+
+### Fixed
+
+- **Shared links no longer crash on guitar**: opening a shared melody and playing it on the guitar sound no longer breaks the audio engine.
+- **Vocal pitch labels line up**: the note names down the side of the Vocal Pitch view now match the rows they label.
+
 ## [0.5.1] - 2026-07-01
 
 ### Added

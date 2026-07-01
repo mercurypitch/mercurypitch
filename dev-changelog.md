@@ -6,6 +6,33 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-01
+
+### Added
+
+- Shared pitch-denoise pipeline (`src/lib/pitch-pipeline/`): a reusable engine that turns a raw pitch contour into logical notes. Stages: log-domain fractional-MIDI conversion (`log-pitch.ts`), a running median (`running-median.ts`), a One-Euro filter (`one-euro.ts`), a temporal-continuity octave corrector that snaps octave jumps back to the melodic line (`octave-corrector.ts`), and a hysteresis (Schmitt-trigger) note state machine (`note-state-machine.ts`). Exposed as a live streaming pipeline (`live-pitch-pipeline.ts`) and an offline re-segmenter (`offline-segment.ts`, with a `segmentSecondsContourToMelody` seconds-native wrapper and a `pipeline` options override for coarse-hop callers). Fully unit-tested, incl. the C3→C4→C5→D3 octave-jump regression.
+- Compose live tracking + open-ended recording (`useRecordingController.ts`, `piano-roll.ts`, `playback-runtime.ts`): the recorder feeds the live pipeline and exposes `provisionalNote`/`liveMidi`; the piano roll draws provisional dashed notes and a live pitch needle (`setPreviewNotes`/`setLiveMidi`/`drawPreviewNotes`/`drawLiveNeedle`) and grows to follow the playhead; `setOpenEnded` skips the auto-stop at arrangement end so recording runs until the user stops.
+- Compose take review (`ComposeTakeReview.tsx`): on stop the raw contour is held as a pending take; an "As sung ↔ Clean" slider re-segments it (key-snap + merge + quantize scaled by the amount) with live preview and Keep/Discard, instead of auto-committing.
+- Recorded take as a single undo step (`piano-roll.ts` `applyMelody`/`installMelody`, `PianoRollCanvas` `onEditorReady` bridge): committing a take routes through an injected `applyTake` that `pushHistory()` before replacing the melody, so one undo restores the previous melody; `melodyEquals` compares by value so the store round-trip is a no-op and history survives.
+- Stem-mixer vocal-pitch cleanup (`useStemMixerPitchAnalysisController.ts`): analysis now captures a real per-frame contour (true frequency + clarity, including unvoiced frames) and re-segments it via the shared pipeline at a chosen cleanup amount (100ms coarse-hop tuning); slider/key/scale/tempo changes re-segment live without re-decoding audio. Panel gains a Cleanup section, disabled until a contour exists.
+- Two-stage pitch-edit model (`pitch-edit-model.ts`): effective melody = `applyEditLayer(base, layer)` where `base` is the cleanup output and the layer holds manual notes + deleted regions keyed by region (not base id), so edits survive a cleanup-slider regen. Ops: `editNote` (move/resize/retune, suppresses the original span), `deleteNote`, `splitNote`, `mergeNotes`. Wired into the canvas (`useStemMixerCanvasController.ts`): hit-testing, click-to-select, drag body to move/retune within the octave, drag edges to resize, one undo step per drag.
+- Edit persistence + views (`db/entities.ts`, `session-pitch-analysis-service.ts`): the original (algorithm) notes and the user edit layer are persisted separately (new optional `editLayerJson` column, no Dexie schema bump) and restored on reload; an Original / Edited / Both view toggle (Both ghosts the original behind the edited notes).
+- Floating edit toolbar (`StemMixerEditToolbar.tsx` + `.module.css`): entering edit mode collapses the analysis panel and shows a compact bottom-centre glass toolbar (view segment, delete/split/merge, undo, reset, done); Escape exits. New `Split`/`Merge` SVG icons (`icons.tsx`).
+- Krumhansl-Schmuckler key detection (`src/lib/key-detection/`): a duration-weighted 12-bin pitch-class histogram correlated against the 24 rotated key templates → argmax gives tonic + mode + confidence margin (`key-detector.ts`, `key-profiles.ts`). Per-region detection slides a window over the note timeline and merges consecutive same-key windows, so a modulating song yields a key per part. Wired into the vocal analysis: adopts the detected global key for cleanup snapping (user-overridable), persists the per-region keys (`keyRegionsJson`, no schema bump), restores them on reload, and shows "Detected key: X". Research plan in `docs/plans/key-detection.md`.
+- Melody audition synth (`melody-synth.ts`): a lazily-created monophonic oscillator/gain (its own `AudioContext`, resumed on the toggle gesture) that glides to and fades in/out the active note. A "Melody" toggle in the Vocal Pitch canvas toolbar (`PitchCanvasToolbar`) drives it from the playhead, sounding whatever the pitch view shows.
+- Scale/quantize helpers: `scaleDegreeSet`/`snapMidiToScale` (`scale-data.ts`) and `quantizeBeat` (`quantize.ts`), both tested.
+
+### Changed
+
+- Compose record-stop now routes through the full editor stop path so the take-review handoff and live-preview teardown are consistent.
+- Analysis panel (`StemMixerPitchAnalysisPanel.tsx`): compact, `max-height` + scrollable with a translucent blurred sticky header sitting flush at the top (padding moved off the scroll container onto header/body), an X close icon that stays visible, and Escape-to-close. The tempo (BPM) number input is styled to match the app's dark inputs (`app.css`).
+
+### Fixed
+
+- Off-scale (accidental) notes on the piano roll are drawn at their true interpolated pitch (`midiToY`) and made hittable, instead of being pinned to the top row.
+- Shared melodies decoded from the compact format carried `freq: 0` (the format stores only midi/startBeat/duration); the guitar pluck synth computed `sampleRate/freq` and built a `Float32Array` of length Infinity, throwing "Invalid typed array length: Infinity" and crashing playback. `share-codec` now reconstructs `note.freq` via `midiToFreq(midi)` on decode, and `renderPluckWaveform` returns a silent buffer for any non-finite / ≤ 0 frequency (`guitar-synth.ts`).
+- Vocal pitch lane labels were drawn one row below the pills (a natural A appeared in the row labelled "A#"); the label row offset is corrected.
+
 ## [0.5.1] - 2026-07-01
 
 ### Added
