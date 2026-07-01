@@ -28,31 +28,34 @@ export interface CagedShape {
  *   E shape: root C on 6th string fret 8, offsets from fret 8
  *   D shape: root C on 4th string fret 10, offsets from fret 10
  */
+// NOTE: `OPEN_MIDI`/`STRING_LABELS` (constants.ts) are ordered high e -> low
+// E (index 0 = high e, index 5 = low E). The offsets/rootString below are
+// expressed in that same order.
 export const CAGED_SHAPES: Record<CagedShapeName, CagedShape> = {
   C: {
     name: 'C',
-    rootString: 1,
-    offsets: [0, 0, -1, -3, -2, -3],
+    rootString: 4, // A string
+    offsets: [-3, -2, -3, -1, 0, 0],
   },
   A: {
     name: 'A',
-    rootString: 1,
-    offsets: [0, 0, 2, 2, 2, 0],
+    rootString: 4, // A string
+    offsets: [0, 2, 2, 2, 0, 0],
   },
   G: {
     name: 'G',
-    rootString: 0,
+    rootString: 5, // low E string
     offsets: [0, -3, -3, -3, -3, 0],
   },
   E: {
     name: 'E',
-    rootString: 0,
-    offsets: [0, 2, 2, 1, 0, 0],
+    rootString: 5, // low E string
+    offsets: [0, 0, 1, 2, 2, 0],
   },
   D: {
     name: 'D',
-    rootString: 2,
-    offsets: [null, -2, 0, 2, 3, 2],
+    rootString: 3, // D string
+    offsets: [2, 3, 2, 0, -2, null],
   },
 }
 

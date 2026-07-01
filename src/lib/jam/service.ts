@@ -81,6 +81,12 @@ export function createJamService(callbacks: JamCallbacks) {
         pc.close()
         peerConnections.delete(peerId)
       }
+      const dc = dataChannels.get(peerId)
+      if (dc) {
+        dc.close()
+        dataChannels.delete(peerId)
+      }
+      pendingCandidates.delete(peerId)
       callbacks.onPeerLeft(peerId)
     },
     onOffer: (from, sdp) => {

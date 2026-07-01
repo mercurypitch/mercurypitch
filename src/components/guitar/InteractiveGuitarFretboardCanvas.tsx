@@ -382,8 +382,13 @@ export const InteractiveGuitarFretboardCanvas: Component<
 
           if (role === 'root') {
             // White ring (already handled by scale root rendering, so add no extra)
-          } else if (role === 'third') {
-            // Diamond marker
+          } else if (
+            role === 'third' ||
+            role === 'second' ||
+            role === 'fourth'
+          ) {
+            // Diamond marker (sus2/sus4 replace the third with a 2nd/4th
+            // at this same chord-tone slot, sharing its visual)
             ctx.fillStyle = 'rgba(255,255,255,0.8)'
             ctx.beginPath()
             const r = 5
