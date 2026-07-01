@@ -73,9 +73,11 @@ export const StemMixerPitchAnalysisPanel: Component<
       style={{
         opacity: previewing() ? '0.2' : '1',
         transition: 'opacity 0.12s ease',
-        // Never grow past the viewport; scroll instead so the close button
-        // (sticky header, below) is always reachable.
-        'max-height': '85vh',
+        // Compact: cap the height and scroll (the sticky header keeps the
+        // close button reachable). Background is set so the sticky header
+        // blends seamlessly instead of showing a darker band.
+        background: 'var(--bg-card, #1c2128)',
+        'max-height': '44vh',
         'overflow-y': 'auto',
       }}
     >
@@ -85,7 +87,7 @@ export const StemMixerPitchAnalysisPanel: Component<
           position: 'sticky',
           top: '0',
           'z-index': '2',
-          background: 'var(--bg-secondary, #161b22)',
+          background: 'var(--bg-card, #1c2128)',
           display: 'flex',
           'align-items': 'center',
           'justify-content': 'space-between',
@@ -102,6 +104,12 @@ export const StemMixerPitchAnalysisPanel: Component<
             display: 'inline-flex',
             'align-items': 'center',
             'justify-content': 'center',
+            background: 'transparent',
+            border: '1px solid var(--border, #30363d)',
+            'border-radius': '6px',
+            color: 'var(--text-secondary, #a8b3bf)',
+            padding: '4px 6px',
+            cursor: 'pointer',
           }}
           onClick={() => props.onClose()}
         >
