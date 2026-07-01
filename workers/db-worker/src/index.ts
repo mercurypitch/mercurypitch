@@ -581,6 +581,95 @@ async function handleLeaderboard(
   return respond({ total: ranked.length, entries: page })
 }
 
+// ── Voice Mirror funnel ──────────────────────────────────────────────
+// Anonymous, rate-limited event sink for mercurypitch.com/mirror. The
+// mirrorEvents table is deliberately NOT in the TABLES allowlist — this
+// endpoint is its only writer, and there is no public reader.
+// Keep the event list in sync with src/features/mirror/funnel.ts.
+
+const MIRROR_EVENTS = new Set([
+  'mirror_view',
+  'mic_granted',
+  'mic_denied',
+  'task_glide_done',
+  'task_hold_done',
+  'task_match_done',
+  'results_view',
+  'card_generated',
+  'card_shared',
+  'cta_app_click',
+])
+
+// Derived numbers only (range/accuracy/steadiness) — never audio.
+const MIRROR_METRIC_KEYS = new Set([
+  'lowMidi',
+  'highMidi',
+  'semitones',
+  'accuracy',
+  'steadiness',
+])
+
+async function handleMirrorEvent(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
+  if (!rl.allowed) {
+    return respond(
+      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+    )
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return respond({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { clientId, event, metrics } = (body ?? {}) as {
+    clientId?: unknown
+    event?: unknown
+    metrics?: unknown
+  }
+  if (
+    typeof clientId !== 'string' ||
+    clientId.length < 8 ||
+    clientId.length > 64
+  ) {
+    return respond({ error: 'Invalid clientId' }, { status: 400 })
+  }
+  if (typeof event !== 'string' || !MIRROR_EVENTS.has(event)) {
+    return respond({ error: 'Invalid event' }, { status: 400 })
+  }
+
+  // Metrics ride along only on results_view, filtered to known numeric keys.
+  let metricsJson: string | null = null
+  if (event === 'results_view' && typeof metrics === 'object' && metrics !== null) {
+    const clean: Record<string, number | null> = {}
+    for (const [key, value] of Object.entries(metrics as Record<string, unknown>)) {
+      if (MIRROR_METRIC_KEYS.has(key) && (typeof value === 'number' || value === null)) {
+        clean[key] = value
+      }
+    }
+    metricsJson = JSON.stringify(clean)
+  }
+
+  await env.DB.prepare(
+    'INSERT INTO mirrorEvents (id, createdAt, clientId, event, metricsJson) VALUES (?, ?, ?, ?, ?)',
+  )
+    .bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      clientId,
+      event,
+      metricsJson,
+    )
+    .run()
+  return respond({ ok: true }, { status: 201 })
+}
+
 // ── Router ───────────────────────────────────────────────────────────
 
 export default {
@@ -612,6 +701,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
     return handleLeaderboard(url, await getAuth(request, env), env)
+  }
+
+  if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
+    return handleMirrorEvent(request, env)
   }
 
   const match = url.pathname.match(/^\/api\/([A-Za-z]+)(?:\/([^/]+))?$/)

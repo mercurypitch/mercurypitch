@@ -278,6 +278,24 @@ CREATE TABLE IF NOT EXISTS userSurveyResponses (
 
 CREATE INDEX IF NOT EXISTS idx_userSurveyResponses_userId ON userSurveyResponses(userId);
 
+-- ── Voice Mirror funnel ──────────────────────────────────────────────
+-- Anonymous funnel events from /mirror (spec §11). clientId is a random
+-- localStorage id, never an account; metricsJson is only stored for
+-- results_view and holds derived numbers (range/accuracy/steadiness) —
+-- never audio. Written only via POST /api/mirror/event (custom
+-- rate-limited route in index.ts); deliberately NOT in the TABLES
+-- allowlist, so the generic CRUD API cannot read or write it.
+CREATE TABLE IF NOT EXISTS mirrorEvents (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  clientId TEXT NOT NULL,
+  event TEXT NOT NULL,
+  metricsJson TEXT -- JSON, results_view only
+);
+
+CREATE INDEX IF NOT EXISTS idx_mirrorEvents_clientId ON mirrorEvents(clientId);
+CREATE INDEX IF NOT EXISTS idx_mirrorEvents_event ON mirrorEvents(event, createdAt);
+
 -- ── Billing: pricing, credits, entitlements (see src/billing.ts) ─────
 -- Pricing is DB-driven so prices/tiers change without a deploy and no price
 -- lives in the repo. `amount` is in minor units (e.g. cents); NULL renders
