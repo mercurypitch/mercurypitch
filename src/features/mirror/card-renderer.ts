@@ -298,9 +298,22 @@ function drawFooter(
   height: number,
 ): void {
   ctx.textAlign = 'center'
-  ctx.font = '700 42px system-ui, sans-serif'
-  ctx.fillStyle = '#f4f0ff'
-  ctx.fillText('MERCURYPITCH', width / 2, height - 108)
+  ctx.font = '700 46px system-ui, sans-serif'
+  // Brand wordmark gradient — the app header's accent→purple (dark theme).
+  // Keep in sync with --mirror-brand-a/-b in mirror.css.
+  const wordmark = 'MercuryPitch'
+  const wordmarkWidth = ctx.measureText(wordmark).width
+  const y = height - 108
+  const gradient = ctx.createLinearGradient(
+    width / 2 - wordmarkWidth / 2,
+    y - 40,
+    width / 2 + wordmarkWidth / 2,
+    y,
+  )
+  gradient.addColorStop(0, '#58a6ff')
+  gradient.addColorStop(1, '#bc8cff')
+  ctx.fillStyle = gradient
+  ctx.fillText(wordmark, width / 2, y)
   ctx.font = '500 34px system-ui, sans-serif'
   ctx.fillStyle = '#9b93c0'
   ctx.fillText('mercurypitch.com/mirror', width / 2, height - 56)
