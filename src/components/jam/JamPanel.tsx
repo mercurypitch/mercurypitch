@@ -6,7 +6,7 @@ import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'sol
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -565,7 +565,7 @@ export const JamPanel: Component = () => {
                 onToggleLoop={() => setJamExerciseLoop((v) => !v)}
               />
               {/* BPM control — host only, shown when melody loaded */}
-              <Show when={jamExerciseMelody()}>
+              <Show when={jamIsHost() && jamExerciseMelody()}>
                 <div class={panelStyles.bpmControl}>
                   <button
                     class={panelStyles.bpmStep}
