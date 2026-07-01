@@ -31,12 +31,12 @@ export const NOTE_NAMES = [
 ]
 
 export function midiToNoteName(midi: number): string {
-  return NOTE_NAMES[midi % 12]
+  return NOTE_NAMES[((midi % 12) + 12) % 12]
 }
 
 /** Note name with scientific-pitch octave, e.g. 60 -> "C4", 48 -> "C3". */
 export function midiToNoteNameOctave(midi: number): string {
-  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+  return `${NOTE_NAMES[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`
 }
 
 export function noteColor(midi: number): string {

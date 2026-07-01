@@ -39,6 +39,13 @@ describe('midiToNoteName', () => {
     expect(midiToNoteName(0)).toBe('C-1')
   })
 
+  it('does not produce "undefined" for MIDI values below 0', () => {
+    // -1 % 12 === -1 in JS, which used to index noteNames[-1] === undefined
+    expect(midiToNoteName(-1)).toBe('B-2')
+    expect(midiToNoteName(-12)).toBe('C-2')
+    expect(midiToNoteName(-13)).toBe('B-3')
+  })
+
   it('returns correct note for all 12 semitones in one octave', () => {
     const expected = [
       'C4',
@@ -96,6 +103,17 @@ describe('noteToMidi', () => {
     for (const [note, midi] of Object.entries(expected)) {
       expect(noteToMidi(note)).toBe(midi)
     }
+  })
+
+  it('handles multi-digit octaves', () => {
+    // C10 = MIDI 132 (name.slice(0,-1) used to grab only the trailing digit)
+    expect(noteToMidi('C10')).toBe(132)
+  })
+
+  it('handles negative octaves', () => {
+    // C-1 = MIDI 0
+    expect(noteToMidi('C-1')).toBe(0)
+    expect(noteToMidi('B-2')).toBe(-1)
   })
 
   it('round-trips with midiToNoteName', () => {
@@ -182,5 +200,11 @@ describe('frequenciesToNoteName', () => {
   it('returns C-∞ for zero or negative frequency', () => {
     expect(frequenciesToNoteName(0)).toBe('C-∞')
     expect(frequenciesToNoteName(-1)).toBe('C-∞')
+  })
+
+  it('does not produce "undefined" for very low (but positive) frequencies', () => {
+    // 1 Hz maps to a deeply negative MIDI note number
+    expect(frequenciesToNoteName(1)).not.toContain('undefined')
+    expect(frequenciesToNoteName(1)).toBe('C-4')
   })
 })

@@ -847,4 +847,17 @@ describe('detectVocalRange', () => {
     expect(result.lowNote).toMatch(/^[A-G][#b]?\d$/)
     expect(result.highNote).toMatch(/^[A-G][#b]?\d$/)
   })
+
+  it('produces valid note names even when the low end is a negative MIDI number', () => {
+    // Bottom 5% lands below MIDI 0, which used to hit an unnormalized
+    // `midi % 12` and render as e.g. "undefined-4".
+    const midis: number[] = []
+    for (let i = 0; i < 100; i++) {
+      midis.push(i < 10 ? -12 - i : 48 + Math.round((i / 99) * 24))
+    }
+    const result = detectVocalRange(midis)
+    expect(result.lowMidi).toBeLessThan(0)
+    expect(result.lowNote).toMatch(/^[A-G][#b]?-?\d+$/)
+    expect(result.lowNote).not.toContain('undefined')
+  })
 })
