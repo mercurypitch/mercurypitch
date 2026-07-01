@@ -73,12 +73,14 @@ export const StemMixerPitchAnalysisPanel: Component<
       style={{
         opacity: previewing() ? '0.2' : '1',
         transition: 'opacity 0.12s ease',
-        // Compact: cap the height and scroll (the sticky header keeps the
-        // close button reachable). Background is set so the sticky header
-        // blends seamlessly instead of showing a darker band.
-        background: 'var(--bg-card, #1c2128)',
+        // Compact + scrollable. The panel's own 1.25rem padding is moved onto
+        // the header/body so the sticky header can sit flush at the very top —
+        // otherwise content scrolls up into that top padding, appearing above
+        // the header.
         'max-height': '44vh',
         'overflow-y': 'auto',
+        padding: '0',
+        gap: '0',
       }}
     >
       <div
@@ -87,12 +89,15 @@ export const StemMixerPitchAnalysisPanel: Component<
           position: 'sticky',
           top: '0',
           'z-index': '2',
-          background: 'var(--bg-card, #1c2128)',
+          // Translucent glass so content scrolls faintly beneath it.
+          background: 'rgba(33, 38, 45, 0.8)',
+          'backdrop-filter': 'blur(8px)',
+          '-webkit-backdrop-filter': 'blur(8px)',
           display: 'flex',
           'align-items': 'center',
           'justify-content': 'space-between',
           gap: '0.5rem',
-          padding: '0.5rem 0',
+          padding: '1rem 1.25rem 0.7rem',
         }}
       >
         <h3 style={{ margin: '0' }}>Vocal Pitch Analysis</h3>
@@ -117,7 +122,10 @@ export const StemMixerPitchAnalysisPanel: Component<
         </button>
       </div>
 
-      <div class="sm-pitch-analysis-body">
+      <div
+        class="sm-pitch-analysis-body"
+        style={{ padding: '0.85rem 1.25rem 1.25rem' }}
+      >
         <div class="sm-pitch-analysis-controls">
           <label>
             <span>Algorithm</span>
