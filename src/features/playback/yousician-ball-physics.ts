@@ -29,6 +29,8 @@ export interface BallPhysicsState {
   lastNote: NoteBounds | null
   /** Last note's endBeat where ball jumped from */
   lastEndBeat: number
+  /** Progress (0-1) through the current jump arc */
+  progress: number
 }
 
 export interface BallPhysicsOptions {
@@ -91,11 +93,10 @@ export function getBallPhysics(
   state: BallPhysicsState,
   config: BallPhysicsConfig,
 ): { x: number; y: number; note: NoteBounds | null; progress: number } {
-  let { x, y, vy, vx, lastEndBeat } = state
+  let { x, y, vy, vx, lastEndBeat, progress } = state
   const { gravity, bounce, lastNote } = state
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
-  let progress = 0
   const startY = y
 
   // Get horizontal speed
@@ -123,7 +124,13 @@ export function getBallPhysics(
     const remainingX = nextNoteEndBeat - x
     const speed = currentVx
 
-    if (remainingX <= speed * 2) {
+    // Once a jump has started (progress > 0) keep animating it to
+    // completion even if the in-flight bezier position momentarily makes
+    // `remainingX` look large again — the arc doesn't move monotonically
+    // towards endX at low t, so re-checking remainingX every frame would
+    // otherwise oscillate between "approaching" and "jumping" and never
+    // finish.
+    if (progress > 0 || remainingX <= speed * 2) {
       // We're near the target - do the jump
       progress = Math.min(1, progress + 0.1)
 
@@ -147,6 +154,7 @@ export function getBallPhysics(
     // Check if we reached the end of the jump
     if (progress >= 1) {
       lastEndBeat = nextNoteEndBeat
+      progress = 0
 
       // Check for note at this position
       note = getCurrentNote(x, notes)
@@ -269,6 +277,7 @@ export function createBallPhysics(
     isJumping: false,
     lastNote: null,
     lastEndBeat: 0,
+    progress: 0,
   }
 }
 

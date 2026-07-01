@@ -666,8 +666,6 @@ export class PianoRollEditor {
    * Converts melody items to NoteBounds for physics collision
    */
   private async initializeBallPhysics(): Promise<void> {
-    if (this.ballState) return
-
     const midiNotes = this.melody
       .filter((item) => item.note?.midi !== undefined)
       .map((item) => ({
@@ -3236,6 +3234,7 @@ export class PianoRollEditor {
           ? result.note.endBeat
           : this.ballState.lastEndBeat
         this.ballState.lastNote = result.note
+        this.ballState.progress = result.progress
 
         // Convert to pixel coordinates for drawing
         const pixelY =
@@ -3306,6 +3305,7 @@ export class PianoRollEditor {
         ? result.note.endBeat
         : this.ballState.lastEndBeat
       this.ballState.lastNote = result.note
+      this.ballState.progress = result.progress
 
       // Convert to pixel coordinates for drawing
       const pixelY =
