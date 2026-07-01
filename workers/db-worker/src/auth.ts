@@ -346,6 +346,9 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // index.ts. Generous for normal use (session saves, settings, follows) but
   // bounds scripted spam / unbounded row creation. Tunable.
   'crud-write': { max: 120, windowMs: 60_000 }, // 120/min
+  // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
+  // 60/min per IP is roomy for humans and cheap to spam-bound.
+  'mirror-event': { max: 60, windowMs: 60_000 },
 }
 
 export async function checkRateLimit(
