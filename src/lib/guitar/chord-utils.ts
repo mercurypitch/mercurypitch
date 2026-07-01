@@ -25,14 +25,20 @@ export function getChordToneRole(
   midi: number,
   rootMidi: number,
   chordName: string,
-): 'root' | 'third' | 'fifth' | 'seventh' | null {
+): 'root' | 'second' | 'third' | 'fourth' | 'fifth' | 'seventh' | null {
   const chord = CHORD_TYPES[chordName]
   if (chord === undefined) return null
   const degree = (((midi - rootMidi) % 12) + 12) % 12
   const idx = chord.degrees.indexOf(degree)
   if (idx === -1) return null
   if (idx === 0) return 'root'
-  if (idx === 1) return chord.degrees.length === 3 ? 'third' : 'third'
+  if (idx === 1) {
+    // Role is interval-based, not purely positional: sus chords replace
+    // the third with a 2nd (sus2) or 4th (sus4) at this same array index.
+    if (degree === 2) return 'second'
+    if (degree === 5) return 'fourth'
+    return 'third'
+  }
   if (idx === 2) return 'fifth'
   if (idx === 3) return 'seventh'
   return null

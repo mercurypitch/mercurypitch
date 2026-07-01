@@ -433,7 +433,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               const newLength = Math.floor(rawData.length * ratio)
               samples = new Float32Array(newLength)
               for (let i = 0; i < newLength; i++) {
-                samples[i] = rawData[Math.floor(i * ratio)]
+                // Map the (shorter) output index to the (longer) source
+                // index by dividing by ratio, not multiplying — otherwise
+                // only the first `ratio` fraction of the source is ever
+                // read and the rest of the audio is silently dropped.
+                samples[i] = rawData[Math.floor(i / ratio)]
               }
             }
 
