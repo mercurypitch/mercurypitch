@@ -4,6 +4,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { appStore, getBandRating, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
+import { deleteAllUvrSessions, getUvrSession, importUvrSession, updateUvrSessionOutputs, } from '@/stores/app-store'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
@@ -188,5 +189,32 @@ describe('Settings — getBandRating', () => {
 
   it('returns 0 for null', () => {
     expect(getBandRating(null)).toBe(0)
+  })
+})
+
+describe('updateUvrSessionOutputs', () => {
+  beforeEach(() => {
+    deleteAllUvrSessions()
+  })
+
+  it('preserves an existing instrumentalMidi output across updates', () => {
+    importUvrSession({
+      sessionId: 'uvr-test-session',
+      status: 'processing',
+      progress: 50,
+      originalFile: { name: 'song.mp3', size: 100, mimeType: 'audio/mp3' },
+      outputs: { instrumentalMidi: 'instrumental.mid' },
+      createdAt: 0,
+    })
+
+    updateUvrSessionOutputs('uvr-test-session', [
+      { stem: 'vocal', path: 'vocal.wav' },
+      { stem: 'instrumental', path: 'instrumental.wav' },
+    ])
+
+    const session = getUvrSession('uvr-test-session')
+    expect(session?.outputs?.vocal).toBe('vocal.wav')
+    expect(session?.outputs?.instrumental).toBe('instrumental.wav')
+    expect(session?.outputs?.instrumentalMidi).toBe('instrumental.mid')
   })
 })
