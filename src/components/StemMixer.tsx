@@ -33,6 +33,7 @@ import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, Sk
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import { StemMixerEditToolbar } from './StemMixerEditToolbar'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
@@ -1622,7 +1623,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }}
       />
 
-      <Show when={pitchAnalysis.panelOpen()}>
+      {/* In edit mode the panel collapses and a floating toolbar takes over,
+          so the pitch lane stays visible and clickable. */}
+      <Show when={pitchAnalysis.editMode()}>
+        <StemMixerEditToolbar
+          pitchView={pitchAnalysis.pitchView()}
+          setPitchView={pitchAnalysis.setPitchView}
+          hasEdits={pitchAnalysis.hasEdits()}
+          hasSelection={pitchAnalysis.selectedNoteId() !== null}
+          onDelete={() => pitchAnalysis.deleteSelectedNote()}
+          onSplit={() => pitchAnalysis.splitSelectedNote()}
+          onMerge={() => pitchAnalysis.mergeSelectedWithNext()}
+          onUndo={() => pitchAnalysis.undoEdit()}
+          onReset={() => pitchAnalysis.resetEdits()}
+          onDone={() => {
+            pitchAnalysis.setEditMode(false)
+            pitchAnalysis.setSelectedNoteId(null)
+          }}
+        />
+      </Show>
+
+      <Show when={pitchAnalysis.panelOpen() && !pitchAnalysis.editMode()}>
         <StemMixerPitchAnalysisPanel
           algorithm={pitchAnalysis.algorithm()}
           setAlgorithm={pitchAnalysis.setAlgorithm}
@@ -1688,13 +1709,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             pitchAnalysis.setSelectedNoteId(null)
           }}
           canEdit={pitchAnalysis.editableNotes().length > 0}
-          hasSelection={pitchAnalysis.selectedNoteId() !== null}
           hasEdits={pitchAnalysis.hasEdits()}
-          onDeleteSelected={() => pitchAnalysis.deleteSelectedNote()}
-          onSplitSelected={() => pitchAnalysis.splitSelectedNote()}
-          onMergeSelected={() => pitchAnalysis.mergeSelectedWithNext()}
-          onUndoEdit={() => pitchAnalysis.undoEdit()}
-          onResetEdits={() => pitchAnalysis.resetEdits()}
           pitchView={pitchAnalysis.pitchView()}
           setPitchView={pitchAnalysis.setPitchView}
           onClose={() => pitchAnalysis.setPanelOpen(false)}

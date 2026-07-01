@@ -1072,3 +1072,40 @@ export const GripVertical: Component = () => (
     <circle cx="15" cy="19" r="1" />
   </svg>
 )
+
+// Split a note (divide at a point)
+export const Split: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+  >
+    <rect x="3" y="9" width="7" height="6" rx="1.5" />
+    <rect x="14" y="9" width="7" height="6" rx="1.5" />
+    <line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="2 2" />
+  </svg>
+)
+
+// Merge two notes into one
+export const Merge: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+  >
+    <rect x="2" y="9" width="6" height="6" rx="1.5" />
+    <rect x="16" y="9" width="6" height="6" rx="1.5" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+    <polyline points="13 9 16 12 13 15" />
+  </svg>
+)
