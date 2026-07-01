@@ -22,6 +22,10 @@ export interface F0Stream {
   takeFrames: () => F0Frame[]
   /** The most recent frame, for live visual feedback (null before any). */
   latest: () => F0Frame | null
+  /** RMS input level of the most recent analysed buffer (0..1). */
+  latestLevel: () => number
+  /** Highest RMS level observed since the last startTask(). */
+  maxLevel: () => number
   /** Tear down the audio graph (does not stop the MediaStream itself). */
   dispose: () => void
 }
@@ -39,6 +43,12 @@ export function createF0Stream(
   const analyser = audioContext.createAnalyser()
   analyser.fftSize = FFT_SIZE
   source.connect(analyser)
+  // Muted sink: some WebKit versions only reliably pull an analyser that is
+  // (transitively) connected to the destination. Zero gain keeps it silent.
+  const keepalive = audioContext.createGain()
+  keepalive.gain.value = 0
+  analyser.connect(keepalive)
+  keepalive.connect(audioContext.destination)
 
   const detector = new PitchDetector({
     sampleRate: audioContext.sampleRate,
@@ -47,11 +57,17 @@ export function createF0Stream(
     // Human singing range with headroom; keeps YIN off subharmonics.
     minFrequency: 60,
     maxFrequency: 1600,
+    // The mirror captures with AGC off (required for honest pitch), so raw
+    // mobile input is quiet — the detector's 0.02 default RMS gate would
+    // reject normal singing at arm's length on a phone.
+    minAmplitude: 0.005,
   })
 
   const buffer = new Float32Array(FFT_SIZE)
   let frames: F0Frame[] = []
   let latestFrame: F0Frame | null = null
+  let latestRms = 0
+  let maxRms = 0
   let taskStart = performance.now()
   let rafId = 0
   let disposed = false
@@ -65,6 +81,14 @@ export function createF0Stream(
     // full 2048-sample pass 60×/s is real battery on mobile.
     if (!recording) return
     analyser.getFloatTimeDomainData(buffer)
+
+    let sumSquares = 0
+    for (let i = 0; i < buffer.length; i++) {
+      sumSquares += buffer[i] * buffer[i]
+    }
+    latestRms = Math.sqrt(sumSquares / buffer.length)
+    if (latestRms > maxRms) maxRms = latestRms
+
     const detected = detector.detect(buffer)
     const frame: F0Frame = {
       t: (performance.now() - taskStart) / 1000,
@@ -81,6 +105,8 @@ export function createF0Stream(
       taskStart = performance.now()
       frames = []
       latestFrame = null
+      latestRms = 0
+      maxRms = 0
       recording = true
       // The detector's stability filter keeps a short pitch history that
       // would otherwise clamp the first frames of a new take toward the
@@ -94,10 +120,14 @@ export function createF0Stream(
       return taken
     },
     latest: () => latestFrame,
+    latestLevel: () => latestRms,
+    maxLevel: () => maxRms,
     dispose: () => {
       disposed = true
       cancelAnimationFrame(rafId)
       source.disconnect()
+      analyser.disconnect()
+      keepalive.disconnect()
     },
   }
 }
