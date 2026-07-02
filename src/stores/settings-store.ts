@@ -1,3 +1,4 @@
+import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { IS_DEV } from '@/lib/defaults'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
@@ -456,6 +457,25 @@ export const [selectedCharacter, setSelectedCharacter] =
 
 export const [characterSounds, setCharacterSounds] =
   createPersistedSignal<boolean>('pitchperfect_character_sounds', true)
+
+// ── App scope & UI mode ─────────────────────────────────────────
+// practiceScope filters the app to one instrument's surface; uiMode picks
+// between the full app ('advanced') and a practice-first UI ('simple').
+// Tab visibility itself is derived in features/tabs/constants.ts.
+
+export const [practiceScope, setPracticeScope] =
+  createPersistedSignal<PracticeScope>('pitchperfect_practice_scope', 'all', {
+    validator: (v): v is PracticeScope =>
+      v === 'all' || v === 'singing' || v === 'guitar' || v === 'piano',
+  })
+
+export const [uiMode, setUiMode] = createPersistedSignal<UiMode>(
+  'pitchperfect_ui_mode',
+  'advanced',
+  {
+    validator: (v): v is UiMode => v === 'advanced' || v === 'simple',
+  },
+)
 
 const SHOW_PLAYBACK_SETUP_KEY = 'pitchperfect_show_playback_setup_label'
 const SHOW_STATS_KEY = 'pitchperfect_show_stats'

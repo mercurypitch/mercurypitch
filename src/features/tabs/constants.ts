@@ -74,6 +74,74 @@ export const TAB_ORDER: readonly ActiveTab[] = TAB_GROUPS.flatMap((g) => [
   ...g.tabs,
 ])
 
+// ── Practice scope & UI mode visibility ─────────────────────────────
+// Two orthogonal user settings (persisted in settings-store) drive which
+// tabs exist in the UI:
+//  - practice scope: the instrument the user practices ('all' shows every
+//    instrument's surface),
+//  - UI mode: 'advanced' is the full app; 'simple' is a practice-first UI
+//    (practice tabs of the current scope + Settings, nothing else).
+
+export type PracticeScope = 'all' | 'singing' | 'guitar' | 'piano'
+export type UiMode = 'advanced' | 'simple'
+
+/** Which scopes a tab belongs to. Settings is handled separately (always). */
+const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
+  [TAB_SINGING]: ['singing'],
+  [TAB_PIANO]: ['piano'],
+  [TAB_GUITAR]: ['guitar'],
+  [TAB_EXERCISES]: ['singing'],
+  [TAB_KARAOKE]: ['singing'],
+  [TAB_JAM]: ['singing'],
+  [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
+  [TAB_LEADERBOARD]: ['singing', 'guitar', 'piano'],
+  [TAB_CHALLENGES]: ['singing'],
+  [TAB_COMPOSE]: ['singing', 'piano'],
+  [TAB_ANALYSIS]: ['singing'],
+  [TAB_SETTINGS]: ['singing', 'guitar', 'piano'],
+  // Dev-only sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
+  [TAB_PITCH_TEST]: ['singing'],
+  [TAB_PITCH_ALGO]: ['singing'],
+}
+
+/** Simple mode keeps only the practice group + Settings (the way back). */
+const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
+  ...(TAB_GROUPS.find((g) => g.id === 'practice')?.tabs ?? []),
+  TAB_SETTINGS,
+])
+
+/** Is `tab` visible under the given scope and UI mode? */
+export function isTabVisible(
+  tab: ActiveTab,
+  scope: PracticeScope,
+  mode: UiMode,
+): boolean {
+  // Settings always stays reachable — it hosts the mode switch itself.
+  if (tab === TAB_SETTINGS) return true
+  if (mode === 'simple' && !SIMPLE_TABS.has(tab)) return false
+  return scope === 'all' || TAB_SCOPES[tab].includes(scope)
+}
+
+/** Canonical order filtered to the visible tabs (drives the swipe nav). */
+export function visibleTabOrder(
+  scope: PracticeScope,
+  mode: UiMode,
+): ActiveTab[] {
+  return TAB_ORDER.filter((t) => isTabVisible(t, scope, mode))
+}
+
+/** Landing tab when the current one is filtered out by a scope change. */
+export function scopeHomeTab(scope: PracticeScope): ActiveTab {
+  switch (scope) {
+    case 'guitar':
+      return TAB_GUITAR
+    case 'piano':
+      return TAB_PIANO
+    default:
+      return DEFAULT_TAB
+  }
+}
+
 // ── PlaybackMode constants ──────────────────────────────────────────
 // These are separate from tab IDs. `PLAYBACK_MODE_SESSION` is the
 // string 'practice' which was previously overloaded as both a

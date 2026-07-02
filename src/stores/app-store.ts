@@ -1423,6 +1423,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-account"]'],
   },
   {
+    title: 'App mode',
+    targetSelector: '[data-tour="settings.app-mode"]',
+    description:
+      'Scope the app to what you practice — singing, guitar, or piano — and pick your interface: Advanced shows the whole app, Simple keeps only the practice tabs for a focused, distraction-free view.',
+    placement: 'bottom',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
+  {
     title: 'Reset & danger zone',
     targetSelector: '[data-testid="danger-reset-btn"]',
     description:

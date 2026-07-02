@@ -1,7 +1,8 @@
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount } from 'solid-js'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
+import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
 
 export interface AppNavTabsProps {
@@ -439,6 +440,10 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     })
   })
 
+  // Scope + UI mode filter the visible tabs; groups with nothing left vanish.
+  const groupTabs = (group: (typeof TAB_GROUPS)[number]) =>
+    group.tabs.filter((t) => isTabVisible(t, practiceScope(), uiMode()))
+
   return (
     <nav
       id="app-tabs"
@@ -447,13 +452,20 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     >
       <For each={TAB_GROUPS}>
         {(group) => (
-          <div
-            class="tab-group collapsible"
-            classList={{ collapsed: isCollapsed(group.id) }}
-          >
-            {groupLabel(group.id, group.label)}
-            <For each={group.tabs}>{(tab) => renderTab(tab)}</For>
-          </div>
+          <Show when={groupTabs(group).length > 0}>
+            <div
+              class="tab-group collapsible"
+              classList={{
+                // Simple mode is a flat, focused bar: no group chrome.
+                collapsed: uiMode() === 'advanced' && isCollapsed(group.id),
+              }}
+            >
+              <Show when={uiMode() === 'advanced'}>
+                {groupLabel(group.id, group.label)}
+              </Show>
+              <For each={groupTabs(group)}>{(tab) => renderTab(tab)}</For>
+            </div>
+          </Show>
         )}
       </For>
     </nav>
