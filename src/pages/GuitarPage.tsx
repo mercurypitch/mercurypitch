@@ -23,6 +23,7 @@ import { NOTE_NAMES } from '@/lib/note-utils'
 import { createPersistedSignal } from '@/lib/storage'
 import { isMobile } from '@/lib/use-viewport'
 import { activeTab } from '@/stores'
+import { recordActivity } from '@/stores/usage-store'
 
 // Small / touch screens hide the 3D-view overlays (input monitor + nav gizmo)
 // by default (isMobile); the user can still toggle them on, and the choice is
@@ -89,6 +90,11 @@ export function GuitarPage(props: GuitarPageProps) {
     getLevel: guitar.getInputLevel,
     isDetecting: () =>
       guitar.detectedMidi() !== null || guitar.detectedClarity() > 0,
+  })
+
+  // Each practice run counts as real app usage (gates the survey).
+  createEffect(() => {
+    if (guitar.gameState() === 'playing') recordActivity()
   })
 
   const drumMachine = ctx.drumMachine

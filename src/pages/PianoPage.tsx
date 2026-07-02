@@ -1,5 +1,5 @@
 import type { Accessor } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from '@/components/FallingNotesSongPicker'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -8,6 +8,7 @@ import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
+import { recordActivity } from '@/stores/usage-store'
 
 type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
@@ -34,6 +35,11 @@ export function PianoPage(props: PianoPageProps) {
     isPlaying: () => fallingNotes.gameState() === 'playing',
     getLevel: fallingNotes.getInputLevel,
     isDetecting: () => (fallingNotes.currentPitch()?.frequency ?? 0) > 0,
+  })
+
+  // Each game run counts as real app usage (gates the survey).
+  createEffect(() => {
+    if (fallingNotes.gameState() === 'playing') recordActivity()
   })
 
   return (

@@ -2,6 +2,7 @@ import { updatePracticeStreak } from '@/db/services/streak-service'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { createPersistedSignal } from '@/lib/storage'
+import { recordActivity } from './usage-store'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 
@@ -42,6 +43,8 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // standings are now derived server-side from sessionRecords, so exercises
   // no longer post leaderboard entries.
   void updatePracticeStreak()
+
+  recordActivity()
 }
 
 export function getExerciseStats(type: ExerciseType): ExerciseStats {

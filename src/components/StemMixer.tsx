@@ -30,6 +30,7 @@ import { startTour, STEM_MIXER_TOUR_STEPS } from '@/stores/app-store'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
+import { recordActivity } from '@/stores/usage-store'
 import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
@@ -302,6 +303,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     isPlaying: audio.playing,
     getLevel: () => rmsOfAnalyser(mic.getMicAnalyserNode()),
     isDetecting: () => (mic.micPitch()?.frequency ?? 0) > 0,
+  })
+
+  // Each karaoke playback counts as real app usage (gates the survey).
+  createEffect(() => {
+    if (audio.playing()) recordActivity()
   })
 
   // ── Karaoke playlist integration ─────────────────────────────
