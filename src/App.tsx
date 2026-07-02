@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
@@ -362,6 +362,12 @@ const AppShell: Component<AppProps> = (props) => {
           targetNotes: drill.notes.length > 0 ? drill.notes : undefined,
           pattern: drill.pattern,
         })
+      }
+      // Exercises read their launch override at mount. If the same type is
+      // already selected (it survives tab switches), the component would keep
+      // its old config — force a fresh mount so the new drill takes effect.
+      if (untrack(selectedExercise) === drill.exercise) {
+        setSelectedExercise(null)
       }
       setSelectedExercise(drill.exercise)
       setPendingDrill(null)
