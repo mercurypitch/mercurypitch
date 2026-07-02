@@ -1,17 +1,28 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { createPersistedSignal } from '@/lib/storage'
 
 /**
  * A single, debounced "what's happening with the mic" state, shared by every
  * tab that listens to the mic (Singing, Karaoke, Piano, Guitar, Jam):
  *
  * - `none`       — a pitch is being read (all good), or the mic is idle.
+ * - `mic-off`    — playback is running but the mic is off, so nothing the
+ *                  user sings is heard or scored. Dismissible for good.
  * - `no-input`   — mic is on and playback is running, but we hear silence:
  *                  the user isn't singing / the mic isn't picking them up.
  * - `too-quiet`  — mic is on and we hear audible sound, but it's too faint for
  *                  the detector to read a pitch.
  */
-export type MicInsight = 'none' | 'no-input' | 'too-quiet'
+export type MicInsight = 'none' | 'mic-off' | 'no-input' | 'too-quiet'
+
+/** "Don't show again" for the playback-with-mic-off hint (all mic tabs). */
+export const [micOffHintDismissed, setMicOffHintDismissed] =
+  createPersistedSignal<boolean>('pitchperfect_mic_off_hint_dismissed', false)
+
+export const dismissMicOffHint = (): void => {
+  setMicOffHintDismissed(true)
+}
 
 export interface MicInsightsOptions {
   /** Gate the monitor (e.g. only on the active tab). Default: always on. */
@@ -47,6 +58,8 @@ const MIN_DISPLAY_MS = 1300
 
 export const MIC_INSIGHT_MESSAGE: Record<MicInsight, string> = {
   none: '',
+  'mic-off':
+    'Your mic is off — turn it on to be heard and scored while you play along.',
   'no-input':
     "Your mic is on but we can't hear you — sing up, or check your mic input.",
   'too-quiet':
@@ -77,8 +90,15 @@ export function useMicInsights(opts: MicInsightsOptions): MicInsights {
   }
 
   createEffect(() => {
-    if (!enabled() || !opts.micActive()) {
+    if (!enabled()) {
       emit('none')
+      return
+    }
+
+    // Mic fully off: no signal to monitor. While playback runs, surface the
+    // persistent "you won't be heard" hint (unless dismissed for good).
+    if (!opts.micActive()) {
+      emit(opts.isPlaying() && !micOffHintDismissed() ? 'mic-off' : 'none')
       return
     }
 

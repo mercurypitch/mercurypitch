@@ -59,6 +59,7 @@ export function PianoPage(props: PianoPageProps) {
       >
         <MicInsightHint
           message={micInsights.message}
+          insight={micInsights.insight}
           style={{
             position: 'absolute',
             top: '10px',

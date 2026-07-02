@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
+import type { MicInsight } from '@/features/mic-feedback/useMicInsights'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { karaokeFocus } from '@/stores/ui-store'
@@ -70,6 +71,7 @@ interface StemMixerFixedWorkspaceProps {
 
   // Mic-feedback message, shown in the Vocal Pitch panel header.
   micMessage: Accessor<string>
+  micInsight: Accessor<MicInsight>
   // Live mic input level 0–1 (drives the "fill" meter) + whether mic is on.
   micLevel: Accessor<number>
   micActive: Accessor<boolean>
@@ -550,6 +552,7 @@ export const StemMixerFixedWorkspace: Component<
                     narrow panels. pointer-events:none lets canvas edits pass. */}
                 <MicInsightHint
                   message={props.micMessage}
+                  insight={props.micInsight}
                   style={{
                     position: 'absolute',
                     left: '50%',

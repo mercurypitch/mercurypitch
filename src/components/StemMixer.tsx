@@ -1612,6 +1612,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showUserNoteLabels={showUserNoteLabels}
           setShowUserNoteLabels={setShowUserNoteLabels}
           micMessage={micInsights.message}
+          micInsight={micInsights.insight}
           micLevel={mic.micLevel}
           micActive={mic.micActive}
           showWaveform={showWaveform}
