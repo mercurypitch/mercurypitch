@@ -1,6 +1,7 @@
 import { createMemo, createSignal } from 'solid-js'
 import { dailyRoutines, getRandomRoutine } from '@/data/routine-templates'
 import type { ExerciseType } from '@/features/exercises/types'
+import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import { createPersistedSignal } from '@/lib/storage'
 import type { RoutineSegment, RoutineTemplate } from './types'
 
@@ -58,11 +59,15 @@ export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
 
   const currentSeg = template.segments[currentIdx]!
 
-  // Only auto-advance exercise segments that match the completed type
-  if (
-    currentSeg.type === 'exercise' &&
-    currentSeg.config.exercise === exerciseType
-  ) {
+  // Auto-advance when the completed exercise matches the current segment:
+  // exercise segments match by type; warmup/cooldown segments complete when
+  // the guided warmup exercise finishes (it runs those segments' patterns).
+  const matches =
+    (currentSeg.type === 'exercise' &&
+      currentSeg.config.exercise === exerciseType) ||
+    ((currentSeg.type === 'warmup' || currentSeg.type === 'cooldown') &&
+      exerciseType === EXERCISE_WARMUP)
+  if (matches) {
     setRoutineData({
       ...data,
       completedSegments: [...data.completedSegments, currentIdx],
