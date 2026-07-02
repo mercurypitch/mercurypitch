@@ -75,16 +75,20 @@ measurable for real — locally (`python handler.py`) or from a deployed job.
   reuses one warm worker; short enough to avoid paying for long idles.
 - **Execution timeout: ~300s** — caps runaway jobs (our jobs run ~2–3 min).
 - **GPU: RTX 4090-class (mid-tier)** for the ~2–3 min/song target.
-- **Container disk: ~5–10 GB** — fits the CUDA image + baked model.
+- **Container disk: 20 GB** — the CUDA + torch image is ~10 GB unpacked;
+  smaller disks fail at worker start (verified on the first real deploy).
 
 ---
 
 ## Deploy
 
-1. **Build & push the worker image** (see [`runpod/README.md`](../../runpod/README.md)):
+1. **Build & push the worker image** (see [`runpod/README.md`](../../runpod/README.md)).
+   Use a pinned version tag, never `latest` — the endpoint should reference an
+   immutable tag, and bumping it in the endpoint settings is the controlled
+   release (RunPod rolls workers onto the new image):
    ```bash
-   docker build -t <registry>/mercurypitch-uvr-runpod:latest runpod/
-   docker push  <registry>/mercurypitch-uvr-runpod:latest
+   docker build -t <registry>/mercurypitch-uvr-runpod:v0.1.0 runpod/
+   docker push  <registry>/mercurypitch-uvr-runpod:v0.1.0
    ```
 2. **Create the serverless endpoint(s)** in the RunPod console with the
    settings above; set the `S3_*` env vars (object storage for stem output —
