@@ -3472,3 +3472,14 @@
     display: none;
   }
 }
+
+/* Cost hint shown next to the mode toggle when Server processing is active */
+.server-cost-hint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 999px;
+  white-space: nowrap;
+}

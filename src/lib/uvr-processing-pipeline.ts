@@ -10,7 +10,7 @@ import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelSta
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
-import { deleteSession, getOutputFile, pollForCompletion, processAudio, } from './uvr-api'
+import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, } from './uvr-api'
 import { VocalSeparator } from './vocal-separator'
 
 // ---------------------------------------------------------------------------
@@ -200,7 +200,13 @@ async function processServer(
   sessionId: string,
   callbacks: ProcessingCallbacks,
 ): Promise<void> {
-  const response = await processAudio(file)
+  // Server mode targets the RunPod GPU tier; when RunPod isn't configured
+  // on the worker the request falls through to the CPU container, so the
+  // opt-in header is always safe to send.
+  const response = await processAudio(file, {
+    ...DEFAULT_PROCESS_REQUEST,
+    provider: 'runpod',
+  })
 
   if (response.status !== 'processing') {
     throw new Error('Failed to start processing')

@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
-import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -184,5 +184,79 @@ describe('getProcessStatus error handling (REQ-UV-063)', () => {
     await expect(getProcessStatus('missing-session')).rejects.toThrow(
       'Failed to get status: Not Found',
     )
+  })
+})
+
+describe('processAudio — server tier opt-in + 402 handling', () => {
+  const OK_RESPONSE = {
+    ok: true,
+    status: 200,
+    json: () =>
+      Promise.resolve({
+        session_id: 'rp_gpu_job-1',
+        status: 'processing',
+        message: 'Processing started',
+        model: 'UVR-MDX-NET-Inst_HQ_3',
+        output_format: 'WAV',
+      }),
+  } as Response
+
+  it('sends X-UVR-Provider when a provider is requested', async () => {
+    const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
+    const file = new File([new Uint8Array([1])], 'song.mp3')
+    const res = await processAudio(file, {
+      ...DEFAULT_PROCESS_REQUEST,
+      provider: 'runpod',
+    })
+    expect(res.session_id).toBe('rp_gpu_job-1')
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit]
+    expect(String(url).endsWith('/process')).toBe(true)
+    expect((init.headers as Record<string, string>)['X-UVR-Provider']).toBe(
+      'runpod',
+    )
+  })
+
+  it('omits the header without a provider', async () => {
+    const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
+    await processAudio(new File([new Uint8Array([1])], 'song.mp3'))
+    const [, init] = spy.mock.calls[0] as [string, RequestInit]
+    expect(
+      (init.headers as Record<string, string>)['X-UVR-Provider'],
+    ).toBeUndefined()
+  })
+
+  it('turns the metering 402 into an actionable message', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 402,
+      statusText: 'Payment Required',
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            error: 'Insufficient credits',
+            required: 1,
+            balance: 0,
+          }),
+        ),
+    } as Response)
+    await expect(
+      processAudio(new File([new Uint8Array([1])], 'song.mp3'), {
+        provider: 'runpod',
+      }),
+    ).rejects.toThrow(
+      'Not enough credits — this song needs 1 credit, you have 0. Get credits in Settings, under Account.',
+    )
+  })
+
+  it('keeps plain error bodies for non-402 failures', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      text: () => Promise.resolve('boom'),
+    } as Response)
+    await expect(
+      processAudio(new File([new Uint8Array([1])], 'song.mp3')),
+    ).rejects.toThrow('boom')
   })
 })

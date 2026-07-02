@@ -971,14 +971,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="header-actions">
               <div class="uvr-mode-toggle">
                 <button
-                  class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                  title="Processing: Server"
-                  onClick={() =>
-                    showNotification(
-                      'Server-side processing not yet available.',
-                      'info',
-                    )
-                  }
+                  class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                  title="Processing: Server GPU (1 credit per song)"
+                  onClick={() => setUvrProcessingMode('server')}
+                  data-testid="uvr-mode-server"
                 >
                   Server
                 </button>
@@ -989,6 +985,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 >
                   Browser
                 </button>
+                <Show when={uvrProcessingMode() === 'server'}>
+                  <span
+                    class="server-cost-hint"
+                    title="Server separation runs on a cloud GPU and uses credits from your account"
+                    data-testid="uvr-server-cost-hint"
+                  >
+                    1 credit / song
+                  </span>
+                </Show>
                 <Show when={uvrProcessingMode() === 'local'}>
                   <div class="uvr-device-toggle">
                     <button

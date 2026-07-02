@@ -72,7 +72,7 @@ const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'local'
 
 export function getUvrProcessingMode(): UvrProcessingMode {
   const saved = localStorage.getItem('pitchperfect_uvr-processing-mode')
-  if (saved === 'local') return 'local'
+  if (saved === 'local' || saved === 'server') return saved
   return DEFAULT_PROCESSING_MODE
 }
 
