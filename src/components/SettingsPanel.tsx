@@ -12,6 +12,7 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
@@ -22,6 +23,7 @@ import type { PitchBufferSize } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
+import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -179,6 +181,47 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
             <AccountSection />
+          </div>
+
+          {/* App Mode Section */}
+          <div class={styles.settingsSection} data-tour="settings.app-mode">
+            <h3 class={styles.settingsSectionTitle}>App Mode</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Scope the app to what you practice, and choose how much interface
+              you want. Simple mode shows only the practice tabs for your
+              instrument (plus Settings) — a focused, distraction-free view.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="practice-scope-select">I practice</label>
+              <SafeSelect
+                id="practice-scope-select"
+                value={practiceScope()}
+                onChange={(e) => {
+                  setPracticeScope(e.currentTarget.value as PracticeScope)
+                }}
+              >
+                <option value="all">Everything</option>
+                <option value="singing">Singing</option>
+                <option value="guitar">Guitar</option>
+                <option value="piano">Piano</option>
+              </SafeSelect>
+            </div>
+
+            <div class={styles.settingsRow}>
+              <label for="ui-mode-select">Interface</label>
+              <SafeSelect
+                id="ui-mode-select"
+                value={uiMode()}
+                onChange={(e) => {
+                  setUiMode(e.currentTarget.value as UiMode)
+                }}
+              >
+                <option value="advanced">Advanced — the full app</option>
+                <option value="simple">Simple — practice only</option>
+              </SafeSelect>
+            </div>
           </div>
         </Show>
 

@@ -72,7 +72,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_ORDER, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
@@ -105,7 +105,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { CHARACTER_INFO, fontFamily, selectedCharacter, showHistoryPanel, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
@@ -426,14 +426,16 @@ const AppShell: Component<AppProps> = (props) => {
     const swipeThreshold = window.innerWidth * 0.35
 
     if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaY) < 80) {
-      // Swipe order follows the same canonical TAB_ORDER the tab bar renders,
-      // so the gesture and the visible tabs can never drift out of sync.
-      const currentIdx = TAB_ORDER.indexOf(activeTab())
+      // Swipe order follows the same canonical order the tab bar renders,
+      // filtered by scope/UI mode, so the gesture and the visible tabs can
+      // never drift out of sync.
+      const order = visibleTabOrder(practiceScope(), uiMode())
+      const currentIdx = order.indexOf(activeTab())
       if (currentIdx !== -1) {
-        if (deltaX > 0 && currentIdx < TAB_ORDER.length - 1) {
-          void handleTabChange(TAB_ORDER[currentIdx + 1])
+        if (deltaX > 0 && currentIdx < order.length - 1) {
+          void handleTabChange(order[currentIdx + 1])
         } else if (deltaX < 0 && currentIdx > 0) {
-          void handleTabChange(TAB_ORDER[currentIdx - 1])
+          void handleTabChange(order[currentIdx - 1])
         }
       }
     }
@@ -1106,6 +1108,16 @@ const AppShell: Component<AppProps> = (props) => {
     if (currentMelody === null) return
     showNotification('Melody saved!', 'success')
   }, 500)
+
+  // If the active tab gets filtered out (scope/UI-mode change, or a deep link
+  // into a hidden tab), land on the scope's home tab instead of a blank shell.
+  createEffect(() => {
+    const scope = practiceScope()
+    const mode = uiMode()
+    if (!isTabVisible(activeTab(), scope, mode)) {
+      void handleTabChange(scopeHomeTab(scope))
+    }
+  })
 
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
