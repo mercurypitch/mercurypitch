@@ -23,6 +23,9 @@ export type HashRoute =
   | { type: 'learn-chapter'; chapterId: string }
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
+  /** Return from Stripe checkout (success_url / cancel_url in the
+   *  db-worker's billing.ts) — lands on Settings → Account. */
+  | { type: 'billing-return'; outcome: 'success' | 'cancel' }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -163,6 +166,16 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'guide' }
   }
 
+  // Stripe checkout return URLs (see workers/db-worker/src/billing.ts):
+  // success lands on Settings → Account with a confirmation; the cancel URL
+  // is /pricing, which is where the pricing panel lives too.
+  if (hash === '/billing/success') {
+    return { type: 'billing-return', outcome: 'success' }
+  }
+  if (hash === '/pricing') {
+    return { type: 'billing-return', outcome: 'cancel' }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -203,6 +216,8 @@ export function buildHash(route: HashRoute): string {
       return route.sectionId === 'all'
         ? '/guide/all'
         : `/guide/${route.sectionId}`
+    case 'billing-return':
+      return route.outcome === 'success' ? '/billing/success' : '/pricing'
     case 'unknown':
       return '/'
   }

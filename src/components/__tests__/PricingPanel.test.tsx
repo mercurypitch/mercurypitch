@@ -8,12 +8,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/db/services/billing-service', async (importOriginal) => {
   // Keep formatPrice real; stub the network calls.
   const actual = (await importOriginal()) as Record<string, unknown>
-  return { ...actual, fetchPricing: vi.fn(), startCheckout: vi.fn() }
+  return {
+    ...actual,
+    fetchPricing: vi.fn(),
+    startCheckout: vi.fn(),
+    fetchBillingMe: vi.fn(),
+  }
 })
 
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import type { Pricing } from '@/db/services/billing-service'
-import { fetchPricing } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 
 const PRICING: Pricing = {
   currency: 'eur',
@@ -65,6 +70,30 @@ afterEach(() => {
 })
 
 describe('PricingPanel', () => {
+  it('shows the credit balance chip when billing info is available', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    vi.mocked(fetchBillingMe).mockResolvedValue({
+      creditBalance: 30,
+      entitlements: [],
+      stripeConfigured: true,
+    })
+    render(() => <PricingPanel />)
+    await waitFor(() =>
+      expect(screen.getByTestId('credit-balance')).toBeInTheDocument(),
+    )
+    expect(screen.getByTestId('credit-balance').textContent).toContain('30')
+  })
+
+  it('hides the balance chip when logged out (me is null)', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    vi.mocked(fetchBillingMe).mockResolvedValue(null)
+    render(() => <PricingPanel />)
+    await waitFor(() =>
+      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+    )
+    expect(screen.queryByTestId('credit-balance')).not.toBeInTheDocument()
+  })
+
   it('renders tiers/packs with Soon tags and a buyable pack', async () => {
     vi.mocked(fetchPricing).mockResolvedValue(PRICING)
     render(() => <PricingPanel />)

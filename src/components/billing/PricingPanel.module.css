@@ -222,3 +222,26 @@
 .supportBtn:hover .supportHeart {
   transform: scale(1.15);
 }
+
+/* Credit balance chip — shown when the user is signed in with cloud billing */
+.balanceRow {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+}
+
+.balanceLabel {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.balanceValue {
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+}

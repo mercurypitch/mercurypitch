@@ -99,6 +99,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
+import { refreshBalance } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
@@ -567,6 +568,24 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // ── Hash routing ────────────────────────────────────────────
+  // Return from Stripe checkout: the router already navigated to Settings
+  // (Account is its default sub-tab); confirm and refresh the balance. The
+  // credit grant arrives via webhook, which can trail the redirect by a few
+  // seconds — refresh again after a delay so the new balance shows up.
+  const handleBillingReturn = (outcome: 'success' | 'cancel'): void => {
+    if (outcome === 'success') {
+      showNotification(
+        'Payment received — credits are being added to your account.',
+        'success',
+      )
+      refreshBalance()
+      window.setTimeout(refreshBalance, 3000)
+      window.setTimeout(refreshBalance, 10000)
+    } else {
+      showNotification('Checkout cancelled.', 'info')
+    }
+  }
+
   useHashRouter({
     setActiveTab,
     setInitialUvrView,
@@ -583,6 +602,7 @@ const AppShell: Component<AppProps> = (props) => {
     handleShareRoutine,
     handleShareFallback,
     handleShareShort,
+    handleBillingReturn,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
