@@ -1105,6 +1105,16 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
+  // Welcome overlay "Enable Mic": enable-only (never toggles an active mic
+  // off), and surface denial — startMic() swallows getUserMedia errors and
+  // returns false, so without this check the welcome screen would show its
+  // "Mic enabled" chip even when permission was refused.
+  const handleWelcomeEnableMic = async () => {
+    if (micActive()) return
+    const ok = await practiceEngine.startMic()
+    if (!ok) throw new Error('Microphone permission denied')
+  }
+
   // Nudge once if singing playback starts while the mic is off.
   usePlaybackMicNudge({
     isPlaying,
@@ -1640,13 +1650,7 @@ const AppShell: Component<AppProps> = (props) => {
         <Show when={showWelcome()}>
           <WelcomeScreen
             onTakeTour={openGuideSelection}
-            // Wire the welcome overlay's "Enable Mic" button to the same
-            // mic toggle the SharedToolbar uses, so first-run permission
-            // grants actually start the mic stream + pitch detection.
-            // Previously this prop wasn't passed at all, so clicking only
-            // flipped a local "micEnabled" UI signal in WelcomeScreen and
-            // the mic was never opened.
-            onEnableMic={handleMicToggle}
+            onEnableMic={handleWelcomeEnableMic}
           />
         </Show>
 

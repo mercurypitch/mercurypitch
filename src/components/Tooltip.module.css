@@ -7,13 +7,16 @@
   display: inline-block;
 }
 
-/* Tooltip text */
+/* Tooltip text. Rendered in a document-level portal with fixed
+   positioning (coords + placement transform set inline), so it can't be
+   clipped by overflow containers. Colors are hardcoded as a pair — the
+   surface stays dark in the light theme, so themed text vars would break. */
 .tooltip {
-  position: absolute;
-  z-index: 1000;
-  background: rgba(30, 41, 59, 0.95);
+  position: fixed;
+  z-index: 10000;
+  background: rgba(30, 41, 59, 0.97);
   backdrop-filter: blur(4px);
-  color: var(--text-primary);
+  color: #e6edf3;
   font-size: 0.75rem;
   line-height: 1.35;
   padding: 5px 10px;
@@ -22,55 +25,5 @@
   max-width: 230px;
   text-align: left;
   pointer-events: none;
-  opacity: 0;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.tooltip.show {
-  opacity: 1;
-}
-
-/* Tooltip positions — the name is where the tooltip appears
-   relative to the wrapped element. */
-.tooltipTop {
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-}
-
-.tooltipTop.show {
-  transform: translateX(-50%) translateY(0);
-}
-
-.tooltipBottom {
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-.tooltipBottom.show {
-  transform: translateX(-50%) translateY(0);
-}
-
-.tooltipLeft {
-  right: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%) translateX(4px);
-}
-
-.tooltipLeft.show {
-  transform: translateY(-50%) translateX(0);
-}
-
-.tooltipRight {
-  left: calc(100% + 6px);
-  top: 50%;
-  transform: translateY(-50%) translateX(-4px);
-}
-
-.tooltipRight.show {
-  transform: translateY(-50%) translateX(0);
 }
