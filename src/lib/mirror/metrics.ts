@@ -12,6 +12,7 @@
 // ============================================================
 
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { detectVibrato } from '@/lib/vocal-analyzer'
 
 /** One pitch frame from the detector stream. */
 export interface F0Frame {
@@ -47,6 +48,12 @@ export const LOCK_MIN_FRAMES = 3
 /** Hold-task trims: onset and release are excluded from steadiness (§4.3). */
 export const HOLD_TRIM_START_SEC = 0.4
 export const HOLD_TRIM_END_SEC = 0.2
+/** Onset/scoop (§4.4): sustained-within window that ends the scoop. */
+export const ONSET_TOLERANCE_CENTS = 50
+export const ONSET_SUSTAIN_SEC = 0.1
+/** Vibrato counts as a feature only inside the singerly rate band (v1.1). */
+export const VIBRATO_MIN_HZ = 3.5
+export const VIBRATO_MAX_HZ = 8.5
 /** Fallback hop when a take has too few frames to estimate one (~60 Hz rAF). */
 export const DEFAULT_HOP_SEC = 0.016
 
@@ -246,12 +253,17 @@ export interface NoteTakeResult {
   band: MatchBand
   /** 0–100 per-note score. */
   score: number
+  /** §4.4 scoop: ms from voicing onset to the first 100 ms sustained within
+   *  ±50 c of target; null when the take never settled. */
+  onsetMs: number | null
 }
 
 export interface AccuracyResult {
   /** Mean of the per-note scores, 0–100. */
   score: number
   takes: NoteTakeResult[]
+  /** Median scoop across settled takes — "you scoop ~180 ms into notes". */
+  scoopMedianMs: number | null
 }
 
 /** Piecewise-linear per-note score (§4.2): 100@≤12 → 70@35 → 40@60 → 0@≥120. */
@@ -286,12 +298,37 @@ export function scoreMatchTake(
     deviationCents: null,
     band: 'no-voice',
     score: 0,
+    onsetMs: null,
   }
   const voiced = preprocess(frames)
   if (voiced.length === 0) return noVoice
 
   const hop = estimateHop(voiced)
   const targetCents = targetMidi * 100
+
+  // §4.4 onset/scoop: time from the first voiced frame to the start of the
+  // first 100 ms sustained within ±50 c (folded) of the target.
+  let onsetMs: number | null = null
+  let onsetRunStart = -1
+  for (let i = 0; i < voiced.length; i++) {
+    const inTolerance =
+      Math.abs(foldCents(voiced[i].cents - targetCents)) <=
+      ONSET_TOLERANCE_CENTS
+    if (!inTolerance) {
+      onsetRunStart = -1
+      continue
+    }
+    const contiguous =
+      i > 0 && voiced[i].t - voiced[i - 1].t <= 2.5 * hop && onsetRunStart >= 0
+    if (!contiguous) onsetRunStart = i
+    if (
+      i - onsetRunStart + 1 >= LOCK_MIN_FRAMES &&
+      voiced[i].t - voiced[onsetRunStart].t + hop >= ONSET_SUSTAIN_SEC
+    ) {
+      onsetMs = (voiced[onsetRunStart].t - voiced[0].t) * 1000
+      break
+    }
+  }
 
   // Find the lock: a contiguous run (no unvoiced gaps) within tolerance whose
   // span reaches LOCK_DURATION_SEC.
@@ -331,16 +368,24 @@ export function scoreMatchTake(
     deviationCents: deviation,
     band: matchBand(deviation),
     score: matchScore(deviation),
+    onsetMs,
   }
 }
 
-/** Accuracy = mean of the per-note scores (§4.2). */
+/** Accuracy = mean of the per-note scores (§4.2), plus the median scoop. */
 export function computeAccuracy(
   takes: readonly NoteTakeResult[],
 ): AccuracyResult | null {
   if (takes.length === 0) return null
   const score = takes.reduce((sum, take) => sum + take.score, 0) / takes.length
-  return { score: Math.round(score), takes: [...takes] }
+  const onsets = takes
+    .map((take) => take.onsetMs)
+    .filter((ms): ms is number => ms !== null)
+  return {
+    score: Math.round(score),
+    takes: [...takes],
+    scoopMedianMs: onsets.length > 0 ? Math.round(median(onsets)) : null,
+  }
 }
 
 /**
@@ -399,14 +444,22 @@ export function pickMatchTargets(
 
 // ── §4.3 Steadiness ──────────────────────────────────────────
 
+export interface VibratoInfo {
+  rateHz: number
+  /** Modulation amplitude in cents — shown as "vibrato: 5.6 Hz, ±38 c". */
+  extentCents: number
+}
+
 export interface SteadinessResult {
   /** The singer's own median pitch, MIDI-cents. */
   referenceCents: number
   referenceNote: string
   /** OLS slope of cents vs. time — "drifted ~4 cents/sec flat". */
   driftCentsPerSec: number
-  /** SD of residual cents after detrending. */
+  /** SD of residual cents after detrending, vibrato excluded (v1.1). */
   wobbleSdCents: number
+  /** Detected vibrato — labeled a feature, never scored as wobble. */
+  vibrato: VibratoInfo | null
   /** 0–100 steadiness score. */
   score: number
   /** Seconds of voiced audio that were actually scored. */
@@ -456,7 +509,27 @@ export function computeSteadiness(
 
   const residualVariance =
     kept.reduce((s, f) => s + (f.cents - (slope * f.t + intercept)) ** 2, 0) / n
-  const wobble = Math.sqrt(residualVariance)
+
+  // v1.1: vibrato is a feature, not wobble. The FFT detector (3–10 Hz band)
+  // is drift-immune, so it can run on the raw hold; when a singerly-rate
+  // vibrato is found, its sinusoid variance (A²/2, A = extent/2) is
+  // subtracted from the residual before scoring.
+  const vib = detectVibrato(
+    kept.map((f) => ({ time: f.t, freq: 0, midi: f.cents / 100 })),
+  )
+  // The analyzer's depthCents is 2×RMS of the modulation ≈ √2×amplitude for
+  // a sinusoid, so amplitude = depth/√2 and its variance share is A²/2.
+  const vibratoAmplitude = vib.depthCents / Math.SQRT2
+  const vibrato: VibratoInfo | null =
+    vib.detected && vib.rateHz >= VIBRATO_MIN_HZ && vib.rateHz <= VIBRATO_MAX_HZ
+      ? { rateHz: vib.rateHz, extentCents: Math.round(vibratoAmplitude) }
+      : null
+  let wobble = Math.sqrt(residualVariance)
+  if (vibrato) {
+    wobble = Math.sqrt(
+      Math.max(0, residualVariance - vibratoAmplitude ** 2 / 2),
+    )
+  }
 
   const referenceCents = median(kept.map((f) => f.cents))
   return {
@@ -464,6 +537,7 @@ export function computeSteadiness(
     referenceNote: midiToNoteNameOctave(centsToMidi(referenceCents)),
     driftCentsPerSec: slope,
     wobbleSdCents: wobble,
+    vibrato,
     score: Math.round(steadinessScore(wobble)),
     voicedSeconds: kept.length * estimateHop(kept),
   }

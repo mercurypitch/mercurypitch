@@ -159,7 +159,7 @@ export default defineConfig({
           // Without this, Rollup co-locates them with app chunks and the
           // mirror transitively loads the whole app vendor bundle.
           if (
-            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note)/.test(
+            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer)/.test(
               id,
             )
           ) {
