@@ -13,7 +13,7 @@ import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { CameraState } from './renderer/camera'
-import { cameraBasis, clampCamera, DEFAULT_CAMERA } from './renderer/camera'
+import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
 import type { TabDetected, TabRenderer, TabScene } from './renderer/TabRenderer'
 import { DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
@@ -49,7 +49,41 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   let rafId = 0
   const [camera, setCamera] = createSignal<CameraState>(DEFAULT_CAMERA)
 
-  const orbit = (dx: number, dy: number) =>
+  // A direct manipulation (drag/wheel/pinch) cancels any in-flight tween so
+  // the camera never fights the user's hand.
+  let tweenRaf = 0
+  const cancelTween = () => {
+    if (tweenRaf !== 0) cancelAnimationFrame(tweenRaf)
+    tweenRaf = 0
+  }
+  const animateCamera = (to: CameraState, ms = 280) => {
+    cancelTween()
+    const from = camera()
+    const t0 = performance.now()
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / ms)
+      const k = 1 - (1 - t) ** 3 // ease-out cubic
+      setCamera(
+        clampCamera({
+          yaw: lerp(from.yaw, to.yaw, k),
+          pitch: lerp(from.pitch, to.pitch, k),
+          radius: lerp(from.radius, to.radius, k),
+          target: [
+            lerp(from.target[0], to.target[0], k),
+            lerp(from.target[1], to.target[1], k),
+            lerp(from.target[2], to.target[2], k),
+          ],
+        }),
+      )
+      tweenRaf = t < 1 ? requestAnimationFrame(step) : 0
+    }
+    tweenRaf = requestAnimationFrame(step)
+  }
+  onCleanup(cancelTween)
+
+  const orbit = (dx: number, dy: number) => {
+    cancelTween()
     setCamera((c) =>
       clampCamera({
         ...c,
@@ -57,15 +91,21 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         pitch: c.pitch - dy * ORBIT_SENS,
       }),
     )
-  const zoom = (deltaY: number) =>
+  }
+  const zoom = (deltaY: number) => {
+    cancelTween()
     setCamera((c) =>
       clampCamera({ ...c, radius: c.radius * Math.exp(deltaY * ZOOM_SENS) }),
     )
+  }
   // Pinch zoom: multiply the orbit radius directly by a ratio (fingers
   // spreading apart → factor < 1 → camera moves closer).
-  const zoomBy = (factor: number) =>
+  const zoomBy = (factor: number) => {
+    cancelTween()
     setCamera((c) => clampCamera({ ...c, radius: c.radius * factor }))
-  const pan = (dx: number, dy: number) =>
+  }
+  const pan = (dx: number, dy: number) => {
+    cancelTween()
     setCamera((c) => {
       const { right, up } = cameraBasis(c)
       const s = c.radius * 0.0016
@@ -78,7 +118,32 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         ],
       })
     })
-  const resetCamera = () => setCamera(DEFAULT_CAMERA)
+  }
+  const resetCamera = () => animateCamera(DEFAULT_CAMERA)
+
+  /** Signed shortest angular distance from b to a, in (-π, π]. */
+  const yawDelta = (a: number, b: number) =>
+    Math.atan2(Math.sin(a - b), Math.cos(a - b))
+
+  // Snap the camera to look along a world axis (gizmo axis-ball click).
+  // X/Z pick the nearest side first; clicking the axis you already face flips
+  // to the opposite side. Y goes to the top-down view (pitch is clamped so the
+  // camera can never flip under the scene).
+  const snapToAxis = (axis: 'X' | 'Y' | 'Z') => {
+    const c = camera()
+    if (axis === 'Y') {
+      animateCamera({ ...c, pitch: PITCH_MAX })
+      return
+    }
+    const base = axis === 'X' ? Math.PI / 2 : 0
+    const nearest =
+      Math.abs(yawDelta(c.yaw, base)) <= Math.PI / 2 ? base : base + Math.PI
+    const alreadyThere =
+      Math.abs(yawDelta(c.yaw, nearest)) < 0.02 && Math.abs(c.pitch) < 0.02
+    const targetYaw = alreadyThere ? nearest + Math.PI : nearest
+    // Travel the shortest arc from the current yaw instead of jumping wraps.
+    animateCamera({ ...c, yaw: c.yaw + yawDelta(targetYaw, c.yaw), pitch: 0 })
+  }
 
   const buildScene = (): TabScene => {
     const source = props.fallingNotes()
@@ -337,6 +402,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
           onPan={pan}
           onZoom={zoom}
           onReset={resetCamera}
+          onSnapAxis={snapToAxis}
         />
       </Show>
       <Show when={props.controls}>
