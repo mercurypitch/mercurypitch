@@ -6,7 +6,28 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - 2026-07-01
+## [0.5.3] - 2026-07-02
+
+### Added
+
+- Voice Mirror standalone entry (`mirror.html` + `src/features/mirror/`): a second Vite input with its own tiny Solid tree (~25 kB gzipped incl. solid + pitch-core chunks, no ONNX/model weights, enforced via `manualChunks`). Served at `/mirror`, `/vocal-range-test`, `/tone-deaf-test` and the `mirror.*` subdomain root by the worker, with a matching dev/preview rewrite plugin in `vite.config.ts`.
+- Pure metrics core (`src/lib/mirror/metrics.ts`, synthetic-track tests): §3 preprocessing (confidence gate, gap-aware 5-frame median filter, MIDI-cents), semitone-bin range with 150 ms dwell + percentile guard rails (±1 semitone margin), octave-folded match scoring with 150 ms/3-frame lock and post-lock windows, OLS drift + detrended wobble, onset/scoop (§4.4), vibrato via the existing `vocal-analyzer` FFT detector with sinusoid-variance exclusion from wobble (v1.1).
+- Session reducer (`src/lib/mirror/session.ts`): pure guided-flow state machine (idle → mic → glides → hold → match×5 → results) with range-relative target picking and one free retry on unvoiced takes.
+- Free Sing analysis (`src/lib/mirror/free-sing.ts`): dwell histogram → home note + tessitura quantiles, breath-gap phrase stats, debounced note-change agility, vibrato on the longest run.
+- Sing the Universe (`src/lib/mirror/cosmic-melodies.ts` + `CosmicMode.tsx`): melodies from Gaia/Hipparcos declinations, ATNF pulsar spin rates (octave-folded) and the Perseus B♭ (pitch-class-pinned root), fitted into the detected range and scored by the match engine.
+- F0 stream adapter (`f0-stream.ts`): AnalyserNode + rAF polling over the shared `MicManager`, YIN-only, detection gated to active takes, per-take detector history reset, RMS level tracking; silent-mic probe with automatic AudioContext rebuild (iOS WebKit sample-rate silence) and a live input-level meter.
+- Share card renderer (`card-renderer.ts`): star-arc trace + steadiness pulsar on canvas, 1080×1920 / 1080×1080 PNG, Web Share API Level 2 with download fallback, brand-gradient wordmark, delta badge and title headline with shrink-to-fit.
+- Client-side baseline (`baseline.ts`, localStorage, derived numbers only) with return-visit delta on the results screen and card.
+- Anonymous funnel: `trackFunnel` beacons (sendBeacon/keepalive-fetch) keyed by a random clientId to the db-worker's new rate-limited `POST /api/mirror/event` → `mirrorEvents` D1 table (event allowlist, metrics only on `results_view`; not exposed via the generic CRUD).
+- WelcomeScreen: brand-gradient "Mirror your voice" pill CTA linking to `/mirror`.
+- Research + roadmap: `docs/plans/voice-mirror-phase2.md`.
+
+### Changed
+
+- Renumbered the previous release 0.6.0 → 0.5.2 (patch-scale update, wrong minor bump).
+- `manualChunks`: new `vendor-solid` and `pitch-core` chunks so the mirror entry never pulls the app vendor bundle.
+
+## [0.5.2] - 2026-07-01
 
 ### Added
 

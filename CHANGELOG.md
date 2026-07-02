@@ -3,7 +3,22 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.6.0] - 2026-07-01
+## [0.5.3] - 2026-07-02
+
+### Added
+
+- **Voice Mirror — see your voice in 60 seconds** (`/mirror`): a free, standalone voice snapshot. Sing three short tasks (glide, hold, match) and get your vocal range as the headline, plus pitch accuracy and steadiness — rendered as a shareable "voiceprint" star-map card. Your latest result is saved on this device, so your next visit shows the delta ("+2 semitones since last time").
+- **Just sing (40 seconds)**: a free-sing mode with no targets — it maps what your voice actually does: the range you used, the note you live around, phrase length between breaths, whether you're a "mover" or a "sustainer", and any vibrato on your longest note.
+- **Sing the Universe**: sing short melodies made from real cosmic data — Orion's stars by their sky positions, five famous pulsars by their spin rates, and the Perseus black hole's B♭ — fitted to your range and scored like the match task.
+- **Vibrato is a feature, not wobble**: if you sing with vibrato, the mirror names it ("5.6 Hz, ±26 cents") and no longer scores it against your steadiness. It also measures how quickly you settle onto notes ("you scoop ~180 ms").
+- **Mic check that actually helps**: before the test starts, the mirror verifies it can hear you, shows a live input level while you sing, and recovers automatically from a silent-microphone quirk on iPhones.
+- **Welcome screen**: a new "Mirror your voice" shortcut takes you straight to the mirror.
+
+### Changed
+
+- The previous release was renumbered from 0.6.0 to 0.5.2 — it was a patch-scale update, not a minor one.
+
+## [0.5.2] - 2026-07-01
 
 ### Added
 
