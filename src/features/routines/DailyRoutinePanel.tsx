@@ -2,13 +2,15 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { IconCheck, IconFire, IconTarget, IconTrophy, IconWater, } from '@/components/exercise-icons'
+import { dailyRoutines } from '@/data/routine-templates'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { showNotification } from '@/stores/notifications-store'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
 import type { SegmentKind } from './types'
-import { useDailyRoutine } from './use-daily-routine'
+import type { RoutineLength } from './use-daily-routine'
+import { routinePrefs, setRoutinePrefs, useDailyRoutine, } from './use-daily-routine'
 
 const segmentLabels: Record<SegmentKind, string> = {
   warmup: 'Warmup',
@@ -71,6 +73,42 @@ export const DailyRoutinePanel: Component = () => {
             fallback={
               <div class="daily-routine-empty">
                 <p>No routine for today yet.</p>
+                <div class="daily-routine-prefs">
+                  <label class="daily-routine-pref">
+                    <span>Focus</span>
+                    <select
+                      value={routinePrefs().focus}
+                      onChange={(e) =>
+                        setRoutinePrefs((p) => ({
+                          ...p,
+                          focus: e.currentTarget.value,
+                        }))
+                      }
+                    >
+                      <option value="auto">Auto — target my weak spots</option>
+                      <option value="surprise">Surprise me</option>
+                      <For each={dailyRoutines}>
+                        {(t) => <option value={t.id}>{t.name}</option>}
+                      </For>
+                    </select>
+                  </label>
+                  <label class="daily-routine-pref">
+                    <span>Length</span>
+                    <select
+                      value={routinePrefs().length}
+                      onChange={(e) =>
+                        setRoutinePrefs((p) => ({
+                          ...p,
+                          length: e.currentTarget.value as RoutineLength,
+                        }))
+                      }
+                    >
+                      <option value="short">Short (~5 min)</option>
+                      <option value="standard">Standard (~8 min)</option>
+                      <option value="long">Long (~12 min)</option>
+                    </select>
+                  </label>
+                </div>
                 <button
                   class="daily-routine-btn"
                   onClick={() => routine.generate()}
