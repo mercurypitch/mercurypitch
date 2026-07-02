@@ -56,6 +56,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
   const [targets, setTargets] = createSignal<number[]>([])
   const [result, setResult] = createSignal<AccuracyResult | null>(null)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
+  const [micError, setMicError] = createSignal<string | null>(null)
   const [takeKey, setTakeKey] = createSignal(0)
 
   let audioContext: AudioContext | null = null
@@ -86,6 +87,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
     setMelody(pick)
     setResult(null)
     setShareStatus(null)
+    setMicError(null)
     sungFrames = []
     try {
       audioContext = new AudioContext()
@@ -108,9 +110,13 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
         f0 = createF0Stream(audioContext, micManager.getStream() ?? stream)
       }
     } catch {
+      // Say why instead of silently bouncing back to the results screen.
       running = false
       teardownAudio()
-      props.onBack()
+      setPhase('pick')
+      setMicError(
+        "We couldn't open the microphone — check the browser's mic permission and try again.",
+      )
       return
     }
 
@@ -196,6 +202,9 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
           Short melodies made from real cosmic data, fitted to your range.
           Listen, then sing them back.
         </p>
+        <Show when={micError()}>
+          <p class="mirror-error">{micError()}</p>
+        </Show>
         <div class="mirror-melody-list">
           <For each={COSMIC_MELODIES}>
             {(item) => (

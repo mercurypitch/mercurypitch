@@ -136,6 +136,26 @@ export function sinusoidAmplitudeCents(
   return (2 * Math.hypot(re, im)) / n
 }
 
+/**
+ * Best single-frequency fit near a detector-estimated rate. The FFT rate is
+ * quantized (~0.1 Hz bins); over a multi-second window even a 0.1 Hz error
+ * sinc-attenuates the projected amplitude, which would leave part of the
+ * vibrato variance in the wobble score. Scanning ±0.15 Hz recovers it.
+ */
+export function bestSinusoidFit(
+  frames: readonly VoicedFrame[],
+  aroundHz: number,
+): { rateHz: number; amplitude: number } {
+  let best = { rateHz: aroundHz, amplitude: 0 }
+  for (let rate = aroundHz - 0.15; rate <= aroundHz + 0.151; rate += 0.05) {
+    const amplitude = sinusoidAmplitudeCents(frames, rate)
+    if (amplitude > best.amplitude) {
+      best = { rateHz: Math.round(rate * 10) / 10, amplitude }
+    }
+  }
+  return best
+}
+
 /** Median inter-frame gap, used as the per-frame dwell/duration estimate. */
 function estimateHop(frames: readonly { t: number }[]): number {
   const gaps: number[] = []
@@ -558,10 +578,10 @@ export function computeSteadiness(
     vib.rateHz >= VIBRATO_MIN_HZ &&
     vib.rateHz <= VIBRATO_MAX_HZ
   ) {
-    const amplitude = sinusoidAmplitudeCents(kept, vib.rateHz)
-    if (amplitude >= 10) {
-      vibrato = { rateHz: vib.rateHz, extentCents: Math.round(amplitude) }
-      wobble = Math.sqrt(Math.max(0, residualVariance - amplitude ** 2 / 2))
+    const fit = bestSinusoidFit(kept, vib.rateHz)
+    if (fit.amplitude >= 10) {
+      vibrato = { rateHz: fit.rateHz, extentCents: Math.round(fit.amplitude) }
+      wobble = Math.sqrt(Math.max(0, residualVariance - fit.amplitude ** 2 / 2))
     }
   }
 

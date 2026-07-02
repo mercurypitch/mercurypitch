@@ -12,7 +12,7 @@
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { detectVibrato } from '@/lib/vocal-analyzer'
 import type { F0Frame, RangeResult, VibratoInfo, VoicedFrame } from './metrics'
-import { BIN_DWELL_MIN_SEC, centsToMidi, median, preprocess, sinusoidAmplitudeCents, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, voiceTypeHint, } from './metrics'
+import { bestSinusoidFit, BIN_DWELL_MIN_SEC, centsToMidi, median, preprocess, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, voiceTypeHint, } from './metrics'
 
 /** A gap this long between voiced frames is a breath / phrase boundary. */
 export const PHRASE_GAP_SEC = 0.35
@@ -201,9 +201,9 @@ export function computeFreeSing(
     ) {
       // Extent by single-frequency projection — the analyzer's depthCents is
       // 2×RMS of the whole signal and overstates on noisy/drifting takes.
-      const amplitude = sinusoidAmplitudeCents(longest, vib.rateHz)
-      if (amplitude >= 10) {
-        vibrato = { rateHz: vib.rateHz, extentCents: Math.round(amplitude) }
+      const fit = bestSinusoidFit(longest, vib.rateHz)
+      if (fit.amplitude >= 10) {
+        vibrato = { rateHz: fit.rateHz, extentCents: Math.round(fit.amplitude) }
       }
     }
   }
