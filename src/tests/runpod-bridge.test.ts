@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig } from '@/lib/runpod'
-import { coerceFormString, decodeStemKey, handleRunpodRequest, parseStems, } from '@/lib/runpod-bridge'
+import { coerceFormString, decodeStemKey, handleRunpodRequest, parseStems, rejectUnconfiguredRunpod, } from '@/lib/runpod-bridge'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -445,5 +445,37 @@ describe('handleRunpodRequest — metering', () => {
     expect(res?.status).toBe(200)
     expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
     expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
+  })
+})
+
+// ── unconfigured RunPod guard (server mode is GPU-only) ────────
+
+describe('rejectUnconfiguredRunpod', () => {
+  it('503s an opted-in process request', async () => {
+    const { request, url } = req('/api/uvr/process', {
+      method: 'POST',
+      headers: { 'x-uvr-provider': 'runpod' },
+    })
+    const res = rejectUnconfiguredRunpod(request, url, 'POST')
+    expect(res?.status).toBe(503)
+    const body = (await res?.json()) as { error: string }
+    expect(body.error).toContain('Use Browser mode')
+  })
+
+  it('lets non-opted process requests fall through to the container', () => {
+    const { request, url } = req('/api/uvr/process', { method: 'POST' })
+    expect(rejectUnconfiguredRunpod(request, url, 'POST')).toBeNull()
+  })
+
+  it('503s follow-ups for rp_* sessions', () => {
+    const { request, url } = req('/api/uvr/status/rp_gpu_job-1')
+    expect(rejectUnconfiguredRunpod(request, url, 'GET')?.status).toBe(503)
+  })
+
+  it('lets container (UUID) sessions fall through', () => {
+    const { request, url } = req(
+      '/api/uvr/status/123e4567-e89b-12d3-a456-426614174000',
+    )
+    expect(rejectUnconfiguredRunpod(request, url, 'GET')).toBeNull()
   })
 })

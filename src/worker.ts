@@ -1,7 +1,7 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace } from '@cloudflare/workers-types'
 import { getRunpodConfig } from './lib/runpod'
-import { handleRunpodRequest } from './lib/runpod-bridge'
+import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
 import { handleShareRequest } from './share-handler'
@@ -106,6 +106,12 @@ export default {
             502,
           )
         }
+      } else {
+        // Server mode is GPU-only: a RunPod-opted request must never fall
+        // through to the CPU container (slower, unmetered — free paid-looking
+        // jobs). Without RunPod configured it gets a clear 503 instead.
+        const rejected = rejectUnconfiguredRunpod(request, url, method)
+        if (rejected !== null) return rejected
       }
 
       const stripped = url.pathname.replace(/^\/api\/uvr/, '')
