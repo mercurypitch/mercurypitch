@@ -203,15 +203,32 @@ def init_worker() -> None:
         logger.exception("Eager model load failed; will lazy-load on first job")
 
 
+def _safe_name_stem(filename: str) -> str:
+    """Sanitize an (untrusted) upload filename into a safe base name.
+
+    The name survives into the output stem filenames, the S3/R2 object keys
+    and the user's downloaded file, so keep it readable — "My Song" stays
+    "My Song" — but strip path separators and anything S3-key- or
+    shell-hostile, collapse whitespace, and cap the length. Falls back to
+    "input" when nothing usable remains.
+    """
+    base = os.path.splitext(os.path.basename(filename or ""))[0]
+    base = re.sub(r"[^A-Za-z0-9 ._()\[\]&+',-]+", " ", base)
+    base = re.sub(r"\s+", " ", base).strip(" .")
+    return base[:60].strip(" .") or "input"
+
+
 def _materialize_input(job_input: dict, job_dir: str) -> str:
     """Write the job's audio to a local file and return its path."""
     filename = job_input.get("filename") or "input"
-    # Keep only the extension from the (untrusted) filename; the body is what
-    # matters. Default to .mp3 so ffmpeg sniffs a container if absent.
+    # Sanitized name + validated extension from the (untrusted) filename.
+    # Default to .mp3 so ffmpeg sniffs a container if absent. The name is
+    # kept (not discarded) so stems come back as "<song>_(Vocals)_….flac"
+    # instead of an anonymous "input_(Vocals)_…".
     ext = os.path.splitext(filename)[1].lower() or ".mp3"
     if not re.match(r"^\.[A-Za-z0-9]{1,5}$", ext):
         ext = ".mp3"
-    local_path = os.path.join(job_dir, f"input{ext}")
+    local_path = os.path.join(job_dir, f"{_safe_name_stem(filename)}{ext}")
 
     audio_url = job_input.get("audio_url")
     audio_b64 = job_input.get("audio_base64")
@@ -246,15 +263,23 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
     return local_path
 
 
+# audio-separator names outputs "<input>_(<Stem>)_<model>.<ext>" — match the
+# parenthesised marker first so a song called e.g. "Vocal Coach.mp3" can't
+# misclassify its instrumental stem via a bare substring hit.
+_STEM_MARKER_RE = re.compile(
+    r"\((vocals?|instrumental|drums|bass|other)\)", re.IGNORECASE
+)
+
+
 def _classify_stem(filename: str) -> str:
     low = filename.lower()
+    marker = _STEM_MARKER_RE.search(low)
+    if marker:
+        key = marker.group(1).rstrip("s") if marker.group(1).startswith("vocal") else marker.group(1)
+        return key
     for key in _STEM_KEYS:
         if key in low:
             return key
-    if "(vocals)" in low:
-        return "vocal"
-    if "(instrumental)" in low:
-        return "instrumental"
     return "unknown"
 
 
@@ -333,13 +358,13 @@ def handler(job: dict) -> dict:
         returned = separator.separate(input_path) or []
         timings["separate"] = round(time.time() - t0, 3)
 
-        # Collect produced stems (skip the input we wrote).
+        # Collect produced stems (skip the exact input file we wrote — the
+        # input now carries the song's name, so match by path, not pattern).
         produced = []
         for path in sorted(glob.glob(os.path.join(job_dir, "*"))):
-            name = os.path.basename(path)
             if not os.path.isfile(path):
                 continue
-            if name.startswith("input.") and "_" not in name:
+            if os.path.samefile(path, input_path):
                 continue
             produced.append(path)
         # Belt-and-braces: audio-separator returns the written files; trust
