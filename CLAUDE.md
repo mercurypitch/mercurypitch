@@ -16,6 +16,16 @@
 
 - Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
 
+## Guided Tours
+
+- Any change to the spotlight tours or the UI they target (`Walkthrough.tsx`,
+  `WALKTHROUGH_STEPS`/`PAGE_TOURS` in `src/stores/app-store.ts`, `data-tour`
+  hooks, control bars, sidebar, settings panel) must be verified with the
+  `/tour-check` skill (`.claude/skills/tour-check/SKILL.md`), which walks every
+  tour in a real browser via `pnpm run test:tours` (`scripts/walk-tours.mjs`).
+- Tours should cover ≥80% of a page's user-visible features — when adding a
+  feature to a page with a tour, update the tour in the same PR.
+
 ## Tech Stack
 
 - SolidJS + TypeScript

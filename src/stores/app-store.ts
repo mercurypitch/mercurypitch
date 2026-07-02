@@ -1024,10 +1024,20 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_SINGING,
   },
   {
+    title: 'Learn & Guide',
+    targetSelector: '[data-tour="singing.guides"]',
+    description:
+      'Come back any time: Learn opens read-along tutorials, Guide restarts these spotlight tours, and Tour appears on pages that have their own quick tour.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+  },
+  {
     title: 'Choose your character!',
     targetSelector: '#character-icons',
     description:
-      'Connect with your inner singer by choosing what suits you best!',
+      'Connect with your inner singer by choosing what suits you best! With Character Sounds enabled in Settings, each one plays with its own instrument timbre.',
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
@@ -1035,17 +1045,6 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     // it, and expand the section if the user collapsed it earlier.
     inSidebar: true,
     reveal: '[data-collapsible="sidebar-character-open"]',
-  },
-  {
-    title: 'Scale & Key',
-    targetSelector: '[data-tour="singing.key-scale"]',
-    description:
-      'Choose your musical key and scale type here. The piano roll updates to match your selection automatically.',
-    placement: 'right',
-    section: 'practice',
-    requiredTab: TAB_SINGING,
-    inSidebar: true,
-    reveal: '[data-collapsible="sidebar-playback-open"]',
   },
   {
     title: 'Load a Melody',
@@ -1056,6 +1055,60 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'practice',
     requiredTab: TAB_SINGING,
     inSidebar: true,
+  },
+  {
+    title: 'Scale & Key',
+    targetSelector: '[data-tour="singing.key-scale"]',
+    description:
+      'Pick your key, scale (major, minors, modes, pentatonic, blues…) and octave. The piano roll follows automatically — and Custom lets you build your own scale.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-playback-open"]',
+  },
+  {
+    title: 'Mic & Sensitivity',
+    targetSelector: '[data-tour="singing.mic-sensitivity"]',
+    description:
+      'Tune how the app hears you: adjust mic sensitivity by hand, or hit auto-calibrate and let it measure your room for you.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-mic-open"]',
+  },
+  {
+    title: 'Daily Routine',
+    targetSelector: '[data-tour="singing.daily-routine"]',
+    description:
+      'A guided warm-up → practice → cool-down plan for the day. Follow it to build a healthy, consistent singing habit.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+  },
+  {
+    title: 'Your activity',
+    targetSelector: '[data-tour="singing.activity"]',
+    description:
+      'Your streak calendar and practice heatmap live here — a quick glance shows how consistently you have been singing.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-activity-open"]',
+  },
+  {
+    title: 'Quick display toggles',
+    targetSelector: '[data-tour="singing.display"]',
+    description:
+      'Flip the canvas essentials without opening Settings: the jumping ball, playhead, grid lines, note list, stats and pitch display.',
+    placement: 'right',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-display-open"]',
   },
   {
     title: 'Mic Button',
@@ -1097,49 +1150,97 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     reveal: '[data-testid="singing-more-toggle"]',
   },
   {
-    title: 'Volume & Speed',
+    title: 'Volume',
     targetSelector: '#volume',
     description:
-      'Control the backing track volume and playback speed. Slower speeds help with difficult passages.',
+      'Balance the backing track against your voice — turn it down if it drowns out your singing.',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
     reveal: '[data-testid="singing-more-toggle"]',
   },
   {
-    title: 'Play Modes',
+    title: 'Playback Speed',
+    targetSelector: '#speed-select',
+    description:
+      'Slow the melody down (to 0.25x) to nail difficult passages, then work back up to full speed.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+    reveal: '[data-testid="singing-more-toggle"]',
+  },
+  {
+    title: 'Play Modes: Once',
     targetSelector: '#btn-once',
     description:
-      'Spaced plays a single cycle with modifiable rests between the notes',
+      'Play the melody through a single time. A rest selector appears beside it so you can add breathing space between notes.',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
   },
   {
-    title: 'Play Modes',
+    title: 'Play Modes: Repeat',
     targetSelector: '#btn-repeat',
-    description: 'Repeat loops through set number of cycles',
+    description:
+      'Loop the melody for a set number of cycles — the count appears next to the button when this mode is active.',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
   },
   {
-    title: 'Play Modes',
+    title: 'Play Modes: Session',
     targetSelector: '#btn-session',
-    description: 'Practice runs your session in sequence.',
+    description:
+      'Run your saved practice session in sequence. A sub-mode selector appears to order the notes: all, random, focus-errors, or reverse.',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
   },
-  // {
-  //   title: 'Count-In & Cycles',
-  //   targetSelector: '#countin-display',
-  //   description:
-  //     'Set how many beats of count-in you want before playback starts, and how many cycles to run in Practice mode.',
-  //   placement: 'bottom',
-  //   section: 'toolbar',
-  //   requiredTab: TAB_SINGING,
-  // },
+  {
+    title: 'Pre-count',
+    targetSelector: '#btn-precount',
+    description:
+      'Get a few metronome beats before playback starts so you can find the tempo and take a breath first.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Anchor tone',
+    targetSelector: '#btn-anchor-tone',
+    description:
+      'Plays a short reference tone of the key before each run, helping you lock into the tonic before you sing.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Metronome',
+    targetSelector: '[data-testid="metronome-btn"]',
+    description:
+      'Add a click on every beat to keep your timing honest while you practice.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Mic waveform',
+    targetSelector: '[data-testid="wave-btn"]',
+    description:
+      'Show a live waveform of your microphone input — handy for checking that the app hears you clearly.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+  },
+  {
+    title: 'Focus Mode',
+    targetSelector: '[data-testid="focus-btn"]',
+    description:
+      'Strip the UI down to just the canvas and essentials for distraction-free practice. Press Esc to come back.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+  },
 
   // ── Editor Section ──
   {
@@ -1161,10 +1262,46 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_COMPOSE,
   },
   {
+    title: 'Edit tools',
+    targetSelector: '.roll-group[data-name="Edit"]',
+    description:
+      'Three ways to touch the grid: Place adds notes, Erase removes them, and Select picks notes for moving, copying, or applying effects.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Notes & rows',
+    targetSelector: '.roll-group[data-name="Notes"]',
+    description:
+      'Choose the note length you place, add or trim rows to widen the pitch range, and shift the whole melody up or down.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Instrument',
+    targetSelector: '.roll-group[data-name="Instrument"]',
+    description:
+      'Pick the sound your melody plays back with — from clean synth tones to piano and beyond.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Import & export',
+    targetSelector: '.roll-group[data-name="I/O"]',
+    description:
+      'Bring a MIDI file into the editor, export your melody as MIDI, or clear the grid and start fresh.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
     title: 'Record to Piano Roll',
     targetSelector: '#record-btn',
     description:
-      'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll.',
+      'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll. When you stop, a review slider lets you keep it raw or clean it up.',
     placement: 'bottom',
     section: 'editor',
     requiredTab: TAB_COMPOSE,
@@ -1295,6 +1432,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-account"]'],
   },
+  {
+    title: 'About & What’s New',
+    targetSelector: '[data-tour="settings.about"]',
+    description:
+      'Your app version lives here, along with the What’s New changelog and a quick map of everything MercuryPitch can do.',
+    placement: 'top',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
   // ── Settings · Practice Section ──
   {
     title: 'Quick presets',
@@ -1308,10 +1455,40 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
+    title: 'Your voice range',
+    targetSelector: '[data-tour="settings.voice-range"]',
+    description:
+      'Tell the app your natural range — soprano to bass — and new exercises start in a comfortable octave. Not sure? "Find my voice" listens and works it out for you.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Accuracy tier',
+    targetSelector: '[data-tour="settings.tier"]',
+    description:
+      'Set your skill level — it decides how close to the target note (in cents) counts as a hit. Start friendly, tighten it as you improve.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Pitch algorithm',
+    targetSelector: '[data-tour="settings.algorithm"]',
+    description:
+      'Two detection engines: YIN is the well-tested classic; MPM handles rich harmonics with fewer octave errors. MPM also unlocks a buffer-size choice — smaller is snappier, larger is steadier.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
     title: 'Pitch detection',
     targetSelector: '#set-sensitivity',
     description:
-      'Fine-tune sensitivity, threshold, and confidence so the app hears you cleanly — lower sensitivity cuts false triggers in a noisy room. Just above, you can switch the detection algorithm (MPM handles harmonics better; YIN is the classic).',
+      'Fine-tune how the app hears you: threshold and sensitivity control what counts as singing (lower sensitivity cuts false triggers in noisy rooms), while confidence and amplitude filter out uncertain readings.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
@@ -1331,17 +1508,37 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Accuracy bands',
     targetSelector: '#band-perfect',
     description:
-      'Decide how many cents count as Perfect, Excellent, Good, and Okay. Tighten the bands as you improve to keep the challenge up.',
+      'Decide how many cents count as Perfect, Excellent, Good, and Okay — the live values panel below shows exactly what your current setup means. Tighten the bands as you improve.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
-    title: 'Sound & feel',
+    title: 'Tone envelope (ADSR)',
+    targetSelector: '[data-tour="settings.adsr"]',
+    description:
+      'Shape how each played note sounds: attack and decay for the start, sustain for the body, release for the tail. Softer envelopes feel more natural to sing along with.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Default speed',
+    targetSelector: '#playback-speed',
+    description:
+      'Set the playback speed every practice session starts at — keep it below 1x while you learn a piece, then bring it back up.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
+    title: 'Reverb',
     targetSelector: '#reverb-type',
     description:
-      'Shape playback: add reverb (room, hall, or cathedral) for a fuller sound, tweak the ADSR envelope for more natural notes, and set your default practice speed.',
+      'Add room, hall, or cathedral reverb for a fuller playback sound, and control how much of it you hear with the wet mix.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,
@@ -1349,10 +1546,20 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   // ── Settings · Display & Controls Section ──
   {
-    title: 'Theme & appearance',
+    title: 'Appearance',
+    targetSelector: '[data-tour="settings.appearance"]',
+    description:
+      'Pick the app font here on Display & Controls — a reload applies it everywhere.',
+    placement: 'left',
+    section: 'settings-display',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-display"]'],
+  },
+  {
+    title: 'Theme',
     targetSelector: '#vis-theme',
     description:
-      'On Display & Controls: switch between light and dark, choose a font, and toggle the canvas grid lines.',
+      'Switch between light and dark themes — the whole app, canvases included, follows instantly.',
     placement: 'left',
     section: 'settings-display',
     requiredTab: TAB_SETTINGS,
@@ -1513,9 +1720,9 @@ export const PRACTICE_MODES_TOUR_STEPS: WalkthroughStep[] = [
 
 const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
-    title: 'Two ways to play',
+    title: 'Three ways to play',
     description:
-      'Switch between Practice (play along with falling notes) and Fretboard (interactive learning).',
+      'Switch between Fretboard (interactive learning), Practice (play along with falling notes), and an immersive 3D view with its own transpose, A–B loop, and speed-ramp tools.',
     targetSelector: '[data-tour="guitar.view-toggle"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
@@ -1531,10 +1738,28 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Load a song',
     description:
-      'Load a MIDI song to play along with, mute or solo tracks, and seek the timeline.',
+      'Load a MIDI or Guitar Pro song to play along with, mute or solo its tracks, and seek the timeline.',
     targetSelector: '[data-tour="guitar.song-picker"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
+  },
+  {
+    title: 'Transport & controls',
+    description:
+      'Mic, play/stop, tempo and volume live here, plus toggles for a MIDI guitar, note-name labels, and showing the notes you played. The sliders button reveals the tempo group.',
+    targetSelector: '[data-testid="guitar-control-bar"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+    navigate: ['[data-tour="guitar.view-fretboard"]'],
+  },
+  {
+    title: 'Key & scale',
+    description:
+      'Pick a root key and scale to light up its notes across the neck — the fastest way to learn where a scale lives.',
+    targetSelector: '.gp-key-scale-select',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+    navigate: ['[data-tour="guitar.view-fretboard"]'],
   },
   {
     title: 'The fretboard',
@@ -1549,7 +1774,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Practice modes',
     description:
-      'Switch the Mode dropdown to turn the fretboard into a focused drill — note quiz, ear training, CAGED and more.',
+      'Switch the Mode dropdown to turn the fretboard into a focused drill — note quiz, ear training, melody transcription, CAGED shapes, chord progressions, sing-to-fret and more. Each mode brings its own HUD.',
     targetSelector: '[data-tour="guitar.mode-select"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
@@ -1569,7 +1794,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Play the falling notes',
     description:
-      'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring.',
+      'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring, and you can tap the on-screen keys too.',
     targetSelector: '[data-tour="piano.canvas"]',
     placement: 'top',
     requiredTab: TAB_PIANO,
@@ -1581,6 +1806,31 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '#btn-mic',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
+  },
+  {
+    title: 'Transport',
+    description:
+      'Start, pause, and reset the run from here — and at the end of a song a score card grades your accuracy.',
+    targetSelector: '[data-testid="piano-control-bar"]',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+  },
+  {
+    title: 'Once or on repeat',
+    description:
+      'Play a song through once, or loop it for a set number of cycles — the cycle counter appears when Repeat is active.',
+    targetSelector: '#btn-once',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+  },
+  {
+    title: 'Tempo, volume & zoom',
+    description:
+      'The sliders button expands BPM, volume, playback speed, and note-lane zoom — slow a song down and zoom in while you learn it.',
+    targetSelector: '[data-testid="tempo-group"]',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+    reveal: '[data-testid="piano-more-toggle"]',
   },
 ]
 
@@ -1599,9 +1849,41 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & seek',
     description:
-      'Play / pause (or hit Space) and scrub the timeline. Set an A–B loop with the A and B keys to drill a tricky phrase.',
+      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too.',
     targetSelector: '[data-tour="mixer.transport"]',
     placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'A–B loop',
+    description:
+      'Set a loop start and end (or press the A and B keys) to drill a tricky phrase over and over; L toggles the loop, S jumps to its start.',
+    targetSelector: '.sm-loop-icon-a',
+    placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Playback speed',
+    description:
+      'Slow the whole mix down (to 0.5x) while you learn a part, then bring it back to full speed.',
+    targetSelector: '.sm-speed-select',
+    placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Sing along, get scored',
+    description:
+      'Enable the mic to compare your voice against the vocal line — and monitor yourself over the track with the headphones toggle.',
+    targetSelector: '.sm-mic-toggle-btn',
+    placement: 'top',
+    requiredTab: TAB_KARAOKE,
+  },
+  {
+    title: 'Song overview',
+    description:
+      'The waveform overview maps the whole song — click anywhere on it to jump there.',
+    targetSelector: '.sm-canvas-overview',
+    placement: 'bottom',
     requiredTab: TAB_KARAOKE,
   },
   {
@@ -1654,7 +1936,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Pitch analysis',
     description:
-      'Open denoising and pitch-detection settings to fine-tune how your singing is scored.',
+      'Open detection settings, offline denoising, and melody cleanup (key / scale / tempo snapping) — you can even hand-edit the detected notes from here.',
     targetSelector: '.sm-pitch-debug-btn',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,
@@ -1688,6 +1970,24 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     navigate: ['[aria-label="Vocal Analysis"]'],
   },
   {
+    title: 'History or live mic',
+    description:
+      'Analyze your saved practice sessions, or switch to Live and watch intensity, breathiness, vibrato, resonance and a full spectrogram react as you sing.',
+    targetSelector: '[data-testid="analysis-mode-toggle"]',
+    placement: 'bottom',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Vocal Analysis"]'],
+  },
+  {
+    title: 'Technique drills',
+    description:
+      'Focused vocal-technique exercises — belting, falsetto, crescendo, riffs and runs — each analyzed with targeted feedback.',
+    targetSelector: '.vocal-techniques',
+    placement: 'top',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Vocal Analysis"]'],
+  },
+  {
     title: 'Pitch Detection',
     description:
       'Test the real-time detector against audio files, your mic, or generated tones to see how it tracks pitch.',
@@ -1697,9 +1997,18 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     navigate: ['[aria-label="Pitch Detection"]'],
   },
   {
+    title: 'Pick a signal source',
+    description:
+      'Feed the detector a generated tone, an audio file (with optional vocal separation first), or your live mic — then compare algorithms and thresholds on it.',
+    targetSelector: '#detection-mode-select',
+    placement: 'right',
+    requiredTab: TAB_ANALYSIS,
+    navigate: ['[aria-label="Pitch Detection"]'],
+  },
+  {
     title: 'Pitch Algorithms',
     description:
-      'Benchmark the detection algorithms head-to-head on the same signal to compare accuracy and latency.',
+      'Benchmark the detection algorithms head-to-head on the same test samples — run one or all, and compare accuracy per sample in the results table.',
     targetSelector: '[data-tour="analysis.algorithms"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
@@ -1711,8 +2020,16 @@ const EXERCISES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Singing exercises',
     description:
-      'Focused drills for breath control, intervals, agility, range and more — each builds a specific skill.',
+      'Focused drills for breath control, intervals, agility, range and more — each builds a specific skill. A practice-intel panel up here suggests what to work on next.',
     targetSelector: '.exercises-header',
+    placement: 'bottom',
+    requiredTab: TAB_EXERCISES,
+  },
+  {
+    title: 'Filter by difficulty',
+    description:
+      'Narrow the library to Easy, Medium, or Hard drills so you always find something at your level.',
+    targetSelector: '.exercise-filter',
     placement: 'bottom',
     requiredTab: TAB_EXERCISES,
   },
@@ -1727,7 +2044,7 @@ const EXERCISES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Start an exercise',
     description:
-      'Each card explains the drill and its difficulty. Hit Start to jump straight into guided practice with live pitch feedback.',
+      'Each card shows the drill, its difficulty badge and tags — plus your grade, best score and play count once you have tried it. Hit Start for guided practice with live pitch feedback.',
     targetSelector: '.exercise-card',
     placement: 'bottom',
     requiredTab: TAB_EXERCISES,
@@ -1759,21 +2076,37 @@ const JAM_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_JAM,
   },
+  {
+    title: 'Inside a room',
+    description:
+      'Once connected you get a shared exercise canvas with synced playback, live pitch from every singer, host-controlled BPM, plus chat, camera, and one-tap invites.',
+    targetSelector: '.jam-actions',
+    placement: 'top',
+    requiredTab: TAB_JAM,
+  },
 ]
 
 const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Share your work',
     description:
-      'Publish a melody, session or exercise so other singers can try it — these buttons start a share.',
-    targetSelector: '.community-header',
+      'Publish a melody or practice session so other singers can try it — the share buttons up here start a share.',
+    targetSelector: '.community-actions',
+    placement: 'bottom',
+    requiredTab: TAB_COMMUNITY,
+  },
+  {
+    title: 'Search & sort',
+    description:
+      'Find shared content by name, and sort the feed by most recent, most popular, or highest rated.',
+    targetSelector: '.search-filter-bar',
     placement: 'bottom',
     requiredTab: TAB_COMMUNITY,
   },
   {
     title: 'Browse the community',
     description:
-      'Switch between shared melodies, practice sessions, and your public profile.',
+      'Switch between shared melodies, practice sessions, and your public profile — with your stats, progress charts and personal records.',
     targetSelector: '.community-tabs',
     placement: 'bottom',
     requiredTab: TAB_COMMUNITY,
@@ -1781,7 +2114,7 @@ const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'The feed',
     description:
-      'Load and play what others have shared, or open a melody straight into practice.',
+      'Load and play what others have shared, copy a link to pass along, or open a melody straight into practice.',
     targetSelector: '.community-content',
     placement: 'top',
     requiredTab: TAB_COMMUNITY,
@@ -1792,7 +2125,7 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Global, friends, weekly',
     description:
-      "Compare yourself against everyone, just your friends, or this week's climbers.",
+      "Compare yourself against everyone, just your friends, or this week's challenges — Weekly swaps the board for challenge cards you can join.",
     targetSelector: '.leaderboard-tabs',
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
@@ -1806,6 +2139,14 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_LEADERBOARD,
   },
   {
+    title: 'Find a singer',
+    description:
+      'Search players by name to jump straight to their row on the board.',
+    targetSelector: '.search-container',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
     title: 'Top of the board',
     description: 'The current top three singers for the selected metric.',
     targetSelector: '.podium-section',
@@ -1815,7 +2156,7 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Full rankings',
     description:
-      'The complete table — find your row and see what it takes to climb.',
+      'The complete table — find your row and see what it takes to climb. Tap any player to open their profile and follow them.',
     targetSelector: '.leaderboard-table',
     placement: 'top',
     requiredTab: TAB_LEADERBOARD,
@@ -1824,9 +2165,17 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
 
 const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   {
+    title: 'Vocal challenges',
+    description:
+      'Structured goals to push your voice — and your current challenge streak, right up top.',
+    targetSelector: '.challenges-header',
+    placement: 'bottom',
+    requiredTab: TAB_CHALLENGES,
+  },
+  {
     title: 'Challenge categories',
     description:
-      'High notes, low notes, speed, perfect pitch, scales and more — each category has its own set.',
+      'High notes, low notes, speed, perfect pitch, scales, intervals, harmony, dynamics and more — each category has its own set, and some unlock as you progress.',
     targetSelector: '.category-tabs',
     placement: 'bottom',
     requiredTab: TAB_CHALLENGES,
@@ -1834,7 +2183,7 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Take on a challenge',
     description:
-      'Pick a challenge card to attempt it. Your progress and status are tracked per challenge.',
+      'Pick a card to attempt it — Start tracks your progress, and Practice jumps straight into a matching drill.',
     targetSelector: '.challenges-grid',
     placement: 'top',
     requiredTab: TAB_CHALLENGES,
@@ -1844,6 +2193,14 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Completing challenges unlocks badges that show up here — collect them all.',
     targetSelector: '.badges-section',
+    placement: 'top',
+    requiredTab: TAB_CHALLENGES,
+  },
+  {
+    title: 'Achievements',
+    description:
+      'Long-term milestones tracked across everything you do in the app — see which are earned and what is still ahead.',
+    targetSelector: '.achievements-section',
     placement: 'top',
     requiredTab: TAB_CHALLENGES,
   },
