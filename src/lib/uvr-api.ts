@@ -28,6 +28,10 @@ export interface ProcessRequest {
   output_format?: string
   stems?: string[]
   cpu_profile?: 'high' | 'mid' | 'low'
+  /** Server-tier opt-in (X-UVR-Provider): 'runpod' = GPU (default server
+   *  tier), 'runpod-cpu' = cheaper tier. When RunPod isn't configured on the
+   *  worker, the request falls through to the container path unchanged. */
+  provider?: 'runpod' | 'runpod-cpu'
 }
 
 // Default processing options
@@ -182,15 +186,46 @@ export async function processAudio(
     formData.append('cpu_profile', options.cpu_profile)
   }
 
+  const headers: Record<string, string> = { ...authHeaders() }
+  if (options.provider !== undefined) {
+    headers['X-UVR-Provider'] = options.provider
+  }
+
   const response = await fetch(`${API_BASE}/process`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers,
     body: formData,
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(error || `Failed to process audio: ${response.statusText}`)
+    const raw = await response.text()
+    let message = raw
+    try {
+      const parsed = JSON.parse(raw) as {
+        error?: string
+        required?: number
+        balance?: number
+      }
+      if (parsed.error !== undefined && parsed.error !== '') {
+        message = parsed.error
+      }
+      // The worker's metering gate refuses with 402 {error, required,
+      // balance} — turn it into something a singer can act on.
+      if (response.status === 402) {
+        const need =
+          parsed.required !== undefined
+            ? ` — this song needs ${parsed.required} credit${parsed.required === 1 ? '' : 's'}`
+            : ''
+        const have =
+          parsed.balance !== undefined ? `, you have ${parsed.balance}` : ''
+        message = `Not enough credits${need}${have}. Get credits in Settings, under Account.`
+      }
+    } catch {
+      /* non-JSON error body — keep the raw text */
+    }
+    throw new Error(
+      message || `Failed to process audio: ${response.statusText}`,
+    )
   }
 
   return ProcessResponseSchema.parse(await response.json())
