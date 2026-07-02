@@ -6,7 +6,9 @@ import type { Component } from 'solid-js'
 import { batch, createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
+import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { TAB_SETTINGS } from '@/features/tabs/constants'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -19,7 +21,8 @@ import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, ru
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
-import { showNotification } from '@/stores/notifications-store'
+import { showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { setActiveTab } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
@@ -524,6 +527,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
 
     const mode = getUvrProcessingMode()
+    if (mode === 'server' && !requireServerAuth()) return
     const sessionId = startUvrSession(
       file.name,
       file.size,
@@ -534,6 +538,39 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     )
     setCurrentView('processing')
     handleProcessStart(sessionId, mode)
+  }
+
+  /** Server processing needs a signed-in account (the worker's JWT gate
+   *  rejects anonymous requests with a bare 401). Gate it client-side with
+   *  a friendly action toast instead of letting the upload fail. */
+  const requireServerAuth = (): boolean => {
+    const token = getAuthToken()
+    if (token !== null && token !== '') return true
+    showActionNotification('Sign in to use cloud GPU processing.', 'info', {
+      label: 'Open Account',
+      onClick: () => setActiveTab(TAB_SETTINGS),
+    })
+    return false
+  }
+
+  /** Turn billing/auth failures from the server path into action toasts
+   *  that link to Settings -> Account; other errors keep the plain toast. */
+  const notifyServerBillingError = (message: string): boolean => {
+    if (message.includes('Not enough credits')) {
+      showActionNotification(message, 'error', {
+        label: 'Get credits',
+        onClick: () => setActiveTab(TAB_SETTINGS),
+      })
+      return true
+    }
+    if (message.includes('Sign in to use cloud')) {
+      showActionNotification(message, 'info', {
+        label: 'Open Account',
+        onClick: () => setActiveTab(TAB_SETTINGS),
+      })
+      return true
+    }
+    return false
   }
 
   const handleProcessStart = async (
@@ -587,7 +624,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         },
         onError: (message) => {
           setErrorUvrSession(sessionId, message)
-          showError(message)
+          if (!notifyServerBillingError(message)) showError(message)
         },
       })
     } catch (error) {
@@ -595,7 +632,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const message =
         error instanceof Error ? error.message : 'Processing failed'
       setErrorUvrSession(sessionId, message)
-      showNotification(message, 'error')
+      if (!notifyServerBillingError(message)) {
+        showNotification(message, 'error')
+      }
     }
   }
 
@@ -973,7 +1012,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <button
                   class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
                   title="Processing: Server GPU (1 credit per song)"
-                  onClick={() => setUvrProcessingMode('server')}
+                  onClick={() => {
+                    if (requireServerAuth()) setUvrProcessingMode('server')
+                  }}
                   data-testid="uvr-mode-server"
                 >
                   Server

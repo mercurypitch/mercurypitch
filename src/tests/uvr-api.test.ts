@@ -248,6 +248,22 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
     )
   })
 
+  it('turns the auth 401 into a sign-in prompt', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: () => Promise.resolve(JSON.stringify({ error: 'Unauthorized' })),
+    } as Response)
+    await expect(
+      processAudio(new File([new Uint8Array([1])], 'song.mp3'), {
+        provider: 'runpod',
+      }),
+    ).rejects.toThrow(
+      'Sign in to use cloud GPU processing — open Settings, under Account.',
+    )
+  })
+
   it('keeps plain error bodies for non-402 failures', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
