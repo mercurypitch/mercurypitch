@@ -2,7 +2,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
+import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 
@@ -23,6 +23,9 @@ export interface UseHashRouterDeps {
   handleShareRoutine: (payload: string) => void
   handleShareFallback: (shareType: string, shareId: string) => void
   handleShareShort: (shortId: string) => void
+  /** Return from Stripe checkout — toast + balance refresh happen here;
+   *  the route itself lands on Settings (whose default sub-tab is Account). */
+  handleBillingReturn: (outcome: 'success' | 'cancel') => void
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -85,6 +88,15 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       const sectionIds =
         route.sectionId === 'all' ? undefined : [route.sectionId]
       deps.startWalkthrough(sectionIds)
+    } else if (route.type === 'billing-return') {
+      deps.dismissWelcome()
+      deps.setActiveTab(TAB_SETTINGS)
+      deps.setActiveUvrSessionId(null)
+      deps.handleBillingReturn(route.outcome)
+      // Clean the one-shot return hash to #/settings so a reload can't
+      // re-fire the toast (the tab-sync effect is muted by hashSyncing
+      // here). replaceState fires no hashchange, so this can't loop.
+      replaceHash({ type: 'tab', tab: TAB_SETTINGS })
     }
     hashSyncing = false
   }

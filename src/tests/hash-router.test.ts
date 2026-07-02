@@ -212,6 +212,19 @@ describe('parseHash', () => {
     expect(result.type).toBe('unknown')
   })
 
+  // Stripe checkout return routes (success_url / cancel_url in
+  // workers/db-worker/src/billing.ts)
+  it('parses billing success and cancel returns', () => {
+    expect(parseHash('#/billing/success')).toEqual({
+      type: 'billing-return',
+      outcome: 'success',
+    })
+    expect(parseHash('#/pricing')).toEqual({
+      type: 'billing-return',
+      outcome: 'cancel',
+    })
+  })
+
   // REQ-RT-004: Unknown / empty routes
   it('returns unknown for empty hash', () => {
     expect(parseHash('')).toEqual({ type: 'unknown' })
@@ -331,6 +344,15 @@ describe('buildHash', () => {
   it('builds guide-start section hash', () => {
     expect(buildHash({ type: 'guide-start', sectionId: 'editor' })).toBe(
       '/guide/editor',
+    )
+  })
+
+  it('builds billing-return hashes', () => {
+    expect(buildHash({ type: 'billing-return', outcome: 'success' })).toBe(
+      '/billing/success',
+    )
+    expect(buildHash({ type: 'billing-return', outcome: 'cancel' })).toBe(
+      '/pricing',
     )
   })
 })

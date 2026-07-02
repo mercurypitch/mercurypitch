@@ -8,7 +8,8 @@
 import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, startCheckout, } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing, formatPrice, startCheckout, } from '@/db/services/billing-service'
+import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PricingPanel.module.css'
 
@@ -34,6 +35,13 @@ const cardVars = (index: number, offset = 0): Record<string, string> => ({
 
 export const PricingPanel: Component = () => {
   const [pricing] = createResource(() => fetchPricing())
+  // Credit balance for the signed-in user (null when logged out / no cloud).
+  // Keyed on balanceVersion (+1 so the initial 0 still fetches): bumping it
+  // after a checkout return re-fetches without remounting the panel.
+  const [me] = createResource(
+    () => balanceVersion() + 1,
+    () => fetchBillingMe(),
+  )
 
   // Reading an errored resource accessor re-throws into the render tree,
   // which crashed Settings to the error screen whenever the billing API was
@@ -59,6 +67,14 @@ export const PricingPanel: Component = () => {
 
   return (
     <div class={styles.panel} data-testid="pricing-panel">
+      <Show when={me()}>
+        {(m) => (
+          <div class={styles.balanceRow} data-testid="credit-balance">
+            <span class={styles.balanceLabel}>Your credits</span>
+            <span class={styles.balanceValue}>{m().creditBalance}</span>
+          </div>
+        )}
+      </Show>
       <p class={styles.intro}>
         On-device separation is free forever. Credits only cover faster
         server-side processing — pricing is being finalised.
