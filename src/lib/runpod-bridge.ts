@@ -73,8 +73,13 @@ export async function handleRunpodRequest(
     const mapped = mapStatusToResponse(sessionId, status)
     // A job that ends in error never delivered — undo its debit. refundJob
     // is idempotent per jobRef, so repeated error polls can't double-refund.
-    if (meter !== null && mapped.status === 'error') {
-      await refundJob(meter, sessionId)
+    if (mapped.status === 'error') {
+      console.error(
+        `[runpod] ${sessionId} failed: ${mapped.error ?? 'unknown'} (runpod status ${status.status ?? '?'})`,
+      )
+      if (meter !== null) {
+        await refundJob(meter, sessionId)
+      }
     }
     return json(mapped)
   }
@@ -90,11 +95,15 @@ export async function handleRunpodRequest(
       const pre = await fetchJobStatus(cfg, endpointId, parsed.jobId)
       const mapped = mapStatusToResponse(sessionId, pre)
       await cancelJob(cfg, endpointId, parsed.jobId)
+      console.log(
+        `[runpod] ${sessionId} cancelled (was ${mapped.status}${mapped.status !== 'completed' ? ', refunding' : ''})`,
+      )
       if (mapped.status !== 'completed') {
         await refundJob(meter, sessionId)
       }
     } else {
       await cancelJob(cfg, endpointId, parsed.jobId)
+      console.log(`[runpod] ${sessionId} cancelled`)
     }
     return json({
       status: 'success',
@@ -149,11 +158,22 @@ async function startRunpodJob(
     audioBase64,
   })
 
+  // One breadcrumb per dispatch: the session id logged on accept is the
+  // correlation key across worker logs, RunPod's console and the credit
+  // ledger's jobRef.
+  const sizeMb = (file.size / 1_000_000).toFixed(1)
+  const via = audioUrl !== undefined ? 'audio_url' : 'inline'
   const res = await submitJob(cfg, endpointId, input)
   if (res.id === undefined || res.id === '') {
+    console.error(
+      `[runpod] submit failed (tier=${tier} file="${file.name}" ${sizeMb}MB ${via}): ${res.error ?? 'no job id'}`,
+    )
     return json({ error: res.error ?? 'RunPod did not return a job id' }, 502)
   }
   const sessionId = toSessionId(tier, res.id)
+  console.log(
+    `[runpod] ${sessionId} accepted: "${file.name}" ${sizeMb}MB ${via} tier=${tier}`,
+  )
 
   // Debit on acceptance (premium.md): the session id is the job's ledger
   // idempotency ref, so it can only exist after submit. If the user can't
@@ -167,6 +187,9 @@ async function startRunpodJob(
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)
+      console.warn(
+        `[runpod] ${sessionId} cancelled: debit refused (balance ${verdict.balance ?? '?'}, required ${verdict.required ?? '?'})`,
+      )
       return json(
         {
           error: verdict.error ?? 'Insufficient credits',

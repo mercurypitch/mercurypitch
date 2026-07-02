@@ -263,11 +263,18 @@ async function grantCheckoutCredits(
     (session.metadata as Record<string, unknown> | undefined) ?? {}
   const userId = typeof metadata.userId === 'string' ? metadata.userId : ''
   const credits = Number(metadata.credits ?? 0)
-  if (userId === '' || !Number.isFinite(credits) || credits <= 0) return
+  if (userId === '' || !Number.isFinite(credits) || credits <= 0) {
+    // A paid session without usable metadata is a wiring bug (or a session
+    // created outside handleCheckout) — surface it, never silently drop it.
+    console.error(
+      `[billing] checkout ${eventId}: no grant (userId=${userId || 'missing'}, credits=${String(metadata.credits)})`,
+    )
+    return
+  }
 
   // idempotencyKey ties the grant to the event, so a redelivered webhook
   // (or a retry) can never double-credit — the UNIQUE constraint drops it.
-  await env.DB.prepare(
+  const res = await env.DB.prepare(
     `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
      VALUES (?, ?, ?, ?, 'purchase', ?, ?)`,
   )
@@ -280,6 +287,10 @@ async function grantCheckoutCredits(
       `evt:${eventId}`,
     )
     .run()
+  console.log(
+    `[billing] checkout ${eventId}: +${credits} credits user=${userId}` +
+      (res.meta.changes === 0 ? ' [duplicate, skipped]' : ''),
+  )
 }
 
 // ── UVR job metering (debit / refund) ────────────────────────────────
@@ -367,11 +378,17 @@ async function handleDebit(
     if (existing) {
       return respond({ debited: -existing.delta, cost, balance, duplicate: true })
     }
+    console.warn(
+      `[billing] debit ${body.jobRef}: refused (user=${auth.userId} balance=${balance} required=${cost})`,
+    )
     return respond(
       { error: 'Insufficient credits', required: cost, balance },
       { status: 402 },
     )
   }
+  console.log(
+    `[billing] debit ${body.jobRef}: -${cost} user=${auth.userId} balance=${balance - cost}`,
+  )
   return respond({ debited: cost, cost, balance: balance - cost })
 }
 
@@ -429,6 +446,11 @@ async function handleRefund(
       uvrRefundKey(body.jobRef),
     )
     .run()
+  if (res.meta.changes > 0) {
+    console.log(
+      `[billing] refund ${body.jobRef}: +${amount} user=${debit.userId}`,
+    )
+  }
   return respond({ refunded: amount, duplicate: res.meta.changes === 0 })
 }
 
