@@ -147,7 +147,10 @@ export function loadSharedRoutine(routine: RoutineTemplate): boolean {
  * Auto-advance the daily routine if the completed exercise matches the
  * current segment. Call this after recording an exercise result.
  */
-export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
+export function autoAdvanceRoutineSegment(
+  exerciseType: ExerciseType,
+  metrics?: Record<string, number>,
+): void {
   const data = routineData()
   if (!data || data.date !== todayStr()) return
 
@@ -162,11 +165,16 @@ export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
   // Auto-advance when the completed exercise matches the current segment:
   // exercise segments match by type; warmup/cooldown segments complete when
   // the guided warmup exercise finishes (it runs those segments' patterns).
+  // The warmup must have run ALL its steps — ending it after two seconds
+  // (stop always records a partial result) shouldn't tick the segment off.
+  const fullWarmupRun =
+    exerciseType === EXERCISE_WARMUP &&
+    (metrics?.stepsCompleted ?? 0) >= (metrics?.totalSteps ?? Infinity)
   const matches =
     (currentSeg.type === 'exercise' &&
       currentSeg.config.exercise === exerciseType) ||
     ((currentSeg.type === 'warmup' || currentSeg.type === 'cooldown') &&
-      exerciseType === EXERCISE_WARMUP)
+      fullWarmupRun)
   if (matches) {
     setRoutineData({
       ...data,

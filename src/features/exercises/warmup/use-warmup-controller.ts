@@ -1,12 +1,12 @@
 import { batch } from 'solid-js'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { trailingSamplesByTime } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_WARMUP } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { WarmupStep } from './warmup-steps'
 
 const NOTE_PLAY_DURATION_MS = 450
+const GAP_BETWEEN_NOTES_MS = 90
 const TICK_MS = 250
 /** Lenient voiced-frame budget: singing ~half the window scores full marks. */
 const EXPECTED_VOICED_PER_SEC = 25
@@ -28,24 +28,46 @@ export function useWarmupController(
   let stepTimer: ReturnType<typeof setTimeout> | undefined
   let tickTimer: ReturnType<typeof setInterval> | undefined
   let _cancelled = false
+  let _active = false
 
-  base._registerDispose(() => {
+  function clearTimers(): void {
     clearTimeout(stepTimer)
     clearInterval(tickTimer)
     stepTimer = undefined
     tickTimer = undefined
-  })
+  }
 
   function setup(midi: number, warmupSteps: WarmupStep[]): void {
     _cancelled = false
+    _active = false
     baseMidi = midi
     steps = warmupSteps
     stepIndex = 0
     singScores = []
+    // Re-registered every run: base.stop()/reset() runs AND empties its
+    // dispose list, so a once-at-creation registration would be gone for
+    // the second run. The flag matters — reset() can fire while a paced
+    // playReference continuation is in flight, and without _cancelled the
+    // continuation would keep stepping a torn-down exercise.
+    base._registerDispose(() => {
+      _cancelled = true
+      _active = false
+      clearTimers()
+    })
   }
 
   function startSteps(): void {
+    if (_active) return // double-invocation guard (Space + click, etc.)
+    _active = true
     runStep()
+  }
+
+  /** Tracked delay — cancellable through clearTimers()/dispose. */
+  function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      clearTimeout(stepTimer)
+      stepTimer = setTimeout(resolve, ms)
+    })
   }
 
   function runStep(): void {
@@ -77,9 +99,13 @@ export function useWarmupController(
     void playReference(step.offsets ?? []).then(() => {
       if (_cancelled) return
       base._updateMetrics({ phase: 2, stepRemaining: step.seconds })
-      const windowMs = step.seconds * 1000
+      // Window anchor on the exercise-relative clock (same epoch as pitch
+      // sample `.time` = elapsed/1000) — scoring must only count samples
+      // sung in THIS window, or a silent window would inherit the previous
+      // window's trailing samples and score full marks.
+      const windowStartSec = base._getElapsed() / 1000
       startWindow(step.seconds, () => {
-        scoreSingWindow(windowMs, step.seconds)
+        scoreSingWindow(windowStartSec, step.seconds)
         stepIndex++
         runStep()
       })
@@ -92,7 +118,11 @@ export function useWarmupController(
       const midi = baseMidi + offset
       base._setTargetPitch(midiToFreq(midi))
       base._updateMetrics({ currentMidi: midi })
-      await audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      // playTone resolves when the tone STARTS (it only awaits engine
+      // init/resume), so the melody must be paced by explicit timers —
+      // otherwise every note fires in the same tick as a glitch-flam.
+      void audioEngine.playTone(midiToFreq(midi), NOTE_PLAY_DURATION_MS)
+      await delay(NOTE_PLAY_DURATION_MS + GAP_BETWEEN_NOTES_MS)
     }
   }
 
@@ -104,6 +134,7 @@ export function useWarmupController(
       const left = Math.max(0, seconds - (Date.now() - startedAt) / 1000)
       base._updateMetrics({ stepRemaining: Math.ceil(left) })
     }, TICK_MS)
+    clearTimeout(stepTimer)
     stepTimer = setTimeout(() => {
       clearInterval(tickTimer)
       if (_cancelled) return
@@ -111,10 +142,10 @@ export function useWarmupController(
     }, seconds * 1000)
   }
 
-  function scoreSingWindow(windowMs: number, seconds: number): void {
-    const history = base.pitchHistory()
-    const recent = trailingSamplesByTime(history, windowMs)
-    const voiced = recent.filter((p) => p.freq > 0).length
+  function scoreSingWindow(windowStartSec: number, seconds: number): void {
+    const voiced = base
+      .pitchHistory()
+      .filter((p) => p.time >= windowStartSec && p.freq > 0).length
     const expected = seconds * EXPECTED_VOICED_PER_SEC
     const score = Math.round(Math.min(1, voiced / expected) * 100)
     singScores.push(score)
@@ -127,6 +158,7 @@ export function useWarmupController(
   }
 
   function finish(): void {
+    _active = false
     base._completeWithResult(computeResult())
   }
 
@@ -149,8 +181,8 @@ export function useWarmupController(
 
   function stopSteps(): void {
     _cancelled = true
-    clearTimeout(stepTimer)
-    clearInterval(tickTimer)
+    _active = false
+    clearTimers()
     base._setRunning(false)
     finish()
   }
