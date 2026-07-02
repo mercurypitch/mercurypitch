@@ -37,7 +37,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   })
 
   // Auto-advance daily routine if this exercise matches the current segment
-  autoAdvanceRoutineSegment(entry.type)
+  autoAdvanceRoutineSegment(entry.type, entry.metrics)
 
   // Fire-and-forget: keep the local practice streak current. Leaderboard
   // standings are now derived server-side from sessionRecords, so exercises

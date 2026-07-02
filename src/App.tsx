@@ -366,10 +366,14 @@ const AppShell: Component<AppProps> = (props) => {
       // Exercises read their launch override at mount. If the same type is
       // already selected (it survives tab switches), the component would keep
       // its old config — force a fresh mount so the new drill takes effect.
+      // The re-select must land AFTER this effect flushes: writes inside an
+      // effect coalesce, so back-to-back writes never unmount anything.
       if (untrack(selectedExercise) === drill.exercise) {
         setSelectedExercise(null)
+        queueMicrotask(() => setSelectedExercise(drill.exercise))
+      } else {
+        setSelectedExercise(drill.exercise)
       }
-      setSelectedExercise(drill.exercise)
       setPendingDrill(null)
     }
   })
