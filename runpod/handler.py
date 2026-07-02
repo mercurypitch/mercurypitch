@@ -354,6 +354,18 @@ def handler(job: dict) -> dict:
         t0 = time.time()
         input_path = _materialize_input(job_input, job_dir)
         timings["download"] = round(time.time() - t0, 3)
+        # One greppable start line per job in the RunPod console — the job id
+        # here is the tail of the app's rp_<tier>_<id> session id, which is
+        # the correlation key across worker logs and the credit ledger.
+        logger.info(
+            "Job %s start: %r (%.1f MB via %s) model=%s format=%s",
+            job_id,
+            os.path.basename(input_path),
+            os.path.getsize(input_path) / 1_000_000,
+            "url" if job_input.get("audio_url") else "base64",
+            model,
+            output_format,
+        )
 
         t0 = time.time()
         separator = _get_separator(model, job_dir, output_format)
@@ -407,10 +419,27 @@ def handler(job: dict) -> dict:
         timings["upload"] = round(time.time() - t0, 3)
 
         if not stems:
+            logger.error(
+                "Job %s: separation produced no output stems (dir had %d files)",
+                job_id,
+                len(produced),
+            )
             return {"error": "Separation produced no output stems"}
 
         timings["total"] = round(time.time() - t_start, 3)
         billed = timings["total"]
+        # Matching end line: grep "Job <id>" in the RunPod console gives the
+        # whole lifecycle; cost/timings mirror what the response reports.
+        logger.info(
+            "Job %s done: %d stem(s) via %s in %.1fs (separate %.1fs) device=%s cost=$%.4f",
+            job_id,
+            len(stems),
+            "s3" if use_storage else "base64",
+            billed,
+            timings["separate"],
+            _detect_device(),
+            billed / 3600.0 * GPU_USD_PER_HR,
+        )
         return {
             "stems": stems,
             "model": model,

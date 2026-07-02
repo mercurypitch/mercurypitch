@@ -86,11 +86,25 @@ export async function debitForJob(
       return verdict
     }
     if (!res.ok) {
-      console.error('[metering] debit failed:', res.status)
+      console.error(`[metering] ${jobRef} debit failed:`, res.status)
+      return { allowed: true, status: res.status }
+    }
+    // Log the outcome — the ledger row is the durable audit; this is the
+    // tail-time breadcrumb next to the job's other [runpod] lines.
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    const debited = typeof body.debited === 'number' ? body.debited : 0
+    if (debited > 0) {
+      console.log(
+        `[metering] ${jobRef} debited ${debited} credit(s)${
+          typeof body.balance === 'number' ? ` (balance ${body.balance})` : ''
+        }${body.duplicate === true ? ' [duplicate]' : ''}`,
+      )
+    } else {
+      console.log(`[metering] ${jobRef} unmetered (tier cost unset)`)
     }
     return { allowed: true, status: res.status }
   } catch (err) {
-    console.error('[metering] debit unreachable:', err)
+    console.error(`[metering] ${jobRef} debit unreachable:`, err)
     return { allowed: true }
   }
 }
@@ -113,9 +127,20 @@ export async function refundJob(
       body: JSON.stringify({ jobRef }),
     })
     if (!res.ok) {
-      console.error('[metering] refund failed:', res.status)
+      console.error(`[metering] ${jobRef} refund failed:`, res.status)
+      return
+    }
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    // Repeated error polls re-call this; only the first refund (not the
+    // idempotent duplicates) is worth a line.
+    if (
+      typeof body.refunded === 'number' &&
+      body.refunded > 0 &&
+      body.duplicate !== true
+    ) {
+      console.log(`[metering] ${jobRef} refunded ${body.refunded} credit(s)`)
     }
   } catch (err) {
-    console.error('[metering] refund unreachable:', err)
+    console.error(`[metering] ${jobRef} refund unreachable:`, err)
   }
 }

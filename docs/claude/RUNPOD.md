@@ -144,6 +144,30 @@ endpoint from there.
 
 ---
 
+## Observability (tracing a user's job in production)
+
+The **session id (`rp_<tier>_<jobId>`) is the correlation key** at every hop:
+it appears in the main worker's logs, its tail is the RunPod job id in the
+RunPod console, and it is the `jobRef` on every credit-ledger row.
+
+| Hop | Where the logs live | What is logged |
+|-----|--------------------|----------------|
+| Main worker (`mercurypitch`/`-dev`) | Cloudflare dash → Workers Logs (persisted via `observability.logs` in `wrangler.jsonc`), or `wrangler tail --env prod\|dev` | every request line; `[runpod]` accept (file, size, tier, inline/url), submit failures, terminal job errors, cancels; `[metering]` debit/refund outcomes |
+| RunPod worker | endpoint → Logs / a worker's log view; job I/O in the Requests tab | `Job <id> start:` (file, size, source, model) and `Job <id> done:` (stems, storage, timings, cost) lines from `handler.py`, plus full tracebacks on failure (`Job <id> failed`) |
+| db-worker (`mercury-pitch-db`/`-dev`) | same Workers Logs / `wrangler tail -c workers/db-worker/wrangler.jsonc --env …` | `[billing]` checkout grants (or metadata-missing errors), debits (grant/refusal with balance), refunds |
+| Durable audit | D1 `creditLedger` | every purchase/debit/refund row with timestamps + idempotency keys — the source of truth for any billing dispute |
+
+Debugging a report ("my separation vanished / charged but no stems"):
+1. Get the session id from the client (or the user's ledger rows by userId).
+2. `wrangler tail`/Workers Logs → grep the session id → shows accept, debit,
+   terminal state, refund.
+3. RunPod console → Requests tab → the job id (session id minus the
+   `rp_<tier>_` prefix) → handler output incl. `timings`/`cost`; Logs tab →
+   `Job <id>` lines + traceback.
+4. D1 ledger by `jobRef` → exactly what was charged/refunded.
+
+---
+
 ## Security notes
 
 - `process` and `DELETE /session` stay behind the existing app-JWT edge gate in
