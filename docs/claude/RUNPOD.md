@@ -168,6 +168,28 @@ Debugging a report ("my separation vanished / charged but no stems"):
 
 ---
 
+## Stem storage lifecycle (R2 is a transit buffer, not a library)
+
+Stems live permanently on the **client**: the app downloads each stem right
+after completion and persists it to IndexedDB (`saveStemBlob` in
+`src/lib/uvr-processing-pipeline.ts`), where the stem mixer plays it from.
+R2 only carries the bytes from the GPU worker to the browser.
+
+Nothing needs the R2 object for long anyway:
+- the app's `/output` route resolves the stem URL by re-reading the RunPod
+  job status, and RunPod retains job results only ~30 minutes after
+  completion — so the app path stops resolving within the hour;
+- the presigned URL issued at upload expires after 24 h (`S3_URL_TTL_SECS`).
+
+So the bucket carries **R2 lifecycle rules that expire `runpod/` and
+`runpod-dev/` objects after 1 day** (R2 runs them roughly daily, no cron or
+worker needed — set via `wrangler r2 bucket lifecycle add <bucket> <name>
+<prefix> --expire-days 1`, view with `… lifecycle list`). Give any future
+prod bucket the same rule at creation. Storage therefore stays at roughly
+one day's traffic (~50 MB per song-pair) instead of growing forever.
+
+---
+
 ## Security notes
 
 - `process` and `DELETE /session` stay behind the existing app-JWT edge gate in
