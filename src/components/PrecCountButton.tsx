@@ -20,7 +20,6 @@ export const PrecCountButton: Component = () => {
         id="btn-precount"
         class={`${styles.ctrlBtn} ${isOn() ? styles.active : ''}`}
         onClick={toggle}
-        title={isOn() ? 'Precount: On' : 'Precount: Off'}
         aria-label={isOn() ? 'Precount: On' : 'Precount: Off'}
       >
         <svg viewBox="0 0 24 24" width="16" height="16">

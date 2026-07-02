@@ -293,11 +293,6 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
                 [styles.focusSpeedBtnActive]: settings().tonicAnchor === true,
               }}
               onClick={() => setTonicAnchor(settings().tonicAnchor !== true)}
-              title={
-                settings().tonicAnchor === true
-                  ? 'Anchor Tone: On'
-                  : 'Anchor Tone: Off'
-              }
               aria-label={
                 settings().tonicAnchor === true
                   ? 'Anchor Tone: On'
