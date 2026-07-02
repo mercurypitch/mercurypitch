@@ -4,6 +4,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
 import { STORAGE_KEY_SESSION_HIST } from './melody-store'
+import { recordActivity } from './usage-store'
 
 export const [practiceSession, setPracticeSession] =
   createSignal<PlaybackSession | null>(null)
@@ -133,6 +134,8 @@ export function endPracticeSession(): SessionResult | null {
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
   setSessionMode(false)
+
+  recordActivity()
 
   return result
 }

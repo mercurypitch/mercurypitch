@@ -106,6 +106,7 @@ import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, selectedCharacter, showHistoryPanel, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -1112,6 +1113,11 @@ const AppShell: Component<AppProps> = (props) => {
     onEnableMic: () => void handleMicToggle(),
   })
 
+  // Each singing playback start counts as real app usage (gates the survey).
+  createEffect(() => {
+    if (isPlaying()) recordActivity()
+  })
+
   // Offer a page's spotlight tour the first time it's visited.
   usePageTourOffer(activeTab)
 
@@ -1530,6 +1536,9 @@ const AppShell: Component<AppProps> = (props) => {
     // Wire runtime events
     setupRuntimeEvents()
 
+    // Accumulate foreground usage time (gates the onboarding survey).
+    startUsageTracking()
+
     props.onMounted?.()
   })
 
@@ -1557,6 +1566,21 @@ const AppShell: Component<AppProps> = (props) => {
     showSelection() ||
     walkthroughModalOpen()
 
+  // Don't ask for feedback the moment a first-time visitor closes the welcome
+  // screen: wait until they have genuinely used the app — enough cumulative
+  // foreground time AND at least one real action (playback run, exercise or
+  // practice session finished) — so they have something to say.
+  const SURVEY_MIN_USAGE_MS = 12 * 60_000
+  const surveyUsageGateMet = () => {
+    try {
+      // The dev force flag skips the usage gate along with the host gate.
+      if (localStorage.getItem('pitchperfect_survey_force') === '1') return true
+    } catch {
+      /* localStorage unavailable — fall through to the usage signals */
+    }
+    return usageMs() >= SURVEY_MIN_USAGE_MS && activityCount() > 0
+  }
+
   // Show optional survey after welcome screen is dismissed (once per browser,
   // tracked via the persisted surveySeen flag — same as the welcome screen).
   createEffect(() => {
@@ -1564,6 +1588,9 @@ const AppShell: Component<AppProps> = (props) => {
     // Defer while a tour surface is open — the effect re-runs when it closes,
     // so the survey is postponed until after the tour, not lost.
     if (tourSurfaceOpen()) return
+    // Defer until real usage: both signals are reactive, so the effect
+    // re-runs as time accrues / activity lands and the survey shows then.
+    if (!surveyUsageGateMet()) return
     setSurveyChecked(true)
     if (!surveyEnabledHere() || surveySeen()) return
     // The survey persists to the cloud, so only prompt signed-in users —
