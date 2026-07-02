@@ -15,22 +15,26 @@ import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
+import type { FreeSingResult } from '@/lib/mirror/free-sing'
+import { computeFreeSing } from '@/lib/mirror/free-sing'
 import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { cardToPngBlob, formatDeltaLine, renderCard, shareCard, } from './card-renderer'
+import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
-import { LiveViz } from './LiveViz'
+import { LiveViz, MicLevelBar } from './LiveViz'
 import { playReferenceTone } from './tone-player'
 
 const GLIDE_SEC = 8
 const HOLD_SEC = 6
 const REFERENCE_SEC = 1
 const MATCH_TAKE_SEC = 3
+const FREE_SING_SEC = 40
 const MIC_CONSUMER_ID = 'voice-mirror'
 // A live mic never reads exactly zero (room noise floors around 1e-3); dead
 // zeros mean the capture graph itself is broken (the iOS WebKit case) or the
@@ -81,10 +85,17 @@ export const MirrorApp: Component = () => {
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
+  const [mode, setMode] = createSignal<'guided' | 'free'>('guided')
+  const [freePhase, setFreePhase] = createSignal<
+    null | 'mic' | 'task' | 'results'
+  >(null)
+  const [freeResult, setFreeResult] = createSignal<FreeSingResult | null>(null)
+  const [cosmicOpen, setCosmicOpen] = createSignal(false)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
   let cancelled = false
+  let freeTakeFrames: F0Frame[] = []
   let cardCanvas: HTMLCanvasElement | null = null
   let voiceprintHost: HTMLDivElement | undefined
 
@@ -182,6 +193,10 @@ export const MirrorApp: Component = () => {
 
   function beginFlow(): void {
     setMicSilent(false)
+    if (mode() === 'free') {
+      void runFreeFlow()
+      return
+    }
     dispatch({ type: 'mic-granted' })
     void runFlow()
   }
@@ -195,8 +210,10 @@ export const MirrorApp: Component = () => {
 
   /** The scariest moment is the biggest trust moment: mic + audio context are
    *  created inside this tap handler (required by iOS Safari). */
-  async function start(): Promise<void> {
-    dispatch({ type: 'start' })
+  async function start(selected: 'guided' | 'free' = mode()): Promise<void> {
+    setMode(selected)
+    if (selected === 'free') setFreePhase('mic')
+    else dispatch({ type: 'start' })
     try {
       audioContext = new AudioContext()
       if (audioContext.state === 'suspended') await audioContext.resume()
@@ -222,8 +239,39 @@ export const MirrorApp: Component = () => {
           ? message
           : 'Microphone access was denied. Allow mic access to continue.',
       )
-      dispatch({ type: 'mic-denied' })
+      if (mode() === 'guided') dispatch({ type: 'mic-denied' })
     }
+  }
+
+  /** Free Sing: one open 40 s take, then post-analysis — no targets. */
+  async function runFreeFlow(): Promise<void> {
+    setFreePhase('task')
+    await brief(3)
+    if (cancelled) return
+    freeTakeFrames = await record(FREE_SING_SEC)
+    teardownAudio()
+    setFreeResult(computeFreeSing(freeTakeFrames))
+    setFreePhase('results')
+    trackFunnel('free_sing_done')
+  }
+
+  async function onShareFree(): Promise<void> {
+    const analysis = freeResult()
+    if (!analysis) return
+    const card = renderCard(
+      {
+        result: { range: analysis.range, accuracy: null, steadiness: null },
+        glides: [freeTakeFrames],
+        title: '✦ FREE SING',
+      },
+      'story',
+    )
+    const blob = await cardToPngBlob(card)
+    const outcome = await shareCard(blob, 'free-sing.png')
+    trackFunnel('card_shared')
+    setShareStatus(
+      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
+    )
   }
 
   async function runFlow(): Promise<void> {
@@ -326,12 +374,16 @@ export const MirrorApp: Component = () => {
 
   return (
     <div class="mirror-shell">
-      <Show when={session().phase === 'idle'}>
-        <Landing onStart={() => void start()} />
+      <Show when={session().phase === 'idle' && freePhase() === null}>
+        <Landing onStart={(selected) => void start(selected)} />
       </Show>
 
       <Show
-        when={session().phase === 'mic' || session().phase === 'mic-denied'}
+        when={
+          session().phase === 'mic' ||
+          session().phase === 'mic-denied' ||
+          freePhase() === 'mic'
+        }
       >
         <section class="mirror-panel">
           <h2>One thing first</h2>
@@ -373,6 +425,51 @@ export const MirrorApp: Component = () => {
             <p class="mirror-dim">Waiting for microphone permission…</p>
           </Show>
         </section>
+      </Show>
+
+      <Show when={freePhase() === 'task'}>
+        <section class="mirror-panel">
+          <h2>Just sing</h2>
+          <p>
+            Sing anything you like for 40 seconds — your shower song counts. No
+            targets, no judgment: we map what your voice actually does.
+          </p>
+          <div class="mirror-stage">
+            <Show when={subPhase() === 'brief'}>
+              <div class="mirror-countdown">{Math.ceil(remaining())}</div>
+            </Show>
+            <Show when={subPhase() === 'recording'}>
+              <LiveViz
+                latest={() => f0?.latest() ?? null}
+                mode="glide"
+                targetMidi={null}
+                resetKey={taskKey()}
+              />
+              <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
+              <div class="mirror-timebar">
+                <div
+                  class="mirror-timebar-fill"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, (remaining() / FREE_SING_SEC) * 100))}%`,
+                  }}
+                />
+              </div>
+            </Show>
+          </div>
+        </section>
+      </Show>
+
+      <Show when={freePhase() === 'results'}>
+        <FreeResults
+          result={freeResult()}
+          shareStatus={shareStatus()}
+          onShare={() => void onShareFree()}
+          onAgain={() => {
+            setFreeResult(null)
+            void start('free')
+          }}
+          appUrl={appUrl()}
+        />
       </Show>
 
       <Show when={isTaskPhase()}>
@@ -429,12 +526,24 @@ export const MirrorApp: Component = () => {
         </section>
       </Show>
 
-      <Show when={session().phase === 'results' && session().result}>
+      <Show when={session().phase === 'results' && cosmicOpen()}>
+        <CosmicMode
+          range={session().result?.range ?? null}
+          onBack={() => setCosmicOpen(false)}
+        />
+      </Show>
+
+      <Show
+        when={
+          session().phase === 'results' && session().result && !cosmicOpen()
+        }
+      >
         <Results
           result={session().result as MirrorResult}
           deltaLine={deltaLine()}
           shareStatus={shareStatus()}
           onShare={() => void onShare()}
+          onCosmic={() => setCosmicOpen(true)}
           appUrl={appUrl()}
           voiceprintRef={(el) => {
             voiceprintHost = el
@@ -446,27 +555,9 @@ export const MirrorApp: Component = () => {
   )
 }
 
-/** Live input-level bar — visible proof the mic is (or isn't) being heard. */
-const MicLevelBar: Component<{ level: () => number }> = (props) => {
-  const [percent, setPercent] = createSignal(0)
-  let rafId = 0
-  onMount(() => {
-    const tick = (): void => {
-      rafId = requestAnimationFrame(tick)
-      // Full scale around 0.12 RMS — loud-but-not-clipping singing.
-      setPercent(Math.min(100, (props.level() / 0.12) * 100))
-    }
-    tick()
-  })
-  onCleanup(() => cancelAnimationFrame(rafId))
-  return (
-    <div class="mirror-miclevel" title="Microphone input level">
-      <div class="mirror-miclevel-fill" style={{ width: `${percent()}%` }} />
-    </div>
-  )
-}
-
-const Landing: Component<{ onStart: () => void }> = (props) => (
+const Landing: Component<{
+  onStart: (mode: 'guided' | 'free') => void
+}> = (props) => (
   <section class="mirror-panel mirror-landing">
     <p class="mirror-wordmark">MercuryPitch</p>
     <h1>See your voice. 60 seconds.</h1>
@@ -474,15 +565,113 @@ const Landing: Component<{ onStart: () => void }> = (props) => (
       Sing three short tasks and get your vocal range, pitch accuracy and
       steadiness — rendered as a voiceprint you can share.
     </p>
-    <button class="mirror-cta" onClick={() => props.onStart()}>
-      Start singing
-    </button>
+    <div class="mirror-actions">
+      <button class="mirror-cta" onClick={() => props.onStart('guided')}>
+        Start singing
+      </button>
+      <button
+        class="mirror-cta mirror-cta-secondary"
+        onClick={() => props.onStart('free')}
+      >
+        Just sing · 40 s
+      </button>
+    </div>
     <p class="mirror-trust">
       Your audio never leaves this device — we analyze it right here in your
       browser.
     </p>
   </section>
 )
+
+const FreeResults: Component<{
+  result: FreeSingResult | null
+  shareStatus: string | null
+  onShare: () => void
+  onAgain: () => void
+  appUrl: string
+}> = (props) => {
+  const r = (): FreeSingResult | null => props.result
+  const styleLabel = (): string => {
+    const agility = r()?.agilityMovesPerSec ?? 0
+    if (agility >= 0.8) return "You're a mover — lots of melodic motion."
+    if (agility <= 0.3) return "You're a sustainer — you live in held notes."
+    return 'You balance held notes and melodic motion.'
+  }
+  return (
+    <section class="mirror-panel mirror-results">
+      <Show
+        when={r()}
+        fallback={
+          <>
+            <h2>We couldn't hear enough</h2>
+            <p class="mirror-dim">
+              A quieter room — or singing a little louder — usually fixes it.
+            </p>
+            <button class="mirror-cta" onClick={() => props.onAgain()}>
+              Try again
+            </button>
+          </>
+        }
+      >
+        <h1 class="mirror-hero">
+          {r()?.range?.lowNote ?? '—'} – {r()?.range?.highNote ?? '—'}
+          <span class="mirror-hero-sub"> · in use</span>
+        </h1>
+        <p class="mirror-chip">
+          You live around {r()?.homeNote} · comfortable middle{' '}
+          {r()?.tessituraLowNote}–{r()?.tessituraHighNote}
+        </p>
+        <Show when={r()?.phrases}>
+          <div class="mirror-stat">
+            <h3>Breath</h3>
+            <p>
+              {r()?.phrases?.count} phrases — median{' '}
+              {r()?.phrases?.medianSec.toFixed(1)} s, longest{' '}
+              {r()?.phrases?.longestSec.toFixed(1)} s
+              {(r()?.phrases?.longestSec ?? 0) >= 6
+                ? ' — solid breath support.'
+                : ' — breath support to build on.'}
+            </p>
+          </div>
+        </Show>
+        <div class="mirror-stat">
+          <h3>Style</h3>
+          <p>{styleLabel()}</p>
+        </div>
+        <Show when={r()?.vibrato}>
+          <div class="mirror-stat">
+            <h3>Vibrato</h3>
+            <p>
+              {r()?.vibrato?.rateHz.toFixed(1)} Hz, ±{r()?.vibrato?.extentCents}{' '}
+              cents on your longest note — a feature worth keeping.
+            </p>
+          </div>
+        </Show>
+        <div class="mirror-actions">
+          <button class="mirror-cta" onClick={() => props.onShare()}>
+            Share my voiceprint
+          </button>
+          <button
+            class="mirror-cta mirror-cta-secondary"
+            onClick={() => props.onAgain()}
+          >
+            Sing again
+          </button>
+          <a
+            class="mirror-cta mirror-cta-secondary"
+            href={props.appUrl}
+            onClick={() => trackFunnel('cta_app_click')}
+          >
+            Train in MercuryPitch
+          </a>
+        </div>
+        <Show when={props.shareStatus}>
+          <p class="mirror-dim">{props.shareStatus}</p>
+        </Show>
+      </Show>
+    </section>
+  )
+}
 
 const BAND_LABEL: Record<NoteTakeResult['band'], string> = {
   bullseye: 'bullseye',
@@ -497,6 +686,7 @@ const Results: Component<{
   deltaLine: string | null
   shareStatus: string | null
   onShare: () => void
+  onCosmic: () => void
   appUrl: string
   voiceprintRef: (el: HTMLDivElement) => void
 }> = (props) => {
@@ -557,6 +747,13 @@ const Results: Component<{
               ? ' — your ear is ahead of your control, which is the good order.'
               : ' — matching is a trainable skill, and this is the honest baseline.'}
           </p>
+          <Show when={accuracy()?.scoopMedianMs !== null}>
+            <p>
+              {(accuracy()?.scoopMedianMs ?? 0) > 120
+                ? `You scoop ~${accuracy()?.scoopMedianMs} ms into notes before settling — try landing the pitch directly.`
+                : `You settle onto notes in ~${accuracy()?.scoopMedianMs} ms — a clean onset.`}
+            </p>
+          </Show>
         </div>
       </Show>
 
@@ -569,12 +766,25 @@ const Results: Component<{
             {(steadiness()?.driftCentsPerSec ?? 0) < 0 ? 'flat' : 'sharp'} with
             ±{(steadiness()?.wobbleSdCents ?? 0).toFixed(0)} cents of wobble.
           </p>
+          <Show when={steadiness()?.vibrato}>
+            <p>
+              Vibrato: {steadiness()?.vibrato?.rateHz.toFixed(1)} Hz, ±
+              {steadiness()?.vibrato?.extentCents} cents — that's a feature, not
+              wobble, and it isn't scored against you.
+            </p>
+          </Show>
         </div>
       </Show>
 
       <div class="mirror-actions">
         <button class="mirror-cta" onClick={() => props.onShare()}>
           Share my voiceprint
+        </button>
+        <button
+          class="mirror-cta mirror-cta-secondary"
+          onClick={() => props.onCosmic()}
+        >
+          Sing the Universe ✦
         </button>
         <a
           class="mirror-cta mirror-cta-secondary"

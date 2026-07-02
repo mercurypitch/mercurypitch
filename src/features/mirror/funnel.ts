@@ -24,6 +24,8 @@ export type FunnelEvent =
   | 'card_generated'
   | 'card_shared'
   | 'cta_app_click'
+  | 'free_sing_done'
+  | 'cosmic_done'
 
 const STORAGE_KEY = 'mirror.funnel.v1'
 const CLIENT_ID_KEY = 'mirror.clientId.v1'

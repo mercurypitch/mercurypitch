@@ -10,9 +10,29 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { CONF_MIN, foldCents, hzToCents } from '@/lib/mirror/metrics'
+
+/** Live input-level bar — visible proof the mic is (or isn't) being heard. */
+export const MicLevelBar: Component<{ level: () => number }> = (props) => {
+  const [percent, setPercent] = createSignal(0)
+  let rafId = 0
+  onMount(() => {
+    const tick = (): void => {
+      rafId = requestAnimationFrame(tick)
+      // Full scale around 0.12 RMS — loud-but-not-clipping singing.
+      setPercent(Math.min(100, (props.level() / 0.12) * 100))
+    }
+    tick()
+  })
+  onCleanup(() => cancelAnimationFrame(rafId))
+  return (
+    <div class="mirror-miclevel" title="Microphone input level">
+      <div class="mirror-miclevel-fill" style={{ width: `${percent()}%` }} />
+    </div>
+  )
+}
 
 export type LiveVizMode = 'glide' | 'hold' | 'match'
 

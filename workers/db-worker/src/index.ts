@@ -598,6 +598,8 @@ const MIRROR_EVENTS = new Set([
   'card_generated',
   'card_shared',
   'cta_app_click',
+  'free_sing_done',
+  'cosmic_done',
 ])
 
 // Derived numbers only (range/accuracy/steadiness) — never audio.

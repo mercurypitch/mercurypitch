@@ -16,10 +16,12 @@ export type CardFormat = 'story' | 'square'
 
 export interface CardInput {
   result: MirrorResult
-  /** Raw glide takes — the card plots the singer's actual trace. */
+  /** Raw takes — the card plots the singer's actual trace. */
   glides: F0Frame[][]
   /** Optional returning-visit delta line, e.g. "▲ +2 semitones since 12 May". */
   deltaLine?: string | null
+  /** Optional headline, e.g. a cosmic melody name. Drawn above the trace. */
+  title?: string | null
 }
 
 const FORMATS: Record<CardFormat, { width: number; height: number }> = {
@@ -203,26 +205,42 @@ function drawPulsar(
   ctx.globalAlpha = 1
 }
 
-/** Returning-visit delta as a badge at the top of the card. */
+/** Shrink-to-fit centered text line. */
+function drawFittedLine(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  width: number,
+  y: number,
+  baseFontSize: number,
+  color: string,
+): void {
+  ctx.textAlign = 'center'
+  let fontSize = baseFontSize
+  ctx.font = `600 ${fontSize}px system-ui, sans-serif`
+  const maxWidth = width - 120
+  const measured = ctx.measureText(text).width
+  if (measured > maxWidth) {
+    fontSize = Math.max(24, Math.floor((fontSize * maxWidth) / measured))
+    ctx.font = `600 ${fontSize}px system-ui, sans-serif`
+  }
+  ctx.fillStyle = color
+  ctx.fillText(text, width / 2, y)
+}
+
+/** Headline (cosmic melody name) and/or returning-visit delta at the top. */
 function drawDeltaBadge(
   ctx: CanvasRenderingContext2D,
   input: CardInput,
   width: number,
 ): void {
-  const line = input.deltaLine ?? ''
-  if (line === '') return
-  ctx.textAlign = 'center'
-  // Shrink-to-fit: a three-part delta line can outgrow the card width.
-  let fontSize = 40
-  ctx.font = `600 ${fontSize}px system-ui, sans-serif`
-  const maxWidth = width - 120
-  const measured = ctx.measureText(line).width
-  if (measured > maxWidth) {
-    fontSize = Math.max(24, Math.floor((fontSize * maxWidth) / measured))
-    ctx.font = `600 ${fontSize}px system-ui, sans-serif`
+  const title = input.title ?? ''
+  const delta = input.deltaLine ?? ''
+  if (title !== '') {
+    drawFittedLine(ctx, title, width, 96, 46, '#ffe9a8')
+    if (delta !== '') drawFittedLine(ctx, delta, width, 152, 34, '#8be9b8')
+    return
   }
-  ctx.fillStyle = '#8be9b8'
-  ctx.fillText(line, width / 2, 96)
+  if (delta !== '') drawFittedLine(ctx, delta, width, 96, 40, '#8be9b8')
 }
 
 function drawStats(

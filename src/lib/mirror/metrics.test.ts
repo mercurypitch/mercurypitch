@@ -247,6 +247,38 @@ describe('scoreMatchTake', () => {
   })
 })
 
+describe('onset / scoop (§4.4)', () => {
+  it('measures the scoop on a take that slides into the note', () => {
+    // 250 ms glide from −300 c up to the target, then a clean hold.
+    const scoop: F0Frame[] = []
+    for (let t = 0; t < 0.25; t += HOP) {
+      const cents = 5700 - 300 * (1 - t / 0.25)
+      scoop.push({ t, f0: centsToHz(cents), conf: 0.95 })
+    }
+    const hold = tone(57, 2, { tStart: 0.25 })
+    const take = scoreMatchTake([...scoop, ...hold], 57)
+    expect(take.locked).toBe(true)
+    expect(take.onsetMs).not.toBeNull()
+    expect(take.onsetMs ?? 0).toBeGreaterThan(120)
+    expect(take.onsetMs ?? 0).toBeLessThan(320)
+  })
+
+  it('reports a near-zero onset when the singer lands the note instantly', () => {
+    const take = scoreMatchTake(tone(57, 2), 57)
+    expect(take.onsetMs ?? 999).toBeLessThan(50)
+  })
+
+  it('aggregates the median scoop across takes', () => {
+    const takes = [
+      scoreMatchTake(tone(57, 2), 57),
+      scoreMatchTake(tone(60, 2), 60),
+    ]
+    const accuracy = computeAccuracy(takes)
+    expect(accuracy?.scoopMedianMs).not.toBeNull()
+    expect(accuracy?.scoopMedianMs ?? 999).toBeLessThan(50)
+  })
+})
+
 describe('matchScore', () => {
   it('follows the piecewise anchors', () => {
     expect(matchScore(12)).toBe(100)
@@ -265,6 +297,7 @@ describe('computeAccuracy', () => {
       deviationCents: score > 0 ? 10 : null,
       band: 'hit' as const,
       score,
+      onsetMs: null,
     }))
     expect(computeAccuracy(takes)?.score).toBe(60)
   })
@@ -306,17 +339,37 @@ describe('pickMatchTargets', () => {
 // ── §4.3 Steadiness ──────────────────────────────────────────
 
 describe('computeSteadiness', () => {
-  it('measures 5.5 Hz ±30 c vibrato as ~21 c of wobble with no drift', () => {
+  it('labels 5.5 Hz ±30 c vibrato as a feature and excludes it from wobble', () => {
     const result = computeSteadiness(
       tone(57, 6, { vibratoHz: 5.5, vibratoCents: 30 }),
     )
     expect(result).not.toBeNull()
-    // SD of a sine is amplitude/√2 ≈ 21.2 c.
-    expect(result?.wobbleSdCents).toBeGreaterThan(18)
-    expect(result?.wobbleSdCents).toBeLessThan(24)
+    expect(result?.vibrato).not.toBeNull()
+    expect(result?.vibrato?.rateHz).toBeGreaterThan(4.5)
+    expect(result?.vibrato?.rateHz).toBeLessThan(6.5)
+    // The ± amplitude of a ±30 c sine, allowing for windowing losses.
+    expect(result?.vibrato?.extentCents).toBeGreaterThan(18)
+    expect(result?.vibrato?.extentCents).toBeLessThan(40)
+    // v1.1: vibrato no longer reads as unsteadiness — wobble is the
+    // residual after removing the vibrato sinusoid's variance.
+    expect(result?.wobbleSdCents).toBeLessThan(12)
+    expect(result?.score).toBeGreaterThanOrEqual(85)
     expect(Math.abs(result?.driftCentsPerSec ?? 99)).toBeLessThan(1)
-    expect(result?.score).toBeGreaterThan(60)
-    expect(result?.score).toBeLessThan(75)
+  })
+
+  it('does not call aperiodic wobble vibrato', () => {
+    // Deterministic non-periodic jitter: sum of incommensurate slow sines
+    // way outside the 3.5–8.5 Hz singerly band.
+    const frames = tone(57, 6).map((f, i) => {
+      const t = i * HOP
+      const jitter =
+        18 * Math.sin(2 * Math.PI * 0.7 * t) +
+        14 * Math.sin(2 * Math.PI * 1.3 * t + 1)
+      return { ...f, f0: centsToHz(5700 + jitter) }
+    })
+    const result = computeSteadiness(frames)
+    expect(result?.vibrato).toBeNull()
+    expect(result?.wobbleSdCents).toBeGreaterThan(10)
   })
 
   it('reports pure drift in the slope, not the wobble', () => {
