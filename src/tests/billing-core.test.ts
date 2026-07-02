@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, mapPricingPlans, timingSafeEqualStr, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
 
 const row = (over: Partial<PricingRow>): PricingRow => ({
   id: 'x',
@@ -141,5 +141,35 @@ describe('verifyStripeSignature', () => {
   it('rejects malformed headers', async () => {
     expect(await verifyStripeSignature('x', 'garbage', secret)).toBe(false)
     expect(await verifyStripeSignature('x', 't=1', secret)).toBe(false)
+  })
+})
+
+describe('uvr metering helpers', () => {
+  it('maps tiers to their pricingPlans rows', () => {
+    expect(UVR_TIER_PLAN_IDS.gpu).toBe('tier-runpod-gpu')
+    expect(UVR_TIER_PLAN_IDS.cpu).toBe('tier-runpod-cpu')
+  })
+
+  it('isUvrTier accepts only gpu/cpu', () => {
+    expect(isUvrTier('gpu')).toBe(true)
+    expect(isUvrTier('cpu')).toBe(true)
+    expect(isUvrTier('tpu')).toBe(false)
+    expect(isUvrTier(undefined)).toBe(false)
+    expect(isUvrTier(1)).toBe(false)
+  })
+
+  it('isValidJobRef enforces the session-id charset and length', () => {
+    expect(isValidJobRef('rp_gpu_sync-80266ad4-e2')).toBe(true)
+    expect(isValidJobRef('')).toBe(false)
+    expect(isValidJobRef(undefined)).toBe(false)
+    expect(isValidJobRef('has space')).toBe(false)
+    expect(isValidJobRef('semi;colon')).toBe(false)
+    expect(isValidJobRef('x'.repeat(201))).toBe(false)
+  })
+
+  it('debit/refund idempotency keys are distinct per job', () => {
+    expect(uvrDebitKey('rp_gpu_j1')).toBe('uvr:rp_gpu_j1')
+    expect(uvrRefundKey('rp_gpu_j1')).toBe('uvr-refund:rp_gpu_j1')
+    expect(uvrDebitKey('rp_gpu_j1')).not.toBe(uvrRefundKey('rp_gpu_j1'))
   })
 })

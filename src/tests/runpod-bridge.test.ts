@@ -302,3 +302,148 @@ describe('parseStems', () => {
     expect(parseStems('[1,2]')).toBeUndefined()
   })
 })
+
+// ── metering (debit on accept, refund on failure/cancel) ───────
+
+describe('handleRunpodRequest — metering', () => {
+  const METER = { baseUrl: 'https://db.test', serviceKey: 'svc' }
+
+  /** Fetch mock dispatching by URL; records calls for assertions. */
+  function mockRoutes(
+    routes: Record<string, { body: unknown; status?: number }>,
+  ) {
+    const calls: { url: string; init?: RequestInit }[] = []
+    vi.spyOn(global, 'fetch').mockImplementation((input, init) => {
+      const url = String(input)
+      calls.push({ url, init })
+      const hit = Object.entries(routes).find(([k]) => url.includes(k))
+      const status = hit?.[1].status ?? 200
+      return Promise.resolve({
+        ok: status < 400,
+        status,
+        statusText: 'x',
+        json: () => Promise.resolve(hit?.[1].body ?? {}),
+      } as Response)
+    })
+    return calls
+  }
+
+  it('debits the accepted job with the forwarded Authorization', async () => {
+    const calls = mockRoutes({
+      '/run': { body: { id: 'job-1' } },
+      '/api/billing/debit': { body: { debited: 2, balance: 8 } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      file: smallFile(),
+    })
+
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+    expect(res?.status).toBe(200)
+    const debit = calls.find((c) => c.url.includes('/api/billing/debit'))
+    expect(debit).toBeDefined()
+    expect((debit?.init?.headers as Record<string, string>).Authorization).toBe(
+      'Bearer tok',
+    )
+    expect(JSON.parse(debit?.init?.body as string)).toEqual({
+      tier: 'gpu',
+      jobRef: 'rp_gpu_job-1',
+    })
+  })
+
+  it('cancels the job and returns 402 when the debit is refused', async () => {
+    const calls = mockRoutes({
+      '/run': { body: { id: 'job-1' } },
+      '/api/billing/debit': {
+        body: { error: 'Insufficient credits', required: 2, balance: 0 },
+        status: 402,
+      },
+      '/cancel/': { body: {} },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      file: smallFile(),
+    })
+
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+    expect(res?.status).toBe(402)
+    const body = (await res?.json()) as { error: string; balance: number }
+    expect(body.error).toBe('Insufficient credits')
+    expect(body.balance).toBe(0)
+    expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
+  })
+
+  it('does not meter when metering is off (null)', async () => {
+    const calls = mockRoutes({ '/run': { body: { id: 'job-1' } } })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: smallFile(),
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(200)
+    expect(calls.some((c) => c.url.includes('/api/billing/'))).toBe(false)
+  })
+
+  it('refunds a job whose status ends in error', async () => {
+    const calls = mockRoutes({
+      '/status/': { body: { status: 'FAILED', error: 'boom' } },
+      '/api/billing/refund': { body: { refunded: 2 } },
+    })
+    const { request, url } = req('/api/uvr/status/rp_gpu_job-1')
+    const res = await handleRunpodRequest(request, url, 'GET', CFG, METER)
+    const body = (await res?.json()) as { status: string }
+    expect(body.status).toBe('error')
+    const refund = calls.find((c) => c.url.includes('/api/billing/refund'))
+    expect(refund).toBeDefined()
+    expect(
+      (refund?.init?.headers as Record<string, string>)['X-Service-Key'],
+    ).toBe('svc')
+    expect(JSON.parse(refund?.init?.body as string)).toEqual({
+      jobRef: 'rp_gpu_job-1',
+    })
+  })
+
+  it('does not refund a completed status', async () => {
+    const calls = mockRoutes({
+      '/status/': {
+        body: {
+          status: 'COMPLETED',
+          output: { stems: [{ stem: 'vocal', filename: 'v.flac', url: 'u' }] },
+        },
+      },
+    })
+    const { request, url } = req('/api/uvr/status/rp_gpu_job-1')
+    await handleRunpodRequest(request, url, 'GET', CFG, METER)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
+  })
+
+  it('refunds a cancel of an unfinished job', async () => {
+    const calls = mockRoutes({
+      '/status/': { body: { status: 'IN_PROGRESS' } },
+      '/cancel/': { body: {} },
+      '/api/billing/refund': { body: { refunded: 2 } },
+    })
+    const { request, url } = req('/api/uvr/session/rp_gpu_job-1')
+    const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+    expect(res?.status).toBe(200)
+    expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(true)
+  })
+
+  it('does not refund deleting an already-completed session', async () => {
+    const calls = mockRoutes({
+      '/status/': {
+        body: {
+          status: 'COMPLETED',
+          output: { stems: [{ stem: 'vocal', filename: 'v.flac', url: 'u' }] },
+        },
+      },
+      '/cancel/': { body: {} },
+    })
+    const { request, url } = req('/api/uvr/session/rp_gpu_job-1')
+    const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+    expect(res?.status).toBe(200)
+    expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
+  })
+})

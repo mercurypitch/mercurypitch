@@ -117,8 +117,22 @@ when configured. To make it user-facing later:
 2. Send `X-UVR-Provider: runpod` (GPU, the default) — or `runpod-cpu` for the
    cheaper tier — from `src/lib/uvr-api.ts processAudio` when a server mode is
    selected. (`?provider=…` works too.)
-3. Gate behind credits/entitlements once billing ships (see
-   [`docs/plans/premium.md`](../plans/premium.md)).
+3. **Credit metering** (implemented; see [`docs/plans/premium.md`](../plans/premium.md)
+   "Metering paid jobs"): the worker debits the tier's per-song credit cost via
+   the db-worker when a job is accepted and refunds it on failure/cancel
+   (`src/lib/uvr-metering.ts`; ledger endpoints in
+   `workers/db-worker/src/billing.ts`). Activation is layered and each layer is
+   inert until set:
+   - `DB_API_URL` (wrangler.jsonc var, already set per env) — without it,
+     no metering calls at all;
+   - per-tier credit cost = the `credits` column of the `tier-runpod-gpu` /
+     `tier-runpod-cpu` rows in `pricingPlans` (D1) — while NULL/0 the debit
+     endpoint no-ops, so jobs run unmetered;
+   - `wrangler secret put BILLING_SERVICE_KEY` on BOTH workers (same value) —
+     authorizes the service-to-service refund path; refunds are skipped
+     without it, so set it before setting tier costs.
+   Insufficient balance → the worker cancels the just-submitted job and
+   returns 402 `{ error, required, balance }`.
 
 Everything downstream of `process` already works: the worker returns an
 `rp_<tier>_`-prefixed session id, and status/output/cancel route to the right

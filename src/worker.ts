@@ -2,6 +2,7 @@ import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace } from '@cloudflare/workers-types'
 import { getRunpodConfig } from './lib/runpod'
 import { handleRunpodRequest } from './lib/runpod-bridge'
+import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
 import { handleShareRequest } from './share-handler'
 
@@ -34,6 +35,14 @@ export interface Env {
   RUNPOD_ENDPOINT_ID_CPU?: string
   /** Optional RunPod API base override (defaults to https://api.runpod.ai/v2). */
   RUNPOD_BASE_URL?: string
+  /** db-worker base URL — enables credit metering of RunPod jobs (debit on
+   *  accept, refund on failure). Per-env var in wrangler.jsonc; while a
+   *  tier's credit cost is unset in pricingPlans, debits no-op. */
+  DB_API_URL?: string
+  /** Shared secret for service-to-service billing refunds; the SAME value
+   *  is set on the db-worker. `wrangler secret put BILLING_SERVICE_KEY`.
+   *  Refunds are skipped while unset. */
+  BILLING_SERVICE_KEY?: string
 }
 
 // Paths that serve the Voice Mirror entry (mirror.html): the canonical path
@@ -84,6 +93,7 @@ export default {
             url,
             method,
             runpod,
+            getMeteringConfig(env),
           )
           if (handled !== null) return handled
         } catch (err) {
