@@ -1,6 +1,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
+import { medianFilter } from '@/lib/mirror/metrics'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
@@ -33,6 +35,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
   // Live feedback so the user knows the mic is on and waiting for them.
   const [hearing, setHearing] = createSignal(false)
   const [singing, setSinging] = createSignal(false)
+  const [liveNote, setLiveNote] = createSignal<string | null>(null)
 
   const [detectedPreset, setDetectedPreset] =
     createSignal<VocalRangePreset | null>(null)
@@ -88,9 +91,11 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
         const midi = Math.round(69 + 12 * Math.log2(pitch.frequency / 440))
         take.push(midi)
         goodFrames++
+        setLiveNote(midiToNoteNameOctave(midi))
       } else {
         goodFrames = Math.max(0, goodFrames - 2)
         if (goodFrames === 0 && take.length > 0) take = [] // scratch the take
+        setLiveNote(null)
       }
 
       setProgress(Math.min(100, (goodFrames / TARGET_FRAMES) * 100))
@@ -108,8 +113,11 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
     stopLoop()
     practiceEngine.stopMic()
 
-    const sorted = [...take].sort((a, b) => a - b)
-    const median = sorted[Math.floor(sorted.length / 2)] ?? 55
+    // Median-filter the frame series first: a stray octave-error frame from
+    // the detector would otherwise be free to land right at the median.
+    const filtered = medianFilter(take, 5)
+    const sorted = [...filtered].sort((a, b) => a - b)
+    const median = Math.round(sorted[Math.floor(sorted.length / 2)] ?? 55)
 
     // Categorize by tessitura (comfortable mid note). MIDI 60 = C4.
     let preset: VocalRangePreset = 'baritone'
@@ -251,7 +259,12 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
                     </Show>
                   }
                 >
-                  Hold it… we're measuring your range.
+                  <Show
+                    when={liveNote()}
+                    fallback="Hold it… we're measuring your voice."
+                  >
+                    Hearing {liveNote()} — hold it steady…
+                  </Show>
                 </Show>
               </p>
             </div>
@@ -272,6 +285,10 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
               <h3>We heard you around {detectedNote()}!</h3>
               <p>Based on your comfortable pitch, your likely voice type is:</p>
               <div class={styles.resultBadge}>{detectedPreset()}</div>
+              <p class={styles.helperText}>
+                Want a precise low-to-high measurement? Run the Full Vocal Range
+                Test in Settings → Singing Voice Range.
+              </p>
 
               <div class={styles.resultActions}>
                 <button

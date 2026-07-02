@@ -177,6 +177,66 @@
   justify-content: center;
 }
 
+/* ── Shared with VoiceRangeTestModal (full range test) ────────── */
+
+.stepDots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stepDot {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color, #3a4050);
+  color: var(--text-secondary, #8b949e);
+  background: var(--bg-secondary, #2d333b);
+}
+
+.stepDotActive {
+  border-color: var(--accent-color, #58a6ff);
+  color: var(--accent-color, #58a6ff);
+  background: rgba(120, 200, 255, 0.1);
+}
+
+.stepDotDone {
+  border-color: rgba(63, 185, 80, 0.5);
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.rangeBar {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--bg-secondary, #2d333b);
+  border: 1px solid var(--border-color, #3a4050);
+  overflow: hidden;
+}
+
+.rangeSpan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #58a6ff, #a371f7);
+  box-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
+}
+
+.rangeBarLabels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: -8px;
+  font-size: 0.68rem;
+  color: var(--text-secondary, #8b949e);
+  opacity: 0.8;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

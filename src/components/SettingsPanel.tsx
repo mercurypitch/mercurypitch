@@ -10,6 +10,7 @@ import { ConsoleLog } from '@/components/ConsoleLog'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
+import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
@@ -31,6 +32,7 @@ export const SettingsPanel: Component = () => {
   const [pendingFont, setPendingFont] = createSignal<FontFamily | null>(null)
   const [showChangelog, setShowChangelog] = createSignal(false)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
+  const [showRangeTest, setShowRangeTest] = createSignal(false)
   const bandValues = createMemo(() => {
     const bands = s().bands
     return {
@@ -245,6 +247,32 @@ export const SettingsPanel: Component = () => {
                   <line x1="12" x2="12" y1="19" y2="22" />
                 </svg>
                 Don't know? Find my voice
+              </button>
+              <button
+                onClick={() => setShowRangeTest(true)}
+                style="display: inline-flex; align-items: center; gap: 7px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-secondary); padding: 9px 18px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = 'var(--accent)'
+                  e.currentTarget.style.borderColor = 'var(--accent)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = 'var(--text-secondary)'
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                }}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  stroke="currentColor"
+                  fill="none"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 12h2l2-7 3 14 3-10 2 6 2-3h4" />
+                </svg>
+                Full range test (advanced)
               </button>
             </div>
           </div>
@@ -1423,11 +1451,6 @@ export const SettingsPanel: Component = () => {
                 open={showChangelog()}
                 onClose={() => setShowChangelog(false)}
               />
-              <Show when={showVoiceDetector()}>
-                <VoiceTypeDetectorModal
-                  onClose={() => setShowVoiceDetector(false)}
-                />
-              </Show>
               <p class={styles.aboutCredits}>
                 Vocal Pitch Practice — Redefined.
               </p>
@@ -1452,6 +1475,16 @@ export const SettingsPanel: Component = () => {
           </div>
         </Show>
       </div>
+
+      {/* Modals live at the panel root: their trigger buttons sit on the
+          Practice sub-tab, so mounting them inside a tab-gated section
+          (as before) made the buttons silently no-op on other tabs. */}
+      <Show when={showVoiceDetector()}>
+        <VoiceTypeDetectorModal onClose={() => setShowVoiceDetector(false)} />
+      </Show>
+      <Show when={showRangeTest()}>
+        <VoiceRangeTestModal onClose={() => setShowRangeTest(false)} />
+      </Show>
     </div>
   )
 }
