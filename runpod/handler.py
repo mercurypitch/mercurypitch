@@ -167,6 +167,18 @@ def _get_separator(model: str, output_dir: str, output_format: str):
     if _loaded_model != model_file:
         _separator.load_model(model_filename=model_file)
         _loaded_model = model_file
+
+    # The loaded model architecture snapshots output_dir/output_format at
+    # load_model() time, so mutating the Separator alone leaves a warm worker
+    # writing stems into the *previous* job's directory (first victim: the
+    # eager-load `_init` dir — every job then "produced no output stems").
+    # Point the live model instance at this job's dir/format too.
+    inst = getattr(_separator, "model_instance", None)
+    if inst is not None:
+        if hasattr(inst, "output_dir"):
+            inst.output_dir = output_dir
+        if hasattr(inst, "output_format"):
+            inst.output_format = output_format
     return _separator
 
 
@@ -318,7 +330,7 @@ def handler(job: dict) -> dict:
         timings["load_model"] = round(time.time() - t0, 3)
 
         t0 = time.time()
-        separator.separate(input_path)
+        returned = separator.separate(input_path) or []
         timings["separate"] = round(time.time() - t0, 3)
 
         # Collect produced stems (skip the input we wrote).
@@ -330,6 +342,15 @@ def handler(job: dict) -> dict:
             if name.startswith("input.") and "_" not in name:
                 continue
             produced.append(path)
+        # Belt-and-braces: audio-separator returns the written files; trust
+        # them too in case a version change moves where output lands.
+        for name in returned:
+            for cand in (
+                name if os.path.isabs(name) else "",
+                os.path.join(job_dir, os.path.basename(str(name))),
+            ):
+                if cand and os.path.isfile(cand) and cand not in produced:
+                    produced.append(cand)
 
         t0 = time.time()
         stems: list[dict] = []
