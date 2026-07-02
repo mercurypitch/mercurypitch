@@ -44,6 +44,26 @@ describe('fitMelodyToRange', () => {
     }
   })
 
+  it('expands sub-octave ranges instead of collapsing melodies', () => {
+    // A beginner range of just 4 semitones: notes must stay distinct (no
+    // clamp pile-up) and the Perseus pin must survive, at the cost of tones
+    // slightly outside the detected range (scoring octave-folds anyway).
+    for (const melody of melodies) {
+      const midis = fitMelodyToRange(melody, 60, 64)
+      const distinctOffsets = new Set(melody.notes.map((n) => n.offset)).size
+      expect(new Set(midis).size).toBe(distinctOffsets)
+      for (const midi of midis) {
+        expect(midi).toBeGreaterThanOrEqual(52)
+        expect(midi).toBeLessThanOrEqual(72)
+      }
+    }
+    const perseus = melodies.find((m) => m.id === 'perseus')
+    if (perseus) {
+      const midis = fitMelodyToRange(perseus, 60, 64)
+      expect(((midis[0] % 12) + 12) % 12).toBe(10)
+    }
+  })
+
   it('pins the Perseus note to a B♭ whenever the range allows one', () => {
     const perseus = melodies.find((m) => m.id === 'perseus')
     expect(perseus).toBeDefined()
