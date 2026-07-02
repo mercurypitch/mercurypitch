@@ -3,6 +3,20 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.0] - 2026-07-02
+
+### Added
+
+- **Unified song bar on Singing, Piano & Guitar**: one sleek top bar with the song name, a seek timeline, a compact track list, and Import MIDI. Drop a MIDI (or Guitar Pro) file anywhere on the canvas to load it, and pick which track to play or sing against.
+- **Fuller playback for real songs**: notes sustain their full length, and large multi-track imports stay smooth.
+- **Credit packs & billing (groundwork)**: buy credit packs via Stripe checkout under Settings → Account, with your balance shown there; credits never expire. On-device features stay free.
+- **Server-side stem separation (in testing)**: songs separate on cloud GPUs in about half a minute, with stems named after your song and automatic refunds on failure.
+
+### Fixed
+
+- Leaving a practice tab now stops its playback and mic instead of running on invisibly.
+- The header version pill opens the changelog, and the karaoke drop zone highlights correctly while you drag a file over it.
+
 ## [0.5.3] - 2026-07-02
 
 ### Added
