@@ -32,6 +32,10 @@ export const CollapsibleSection: Component<CollapsibleSectionProps> = (
         type="button"
         class={styles.header}
         aria-expanded={open()}
+        // Stable hook for the guide tour: steps use
+        // reveal='[data-collapsible="<storageKey>"]' to expand a section the
+        // user collapsed (and re-collapse it when the tour ends).
+        data-collapsible={props.storageKey}
         onClick={() => setOpen(!open())}
       >
         <span class={styles.title}>{props.title}</span>

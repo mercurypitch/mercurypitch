@@ -39,10 +39,14 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   const handleTakeTour = () => {
-    dismissWelcome()
+    // Open the guide dialog BEFORE dismissing the welcome overlay: Solid
+    // effects run synchronously on writes, and the deferred onboarding survey
+    // watches showWelcome — this order keeps a tour surface open the whole
+    // hand-off so the survey can never slip in over the tour.
     if (props.onTakeTour) {
       props.onTakeTour()
     }
+    dismissWelcome()
   }
 
   return (

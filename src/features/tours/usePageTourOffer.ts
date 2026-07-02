@@ -1,6 +1,6 @@
 import { createEffect } from 'solid-js'
 import { tabLabel } from '@/features/tabs/constants'
-import { hasPageTour, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, } from '@/stores'
+import { hasPageTour, removeNotification, removeNotificationsByChannel, showActionNotification, startPageTour, TOUR_OFFER_CHANNEL, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
 
 /**
@@ -26,6 +26,11 @@ export function usePageTourOffer(activeTab: () => ActiveTab): void {
     const key = `pitchperfect_page_tour_offered_${tab}`
     if (localStorage.getItem(key) === 'true') return
     localStorage.setItem(key, 'true')
+
+    // A running spotlight tour is what switched us to this tab (page tours
+    // navigate via requiredTab): the user is already touring it, so popping
+    // a "take a quick tour" toast on top would be noise. Count it as offered.
+    if (walkthroughActive()) return
 
     const id = showActionNotification(
       `New to ${tabLabel(tab)}? Take a quick tour.`,

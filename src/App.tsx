@@ -96,8 +96,8 @@ import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarOpen, showSelection, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -242,21 +242,10 @@ const AppShell: Component<AppProps> = (props) => {
   const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
-  // Store-backed (ui-store) so the tour engine can open the mobile sidebar.
+  // Store-backed (ui-store) so the tour engine can open the mobile sidebar
+  // and expand the desktop-collapsed rail (sidebarCollapsed lives there too).
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
-  const savedSidebarCollapsed =
-    localStorage.getItem('pitchperfect_sidebar_collapsed') === 'true'
-  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(
-    savedSidebarCollapsed,
-  )
-
-  createEffect(() => {
-    localStorage.setItem(
-      'pitchperfect_sidebar_collapsed',
-      String(sidebarCollapsed()),
-    )
-  })
 
   // Sync audio engine instrument when switching tabs
   createEffect(() => {
@@ -387,8 +376,10 @@ const AppShell: Component<AppProps> = (props) => {
   const openGuideSelection = () => setShowGuideSelection(true)
   const closeGuideSelection = () => setShowGuideSelection(false)
   const startGuideTour = (sectionIds: string[]) => {
-    closeGuideSelection()
+    // Start before closing the dialog so a tour surface stays open across the
+    // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
     startWalkthrough(sectionIds)
+    closeGuideSelection()
   }
 
   // ── Swipe to Change Tabs ──────────────────────────────────
@@ -1537,10 +1528,22 @@ const AppShell: Component<AppProps> = (props) => {
     return host !== 'localhost' && host !== '127.0.0.1' && host !== ''
   }
 
+  // True while any guide/tour surface is up: the guide-section dialog, the
+  // spotlight walkthrough, or the Learn chapter modals. The survey must never
+  // pop over these (it used to occlude a tour started from the welcome screen).
+  const tourSurfaceOpen = () =>
+    showGuideSelection() ||
+    walkthroughActive() ||
+    showSelection() ||
+    walkthroughModalOpen()
+
   // Show optional survey after welcome screen is dismissed (once per browser,
   // tracked via the persisted surveySeen flag — same as the welcome screen).
   createEffect(() => {
     if (showWelcome() || surveyChecked()) return
+    // Defer while a tour surface is open — the effect re-runs when it closes,
+    // so the survey is postponed until after the tour, not lost.
+    if (tourSurfaceOpen()) return
     setSurveyChecked(true)
     if (!surveyEnabledHere() || surveySeen()) return
     // The survey persists to the cloud, so only prompt signed-in users —
@@ -1549,8 +1552,20 @@ const AppShell: Component<AppProps> = (props) => {
     // anonymously at startup; an upgraded-then-signed-out device is not.)
     if (!hasValidToken()) return
     void import('@/db/services/survey-service').then(({ hasSubmittedSurvey }) =>
+      // Show-time snapshot reads by design: the re-arm below re-runs the
+      // effect when the tour surfaces close, so tracking isn't needed here.
+      // eslint-disable-next-line solid/reactivity
       hasSubmittedSurvey().then((already) => {
-        if (!already) setShowSurvey(true)
+        if (already) return
+        // Re-check at show time: effects run synchronously on signal writes,
+        // so "Take a Tour" dismisses the welcome (running this effect) a tick
+        // before the guide dialog opens — and the async check above widens
+        // the window further. Re-arm instead of showing over a tour.
+        if (tourSurfaceOpen()) {
+          setSurveyChecked(false)
+          return
+        }
+        setShowSurvey(true)
       }),
     )
   })

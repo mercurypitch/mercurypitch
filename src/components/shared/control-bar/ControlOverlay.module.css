@@ -66,6 +66,16 @@
   max-width: none;
 }
 
+/* Phones: the natural-width card overflows the viewport and parks controls
+   (record, share, the expand toggle) off-screen — unreachable for users and
+   for the guide tour's spotlight. Every control is flex-shrink:0 now, so
+   capping the card is safe: the inner bar scrolls horizontally instead. */
+@media (max-width: 700px) {
+  .inlineOverlay {
+    max-width: 100%;
+  }
+}
+
 @keyframes barIn {
   from {
     opacity: 0;

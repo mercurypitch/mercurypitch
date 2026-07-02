@@ -5,12 +5,13 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, Index, onCleanup, Show } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
+import { applyPersistedValue } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, startWalkthrough, } from '@/stores/app-store'
-import { activeTab, setActiveTab, setSidebarOpen } from '@/stores/ui-store'
+import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, sidebarCollapsed, } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
@@ -180,18 +181,42 @@ export const Walkthrough: Component = () => {
     onCleanup(() => window.removeEventListener('keydown', onKey))
   })
 
-  // Poll until a target element exists in the DOM
+  // An element only counts as a spotlight target when the user could actually
+  // see it: rendered, not display:none / visibility:hidden, and not inside an
+  // opacity-0 collapsed group (e.g. the control-bar "more" panel). Scrolled-
+  // out-of-viewport elements still count — scrollToTargetIfNeeded reels those
+  // in. Prevents the tour from spotlighting empty space.
+  const isVisibleTarget = (el: Element): boolean => {
+    if (!(el instanceof HTMLElement)) return true
+    if (typeof el.checkVisibility === 'function') {
+      return el.checkVisibility({
+        checkOpacity: true,
+        checkVisibilityCSS: true,
+      })
+    }
+    const r = el.getBoundingClientRect()
+    return r.width > 0 && r.height > 0
+  }
+
+  /** The step target, but only when it's genuinely visible on screen. */
+  const queryVisible = (selector: string): Element | null => {
+    const el = document.querySelector(selector)
+    return el !== null && isVisibleTarget(el) ? el : null
+  }
+
+  // Poll until a target element exists in the DOM *and* is visible.
   // Checks immediately first (0 delay) to resolve instantly if already rendered
   // Retries up to `maxAttempts` times with `intervalMs` between attempts
+  // (default budget ~1s — enough for lazy tab content and reveal animations).
   const waitForTarget = (
     selector: string,
-    maxAttempts = 10,
+    maxAttempts = 20,
     intervalMs = 50,
   ): Promise<boolean> =>
     new Promise((resolve) => {
       let attempts = 0
       const tryOnce = () => {
-        if (document.querySelector(selector)) {
+        if (queryVisible(selector) !== null) {
           resolve(true)
           return
         }
@@ -216,7 +241,7 @@ export const Walkthrough: Component = () => {
       highlightRef.style.display = 'none'
       return
     }
-    const el = document.querySelector(step.targetSelector)
+    const el = queryVisible(step.targetSelector)
     if (!el) {
       highlightRef.style.display = 'none'
       return
@@ -240,7 +265,7 @@ export const Walkthrough: Component = () => {
       step.targetSelector === ''
     )
       return
-    const el = document.querySelector(step.targetSelector)
+    const el = queryVisible(step.targetSelector)
     if (!el) return
 
     const margin = 80
@@ -293,7 +318,7 @@ export const Walkthrough: Component = () => {
     const targetSelector = step?.targetSelector
     const el =
       targetSelector !== undefined && targetSelector !== ''
-        ? document.querySelector(targetSelector)
+        ? queryVisible(targetSelector)
         : null
 
     if (el === null) {
@@ -402,9 +427,31 @@ export const Walkthrough: Component = () => {
   // A generation token cancels a stale preparation when the step changes mid-run.
   let prepGen = 0
   let tourOpenedSidebar = false
+  // Desktop: the sidebar can be collapsed to a thin rail that display:none's
+  // its content. Track when the tour expanded it so we can re-collapse after.
+  let tourExpandedSidebarRail = false
   // Collapse toggles the tour expanded (via step.reveal) so we can restore
   // them when it ends — mirrors tourOpenedSidebar.
   const tourExpandedReveals = new Set<string>()
+  // Control bars the tour un-hid (ControlOverlay persists a hidden flag per
+  // tab); re-hidden when the tour ends so the user's choice is respected.
+  const tourShownControlBars = new Set<string>()
+
+  // The floating control bars (Singing / Piano / Guitar) can be dismissed via
+  // their hide chevron, which unmounts every control the toolbar steps target.
+  // If the step's target is missing while a "show controls" pill is on screen,
+  // flip the bar's persisted hidden flag so the bar (and target) mount again.
+  // applyPersistedValue updates the live signal AND localStorage, so we can
+  // also restore the flag at tour end even if the tab has unmounted since.
+  const revealHiddenControlBar = (targetSelector: string): void => {
+    if (document.querySelector(targetSelector) !== null) return
+    const show = document.querySelector('[data-testid$="-control-show"]')
+    if (!(show instanceof HTMLElement)) return
+    const prefix = (show.dataset.testid ?? '').replace(/-control-show$/, '')
+    if (prefix === '') return
+    applyPersistedValue(`mp-${prefix}-control-hidden`, 'false')
+    tourShownControlBars.add(prefix)
+  }
 
   const prepareAndPosition = async (): Promise<void> => {
     const gen = ++prepGen
@@ -423,7 +470,20 @@ export const Walkthrough: Component = () => {
       if (want) tourOpenedSidebar = true
       // Give the drawer a frame to slide in before measuring.
       await wait(want ? 240 : 0)
+    } else if (step.inSidebar === true && sidebarCollapsed()) {
+      // Desktop: expand the collapsed rail, else the target is display:none.
+      setSidebarCollapsed(false)
+      tourExpandedSidebarRail = true
+      await wait(120) // let the sidebar re-flow before measuring
     }
+
+    // Un-hide a dismissed control bar when the step's target — or the
+    // collapse toggle the step needs first (step.reveal) — lives in it.
+    revealHiddenControlBar(
+      step.reveal !== undefined && step.reveal !== ''
+        ? step.reveal
+        : step.targetSelector,
+    )
 
     // Click through the navigation path (sub-tabs, sub-views, dropdowns).
     if (step.navigate) {
@@ -457,7 +517,15 @@ export const Walkthrough: Component = () => {
 
     if (gen !== prepGen) return
     const found = await waitForTarget(step.targetSelector)
-    if (gen !== prepGen || !found) return
+    if (gen !== prepGen) return
+    if (!found) {
+      // Target never appeared (or is invisible on this screen size): don't
+      // leave the spotlight parked on the previous step's element. Hide the
+      // highlight and centre the tooltip so the step stays readable.
+      updateHighlight()
+      updateTooltip()
+      return
+    }
     scrollToTargetIfNeeded()
     // Position immediately (scrollIntoView is synchronous) so the spotlight
     // doesn't wait on a frame — and so it still lands when rAF is throttled,
@@ -490,6 +558,10 @@ export const Walkthrough: Component = () => {
       setSidebarOpen(false)
       tourOpenedSidebar = false
     }
+    if (tourExpandedSidebarRail) {
+      setSidebarCollapsed(true)
+      tourExpandedSidebarRail = false
+    }
     if (tourExpandedReveals.size > 0) {
       for (const sel of tourExpandedReveals) {
         const toggle = document.querySelector(sel)
@@ -501,6 +573,13 @@ export const Walkthrough: Component = () => {
         }
       }
       tourExpandedReveals.clear()
+    }
+    if (tourShownControlBars.size > 0) {
+      // Persisted-flag write works even when the bar's tab has unmounted.
+      for (const prefix of tourShownControlBars) {
+        applyPersistedValue(`mp-${prefix}-control-hidden`, 'true')
+      }
+      tourShownControlBars.clear()
     }
   })
 

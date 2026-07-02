@@ -28,31 +28,34 @@ interface GuideSelectionProps {
 export const GuideSelection: Component<GuideSelectionProps> = (props) => {
   const incomplete = () => getIncompleteGuideSections()
 
+  // Always start the tour BEFORE closing this dialog: the deferred onboarding
+  // survey fires the moment no tour surface is open, and Solid effects run
+  // synchronously on writes — close-then-start would open a one-tick gap.
   const handleStartFull = () => {
-    props.onClose()
     props.onStartTour(GUIDE_SECTIONS.map((s) => s.id))
+    props.onClose()
   }
 
   const handleStartIncomplete = () => {
     const secs = incomplete()
     if (secs.length === 0) return
-    props.onClose()
     props.onStartTour(secs.map((s) => s.id))
+    props.onClose()
   }
 
   const handleStartSection = (id: string) => {
-    props.onClose()
     props.onStartTour([id])
+    props.onClose()
   }
 
   const handleStartPageTour = (tab: ActiveTab) => {
-    props.onClose()
     startPageTour(tab)
+    props.onClose()
   }
 
   const handleStartMixerTour = () => {
-    props.onClose()
     startMixerTourIfReady()
+    props.onClose()
   }
 
   // Close on Escape — only while open, and detach when closed.
