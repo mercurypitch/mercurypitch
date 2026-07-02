@@ -122,6 +122,23 @@ export const MirrorApp: Component = () => {
     audioContext = null
   }
 
+  /** Full restart back to the landing — retakes are the whole point of a
+   *  baseline+delta product, so every terminal screen offers a way back. */
+  function resetAll(): void {
+    teardownAudio()
+    starting = false
+    cardCanvas = null
+    setSession(initialSessionState())
+    setFreePhase(null)
+    setFreeResult(null)
+    setDeltaLine(null)
+    setShareStatus(null)
+    setMicError(null)
+    setMicSilent(false)
+    setRetryNotice(false)
+    setCosmicOpen(false)
+  }
+
   /** Countdown helper driving the `remaining` signal. */
   async function countdown(seconds: number): Promise<void> {
     const start = performance.now()
@@ -411,9 +428,17 @@ export const MirrorApp: Component = () => {
           </p>
           <Show when={micError()}>
             <p class="mirror-error">{micError()}</p>
-            <button class="mirror-cta" onClick={() => void start()}>
-              Try again
-            </button>
+            <div class="mirror-actions">
+              <button class="mirror-cta" onClick={() => void start()}>
+                Try again
+              </button>
+              <button
+                class="mirror-cta mirror-cta-secondary"
+                onClick={() => resetAll()}
+              >
+                Back to start
+              </button>
+            </div>
           </Show>
           <Show when={micError() === null && micChecking()}>
             <p class="mirror-dim">Checking your microphone — say "ahh"…</p>
@@ -436,6 +461,12 @@ export const MirrorApp: Component = () => {
                 onClick={() => beginFlow()}
               >
                 Continue anyway
+              </button>
+              <button
+                class="mirror-cta mirror-cta-secondary"
+                onClick={() => resetAll()}
+              >
+                Back to start
               </button>
             </div>
           </Show>
@@ -486,6 +517,7 @@ export const MirrorApp: Component = () => {
             setFreeResult(null)
             void start('free')
           }}
+          onStartOver={() => resetAll()}
           appUrl={appUrl()}
         />
       </Show>
@@ -562,6 +594,7 @@ export const MirrorApp: Component = () => {
           shareStatus={shareStatus()}
           onShare={() => void onShare()}
           onCosmic={() => setCosmicOpen(true)}
+          onStartOver={() => resetAll()}
           appUrl={appUrl()}
           voiceprintRef={(el) => {
             voiceprintHost = el
@@ -606,6 +639,7 @@ const FreeResults: Component<{
   shareStatus: string | null
   onShare: () => void
   onAgain: () => void
+  onStartOver: () => void
   appUrl: string
 }> = (props) => {
   const r = (): FreeSingResult | null => props.result
@@ -682,6 +716,12 @@ const FreeResults: Component<{
           >
             Train in MercuryPitch
           </a>
+          <button
+            class="mirror-cta mirror-cta-secondary"
+            onClick={() => props.onStartOver()}
+          >
+            Start over
+          </button>
         </div>
         <Show when={props.shareStatus}>
           <p class="mirror-dim">{props.shareStatus}</p>
@@ -705,6 +745,7 @@ const Results: Component<{
   shareStatus: string | null
   onShare: () => void
   onCosmic: () => void
+  onStartOver: () => void
   appUrl: string
   voiceprintRef: (el: HTMLDivElement) => void
 }> = (props) => {
@@ -811,6 +852,12 @@ const Results: Component<{
         >
           Train in MercuryPitch
         </a>
+        <button
+          class="mirror-cta mirror-cta-secondary"
+          onClick={() => props.onStartOver()}
+        >
+          Start over
+        </button>
       </div>
       <Show when={props.shareStatus}>
         <p class="mirror-dim">{props.shareStatus}</p>

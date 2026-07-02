@@ -406,6 +406,17 @@ describe('computeSteadiness', () => {
     expect(Math.abs(result?.driftCentsPerSec ?? 99)).toBeLessThan(1)
   })
 
+  it('is not attenuated by the detector’s 0.1 Hz rate quantization', () => {
+    // 5.71 Hz sits between FFT bins; without the rate-grid fit, ~half the
+    // vibrato variance would leak back into wobble.
+    const result = computeSteadiness(
+      tone(57, 6, { vibratoHz: 5.71, vibratoCents: 50 }),
+    )
+    expect(result?.vibrato).not.toBeNull()
+    expect(result?.wobbleSdCents).toBeLessThan(12)
+    expect(result?.score).toBeGreaterThanOrEqual(85)
+  })
+
   it('rejects periodic wobble outside the singerly rate band', () => {
     // A clean 2.5 Hz slow wobble — periodic, but below VIBRATO_MIN_HZ: it
     // must stay wobble, not be excused as vibrato.

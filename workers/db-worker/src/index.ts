@@ -631,9 +631,20 @@ async function handleMirrorEvent(
     return respond({ error: 'Payload too large' }, { status: 413 })
   }
 
+  // Chunked/HTTP2 requests may omit Content-Length — enforce the cap on the
+  // actual bytes too, before JSON.parse buffers something huge.
+  let rawBody: string
+  try {
+    rawBody = await request.text()
+  } catch {
+    return respond({ error: 'Invalid body' }, { status: 400 })
+  }
+  if (rawBody.length > 4096) {
+    return respond({ error: 'Payload too large' }, { status: 413 })
+  }
   let body: unknown
   try {
-    body = await request.json()
+    body = JSON.parse(rawBody)
   } catch {
     return respond({ error: 'Invalid JSON' }, { status: 400 })
   }
