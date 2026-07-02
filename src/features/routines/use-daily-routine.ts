@@ -1,17 +1,45 @@
 import { createMemo, createSignal } from 'solid-js'
-import { dailyRoutines, getRandomRoutine } from '@/data/routine-templates'
+import { dailyRoutines, getRoutineById } from '@/data/routine-templates'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
+import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { createPersistedSignal } from '@/lib/storage'
 import type { RoutineSegment, RoutineTemplate } from './types'
 
 const STORAGE_KEY = 'mp_daily_routine'
+const PREFS_KEY = 'mp_daily_routine_prefs'
+const RECENT_KEY = 'mp_daily_routine_recent'
 
 interface PersistedRoutine {
   templateId: string
   date: string
   completedSegments: number[]
+  /**
+   * The resolved routine, stored whole: generated routines can be
+   * length-scaled (and shared routines aren't in the registry at all), so
+   * the id alone can't reproduce them across reloads.
+   */
+  template?: RoutineTemplate
 }
+
+export type RoutineLength = 'short' | 'standard' | 'long'
+export type RoutineFocus = 'auto' | 'surprise' | string // or a template id
+
+export interface RoutinePrefs {
+  length: RoutineLength
+  focus: RoutineFocus
+}
+
+export const [routinePrefs, setRoutinePrefs] =
+  createPersistedSignal<RoutinePrefs>(PREFS_KEY, {
+    length: 'standard',
+    focus: 'auto',
+  })
+
+/** Recently generated template ids (most recent first) — rotation memory. */
+const [recentTemplateIds, setRecentTemplateIds] = createPersistedSignal<
+  string[]
+>(RECENT_KEY, [])
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
@@ -20,6 +48,77 @@ function todayStr(): string {
 // Shared persisted signal so auto-advance can update it from outside the hook
 const [routineData, setRoutineData] =
   createPersistedSignal<PersistedRoutine | null>(STORAGE_KEY, null)
+
+/** The template a persisted routine refers to (stored copy wins). */
+function resolveTemplate(p: PersistedRoutine): RoutineTemplate | null {
+  return p.template ?? getRoutineById(p.templateId) ?? null
+}
+
+/**
+ * Pick today's base template from the user's focus preference.
+ *
+ * 'auto' targets the weakest area from practice history (weak exercise →
+ * the template drilling it; weak intervals → interval work; weak pitches →
+ * range work) and falls back to rotating through templates the user hasn't
+ * seen recently. 'surprise' is the rotation alone. Anything else is a
+ * template id.
+ */
+function pickTemplate(focus: RoutineFocus): RoutineTemplate {
+  if (focus !== 'auto' && focus !== 'surprise') {
+    const specific = getRoutineById(focus)
+    if (specific) return specific
+  }
+
+  if (focus === 'auto') {
+    const report = generateWeaknessReport()
+    const weakType = report.weakExercises[0]?.type
+    if (weakType !== undefined) {
+      const drilling = dailyRoutines.find((r) =>
+        r.segments.some(
+          (s) => s.type === 'exercise' && s.config.exercise === weakType,
+        ),
+      )
+      if (drilling) return drilling
+    }
+    if (report.weakIntervals.length > 0) {
+      const t = getRoutineById('interval-focus')
+      if (t) return t
+    }
+    if (report.weakPitches.length > 0) {
+      const t = getRoutineById('range-focus')
+      if (t) return t
+    }
+  }
+
+  // Rotation: prefer templates not generated recently.
+  const recent = recentTemplateIds()
+  const fresh = dailyRoutines.filter((r) => !recent.includes(r.id))
+  const pool = fresh.length > 0 ? fresh : dailyRoutines
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+const LENGTH_FACTOR: Record<RoutineLength, number> = {
+  short: 0.6,
+  standard: 1,
+  long: 1.4,
+}
+
+/** Scale a template to the preferred session length. */
+function applyLength(
+  template: RoutineTemplate,
+  length: RoutineLength,
+): RoutineTemplate {
+  if (length === 'standard') return template
+  const factor = LENGTH_FACTOR[length]
+  const segments = template.segments
+    // A short session keeps the core work and drops the challenge detour.
+    .filter((s) => length !== 'short' || s.type !== 'challenge-prep')
+    .map((s) => ({
+      ...s,
+      durationSec: Math.max(30, Math.round((s.durationSec * factor) / 15) * 15),
+    }))
+  return { ...template, segments }
+}
 
 // Shared routine loaded from URL (may not be in dailyRoutines registry)
 const [_sharedRoutine, _setSharedRoutine] =
@@ -39,6 +138,7 @@ export function loadSharedRoutine(routine: RoutineTemplate): boolean {
     templateId: routine.id,
     date: todayStr(),
     completedSegments: [],
+    template: routine,
   })
   return hadProgress
 }
@@ -51,7 +151,7 @@ export function autoAdvanceRoutineSegment(exerciseType: ExerciseType): void {
   const data = routineData()
   if (!data || data.date !== todayStr()) return
 
-  const template = dailyRoutines.find((r) => r.id === data.templateId)
+  const template = resolveTemplate(data)
   if (!template) return
 
   const currentIdx = data.completedSegments.length
@@ -84,7 +184,7 @@ export function useDailyRoutine() {
     const p = persisted()
     if (p && p.date === todayStr()) {
       return (
-        dailyRoutines.find((r) => r.id === p.templateId) ??
+        resolveTemplate(p) ??
         (_sharedRoutine()?.id === p.templateId ? _sharedRoutine() : null)
       )
     }
@@ -117,11 +217,17 @@ export function useDailyRoutine() {
   })
 
   function generate(): RoutineTemplate {
-    const routine = getRandomRoutine()
+    const prefs = routinePrefs()
+    const base = pickTemplate(prefs.focus)
+    const routine = applyLength(base, prefs.length)
+    setRecentTemplateIds((prev) =>
+      [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
+    )
     setPersisted({
       templateId: routine.id,
       date: todayStr(),
       completedSegments: [],
+      template: routine,
     })
     return routine
   }

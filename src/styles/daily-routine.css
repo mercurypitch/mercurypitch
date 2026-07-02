@@ -498,3 +498,36 @@
 .celebration-btn:hover {
   opacity: 0.85;
 }
+
+/* Generation preferences (focus + length) shown before generating */
+.daily-routine-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+
+.daily-routine-pref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.daily-routine-pref span {
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.daily-routine-pref select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+}
