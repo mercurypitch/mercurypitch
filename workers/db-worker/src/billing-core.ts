@@ -79,6 +79,45 @@ export function creditBalance(rows: { delta: number }[]): number {
   return rows.reduce((sum, r) => sum + (r.delta ?? 0), 0)
 }
 
+// ── UVR job metering ─────────────────────────────────────────────────
+// A server-side separation debits the tier's per-song credit cost when the
+// job is accepted and refunds it if the job fails or is cancelled
+// (docs/plans/premium.md "Metering paid jobs"). The cost lives in the
+// pricingPlans tier rows' `credits` column — NULL/0 means the tier is not
+// metered yet and debits no-op, so the endpoints are safe to wire before
+// pricing is decided.
+
+/** pricingPlans row ids carrying each server tier's per-song credit cost. */
+export const UVR_TIER_PLAN_IDS = {
+  gpu: 'tier-runpod-gpu',
+  cpu: 'tier-runpod-cpu',
+} as const
+
+export type UvrTier = keyof typeof UVR_TIER_PLAN_IDS
+
+export function isUvrTier(value: unknown): value is UvrTier {
+  return value === 'gpu' || value === 'cpu'
+}
+
+/** Job refs are worker-issued session ids (`rp_<tier>_<runpodJobId>`); keep
+ *  the charset tight so ledger idempotency keys stay clean. */
+const JOB_REF_RE = /^[A-Za-z0-9_-]{1,200}$/
+
+export function isValidJobRef(value: unknown): value is string {
+  return typeof value === 'string' && JOB_REF_RE.test(value)
+}
+
+/** Ledger idempotency key tying a job's debit to its jobRef — a retried
+ *  debit for the same job is dropped by the UNIQUE constraint. */
+export function uvrDebitKey(jobRef: string): string {
+  return `uvr:${jobRef}`
+}
+
+/** Idempotency key for the (at most one) refund of a job's debit. */
+export function uvrRefundKey(jobRef: string): string {
+  return `uvr-refund:${jobRef}`
+}
+
 // ── Stripe webhook signature ─────────────────────────────────────────
 
 const WEBHOOK_TOLERANCE_SEC = 300

@@ -14,3 +14,11 @@ RUNPOD_ENDPOINT_ID_GPU=
 RUNPOD_ENDPOINT_ID_CPU=
 # Optional — defaults to https://api.runpod.ai/v2
 # RUNPOD_BASE_URL=
+
+# Credit metering for RunPod jobs (debit on accept, refund on failure).
+# DB_API_URL points at the db-worker (dev shown); unset = metering off.
+# BILLING_SERVICE_KEY authorizes refunds — set the SAME value on the
+# db-worker (workers/db-worker/.dev.vars). Debits no-op while the tier
+# credit costs in pricingPlans are unset.
+# DB_API_URL=https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev
+# BILLING_SERVICE_KEY=

@@ -47,7 +47,13 @@
       ],
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "d7c42a4fac32488ab199890ac050ebb8" }
-      ]
+      ],
+      // db-worker base URL — lets the worker meter RunPod jobs against the
+      // credit ledger (debits no-op until a tier's credit cost is set in
+      // pricingPlans, so this is safe to ship ahead of pricing).
+      "vars": {
+        "DB_API_URL": "https://mercury-pitch-db.komediruzecki-2015.workers.dev"
+      }
     },
     "dev": {
       "name": "mercurypitch-dev",
@@ -57,6 +63,9 @@
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" }
       ],
+      "vars": {
+        "DB_API_URL": "https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev"
+      },
       "build": {
         "command": "pnpm run build:dev"
       }

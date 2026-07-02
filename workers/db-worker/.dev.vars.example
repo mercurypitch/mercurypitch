@@ -22,3 +22,8 @@ GOOGLE_CLIENT_SECRET=
 # Optional: extra app origins allowed as returnTo targets (comma-separated).
 # Defaults already cover mercurypitch.com, dev.mercurypitch.com and localhost:3000.
 #APP_ORIGINS=
+
+# Shared secret authorizing service-to-service billing calls (the main
+# worker's UVR job refunds via X-Service-Key). Set the SAME value in the
+# main worker's env (.dev.vars / `wrangler secret put BILLING_SERVICE_KEY`).
+#BILLING_SERVICE_KEY=

@@ -9,6 +9,8 @@
 
 import type { RunpodConfig, RunpodTier } from './runpod'
 import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, submitJob, toSessionId, } from './runpod'
+import type { MeteringConfig } from './uvr-metering'
+import { debitForJob, refundJob } from './uvr-metering'
 
 // base64 inflates ~33%; RunPod's /run input cap is ~10 MB, so only inline
 // audio up to this raw size. Larger uploads must pass an `audio_url`
@@ -33,6 +35,8 @@ export async function handleRunpodRequest(
   url: URL,
   method: string,
   cfg: RunpodConfig,
+  /** Credit metering (debit on accept, refund on failure/cancel); null = off. */
+  meter: MeteringConfig | null = null,
 ): Promise<Response | null> {
   const stripped = url.pathname.replace(/^\/api\/uvr/, '')
   const match = stripped.match(
@@ -51,7 +55,7 @@ export async function handleRunpodRequest(
     const tier = resolveTier(cfg, requested)
     const endpointId = endpointFor(cfg, tier)
     if (endpointId === null) return null
-    return startRunpodJob(request, cfg, endpointId, tier)
+    return startRunpodJob(request, cfg, endpointId, tier, meter)
   }
 
   // Follow-up calls route to RunPod by the rp_<tier>_ session id, so
@@ -66,7 +70,13 @@ export async function handleRunpodRequest(
 
   if (route === 'status' && method === 'GET') {
     const status = await fetchJobStatus(cfg, endpointId, parsed.jobId)
-    return json(mapStatusToResponse(sessionId, status))
+    const mapped = mapStatusToResponse(sessionId, status)
+    // A job that ends in error never delivered — undo its debit. refundJob
+    // is idempotent per jobRef, so repeated error polls can't double-refund.
+    if (meter !== null && mapped.status === 'error') {
+      await refundJob(meter, sessionId)
+    }
+    return json(mapped)
   }
 
   if (route === 'output' && method === 'GET') {
@@ -74,7 +84,18 @@ export async function handleRunpodRequest(
   }
 
   if (route === 'session' && method === 'DELETE') {
-    await cancelJob(cfg, endpointId, parsed.jobId)
+    if (meter !== null) {
+      // Refund only when the job hadn't completed — deleting a finished
+      // session is routine cleanup, not a failure.
+      const pre = await fetchJobStatus(cfg, endpointId, parsed.jobId)
+      const mapped = mapStatusToResponse(sessionId, pre)
+      await cancelJob(cfg, endpointId, parsed.jobId)
+      if (mapped.status !== 'completed') {
+        await refundJob(meter, sessionId)
+      }
+    } else {
+      await cancelJob(cfg, endpointId, parsed.jobId)
+    }
     return json({
       status: 'success',
       message: `Session ${sessionId} cancelled`,
@@ -91,6 +112,7 @@ async function startRunpodJob(
   cfg: RunpodConfig,
   endpointId: string,
   tier: RunpodTier,
+  meter: MeteringConfig | null,
 ): Promise<Response> {
   const form = await request.formData()
   const file = form.get('file')
@@ -131,9 +153,33 @@ async function startRunpodJob(
   if (res.id === undefined || res.id === '') {
     return json({ error: res.error ?? 'RunPod did not return a job id' }, 502)
   }
+  const sessionId = toSessionId(tier, res.id)
+
+  // Debit on acceptance (premium.md): the session id is the job's ledger
+  // idempotency ref, so it can only exist after submit. If the user can't
+  // pay, kill the just-started job rather than run it for free.
+  if (meter !== null) {
+    const verdict = await debitForJob(
+      meter,
+      request.headers.get('Authorization'),
+      tier,
+      sessionId,
+    )
+    if (!verdict.allowed) {
+      await cancelJob(cfg, endpointId, res.id)
+      return json(
+        {
+          error: verdict.error ?? 'Insufficient credits',
+          required: verdict.required,
+          balance: verdict.balance,
+        },
+        402,
+      )
+    }
+  }
 
   return json({
-    session_id: toSessionId(tier, res.id),
+    session_id: sessionId,
     status: 'processing',
     message: 'Processing started',
     model: input.model,

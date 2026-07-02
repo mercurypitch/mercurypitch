@@ -31,6 +31,10 @@ export interface Env {
   STRIPE_SECRET_KEY?: string
   /** Stripe webhook signing secret (whsec_...) for /api/billing/webhook. */
   STRIPE_WEBHOOK_SECRET?: string
+  /** Shared secret authorizing service-to-service billing calls (the main
+   *  worker's job refunds via X-Service-Key). Set the SAME value on both
+   *  workers; refunds return 503 while unset. */
+  BILLING_SERVICE_KEY?: string
 }
 
 export interface AuthUser {
