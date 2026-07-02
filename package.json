@@ -17,6 +17,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:tours": "node scripts/walk-tours.mjs",
     "serve": "pnpm dlx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier src --check",

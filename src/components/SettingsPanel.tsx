@@ -208,7 +208,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Vocal Range Preset Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.voice-range">
             <h3 class={styles.settingsSectionTitle}>Singing Voice Range</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
@@ -250,7 +250,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Accuracy Tier Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.tier">
             <h3 class={styles.settingsSectionTitle}>Accuracy Tier</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
@@ -262,7 +262,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Pitch Algorithm Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.algorithm">
             <h3 class={styles.settingsSectionTitle}>Pitch Algorithm</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
@@ -515,7 +515,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* ADSR Envelope Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.adsr">
             <h3 class={styles.settingsSectionTitle}>Tone Envelope (ADSR)</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
@@ -595,7 +595,7 @@ export const SettingsPanel: Component = () => {
 
         <Show when={activeTab() === 'display'}>
           {/* Appearance */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.appearance">
             <h3 class={styles.settingsSectionTitle}>Appearance</h3>
             <div class={styles.settingsDivider} />
 
@@ -1294,7 +1294,7 @@ export const SettingsPanel: Component = () => {
           </Show>
 
           {/* About Section */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.about">
             <h3 class={styles.settingsSectionTitle}>About MercuryPitch</h3>
             <div class={styles.settingsDivider} />
             <div class={styles.aboutContent}>

@@ -282,6 +282,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         type="button"
         class={styles.btn}
         classList={{ [styles.active]: micWaveVisible() }}
+        data-testid="wave-btn"
         title="Toggle mic waveform"
         aria-label="Toggle mic waveform"
         aria-pressed={micWaveVisible()}

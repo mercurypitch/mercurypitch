@@ -140,7 +140,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </button>
 
       {/* Learn + Guide buttons */}
-      <div class={styles.walkthroughControlGroup}>
+      <div class={styles.walkthroughControlGroup} data-tour="singing.guides">
         <button
           class={styles.walkthroughControlBtn}
           onClick={() => props.onOpenLearn?.()}
@@ -370,21 +370,25 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           title="Mic & Sensitivity"
           storageKey="sidebar-mic-open"
         >
-          <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
+          <div data-tour="singing.mic-sensitivity">
+            <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
+          </div>
         </CollapsibleSection>
       </Show>
 
       {/* Daily Routine */}
-      <div class={styles.sidebarSection}>
+      <div class={styles.sidebarSection} data-tour="singing.daily-routine">
         <DailyRoutinePanel />
       </div>
 
       {/* Activity — streak calendar + practice heatmap. Recent-session scores
           moved to the top-right canvas scoreboard (SingingCanvasHud). */}
       <CollapsibleSection title="Activity" storageKey="sidebar-activity-open">
-        <StreakCalendar />
-        <div class={styles.heatmapWrapper}>
-          <CalendarHeatmap weeks={8} />
+        <div data-tour="singing.activity">
+          <StreakCalendar />
+          <div class={styles.heatmapWrapper}>
+            <CalendarHeatmap weeks={8} />
+          </div>
         </div>
       </CollapsibleSection>
 
@@ -404,7 +408,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Display & visibility toggles — last; collapsible. */}
       <CollapsibleSection title="Display" storageKey="sidebar-display-open">
-        <div class={styles.visGrid}>
+        <div class={styles.visGrid} data-tour="singing.display">
           <div class={styles.visGridCell}>
             <span class={styles.visGridLabel}>Ball</span>
             <label class={['settings-toggle', styles.visGridToggle].join(' ')}>
