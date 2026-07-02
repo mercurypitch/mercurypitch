@@ -16,6 +16,13 @@ export const [activeTab, setActiveTab] = createSignal<ActiveTab>(DEFAULT_TAB)
 // spotlight tour engine can open it to reach sidebar-anchored steps on mobile.
 export const [sidebarOpen, setSidebarOpen] = createSignal(false)
 
+// Desktop sidebar collapse (thin rail; its content is display:none). Store-
+// backed for the same reason: the tour must expand it for sidebar-anchored
+// steps and restore it afterwards. Persisted under the key (and 'true'/'false'
+// format) App.tsx historically used, so existing user prefs carry over.
+export const [sidebarCollapsed, setSidebarCollapsed] =
+  createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
+
 // Editor view within the Editor tab
 export type EditorView = 'piano-roll' | 'session-editor'
 export const [editorView, setEditorView] =

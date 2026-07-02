@@ -1031,8 +1031,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
-    // Character picker lives in the sidebar — open the mobile drawer to reach it.
+    // Character picker lives in the sidebar — open the mobile drawer to reach
+    // it, and expand the section if the user collapsed it earlier.
     inSidebar: true,
+    reveal: '[data-collapsible="sidebar-character-open"]',
   },
   {
     title: 'Scale & Key',
@@ -1043,6 +1045,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'practice',
     requiredTab: TAB_SINGING,
     inSidebar: true,
+    reveal: '[data-collapsible="sidebar-playback-open"]',
   },
   {
     title: 'Load a Melody',
@@ -1175,6 +1178,8 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'editor',
     requiredTab: TAB_COMPOSE,
     inSidebar: true,
+    // Lives in the sidebar's collapsible "Playback Setup" section.
+    reveal: '[data-collapsible="sidebar-playback-open"]',
   },
   {
     title: 'Session Editor',

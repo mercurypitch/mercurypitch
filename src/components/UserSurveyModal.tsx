@@ -72,6 +72,7 @@ const UserSurveyModal: Component<Props> = (props) => {
       role="dialog"
       aria-modal="true"
       aria-label="Quick survey"
+      data-testid="user-survey-modal"
       onClick={() => props.onClose()}
     >
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>

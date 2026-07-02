@@ -35,6 +35,14 @@ const cardVars = (index: number, offset = 0): Record<string, string> => ({
 export const PricingPanel: Component = () => {
   const [pricing] = createResource(() => fetchPricing())
 
+  // Reading an errored resource accessor re-throws into the render tree,
+  // which crashed Settings to the error screen whenever the billing API was
+  // unreachable (e.g. local dev without the db-worker running). Only touch
+  // the accessor once the resource settled without error; the error itself
+  // renders as the friendly "unavailable" note below.
+  const loadedPricing = () =>
+    !pricing.loading && pricing.error == null ? pricing() : undefined
+
   async function buy(plan: PricingPlan): Promise<void> {
     try {
       const url = await startCheckout(plan.id)
@@ -63,12 +71,14 @@ export const PricingPanel: Component = () => {
         <p class={styles.note}>Pricing is unavailable right now.</p>
       </Show>
       <Show
-        when={!pricing.loading && pricing.error == null && pricing() == null}
+        when={
+          !pricing.loading && pricing.error == null && loadedPricing() == null
+        }
       >
         <p class={styles.note}>Pricing is coming soon.</p>
       </Show>
 
-      <Show when={pricing()}>
+      <Show when={loadedPricing()}>
         {(p) => (
           <>
             <Show when={p().tiers.length > 0}>
