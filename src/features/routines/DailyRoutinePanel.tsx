@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { IconCheck, IconFire, IconTarget, IconTrophy, IconWater, } from '@/components/exercise-icons'
+import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { showNotification } from '@/stores/notifications-store'
@@ -132,6 +133,28 @@ export const DailyRoutinePanel: Component = () => {
                                     setActiveTab(TAB_CHALLENGES)
                                   }}
                                   title="Go to Challenges"
+                                >
+                                  ▶
+                                </button>
+                              )}
+                              {(seg.type === 'warmup' ||
+                                seg.type === 'cooldown') && (
+                                <button
+                                  class="daily-routine-segment-start-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // The guided warmup runs this segment's
+                                    // pattern (cool-downs map via `mode`).
+                                    startExercise(EXERCISE_WARMUP, {
+                                      pattern:
+                                        seg.config.pattern ?? seg.config.mode,
+                                    })
+                                  }}
+                                  title={
+                                    seg.type === 'warmup'
+                                      ? 'Start guided warmup'
+                                      : 'Start guided cool-down'
+                                  }
                                 >
                                   ▶
                                 </button>
