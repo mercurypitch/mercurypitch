@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
@@ -93,9 +93,15 @@ export function GuitarPage(props: GuitarPageProps) {
   })
 
   // Each practice run counts as real app usage (gates the survey).
-  createEffect(() => {
-    if (guitar.gameState() === 'playing') recordActivity()
-  })
+  // Edge-triggered via on() so the effect depends only on the game state.
+  createEffect(
+    on(
+      () => guitar.gameState(),
+      (state) => {
+        if (state === 'playing') recordActivity()
+      },
+    ),
+  )
 
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm

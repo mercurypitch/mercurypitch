@@ -22,15 +22,24 @@ export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
     props.disabledNotes?.includes(note) ?? false
 
   // Preview the picked note so users hear the target, not just read it.
-  // Re-clicking cuts the previous preview short instead of stacking voices.
+  // Re-clicking cuts the previous preview short instead of stacking voices;
+  // the generation counter covers rapid clicks that race the async engine
+  // init (a superseded preview stops itself as soon as its id resolves).
   let previewNoteId: number | undefined
+  let previewGen = 0
   const previewNote = (note: string) => {
     if (props.previewSound === false) return
     const midi = noteToMidi(note)
     if (Number.isNaN(midi)) return
+    const gen = ++previewGen
     void initAudioEngine().then(async (engine) => {
       if (previewNoteId !== undefined) engine.stopNote(previewNoteId)
-      previewNoteId = await engine.playNote(midiToFrequency(midi), PREVIEW_MS)
+      const id = await engine.playNote(midiToFrequency(midi), PREVIEW_MS)
+      if (gen !== previewGen) {
+        if (id !== undefined) engine.stopNote(id)
+        return
+      }
+      previewNoteId = id
     })
   }
   onCleanup(() => {

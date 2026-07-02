@@ -1,5 +1,5 @@
 import type { Setter, Signal } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 
 // ── Cloud-sync hooks ─────────────────────────────────────────────
 // Every persisted signal funnels writes through here, which gives the
@@ -84,11 +84,13 @@ export function createPersistedSignal<T>(
     }
   })
 
-  // eslint-disable-next-line solid/reactivity
   const setValuePersisted = ((newValue: Parameters<Setter<T>>[0]) => {
+    // Match native setter semantics: the previous value is read untracked.
+    // Without this, a functional update called inside an effect subscribes
+    // that effect to its own write — an unbounded reactive loop.
     const nextValue =
       typeof newValue === 'function'
-        ? (newValue as (prev: T) => T)(value())
+        ? (newValue as (prev: T) => T)(untrack(value))
         : newValue
 
     setValue(() => nextValue)

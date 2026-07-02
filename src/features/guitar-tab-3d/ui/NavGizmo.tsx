@@ -51,6 +51,9 @@ export function NavGizmo(props: NavGizmoProps) {
 
   let lastX = 0
   let lastY = 0
+  // Pointer-down position of a potential axis-ball click (snap gating).
+  let snapDownX = 0
+  let snapDownY = 0
   const onDown = (e: PointerEvent) => {
     setDragging(true)
     lastX = e.clientX
@@ -139,16 +142,28 @@ export function NavGizmo(props: NavGizmoProps) {
                 >
                   {a.key}
                 </text>
-                {/* Enlarged invisible hit target: a tap snaps the camera to
-                    this axis without starting an orbit drag. */}
+                {/* Enlarged invisible hit target. The pointerdown must keep
+                    propagating so a drag that starts on a ball still orbits
+                    (the facing axis projects over the dial center); the snap
+                    only fires when the pointer barely travelled — i.e. a
+                    real click/tap, not a drag release. */}
                 <circle
                   cx={a.x}
                   cy={a.y}
                   r="12"
                   fill="transparent"
                   style={{ cursor: 'pointer' }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => props.onSnapAxis(a.key)}
+                  onPointerDown={(e) => {
+                    snapDownX = e.clientX
+                    snapDownY = e.clientY
+                  }}
+                  onClick={(e) => {
+                    const travel = Math.hypot(
+                      e.clientX - snapDownX,
+                      e.clientY - snapDownY,
+                    )
+                    if (travel < 5) props.onSnapAxis(a.key)
+                  }}
                 >
                   <title>{`View along the ${a.key} axis`}</title>
                 </circle>

@@ -1114,9 +1114,13 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   // Each singing playback start counts as real app usage (gates the survey).
-  createEffect(() => {
-    if (isPlaying()) recordActivity()
-  })
+  // Edge-triggered via on(): the effect must depend only on the playing
+  // signal, never on anything recordActivity() touches.
+  createEffect(
+    on(isPlaying, (playing) => {
+      if (playing) recordActivity()
+    }),
+  )
 
   // Offer a page's spotlight tour the first time it's visited.
   usePageTourOffer(activeTab)
