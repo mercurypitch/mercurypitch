@@ -89,6 +89,11 @@ S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY") or os.getenv(
 # CDN domain). When empty, a time-limited presigned GET URL is generated.
 S3_PUBLIC_BASE_URL = os.getenv("S3_PUBLIC_BASE_URL", "").rstrip("/")
 S3_URL_TTL_SECS = int(os.getenv("S3_URL_TTL_SECS", str(24 * 3600)))
+# Key prefix inside the bucket — set per RunPod endpoint to separate
+# environments sharing one bucket (e.g. "runpod-dev" on the dev/test
+# endpoint, default "runpod" for prod). Also handy for prefix-scoped R2
+# lifecycle rules (auto-expire dev stems sooner).
+S3_KEY_PREFIX = os.getenv("S3_KEY_PREFIX", "runpod").strip("/") or "runpod"
 
 _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _VALID_FORMATS = {"WAV", "MP3", "FLAC"}
@@ -393,7 +398,7 @@ def handler(job: dict) -> dict:
                 "duration": _audio_duration(path),
             }
             if use_storage:
-                key = f"runpod/{job_id}/{name}"
+                key = f"{S3_KEY_PREFIX}/{job_id}/{name}"
                 entry["url"] = _upload_stem(path, key)
             else:
                 with open(path, "rb") as fh:

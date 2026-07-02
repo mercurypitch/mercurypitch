@@ -76,6 +76,7 @@ files; production must use storage to stay under RunPod payload limits.
 | `S3_REGION` | `auto` for R2 |
 | `S3_PUBLIC_BASE_URL` | Public/CDN base for returned URLs; if empty, presigned GETs are used |
 | `S3_URL_TTL_SECS` | Presigned URL lifetime (default 24h) |
+| `S3_KEY_PREFIX` | Key prefix inside the bucket (default `runpod`). Set per endpoint to separate environments sharing one bucket — e.g. `runpod-dev` on the dev/test endpoint — and to scope prefix-based lifecycle rules |
 
 Other tunables: `UVR_DEFAULT_MODEL`, `UVR_MODEL_DIR` (default `/models`),
 `UVR_MAX_INPUT_BYTES` (default 100 MB), `RUNPOD_GPU_USD_PER_HR` (default
