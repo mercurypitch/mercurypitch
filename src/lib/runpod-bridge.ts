@@ -25,6 +25,41 @@ function json(body: unknown, status = 200): Response {
 }
 
 /**
+ * Refuse RunPod-opted requests when RunPod is NOT configured, instead of
+ * silently falling through to the CPU container. The server option is
+ * GPU-only by design (the RunPod CPU tier comes later): a container
+ * fallback would run paid-looking jobs slower, for free and unmetered.
+ * Returns null when the request didn't opt in / isn't a RunPod session —
+ * those keep flowing to the container path as before.
+ */
+export function rejectUnconfiguredRunpod(
+  request: Request,
+  url: URL,
+  method: string,
+): Response | null {
+  const stripped = url.pathname.replace(/^\/api\/uvr/, '')
+  if (
+    method === 'POST' &&
+    stripped === '/process' &&
+    requestedRunpodTier(request, url) !== null
+  ) {
+    return json(
+      {
+        error:
+          'Server processing is not available right now. Use Browser mode instead.',
+      },
+      503,
+    )
+  }
+  // Follow-ups for rp_* sessions cannot be served without config either.
+  const m = stripped.match(/^\/(?:status|output|session)\/([^/]+)/)
+  if (m && parseSession(m[1]) !== null) {
+    return json({ error: 'Server processing is not available right now.' }, 503)
+  }
+  return null
+}
+
+/**
  * Bridge the app's /api/uvr/* contract to RunPod's serverless job API.
  * Returns a Response when it owns the request, or null to fall through to
  * the container path. Stateless: the tier + RunPod job id are carried in the
