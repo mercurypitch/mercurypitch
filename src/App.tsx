@@ -1763,6 +1763,7 @@ const AppShell: Component<AppProps> = (props) => {
                         {/* Centered over the session status bar */}
                         <MicInsightHint
                           message={micInsights.message}
+                          insight={micInsights.insight}
                           style={{
                             position: 'absolute',
                             top: '50%',

@@ -293,6 +293,7 @@ export const JamPanel: Component = () => {
               <JamPitchDisplay />
               <MicInsightHint
                 message={micInsights.message}
+                insight={micInsights.insight}
                 style={{ margin: '6px auto 0', width: 'fit-content' }}
               />
             </div>

@@ -705,6 +705,7 @@ export function GuitarPage(props: GuitarPageProps) {
       >
         <MicInsightHint
           message={micInsights.message}
+          insight={micInsights.insight}
           style={{
             position: 'absolute',
             top: '10px',
