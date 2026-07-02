@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
@@ -306,9 +306,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
 
   // Each karaoke playback counts as real app usage (gates the survey).
-  createEffect(() => {
-    if (audio.playing()) recordActivity()
-  })
+  // Edge-triggered via on() so the effect depends only on the playing flag.
+  createEffect(
+    on(audio.playing, (playing) => {
+      if (playing) recordActivity()
+    }),
+  )
 
   // ── Karaoke playlist integration ─────────────────────────────
   const [playlistSidebarOpen, setPlaylistSidebarOpen] = createPersistedSignal(

@@ -38,15 +38,22 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
     props.onSelect?.(name)
   }
 
-  const toggleInfo = (name: CharacterName, e: MouseEvent) => {
-    // Don't select the character underneath, and don't let the
-    // outside-click closer immediately undo the toggle.
-    e.stopPropagation()
+  const toggleInfo = (name: CharacterName) => {
     setInfoFor((cur) => (cur === name ? null : name))
   }
 
   onMount(() => {
-    const close = () => setInfoFor(null)
+    // Close on outside clicks by containment, NOT stopPropagation: Solid
+    // delegates onClick to a document-level listener, so both the badge's
+    // handler and this closer run on the same node and stopPropagation
+    // can't order them — a badge click would open and instantly close.
+    const close = (e: MouseEvent) => {
+      const target = e.target as Element | null
+      if (target?.closest('.character-info-badge, .character-info-panel')) {
+        return
+      }
+      setInfoFor(null)
+    }
     document.addEventListener('click', close)
     onCleanup(() => document.removeEventListener('click', close))
   })
@@ -73,7 +80,7 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
                 class="character-info-badge"
                 aria-label={`About ${CHARACTER_INFO[name].displayName}`}
                 aria-expanded={infoFor() === name}
-                onClick={(e) => toggleInfo(name, e)}
+                onClick={() => toggleInfo(name)}
               >
                 <svg
                   width="10"

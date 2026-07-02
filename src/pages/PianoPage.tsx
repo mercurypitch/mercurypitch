@@ -1,5 +1,5 @@
 import type { Accessor } from 'solid-js'
-import { createEffect, Show } from 'solid-js'
+import { createEffect, on, Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from '@/components/FallingNotesSongPicker'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -38,9 +38,15 @@ export function PianoPage(props: PianoPageProps) {
   })
 
   // Each game run counts as real app usage (gates the survey).
-  createEffect(() => {
-    if (fallingNotes.gameState() === 'playing') recordActivity()
-  })
+  // Edge-triggered via on() so the effect depends only on the game state.
+  createEffect(
+    on(
+      () => fallingNotes.gameState(),
+      (state) => {
+        if (state === 'playing') recordActivity()
+      },
+    ),
+  )
 
   return (
     <div id="falling-notes-panel">

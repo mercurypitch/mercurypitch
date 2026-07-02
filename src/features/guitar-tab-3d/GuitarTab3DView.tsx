@@ -119,7 +119,16 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       })
     })
   }
-  const resetCamera = () => animateCamera(DEFAULT_CAMERA)
+  // Yaw accumulates unbounded across orbits/flips; tween to the nearest
+  // equivalent of the default yaw so Reset glides instead of whirling back
+  // through every accumulated revolution.
+  const resetCamera = () => {
+    const c = camera()
+    animateCamera({
+      ...DEFAULT_CAMERA,
+      yaw: c.yaw + yawDelta(DEFAULT_CAMERA.yaw, c.yaw),
+    })
+  }
 
   /** Signed shortest angular distance from b to a, in (-π, π]. */
   const yawDelta = (a: number, b: number) =>
