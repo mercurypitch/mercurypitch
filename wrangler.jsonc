@@ -39,7 +39,11 @@
     "prod": {
       "name": "mercurypitch",
       "routes": [
-        { "pattern": "mercurypitch.com", "custom_domain": true }
+        { "pattern": "mercurypitch.com", "custom_domain": true },
+        // Voice Mirror standalone entry — the worker serves mirror.html at
+        // this hostname's root (src/worker.ts). custom_domain creates the
+        // DNS record automatically on deploy.
+        { "pattern": "mirror.mercurypitch.com", "custom_domain": true }
       ],
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "d7c42a4fac32488ab199890ac050ebb8" }
