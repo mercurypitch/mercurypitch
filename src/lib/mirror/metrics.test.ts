@@ -127,6 +127,21 @@ describe('preprocess', () => {
       expect(frame.cents).toBeCloseTo(6000, 0)
     }
   })
+
+  it('filters per voiced run — a short post-breath note is not erased', () => {
+    // A 2-frame C4 run isolated between long A3 runs: a GLOBAL 5-frame
+    // median would vote it back to A3; per-run filtering must keep it C4.
+    const frames = [
+      ...tone(57, 0.3),
+      ...tone(60, 0.032, { tStart: 0.8 }),
+      ...tone(57, 0.3, { tStart: 1.6 }),
+    ]
+    const shortRun = preprocess(frames).filter((f) => f.t >= 0.8 && f.t < 1.0)
+    expect(shortRun.length).toBeGreaterThan(0)
+    for (const frame of shortRun) {
+      expect(frame.cents).toBeCloseTo(6000, 0)
+    }
+  })
 })
 
 // ── §4.1 Range ───────────────────────────────────────────────
@@ -161,6 +176,18 @@ describe('computeRange', () => {
     }))
     const range = computeRange([[...clean, ...noisyTail], glide(67, 48)])
     expect(range?.lowNote).toBe('C3')
+    expect(range?.highNote).toBe('G4')
+  })
+
+  it('clips a sustained high-confidence octave error via the guard rails', () => {
+    // 0.25 s of octave-doubled frames (16 frames — survives the 5-frame
+    // median and exceeds the 150 ms dwell): only the percentile clip with
+    // its one-semitone margin can remove it.
+    const octaveError = tone(67 + 12, 0.25, { tStart: 20 })
+    const range = computeRange([
+      [...glide(40, 67), ...octaveError],
+      glide(67, 40),
+    ])
     expect(range?.highNote).toBe('G4')
   })
 
@@ -234,6 +261,28 @@ describe('scoreMatchTake', () => {
     const take = scoreMatchTake(tone(57, 2, { offsetCents: 80 }), 57)
     expect(take.locked).toBe(false)
     expect(take.band).toBe('no-voice')
+  })
+
+  it('needs LOCK_MIN_FRAMES — sparse stray frames spanning 150 ms are no lock', () => {
+    // Two isolated in-tune frames 200 ms apart: the duration criterion alone
+    // would call this a lock; the frame-count guard must reject it.
+    const sparse: F0Frame[] = [0, 0.2, 0.4, 0.6].map((t) => ({
+      t,
+      f0: centsToHz(5700),
+      conf: 0.95,
+    }))
+    const take = scoreMatchTake(sparse.slice(0, 2), 57)
+    expect(take.locked).toBe(false)
+  })
+
+  it('scores the close band (35–60 c) and reports no onset when never within ±50 c', () => {
+    // +55 c: locks (±60 tolerance) but never enters the ±50 c onset window.
+    const take = scoreMatchTake(tone(57, 2, { offsetCents: 55 }), 57)
+    expect(take.locked).toBe(true)
+    expect(take.band).toBe('close')
+    expect(take.score).toBeGreaterThan(40)
+    expect(take.score).toBeLessThan(70)
+    expect(take.onsetMs).toBeNull()
   })
 
   it('scores post-lock frames only: lock then drift lands in miss', () => {
@@ -355,6 +404,35 @@ describe('computeSteadiness', () => {
     expect(result?.wobbleSdCents).toBeLessThan(12)
     expect(result?.score).toBeGreaterThanOrEqual(85)
     expect(Math.abs(result?.driftCentsPerSec ?? 99)).toBeLessThan(1)
+  })
+
+  it('rejects periodic wobble outside the singerly rate band', () => {
+    // A clean 2.5 Hz slow wobble — periodic, but below VIBRATO_MIN_HZ: it
+    // must stay wobble, not be excused as vibrato.
+    const result = computeSteadiness(
+      tone(57, 6, { vibratoHz: 2.5, vibratoCents: 30 }),
+    )
+    expect(result?.vibrato).toBeNull()
+    expect(result?.wobbleSdCents).toBeGreaterThan(15)
+    expect(result?.score).toBeLessThan(80)
+  })
+
+  it('subtracts only the vibrato share, not coexisting real wobble', () => {
+    // 5.5 Hz vibrato PLUS slow 1.1 Hz wobble: the projection must remove the
+    // vibrato sinusoid but keep the out-of-band wobble in the score.
+    const frames = tone(57, 6).map((f, i) => {
+      const t = i * HOP
+      const cents =
+        5700 +
+        30 * Math.sin(2 * Math.PI * 5.5 * t) +
+        20 * Math.sin(2 * Math.PI * 1.1 * t)
+      return { ...f, f0: centsToHz(cents) }
+    })
+    const result = computeSteadiness(frames)
+    expect(result?.vibrato).not.toBeNull()
+    // The 1.1 Hz component (SD ≈ 14 c) must survive the subtraction.
+    expect(result?.wobbleSdCents).toBeGreaterThan(9)
+    expect(result?.score).toBeLessThan(95)
   })
 
   it('does not call aperiodic wobble vibrato', () => {

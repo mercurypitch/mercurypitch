@@ -88,7 +88,19 @@ export function fitMelodyToRange(
   lowMidi: number,
   highMidi: number,
 ): number[] {
-  const center = (lowMidi + highMidi) / 2
+  // Reference tones need at least an octave of room: folding into a
+  // sub-octave window cannot reach every pitch class (the Perseus B♭ pin),
+  // and clamping would collapse distinct melody notes onto one pitch.
+  // Scoring is octave-folded anyway (§4.2), so a tone slightly outside a
+  // very narrow detected range is still fair — and singable.
+  let lo = lowMidi
+  let hi = highMidi
+  if (hi - lo < 12) {
+    lo = Math.round(lo - (12 - (hi - lo)) / 2)
+    hi = lo + 12
+  }
+
+  const center = (lo + hi) / 2
   const meanOffset =
     melody.notes.reduce((sum, n) => sum + n.offset, 0) / melody.notes.length
   let root = Math.round(center - meanOffset)
@@ -99,10 +111,12 @@ export function fitMelodyToRange(
     root += up <= 6 ? up : up - 12
   }
 
+  // Octave-fold into the (≥ one octave) window: terminates inside it and
+  // preserves each note's pitch class.
   return melody.notes.map((note) => {
     let midi = root + note.offset
-    while (midi > highMidi) midi -= 12
-    while (midi < lowMidi) midi += 12
-    return Math.min(highMidi, Math.max(lowMidi, midi))
+    while (midi > hi) midi -= 12
+    while (midi < lo) midi += 12
+    return midi
   })
 }

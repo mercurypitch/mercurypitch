@@ -61,6 +61,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
   let cancelled = false
+  let running = false
   let sungFrames: F0Frame[] = []
 
   onCleanup(() => {
@@ -78,6 +79,10 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
 
   /** Runs one melody end-to-end. Called from the pick tap (iOS gesture). */
   async function startMelody(pick: CosmicMelody): Promise<void> {
+    // A double-tap during mic acquisition would run two flows over the same
+    // closure audio state (leaked contexts, overlapping playback).
+    if (running) return
+    running = true
     setMelody(pick)
     setResult(null)
     setShareStatus(null)
@@ -87,7 +92,23 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
       if (audioContext.state === 'suspended') await audioContext.resume()
       const stream = await micManager.acquire(MIC_CONSUMER_ID)
       f0 = createF0Stream(audioContext, stream)
+      // Same dead-input condition the guided flow guards against (iOS WebKit
+      // sample-rate silence when the context pre-dates a fresh capture):
+      // quick zero-check, one automatic rebuild with a post-capture context.
+      f0.startTask()
+      await sleep(500)
+      f0.takeFrames()
+      if (f0.maxLevel() <= 1e-6) {
+        f0.dispose()
+        await audioContext.close().catch(() => undefined)
+        audioContext = new AudioContext()
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume().catch(() => undefined)
+        }
+        f0 = createF0Stream(audioContext, micManager.getStream() ?? stream)
+      }
     } catch {
+      running = false
       teardownAudio()
       props.onBack()
       return
@@ -141,6 +162,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
     if (cancelled) return
 
     teardownAudio()
+    running = false
     setResult(computeAccuracy(takes))
     setPhase('score')
     trackFunnel('cosmic_done')

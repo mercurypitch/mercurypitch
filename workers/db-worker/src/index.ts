@@ -624,6 +624,13 @@ async function handleMirrorEvent(
     )
   }
 
+  // Funnel payloads are tiny (a UUID + an event name + 5 numbers) — reject
+  // anything bigger before parsing it into memory.
+  const contentLength = Number(request.headers.get('Content-Length') ?? '0')
+  if (contentLength > 4096) {
+    return respond({ error: 'Payload too large' }, { status: 413 })
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -635,11 +642,9 @@ async function handleMirrorEvent(
     event?: unknown
     metrics?: unknown
   }
-  if (
-    typeof clientId !== 'string' ||
-    clientId.length < 8 ||
-    clientId.length > 64
-  ) {
+  // The client always sends a UUID (or the literal 'no-storage') — enforce
+  // the shape so the clientId index stays clean for grouping/dedup.
+  if (typeof clientId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(clientId)) {
     return respond({ error: 'Invalid clientId' }, { status: 400 })
   }
   if (typeof event !== 'string' || !MIRROR_EVENTS.has(event)) {

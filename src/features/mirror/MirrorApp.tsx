@@ -96,6 +96,9 @@ export const MirrorApp: Component = () => {
   let f0: F0Stream | null = null
   let cancelled = false
   let freeTakeFrames: F0Frame[] = []
+  // Guards double-taps on Start/Try-again/Test-again: a second concurrent
+  // start would orphan AudioContexts and drive two flows over one session.
+  let starting = false
   let cardCanvas: HTMLCanvasElement | null = null
   let voiceprintHost: HTMLDivElement | undefined
 
@@ -192,7 +195,11 @@ export const MirrorApp: Component = () => {
   }
 
   function beginFlow(): void {
+    // 'Continue anyway' can race a 'Test again' rebuild — while the check is
+    // in flight, f0 may be mid-swap and a second flow could start.
+    if (starting || micChecking()) return
     setMicSilent(false)
+    setShareStatus(null)
     if (mode() === 'free') {
       void runFreeFlow()
       return
@@ -204,14 +211,23 @@ export const MirrorApp: Component = () => {
   /** Re-test from the warning screen — the tap gives WebKit a fresh user
    *  gesture, so a suspended context can resume here. */
   async function retryMicCheck(): Promise<void> {
-    await rebuildAudio()
+    if (starting || micChecking()) return
+    setMicChecking(true)
+    try {
+      await rebuildAudio()
+    } finally {
+      setMicChecking(false)
+    }
     if (await probeMic()) beginFlow()
   }
 
   /** The scariest moment is the biggest trust moment: mic + audio context are
    *  created inside this tap handler (required by iOS Safari). */
   async function start(selected: 'guided' | 'free' = mode()): Promise<void> {
+    if (starting) return
+    starting = true
     setMode(selected)
+    setShareStatus(null)
     if (selected === 'free') setFreePhase('mic')
     else dispatch({ type: 'start' })
     try {
@@ -221,6 +237,7 @@ export const MirrorApp: Component = () => {
       f0 = createF0Stream(audioContext, stream)
       trackFunnel('mic_granted')
       setMicError(null)
+      starting = false
       if (await probeMic()) {
         beginFlow()
       } else {
@@ -229,6 +246,7 @@ export const MirrorApp: Component = () => {
         setMicSilent(true)
       }
     } catch (err) {
+      starting = false
       // Without this, every denied attempt leaks an AudioContext and the
       // browser's hardware-context cap eventually blocks 'Try again'.
       teardownAudio()

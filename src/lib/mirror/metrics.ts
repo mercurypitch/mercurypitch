@@ -104,6 +104,38 @@ function percentileSorted(sorted: number[], p: number): number {
   return sorted[lo] * (1 - frac) + sorted[hi] * frac
 }
 
+/**
+ * Amplitude (cents) of a single-frequency component in a voiced series,
+ * measured by projection after OLS detrending. Broadband noise projects only
+ * weakly onto one frequency, so this isolates a true periodic modulation.
+ */
+export function sinusoidAmplitudeCents(
+  frames: readonly VoicedFrame[],
+  rateHz: number,
+): number {
+  const n = frames.length
+  if (n < 4) return 0
+  const meanT = frames.reduce((s, f) => s + f.t, 0) / n
+  const meanC = frames.reduce((s, f) => s + f.cents, 0) / n
+  let covTC = 0
+  let varT = 0
+  for (const f of frames) {
+    covTC += (f.t - meanT) * (f.cents - meanC)
+    varT += (f.t - meanT) ** 2
+  }
+  const slope = varT > 0 ? covTC / varT : 0
+  const intercept = meanC - slope * meanT
+  let re = 0
+  let im = 0
+  for (const f of frames) {
+    const residual = f.cents - (slope * f.t + intercept)
+    const phase = 2 * Math.PI * rateHz * f.t
+    re += residual * Math.cos(phase)
+    im += residual * Math.sin(phase)
+  }
+  return (2 * Math.hypot(re, im)) / n
+}
+
 /** Median inter-frame gap, used as the per-frame dwell/duration estimate. */
 function estimateHop(frames: readonly { t: number }[]): number {
   const gaps: number[] = []
@@ -510,25 +542,27 @@ export function computeSteadiness(
   const residualVariance =
     kept.reduce((s, f) => s + (f.cents - (slope * f.t + intercept)) ** 2, 0) / n
 
-  // v1.1: vibrato is a feature, not wobble. The FFT detector (3–10 Hz band)
-  // is drift-immune, so it can run on the raw hold; when a singerly-rate
-  // vibrato is found, its sinusoid variance (A²/2, A = extent/2) is
-  // subtracted from the residual before scoring.
+  // v1.1: vibrato is a feature, not wobble. The FFT detector finds the
+  // modulation RATE; the amplitude is measured here by projecting the
+  // detrended residual onto that single frequency (the analyzer's own
+  // depthCents is 2×RMS of the WHOLE signal — subtracting that would erase
+  // real wobble along with the vibrato). Broadband shakiness projects only
+  // weakly onto one frequency, so an unsteady voice stays unsteady.
   const vib = detectVibrato(
     kept.map((f) => ({ time: f.t, freq: 0, midi: f.cents / 100 })),
   )
-  // The analyzer's depthCents is 2×RMS of the modulation ≈ √2×amplitude for
-  // a sinusoid, so amplitude = depth/√2 and its variance share is A²/2.
-  const vibratoAmplitude = vib.depthCents / Math.SQRT2
-  const vibrato: VibratoInfo | null =
-    vib.detected && vib.rateHz >= VIBRATO_MIN_HZ && vib.rateHz <= VIBRATO_MAX_HZ
-      ? { rateHz: vib.rateHz, extentCents: Math.round(vibratoAmplitude) }
-      : null
+  let vibrato: VibratoInfo | null = null
   let wobble = Math.sqrt(residualVariance)
-  if (vibrato) {
-    wobble = Math.sqrt(
-      Math.max(0, residualVariance - vibratoAmplitude ** 2 / 2),
-    )
+  if (
+    vib.detected &&
+    vib.rateHz >= VIBRATO_MIN_HZ &&
+    vib.rateHz <= VIBRATO_MAX_HZ
+  ) {
+    const amplitude = sinusoidAmplitudeCents(kept, vib.rateHz)
+    if (amplitude >= 10) {
+      vibrato = { rateHz: vib.rateHz, extentCents: Math.round(amplitude) }
+      wobble = Math.sqrt(Math.max(0, residualVariance - amplitude ** 2 / 2))
+    }
   }
 
   const referenceCents = median(kept.map((f) => f.cents))

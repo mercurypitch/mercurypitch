@@ -126,6 +126,11 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           href="/mirror"
           class={styles.welcomeMirrorCta}
           aria-label="Voice Mirror — your free 60-second voiceprint"
+          onClick={() => {
+            // Persist the dismissal before the full-page navigation, so
+            // coming back from the mirror doesn't re-show this overlay.
+            dismissWelcome()
+          }}
         >
           <span class={styles.welcomeMirrorIcon} aria-hidden="true">
             ✦

@@ -12,7 +12,7 @@
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { detectVibrato } from '@/lib/vocal-analyzer'
 import type { F0Frame, RangeResult, VibratoInfo, VoicedFrame } from './metrics'
-import { centsToMidi, computeRange, median, preprocess, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, } from './metrics'
+import { BIN_DWELL_MIN_SEC, centsToMidi, median, preprocess, sinusoidAmplitudeCents, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, voiceTypeHint, } from './metrics'
 
 /** A gap this long between voiced frames is a breath / phrase boundary. */
 export const PHRASE_GAP_SEC = 0.35
@@ -28,7 +28,7 @@ export interface PhraseStats {
 }
 
 export interface FreeSingResult {
-  /** Range actually used in the take (same rails as the guided glide). */
+  /** Range actually used in the take (dwell-qualified bins, ≥150 ms). */
   range: RangeResult | null
   /** The semitone with the most dwell — where this voice "lives". */
   homeMidi: number
@@ -45,8 +45,8 @@ export interface FreeSingResult {
   voicedSeconds: number
 }
 
-/** Split voiced frames into phrases at breath-sized gaps. */
-export function splitPhrases(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
+/** All voiced runs between breath-sized gaps (unfiltered). */
+function splitRuns(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
   const runs: VoicedFrame[][] = []
   let start = 0
   for (let i = 1; i <= voiced.length; i++) {
@@ -55,7 +55,12 @@ export function splitPhrases(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
     runs.push(voiced.slice(start, i))
     start = i
   }
-  return runs.filter(
+  return runs
+}
+
+/** Split voiced frames into phrases at breath-sized gaps. */
+export function splitPhrases(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
+  return splitRuns(voiced).filter(
     (run) =>
       run.length > 1 && run[run.length - 1].t - run[0].t >= PHRASE_MIN_SEC,
   )
@@ -67,8 +72,16 @@ export function computeFreeSing(
   const voiced = preprocess(frames)
   if (voiced.length < 30) return null
 
-  // Dwell histogram per semitone (uniform-hop dwell is fine here — the
-  // histogram is only compared against itself).
+  // Per-frame duration estimate (median intra-run gap).
+  const hopGaps: number[] = []
+  for (let i = 1; i < voiced.length; i++) {
+    const gap = voiced[i].t - voiced[i - 1].t
+    if (gap > 0 && gap <= PHRASE_GAP_SEC) hopGaps.push(gap)
+  }
+  const hop = hopGaps.length > 0 ? median(hopGaps) : 0.016
+
+  // Dwell histogram per semitone — the single source of truth for the home
+  // note, the tessitura AND the range-in-use, so the three never disagree.
   const dwell = new Map<number, number>()
   for (const frame of voiced) {
     const midi = centsToMidi(frame.cents)
@@ -98,7 +111,30 @@ export function computeFreeSing(
   const tessituraLowMidi = quantileBin(0.25)
   const tessituraHighMidi = quantileBin(0.75)
 
+  // Range-in-use from the same histogram: bins with the guided test's 150 ms
+  // dwell qualify. (The glide-tuned percentile guard rails would clip real
+  // extremes on a 40 s take, so computeRange is deliberately not reused.)
+  const qualifying = bins
+    .filter(([, count]) => count * hop >= BIN_DWELL_MIN_SEC)
+    .map(([midi]) => midi)
+  const range: RangeResult | null =
+    qualifying.length > 0
+      ? {
+          lowMidi: qualifying[0],
+          highMidi: qualifying[qualifying.length - 1],
+          lowNote: midiToNoteNameOctave(qualifying[0]),
+          highNote: midiToNoteNameOctave(qualifying[qualifying.length - 1]),
+          semitones: qualifying[qualifying.length - 1] - qualifying[0],
+          qualifyingMidis: qualifying,
+          voiceHint: voiceTypeHint(
+            qualifying[0],
+            qualifying[qualifying.length - 1],
+          ),
+        }
+      : null
+
   // Phrases between breaths.
+  const allRuns = splitRuns(voiced)
   const runs = splitPhrases(voiced)
   const durations = runs.map((run) => run[run.length - 1].t - run[0].t)
   const phrases: PhraseStats | null =
@@ -134,8 +170,11 @@ export function computeFreeSing(
       pendingCount = 0
     }
   }
-  const voicedSeconds = runs.reduce(
-    (sum, run) => sum + (run[run.length - 1].t - run[0].t),
+  // Moves are counted over ALL voiced frames, so the denominator must be
+  // total voiced time (all runs), not just phrase-length runs — otherwise a
+  // staccato singer's moves would divide by (nearly) zero seconds.
+  const voicedSeconds = allRuns.reduce(
+    (sum, run) => sum + (run[run.length - 1].t - run[0].t) + hop,
     0,
   )
   const agilityMovesPerSec = voicedSeconds > 0 ? moves / voicedSeconds : 0
@@ -160,15 +199,17 @@ export function computeFreeSing(
       vib.rateHz >= VIBRATO_MIN_HZ &&
       vib.rateHz <= VIBRATO_MAX_HZ
     ) {
-      vibrato = {
-        rateHz: vib.rateHz,
-        extentCents: Math.round(vib.depthCents / Math.SQRT2),
+      // Extent by single-frequency projection — the analyzer's depthCents is
+      // 2×RMS of the whole signal and overstates on noisy/drifting takes.
+      const amplitude = sinusoidAmplitudeCents(longest, vib.rateHz)
+      if (amplitude >= 10) {
+        vibrato = { rateHz: vib.rateHz, extentCents: Math.round(amplitude) }
       }
     }
   }
 
   return {
-    range: computeRange([[...frames]]),
+    range,
     homeMidi,
     homeNote: midiToNoteNameOctave(homeMidi),
     tessituraLowMidi,
