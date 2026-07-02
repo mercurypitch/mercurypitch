@@ -355,11 +355,12 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
-      if (drill.notes.length > 0) {
+      if (drill.notes.length > 0 || drill.pattern != null) {
         setLaunchOverride(drill.exercise, {
           type: drill.exercise,
           targetNote: drill.notes[0],
-          targetNotes: drill.notes,
+          targetNotes: drill.notes.length > 0 ? drill.notes : undefined,
+          pattern: drill.pattern,
         })
       }
       setSelectedExercise(drill.exercise)

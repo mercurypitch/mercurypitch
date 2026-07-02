@@ -17,6 +17,7 @@ export const EXERCISE_CHORD_STACKER = 'chord-stacker' as const
 export const EXERCISE_STACCATO = 'staccato-precision' as const
 export const EXERCISE_ROUTINE_RUNNER = 'routine-runner' as const
 export const EXERCISE_SIGHT_SINGING = 'sight-singing' as const
+export const EXERCISE_WARMUP = 'warmup' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -36,6 +37,7 @@ export type ExerciseType =
   | typeof EXERCISE_STACCATO
   | typeof EXERCISE_ROUTINE_RUNNER
   | typeof EXERCISE_SIGHT_SINGING
+  | typeof EXERCISE_WARMUP
 
 // ── Config ──────────────────────────────────────────────────────
 
@@ -49,6 +51,8 @@ export interface ExerciseConfig {
   duration?: number
   /** Difficulty multiplier (1-10, default 5) */
   difficulty?: number
+  /** Step-pattern for pattern-driven exercises (e.g. warmup blocks) */
+  pattern?: string
 }
 
 // ── State ───────────────────────────────────────────────────────

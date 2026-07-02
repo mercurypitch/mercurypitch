@@ -20,6 +20,7 @@ import SlideExercise from '@/features/exercises/slide/SlideExercise'
 import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
+import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
 
 interface ExercisesPageProps {
   /** Exercise selection state lives in AppShell (also set by share/deep-link
@@ -46,6 +47,14 @@ export function ExercisesPage(props: ExercisesPageProps) {
           />
         }
       >
+        <Show when={props.selectedExercise() === 'warmup'}>
+          <WarmupExercise
+            audioEngine={audioEngine}
+            practiceEngine={practiceEngine}
+            onBack={props.onBack}
+            autoStart={props.autoStartExercise()}
+          />
+        </Show>
         <Show when={props.selectedExercise() === 'long-note'}>
           <LongNoteExercise
             audioEngine={audioEngine}
