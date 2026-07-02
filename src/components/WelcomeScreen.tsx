@@ -121,14 +121,25 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </button>
         </div>
 
-        {/* Voice Mirror teaser */}
-        <p style="text-align: center; font-size: 0.8rem; margin: -8px 0 16px; color: var(--text-secondary);">
-          New here?{' '}
-          <a href="/mirror" style="color: var(--text-secondary);">
-            Get your free 60-second voiceprint
-          </a>{' '}
-          — range, accuracy and steadiness, analyzed in your browser.
-        </p>
+        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account */}
+        <a
+          href="/mirror"
+          class={styles.welcomeMirrorCta}
+          aria-label="Voice Mirror — your free 60-second voiceprint"
+        >
+          <span class={styles.welcomeMirrorIcon} aria-hidden="true">
+            ✦
+          </span>
+          <span class={styles.welcomeMirrorText}>
+            <strong>Mirror your voice</strong>
+            <small>
+              Free 60-second voiceprint — your range, mapped in stars
+            </small>
+          </span>
+          <span class={styles.welcomeMirrorArrow} aria-hidden="true">
+            →
+          </span>
+        </a>
 
         {/* Mic Permission */}
         <div
