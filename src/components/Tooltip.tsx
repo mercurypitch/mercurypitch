@@ -11,11 +11,14 @@ type Placement = 'top' | 'bottom' | 'left' | 'right'
 interface TooltipProps extends ParentProps {
   text: string
   placement?: Placement
+  /** Also toggle on click/tap — hover doesn't exist on touch devices. */
+  clickToggle?: boolean
 }
 
 /**
  * Wraps children and shows a styled tooltip on hover.
  * Usage: <Tooltip text="Do something">Button</Tooltip>
+ * With `clickToggle`, a click/tap toggles it too (for touch devices).
  */
 export const Tooltip: Component<TooltipProps> = (props) => {
   const [visible, setVisible] = createSignal(false)
@@ -35,6 +38,15 @@ export const Tooltip: Component<TooltipProps> = (props) => {
     setVisible(false)
   }
 
+  const handleClick = () => {
+    if (props.clickToggle !== true) return
+    if (showTimer !== undefined) {
+      clearTimeout(showTimer)
+      showTimer = undefined
+    }
+    setVisible((v) => !v)
+  }
+
   const placementClass: Record<Placement, string> = {
     top: styles.tooltipTop,
     bottom: styles.tooltipBottom,
@@ -47,11 +59,12 @@ export const Tooltip: Component<TooltipProps> = (props) => {
       class={styles.tooltipWrapper}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       {props.children}
       <Show when={visible() && props.text}>
         <span
-          class={`${styles.tooltip} ${placementClass[placement()]}`}
+          class={`${styles.tooltip} ${placementClass[placement()]} ${styles.show}`}
           role="tooltip"
         >
           {props.text}
