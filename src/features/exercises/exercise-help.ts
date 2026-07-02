@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -16,6 +16,15 @@ export interface ExerciseHelp {
 }
 
 export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
+  [EXERCISE_WARMUP]: {
+    summary:
+      'A coached vocal warmup: breathing, hums, lip trills, sirens, and a light scale.',
+    body: [
+      'Warming up prepares your voice the way stretching prepares muscles — it protects your cords and makes everything after sound better.',
+      'Follow each step: breathe with the timer, then echo the short reference lines with hums, lip trills ("brrr"), sirens, and a gentle five-note scale.',
+      'There are no grades here — the score just reflects that you sang along. Pick the block you need, or run the full warmup before practice.',
+    ],
+  },
   [EXERCISE_LONG_NOTE]: {
     summary:
       'Hold a steady pitch as long as you can. Builds breath support and pitch stability.',

@@ -1,11 +1,11 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
-import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconFire, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -27,6 +27,7 @@ export type ExerciseDifficulty = 'easy' | 'medium' | 'hard'
 // general) — drives the difficulty badge and the Easy/Medium/Hard filter.
 // This is separate from the per-user *adaptive* level that scales scoring.
 const EXERCISE_DIFFICULTY: Record<ExerciseType, ExerciseDifficulty> = {
+  [EXERCISE_WARMUP]: 'easy',
   [EXERCISE_LONG_NOTE]: 'easy',
   [EXERCISE_PITCH_HOLD]: 'easy',
   [EXERCISE_SIREN]: 'easy',
@@ -61,6 +62,15 @@ const DIFFICULTY_FILTERS: { id: DifficultyFilter; label: string }[] = [
 ]
 
 const CARDS: ExerciseCardDef[] = [
+  {
+    type: EXERCISE_WARMUP,
+    title: 'Guided Warmup',
+    description:
+      'A coached warmup: breathing, hums, lip trills, sirens, and a light scale. Start every session here.',
+    icon: () => <IconFire size={24} />,
+    tags: ['Warm-up', 'Routine'],
+    available: true,
+  },
   {
     type: EXERCISE_LONG_NOTE,
     title: 'Long Note',

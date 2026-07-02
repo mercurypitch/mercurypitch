@@ -126,6 +126,8 @@ export interface PendingDrill {
   exercise: ExerciseType
   notes: string[]
   challengeName: string
+  /** Step-pattern for pattern-driven exercises (warmup blocks). */
+  pattern?: string
 }
 
 export const [pendingDrill, setPendingDrill] =
@@ -139,12 +141,13 @@ export function launchDrill(drill: PendingDrill): void {
 /** Launch an exercise directly (used by daily routine Start buttons) */
 export function startExercise(
   exercise: ExerciseType,
-  opts?: { notes?: string[]; challengeName?: string },
+  opts?: { notes?: string[]; challengeName?: string; pattern?: string },
 ): void {
   setPendingDrill({
     exercise,
     notes: opts?.notes ?? [],
     challengeName: opts?.challengeName ?? '',
+    pattern: opts?.pattern,
   })
   setActiveTab(TAB_EXERCISES)
 }

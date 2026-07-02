@@ -56,3 +56,9 @@ export function launchTargetNotes(type: ExerciseType): string[] | undefined {
   const o = override()
   return o && o.type === type ? o.config.targetNotes : undefined
 }
+
+/** Step-pattern a launch requested for `type` (e.g. warmup block), if any. */
+export function launchPattern(type: ExerciseType): string | undefined {
+  const o = override()
+  return o && o.type === type ? o.config.pattern : undefined
+}
