@@ -228,6 +228,7 @@
 }
 
 .rangeBarLabels {
+  position: relative; /* anchors the absolutely-placed mid-scale label */
   display: flex;
   justify-content: space-between;
   width: 100%;

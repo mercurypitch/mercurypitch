@@ -50,8 +50,17 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
     }
   }
 
+  // Guards for the async mic acquisition: `disposed` releases a mic that
+  // was granted after the modal closed (permission prompts can outlive
+  // it); `acquiring` stops a Try Again double-click racing two loops.
+  let disposed = false
+  let acquiring = false
+
   /** Request the mic (if needed) and start listening automatically. */
   const begin = async () => {
+    if (acquiring) return
+    acquiring = true
+    stopLoop()
     setStep('requesting')
     setProgress(0)
     let ok = false
@@ -59,6 +68,11 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
       ok = await practiceEngine.startMic()
     } catch {
       ok = false
+    }
+    acquiring = false
+    if (disposed) {
+      practiceEngine.stopMic()
+      return
     }
     if (!ok) {
       setStep('error')
@@ -79,6 +93,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
     let goodFrames = 0
 
     const loop = () => {
+      if (disposed) return
       const level = practiceEngine.getInputLevel()
       const pitch = practiceEngine.detectPitch()
       const strong =
@@ -154,6 +169,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
   })
 
   onCleanup(() => {
+    disposed = true
     stopLoop()
     practiceEngine.stopMic()
   })

@@ -110,7 +110,16 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
     }
   }
 
+  // Guards for the async mic acquisition: `disposed` covers closing the
+  // modal while the permission prompt is pending (the granted mic must be
+  // released, not left recording into a dead component); `acquiring`
+  // covers a double-click on Start/Try Again racing two capture loops
+  // (both would pass the engine's isRecording guard while awaiting).
+  let disposed = false
+  let acquiring = false
+
   onCleanup(() => {
+    disposed = true
     stopLoop()
     practiceEngine.stopMic()
   })
@@ -118,11 +127,19 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
   const task = () => TASKS[taskIndex()]
 
   const start = async () => {
+    if (acquiring) return
+    acquiring = true
+    stopLoop()
     let ok = false
     try {
       ok = await practiceEngine.startMic()
     } catch {
       ok = false
+    }
+    acquiring = false
+    if (disposed) {
+      practiceEngine.stopMic()
+      return
     }
     if (!ok) {
       setPhase('error')
@@ -149,6 +166,7 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
     setLiveNote(null)
 
     const loop = () => {
+      if (disposed) return
       const level = practiceEngine.getInputLevel()
       const pitch = practiceEngine.detectPitch()
       const voiced =
@@ -342,7 +360,17 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
               </div>
               <div class={styles.rangeBarLabels} aria-hidden="true">
                 <span>E2</span>
-                <span>C4</span>
+                {/* C4 sits at its true position on the E2..C6 scale, not
+                    the visual midpoint (they differ by ~4.5%). */}
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: `${pct(60)}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  C4
+                </span>
                 <span>C6</span>
               </div>
 
