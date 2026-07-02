@@ -11,6 +11,8 @@ import { createMemo, createSignal, For } from 'solid-js'
 import type { CameraState } from '../renderer/camera'
 import { cameraBasis } from '../renderer/camera'
 
+export type GizmoAxis = 'X' | 'Y' | 'Z'
+
 export interface NavGizmoProps {
   camera: Accessor<CameraState>
   onOrbit: (dx: number, dy: number) => void
@@ -18,13 +20,16 @@ export interface NavGizmoProps {
   /** deltaY semantics match a wheel event: positive zooms out. */
   onZoom: (deltaY: number) => void
   onReset: () => void
+  /** Clicking an axis ball reorients the camera to look along that axis. */
+  onSnapAxis: (axis: GizmoAxis) => void
 }
 
-const AXES: { key: string; vec: [number, number, number]; color: string }[] = [
-  { key: 'X', vec: [1, 0, 0], color: '#ff5d5d' },
-  { key: 'Y', vec: [0, 1, 0], color: '#5dff8f' },
-  { key: 'Z', vec: [0, 0, 1], color: '#4dd2ff' },
-]
+const AXES: { key: GizmoAxis; vec: [number, number, number]; color: string }[] =
+  [
+    { key: 'X', vec: [1, 0, 0], color: '#ff5d5d' },
+    { key: 'Y', vec: [0, 1, 0], color: '#5dff8f' },
+    { key: 'Z', vec: [0, 0, 1], color: '#4dd2ff' },
+  ]
 const R = 30 // axis length in the gizmo's SVG units
 
 export function NavGizmo(props: NavGizmoProps) {
@@ -134,6 +139,19 @@ export function NavGizmo(props: NavGizmoProps) {
                 >
                   {a.key}
                 </text>
+                {/* Enlarged invisible hit target: a tap snaps the camera to
+                    this axis without starting an orbit drag. */}
+                <circle
+                  cx={a.x}
+                  cy={a.y}
+                  r="12"
+                  fill="transparent"
+                  style={{ cursor: 'pointer' }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => props.onSnapAxis(a.key)}
+                >
+                  <title>{`View along the ${a.key} axis`}</title>
+                </circle>
               </g>
             )
           }}
