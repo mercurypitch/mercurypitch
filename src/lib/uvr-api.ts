@@ -209,8 +209,12 @@ export async function processAudio(
       if (parsed.error !== undefined && parsed.error !== '') {
         message = parsed.error
       }
-      // The worker's metering gate refuses with 402 {error, required,
-      // balance} — turn it into something a singer can act on.
+      // Auth/metering refusals become something a singer can act on
+      // (UvrPanel upgrades these to action toasts linking to Account).
+      if (response.status === 401) {
+        message =
+          'Sign in to use cloud GPU processing — open Settings, under Account.'
+      }
       if (response.status === 402) {
         const need =
           parsed.required !== undefined

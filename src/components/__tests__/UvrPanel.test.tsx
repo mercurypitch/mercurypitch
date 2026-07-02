@@ -153,3 +153,53 @@ describe('UvrPanel Component', () => {
     })
   })
 })
+
+// ── Server mode auth gate ───────────────────────────────────────
+
+describe('Server mode auth gate', () => {
+  const defaultProps = {
+    initialView: 'upload' as const,
+    onPracticeStart: vi.fn(),
+    onExport: vi.fn(),
+    onSessionView: vi.fn(),
+    onClose: vi.fn(),
+  }
+
+  it('refuses Server mode when signed out and offers the Account link', async () => {
+    localStorage.removeItem('mp:authToken')
+    localStorage.setItem('pitchperfect_uvr-processing-mode', 'local')
+    const { notifications, setNotifications } =
+      await import('@/stores/notifications-store')
+    setNotifications([])
+
+    render(() => <UvrPanel {...defaultProps} />)
+    screen.getByTestId('uvr-mode-server').click()
+
+    expect(localStorage.getItem('pitchperfect_uvr-processing-mode')).toBe(
+      'local',
+    )
+    const toasts = notifications()
+    expect(
+      toasts.some((n) =>
+        n.message.includes('Sign in to use cloud GPU processing'),
+      ),
+    ).toBe(true)
+    expect(toasts.find((n) => n.action)?.action?.label).toBe('Open Account')
+  })
+
+  it('activates Server mode when a token is present', async () => {
+    localStorage.setItem('mp:authToken', 'jwt-token')
+    localStorage.setItem('pitchperfect_uvr-processing-mode', 'local')
+    const { setNotifications } = await import('@/stores/notifications-store')
+    setNotifications([])
+
+    render(() => <UvrPanel {...defaultProps} />)
+    screen.getByTestId('uvr-mode-server').click()
+
+    expect(localStorage.getItem('pitchperfect_uvr-processing-mode')).toBe(
+      'server',
+    )
+    localStorage.removeItem('mp:authToken')
+    localStorage.setItem('pitchperfect_uvr-processing-mode', 'local')
+  })
+})
