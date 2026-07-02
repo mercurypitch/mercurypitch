@@ -15,12 +15,14 @@
   backdrop-filter: blur(4px);
   color: var(--text-primary);
   font-size: 0.75rem;
+  line-height: 1.35;
   padding: 5px 10px;
   border-radius: 6px;
-  white-space: nowrap;
+  width: max-content;
+  max-width: 230px;
+  text-align: left;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-4px);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -29,14 +31,14 @@
 
 .tooltip.show {
   opacity: 1;
-  transform: translateY(0);
 }
 
-/* Tooltip positions */
+/* Tooltip positions — the name is where the tooltip appears
+   relative to the wrapped element. */
 .tooltipTop {
-  top: 100%;
+  bottom: calc(100% + 6px);
   left: 50%;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateX(-50%) translateY(4px);
 }
 
 .tooltipTop.show {
@@ -44,9 +46,9 @@
 }
 
 .tooltipBottom {
-  bottom: 100%;
+  top: calc(100% + 6px);
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
+  transform: translateX(-50%) translateY(-4px);
 }
 
 .tooltipBottom.show {
@@ -54,9 +56,9 @@
 }
 
 .tooltipLeft {
-  left: 100%;
+  right: calc(100% + 6px);
   top: 50%;
-  transform: translateY(-50%) translateX(-4px);
+  transform: translateY(-50%) translateX(4px);
 }
 
 .tooltipLeft.show {
@@ -64,9 +66,9 @@
 }
 
 .tooltipRight {
-  right: 100%;
+  left: calc(100% + 6px);
   top: 50%;
-  transform: translateY(-50%) translateX(4px);
+  transform: translateY(-50%) translateX(-4px);
 }
 
 .tooltipRight.show {
