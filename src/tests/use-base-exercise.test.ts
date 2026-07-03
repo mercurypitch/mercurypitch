@@ -27,7 +27,7 @@ function createMockPracticeEngine(
     stopMic: vi.fn(),
     isMicActive: vi.fn().mockReturnValue(false),
     update: vi.fn().mockReturnValue(null),
-    setCallbacks: vi.fn(),
+    addCallbacks: vi.fn().mockReturnValue(() => {}),
     getWaveformData: vi.fn().mockReturnValue(new Float32Array(1024)),
     detectPitch: vi.fn().mockReturnValue(null),
     setAlgorithm: vi.fn(),

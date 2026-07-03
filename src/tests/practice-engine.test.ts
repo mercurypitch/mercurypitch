@@ -3,7 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { centsToBand, centsToRating, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { centsToBand, centsToRating, PracticeEngine, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
 import type { AccuracyRating } from '@/types'
 
 // Default bands used in tests (matching DEFAULT_BANDS in practice-engine.ts)
@@ -175,5 +176,52 @@ describe('Rating consistency', () => {
     for (let i = 0; i < ratings.length; i++) {
       expect(ratingToScore(ratings[i])).toBe(scores[i])
     }
+  })
+})
+
+describe('PracticeEngine callback subscriptions', () => {
+  const stubAudioEngine = () =>
+    ({
+      init: () => Promise.resolve(),
+      resume: () => Promise.resolve(),
+      getSampleRate: () => 44100,
+      getBufferSize: () => 2048,
+      startMic: () => Promise.resolve(true),
+      stopMic: () => {},
+      isMicActive: () => true,
+    }) as unknown as AudioEngine
+
+  it('notifies every subscriber of mic state changes', async () => {
+    const engine = new PracticeEngine(stubAudioEngine())
+    const first: boolean[] = []
+    const second: boolean[] = []
+    engine.addCallbacks({ onMicStateChange: (active) => first.push(active) })
+    engine.addCallbacks({ onMicStateChange: (active) => second.push(active) })
+
+    await engine.startMic()
+    engine.stopMic()
+
+    // Regression: setCallbacks() used to replace the whole listener set, so
+    // the second registration (an exercise) silently disconnected the first
+    // (the app-level mic-state signal).
+    expect(first).toEqual([true, false])
+    expect(second).toEqual([true, false])
+  })
+
+  it('unsubscribing removes only that listener', async () => {
+    const engine = new PracticeEngine(stubAudioEngine())
+    const kept: boolean[] = []
+    const removed: boolean[] = []
+    engine.addCallbacks({ onMicStateChange: (active) => kept.push(active) })
+    const unsubscribe = engine.addCallbacks({
+      onMicStateChange: (active) => removed.push(active),
+    })
+
+    await engine.startMic()
+    unsubscribe()
+    engine.stopMic()
+
+    expect(kept).toEqual([true, false])
+    expect(removed).toEqual([true])
   })
 })

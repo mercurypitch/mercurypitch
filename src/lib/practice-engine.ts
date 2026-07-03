@@ -29,7 +29,7 @@ export class PracticeEngine {
   private audioEngine: AudioEngine
   private detector: PitchDetector
 
-  private callbacks: PracticeEngineCallbacks = {}
+  private callbackSets = new Set<PracticeEngineCallbacks>()
 
   // State
   private micActive = false
@@ -124,8 +124,31 @@ export class PracticeEngine {
     }
   }
 
-  setCallbacks(callbacks: PracticeEngineCallbacks): void {
-    this.callbacks = callbacks
+  /**
+   * Subscribe a callback set. Registration is additive: the app-level practice
+   * controller listens for the whole app lifetime (it keeps the shared
+   * mic-state signal in sync), while shorter-lived subsystems subscribe and
+   * unsubscribe as they mount. The old replace-wholesale setter let an
+   * exercise silently disconnect the app listener — after visiting any
+   * exercise, mic toggles elsewhere no longer updated the UI.
+   *
+   * Returns an unsubscribe function; callers with a shorter lifetime than the
+   * app must call it on cleanup.
+   */
+  addCallbacks(callbacks: PracticeEngineCallbacks): () => void {
+    this.callbackSets.add(callbacks)
+    return () => {
+      this.callbackSets.delete(callbacks)
+    }
+  }
+
+  private emit<K extends keyof PracticeEngineCallbacks>(
+    event: K,
+    ...args: Parameters<NonNullable<PracticeEngineCallbacks[K]>>
+  ): void {
+    for (const cbs of this.callbackSets) {
+      ;(cbs[event] as ((...a: typeof args) => void) | undefined)?.(...args)
+    }
   }
 
   // ── Mic ──────────────────────────────────────────────────
@@ -161,15 +184,15 @@ export class PracticeEngine {
         this.micActive = true
         this.detector.resetHistory()
         console.info('[PracticeEngine] Mic started successfully')
-        this.callbacks.onMicStateChange?.(true)
+        this.emit('onMicStateChange', true)
         return true
       }
       console.warn('[PracticeEngine] Mic start failed - access denied')
-      this.callbacks.onMicStateChange?.(false, 'Microphone access denied')
+      this.emit('onMicStateChange', false, 'Microphone access denied')
       return false
     } catch (err) {
       console.error('[PracticeEngine] Mic start error:', err)
-      this.callbacks.onMicStateChange?.(false, String(err))
+      this.emit('onMicStateChange', false, String(err))
       return false
     }
   }
@@ -182,7 +205,7 @@ export class PracticeEngine {
     console.info('[PracticeEngine] Stopping mic...')
     this.audioEngine.stopMic()
     this.micActive = false
-    this.callbacks.onMicStateChange?.(false)
+    this.emit('onMicStateChange', false)
   }
 
   isMicActive(): boolean {
@@ -258,7 +281,7 @@ export class PracticeEngine {
   /** Call this every animation frame while playing */
   update(): PitchResult | null {
     if (!this.micActive) {
-      this.callbacks.onPitchDetected?.({
+      this.emit('onPitchDetected', {
         freq: 0,
         midi: 0,
         note: '',
@@ -323,10 +346,10 @@ export class PracticeEngine {
         octave: pitch.octave,
       }
 
-      this.callbacks.onPitchDetected?.(result)
+      this.emit('onPitchDetected', result)
       return result
     } else {
-      this.callbacks.onPitchDetected?.(null)
+      this.emit('onPitchDetected', null)
       return null
     }
   }
@@ -384,7 +407,7 @@ export class PracticeEngine {
     }
 
     this.noteResults.push(result)
-    this.callbacks.onNoteComplete?.(result)
+    this.emit('onNoteComplete', result)
   }
 
   // ── Playback lifecycle ────────────────────────────────────
