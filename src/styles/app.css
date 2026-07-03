@@ -47,6 +47,17 @@
   --note-active: #58a6ff;
   --bg-inverse: #f6f8fa;
   --text-inverse: #1f2328;
+
+  /* ── Compat aliases ──
+     exercises.css (and friends) reference these names without fallbacks.
+     They were never defined, so e.g. `border: 1px solid var(--border-color)`
+     collapsed the whole shorthand (border-style: none) and pills/buttons
+     rendered as bare text. Aliased to theme tokens so they follow the
+     active theme; --accent-hover follows the light theme below. */
+  --border-color: var(--border);
+  --accent-color: var(--accent);
+  --accent-hover: #79b8ff;
+  --bg-accent: rgba(99, 102, 241, 0.12);
   color-scheme: dark;
 
   /* ── Spacing scale ──
@@ -92,6 +103,7 @@
   --accent: #0969da;
   --accent-dim: rgba(9, 105, 218, 0.12);
   --accent-glow: rgba(9, 105, 218, 0.25);
+  --accent-hover: #0a5bc4;
   --green: #1a7f37;
   --green-dim: rgba(26, 127, 55, 0.12);
   --green-glow: rgba(26, 127, 55, 0.25);
