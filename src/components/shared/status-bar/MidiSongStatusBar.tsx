@@ -14,7 +14,6 @@ import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import styles from './SongStatusBar.module.css'
-import { useControlDockOffset } from './use-control-dock-offset'
 
 interface MidiSongStatusBarProps {
   picker: MidiSongPicker
@@ -30,6 +29,11 @@ interface MidiSongStatusBarProps {
   totalBeats: () => number
   songBpm: () => number
   onSeek: (beat: number) => void
+  /**
+   * Loaded song/melody name from the controller (store-backed, so it
+   * survives page remounts; the picker's own selection state does not).
+   */
+  songName: () => string
   /** Dim the bar while the game/playback runs (hover restores it). */
   isPlaying: () => boolean
   /** Extra action chips appended to the right cluster (guitar pills etc.). */
@@ -46,10 +50,6 @@ const formatTime = (t: number): string => {
 
 export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
   const [tracksOpen, setTracksOpen] = createSignal(false)
-  let barEl: HTMLDivElement | undefined
-  // The bar's height is dynamic (wrap on narrow screens, track dock) — keep
-  // the container's top-docked control bar measured clear of it.
-  useControlDockOffset(() => barEl)
 
   // A freshly loaded multi-track song opens the dock so the mixer is
   // discoverable; single-track songs keep the bar minimal.
@@ -82,7 +82,6 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
   return (
     <>
       <div
-        ref={barEl}
         class={styles.bar}
         classList={{ [styles.dimmed]: props.isPlaying() }}
         data-tour={props.dataTour}
@@ -94,7 +93,9 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
           title="Choose a song or melody"
         >
           <span class={styles.songName}>
-            {props.picker.currentMelodyName()}
+            {props.songName() !== ''
+              ? props.songName()
+              : props.picker.currentMelodyName()}
           </span>
           <span class={styles.songChevron}>
             <ChevronDownIcon />

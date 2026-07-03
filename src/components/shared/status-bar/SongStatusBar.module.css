@@ -6,11 +6,10 @@
    ============================================================ */
 
 .bar {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  z-index: 6;
+  /* In normal flow above the canvas — HUD cards (score corners, accuracy
+     panel, the 3D status chip) keep the full canvas top to themselves. */
+  position: relative;
+  margin: 8px 8px 6px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -362,6 +361,59 @@
 
 .trackIconOff {
   color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+}
+
+/* ── Session cluster (Singing: live session / playback state) ─ */
+
+.sessionCluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.sessionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green, #3fb950);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionMeta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sessionItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionItemRest {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.sessionElapsed {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--green, #3fb950);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ── Import status line ────────────────────────────────────── */
