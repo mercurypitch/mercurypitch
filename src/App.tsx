@@ -1111,12 +1111,46 @@ const AppShell: Component<AppProps> = (props) => {
 
   // If the active tab gets filtered out (scope/UI-mode change, or a deep link
   // into a hidden tab), land on the scope's home tab instead of a blank shell.
+  //
+  // The redirect is deferred to a microtask so it never runs mid-navigation:
+  // hash dispatch and share handlers set one-shot intents (jam room to join,
+  // exercise auto-start) around their setActiveTab call, and a synchronous
+  // redirect would fire before those intents exist — leaving them stranded to
+  // go off as stale surprises when the tab becomes visible later. By microtask
+  // time the whole dispatch has finished (and the state→URL sync is no longer
+  // muted, so the hash follows the redirect too).
+  //
+  // While a tour runs the guard stands down entirely: tour steps re-assert
+  // their requiredTab, and redirecting against that is an unbounded loop.
+  // walkthroughActive is tracked, so the guard re-evaluates when it ends.
+  const appMountedAt = performance.now()
   createEffect(() => {
     const scope = practiceScope()
     const mode = uiMode()
-    if (!isTabVisible(activeTab(), scope, mode)) {
-      void handleTabChange(scopeHomeTab(scope))
-    }
+    if (walkthroughActive()) return
+    if (isTabVisible(activeTab(), scope, mode)) return
+    queueMicrotask(() => {
+      const s = untrack(practiceScope)
+      const m = untrack(uiMode)
+      if (untrack(walkthroughActive)) return
+      if (isTabVisible(untrack(activeTab), s, m)) return
+      // Drop one-shot intents aimed at the hidden tab.
+      setJamRoomToJoin(null)
+      setPendingDrill(null)
+      setAutoStartExercise(false)
+      setInitialUvrView(null)
+      setInitialUvrSessionId(null)
+      // Explain the bounce — but not during startup, where landing on the
+      // scope's home tab is the expected behavior, not a surprise.
+      if (performance.now() - appMountedAt > 2000) {
+        showNotification(
+          'That page is hidden by your App Mode settings (Settings → General).',
+          'info',
+          { channel: 'app-mode-guard' },
+        )
+      }
+      void handleTabChange(scopeHomeTab(s))
+    })
   })
 
   // ── Mic handler ────────────────────────────────────────────
