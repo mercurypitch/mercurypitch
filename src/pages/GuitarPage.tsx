@@ -92,6 +92,15 @@ export function GuitarPage(props: GuitarPageProps) {
     !isMobile(),
     { validator: (v): v is boolean => typeof v === 'boolean' },
   )
+  // Read-only mirror of the 3D HUD's dock (Tab3DHud owns/writes it) so the
+  // mic-off hint can sit opposite the HUD: when the HUD is top-docked the hint
+  // drops to the bottom, clearing a bar that grows taller as it wraps.
+  const [hud3dDock] = createPersistedSignal<'top' | 'bottom'>(
+    'gp-tab3d-hud-dock',
+    isMobile() ? 'top' : 'bottom',
+    { validator: (v): v is 'top' | 'bottom' => v === 'top' || v === 'bottom' },
+  )
+
   // Audio input/output device picker panel.
   const [devicesOpen, setDevicesOpen] = createSignal(false)
   // Recent run scores (%), most-recent-first, for the 3D corner score card.
@@ -703,7 +712,13 @@ export function GuitarPage(props: GuitarPageProps) {
         id="guitar-fretboard-container"
         data-tour="guitar.fretboard"
         ref={dropZone.bind}
-        style={{ position: 'relative' }}
+        style={{
+          position: 'relative',
+          // Reserve headroom for the top-docked floating control bar so it
+          // sits above the fret grid instead of over the top string. The 3D
+          // view has no floating bar (its own HUD floats), so no reserve.
+          'padding-top': guitarView() === '3d' ? undefined : '60px',
+        }}
       >
         <Show when={dropZone.isDragOver()}>
           <div class={barStyles.dropOverlay}>
@@ -772,12 +787,16 @@ export function GuitarPage(props: GuitarPageProps) {
           insight={micInsights.insight}
           style={{
             position: 'absolute',
-            // Below the top-docked control bar.
-            top: '68px',
             left: '50%',
             transform: 'translateX(-50%)',
             'z-index': '6',
             'white-space': 'nowrap',
+            // Clear the top chrome: the floating control bar (fretboard/hero
+            // sit at top:68px below it), or — in 3D with the HUD docked top —
+            // drop to the bottom, which is free and immune to HUD wrap.
+            ...(guitarView() === '3d' && hud3dDock() === 'top'
+              ? { bottom: '14px' }
+              : { top: '68px' }),
           }}
         />
         <Show
@@ -901,6 +920,50 @@ export function GuitarPage(props: GuitarPageProps) {
             singTargetMidi={singToFretboard.targetMidi}
           />
         </Show>
+
+        {/* Finished-run score: a non-blocking corner card (same pattern as
+            Piano and Guitar-3D) instead of a modal — the fretboard stays
+            visible behind it. Inside the container so it anchors to the
+            canvas; 3D keeps its own HUD card. */}
+        <Show when={guitar.gameState() === 'finished' && guitarView() !== '3d'}>
+          {(() => {
+            const pct = () => {
+              const t = guitar.totalNotes()
+              return t > 0 ? Math.round((guitar.score() / (t * 100)) * 100) : 0
+            }
+            const grade = () =>
+              pct() >= 90
+                ? 'Pitch Perfect!'
+                : pct() >= 80
+                  ? 'Excellent!'
+                  : pct() >= 65
+                    ? 'Good!'
+                    : pct() >= 50
+                      ? 'Okay!'
+                      : 'Keep Practicing!'
+            return (
+              <div class="fn-score-corner" aria-label="Run score">
+                <span class="fn-score-corner-title">Complete</span>
+                <span class="fn-score-corner-pct">{pct()}%</span>
+                <span class="fn-score-corner-grade">{grade()}</span>
+                <span class="fn-score-corner-detail">
+                  {guitar.totalNotes()} notes · Max Combo: {guitar.maxCombo()}x
+                </span>
+                <div class="fn-score-corner-actions">
+                  <button
+                    class="fn-btn fn-btn-play"
+                    onClick={() => void guitar.startGame()}
+                  >
+                    Play Again
+                  </button>
+                  <button class="fn-btn fn-btn-close" onClick={guitar.stopGame}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+        </Show>
       </div>
 
       <Show
@@ -912,51 +975,6 @@ export function GuitarPage(props: GuitarPageProps) {
         }
       >
         <DrumMachinePanel drumMachine={drumMachine} />
-      </Show>
-      <Show when={guitar.gameState() === 'finished' && guitarView() !== '3d'}>
-        <div class="gp-score-overlay">
-          <div class="gp-score-card">
-            <h2>Complete!</h2>
-            <div class="gp-score-grade">
-              {(() => {
-                const s = guitar.score()
-                const t = guitar.totalNotes()
-                const pct = t > 0 ? Math.round((s / (t * 100)) * 100) : 0
-                return pct >= 90
-                  ? 'Pitch Perfect!'
-                  : pct >= 80
-                    ? 'Excellent!'
-                    : pct >= 65
-                      ? 'Good!'
-                      : pct >= 50
-                        ? 'Okay!'
-                        : 'Keep Practicing!'
-              })()}
-            </div>
-            <div class="gp-score-pct">
-              {guitar.totalNotes() > 0
-                ? Math.round(
-                    (guitar.score() / (guitar.totalNotes() * 100)) * 100,
-                  )
-                : 0}
-              %
-            </div>
-            <div class="gp-score-detail">
-              {guitar.totalNotes()} notes · Max Combo: {guitar.maxCombo()}x
-            </div>
-            <div class="gp-score-actions">
-              <button
-                class="gp-btn gp-btn-play"
-                onClick={() => void guitar.startGame()}
-              >
-                Play Again
-              </button>
-              <button class="gp-btn gp-btn-close" onClick={guitar.stopGame}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
       </Show>
     </div>
   )
