@@ -64,8 +64,10 @@ interface ControlOverlayProps {
   inline?: boolean
   /**
    * Initial dock side before the user has chosen one (the choice persists per
-   * device). Defaults to bottom on desktop / top on small/touch. Piano sets
-   * this to 'top' so the bar doesn't sit over the keyboard at the canvas foot.
+   * device). Defaults to bottom on desktop / top on small/touch. Piano and
+   * Singing set this to 'top' — Piano so the bar doesn't sit over the keyboard
+   * at the canvas foot, Singing so it doesn't fight the bottom-centre
+   * notification toasts.
    */
   defaultDock?: Dock
 }
