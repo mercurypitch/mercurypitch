@@ -610,9 +610,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     animFrameId = requestAnimationFrame(loop)
   }
 
+  // updateArc runs once per RAF frame — building the playable list there
+  // (copy + sort + wrap of every melody item) made each frame O(n log n)
+  // with ~2n allocations, which froze the canvas on 10k-note MIDI imports.
+  // Rebuild only when the melody actually changes.
+  const playableNotes = createMemo(() => buildPlayable(props.melody()))
+
   // Quadratic Bezier arc physics — call once per RAF frame
   const updateArc = (now: number) => {
-    const melody = props.melody()
     const beat = props.currentBeat()
     if (!props.isPlaying?.() || props.isPaused?.()) return
     // Count-in arc: ball sweeps from left edge toward first note
@@ -621,7 +626,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const h = canvasRef.clientHeight
     const boxHalf = 11
 
-    const playable = buildPlayable(melody)
+    const playable = playableNotes()
     if (playable.length === 0) return
 
     // ---- Initial arc: find correct note for current beat ----------
@@ -1035,11 +1040,34 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     drawAccuracyHeatmap(h)
     drawTargetPitch(h)
 
+    // Dense scenes (large MIDI imports put hundreds of notes in the visible
+    // window at once) drop the per-note gradient/label treatment below —
+    // it costs several ms per frame at that count and reads as noise anyway.
+    let visibleCount = 0
+    for (let j = 0; j < melody.length; j++) {
+      const it = melody[j]
+      if (
+        beatToX(it.startBeat + it.duration, w) >= -40 &&
+        beatToX(it.startBeat, w) <= w + 40
+      ) {
+        visibleCount++
+      }
+    }
+    const dense = visibleCount > 120
+
     let playableResultIndex = 0
     for (let j = 0; j < melody.length; j++) {
       const item = melody[j]
       const x1 = beatToX(item.startBeat, w)
       const x2 = beatToX(item.startBeat + item.duration, w)
+      // Off-screen cull: with imported songs (10k+ notes) the canvas path
+      // work per note dominates the frame budget — only visible notes pay
+      // it. Non-rest items still consume their result index so the
+      // played-note coloring stays aligned with noteResults.
+      if (x2 < -40 || x1 > w + 40) {
+        if (item.isRest !== true) playableResultIndex++
+        continue
+      }
       const bw = x2 - x1
       const y = freqToY(item.note.freq, h)
       if (item.isRest === true) {
@@ -1217,6 +1245,16 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             text: '#b8f0c4',
             badgeBg: 'rgba(63,185,80,0.4)',
           }
+        }
+
+        // Dense fast path: one flat fill per note, no gradients / highlight
+        // clips / outlines / labels. The active note keeps the full look.
+        if (dense && !isActive) {
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxHalf * 2, 4)
+          ctx.fillStyle = palette.fillTop
+          ctx.fill()
+          continue
         }
 
         // ── Effect shapes (slide / ease / vibrato) — replace the normal block ──
