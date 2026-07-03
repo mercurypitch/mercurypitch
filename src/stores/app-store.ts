@@ -1766,7 +1766,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & controls',
     description:
-      'Mic, play/stop, tempo and volume float over the canvas — drag the grip to dock the bar top or bottom. Toggles for a MIDI guitar, note-name labels, and showing the notes you played live here too.',
+      'Mic, play/stop, tempo and volume float over the canvas — drag the grip to slide the bar anywhere along the top or bottom edge, or click it to flip sides. Toggles for a MIDI guitar, note-name labels, and showing the notes you played live here too.',
     targetSelector: '[data-testid="guitar-control-bar"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,

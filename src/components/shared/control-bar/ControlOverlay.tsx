@@ -10,7 +10,7 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { isMobile } from '@/lib/use-viewport'
 import styles from './ControlOverlay.module.css'
@@ -108,15 +108,51 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
     `mp-${prefix}-control-hidden`,
     false,
   )
+  // Committed horizontal nudge, px from centre (0 = centred). Applied as the
+  // relatively-positioned bar's `left` — NOT a transform, so the inner
+  // <select>s don't sit under a transformed ancestor (the iOS Safari bug the
+  // flex-centre wrapper avoids). Persists per device/tab.
+  const [offsetX, setOffsetX] = createPersistedSignal<number>(
+    `mp-${prefix}-control-x`,
+    0,
+    { validator: (v): v is number => typeof v === 'number' && isFinite(v) },
+  )
+  // Live position while dragging (null when not) — kept out of the persisted
+  // signal so a drag doesn't spam localStorage / cloud sync on every move.
+  const [dragX, setDragX] = createSignal<number | null>(null)
+  const barLeft = () => dragX() ?? offsetX()
 
-  // Grip: click flips dock; drag snaps to the half it's released in.
-  let downY = 0
-  let moved = false
+  let overlayEl: HTMLDivElement | undefined
   let containerEl: HTMLElement | null = null
+
+  // Keep the bar fully on-canvas: cap the nudge to half the slack between the
+  // container and the bar (minus a small breathing gap).
+  const clampOffset = (x: number): number => {
+    const bar = overlayEl?.offsetWidth ?? 0
+    const cont = containerEl?.clientWidth ?? 0
+    if (bar === 0 || cont === 0) return x
+    const max = Math.max(0, (cont - bar) / 2 - 8)
+    return Math.max(-max, Math.min(max, x))
+  }
+  const reclamp = () => {
+    const c = clampOffset(offsetX())
+    if (c !== offsetX()) setOffsetX(c)
+  }
+
+  // Grip: click flips dock; drag repositions freely (horizontal nudge + snap to
+  // the top/bottom half it's released in).
+  let downX = 0
+  let downY = 0
+  let startOffset = 0
+  let moved = false
   const onGripDown = (e: PointerEvent) => {
+    downX = e.clientX
     downY = e.clientY
     moved = false
-    containerEl = (e.currentTarget as HTMLElement).closest(containerSelector)
+    containerEl =
+      overlayEl?.closest<HTMLElement>(containerSelector) ?? containerEl
+    startOffset = offsetX()
+    setDragX(startOffset)
     try {
       ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
     } catch {
@@ -125,17 +161,37 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
     e.preventDefault()
   }
   const onGripMove = (e: PointerEvent) => {
-    if (Math.abs(e.clientY - downY) > 4) moved = true
+    const dx = e.clientX - downX
+    const dy = e.clientY - downY
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true
+    if (dragX() !== null) setDragX(clampOffset(startOffset + dx))
   }
   const onGripUp = (e: PointerEvent) => {
     ;(e.currentTarget as Element).releasePointerCapture?.(e.pointerId)
+    const live = dragX()
+    setDragX(null)
     if (!moved) {
       setDock((d) => (d === 'top' ? 'bottom' : 'top'))
       return
     }
+    if (live !== null) setOffsetX(clampOffset(live))
     const rect = containerEl?.getBoundingClientRect()
     if (rect) setDock(e.clientY - rect.top < rect.height / 2 ? 'top' : 'bottom')
   }
+
+  // Resolve the container once mounted and re-clamp the persisted offset to the
+  // current width (a value saved on a wider viewport must not push the bar
+  // off-canvas here); keep it clamped as the container resizes.
+  onMount(() => {
+    containerEl = overlayEl?.closest<HTMLElement>(containerSelector) ?? null
+    if (!containerEl || typeof ResizeObserver === 'undefined') {
+      reclamp()
+      return
+    }
+    const ro = new ResizeObserver(() => reclamp())
+    ro.observe(containerEl)
+    onCleanup(() => ro.disconnect())
+  })
 
   return (
     <>
@@ -147,12 +203,17 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
             [styles.bottom]: dock() === 'bottom',
           }}
         >
-          <div class={styles.overlay} data-testid={`${prefix}-control-overlay`}>
+          <div
+            ref={overlayEl}
+            class={styles.overlay}
+            style={{ left: `${barLeft()}px` }}
+            data-testid={`${prefix}-control-overlay`}
+          >
             <div class={styles.chrome}>
               <button
                 type="button"
                 class={styles.grip}
-                title="Drag to move (top / bottom) · click to flip"
+                title="Drag to move · click to flip top / bottom"
                 aria-label="Move control bar"
                 onPointerDown={onGripDown}
                 onPointerMove={onGripMove}
