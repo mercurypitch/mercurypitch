@@ -3,14 +3,21 @@
 // the canvas: scale + melody + tempo + bar.beat on the left, the
 // live session/playback state in the middle (absorbing the old
 // green SessionPlayer banner: elapsed time, session item
-// progress, skip/end), and import actions on the right. Shares
-// the visual language (and stylesheet) of the Piano/Guitar bars.
+// progress, skip/end), and song actions on the right (browse
+// library/imported songs, pick the scored MIDI track, import).
+// Shares the visual language (and stylesheet) of the Piano and
+// Guitar song status bars.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
+import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
+import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
+import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { getCurrentSessionItem, practiceSession, sessionActive, sessionItemIndex, sessionMode, } from '@/stores'
+import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
+import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 
 interface SingingStatusBarProps {
   keyName: () => string
@@ -20,7 +27,10 @@ interface SingingStatusBarProps {
   currentBeat: () => number
   /** Live singing-playback signal (the controller's, not the dead store one). */
   isPlaying: () => boolean
-  onImportMidi: () => void
+  /** Song/melody picker (library melodies + imported MIDI songs). */
+  picker: MidiSongPicker
+  /** The imported MIDI song the current melody was extracted from, if any. */
+  currentSong: () => SavedMidiSong | null
   onSessionSkip: () => void
   onSessionEnd: () => void
 }
@@ -54,6 +64,7 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   const session = () => practiceSession()
   const isSequence = () => sessionMode()
   const currentItem = () => getCurrentSessionItem()
+  const trackCount = () => props.currentSong()?.tracks.length ?? 0
 
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
@@ -77,96 +88,167 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   })
 
   return (
-    <div
-      class={barStyles.bar}
-      classList={{ [barStyles.dimmed]: props.isPlaying() && !sessionActive() }}
-      data-testid="singing-status-bar"
-    >
-      <div class={barStyles.info} title={scaleLabel()}>
-        <span>{scaleLabel()}</span>
-        <Show when={props.melodyName()}>
-          {(name) => (
-            <>
-              <span class={barStyles.infoDot}>·</span>
-              <span class={barStyles.infoSecondary} title={name()}>
-                {name()}
-              </span>
-            </>
-          )}
-        </Show>
-      </div>
-      <div class={barStyles.infoMeta}>
-        <span>{props.bpm()} BPM</span>
-        <span class={barStyles.infoDot}>·</span>
-        <span class={barStyles.infoPos}>{barBeat(props.currentBeat())}</span>
-      </div>
-
-      {/* Live session / playback cluster (the old green banner). */}
-      <Show when={sessionActive()}>
-        <div class={barStyles.sessionCluster} data-testid="session-player">
-          <span
-            class={barStyles.sessionTitle}
-            data-testid="session-player-title"
-          >
-            <ClockIcon />
-            {isSequence()
-              ? (session()?.name ?? 'Session')
-              : (props.melodyName() ?? 'Melody')}
-          </span>
-          <Show when={isSequence() && session()}>
-            <span
-              class={barStyles.sessionMeta}
-              data-testid="session-player-progress"
-            >
-              Item {sessionItemIndex() + 1} of {session()!.items.length}
-            </span>
-          </Show>
-          <Show when={isSequence()}>
-            <span
-              class={barStyles.sessionItem}
-              classList={{
-                [barStyles.sessionItemRest]: currentItem()?.type === 'rest',
-              }}
-              data-testid="session-player-item"
-            >
-              {currentItem()?.type === 'rest'
-                ? `Rest — ${currentItem()?.label ?? 'pause'}`
-                : (currentItem()?.label ?? 'Loading...')}
-            </span>
-          </Show>
-          <span class={barStyles.sessionElapsed} data-testid="session-elapsed">
-            {formatElapsed(elapsed())}
-          </span>
-          <Show when={isSequence()}>
-            <button
-              class={barStyles.chipBtn}
-              data-testid="session-skip-btn"
-              onClick={() => props.onSessionSkip()}
-              title="Skip this item"
-            >
-              Skip
-            </button>
-            <button
-              class={barStyles.chipBtn}
-              data-testid="session-end-btn"
-              onClick={() => props.onSessionEnd()}
-              title="End the session"
-            >
-              End
-            </button>
+    <>
+      <div
+        class={barStyles.bar}
+        classList={{
+          [barStyles.dimmed]: props.isPlaying() && !sessionActive(),
+        }}
+        data-testid="singing-status-bar"
+      >
+        <div class={barStyles.info} title={scaleLabel()}>
+          <span>{scaleLabel()}</span>
+          <Show when={props.melodyName()}>
+            {(name) => (
+              <>
+                <span class={barStyles.infoDot}>·</span>
+                <span class={barStyles.infoSecondary} title={name()}>
+                  {name()}
+                </span>
+              </>
+            )}
           </Show>
         </div>
+        <div class={barStyles.infoMeta}>
+          <span>{props.bpm()} BPM</span>
+          <span class={barStyles.infoDot}>·</span>
+          <span class={barStyles.infoPos}>{barBeat(props.currentBeat())}</span>
+        </div>
+
+        {/* Live session / playback cluster (the old green banner). */}
+        <Show when={sessionActive()}>
+          <div class={barStyles.sessionCluster} data-testid="session-player">
+            <span
+              class={barStyles.sessionTitle}
+              data-testid="session-player-title"
+            >
+              <ClockIcon />
+              {isSequence()
+                ? (session()?.name ?? 'Session')
+                : (props.melodyName() ?? 'Melody')}
+            </span>
+            <Show when={isSequence() && session()}>
+              <span
+                class={barStyles.sessionMeta}
+                data-testid="session-player-progress"
+              >
+                Item {sessionItemIndex() + 1} of {session()!.items.length}
+              </span>
+            </Show>
+            <Show when={isSequence()}>
+              <span
+                class={barStyles.sessionItem}
+                classList={{
+                  [barStyles.sessionItemRest]: currentItem()?.type === 'rest',
+                }}
+                data-testid="session-player-item"
+              >
+                {currentItem()?.type === 'rest'
+                  ? `Rest — ${currentItem()?.label ?? 'pause'}`
+                  : (currentItem()?.label ?? 'Loading...')}
+              </span>
+            </Show>
+            <span
+              class={barStyles.sessionElapsed}
+              data-testid="session-elapsed"
+            >
+              {formatElapsed(elapsed())}
+            </span>
+            <Show when={isSequence()}>
+              <button
+                class={barStyles.chipBtn}
+                data-testid="session-skip-btn"
+                onClick={() => props.onSessionSkip()}
+                title="Skip this item"
+              >
+                Skip
+              </button>
+              <button
+                class={barStyles.chipBtn}
+                data-testid="session-end-btn"
+                onClick={() => props.onSessionEnd()}
+                title="End the session"
+              >
+                End
+              </button>
+            </Show>
+          </div>
+        </Show>
+
+        <div class={barStyles.actions}>
+          <button
+            class={barStyles.chipBtn}
+            onClick={() => props.picker.setIsModalOpen(true)}
+            title="Browse library melodies and imported MIDI songs"
+            data-testid="singing-songs-btn"
+          >
+            Songs
+          </button>
+          <Show when={trackCount() > 1}>
+            <button
+              class={barStyles.chipBtn}
+              onClick={() => {
+                const song = props.currentSong()
+                if (song) props.picker.openTrackModal(song)
+              }}
+              title="Choose which MIDI track to sing against"
+              data-testid="singing-tracks-btn"
+            >
+              Track
+              <span class={barStyles.chipCount}>{trackCount()}</span>
+            </button>
+          </Show>
+          <button
+            class={barStyles.chipBtn}
+            onClick={props.picker.importMidi}
+            title="Import a MIDI file (or drop one on the canvas)"
+          >
+            Import MIDI
+          </button>
+        </div>
+
+        <Show when={props.picker.importStatus() !== ''}>
+          <div class={barStyles.statusLine}>{props.picker.importStatus()}</div>
+        </Show>
+      </div>
+
+      <Show when={props.picker.isModalOpen()}>
+        <MidiSongSelectModal
+          prefix="fn"
+          melodies={props.picker.melodies}
+          savedSongs={savedMidiSongs}
+          selectedId={props.picker.selectedId}
+          onClose={() => props.picker.setIsModalOpen(false)}
+          onPickMelody={(id) => {
+            props.picker.setSelectedId(id)
+            props.picker.loadMelody(id)
+            props.picker.setIsModalOpen(false)
+          }}
+          onPickSaved={(s) => {
+            props.picker.loadSavedSong(s)
+            props.picker.setIsModalOpen(false)
+          }}
+          onOpenTracks={(s) => props.picker.openTrackModal(s)}
+          onDeleteSaved={(id) => props.picker.deleteSong(id)}
+        />
       </Show>
 
-      <div class={barStyles.actions}>
-        <button
-          class={barStyles.chipBtn}
-          onClick={() => props.onImportMidi()}
-          title="Import a MIDI melody (or drop a .mid file on the canvas)"
-        >
-          Import MIDI
-        </button>
-      </div>
-    </div>
+      <Show when={props.picker.trackModalSong()}>
+        {(song) => (
+          <MidiTrackPickerModal
+            song={song}
+            prefix="fn"
+            radioName="singing-score-track"
+            pendingScoreId={props.picker.pendingScoreId}
+            setPendingScoreId={props.picker.setPendingScoreId}
+            pendingBackingIds={props.picker.pendingBackingIds}
+            setPendingBackingIds={props.picker.setPendingBackingIds}
+            onApply={props.picker.applyTrackSelection}
+            onClose={() => props.picker.setTrackModalSong(null)}
+            hideBacking
+          />
+        )}
+      </Show>
+    </>
   )
 }

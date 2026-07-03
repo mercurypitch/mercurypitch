@@ -78,8 +78,8 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
+import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
-import { importMelodyFromMIDI } from '@/lib/piano-roll'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -88,6 +88,7 @@ import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
+import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -106,6 +107,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
+import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
@@ -1161,39 +1163,64 @@ const AppShell: Component<AppProps> = (props) => {
     })
   })
 
-  // ── Singing melody import (button + canvas drag-and-drop) ────
-  const importSingingMelodyFile = async (file: File) => {
-    try {
-      const buffer = await file.arrayBuffer()
-      const items = importMelodyFromMIDI(new Uint8Array(buffer))
-      if (items === null || items.length === 0) {
-        showNotification('Could not parse MIDI file', 'error')
-        return
+  // ── Singing song picker (library melodies + imported MIDI songs) ────
+  // Imports go through the same picker flow as Piano/Guitar: a multi-track
+  // MIDI opens the track picker, and the CHOSEN track (not a flatten of all
+  // tracks — which buried the melody and tanked canvas/audio performance)
+  // becomes the practice melody.
+  const [singingSong, setSingingSong] = createSignal<SavedMidiSong | null>(null)
+
+  const midiNotesToMelodyItems = (notes: MidiSongNote[]): MelodyItem[] =>
+    notes.map((n, i) => {
+      const { name, octave } = midiToNote(n.midi)
+      return {
+        id: i,
+        note: { midi: n.midi, name, octave, freq: midiToFreq(n.midi) },
+        startBeat: n.startBeat,
+        duration: n.duration,
       }
-      const name = file.name.replace(/\.(mid|midi)$/i, '')
-      const created = melodyStore.createNewMelody(name)
-      const updated = melodyStore.updateMelody(created.id, { items })
-      if (updated) melodyStore.setCurrentMelody(updated)
-      showNotification(`Imported "${name}" (${items.length} notes)`, 'success')
-    } catch {
-      showNotification('Error reading MIDI file', 'error')
+    })
+
+  const handleSingingSongLoaded = (
+    items: MelodyItem[],
+    name: string,
+    songBpm: number,
+    song: SavedMidiSong | null,
+  ) => {
+    setSingingSong(song)
+    const existing = melodyStore.getAllMelodies().find((m) => m.name === name)
+    if (song === null && existing) {
+      // Library melody picked from the modal — just make it current.
+      melodyStore.setCurrentMelody(existing)
+      return
     }
+    // Imported MIDI song: upsert a library melody named after it so the
+    // singing pipeline (and the sidebar library) can see it.
+    const target = existing ?? melodyStore.createNewMelody(name)
+    const updated = melodyStore.updateMelody(target.id, {
+      items,
+      bpm: songBpm,
+    })
+    if (updated) melodyStore.setCurrentMelody(updated)
+    showNotification(`Loaded "${name}" (${items.length} notes)`, 'success')
   }
 
-  const handleSingingImportMidi = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.mid,.midi'
-    input.onchange = () => {
-      const file = input.files?.[0]
-      if (file) void importSingingMelodyFile(file)
-    }
-    input.click()
-  }
+  const singingPicker = useMidiSongPicker<MelodyItem>({
+    currentSong: singingSong,
+    fromMelodyItems: (items) => items,
+    // Singing scores a single melody line; backing tracks are not played.
+    fromScoreNotes: midiNotesToMelodyItems,
+    fromBackingNotes: () => [],
+    onSongLoaded: (items, name, songBpm, _backing, _muted, song) =>
+      handleSingingSongLoaded(items, name, songBpm, song),
+    // The singing page always has a current melody — never clobber it with
+    // the picker's first-melody auto-load on mount.
+    skipAutoLoad: () => true,
+  })
 
   const singingDropZone = useFileDropZone({
     accept: /\.(mid|midi)$/i,
-    onFiles: (files) => void importSingingMelodyFile(files[0]),
+    onFiles: (files) => void singingPicker.importMidiFile(files[0]),
     onRejected: () =>
       showNotification(
         'Drop a .mid or .midi file to load it as a melody.',
@@ -1908,7 +1935,8 @@ const AppShell: Component<AppProps> = (props) => {
                         bpm={bpm}
                         currentBeat={currentBeat}
                         isPlaying={isPlaying}
-                        onImportMidi={handleSingingImportMidi}
+                        picker={singingPicker}
+                        currentSong={singingSong}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
                       />

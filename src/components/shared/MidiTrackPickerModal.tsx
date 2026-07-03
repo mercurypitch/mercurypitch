@@ -6,7 +6,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { CloseIcon } from '@/components/shared/midi-picker-icons'
 import type { MidiSongTrack } from '@/lib/midi-song'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -23,6 +23,11 @@ interface MidiTrackPickerModalProps {
   setPendingBackingIds: (ids: Set<string>) => void
   onApply: () => void
   onClose: () => void
+  /**
+   * Hide the "Hear" (backing audio) column — the Singing page scores against
+   * a single melody line and does not play backing tracks.
+   */
+  hideBacking?: boolean
 }
 
 export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
@@ -48,11 +53,16 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
         </div>
         <div class="gp-track-legend">
           <span>
-            <strong>Score</strong>: the track you play against (falling notes)
+            <strong>Score</strong>:{' '}
+            {props.hideBacking === true
+              ? 'the track you sing against'
+              : 'the track you play against (falling notes)'}
           </span>
-          <span>
-            <strong>Hear</strong>: played as backing audio
-          </span>
+          <Show when={props.hideBacking !== true}>
+            <span>
+              <strong>Hear</strong>: played as backing audio
+            </span>
+          </Show>
         </div>
         <div class={`${props.prefix}-modal-list`}>
           <For each={props.song().tracks}>
@@ -67,28 +77,30 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                   />
                   Score
                 </label>
-                <label
-                  class="gp-track-hear"
-                  classList={{
-                    'gp-track-hear-disabled': props.pendingScoreId() === t.id,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    disabled={props.pendingScoreId() === t.id}
-                    checked={
-                      props.pendingScoreId() !== t.id &&
-                      props.pendingBackingIds().has(t.id)
-                    }
-                    onChange={(e) => {
-                      const next = new Set(props.pendingBackingIds())
-                      if (e.currentTarget.checked) next.add(t.id)
-                      else next.delete(t.id)
-                      props.setPendingBackingIds(next)
+                <Show when={props.hideBacking !== true}>
+                  <label
+                    class="gp-track-hear"
+                    classList={{
+                      'gp-track-hear-disabled': props.pendingScoreId() === t.id,
                     }}
-                  />
-                  Hear
-                </label>
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={props.pendingScoreId() === t.id}
+                      checked={
+                        props.pendingScoreId() !== t.id &&
+                        props.pendingBackingIds().has(t.id)
+                      }
+                      onChange={(e) => {
+                        const next = new Set(props.pendingBackingIds())
+                        if (e.currentTarget.checked) next.add(t.id)
+                        else next.delete(t.id)
+                        props.setPendingBackingIds(next)
+                      }}
+                    />
+                    Hear
+                  </label>
+                </Show>
                 <div class="gp-track-info">
                   <div class="gp-item-name">{t.name}</div>
                   <div class="gp-item-meta">
