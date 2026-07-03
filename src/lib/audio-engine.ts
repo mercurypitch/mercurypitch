@@ -1113,6 +1113,8 @@ export class AudioEngine {
     trillRate?: number,
     staccatoRatio?: number,
     chordIntervals?: number[],
+    /** Per-voice loudness scale (0..1, default 1) on top of master volume. */
+    gain?: number,
   ): Promise<number | undefined> {
     await this.init()
     await this.resume()
@@ -1161,7 +1163,10 @@ export class AudioEngine {
     }
 
     const voiceVolumeGain = this.audioCtx.createGain()
-    voiceVolumeGain.gain.setValueAtTime(activeVolumeMultiplier, now)
+    voiceVolumeGain.gain.setValueAtTime(
+      activeVolumeMultiplier * (gain ?? 1),
+      now,
+    )
     mainGain.connect(voiceVolumeGain)
     voiceVolumeGain.connect(this.mainGain)
 
@@ -1185,6 +1190,31 @@ export class AudioEngine {
     }
 
     return noteId
+  }
+
+  /**
+   * Short, quieter UI preview of a note (target-note pickers etc.) — a plain
+   * playNote at reduced per-voice gain so it never startles at full volume.
+   */
+  async previewNote(
+    frequency: number,
+    durationMs: number,
+    gain = 0.45,
+  ): Promise<number | undefined> {
+    return this.playNote(
+      frequency,
+      durationMs,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      gain,
+    )
   }
 
   /** Whether the current instrument is a plucked-string voice with its own natural decay */

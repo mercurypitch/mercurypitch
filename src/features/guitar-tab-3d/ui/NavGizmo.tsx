@@ -31,6 +31,13 @@ const AXES: { key: GizmoAxis; vec: [number, number, number]; color: string }[] =
     { key: 'Z', vec: [0, 0, 1], color: '#4dd2ff' },
   ]
 const R = 30 // axis length in the gizmo's SVG units
+/** SVG-unit radius around a ball's center that counts as hitting it. */
+const HIT_RADIUS = 12
+/** Max pointer travel (px) for a press to count as a tap, not a drag. */
+const TAP_SLOP_PX = 8
+/** The viewBox is "-46 -46 92 92" — used to map client px → SVG units. */
+const VIEWBOX_MIN = -46
+const VIEWBOX_SIZE = 92
 
 export function NavGizmo(props: NavGizmoProps) {
   const [panMode, setPanMode] = createSignal(false)
@@ -51,14 +58,42 @@ export function NavGizmo(props: NavGizmoProps) {
 
   let lastX = 0
   let lastY = 0
-  // Pointer-down position of a potential axis-ball click (snap gating).
-  let snapDownX = 0
-  let snapDownY = 0
+  // Tap-to-snap bookkeeping. The snap is decided entirely in the pointer
+  // stream (down position + ball hit-test, resolved on pointerup) because a
+  // synthesized `click` never reaches the axis balls on touch devices: the
+  // dial's pointerdown calls preventDefault (suppressing compatibility
+  // events) and pointer capture retargets the stream to the SVG.
+  let downX = 0
+  let downY = 0
+  let pendingSnap: GizmoAxis | null = null
+
+  /** The axis ball (if any) under the pointer, nearest-to-viewer first. */
+  const axisAtPointer = (e: PointerEvent): GizmoAxis | null => {
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
+    const x =
+      ((e.clientX - rect.left) / rect.width) * VIEWBOX_SIZE + VIEWBOX_MIN
+    const y =
+      ((e.clientY - rect.top) / rect.height) * VIEWBOX_SIZE + VIEWBOX_MIN
+    const projected = axes() // sorted far → near, so scan from the end
+    for (let i = projected.length - 1; i >= 0; i--) {
+      const a = projected[i]
+      if (Math.hypot(x - a.x, y - a.y) <= HIT_RADIUS) return a.key
+    }
+    return null
+  }
+
   const onDown = (e: PointerEvent) => {
     setDragging(true)
     lastX = e.clientX
     lastY = e.clientY
-    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    downX = e.clientX
+    downY = e.clientY
+    pendingSnap = axisAtPointer(e)
+    try {
+      ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    } catch {
+      /* stale/foreign pointerId — drag still works uncaptured */
+    }
     e.preventDefault()
   }
   const onMove = (e: PointerEvent) => {
@@ -72,7 +107,23 @@ export function NavGizmo(props: NavGizmoProps) {
   }
   const onUp = (e: PointerEvent) => {
     setDragging(false)
-    ;(e.currentTarget as Element).releasePointerCapture?.(e.pointerId)
+    try {
+      ;(e.currentTarget as Element).releasePointerCapture?.(e.pointerId)
+    } catch {
+      /* invalid pointerId (e.g. pointercancel on some Android browsers)
+         must not abort the handler — the tap-snap below still applies */
+    }
+    // A press that started on a ball and barely moved is a tap → snap.
+    // pointercancel means the gesture was aborted, never snap on it.
+    const travel = Math.hypot(e.clientX - downX, e.clientY - downY)
+    if (
+      e.type !== 'pointercancel' &&
+      pendingSnap !== null &&
+      travel < TAP_SLOP_PX
+    ) {
+      props.onSnapAxis(pendingSnap)
+    }
+    pendingSnap = null
   }
 
   return (
@@ -142,28 +193,17 @@ export function NavGizmo(props: NavGizmoProps) {
                 >
                   {a.key}
                 </text>
-                {/* Enlarged invisible hit target. The pointerdown must keep
-                    propagating so a drag that starts on a ball still orbits
-                    (the facing axis projects over the dial center); the snap
-                    only fires when the pointer barely travelled — i.e. a
-                    real click/tap, not a drag release. */}
+                {/* Desktop affordance only (cursor + tooltip). The tap→snap
+                    logic lives in the dial's own pointer handlers via
+                    hit-testing — element-level click handlers never fire on
+                    touch here (preventDefault + pointer capture suppress the
+                    synthesized click). */}
                 <circle
                   cx={a.x}
                   cy={a.y}
-                  r="12"
+                  r={HIT_RADIUS}
                   fill="transparent"
                   style={{ cursor: 'pointer' }}
-                  onPointerDown={(e) => {
-                    snapDownX = e.clientX
-                    snapDownY = e.clientY
-                  }}
-                  onClick={(e) => {
-                    const travel = Math.hypot(
-                      e.clientX - snapDownX,
-                      e.clientY - snapDownY,
-                    )
-                    if (travel < 5) props.onSnapAxis(a.key)
-                  }}
                 >
                   <title>{`View along the ${a.key} axis`}</title>
                 </circle>
