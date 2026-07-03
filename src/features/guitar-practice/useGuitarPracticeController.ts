@@ -281,6 +281,11 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   let audioJudgedIndices = new Set<string>()
   let playedIndices = new Set<string>()
   let countInTicks = 0
+  // A seek made while stopped/finished is a start position, not stale state:
+  // the next startGame() begins there instead of snapping back to beat 0.
+  let pendingStartBeat: number | null = null
+  // Where the count-in lands when it completes (startGame sets it).
+  let countdownLandBeat = 0
 
   // ── Articulation tracking ────────────────────────────────────
   // Each distinct "note event" from the player (new pitch, MIDI note-on,
@@ -477,8 +482,10 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
           }
           if (elapsedBeats >= countInBeats) {
             setGameState('playing')
-            gameStartTime = performance.now()
-            setPlayheadBeat(0)
+            // Land on the start position (0, or the beat the user seeked to
+            // while stopped) with the playing-rate anchor.
+            anchorPlaying(countdownLandBeat)
+            setPlayheadBeat(countdownLandBeat)
           }
         }
 
@@ -848,11 +855,17 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     const target = Math.max(0, Math.min(targetBeat, totalBeats()))
     setPlayheadBeat(target)
 
-    if (gameState() === 'playing') {
+    const state = gameState()
+    if (state === 'playing') {
       anchorPlaying(target)
-    } else if (gameState() === 'countdown') {
+    } else if (state === 'countdown') {
       const bps = songBpm() / 60
       gameStartTime = performance.now() - ((target + countIn()) / bps) * 1000
+      countdownLandBeat = target
+    } else if (state === 'idle' || state === 'finished') {
+      // Stopped: remember the position so the next start begins there
+      // (startGame() would otherwise snap the playhead back to 0).
+      pendingStartBeat = target
     }
 
     resetProgressTo(target)
@@ -879,20 +892,27 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setMaxCombo(0)
     setNotesMissed(0)
 
+    // Respect a seek made while stopped: start from there instead of 0.
+    const startBeat = pendingStartBeat ?? 0
+    pendingStartBeat = null
+    if (startBeat > 0) resetProgressTo(startBeat)
+
     const beats = countIn()
     if (beats > 0) {
       setGameState('countdown')
       gameStartTime = performance.now()
       setPlayheadBeat(-beats)
+      countdownLandBeat = startBeat
     } else {
       setGameState('playing')
-      gameStartTime = performance.now()
-      setPlayheadBeat(0)
+      anchorPlaying(startBeat)
+      setPlayheadBeat(startBeat)
     }
     startLoop()
   }
 
   const stopGame = () => {
+    pendingStartBeat = null
     setGameState('idle')
     setPlayheadBeat(0)
     stopLoop()

@@ -154,6 +154,9 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   let gameStartTime = 0
   let judgedNotes = new Set<number>()
   let playedNotes = new Set<number>()
+  // A seek made while stopped/finished is a start position, not stale state:
+  // the next startGame() begins there instead of snapping back to beat 0.
+  let pendingStartBeat: number | null = null
 
   engine.callbacks.onMicStateChange = (active, _error) => {
     // Mic state changes are handled by the caller via isMicActive()
@@ -462,14 +465,21 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setHitResults([])
     setNotesMissed(0)
 
+    // Respect a seek made while stopped: start from there instead of 0.
+    const startBeat = pendingStartBeat ?? 0
+    pendingStartBeat = null
+    if (startBeat > 0) markProgressBefore(startBeat)
+
     const countInBeats = countIn()
+    const bps = beatsPerSecond() * speed()
     if (countInBeats > 0) {
       setGameState('countdown')
-      setPlayheadBeat(-countInBeats)
+      setPlayheadBeat(startBeat - countInBeats)
       setIsCountingIn(true)
-      gameStartTime = performance.now()
+      // Rebased so the loop's (elapsed - countIn) sweep runs from
+      // startBeat - countIn up to startBeat instead of -countIn → 0.
+      gameStartTime = performance.now() - (startBeat / bps) * 1000
 
-      const bps = beatsPerSecond() * speed()
       const beatMs = (1 / bps) * 1000
       let currentBeat = countInBeats
 
@@ -487,8 +497,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           setIsCountingIn(false)
           setCountInBeatTracker(0)
           setGameState('playing')
-          setPlayheadBeat(0)
-          gameStartTime = performance.now()
+          setPlayheadBeat(startBeat)
+          gameStartTime = performance.now() - (startBeat / bps) * 1000
           return
         }
         currentBeat--
@@ -497,8 +507,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       tick() // Start first tick immediately
     } else {
       setGameState('playing')
-      setPlayheadBeat(0)
-      gameStartTime = performance.now()
+      setPlayheadBeat(startBeat)
+      gameStartTime = performance.now() - (startBeat / bps) * 1000
     }
   }
 
@@ -549,6 +559,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const resetGame = () => {
     stopLoop()
+    pendingStartBeat = null
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
     setGameState('idle')
@@ -569,6 +580,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     mutedIds?: string[],
     songObj?: SavedMidiSong | null,
   ) => {
+    pendingStartBeat = null
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
     setSongNotes(notes)
@@ -609,19 +621,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setTotalBeats(Math.max(maxNoteBeat, maxBackingBeat))
   }
 
-  const seekToBeat = (targetBeat: number) => {
+  // Pre-mark everything before `target` as already played/judged so a seek
+  // (or a start from a seeked position) doesn't count skipped notes as misses.
+  const markProgressBefore = (target: number) => {
     const notes = songNotes()
-    const bps = beatsPerSecond() * speed()
-
-    const target = Math.max(0, Math.min(targetBeat, totalBeats()))
-    setPlayheadBeat(target)
-
-    if (gameState() === 'playing') {
-      gameStartTime = performance.now() - (target / bps) * 1000
-    } else if (gameState() === 'countdown') {
-      gameStartTime = performance.now() - ((target + countIn()) / bps) * 1000
-    }
-
     judgedNotes.clear()
     playedNotes.clear()
     playedBackingIndices.clear()
@@ -642,6 +645,26 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
         playedBackingIndices.add(i)
       }
     }
+  }
+
+  const seekToBeat = (targetBeat: number) => {
+    const bps = beatsPerSecond() * speed()
+
+    const target = Math.max(0, Math.min(targetBeat, totalBeats()))
+    setPlayheadBeat(target)
+
+    const state = gameState()
+    if (state === 'playing') {
+      gameStartTime = performance.now() - (target / bps) * 1000
+    } else if (state === 'countdown') {
+      gameStartTime = performance.now() - ((target + countIn()) / bps) * 1000
+    } else if (state === 'idle' || state === 'finished') {
+      // Stopped: remember the position so the next start begins there
+      // (startGame() would otherwise snap the playhead back to 0).
+      pendingStartBeat = target
+    }
+
+    markProgressBefore(target)
   }
 
   const setSpeedSafe = (newSpeed: number) => {
