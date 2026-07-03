@@ -2316,6 +2316,13 @@
   color: var(--accent);
 }
 
+/* The shared Clock icon has intrinsic 24x24 attributes — scale it to the
+   wrapper or it escapes the pill and shoves the label out of line. */
+.rv-time-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .rv-header-right {
   display: flex;
   align-items: center;
