@@ -557,59 +557,8 @@
   color: #c9d1d9;
 }
 
-/* ── Score overlay ────────────────────────────────────────── */
-
-.gp-score-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
-  border-radius: 6px;
-}
-
-.gp-score-card {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 32px 48px;
-  text-align: center;
-  color: #c9d1d9;
-}
-
-.gp-score-card h2 {
-  font-size: 24px;
-  margin-bottom: 12px;
-  color: #f0f6fc;
-}
-
-.gp-score-grade {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #3fb950;
-}
-
-.gp-score-pct {
-  font-size: 48px;
-  font-weight: bold;
-  color: #f0f6fc;
-  margin-bottom: 8px;
-}
-
-.gp-score-detail {
-  font-size: 14px;
-  color: #8b949e;
-  margin-bottom: 20px;
-}
-
-.gp-score-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
+/* The finished-run scoreboard is now the shared .fn-score-corner card
+   (see app.css) — the old .gp-score-* full-screen modal was removed. */
 
 /* ── Current step highlight in drum grid ──────────────────── */
 
