@@ -1758,7 +1758,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Load a song',
     description:
-      'Load a MIDI or Guitar Pro song to play along with, mute or solo its tracks, and seek the timeline.',
+      'The status bar keeps the loaded song, its seek timeline and the compact track mixer at hand. Import a MIDI or Guitar Pro file from here — or just drop one anywhere on the canvas.',
     targetSelector: '[data-tour="guitar.song-picker"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
@@ -1766,7 +1766,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & controls',
     description:
-      'Mic, play/stop, tempo and volume live here, plus toggles for a MIDI guitar, note-name labels, and showing the notes you played. The sliders button reveals the tempo group.',
+      'Mic, play/stop, tempo and volume float over the canvas — drag the grip to dock the bar top or bottom. Toggles for a MIDI guitar, note-name labels, and showing the notes you played live here too.',
     targetSelector: '[data-testid="guitar-control-bar"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
@@ -1806,7 +1806,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Load a song',
     description:
-      'Pick a MIDI song; mute or solo tracks and seek along the timeline.',
+      'The status bar shows the loaded song with its seek timeline and compact track mixer. Pick or import a MIDI song from here — or drop a .mid file anywhere on the canvas.',
     targetSelector: '[data-tour="piano.song-picker"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
