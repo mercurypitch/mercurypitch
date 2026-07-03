@@ -191,3 +191,21 @@
   margin: 0;
   color: var(--text-secondary);
 }
+
+/* Desktop (hover-capable): the info badge stays hidden until the cell is
+   hovered or the badge is keyboard-focused/open — the button's title
+   tooltip covers discovery there. Touch devices keep it always visible,
+   since they have neither hover nor tooltips. */
+@media (hover: hover) and (pointer: fine) {
+  .character-info-badge {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .character-icon-cell:hover .character-info-badge,
+  .character-info-badge:focus-visible,
+  .character-info-badge[aria-expanded='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
