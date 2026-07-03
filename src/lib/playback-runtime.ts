@@ -213,14 +213,18 @@ export class PlaybackRuntime {
   pause(): boolean {
     if (!this.isPlaying || this.isPaused) return true
 
-    // Record the time when pause started - this will be used to calculate pause duration
-    if (this.playStartTime > 0) {
-      this.pauseStartTime = performance.now()
-      this.isPaused = true
-      // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
-      this._emit({ type: 'state', state: 'paused' })
-      this._stopAnimationLoop()
-    }
+    // Record when the pause began (resume() uses it for pauseOffset). We must
+    // pause whenever playback is active — the old `playStartTime > 0` guard
+    // silently no-op'd after seeking far into a song: seekTo rebases
+    // playStartTime to `now - elapsed`, which goes NEGATIVE when the seeked
+    // time exceeds time-since-page-load, so Space/Pause flipped the button
+    // but never stopped the loop and the playhead ran on. isPlaying (checked
+    // above) already means playback started, so no sign guard is needed.
+    this.pauseStartTime = performance.now()
+    this.isPaused = true
+    // Keep isPlaying=true so resume() can proceed — "paused but playing".
+    this._emit({ type: 'state', state: 'paused' })
+    this._stopAnimationLoop()
     return this.isPlaying
   }
 
