@@ -108,6 +108,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
+import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
@@ -1223,6 +1224,18 @@ const AppShell: Component<AppProps> = (props) => {
         'Drop a .mid or .midi file to load it as a melody.',
         'info',
       ),
+  })
+
+  // Restore the imported song behind the current melody on reload. Melodies
+  // persist (melody store), but singingSong is a fresh signal each load, so
+  // the Track button vanished after a refresh. Imports are stored as a saved
+  // MIDI song named after the melody — match by name to bring it back.
+  onMount(() => {
+    if (singingSong() !== null) return
+    const name = melodyStore.currentMelody()?.name
+    if (name === undefined || name === '') return
+    const match = savedMidiSongs().find((s) => s.name === name)
+    if (match && match.tracks.length > 0) setSingingSong(match)
   })
 
   // ── Mic handler ────────────────────────────────────────────
