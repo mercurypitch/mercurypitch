@@ -28,7 +28,9 @@
 }
 
 .top {
-  top: 12px;
+  /* Containers that render a SongStatusBar strip along the canvas top set
+     --control-dock-top-offset so the top-docked bar clears it. */
+  top: var(--control-dock-top-offset, 12px);
 }
 
 .bottom {
@@ -174,7 +176,7 @@
 }
 
 .showBtn.top {
-  top: 10px;
+  top: var(--control-dock-top-offset, 10px);
 }
 
 .showBtn.top:hover {
