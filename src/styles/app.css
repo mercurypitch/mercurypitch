@@ -2029,61 +2029,64 @@ input:checked + .settings-slider:before {
   color: #c9d1d9;
 }
 
-.fn-score-overlay {
+/* Finished-run score: non-blocking corner card over the falling-notes
+   canvas (same pattern as the Guitar 3D score card) — sits below the
+   top-docked control bar, board stays visible and interactive. */
+.fn-score-corner {
   position: absolute;
-  inset: 0;
+  top: 64px;
+  right: 12px;
+  z-index: 7;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
-  border-radius: 6px;
-}
-
-.fn-score-card {
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 12px;
-  padding: 32px 48px;
-  text-align: center;
+  gap: 3px;
+  min-width: 150px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(12, 14, 22, 0.78);
+  backdrop-filter: blur(10px) saturate(125%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   color: #c9d1d9;
+  user-select: none;
 }
 
-.fn-score-card h2 {
-  font-size: 24px;
-  margin-bottom: 12px;
+.fn-score-corner-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 184, 0.85);
+}
+
+.fn-score-corner-pct {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
   color: #f0f6fc;
 }
 
-.fn-score-grade {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
+.fn-score-corner-grade {
+  font-size: 13px;
+  font-weight: 600;
   color: #3fb950;
 }
 
-.fn-score-pct {
-  font-size: 48px;
-  font-weight: bold;
-  color: #f0f6fc;
-  margin-bottom: 8px;
-}
-
-.fn-score-detail {
-  font-size: 14px;
+.fn-score-corner-detail {
+  font-size: 11px;
   color: #8b949e;
-  margin-bottom: 20px;
 }
 
-.fn-score-actions {
+.fn-score-corner-actions {
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.fn-score-card .fn-btn {
-  padding: 10px 32px;
-  font-size: 16px;
+.fn-score-corner .fn-btn {
+  padding: 5px 12px;
+  font-size: 12px;
 }
 
 /* ===== Changelog Modal ===== */
