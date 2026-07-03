@@ -58,6 +58,11 @@
   --accent-color: var(--accent);
   --accent-hover: #79b8ff;
   --bg-accent: rgba(99, 102, 241, 0.12);
+  /* uvr.css / stem-mixer text tokens (used ~150x, never defined — text fell
+     back to inherited colors wherever the per-rule fallback was missing). */
+  --fg-primary: var(--text-primary);
+  --fg-secondary: var(--text-secondary);
+  --fg-tertiary: var(--text-muted);
   color-scheme: dark;
 
   /* ── Spacing scale ──
