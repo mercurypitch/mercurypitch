@@ -73,9 +73,26 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     }
   }
 
+  // dragenter/dragleave fire for every child element crossed inside the
+  // zone — only the balance says whether the pointer actually left, so the
+  // highlight used to flicker off after the first child crossing.
+  let dragDepth = 0
+
+  const handleDragEnter = () => {
+    if (props.disabled === true) return
+    dragDepth++
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    dragDepth = Math.max(0, dragDepth - 1)
+    if (dragDepth === 0) setIsDragging(false)
+  }
+
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     if (props.disabled === true) return
+    dragDepth = 0
     setIsDragging(false)
 
     const files = e.dataTransfer?.files
@@ -128,9 +145,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
       {/* Upload Zone */}
       <label
         class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled === true ? 'disabled' : ''}`}
-        onDragEnter={() => props.disabled !== true && setIsDragging(true)}
+        onDragEnter={handleDragEnter}
         onDragOver={(e) => e.preventDefault()}
-        onDragLeave={() => setIsDragging(false)}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         for="uvr-file-input"
       >
