@@ -49,7 +49,25 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let startTime = 0
   let running = false
   let lastMicState = false
-  let disposeFns: Array<() => void> = []
+
+  // Controller cleanup callbacks. Registrations are PERSISTENT for the
+  // component's lifetime: controllers register once at creation (closing
+  // over their mutable timer handles / cancellation flags), and the base
+  // re-runs the callbacks at every teardown point. They used to be emptied
+  // after the first run, which left every later run of the same mounted
+  // exercise without cleanup — zombie timers and tones after a second
+  // stop/reset. Callbacks must therefore be idempotent (all are: they
+  // clear timers and set flags).
+  const disposeFns: Array<() => void> = []
+  const runDisposers = (): void => {
+    for (const fn of disposeFns) {
+      try {
+        fn()
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 
   // Re-entrancy guards. If a reactive cycle causes these functions to be
   // called recursively, we log and bail instead of cascading.
@@ -67,14 +85,20 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     },
   })
 
-  async function start(): Promise<void> {
+  /**
+   * Acquire the mic and enter the active state. Returns true only when the
+   * exercise actually started — callers must gate their controller's step
+   * logic on it, or a denied mic / concurrent start would kick off timer
+   * chains on an exercise that is still idle.
+   */
+  async function start(): Promise<boolean> {
     // Guard against concurrent starts — reset() fires the autoStart effect
     // which races with explicit handleStart() calls from click handlers.
-    if (state().status !== 'idle') return
+    if (state().status !== 'idle') return false
 
     if (startDepth > 0) {
       console.warn('[useBaseExercise] re-entrant start() call — bailing')
-      return
+      return false
     }
     startDepth++
 
@@ -100,7 +124,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
           setState((s) => ({ ...s, status: 'idle' }))
         })
         startDepth--
-        return
+        return false
       }
     }
     setError(null)
@@ -147,6 +171,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     }
     animId = requestAnimationFrame(loop)
     startDepth--
+    return true
   }
 
   function stop(): void {
@@ -155,14 +180,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     // Clear controller timers registered via _registerDispose — mirrors
     // reset()/_setRunning(false) so a caller using stop() doesn't leak
     // pending setInterval/setTimeout chains from the exercise controller.
-    for (const fn of disposeFns) {
-      try {
-        fn()
-      } catch {
-        /* ignore */
-      }
-    }
-    disposeFns = []
+    runDisposers()
     const finalElapsed = performance.now() - startTime
     setState((s) => ({ ...s, status: 'complete', elapsedMs: finalElapsed }))
   }
@@ -203,14 +221,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     audioEngine.stopTone()
 
     // Clear all controller timers registered via _registerDispose
-    for (const fn of disposeFns) {
-      try {
-        fn()
-      } catch {
-        /* ignore */
-      }
-    }
-    disposeFns = []
+    runDisposers()
 
     practiceEngine.stopMic()
     batch(() => {
@@ -239,14 +250,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     running = false
     cancelAnimationFrame(animId)
     // Dispose controller timers (setInterval, rAF loops) to prevent leaks
-    for (const fn of disposeFns) {
-      try {
-        fn()
-      } catch {
-        /* ignore */
-      }
-    }
-    disposeFns = []
+    runDisposers()
     practiceEngine.stopMic()
   })
 
@@ -273,17 +277,15 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       running = v
       if (!v) {
         // When external caller sets running=false, clear controller timers
-        for (const fn of disposeFns) {
-          try {
-            fn()
-          } catch {
-            /* ignore */
-          }
-        }
-        disposeFns = []
+        runDisposers()
         audioEngine.stopTone()
       }
     },
+    /**
+     * Register a cleanup callback for controller timers/flags. Call ONCE at
+     * controller creation — the registration is permanent and re-runs at
+     * every stop/reset/unmount, so the callback must be idempotent.
+     */
     _registerDispose: (fn: () => void) => {
       disposeFns.push(fn)
     },

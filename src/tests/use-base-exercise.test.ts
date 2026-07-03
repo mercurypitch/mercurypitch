@@ -147,4 +147,73 @@ describe('useBaseExercise', () => {
       dispose()
     })
   })
+
+  it('dispose registrations persist across runs (stop, reset, unmount)', () => {
+    // Controllers register their cleanup once at creation. The list used to
+    // be emptied after its first run, so the second stop/reset — and the
+    // final unmount — no longer cleared controller timers (zombie
+    // setTimeout/setInterval chains after Try Again).
+    createRoot((dispose) => {
+      const audioEngine = createMockAudioEngine()
+      const practiceEngine = createMockPracticeEngine()
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'long-note', targetNote: 'A3' },
+      })
+
+      const cleanup = vi.fn()
+      base._registerDispose(cleanup)
+
+      base.stop() // run 1 ends
+      base.reset() // back to idle for run 2
+      base.stop() // run 2 ends — previously a no-op for the controller
+      expect(cleanup).toHaveBeenCalledTimes(3)
+
+      dispose() // unmount — must still clear controller timers
+      expect(cleanup).toHaveBeenCalledTimes(4)
+    })
+  })
+
+  it('start() reports failure so controllers are not started without a mic', async () => {
+    const audioEngine = createMockAudioEngine()
+    const practiceEngine = createMockPracticeEngine({
+      startMic: vi.fn().mockResolvedValue(false),
+    } as unknown as Partial<PracticeEngine>)
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'long-note', targetNote: 'A3' },
+      })
+
+      await expect(base.start()).resolves.toBe(false)
+      expect(base.state().status).toBe('idle')
+      expect(base.error()).toMatch(/microphone/i)
+
+      dispose()
+    })
+  })
+
+  it('start() resolves true when the mic is granted', async () => {
+    const audioEngine = createMockAudioEngine()
+    const practiceEngine = createMockPracticeEngine()
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'long-note', targetNote: 'A3' },
+      })
+
+      await expect(base.start()).resolves.toBe(true)
+      expect(base.state().status).toBe('active')
+
+      // A concurrent second start (already active) must report failure too.
+      await expect(base.start()).resolves.toBe(false)
+
+      dispose()
+    })
+  })
 })

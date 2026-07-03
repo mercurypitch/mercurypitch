@@ -52,7 +52,7 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   const handleStart = async () => {
     const range = getComfortableMidiRange(vocalRangePreset())
     controller.setBase(noteToMidi(startNote()), range.min, range.max)
-    await base.start()
+    if (!(await base.start())) return
     controller.startRounds()
   }
 

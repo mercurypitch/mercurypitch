@@ -64,7 +64,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
 
   const handleStart = async () => {
     controller.setArpeggio(noteToMidi(startNote()), arpeggioType(), direction())
-    await base.start()
+    if (!(await base.start())) return
     controller.startArpeggio()
   }
 

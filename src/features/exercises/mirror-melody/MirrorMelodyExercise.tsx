@@ -42,7 +42,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setMelody(noteToMidi(startNote()))
-    await base.start()
+    if (!(await base.start())) return
     controller.startSequence()
   }
 

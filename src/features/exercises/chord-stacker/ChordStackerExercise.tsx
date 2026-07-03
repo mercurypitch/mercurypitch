@@ -51,7 +51,7 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))
-    await base.start()
+    if (!(await base.start())) return
     controller.startRounds()
   }
 

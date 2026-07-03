@@ -62,7 +62,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setScale(noteToMidi(startNote()), scaleType(), direction())
-    await base.start()
+    if (!(await base.start())) return
     controller.startScale()
   }
 

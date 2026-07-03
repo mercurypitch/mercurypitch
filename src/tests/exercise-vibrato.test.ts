@@ -24,7 +24,7 @@ function createMockBase(
       elapsedMs: 0,
       metrics: {},
     }),
-    start: async () => {},
+    start: async () => true,
     stop: () => {},
     reset: () => {},
     result: () => null,
