@@ -23,7 +23,10 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--bg-tertiary);
-  background: #1a120b;
+  /* Normal app-dark. The canvas paints its own warm-wood backdrop over the
+     fret area; this only shows in the top clearance band behind the floating
+     control bar, where the raw #1a120b brown read as an ugly stray strip. */
+  background: var(--bg-primary);
 }
 
 /* ── Drum Machine Panel ────────────────────────────────────── */
