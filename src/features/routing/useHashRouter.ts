@@ -117,14 +117,20 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   // Sync activeTab + UvrPanel state → URL hash
   createEffect(() => {
-    if (!initialized() || hashSyncing) return
-    if (
+    // Read every tracked signal BEFORE any early return: Solid re-collects
+    // dependencies per run, so bailing out first (e.g. while hashSyncing is
+    // set during a dispatch) would drop the activeTab subscription and leave
+    // the effect dormant — the URL then goes stale on the next tab change
+    // (seen with the App Mode guard redirecting away from a deep link).
+    const tab = deps.activeTab()
+    const view = deps.activeUvrView()
+    const sessionId = deps.activeUvrSessionId()
+    const surfaceOpen =
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection()
-    )
-      return
-    const tab = deps.activeTab()
+    if (!initialized() || hashSyncing) return
+    if (surfaceOpen) return
     if (tab !== TAB_KARAOKE) {
       const expectedHash = `#/${tab}`
       if (window.location.hash !== expectedHash) {
@@ -132,8 +138,6 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       }
       return
     }
-    const view = deps.activeUvrView()
-    const sessionId = deps.activeUvrSessionId()
     let route: HashRoute
     if (view === 'results' && sessionId !== null) {
       route = { type: 'uvr-session', sessionId }
@@ -150,19 +154,23 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   // Sync walkthrough/guide state → URL hash
   createEffect(() => {
+    // Same read-before-bail rule as above.
+    const modalOpen = deps.walkthroughModalOpen()
+    const walkthroughId = deps.selectedWalkthrough()
+    const selectionOpen = deps.showSelection()
+    const guideOpen = deps.showGuideSelection()
     if (!initialized() || hashSyncing) return
-    if (deps.walkthroughModalOpen() && deps.selectedWalkthrough() !== null) {
-      const id = deps.selectedWalkthrough()!
-      const expectedHash = `#/learn/${id}`
+    if (modalOpen && walkthroughId !== null) {
+      const expectedHash = `#/learn/${walkthroughId}`
       if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'learn-chapter', chapterId: id })
+        replaceHash({ type: 'learn-chapter', chapterId: walkthroughId })
       }
-    } else if (deps.showSelection()) {
+    } else if (selectionOpen) {
       const expectedHash = '#/learn'
       if (window.location.hash !== expectedHash) {
         replaceHash({ type: 'learn' })
       }
-    } else if (deps.showGuideSelection()) {
+    } else if (guideOpen) {
       const expectedHash = '#/guide'
       if (window.location.hash !== expectedHash) {
         replaceHash({ type: 'guide' })

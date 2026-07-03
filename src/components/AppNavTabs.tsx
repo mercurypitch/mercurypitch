@@ -361,6 +361,8 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   }
   createEffect(() => {
     collapsed() // re-measure overflow when a group collapses/expands
+    practiceScope() // ...and when scope/UI mode change the visible tabs
+    uiMode() // (content shrinks without a resize, so the RO won't fire)
     requestAnimationFrame(updateScrollable)
   })
 
@@ -448,7 +450,10 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     <nav
       id="app-tabs"
       ref={navRef}
-      classList={{ 'tabs-scrollable': scrollable() }}
+      classList={{
+        'tabs-scrollable': scrollable(),
+        'tabs-simple': uiMode() === 'simple',
+      }}
     >
       <For each={TAB_GROUPS}>
         {(group) => (

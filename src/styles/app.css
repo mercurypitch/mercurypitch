@@ -2727,3 +2727,15 @@ input[type='range'] {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Simple mode: a flat, focused tab bar — the group pills lose the inset the
+   (hidden) labels used to occupy. */
+#app-tabs.tabs-simple .tab-group {
+  border: none;
+  background: transparent;
+  padding: 3px 0;
+}
+
+#app-tabs.tabs-simple .tab-group.collapsible .app-tab {
+  margin-left: 0;
+}
