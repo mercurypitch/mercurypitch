@@ -586,6 +586,9 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     mutedIds?: string[],
     songObj?: SavedMidiSong | null,
   ) => {
+    // Loading over a running song: silence its voices (the game state flips
+    // to idle below, but already-started notes would ring out otherwise).
+    audioEngine.stopAllNotes()
     pendingStartBeat = null
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
