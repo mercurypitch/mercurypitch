@@ -77,21 +77,21 @@ export const PricingPanel: Component = () => {
       </Show>
       <p class={styles.intro}>
         On-device separation is free forever. Credits only cover faster
-        server-side processing — pricing is being finalised.
+        server-side processing.
       </p>
 
       <Show when={pricing.loading}>
-        <p class={styles.note}>Loading plans…</p>
+        <p class={styles.note}>Loading credit options…</p>
       </Show>
       <Show when={pricing.error != null}>
-        <p class={styles.note}>Pricing is unavailable right now.</p>
+        <p class={styles.note}>Credit options are unavailable right now.</p>
       </Show>
       <Show
         when={
           !pricing.loading && pricing.error == null && loadedPricing() == null
         }
       >
-        <p class={styles.note}>Pricing is coming soon.</p>
+        <p class={styles.note}>Credit packs are coming soon.</p>
       </Show>
 
       <Show when={loadedPricing()}>
