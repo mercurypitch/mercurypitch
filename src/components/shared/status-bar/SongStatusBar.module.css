@@ -275,6 +275,17 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
+/* Full-width variant for narrow hosts (sidebar preset rows): the pill track
+   stretches and the segments share the width evenly. */
+.segGrow {
+  display: flex;
+}
+
+.segGrow .segBtn {
+  flex: 1;
+  padding-inline: 4px;
+}
+
 /* ── Track dock (compact multi-column mixer) ───────────────── */
 
 .trackDock {
