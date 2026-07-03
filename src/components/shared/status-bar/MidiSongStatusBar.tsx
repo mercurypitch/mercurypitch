@@ -141,7 +141,7 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
           </Show>
           <button
             class={styles.chipBtn}
-            onClick={props.picker.importMidi}
+            onClick={() => props.picker.importMidi()}
             title="Import a MIDI file (or drop one on the canvas)"
           >
             Import MIDI
