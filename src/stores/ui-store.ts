@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES } from '@/features/tabs/constants'
@@ -10,7 +10,42 @@ export type { ActiveTab } from '@/features/tabs/constants'
 
 // ── Active tab ───────────────────────────────────────────────
 
-export const [activeTab, setActiveTab] = createSignal<ActiveTab>(DEFAULT_TAB)
+const [activeTabSignal, setActiveTabSignal] =
+  createSignal<ActiveTab>(DEFAULT_TAB)
+
+export const activeTab = activeTabSignal
+
+/**
+ * Tab-leave cleanup, invoked synchronously on every real tab change with
+ * (prev, next) — BEFORE the signal updates. AppShell registers it (it owns
+ * the engines/controllers cleanup needs).
+ *
+ * This used to be a `createEffect(on(activeTab, ...))` reading `on`'s
+ * prevInput — but that effect's initial execution can be deferred until the
+ * first tab CHANGE (transition/suspense scheduling in production builds), so
+ * prevInput was undefined exactly then and the first switch after load
+ * escaped cleanup entirely (e.g. singing playback kept sounding under the
+ * piano tab). A synchronous listener at the single setter choke point cannot
+ * miss a transition.
+ */
+type TabTransitionListener = (prev: ActiveTab, next: ActiveTab) => void
+let tabTransitionListener: TabTransitionListener | null = null
+
+export function onTabTransition(listener: TabTransitionListener): void {
+  tabTransitionListener = listener
+}
+
+export const setActiveTab = (tab: ActiveTab): ActiveTab => {
+  const prev = untrack(activeTabSignal)
+  if (prev !== tab && tabTransitionListener !== null) {
+    try {
+      tabTransitionListener(prev, tab)
+    } catch (err) {
+      console.error('[ui-store] tab transition cleanup failed:', err)
+    }
+  }
+  return setActiveTabSignal(tab)
+}
 
 // Mobile sidebar drawer open state. Store-backed (not AppShell-local) so the
 // spotlight tour engine can open it to reach sidebar-anchored steps on mobile.
