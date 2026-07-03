@@ -168,6 +168,9 @@ export function GuitarPage(props: GuitarPageProps) {
     fromBackingNotes: (notes, trackId) => notes.map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       guitar.loadSong(items, name, bpm, backing, muted, song),
+    // The page remounts on every tab visit; the controller (and its loaded
+    // song) live in GuitarContext — don't clobber them with the first melody.
+    skipAutoLoad: () => guitar.selectedSongName() !== '',
   })
 
   const [gpStatus, setGpStatus] = createSignal('')
@@ -209,6 +212,84 @@ export function GuitarPage(props: GuitarPageProps) {
 
   return (
     <div id="guitar-practice-panel">
+      {/* In flow above everything, so the canvas HUD (3D status chip,
+          score cards) keeps the full canvas top to itself. */}
+      <MidiSongStatusBar
+        picker={picker}
+        prefix="gp"
+        dataTour="guitar.song-picker"
+        currentSong={guitar.currentSong}
+        mutedTrackIds={guitar.mutedTrackIds}
+        onToggleMute={guitar.toggleTrackMute}
+        visibleTrackIds={guitar.visibleTrackIds}
+        onToggleVisibility={guitar.toggleTrackVisibility}
+        playheadBeat={guitar.playheadBeat}
+        totalBeats={guitar.totalBeats}
+        songBpm={guitar.songBpm}
+        onSeek={guitar.seekToBeat}
+        songName={guitar.selectedSongName}
+        isPlaying={() =>
+          guitar.gameState() === 'playing' || guitar.gameState() === 'countdown'
+        }
+        extraStatus={gpStatus}
+        extraActions={
+          <>
+            <SegmentedControl
+              label="Sound"
+              dataTour="guitar.instruments"
+              options={[
+                { value: 'guitar-acoustic', label: 'Acoustic' },
+                { value: 'guitar-electric', label: 'Electric' },
+                { value: 'bass', label: 'Bass' },
+              ]}
+              value={() => guitar.instrumentType()}
+              onChange={(v) => guitar.setInstrumentType(v as InstrumentType)}
+            />
+            <SegmentedControl
+              ariaLabel="View"
+              dataTour="guitar.view-toggle"
+              options={[
+                {
+                  value: 'interactive',
+                  label: 'Fretboard',
+                  dataTour: 'guitar.view-fretboard',
+                },
+                { value: 'hero', label: 'Practice' },
+                { value: '3d', label: '3D' },
+              ]}
+              value={guitarView}
+              onChange={setGuitarView}
+            />
+            <button
+              class={barStyles.chipBtn}
+              onClick={() => gpFileInput?.click()}
+              title="Import a Guitar Pro tab (or drop one on the canvas)"
+            >
+              Import GP
+            </button>
+            <input
+              ref={gpFileInput}
+              type="file"
+              accept={GP_FILE_EXTENSIONS}
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const input = e.currentTarget as HTMLInputElement
+                const file = input.files?.[0]
+                input.value = ''
+                if (file) void importGuitarProFile(file)
+              }}
+            />
+            <button
+              class={barStyles.chipBtn}
+              aria-expanded={devicesOpen()}
+              onClick={() => setDevicesOpen((v) => !v)}
+              title="Audio input/output devices"
+            >
+              Devices
+            </button>
+          </>
+        }
+      />
       <Show when={devicesOpen()}>
         <GuitarSignalFlow
           inputMode={guitar.inputMode}
@@ -622,89 +703,8 @@ export function GuitarPage(props: GuitarPageProps) {
         id="guitar-fretboard-container"
         data-tour="guitar.fretboard"
         ref={dropZone.bind}
-        style={{
-          position: 'relative',
-          // Clear the song status bar so the top-docked control bar and its
-          // collapsed "show" pill land below it instead of on top of it.
-          '--control-dock-top-offset': '58px',
-        }}
+        style={{ position: 'relative' }}
       >
-        <MidiSongStatusBar
-          picker={picker}
-          prefix="gp"
-          dataTour="guitar.song-picker"
-          currentSong={guitar.currentSong}
-          mutedTrackIds={guitar.mutedTrackIds}
-          onToggleMute={guitar.toggleTrackMute}
-          visibleTrackIds={guitar.visibleTrackIds}
-          onToggleVisibility={guitar.toggleTrackVisibility}
-          playheadBeat={guitar.playheadBeat}
-          totalBeats={guitar.totalBeats}
-          songBpm={guitar.songBpm}
-          onSeek={guitar.seekToBeat}
-          isPlaying={() =>
-            guitar.gameState() === 'playing' ||
-            guitar.gameState() === 'countdown'
-          }
-          extraStatus={gpStatus}
-          extraActions={
-            <>
-              <SegmentedControl
-                label="Sound"
-                dataTour="guitar.instruments"
-                options={[
-                  { value: 'guitar-acoustic', label: 'Acoustic' },
-                  { value: 'guitar-electric', label: 'Electric' },
-                  { value: 'bass', label: 'Bass' },
-                ]}
-                value={() => guitar.instrumentType()}
-                onChange={(v) => guitar.setInstrumentType(v as InstrumentType)}
-              />
-              <SegmentedControl
-                ariaLabel="View"
-                dataTour="guitar.view-toggle"
-                options={[
-                  {
-                    value: 'interactive',
-                    label: 'Fretboard',
-                    dataTour: 'guitar.view-fretboard',
-                  },
-                  { value: 'hero', label: 'Practice' },
-                  { value: '3d', label: '3D' },
-                ]}
-                value={guitarView}
-                onChange={setGuitarView}
-              />
-              <button
-                class={barStyles.chipBtn}
-                onClick={() => gpFileInput?.click()}
-                title="Import a Guitar Pro tab (or drop one on the canvas)"
-              >
-                Import GP
-              </button>
-              <input
-                ref={gpFileInput}
-                type="file"
-                accept={GP_FILE_EXTENSIONS}
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const input = e.currentTarget as HTMLInputElement
-                  const file = input.files?.[0]
-                  input.value = ''
-                  if (file) void importGuitarProFile(file)
-                }}
-              />
-              <button
-                class={barStyles.chipBtn}
-                aria-expanded={devicesOpen()}
-                onClick={() => setDevicesOpen((v) => !v)}
-                title="Audio input/output devices"
-              >
-                Devices
-              </button>
-            </>
-          }
-        />
         <Show when={dropZone.isDragOver()}>
           <div class={barStyles.dropOverlay}>
             <span class={barStyles.dropLabel}>
@@ -772,9 +772,8 @@ export function GuitarPage(props: GuitarPageProps) {
           insight={micInsights.insight}
           style={{
             position: 'absolute',
-            // Below the status bar and the top-docked control bar (the var is
-            // measured onto the container by useControlDockOffset).
-            top: 'calc(var(--control-dock-top-offset, 12px) + 60px)',
+            // Below the top-docked control bar.
+            top: '68px',
             left: '50%',
             transform: 'translateX(-50%)',
             'z-index': '6',

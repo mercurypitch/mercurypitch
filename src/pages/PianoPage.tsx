@@ -16,6 +16,7 @@ import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { showNotification } from '@/stores'
 import type { FallingNote } from '@/stores/falling-notes-store'
+import { selectedSongName } from '@/stores/falling-notes-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
 
@@ -87,6 +88,9 @@ export function PianoPage(props: PianoPageProps) {
       midiNotesToFallingNotes(notes).map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       fallingNotes.loadSong(items, name, bpm, backing, muted, song),
+    // The page remounts on every tab visit; the controller (and its loaded
+    // song) live app-wide — don't clobber them with the first library melody.
+    skipAutoLoad: () => selectedSongName() !== '',
   })
 
   const dropZone = useFileDropZone({
@@ -98,32 +102,30 @@ export function PianoPage(props: PianoPageProps) {
 
   return (
     <div id="falling-notes-panel">
+      {/* In flow above the canvas, so the canvas HUD (score corners) keeps
+          the full canvas top to itself. */}
+      <MidiSongStatusBar
+        picker={picker}
+        prefix="fn"
+        dataTour="piano.song-picker"
+        currentSong={fallingNotes.currentSong}
+        mutedTrackIds={fallingNotes.mutedTrackIds}
+        onToggleMute={fallingNotes.toggleTrackMute}
+        visibleTrackIds={fallingNotes.visibleTrackIds}
+        onToggleVisibility={fallingNotes.toggleTrackVisibility}
+        playheadBeat={fallingNotes.playheadBeat}
+        totalBeats={fallingNotes.totalBeats}
+        songBpm={fallingNotes.currentSongBpm}
+        onSeek={fallingNotes.seekToBeat}
+        songName={selectedSongName}
+        isPlaying={() => fallingNotes.gameState() === 'playing'}
+      />
       <div
         id="falling-notes-canvas-container"
         data-tour="piano.canvas"
         ref={dropZone.bind}
-        style={{
-          position: 'relative',
-          // Clear the song status bar so the top-docked control bar and its
-          // collapsed "show" pill land below it instead of on top of it.
-          '--control-dock-top-offset': '58px',
-        }}
+        style={{ position: 'relative' }}
       >
-        <MidiSongStatusBar
-          picker={picker}
-          prefix="fn"
-          dataTour="piano.song-picker"
-          currentSong={fallingNotes.currentSong}
-          mutedTrackIds={fallingNotes.mutedTrackIds}
-          onToggleMute={fallingNotes.toggleTrackMute}
-          visibleTrackIds={fallingNotes.visibleTrackIds}
-          onToggleVisibility={fallingNotes.toggleTrackVisibility}
-          playheadBeat={fallingNotes.playheadBeat}
-          totalBeats={fallingNotes.totalBeats}
-          songBpm={fallingNotes.currentSongBpm}
-          onSeek={fallingNotes.seekToBeat}
-          isPlaying={() => fallingNotes.gameState() === 'playing'}
-        />
         <Show when={dropZone.isDragOver()}>
           <div class={barStyles.dropOverlay}>
             <span class={barStyles.dropLabel}>Drop MIDI to load</span>
@@ -134,9 +136,8 @@ export function PianoPage(props: PianoPageProps) {
           insight={micInsights.insight}
           style={{
             position: 'absolute',
-            // Below the status bar and the top-docked control bar (the var is
-            // measured onto the container by useControlDockOffset).
-            top: 'calc(var(--control-dock-top-offset, 12px) + 60px)',
+            // Below the top-docked control bar.
+            top: '68px',
             left: '50%',
             transform: 'translateX(-50%)',
             'z-index': '6',
