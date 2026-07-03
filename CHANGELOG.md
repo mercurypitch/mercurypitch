@@ -7,54 +7,49 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
-- **Voice Mirror — see your voice in 60 seconds** (`/mirror`): a free, standalone voice snapshot. Sing three short tasks (glide, hold, match) and get your vocal range as the headline, plus pitch accuracy and steadiness — rendered as a shareable "voiceprint" star-map card. Your latest result is saved on this device, so your next visit shows the delta ("+2 semitones since last time").
-- **Just sing (40 seconds)**: a free-sing mode with no targets — it maps what your voice actually does: the range you used, the note you live around, phrase length between breaths, whether you're a "mover" or a "sustainer", and any vibrato on your longest note.
-- **Sing the Universe**: sing short melodies made from real cosmic data — Orion's stars by their sky positions, five famous pulsars by their spin rates, and the Perseus black hole's B♭ — fitted to your range and scored like the match task.
-- **Vibrato is a feature, not wobble**: if you sing with vibrato, the mirror names it ("5.6 Hz, ±26 cents") and no longer scores it against your steadiness. It also measures how quickly you settle onto notes ("you scoop ~180 ms").
-- **Mic check that actually helps**: before the test starts, the mirror verifies it can hear you, shows a live input level while you sing, and recovers automatically from a silent-microphone quirk on iPhones.
-- **Welcome screen**: a new "Mirror your voice" shortcut takes you straight to the mirror.
+- **Voice Mirror** (`/mirror`): a free 60-second voice snapshot — sing three short tasks and get your range, pitch accuracy and steadiness as a shareable card.
+- **Just sing**: a no-targets mode that maps your range, home note, phrasing and vibrato.
+- **Sing the Universe**: short melodies built from real cosmic data, fitted to your range.
+- **Vibrato-aware scoring**: vibrato is named, not counted as unsteadiness.
+- Welcome-screen "Mirror your voice" shortcut.
 
 ### Changed
 
-- The previous release was renumbered from 0.6.0 to 0.5.2 — it was a patch-scale update, not a minor one.
+- Renumbered the previous release from 0.6.0 to 0.5.2.
 
 ## [0.5.2] - 2026-07-01
 
 ### Added
 
-- **Cleaner recorded melodies**: recording a melody in Compose now removes octave jumps and stray, flickering notes automatically, so what you sing turns into logical, well-formed notes instead of a jittery mess.
-- **See your pitch as you record**: while recording in Compose, your voice is drawn live on the piano roll — provisional notes and a moving pitch marker — so you can watch the melody take shape in real time.
-- **Record for as long as you like**: recording no longer stops after a fixed number of bars. It keeps going until you stop it, and the grid grows to follow along.
-- **Tidy up a take before you keep it**: after recording, a simple "As sung ↔ Clean" slider lets you dial in how much cleanup to apply, previewing the result, before you Keep or Discard the take.
-- **Recording over a melody is one undo**: laying down a new take over an existing melody can now be undone in a single step, so you never lose the previous version.
-- **Clean up the karaoke vocal line**: the Vocal Pitch panel in Karaoke gets the same cleanup slider, turning a noisy detected vocal into clear notes — with the key, scale and tempo adjustable.
-- **Edit the detected vocal notes**: a new edit mode lets you select, move, resize, retune, delete, split and merge the vocal notes from a floating toolbar. Your edits are saved separately from the automatic detection, so you can switch between the original, your edited version, or both — and your edits survive a reload.
-- **Automatic key detection**: the vocal line's musical key is detected for you — for the whole song and per section, so songs that change key are handled correctly.
-- **Hear the detected melody**: a "Melody" toggle in the Vocal Pitch panel plays the detected notes as a soft synth that follows along during playback, so you can hear how the cleaned-up line sounds.
+- **Cleaner recorded melodies**: Compose recording auto-removes octave jumps and stray notes.
+- **Live pitch while recording**: your voice draws onto the piano roll in real time.
+- **Unlimited recording length**, plus an "As sung ↔ Clean" slider to tidy a take before keeping it.
+- **One-step undo** for recording over an existing melody.
+- **Karaoke vocal cleanup + editing**: clean, retune and edit the detected vocal line; edits save separately and survive reload.
+- **Automatic key detection**, per-song and per-section.
+- **Hear the detected melody** as a soft synth during playback.
 
 ### Fixed
 
-- **Shared links no longer crash on guitar**: opening a shared melody and playing it on the guitar sound no longer breaks the audio engine.
-- **Vocal pitch labels line up**: the note names down the side of the Vocal Pitch view now match the rows they label.
+- Shared melodies no longer break the guitar sound.
+- Vocal-pitch note labels line up with their rows.
 
 ## [0.5.1] - 2026-07-01
 
 ### Added
 
-- **Live pitch marker while you sing**: a green marker tracks your voice on the left edge of the practice canvas the moment the mic hears you — not just during playback — with a faint guide line across so you can read your pitch against the melody.
-- **Cleaner practice screen on phones**: the accuracy, sessions and pitch cards are now hidden by default on small screens so the melody has room. A small toggle brings them back whenever you want them.
-- **Keyboard controls for the guided tours**: on desktop, use the arrow keys (or Enter) to step through a tour and Esc to close it.
-- **Continue to the next section**: on the last step of a tour section, a button now offers to carry straight on into the next one.
-- **Deeper, better-organised tours**: the Effects and Settings walkthroughs cover far more, Settings is now three focused per-tab tours (General, Practice, Display & Controls), and new "Learn" articles explain note effects and the Display and General settings in depth.
+- **Live pitch marker**: tracks your voice the moment the mic hears you, not just during playback.
+- **Cleaner phone layout**: the accuracy/session/pitch cards hide by default on small screens, with a toggle to restore them.
+- **Keyboard tour controls** (arrows/Enter/Esc), continue-to-next-section, and deeper Effects/Settings tours with new "Learn" articles.
 
 ### Changed
 
-- **Tours adapt to your screen**: they respond to resizing and rotation, expand a collapsed control bar before pointing at a hidden control, let you click the progress dots to jump between steps, and have a cleaner, more compact tooltip.
+- Tours adapt to screen size and let you jump between steps.
 
 ### Fixed
 
-- **Mic no longer sticks on**: leaving the Singing or Compose tab now stops the mic, so the mic button doesn't look active — or react to playback — when you come back.
-- **Mic button icon always shows**: the mic icon no longer collapses to nothing on a tight control bar.
+- Leaving Singing/Compose now stops the mic.
+- The mic icon no longer collapses on a tight control bar.
 
 ## [0.5.0] - 2026-06-30
 
