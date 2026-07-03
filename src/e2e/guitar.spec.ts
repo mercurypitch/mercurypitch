@@ -29,9 +29,12 @@ const MODE_HUDS: Array<{ mode: string; hud: string }> = [
 ]
 
 const panel = '#guitar-practice-panel'
-const fretboardBtn = () =>
-  `${panel} .gp-view-toggle button:has-text("Fretboard")`
-const practiceBtn = () => `${panel} .gp-view-toggle button:has-text("Practice")`
+// The view switch is a shared SegmentedControl (role=radiogroup) in the song
+// status bar; the active segment carries aria-checked, and the Fretboard
+// segment has its own data-tour hook.
+const viewGroup = '[data-tour="guitar.view-toggle"]'
+const fretboardBtn = () => `${viewGroup} button:has-text("Fretboard")`
+const practiceBtn = () => `${viewGroup} button:has-text("Practice")`
 
 /** The mode <select> — the only key/scale select that offers fretboard modes. */
 function modeSelect(page: import('@playwright/test').Page) {
@@ -63,17 +66,25 @@ test.describe('Guitar tab', () => {
   test('opens on the Practice (hero) view with the fretboard + toolbar', async ({
     page,
   }) => {
-    await expect(page.locator(practiceBtn())).toHaveClass(/gp-view-tab-active/)
+    await expect(page.locator(practiceBtn())).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
     await expect(page.locator('#guitar-fretboard-container')).toBeVisible()
-    // Toolbar + song picker are present in both views.
-    await expect(page.locator(`${panel} .gp-header-controls`)).toBeVisible()
+    // The song status bar (song picker + controls) is present in both views.
+    await expect(
+      page.locator(`${panel} [data-testid="gp-song-status-bar"]`),
+    ).toBeVisible()
   })
 
   test('switches to the Fretboard (interactive) view and shows mode controls', async ({
     page,
   }) => {
     await page.locator(fretboardBtn()).click()
-    await expect(page.locator(fretboardBtn())).toHaveClass(/gp-view-tab-active/)
+    await expect(page.locator(fretboardBtn())).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
     await expect(modeSelect(page)).toBeVisible()
     await expect(page.locator('#guitar-fretboard-container')).toBeVisible()
   })
@@ -88,11 +99,12 @@ test.describe('Guitar tab', () => {
   })
 
   test('instrument selector toggles the active sound', async ({ page }) => {
-    const electric = page.locator(`${panel} .gp-instrument-btn`, {
-      hasText: 'Electric',
-    })
+    // Sound is a SegmentedControl (role=radiogroup) in the status bar.
+    const electric = page.locator(
+      '[data-tour="guitar.instruments"] button:has-text("Electric")',
+    )
     await electric.click()
-    await expect(electric).toHaveClass(/gp-instrument-active/)
+    await expect(electric).toHaveAttribute('aria-checked', 'true')
   })
 
   test('key and scale selectors are usable in the Fretboard view', async ({
@@ -119,7 +131,10 @@ test.describe('Guitar tab', () => {
     await expect(page.locator(panel)).toBeVisible()
 
     // State survived: still Fretboard view, still CAGED mode.
-    await expect(page.locator(fretboardBtn())).toHaveClass(/gp-view-tab-active/)
+    await expect(page.locator(fretboardBtn())).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
     await expect(page.locator('.gp-caged-hud')).toBeVisible()
   })
 })
