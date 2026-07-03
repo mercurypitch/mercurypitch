@@ -274,7 +274,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       const keyboardDelayBeats = visibleBeatWindow() * KEYBOARD_DELAY_FACTOR
       if (!playedNotes.has(note.id) && deltaBeats <= -keyboardDelayBeats) {
         playedNotes.add(note.id)
-        audioEngine.playTone(
+        // Polyphonic (own voice per note, like the guitar game) — the mono
+        // playTone slot cut every sustained note ~80ms after the next note
+        // on ANY track started.
+        void audioEngine.playNote(
           note.targetFreq,
           note.duration > 0 ? (note.duration / bps) * 1000 : 300,
         )
@@ -306,7 +309,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           if (b.trackId !== undefined && mutedTrackIds().has(b.trackId)) {
             continue
           }
-          void audioEngine.playTone(
+          void audioEngine.playNote(
             b.freq,
             Math.max(50, (b.duration / bps) * 1000),
           )
@@ -518,6 +521,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       // Store current beat so we can resume from here
       const pausedBeat = playheadBeat()
       setPlayheadBeat(pausedBeat)
+      // Sounding voices would otherwise ring on through the pause.
+      audioEngine.stopAllNotes()
     }
   }
 
@@ -559,6 +564,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const resetGame = () => {
     stopLoop()
+    audioEngine.stopAllNotes()
     pendingStartBeat = null
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
@@ -652,6 +658,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
     const target = Math.max(0, Math.min(targetBeat, totalBeats()))
     setPlayheadBeat(target)
+    // Voices started before the jump belong to the old position.
+    audioEngine.stopAllNotes()
 
     const state = gameState()
     if (state === 'playing') {

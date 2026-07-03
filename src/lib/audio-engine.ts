@@ -126,6 +126,8 @@ export class AudioEngine {
       lfoGains?: GainNode[]
     }
   >()
+  /** Simultaneous playNote voices allowed before the oldest is stolen. */
+  private static readonly MAX_POLY_VOICES = 24
 
   // BPM state (used for timing calculations)
   private _bpm = 120
@@ -1119,6 +1121,19 @@ export class AudioEngine {
     await this.init()
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return undefined
+
+    // Dense multi-track songs (the play-along games fire a voice per note,
+    // across every audible track) can stack far more simultaneous voices
+    // than anything musically useful — steal the oldest so oscillator count
+    // and CPU stay bounded. The map preserves insertion order; the immediate
+    // delete matters because stopNote defers its own map removal past the
+    // release, which would otherwise make every following note over-steal.
+    while (this._activeVoices.size >= AudioEngine.MAX_POLY_VOICES) {
+      const oldest = this._activeVoices.keys().next().value
+      if (oldest === undefined) break
+      this.stopNote(oldest)
+      this._activeVoices.delete(oldest)
+    }
 
     const now = this.audioCtx.currentTime
     const noteId = Date.now() + Math.random()

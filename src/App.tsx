@@ -1602,6 +1602,7 @@ const AppShell: Component<AppProps> = (props) => {
       appStore,
       melodyStore,
       playbackRuntime,
+      audioEngine,
       loadAndPlayMelodyForSession,
       playSessionSequence,
       setPlayMode,
