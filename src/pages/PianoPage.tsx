@@ -1,14 +1,45 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, on, Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
-import { FallingNotesSongPicker } from '@/components/FallingNotesSongPicker'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { PianoControlBar } from '@/components/piano/PianoControlBar'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
+import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
+import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
+import type { MidiSongNote } from '@/lib/midi-song'
+import { midiToNoteName } from '@/lib/note-utils'
+import { midiToFreq } from '@/lib/scale-data'
+import { useFileDropZone } from '@/lib/use-file-drop-zone'
+import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
+import { showNotification } from '@/stores'
+import type { FallingNote } from '@/stores/falling-notes-store'
 import { recordActivity } from '@/stores/usage-store'
+import type { MelodyItem } from '@/types'
+
+function melodyToFallingNotes(items: MelodyItem[]): FallingNote[] {
+  return items.map((item, i) => ({
+    id: item.id ?? i,
+    midi: item.note.midi,
+    name: item.note.name,
+    startBeat: item.startBeat,
+    duration: item.duration,
+    targetFreq: item.note.freq,
+  }))
+}
+
+function midiNotesToFallingNotes(notes: MidiSongNote[]): FallingNote[] {
+  return notes.map((n, i) => ({
+    id: i,
+    midi: n.midi,
+    name: midiToNoteName(n.midi),
+    startBeat: n.startBeat,
+    duration: n.duration,
+    targetFreq: midiToFreq(n.midi),
+  }))
+}
 
 type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
@@ -48,11 +79,40 @@ export function PianoPage(props: PianoPageProps) {
     ),
   )
 
+  const picker = useMidiSongPicker<FallingNote>({
+    currentSong: () => fallingNotes.currentSong(),
+    fromMelodyItems: melodyToFallingNotes,
+    fromScoreNotes: midiNotesToFallingNotes,
+    fromBackingNotes: (notes, trackId) =>
+      midiNotesToFallingNotes(notes).map((n) => ({ ...n, trackId })),
+    onSongLoaded: (items, name, bpm, backing, muted, song) =>
+      fallingNotes.loadSong(items, name, bpm, backing, muted, song),
+  })
+
+  const dropZone = useFileDropZone({
+    accept: /\.(mid|midi)$/i,
+    onFiles: (files) => void picker.importMidiFile(files[0]),
+    onRejected: () =>
+      showNotification('Drop a .mid or .midi file to load it here.', 'info'),
+  })
+
   return (
     <div id="falling-notes-panel">
-      <div data-tour="piano.song-picker">
-        <FallingNotesSongPicker
-          onSongLoaded={fallingNotes.loadSong}
+      <div
+        id="falling-notes-canvas-container"
+        data-tour="piano.canvas"
+        ref={dropZone.bind}
+        style={{
+          position: 'relative',
+          // Clear the song status bar so the top-docked control bar and its
+          // collapsed "show" pill land below it instead of on top of it.
+          '--control-dock-top-offset': '58px',
+        }}
+      >
+        <MidiSongStatusBar
+          picker={picker}
+          prefix="fn"
+          dataTour="piano.song-picker"
           currentSong={fallingNotes.currentSong}
           mutedTrackIds={fallingNotes.mutedTrackIds}
           onToggleMute={fallingNotes.toggleTrackMute}
@@ -62,19 +122,21 @@ export function PianoPage(props: PianoPageProps) {
           totalBeats={fallingNotes.totalBeats}
           songBpm={fallingNotes.currentSongBpm}
           onSeek={fallingNotes.seekToBeat}
+          isPlaying={() => fallingNotes.gameState() === 'playing'}
         />
-      </div>
-      <div
-        id="falling-notes-canvas-container"
-        data-tour="piano.canvas"
-        style={{ position: 'relative' }}
-      >
+        <Show when={dropZone.isDragOver()}>
+          <div class={barStyles.dropOverlay}>
+            <span class={barStyles.dropLabel}>Drop MIDI to load</span>
+          </div>
+        </Show>
         <MicInsightHint
           message={micInsights.message}
           insight={micInsights.insight}
           style={{
             position: 'absolute',
-            top: '10px',
+            // Below the status bar and the top-docked control bar (the var is
+            // measured onto the container by useControlDockOffset).
+            top: 'calc(var(--control-dock-top-offset, 12px) + 60px)',
             left: '50%',
             transform: 'translateX(-50%)',
             'z-index': '6',

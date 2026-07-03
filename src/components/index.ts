@@ -27,7 +27,6 @@ export { UvrUploadControl } from './UvrUploadControl'
 export { UvrProcessControl } from './UvrProcessControl'
 export { UvrResultViewer } from './UvrResultViewer'
 export { FallingNotesCanvas } from './FallingNotesCanvas'
-export { FallingNotesSongPicker } from './FallingNotesSongPicker'
 
 export {
   FileUpload,
