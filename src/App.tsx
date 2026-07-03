@@ -45,7 +45,6 @@ import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
-import { SessionPlayer } from '@/components/SessionPlayer'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import type { UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
@@ -100,7 +99,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -1076,9 +1075,15 @@ const AppShell: Component<AppProps> = (props) => {
           if (micActive()) practiceEngine.stopMic()
         }
 
-        // 2. Stop piano mic if active
-        if (prevTab === TAB_PIANO && fallingNotes.isMicActive()) {
-          fallingNotes.stopMic()
+        // 2. Pause a running piano game (it otherwise keeps playing — and
+        // sounding — invisibly on the previous tab; pause rather than stop so
+        // coming back can resume, and discard a run still counting in) and
+        // stop the piano mic if active.
+        if (prevTab === TAB_PIANO) {
+          const pianoState = fallingNotes.gameState()
+          if (pianoState === 'playing') fallingNotes.pauseGame()
+          else if (pianoState === 'countdown') fallingNotes.resetGame()
+          if (fallingNotes.isMicActive()) fallingNotes.stopMic()
         }
 
         // 3. Stop guitar practice if active
@@ -1889,37 +1894,39 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
                   {/* Practice panel */}
                   <div id="practice-panel">
-                    <Show when={sessionActive()}>
-                      <div style={{ position: 'relative' }}>
-                        <SessionPlayer
-                          onSkip={handleSessionSkip}
-                          onEnd={handleSessionEnd}
-                        />
-                        {/* Centered over the session status bar */}
-                        <MicInsightHint
-                          message={micInsights.message}
-                          insight={micInsights.insight}
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            'z-index': '6',
-                            'white-space': 'nowrap',
-                          }}
-                        />
-                      </div>
-                    </Show>
+                    {/* The status bar sits in flow above the canvas (it also
+                        carries the live session/playback state that the old
+                        green SessionPlayer banner showed here). */}
+                    <div style={{ position: 'relative' }}>
+                      <SingingStatusBar
+                        keyName={keyNameSignal}
+                        scaleType={scaleTypeSignal}
+                        melodyName={() =>
+                          melodyStore.currentMelody()?.name ?? null
+                        }
+                        bpm={bpm}
+                        currentBeat={currentBeat}
+                        isPlaying={isPlaying}
+                        onImportMidi={handleSingingImportMidi}
+                        onSessionSkip={handleSessionSkip}
+                        onSessionEnd={handleSessionEnd}
+                      />
+                      {/* Centered over the status bar */}
+                      <MicInsightHint
+                        message={micInsights.message}
+                        insight={micInsights.insight}
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          'z-index': '6',
+                          'white-space': 'nowrap',
+                        }}
+                      />
+                    </div>
 
-                    <div
-                      id="canvas-container"
-                      ref={singingDropZone.bind}
-                      style={{
-                        // Clear the song status bar so the top-docked control
-                        // bar (and its collapsed pill) lands below it.
-                        '--control-dock-top-offset': '58px',
-                      }}
-                    >
+                    <div id="canvas-container" ref={singingDropZone.bind}>
                       <PitchCanvas
                         melody={activePlaybackItems}
                         scale={() => melodyStore.currentScale()}
@@ -1948,17 +1955,6 @@ const AppShell: Component<AppProps> = (props) => {
                         targetNoteName={targetNoteName}
                         liveScore={liveScore}
                         isPlaying={isPlaying}
-                      />
-                      <SingingStatusBar
-                        keyName={keyNameSignal}
-                        scaleType={scaleTypeSignal}
-                        melodyName={() =>
-                          melodyStore.currentMelody()?.name ?? null
-                        }
-                        bpm={bpm}
-                        currentBeat={currentBeat}
-                        isPlaying={isPlaying}
-                        onImportMidi={handleSingingImportMidi}
                       />
                       <Show when={singingDropZone.isDragOver()}>
                         <div class={statusBarStyles.dropOverlay}>
