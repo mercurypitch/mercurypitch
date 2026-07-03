@@ -52,7 +52,9 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
   const [tracksOpen, setTracksOpen] = createSignal(false)
 
   // A freshly loaded multi-track song opens the dock so the mixer is
-  // discoverable; single-track songs keep the bar minimal.
+  // discoverable; single-track songs keep the bar minimal. Deferred so a
+  // page remount with a song already loaded (every tab revisit) doesn't
+  // re-open a dock the user collapsed.
   createEffect(
     on(
       () => props.currentSong()?.id,
@@ -62,6 +64,7 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
         }
         if (id === undefined) setTracksOpen(false)
       },
+      { defer: true },
     ),
   )
 
