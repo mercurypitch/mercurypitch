@@ -410,6 +410,23 @@
   flex-wrap: wrap;
 }
 
+/* Stop control shown inside the exercise card while a run is active. */
+.exercise-btn-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(248, 81, 73, 0.14);
+  color: #ff8b82;
+  border: 1px solid rgba(248, 81, 73, 0.55);
+  box-shadow: 0 2px 10px rgba(248, 81, 73, 0.12);
+}
+
+.exercise-btn-stop:hover {
+  background: rgba(248, 81, 73, 0.26);
+  color: #ffb3ad;
+  border-color: rgba(248, 81, 73, 0.8);
+}
+
 .exercise-btn {
   padding: 10px 24px;
   border-radius: 8px;
@@ -430,7 +447,9 @@
 }
 
 .exercise-btn-secondary {
-  background: var(--bg-accent);
+  /* --bg-accent is not defined globally — without the fallback these
+     buttons rendered with a transparent background (plain-text look). */
+  background: var(--bg-accent, rgba(99, 102, 241, 0.12));
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
@@ -645,10 +664,24 @@
   margin-top: 2px;
 }
 
+/* Floating pill pinned to the bottom of the exercise card while a run is
+   active: always visible regardless of how tall the exercise content is
+   (in-flow placement got clipped by the card's centered overflow). */
 .exercise-active-controls {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(12, 14, 22, 0.72);
+  backdrop-filter: blur(10px) saturate(125%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
 .exercise-timer-countdown {
