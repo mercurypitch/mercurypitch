@@ -20,8 +20,9 @@ import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
+import statusBarStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
-import { SingingStatusChip } from '@/components/singing/SingingStatusChip'
+import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 
@@ -79,6 +80,7 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
+import { importMelodyFromMIDI } from '@/lib/piano-roll'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -86,6 +88,7 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
+import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -1153,6 +1156,46 @@ const AppShell: Component<AppProps> = (props) => {
     })
   })
 
+  // ── Singing melody import (button + canvas drag-and-drop) ────
+  const importSingingMelodyFile = async (file: File) => {
+    try {
+      const buffer = await file.arrayBuffer()
+      const items = importMelodyFromMIDI(new Uint8Array(buffer))
+      if (items === null || items.length === 0) {
+        showNotification('Could not parse MIDI file', 'error')
+        return
+      }
+      const name = file.name.replace(/\.(mid|midi)$/i, '')
+      const created = melodyStore.createNewMelody(name)
+      const updated = melodyStore.updateMelody(created.id, { items })
+      if (updated) melodyStore.setCurrentMelody(updated)
+      showNotification(`Imported "${name}" (${items.length} notes)`, 'success')
+    } catch {
+      showNotification('Error reading MIDI file', 'error')
+    }
+  }
+
+  const handleSingingImportMidi = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.mid,.midi'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (file) void importSingingMelodyFile(file)
+    }
+    input.click()
+  }
+
+  const singingDropZone = useFileDropZone({
+    accept: /\.(mid|midi)$/i,
+    onFiles: (files) => void importSingingMelodyFile(files[0]),
+    onRejected: () =>
+      showNotification(
+        'Drop a .mid or .midi file to load it as a melody.',
+        'info',
+      ),
+  })
+
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
     if (micActive()) {
@@ -1868,7 +1911,15 @@ const AppShell: Component<AppProps> = (props) => {
                       </div>
                     </Show>
 
-                    <div id="canvas-container">
+                    <div
+                      id="canvas-container"
+                      ref={singingDropZone.bind}
+                      style={{
+                        // Clear the song status bar so the top-docked control
+                        // bar (and its collapsed pill) lands below it.
+                        '--control-dock-top-offset': '58px',
+                      }}
+                    >
                       <PitchCanvas
                         melody={activePlaybackItems}
                         scale={() => melodyStore.currentScale()}
@@ -1898,7 +1949,7 @@ const AppShell: Component<AppProps> = (props) => {
                         liveScore={liveScore}
                         isPlaying={isPlaying}
                       />
-                      <SingingStatusChip
+                      <SingingStatusBar
                         keyName={keyNameSignal}
                         scaleType={scaleTypeSignal}
                         melodyName={() =>
@@ -1907,7 +1958,15 @@ const AppShell: Component<AppProps> = (props) => {
                         bpm={bpm}
                         currentBeat={currentBeat}
                         isPlaying={isPlaying}
+                        onImportMidi={handleSingingImportMidi}
                       />
+                      <Show when={singingDropZone.isDragOver()}>
+                        <div class={statusBarStyles.dropOverlay}>
+                          <span class={statusBarStyles.dropLabel}>
+                            Drop MIDI to load as melody
+                          </span>
+                        </div>
+                      </Show>
                       <ControlOverlay defaultDock="top">
                         <SingingControlBar
                           isPlaying={isPlaying}
