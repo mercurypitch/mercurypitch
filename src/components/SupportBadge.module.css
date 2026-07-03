@@ -16,11 +16,29 @@
   display: inline-flex;
   align-items: center;
   padding: 0.32rem 0.6rem;
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
+  font-size: inherit;
   font-weight: 600;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.version:hover,
+.version:focus-visible {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.version:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .support {
