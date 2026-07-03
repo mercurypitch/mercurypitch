@@ -62,8 +62,10 @@ export function usePracticeController(deps: Deps): PracticeController {
   const [countInBeat, setCountInBeat] = createSignal(0)
   const [isCountingIn, setIsCountingIn] = createSignal(false)
 
-  // Wire practice engine callbacks
-  practiceEngine.setCallbacks({
+  // Wire practice engine callbacks. This controller lives for the whole app
+  // session and is the one place the shared mic-state signal gets updated,
+  // so the subscription is never removed.
+  practiceEngine.addCallbacks({
     onPitchDetected: (pitch) => {
       setCurrentPitch(pitch)
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {

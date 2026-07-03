@@ -38,7 +38,7 @@ function createMockPracticeEngine(
     stopMic: () => {},
     isMicActive: () => false,
     update: () => null,
-    setCallbacks: () => {},
+    addCallbacks: () => () => {},
     getWaveformData: () => new Float32Array(1024),
     detectPitch: () => null,
     setAlgorithm: () => {},

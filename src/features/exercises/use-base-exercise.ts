@@ -48,8 +48,6 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let animId = 0
   let startTime = 0
   let running = false
-  let lastMicState = false
-
   // Controller cleanup callbacks. Registrations are PERSISTENT for the
   // component's lifetime: controllers register once at creation (closing
   // over their mutable timer handles / cancellation flags), and the base
@@ -75,15 +73,12 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let resetDepth = 0
   let startDepth = 0
 
-  // Wire mic state callback
-  practiceEngine.setCallbacks({
-    onMicStateChange: (active) => {
-      if (active !== lastMicState && !active && running) {
-        // Mic dropped unexpectedly — keep running but mark
-      }
-      lastMicState = active
-    },
-  })
+  // NOTE: exercises deliberately do NOT subscribe to practice-engine
+  // callbacks — they poll practiceEngine.update() in their own rAF loop.
+  // A previous version registered a no-op onMicStateChange here via the
+  // replace-wholesale setCallbacks(), which disconnected the app-level
+  // listener that keeps the shared mic-state signal in sync: after visiting
+  // any exercise, mic toggles on other tabs stopped updating the UI.
 
   /**
    * Acquire the mic and enter the active state. Returns true only when the
