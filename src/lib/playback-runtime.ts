@@ -61,6 +61,8 @@ export class PlaybackRuntime {
   private playStartTime = 0
   private pauseOffset = 0
   private pauseStartTime = 0
+  // A seek made while stopped: consumed as the start position by start().
+  private pendingStartBeat = 0
   private _countInBeats = 0
   private countInBeat = 0
   private metronomeEnabled?: () => boolean
@@ -197,6 +199,15 @@ export class PlaybackRuntime {
     this._emit({ type: 'state', state: 'playing' })
 
     this._startAnimationLoop()
+
+    // Consume a seek made while stopped: jump there the moment playback
+    // begins. The playing-state seek rebases past the count-in, so a
+    // mid-song start skips the count-in runway.
+    if (!isResuming && this.pendingStartBeat > 0) {
+      const target = this.pendingStartBeat
+      this.pendingStartBeat = 0
+      this.seekTo(target)
+    }
   }
 
   pause(): boolean {
@@ -248,6 +259,7 @@ export class PlaybackRuntime {
     this.isPlaying = false
     this.isPaused = false
     this._openEnded = false
+    this.pendingStartBeat = 0
 
     // Reset pause tracking so a fresh start() after stop isn't poisoned
     this.pauseStartTime = 0
@@ -333,8 +345,11 @@ export class PlaybackRuntime {
       return
     }
 
-    // Stopped: just relocate the head.
+    // Stopped: relocate the head — and remember it as the start position
+    // for the next start(), which would otherwise snap back to beat 0
+    // (mirrors the Piano/Guitar seek-then-play behaviour).
     this.currentBeat = target
+    this.pendingStartBeat = target
     this._emit({ type: 'beat', beat: target })
   }
 
@@ -400,8 +415,17 @@ export class PlaybackRuntime {
   }
 
   setMelody(melody: MelodyItem[]): void {
-    // Create shallow copy to prevent mutation cascade
+    // Create shallow copy to prevent mutation cascade.
+    // NOTE: deliberately does NOT clear pendingStartBeat — the play path
+    // re-sets the (same) melody right before start(), which must still
+    // honour a seek made while stopped. Callers that genuinely swap songs
+    // use clearPendingStart().
     this._melody = [...melody]
+  }
+
+  /** Drop a stopped-state seek position (the loaded song changed). */
+  clearPendingStart(): void {
+    this.pendingStartBeat = 0
   }
 
   setDurationBeats(beats: number): void {
