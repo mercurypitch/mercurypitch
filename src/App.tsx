@@ -1908,7 +1908,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentBeat={currentBeat}
                         isPlaying={isPlaying}
                       />
-                      <ControlOverlay>
+                      <ControlOverlay defaultDock="top">
                         <SingingControlBar
                           isPlaying={isPlaying}
                           isPaused={isPaused}
