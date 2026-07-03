@@ -854,6 +854,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const seekToBeat = (targetBeat: number) => {
     const target = Math.max(0, Math.min(targetBeat, totalBeats()))
     setPlayheadBeat(target)
+    // Voices started before the jump belong to the old position.
+    audioEngine.stopAllNotes()
 
     const state = gameState()
     if (state === 'playing') {
@@ -916,6 +918,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setGameState('idle')
     setPlayheadBeat(0)
     stopLoop()
+    audioEngine.stopAllNotes()
   }
 
   const pauseGame = () => {
@@ -923,6 +926,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     if (state === 'playing') {
       setGameState('paused')
       stopLoop()
+      // Sounding voices would otherwise ring on through the pause.
+      audioEngine.stopAllNotes()
     } else if (state === 'countdown') {
       setGameState('idle')
       setPlayheadBeat(0)

@@ -1,4 +1,5 @@
 import type { Setter } from 'solid-js'
+import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { appStore } from '@/stores'
@@ -9,6 +10,8 @@ export interface E2EBridgeDeps {
   appStore: typeof appStore
   melodyStore: typeof melodyStore
   playbackRuntime?: PlaybackRuntime
+  /** Poly-voice probe: tests assert active voice counts and the cap. */
+  audioEngine?: AudioEngine
   loadAndPlayMelodyForSession?: (id: string) => void
   playSessionSequence?: (ids: string[]) => void
   setPlayMode?: Setter<PlaybackMode>
@@ -31,6 +34,7 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
     appStore: app,
     melodyStore: melody,
     playbackRuntime,
+    audioEngine,
     loadAndPlayMelodyForSession,
     playSessionSequence,
     setPlayMode,
@@ -41,6 +45,7 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
     appStore: app,
     melodyStore: melody,
     playbackRuntime,
+    audioEngine,
     loadAndPlayMelodyForSession,
     playSessionSequence,
     setPlayMode,
