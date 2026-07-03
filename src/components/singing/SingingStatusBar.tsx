@@ -31,6 +31,10 @@ interface SingingStatusBarProps {
   picker: MidiSongPicker
   /** The imported MIDI song the current melody was extracted from, if any. */
   currentSong: () => SavedMidiSong | null
+  /** Playback position/length in beats, for the seek scrubber. */
+  playheadBeat: () => number
+  totalBeats: () => number
+  onSeek: (beat: number) => void
   onSessionSkip: () => void
   onSessionEnd: () => void
 }
@@ -42,6 +46,12 @@ const titleCase = (s: string): string =>
 const barBeat = (b: number): string => {
   const beat = Math.max(0, b)
   return `${Math.floor(beat / 4) + 1}.${Math.floor(beat % 4) + 1}`
+}
+
+const formatTime = (t: number): string => {
+  const mins = Math.floor(t / 60)
+  const secs = Math.floor(t % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
 const formatElapsed = (s: number): string => {
@@ -65,6 +75,18 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   const isSequence = () => sessionMode()
   const currentItem = () => getCurrentSessionItem()
   const trackCount = () => props.currentSong()?.tracks.length ?? 0
+
+  const handleSeek = (e: MouseEvent) => {
+    const rail = e.currentTarget as HTMLDivElement
+    const rect = rail.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    props.onSeek(ratio * props.totalBeats())
+  }
+
+  const progressPct = () =>
+    props.totalBeats() > 0
+      ? (Math.max(0, props.playheadBeat()) / props.totalBeats()) * 100
+      : 0
 
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
@@ -114,6 +136,31 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
           <span class={barStyles.infoDot}>·</span>
           <span class={barStyles.infoPos}>{barBeat(props.currentBeat())}</span>
         </div>
+
+        {/* Song timeline — click to jump (works stopped, playing or paused). */}
+        <Show when={props.totalBeats() > 0}>
+          <div class={barStyles.scrub}>
+            <span class={barStyles.time}>
+              {formatTime(
+                Math.max(0, props.playheadBeat()) / (props.bpm() / 60),
+              )}
+            </span>
+            <div
+              class={barStyles.rail}
+              onClick={handleSeek}
+              title="Seek"
+              data-testid="singing-seek-rail"
+            >
+              <div
+                class={barStyles.fill}
+                style={{ width: `${progressPct()}%` }}
+              />
+            </div>
+            <span class={barStyles.time}>
+              {formatTime(props.totalBeats() / (props.bpm() / 60))}
+            </span>
+          </div>
+        </Show>
 
         {/* Live session / playback cluster (the old green banner). */}
         <Show when={sessionActive()}>

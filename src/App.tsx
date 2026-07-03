@@ -1188,6 +1188,8 @@ const AppShell: Component<AppProps> = (props) => {
     song: SavedMidiSong | null,
   ) => {
     setSingingSong(song)
+    // A pending stopped-state seek belongs to the previous song.
+    playbackRuntime.clearPendingStart()
     const existing = melodyStore.getAllMelodies().find((m) => m.name === name)
     if (song === null && existing) {
       // Library melody picked from the modal — just make it current.
@@ -1937,6 +1939,9 @@ const AppShell: Component<AppProps> = (props) => {
                         isPlaying={isPlaying}
                         picker={singingPicker}
                         currentSong={singingSong}
+                        playheadBeat={currentBeat}
+                        totalBeats={totalBeats}
+                        onSeek={(beat) => playbackRuntime.seekTo(beat)}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
                       />
