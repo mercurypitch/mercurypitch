@@ -82,6 +82,7 @@ import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
 import { melodyIndicesAtBeat, melodyTotalBeats, midiToFreq, midiToNote, } from '@/lib/scale-data'
+import { installSelectBlurOnPointerChange } from '@/lib/select-blur'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -1536,6 +1537,11 @@ const AppShell: Component<AppProps> = (props) => {
   onMount(() => {
     initTheme()
     initDefaultOGTags()
+
+    // Blur a <select> after a pointer pick so Spacebar hits the global
+    // play/pause shortcut instead of re-opening the focused dropdown
+    // (guitar key/scale/mode/chord, drum-machine preset, and any other).
+    onCleanup(installSelectBlurOnPointerChange())
 
     // Cloud settings sync: pull on startup/auth change, write-through
     // on preference changes. Inert when no API is configured.
