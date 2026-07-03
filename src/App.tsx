@@ -62,6 +62,8 @@ import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
+import type { BackingNote } from '@/features/playback/useSingingBacking'
+import { useSingingBacking } from '@/features/playback/useSingingBacking'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { SparklineChart } from '@/features/practice-intelligence/components/SparklineChart'
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
@@ -1167,6 +1169,15 @@ const AppShell: Component<AppProps> = (props) => {
   // becomes the practice melody.
   const [singingSong, setSingingSong] = createSignal<SavedMidiSong | null>(null)
 
+  // Karaoke backing: the "heard" (non-scored) tracks play as audio while the
+  // scored track stays the reference/scored melody.
+  const singingBacking = useSingingBacking({
+    playbackRuntime,
+    audioEngine,
+    isPlaying,
+    bpm,
+  })
+
   const midiNotesToMelodyItems = (notes: MidiSongNote[]): MelodyItem[] =>
     notes.map((n, i) => {
       const { name, octave } = midiToNote(n.midi)
@@ -1178,6 +1189,24 @@ const AppShell: Component<AppProps> = (props) => {
       }
     })
 
+  // Karaoke backing = only the "heard" tracks (song.backingTrackIds). The
+  // picker's flattened `backing` param lumps heard + muted tracks together
+  // and splits them via a separate mutedIds list, but flattening to
+  // MelodyItem[] drops track identity — so derive straight from the song to
+  // honour the Hear/mute toggle. (Same derivation as the reload path below.)
+  const backingFromSong = (song: SavedMidiSong | null): BackingNote[] =>
+    song === null
+      ? []
+      : song.tracks
+          .filter((t) => song.backingTrackIds.includes(t.id))
+          .flatMap((t) =>
+            t.notes.map((n) => ({
+              freq: midiToFreq(n.midi),
+              startBeat: n.startBeat,
+              duration: n.duration,
+            })),
+          )
+
   const handleSingingSongLoaded = (
     items: MelodyItem[],
     name: string,
@@ -1185,6 +1214,7 @@ const AppShell: Component<AppProps> = (props) => {
     song: SavedMidiSong | null,
   ) => {
     setSingingSong(song)
+    singingBacking.setBacking(backingFromSong(song))
     // A pending stopped-state seek belongs to the previous song.
     playbackRuntime.clearPendingStart()
     const existing = melodyStore.getAllMelodies().find((m) => m.name === name)
@@ -1207,9 +1237,9 @@ const AppShell: Component<AppProps> = (props) => {
   const singingPicker = useMidiSongPicker<MelodyItem>({
     currentSong: singingSong,
     fromMelodyItems: (items) => items,
-    // Singing scores a single melody line; backing tracks are not played.
     fromScoreNotes: midiNotesToMelodyItems,
-    fromBackingNotes: () => [],
+    // Heard tracks become karaoke backing audio (played, not scored).
+    fromBackingNotes: (notes) => midiNotesToMelodyItems(notes),
     onSongLoaded: (items, name, songBpm, _backing, _muted, song) =>
       handleSingingSongLoaded(items, name, songBpm, song),
     // The singing page always has a current melody — never clobber it with
@@ -1236,7 +1266,12 @@ const AppShell: Component<AppProps> = (props) => {
     const name = melodyStore.currentMelody()?.name
     if (name === undefined || name === '') return
     const match = savedMidiSongs().find((s) => s.name === name)
-    if (match && match.tracks.length > 0) setSingingSong(match)
+    if (match && match.tracks.length > 0) {
+      setSingingSong(match)
+      // Rehydrate the karaoke backing from the song's heard tracks so it
+      // plays after a reload, not just right after import.
+      singingBacking.setBacking(backingFromSong(match))
+    }
   })
 
   // ── Mic handler ────────────────────────────────────────────

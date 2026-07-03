@@ -292,7 +292,7 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
             setPendingBackingIds={props.picker.setPendingBackingIds}
             onApply={props.picker.applyTrackSelection}
             onClose={() => props.picker.setTrackModalSong(null)}
-            hideBacking
+            scoreHint="the track you sing against"
           />
         )}
       </Show>
