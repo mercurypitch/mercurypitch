@@ -24,10 +24,12 @@ interface MidiTrackPickerModalProps {
   onApply: () => void
   onClose: () => void
   /**
-   * Hide the "Hear" (backing audio) column — the Singing page scores against
-   * a single melody line and does not play backing tracks.
+   * Hide the "Hear" (backing audio) column entirely (unused now that Singing
+   * also plays backing; kept for callers that want a score-only picker).
    */
   hideBacking?: boolean
+  /** Override the "Score" legend hint (e.g. "the track you sing against"). */
+  scoreHint?: string
 }
 
 export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
@@ -54,9 +56,10 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
         <div class="gp-track-legend">
           <span>
             <strong>Score</strong>:{' '}
-            {props.hideBacking === true
-              ? 'the track you sing against'
-              : 'the track you play against (falling notes)'}
+            {props.scoreHint ??
+              (props.hideBacking === true
+                ? 'the track you sing against'
+                : 'the track you play against (falling notes)')}
           </span>
           <Show when={props.hideBacking !== true}>
             <span>

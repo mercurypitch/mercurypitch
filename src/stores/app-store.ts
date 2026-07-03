@@ -1050,7 +1050,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Load a Melody',
     targetSelector: '[data-tour="singing.library"]',
     description:
-      'Load a preset melody from the library, import a MIDI file (or drop one on the canvas — the status bar lets you pick which track to sing), or record your own. Presets give you a great head start.',
+      'Load a preset melody from the library, import a MIDI file (or drop one on the canvas — the status bar lets you pick which track to sing against while the rest play as karaoke backing), or record your own. Presets give you a great head start.',
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
