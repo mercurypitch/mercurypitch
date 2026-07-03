@@ -55,6 +55,8 @@ export interface MidiSongPicker {
   applyTrackSelection: () => void
   selectScoreTrack: (trackId: string) => void
   importMidi: () => void
+  /** Import a .mid/.midi File directly (drag-and-drop path). */
+  importMidiFile: (file: File) => Promise<void>
 }
 
 export function useMidiSongPicker<T>(
@@ -176,41 +178,44 @@ export function useMidiSongPicker<T>(
     loadSavedSong(updated)
   }
 
+  const importMidiFile = async (file: File) => {
+    try {
+      setImportStatus('Parsing...')
+      const buffer = await file.arrayBuffer()
+      const data = new Uint8Array(buffer)
+      const song = parseMidiSong(data)
+
+      if (!song) {
+        setImportStatus('No notes found in MIDI file')
+        return
+      }
+
+      const name = file.name.replace(/\.(mid|midi)$/i, '')
+      const score = defaultScoreTrack(song)
+      const backingIds = song.tracks
+        .filter((t) => t.id !== score.id)
+        .map((t) => t.id)
+      const saved = saveMidiSong(name, song, score.id, backingIds)
+
+      if (song.tracks.length > 1) {
+        // Let the user pick which track to practice before loading
+        openTrackModal(saved)
+      } else {
+        loadSavedSong(saved)
+      }
+    } catch (err) {
+      setImportStatus(`Import failed: ${String(err)}`)
+    }
+  }
+
   const importMidi = () => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.mid,.midi'
-    input.onchange = async () => {
+    input.onchange = () => {
       const file = input.files?.[0]
       if (!file) return
-
-      try {
-        setImportStatus('Parsing...')
-        const buffer = await file.arrayBuffer()
-        const data = new Uint8Array(buffer)
-        const song = parseMidiSong(data)
-
-        if (!song) {
-          setImportStatus('No notes found in MIDI file')
-          return
-        }
-
-        const name = file.name.replace(/\.(mid|midi)$/i, '')
-        const score = defaultScoreTrack(song)
-        const backingIds = song.tracks
-          .filter((t) => t.id !== score.id)
-          .map((t) => t.id)
-        const saved = saveMidiSong(name, song, score.id, backingIds)
-
-        if (song.tracks.length > 1) {
-          // Let the user pick which track to practice before loading
-          openTrackModal(saved)
-        } else {
-          loadSavedSong(saved)
-        }
-      } catch (err) {
-        setImportStatus(`Import failed: ${String(err)}`)
-      }
+      void importMidiFile(file)
     }
     input.click()
   }
@@ -244,5 +249,6 @@ export function useMidiSongPicker<T>(
     applyTrackSelection,
     selectScoreTrack,
     importMidi,
+    importMidiFile,
   }
 }
