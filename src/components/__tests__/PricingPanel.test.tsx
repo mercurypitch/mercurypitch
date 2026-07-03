@@ -119,7 +119,9 @@ describe('PricingPanel', () => {
     vi.mocked(fetchPricing).mockResolvedValue(null)
     render(() => <PricingPanel />)
     await waitFor(() =>
-      expect(screen.getByText('Pricing is coming soon.')).toBeInTheDocument(),
+      expect(
+        screen.getByText('Credit packs are coming soon.'),
+      ).toBeInTheDocument(),
     )
   })
 })

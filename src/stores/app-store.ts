@@ -1433,6 +1433,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-account"]'],
   },
   {
+    title: 'Credits',
+    targetSelector: '[data-tour="settings.credits"]',
+    description:
+      'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Check your balance and top up here.',
+    placement: 'bottom',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-credits"]'],
+  },
+  {
     title: 'Reset & danger zone',
     targetSelector: '[data-testid="danger-reset-btn"]',
     description:

@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
+import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -123,7 +124,7 @@ export const SettingsPanel: Component = () => {
 
   const [testCrash, setTestCrash] = createSignal(false)
   const [activeTab, setActiveTab] = createSignal<
-    'account' | 'singing' | 'display'
+    'account' | 'singing' | 'display' | 'credits'
   >('account')
 
   return (
@@ -172,6 +173,19 @@ export const SettingsPanel: Component = () => {
             data-testid="settings-tab-display"
           >
             Display &amp; Controls
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class={styles.settingsTab}
+            classList={{
+              [styles.settingsTabActive]: activeTab() === 'credits',
+            }}
+            aria-selected={activeTab() === 'credits'}
+            onClick={() => setActiveTab('credits')}
+            data-testid="settings-tab-credits"
+          >
+            Credits
           </button>
         </div>
 
@@ -222,6 +236,21 @@ export const SettingsPanel: Component = () => {
                 <option value="simple">Simple — practice only</option>
               </SafeSelect>
             </div>
+          </div>
+        </Show>
+
+        <Show when={activeTab() === 'credits'}>
+          {/* Credits — server-side separation top-ups. Deliberately named
+              "Credits" (not plans/pricing): on-device stays free and there
+              is no subscription to sell. */}
+          <div class={styles.settingsSection} data-tour="settings.credits">
+            <h3 class={styles.settingsSectionTitle}>Credits</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Credits pay only for faster server-side vocal separation.
+              Everything that runs on your device is free, forever.
+            </p>
+            <PricingPanel />
           </div>
         </Show>
 
