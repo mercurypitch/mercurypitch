@@ -5,6 +5,8 @@
 // that links to the support (Ko-fi) page. Right-anchored in the header.
 
 import type { Component } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
+import { ChangelogModal } from '@/components/ChangelogModal'
 import { APP_VERSION, COMMIT_SHA } from '@/lib/defaults'
 import styles from './SupportBadge.module.css'
 
@@ -13,14 +15,24 @@ import styles from './SupportBadge.module.css'
 const SUPPORT_URL = 'https://ko-fi.com/chaosmatters'
 
 export const SupportBadge: Component = () => {
+  const [showChangelog, setShowChangelog] = createSignal(false)
   return (
     <div class={styles.badge}>
-      <span
+      <button
+        type="button"
         class={styles.version}
-        title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA})`}
+        title={`MercuryPitch v${APP_VERSION} (${COMMIT_SHA}) — what's new`}
+        aria-label="Show the changelog"
+        onClick={() => setShowChangelog(true)}
       >
         v{APP_VERSION}
-      </span>
+      </button>
+      <Show when={showChangelog()}>
+        <ChangelogModal
+          open={showChangelog()}
+          onClose={() => setShowChangelog(false)}
+        />
+      </Show>
       <a
         class={styles.support}
         href={SUPPORT_URL}
