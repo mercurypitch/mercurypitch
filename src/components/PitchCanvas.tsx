@@ -1575,6 +1575,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           props.totalBeats(),
         )
         const py = freqToY(pt.freq, h)
+        // Skip detections far outside the fitted view (breath/rumble
+        // artifacts at the detector's range extremes) and break the line
+        // there — since the view fits the melody tightly, an off-view
+        // point would otherwise drag a violent spike across the canvas.
+        if (py < -h * 0.25 || py > h * 1.25) {
+          started = false
+          continue
+        }
         if (!started) {
           ctx.moveTo(px, py)
           started = true
@@ -1583,7 +1591,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.stroke()
 
       const last = history[history.length - 1]
-      if (last.freq !== null && last.freq > 0) {
+      // The glowing trail-head dot only rides a LIVE run — on the preserved
+      // post-run trace it read as a second "current pitch" dot next to the
+      // left live marker.
+      const transportOn = props.isPlaying() || props.isPaused()
+      if (transportOn && last.freq !== null && last.freq > 0) {
         const ly = freqToY(last.freq, h)
         const lx = beatToHistoryX(
           last.time,
