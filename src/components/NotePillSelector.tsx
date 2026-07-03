@@ -34,7 +34,9 @@ export const NotePillSelector: Component<NotePillSelectorProps> = (props) => {
     const gen = ++previewGen
     void initAudioEngine().then(async (engine) => {
       if (previewNoteId !== undefined) engine.stopNote(previewNoteId)
-      const id = await engine.playNote(midiToFrequency(midi), PREVIEW_MS)
+      // previewNote plays at reduced per-voice gain — a sudden full-volume
+      // tone on a pill tap was jarring next to regular playback.
+      const id = await engine.previewNote(midiToFrequency(midi), PREVIEW_MS)
       if (gen !== previewGen) {
         if (id !== undefined) engine.stopNote(id)
         return
