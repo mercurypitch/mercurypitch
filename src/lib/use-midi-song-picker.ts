@@ -32,6 +32,12 @@ export interface MidiSongPickerOptions<T> {
     mutedIds: string[],
     songObj: SavedMidiSong | null,
   ) => void
+  /**
+   * The picker auto-loads the first library melody on mount. Pages remount on
+   * every tab visit while their controller lives app-wide — return true when
+   * the controller already holds content so the remount doesn't clobber it.
+   */
+  skipAutoLoad?: () => boolean
 }
 
 export interface MidiSongPicker {
@@ -221,6 +227,13 @@ export function useMidiSongPicker<T>(
   }
 
   onMount(() => {
+    if (opts.skipAutoLoad?.() === true) {
+      // Keep the picker's selection in sync with the already-loaded song so
+      // the select modal highlights the right entry.
+      const song = opts.currentSong()
+      if (song) setSelectedId(song.id)
+      return
+    }
     const list = melodies()
     if (list.length > 0) {
       setSelectedId(list[0].id)
