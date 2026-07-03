@@ -23,12 +23,17 @@ export function useDynamicSwellController(
   let roundIndex = 0
   let roundScores: number[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  let _cancelled = false
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
     phaseTimer = undefined
+    // reset()/unmount can fire while a playTone().then() continuation is
+    // in flight — clearing the pending timer alone cannot stop it from
+    // re-arming the chain (Back kept the sequence playing to the end).
+    // The flag makes the continuation's own guards bail instead.
+    _cancelled = true
   })
   let holdStartTime = 0
-  let _cancelled = false
   // Adaptive constants resolved per round set; default level 5 == originals.
   let holdDurationMs = HOLD_DURATION_MS
   let deviationPenalty = DEVIATION_PENALTY

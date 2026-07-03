@@ -45,12 +45,17 @@ export function useIntervalTrainerController(
   let roundScores: Array<{ note1: number; note2: number }> = []
   let intervalSpans: Array<{ span: number; score: number }> = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  let _cancelled = false
   base._registerDispose(() => {
     clearTimeout(phaseTimer)
     phaseTimer = undefined
+    // reset()/unmount can fire while a playTone().then() continuation is
+    // in flight — clearing the pending timer alone cannot stop it from
+    // re-arming the chain (Back kept the sequence playing to the end).
+    // The flag makes the continuation's own guards bail instead.
+    _cancelled = true
   })
   let matchStartTime = 0
-  let _cancelled = false
   // Scaling-penalty per cent of pitch error; set from difficulty in setBase.
   // 1.5 at difficulty 5 (default) reproduces the original scoring formula.
   let centsPenalty = 1.5
