@@ -800,7 +800,19 @@ test.describe('Critical Flows — GH #121', () => {
     test('Precount button exists and toggles on/off', async ({ page }) => {
       const precountBtn = page.locator('#btn-precount')
       await expect(precountBtn).toBeVisible()
-      await expect(precountBtn).toHaveAttribute('title', /Precount/)
+      // The native title became a portal Tooltip (it doubled with the browser
+      // tooltip), so the stable accessible contract is the aria-label.
+      await expect(precountBtn).toHaveAttribute(
+        'aria-label',
+        /Precount: (On|Off)/,
+      )
+      const before = await precountBtn.getAttribute('aria-label')
+      const after = before === 'Precount: On' ? 'Precount: Off' : 'Precount: On'
+      await precountBtn.click()
+      await expect(precountBtn).toHaveAttribute('aria-label', after)
+      // Toggle back so the setting doesn't leak into later tests.
+      await precountBtn.click()
+      await expect(precountBtn).toHaveAttribute('aria-label', String(before))
     })
 
     test('Focus Mode play/pause controls work', async ({ page }) => {
