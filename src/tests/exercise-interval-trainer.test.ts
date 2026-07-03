@@ -139,4 +139,35 @@ describe('useIntervalTrainerController', () => {
     expect(result.score).toBeGreaterThan(0)
     expect(result.score).toBeLessThanOrEqual(100)
   })
+
+  it('dispose cancels an in-flight round chain (Back / unmount mid-run)', async () => {
+    // Navigating away runs base.reset(), which fires the registered dispose
+    // callbacks. The dispose must also flip the controller's cancellation
+    // flag: clearing the pending timer alone can't stop a playTone().then()
+    // continuation that is in flight — the exercise used to keep playing its
+    // whole note sequence after the component was gone.
+    vi.useFakeTimers()
+    const disposers: Array<() => void> = []
+    const playTone = vi.fn().mockResolvedValue(undefined)
+    const base = createMockBase({
+      _registerDispose: (fn: () => void) => {
+        disposers.push(fn)
+      },
+    })
+    const ctrl = useIntervalTrainerController(base, { playTone })
+
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    // Let the chain get going (first notes + gap timers).
+    await vi.advanceTimersByTimeAsync(3000)
+    const callsBefore = playTone.mock.calls.length
+    expect(callsBefore).toBeGreaterThan(0)
+
+    // What unmount/reset does.
+    for (const fn of disposers) fn()
+
+    // Nothing further may play, no matter how long the clock runs.
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(playTone.mock.calls.length).toBe(callsBefore)
+  })
 })
