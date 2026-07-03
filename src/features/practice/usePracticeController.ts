@@ -101,7 +101,19 @@ export function usePracticeController(deps: Deps): PracticeController {
       const pitch = practiceEngine.update()
       const beat = playbackRuntime.getCurrentBeat()
 
-      if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
+      // Collect the trace only while the transport runs. Without the gate,
+      // singing with the mic on after stop/pause kept appending samples at
+      // the frozen/reset beat — a second glowing "live" dot parked at that
+      // x (next to the left live marker, or mid-canvas when paused) that
+      // still tracked pitch, plus a stray connector line into the
+      // preserved run trace.
+      const transportActive = deps.isPlaying() || editorIsPlaying()
+      if (
+        transportActive &&
+        pitch &&
+        pitch.frequency > 0 &&
+        pitch.clarity >= 0.2
+      ) {
         setPitchHistory((prev) => {
           const next = [
             ...prev,
@@ -112,6 +124,16 @@ export function usePracticeController(deps: Deps): PracticeController {
             },
           ]
           return next.length > 2000 ? next.slice(-2000) : next
+        })
+      } else if (transportActive) {
+        // Unvoiced frame mid-run: close the current line segment with ONE
+        // gap marker so silence renders as a gap — previously the last
+        // sung note was connected straight across to the next detection
+        // (often a breath/rumble artifact), a violent vertical spike.
+        setPitchHistory((prev) => {
+          const last = prev[prev.length - 1]
+          if (last === undefined || last.freq === null) return prev
+          return [...prev, { freq: null, time: beat }]
         })
       }
 
