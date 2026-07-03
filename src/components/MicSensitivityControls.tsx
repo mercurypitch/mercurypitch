@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal } from 'solid-js'
+import { SegmentedControl } from '@/components/shared/SegmentedControl'
 import type { AccuracyTier, SensitivityPreset } from '@/stores/settings-store'
 import { accuracyTier, applyAccuracyTier, applySensitivityPreset, sensitivityPreset, } from '@/stores/settings-store'
 import styles from './MicSensitivityControls.module.css'
@@ -15,18 +16,6 @@ const ROOMS: Array<{ value: SensitivityPreset; label: string }> = [
   { value: 'home', label: 'Home' },
   { value: 'noisy', label: 'Noisy' },
 ]
-
-const segBtn = (active: boolean): JSX.CSSProperties => ({
-  flex: '1',
-  padding: '0.3rem 0.4rem',
-  'font-size': '0.75rem',
-  border: '1px solid var(--border-color, rgba(0,0,0,0.15))',
-  background: active ? 'var(--accent, #4a7)' : 'transparent',
-  color: active
-    ? 'var(--accent-contrast, #fff)'
-    : 'var(--text-secondary, #555)',
-  cursor: 'pointer',
-})
 
 /**
  * Quick mic/scoring presets for the sidebar. Surfaces the existing
@@ -59,52 +48,26 @@ export function MicSensitivityControls(props: {
         <span style={{ 'font-size': '0.7rem', opacity: '0.7' }}>
           Strictness
         </span>
-        <div
-          style={{
-            display: 'flex',
-            'border-radius': '6px',
-            overflow: 'hidden',
-          }}
-        >
-          <For each={TIERS}>
-            {(t) => (
-              <button
-                type="button"
-                style={segBtn(accuracyTier() === t.value)}
-                aria-pressed={accuracyTier() === t.value}
-                onClick={() => applyAccuracyTier(t.value)}
-              >
-                {t.label}
-              </button>
-            )}
-          </For>
-        </div>
+        <SegmentedControl
+          options={TIERS}
+          value={accuracyTier}
+          onChange={applyAccuracyTier}
+          ariaLabel="Scoring strictness"
+          grow
+        />
       </div>
 
       <div
         style={{ display: 'flex', 'flex-direction': 'column', gap: '0.2rem' }}
       >
         <span style={{ 'font-size': '0.7rem', opacity: '0.7' }}>Room</span>
-        <div
-          style={{
-            display: 'flex',
-            'border-radius': '6px',
-            overflow: 'hidden',
-          }}
-        >
-          <For each={ROOMS}>
-            {(r) => (
-              <button
-                type="button"
-                style={segBtn(sensitivityPreset() === r.value)}
-                aria-pressed={sensitivityPreset() === r.value}
-                onClick={() => applySensitivityPreset(r.value)}
-              >
-                {r.label}
-              </button>
-            )}
-          </For>
-        </div>
+        <SegmentedControl
+          options={ROOMS}
+          value={sensitivityPreset}
+          onChange={applySensitivityPreset}
+          ariaLabel="Room noise"
+          grow
+        />
       </div>
 
       <button

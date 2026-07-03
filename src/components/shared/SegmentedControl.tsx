@@ -24,6 +24,8 @@ interface SegmentedControlProps<T extends string> {
   /** Accessible group name; falls back to the label. */
   ariaLabel?: string
   dataTour?: string
+  /** Stretch to the host's width, segments sharing it evenly (sidebar rows). */
+  grow?: boolean
 }
 
 export function SegmentedControl<T extends string>(
@@ -32,6 +34,7 @@ export function SegmentedControl<T extends string>(
   return (
     <div
       class={styles.segmented}
+      classList={{ [styles.segGrow]: props.grow === true }}
       role="radiogroup"
       aria-label={props.ariaLabel ?? props.label}
       data-tour={props.dataTour}
