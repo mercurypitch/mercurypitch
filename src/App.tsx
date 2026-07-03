@@ -1940,22 +1940,25 @@ const AppShell: Component<AppProps> = (props) => {
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
                       />
-                      {/* Centered over the status bar */}
+                    </div>
+
+                    <div id="canvas-container" ref={singingDropZone.bind}>
+                      {/* Below the top-docked control bar, in the empty band
+                          above the notes — matches the Piano/Guitar hint
+                          placement. Centring it on the status bar occluded
+                          the song timeline. */}
                       <MicInsightHint
                         message={micInsights.message}
                         insight={micInsights.insight}
                         style={{
                           position: 'absolute',
-                          top: '50%',
+                          top: '68px',
                           left: '50%',
-                          transform: 'translate(-50%, -50%)',
+                          transform: 'translateX(-50%)',
                           'z-index': '6',
                           'white-space': 'nowrap',
                         }}
                       />
-                    </div>
-
-                    <div id="canvas-container" ref={singingDropZone.bind}>
                       <PitchCanvas
                         melody={activePlaybackItems}
                         scale={() => melodyStore.currentScale()}
