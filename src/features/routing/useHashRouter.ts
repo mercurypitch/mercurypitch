@@ -8,7 +8,9 @@ import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
-  setActiveTab: Setter<ActiveTab>
+  // Plain-value setter: the store wraps the raw signal setter with the
+  // tab-transition cleanup hook, so it is no longer a Solid Setter.
+  setActiveTab: (tab: ActiveTab) => void
   setInitialUvrView: Setter<UvrView | null>
   setInitialUvrSessionId: Setter<string | null>
   setActiveUvrSessionId: Setter<string | null>

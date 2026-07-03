@@ -100,7 +100,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -1056,57 +1056,52 @@ const AppShell: Component<AppProps> = (props) => {
   // Clean up pending session sequencer timeouts on unmount
   onCleanup(() => sessionSequencer.destroy())
 
-  // ── Tab change handler with audio cleanup ──────────────────
   // ── Tab-change cleanup ──────────────────────────────────────
-  // We use an effect to ensure cleanup runs whenever activeTab changes,
-  // regardless of whether it was triggered by a UI click, hash router,
-  // or an E2E bridge call.
-  createEffect(
-    on(
-      activeTab,
-      (_newTab, prevTab) => {
-        if (prevTab === undefined) return // Initial mount
+  // Registered as a SYNCHRONOUS listener at the setActiveTab choke point
+  // (nav clicks, hash router and the E2E bridge all funnel through it).
+  //
+  // This was a `createEffect(on(activeTab, ..., { defer: true }))` before —
+  // but with defer the initial run is skipped, so `on` never records a
+  // previous input and the FIRST tab change after load fired with
+  // prevTab === undefined, returning early: whichever tab you switched to
+  // first kept the previous tab's audio running (e.g. singing playback kept
+  // sounding under the piano tab). The listener runs before the signal
+  // flips and cannot miss a transition.
+  onTabTransition((prevTab, _newTab) => {
+    // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
+    // practice session but leaves the mic running, so without this the mic
+    // lingers after leaving and micActive stays stuck on — making the mic
+    // button look active (and react to playback) on the next visit. Mirrors
+    // the Piano/Guitar cleanup below.
+    if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
+      void resetPlaybackState()
+      if (micActive()) practiceEngine.stopMic()
+    }
 
-        // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
-        // practice session but leaves the mic running, so without this the mic
-        // lingers after leaving and micActive stays stuck on — making the mic
-        // button look active (and react to playback) on the next visit. Mirrors
-        // the Piano/Guitar cleanup below.
-        if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
-          void resetPlaybackState()
-          if (micActive()) practiceEngine.stopMic()
-        }
+    // 2. Pause a running piano game (it otherwise keeps playing — and
+    // sounding — invisibly on the previous tab; pause rather than stop so
+    // coming back can resume, and discard a run still counting in) and
+    // stop the piano mic if active.
+    if (prevTab === TAB_PIANO) {
+      const pianoState = fallingNotes.gameState()
+      if (pianoState === 'playing') fallingNotes.pauseGame()
+      else if (pianoState === 'countdown') fallingNotes.resetGame()
+      if (fallingNotes.isMicActive()) fallingNotes.stopMic()
+    }
 
-        // 2. Pause a running piano game (it otherwise keeps playing — and
-        // sounding — invisibly on the previous tab; pause rather than stop so
-        // coming back can resume, and discard a run still counting in) and
-        // stop the piano mic if active.
-        if (prevTab === TAB_PIANO) {
-          const pianoState = fallingNotes.gameState()
-          if (pianoState === 'playing') fallingNotes.pauseGame()
-          else if (pianoState === 'countdown') fallingNotes.resetGame()
-          if (fallingNotes.isMicActive()) fallingNotes.stopMic()
-        }
+    // 3. Stop guitar practice if active
+    if (prevTab === TAB_GUITAR && guitarCtx.guitar.gameState() !== 'idle') {
+      guitarCtx.guitar.stopGame()
+    }
 
-        // 3. Stop guitar practice if active
-        if (prevTab === TAB_GUITAR && guitarCtx.guitar.gameState() !== 'idle') {
-          guitarCtx.guitar.stopGame()
-        }
-
-        // 4. Stop guitar mic if active. The guitar controller owns its mic
-        // (shared MicManager), so stop it directly; practiceEngine.stopMic()
-        // covers the singToFretboard mode's own mic.
-        if (prevTab === TAB_GUITAR) {
-          guitarCtx.guitar.stopMic()
-          practiceEngine.stopMic()
-        }
-
-        // 5. Clear any active walkthroughs if switching away from study-related tabs
-        // (Optional, based on UX needs)
-      },
-      { defer: true },
-    ),
-  )
+    // 4. Stop guitar mic if active. The guitar controller owns its mic
+    // (shared MicManager), so stop it directly; practiceEngine.stopMic()
+    // covers the singToFretboard mode's own mic.
+    if (prevTab === TAB_GUITAR) {
+      guitarCtx.guitar.stopMic()
+      practiceEngine.stopMic()
+    }
+  })
 
   const handleTabChange = (newTab: ActiveTab) => {
     setActiveTab(newTab)
