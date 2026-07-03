@@ -39,7 +39,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setTarget(noteToMidi(untrack(() => targetNote())))
-    await base.start()
+    if (!(await base.start())) return
     controller.startLoop()
   }
 

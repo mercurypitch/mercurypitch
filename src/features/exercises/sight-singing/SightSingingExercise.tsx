@@ -158,7 +158,7 @@ const SightSingingExercise: Component<Props> = (props) => {
     if (scale.length < 3) return
     const range = getComfortableMidiRange(vocalRangePreset())
     controller.setScale(scale, range.min, range.max)
-    await base.start()
+    if (!(await base.start())) return
     controller.startRounds()
   }
 

@@ -65,7 +65,7 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))
-    await base.start()
+    if (!(await base.start())) return
     await controller.startRounds()
   }
 

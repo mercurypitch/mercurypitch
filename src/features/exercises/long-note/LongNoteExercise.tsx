@@ -54,7 +54,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setTarget(untrack(() => targetMidi()))
-    await base.start()
+    if (!(await base.start())) return
     controller.startLoop()
   }
 

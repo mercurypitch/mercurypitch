@@ -75,7 +75,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
     // Guard: a slide needs two different notes.
     if (fromNote() === toNote()) return
     controller.setTargets(noteToMidi(fromNote()), noteToMidi(toNote()))
-    await base.start()
+    if (!(await base.start())) return
     controller.startLoop()
   }
 

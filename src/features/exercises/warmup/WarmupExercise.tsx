@@ -70,7 +70,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       untrack(() => noteToMidi(comfortNote())),
       steps(),
     )
-    await base.start()
+    if (!(await base.start())) return
     controller.startSteps()
   }
 

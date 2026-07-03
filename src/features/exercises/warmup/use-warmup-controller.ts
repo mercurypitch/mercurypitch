@@ -37,6 +37,17 @@ export function useWarmupController(
     tickTimer = undefined
   }
 
+  // Registered once — the base keeps dispose registrations for the whole
+  // component lifetime and re-runs them at every stop/reset/unmount. The
+  // _cancelled flip matters: reset() can fire while a paced playReference
+  // continuation is in flight, and without it the continuation would keep
+  // stepping a torn-down exercise. setup() re-arms the flags per run.
+  base._registerDispose(() => {
+    _cancelled = true
+    _active = false
+    clearTimers()
+  })
+
   function setup(midi: number, warmupSteps: WarmupStep[]): void {
     _cancelled = false
     _active = false
@@ -44,16 +55,6 @@ export function useWarmupController(
     steps = warmupSteps
     stepIndex = 0
     singScores = []
-    // Re-registered every run: base.stop()/reset() runs AND empties its
-    // dispose list, so a once-at-creation registration would be gone for
-    // the second run. The flag matters — reset() can fire while a paced
-    // playReference continuation is in flight, and without _cancelled the
-    // continuation would keep stepping a torn-down exercise.
-    base._registerDispose(() => {
-      _cancelled = true
-      _active = false
-      clearTimers()
-    })
   }
 
   function startSteps(): void {

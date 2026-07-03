@@ -51,7 +51,7 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
 
   const handleStart = async () => {
     controller.setBase(noteToMidi(startNote()))
-    await base.start()
+    if (!(await base.start())) return
     controller.startRounds()
   }
 

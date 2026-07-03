@@ -45,7 +45,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   let lastPopHits = 0
 
   const handleStart = async () => {
-    await base.start()
+    if (!(await base.start())) return
     if (base.state().status !== 'active') return
     lastCombo = 0
     controller.startGame()
