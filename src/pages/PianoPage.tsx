@@ -164,88 +164,85 @@ export function PianoPage(props: PianoPageProps) {
             onZoomOut={fallingNotes.zoomOut}
           />
         </ControlOverlay>
+        {/* Finished-run score: a non-blocking corner card (same pattern as
+            the Guitar 3D and Singing scoreboards) instead of a modal — the
+            board stays visible and playable behind it. */}
+        <Show when={fallingNotes.gameState() === 'finished'}>
+          {(() => {
+            const pct = () => {
+              const t = fallingNotes.totalNotes()
+              return t > 0
+                ? Math.round((fallingNotes.score() / (t * 100)) * 100)
+                : 0
+            }
+            const grade = () =>
+              pct() >= 90
+                ? 'Pitch Perfect!'
+                : pct() >= 80
+                  ? 'Excellent!'
+                  : pct() >= 65
+                    ? 'Good!'
+                    : pct() >= 50
+                      ? 'Okay!'
+                      : 'Keep Practicing!'
+            return (
+              <div class="fn-score-corner" aria-label="Run score">
+                <span class="fn-score-corner-title">Complete</span>
+                <span class="fn-score-corner-pct">{pct()}%</span>
+                <span class="fn-score-corner-grade">{grade()}</span>
+                <span class="fn-score-corner-detail">
+                  {fallingNotes.totalNotes()} notes · Max Combo:{' '}
+                  {fallingNotes.maxCombo()}x
+                </span>
+                <div class="fn-score-corner-actions">
+                  <button
+                    class="fn-btn fn-btn-play"
+                    onClick={() => void fallingNotes.startGame()}
+                    aria-label="Play again"
+                    title="Play again"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="1 4 1 10 7 10" />
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                    </svg>{' '}
+                    Play Again
+                  </button>
+                  <button
+                    class="fn-btn fn-btn-close"
+                    onClick={fallingNotes.resetGame}
+                    aria-label="Close"
+                    title="Close"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>{' '}
+                    Close
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+        </Show>
       </div>
-      {/* Score overlay for finished game */}
-      <Show when={fallingNotes.gameState() === 'finished'}>
-        <div class="fn-score-overlay">
-          <div class="fn-score-card">
-            <h2>Complete!</h2>
-            <div class="fn-score-grade">
-              {(() => {
-                const s = fallingNotes.score()
-                const t = fallingNotes.totalNotes()
-                const pct = t > 0 ? Math.round((s / (t * 100)) * 100) : 0
-                return pct >= 90
-                  ? 'Pitch Perfect!'
-                  : pct >= 80
-                    ? 'Excellent!'
-                    : pct >= 65
-                      ? 'Good!'
-                      : pct >= 50
-                        ? 'Okay!'
-                        : 'Keep Practicing!'
-              })()}
-            </div>
-            <div class="fn-score-pct">
-              {fallingNotes.totalNotes() > 0
-                ? Math.round(
-                    (fallingNotes.score() / (fallingNotes.totalNotes() * 100)) *
-                      100,
-                  )
-                : 0}
-              %
-            </div>
-            <div class="fn-score-detail">
-              {fallingNotes.totalNotes()} notes · Max Combo:{' '}
-              {fallingNotes.maxCombo()}x
-            </div>
-            <div class="fn-score-actions">
-              <button
-                class="fn-btn fn-btn-play"
-                onClick={() => void fallingNotes.startGame()}
-                aria-label="Play again"
-                title="Play again"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="1 4 1 10 7 10" />
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                </svg>{' '}
-                Play Again
-              </button>
-              <button
-                class="fn-btn fn-btn-close"
-                onClick={fallingNotes.resetGame}
-                aria-label="Close"
-                title="Close"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>{' '}
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </Show>
     </div>
   )
 }
