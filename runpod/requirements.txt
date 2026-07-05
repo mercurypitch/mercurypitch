@@ -7,8 +7,9 @@
 # RunPod serverless SDK (handler runtime + local test loop)
 runpod>=1.6.0
 
-# Stem separation (same engine as the CPU FastAPI api.py)
-audio-separator>=0.18.0
+# Stem separation (same engine as the CPU FastAPI api.py). Pinned: quality
+# behavior (invert_using_spec, mdx_params) validated against this version.
+audio-separator==0.44.2
 
 # Fetch audio_url inputs
 requests>=2.31.0

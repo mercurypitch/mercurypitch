@@ -82,6 +82,22 @@ MAX_INPUT_BYTES = int(os.getenv("UVR_MAX_INPUT_BYTES", str(100 * 1024 * 1024)))
 # the credit. 0 disables the cap.
 MAX_INPUT_MINUTES = float(os.getenv("UVR_MAX_INPUT_MINUTES", "12"))
 
+# ── Separation quality knobs ────────────────────────────────────
+# Env sets the endpoint default; each job may override via `input`
+# (invert_using_spec / mdx_overlap / mdx_denoise / mdx_segment_size) for
+# A/B testing without an endpoint change.
+#
+# invert_using_spec is ON by default: the vocal stem of an instrumental
+# model (Inst_HQ_3 predicts the instrumental; vocal = mix - prediction)
+# is derived by SPECTROGRAM-domain inversion instead of time-domain
+# subtraction. Time-domain subtraction leaves phase-misalignment bleed —
+# instrumental audibly leaking into the vocal stem, varying by song —
+# which the in-browser separator already avoids the same way.
+INVERT_USING_SPEC = os.getenv("UVR_INVERT_USING_SPEC", "1") != "0"
+MDX_OVERLAP = float(os.getenv("UVR_MDX_OVERLAP", "0.25"))
+MDX_DENOISE = os.getenv("UVR_MDX_DENOISE", "0") != "0"
+MDX_SEGMENT_SIZE = int(os.getenv("UVR_MDX_SEGMENT_SIZE", "256"))
+
 # Object storage (S3-compatible — Cloudflare R2 works). When set, stems
 # are uploaded and returned as URLs instead of inline base64. This is the
 # production path; base64 is only sane for small local-test files.
@@ -111,7 +127,7 @@ os.makedirs(WORK_DIR, exist_ok=True)
 # Reused across warm invocations so we only pay the model-load cost once
 # per container lifetime, not once per request.
 _separator: Any = None
-_loaded_model: Optional[str] = None
+_loaded_key: Optional[tuple] = None
 _s3_client: Any = None
 
 
@@ -154,31 +170,84 @@ def _detect_device() -> str:
     return "cpu"
 
 
-def _get_separator(model: str, output_dir: str, output_format: str):
+def _quality_from_input(job_input: dict) -> dict:
+    """Resolve separation-quality settings: env defaults, per-job overrides.
+
+    Overrides are best-effort coerced and clamped; anything unparseable
+    falls back to the env default so a malformed job can't crash or pick
+    pathological settings."""
+
+    def _as_bool(value: Any, default: bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "yes", "on")
+        return default
+
+    def _as_num(value: Any, default: float) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    overlap = _as_num(job_input.get("mdx_overlap"), MDX_OVERLAP)
+    segment = int(_as_num(job_input.get("mdx_segment_size"), MDX_SEGMENT_SIZE))
+    return {
+        "invert_using_spec": _as_bool(
+            job_input.get("invert_using_spec"), INVERT_USING_SPEC
+        ),
+        "overlap": min(0.95, max(0.1, overlap)),
+        "enable_denoise": _as_bool(job_input.get("mdx_denoise"), MDX_DENOISE),
+        "segment_size": min(4096, max(64, segment)),
+    }
+
+
+def _get_separator(
+    model: str, output_dir: str, output_format: str, quality: dict
+):
     """Return a Separator with `model` loaded, reusing the warm instance.
 
     audio-separator auto-selects CUDAExecutionProvider when onnxruntime-gpu
-    sees a GPU, so no provider plumbing is needed on NVIDIA hosts.
+    sees a GPU, so no provider plumbing is needed on NVIDIA hosts. The warm
+    instance is keyed on (model, quality): quality settings are baked into
+    the Separator/model at load time, so a job with different settings
+    rebuilds (a few seconds) — the steady state (env defaults) never does.
     """
-    global _separator, _loaded_model
+    global _separator, _loaded_key
     from audio_separator.separator import Separator
 
-    if _separator is None:
+    model_file = model if model.endswith(".onnx") else f"{model}.onnx"
+    key = (
+        model_file,
+        quality["invert_using_spec"],
+        quality["overlap"],
+        quality["enable_denoise"],
+        quality["segment_size"],
+    )
+
+    if _separator is None or _loaded_key != key:
         os.makedirs(MODEL_DIR, exist_ok=True)
         _separator = Separator(
             output_dir=output_dir,
             output_format=output_format,
             model_file_dir=MODEL_DIR,
+            invert_using_spec=quality["invert_using_spec"],
+            mdx_params={
+                "hop_length": 1024,
+                "segment_size": quality["segment_size"],
+                "overlap": quality["overlap"],
+                "batch_size": 1,
+                "enable_denoise": quality["enable_denoise"],
+            },
         )
+        _separator.load_model(model_filename=model_file)
+        _loaded_key = key
     else:
         # Reuse the warm instance but point it at this job's output dir/format.
         _separator.output_dir = output_dir
         _separator.output_format = output_format
-
-    model_file = model if model.endswith(".onnx") else f"{model}.onnx"
-    if _loaded_model != model_file:
-        _separator.load_model(model_filename=model_file)
-        _loaded_model = model_file
 
     # The loaded model architecture snapshots output_dir/output_format at
     # load_model() time, so mutating the Separator alone leaves a warm worker
@@ -204,7 +273,10 @@ def init_worker() -> None:
         return
     try:
         t0 = time.time()
-        _get_separator(DEFAULT_MODEL, os.path.join(WORK_DIR, "_init"), "FLAC")
+        _get_separator(
+            DEFAULT_MODEL, os.path.join(WORK_DIR, "_init"), "FLAC",
+            _quality_from_input({}),
+        )
         logger.info(
             "Pre-loaded model %s in %.1fs (device=%s)",
             DEFAULT_MODEL,
@@ -367,6 +439,7 @@ def handler(job: dict) -> dict:
         return {"error": f"Invalid output_format (use {sorted(_VALID_FORMATS)})"}
 
     wanted = job_input.get("stems") or ["vocal", "instrumental"]
+    quality = _quality_from_input(job_input)
     job_dir = os.path.join(WORK_DIR, job_id)
     os.makedirs(job_dir, exist_ok=True)
 
@@ -380,13 +453,16 @@ def handler(job: dict) -> dict:
         # here is the tail of the app's rp_<tier>_<id> session id, which is
         # the correlation key across worker logs and the credit ledger.
         logger.info(
-            "Job %s start: %r (%.1f MB via %s) model=%s format=%s",
+            "Job %s start: %r (%.1f MB via %s) model=%s format=%s quality=%s",
             job_id,
             os.path.basename(input_path),
             os.path.getsize(input_path) / 1_000_000,
-            "url" if job_input.get("audio_url") else "base64",
+            "s3" if job_input.get("audio_s3_key")
+            else "url" if job_input.get("audio_url")
+            else "base64",
             model,
             output_format,
+            quality,
         )
 
         # Duration guard — reject over-long songs before paying for a full
@@ -408,7 +484,7 @@ def handler(job: dict) -> dict:
             }
 
         t0 = time.time()
-        separator = _get_separator(model, job_dir, output_format)
+        separator = _get_separator(model, job_dir, output_format, quality)
         timings["load_model"] = round(time.time() - t0, 3)
 
         t0 = time.time()
@@ -486,6 +562,7 @@ def handler(job: dict) -> dict:
             "output_format": output_format,
             "device": _detect_device(),
             "storage": "s3" if use_storage else "base64",
+            "quality": quality,
             "timings": timings,
             "cost": {
                 "gpu_usd_per_hr": GPU_USD_PER_HR,

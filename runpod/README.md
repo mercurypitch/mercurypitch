@@ -90,6 +90,20 @@ Other tunables: `UVR_DEFAULT_MODEL`, `UVR_MODEL_DIR` (default `/models`),
 `UVR_MAX_INPUT_BYTES` (default 100 MB), `RUNPOD_GPU_USD_PER_HR` (default
 `0.69`, used only for the reported cost figure).
 
+## Separation quality
+
+| Env (endpoint default) | Job override (`input`) | Default | Meaning |
+|---|---|---|---|
+| `UVR_INVERT_USING_SPEC` | `invert_using_spec` | **on** | Derive the vocal stem by spectrogram-domain inversion instead of time-domain subtraction. Time-domain leaves phase-misalignment bleed (instrumental audibly leaking into the vocal, varying by song); spec inversion matches the in-browser separator |
+| `UVR_MDX_OVERLAP` | `mdx_overlap` | 0.25 | Chunk overlap (0.1–0.95); higher = smoother seams, slower |
+| `UVR_MDX_DENOISE` | `mdx_denoise` | off | MDX two-pass denoise; cleaner output at ~2x inference time |
+| `UVR_MDX_SEGMENT_SIZE` | `mdx_segment_size` | 256 | MDX segment size (64–4096) |
+
+The warm separator is cached per (model, quality) tuple: jobs using the
+endpoint defaults never rebuild; an override rebuilds once (a few seconds).
+Each job's resolved settings are logged in the `Job <id> start:` line and
+echoed back as `quality` in the output.
+
 ## Cost & cold-start tuning
 
 RunPod bills **per second from when a worker starts until it stops** — there is
