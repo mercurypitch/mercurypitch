@@ -1370,47 +1370,51 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="section-header">
                 <h4>Processing Audio</h4>
               </div>
-              {session() && (
-                <UvrProcessControl
-                  sessionId={session()!.sessionId}
-                  apiSessionId={session()!.apiSessionId}
-                  status={session()!.status}
-                  progress={session()!.progress}
-                  indeterminate={session()!.indeterminate}
-                  processingTime={session()!.processingTime}
-                  error={session()!.error}
-                  processingMode={session()!.processingMode}
-                  numChunks={session()!.numChunks}
-                  provider={session()!.provider}
-                  originalFileName={session()!.originalFile?.name}
-                  onCancel={() => {
-                    const s = session()
-                    if (!s) return
-                    cancelUvrPipeline(
-                      s.processingMode ?? 'server',
-                      s.apiSessionId,
-                    )
-                    cancelUvrSession(s.sessionId)
-                    setCurrentView('upload')
-                  }}
-                  onRetry={() => {
-                    const s = session()
-                    if (!s) return
-                    retryUvrSession(s.sessionId)
-                    void handleProcessStart(s.sessionId, s.processingMode)
-                  }}
-                  onNewSession={() => setCurrentView('upload')}
-                  onDeleteAndNew={() => {
-                    // Capture once: deleteUvrSession clears the current-session
-                    // signal, so a second session()! read here crashed the app.
-                    const s = session()
-                    if (!s) return
-                    deleteUvrSession(s.sessionId)
-                    void deleteUvrSessionFromDb(s.sessionId)
-                    setCurrentView('upload')
-                  }}
-                />
-              )}
+              {/* Show's callback accessor stays truthy-narrowed while the
+                  branch is torn down. The bare `session() && (...)` guard was
+                  NOT enough: deleting the session nulls the signal, and the
+                  child's reactive prop reads (session()!.status) re-ran on
+                  null before the unmount landed — crashing the app. */}
+              <Show when={session()}>
+                {(sess) => (
+                  <UvrProcessControl
+                    sessionId={sess().sessionId}
+                    apiSessionId={sess().apiSessionId}
+                    status={sess().status}
+                    progress={sess().progress}
+                    indeterminate={sess().indeterminate}
+                    processingTime={sess().processingTime}
+                    error={sess().error}
+                    processingMode={sess().processingMode}
+                    numChunks={sess().numChunks}
+                    provider={sess().provider}
+                    originalFileName={sess().originalFile?.name}
+                    onCancel={() => {
+                      // One upfront read: the calls below mutate the session
+                      // signal mid-handler.
+                      const s = sess()
+                      cancelUvrPipeline(
+                        s.processingMode ?? 'server',
+                        s.apiSessionId,
+                      )
+                      cancelUvrSession(s.sessionId)
+                      setCurrentView('upload')
+                    }}
+                    onRetry={() => {
+                      const s = sess()
+                      retryUvrSession(s.sessionId)
+                      void handleProcessStart(s.sessionId, s.processingMode)
+                    }}
+                    onNewSession={() => setCurrentView('upload')}
+                    onDeleteAndNew={() => {
+                      const s = sess()
+                      deleteUvrSession(s.sessionId)
+                      void deleteUvrSessionFromDb(s.sessionId)
+                      setCurrentView('upload')
+                    }}
+                  />
+                )}
+              </Show>
               <Show when={fingerprintingSession() !== ''}>
                 <div
                   style={{
@@ -1466,24 +1470,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   <ImportFile /> Back to Upload
                 </button>
               </div>
-              {session() && (
-                <UvrResultViewer
-                  outputs={session()!.outputs}
-                  stemMeta={session()!.stemMeta}
-                  processingTime={session()!.processingTime}
-                  sessionId={session()!.sessionId}
-                  originalFileName={session()?.originalFile?.name}
-                  onStartPractice={(mode) => {
-                    void handlePracticeStart(mode)
-                  }}
-                  onStartMix={(stems) => {
-                    void handleMixStart(stems)
-                  }}
-                  onExport={(type) => {
-                    void handleExport(type)
-                  }}
-                />
-              )}
+              <Show when={session()}>
+                {(sess) => (
+                  <UvrResultViewer
+                    outputs={sess().outputs}
+                    stemMeta={sess().stemMeta}
+                    processingTime={sess().processingTime}
+                    sessionId={sess().sessionId}
+                    originalFileName={sess().originalFile?.name}
+                    onStartPractice={(mode) => {
+                      void handlePracticeStart(mode)
+                    }}
+                    onStartMix={(stems) => {
+                      void handleMixStart(stems)
+                    }}
+                    onExport={(type) => {
+                      void handleExport(type)
+                    }}
+                  />
+                )}
+              </Show>
             </div>
           </Show>
 
