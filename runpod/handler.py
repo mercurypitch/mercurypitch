@@ -51,6 +51,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger("runpod-uvr")
 
+# audio-separator's Separator.separate() swallows per-file exceptions
+# (logs "Failed to process file ...", returns []) — a real separation crash
+# then surfaces to us only as "no output stems". Capture the library's ERROR
+# records so the job error can carry the underlying cause.
+_lib_errors: list[str] = []
+
+
+class _LibErrorCapture(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            _lib_errors.append(record.getMessage())
+            del _lib_errors[:-3]
+        except Exception:
+            pass
+
+
+_lib_capture = _LibErrorCapture(level=logging.ERROR)
+logging.getLogger("audio_separator").addHandler(_lib_capture)
+
 # ── Configuration (env) ─────────────────────────────────────────
 # Where audio-separator caches its ONNX/torch model weights. Bake the
 # default model into the image at this path (see Dockerfile) so a cold
@@ -204,6 +223,44 @@ def _quality_from_input(job_input: dict) -> dict:
     }
 
 
+def _patch_invert_stem() -> None:
+    """Fix the channel orientation bug that breaks invert_using_spec.
+
+    audio-separator 0.44.2's MDX path hands spec_utils.invert_stem the
+    primary source time-major (N, 2) while the match-mix is channels-first
+    (2, N); librosa's STFT then sees N channels of 2 samples and the whole
+    separation dies in a broadcast ValueError — swallowed by
+    Separator.separate(), so every spec-inversion job reports
+    "no output stems". Re-orient both waves to channels-first before the
+    original function runs. Idempotent; a fixed upstream release makes the
+    transpose a no-op (both args already channels-first)."""
+    from audio_separator.separator.uvr_lib_v5 import spec_utils
+
+    if getattr(spec_utils.invert_stem, "_mp_channels_first_fix", False):
+        return
+
+    import numpy as np
+
+    orig = spec_utils.invert_stem
+
+    def _channels_first(wave):
+        if (
+            isinstance(wave, np.ndarray)
+            and wave.ndim == 2
+            and wave.shape[0] != 2
+            and wave.shape[1] == 2
+        ):
+            return wave.T
+        return wave
+
+    def fixed(mixture, stem):
+        return orig(_channels_first(mixture), _channels_first(stem))
+
+    fixed._mp_channels_first_fix = True  # type: ignore[attr-defined]
+    spec_utils.invert_stem = fixed
+    logger.info("Patched spec_utils.invert_stem for channels-first input")
+
+
 def _get_separator(
     model: str, output_dir: str, output_format: str, quality: dict
 ):
@@ -217,6 +274,8 @@ def _get_separator(
     """
     global _separator, _loaded_key
     from audio_separator.separator import Separator
+
+    _patch_invert_stem()
 
     model_file = model if model.endswith(".onnx") else f"{model}.onnx"
     key = (
@@ -445,6 +504,7 @@ def handler(job: dict) -> dict:
 
     timings: dict[str, float] = {}
     t_start = time.time()
+    _lib_errors.clear()
     try:
         t0 = time.time()
         input_path = _materialize_input(job_input, job_dir)
@@ -540,7 +600,11 @@ def handler(job: dict) -> dict:
                 job_id,
                 len(produced),
             )
-            return {"error": "Separation produced no output stems"}
+            # Surface the library's swallowed per-file error (see
+            # _LibErrorCapture) — without it a separation crash is
+            # indistinguishable from an empty result.
+            detail = f" ({_lib_errors[-1]})" if _lib_errors else ""
+            return {"error": f"Separation produced no output stems{detail}"}
 
         timings["total"] = round(time.time() - t_start, 3)
         billed = timings["total"]
