@@ -3,14 +3,15 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.6.0] - 2026-07-02
+## [0.6.0] - 2026-07-05
 
 ### Added
 
+- **Karaoke server-side processing is here**: flip the Karaoke processing toggle to **Server** and your song is separated on a cloud GPU in roughly half a minute — no more waiting on your device. Stems come back named after your song, save to this device automatically, and play in the stem mixer like always. Songs up to 50 MB and about 12 minutes are supported; a failed or cancelled job automatically refunds its credit.
+- **Credits**: server processing costs 1 credit per song. Buy credit packs (€5 / €10 / €20 / €40) through Stripe's secure checkout under **Settings → Credits** — your balance shows right there, credits never expire, and after checkout you land back on the Credits page with a confirmation. Everything that runs on your device stays free forever.
+- **Deep links to Settings tabs**: `#/settings/account`, `#/settings/credits`, `#/settings/practice` and `#/settings/display` open the exact tab — and messages like "Not enough credits" now carry a button that takes you straight there.
 - **Unified song bar on Singing, Piano & Guitar**: one sleek top bar with the song name, a seek timeline, a compact track list, and Import MIDI. Drop a MIDI (or Guitar Pro) file anywhere on the canvas to load it, and pick which track to play or sing against.
 - **Fuller playback for real songs**: notes sustain their full length, and large multi-track imports stay smooth.
-- **Credit packs & billing (groundwork)**: buy credit packs via Stripe checkout under Settings → Account, with your balance shown there; credits never expire. On-device features stay free.
-- **Server-side stem separation (in testing)**: songs separate on cloud GPUs in about half a minute, with stems named after your song and automatic refunds on failure.
 
 ### Fixed
 
