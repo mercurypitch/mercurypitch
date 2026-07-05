@@ -38,7 +38,7 @@ describe('formatFileSize', () => {
 
 describe('DEFAULT_PROCESS_REQUEST', () => {
   it('has expected default model', () => {
-    expect(DEFAULT_PROCESS_REQUEST.model).toBe('UVR-MDX-NET-Inst_HQ_3')
+    expect(DEFAULT_PROCESS_REQUEST.model).toBe('roformer')
   })
 
   it('has WAV output format', () => {
@@ -272,7 +272,7 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
         session_id: 'rp_gpu_job-1',
         status: 'processing',
         message: 'Processing started',
-        model: 'UVR-MDX-NET-Inst_HQ_3',
+        model: 'roformer',
         output_format: 'WAV',
       }),
   } as Response

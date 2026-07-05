@@ -8,7 +8,7 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { RunpodConfig, RunpodTier } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
 import { debitForJob, refundJob } from './uvr-metering'
 
@@ -200,6 +200,21 @@ async function startRunpodJob(
   }
 
   const model = coerceFormString(form.get('model'))
+  // Allowlist before spending anything: an unknown model would only fail
+  // inside the (billable) RunPod job, and an open passthrough would let a
+  // crafted request make the worker download arbitrary weights on our GPU
+  // time. Absent model = handler default; unknown = loud 400.
+  if (
+    model !== undefined &&
+    !(RUNPOD_ALLOWED_MODELS as readonly string[]).includes(model)
+  ) {
+    return json(
+      {
+        error: `Unknown model (use one of: ${RUNPOD_ALLOWED_MODELS.join(', ')})`,
+      },
+      400,
+    )
+  }
   const outputFormat = coerceFormString(form.get('output_format'))
   const audioUrl = coerceFormString(form.get('audio_url'))
   const stems = parseStems(form.get('stems'))

@@ -24,7 +24,18 @@
 /** Prefix marking a session id as RunPod-backed. */
 export const RUNPOD_SESSION_PREFIX = 'rp_'
 
-export const RUNPOD_DEFAULT_MODEL = 'UVR-MDX-NET-Inst_HQ_3'
+/** Registry quality tiers the handler accepts (see runpod/handler.py
+ *  MODEL_REGISTRY — that copy is the source of truth). The legacy MDX
+ *  weights filename stays accepted for older clients. */
+export const RUNPOD_ALLOWED_MODELS = [
+  'roformer',
+  'mdx',
+  'karaoke',
+  'ensemble',
+  'UVR-MDX-NET-Inst_HQ_3',
+] as const
+
+export const RUNPOD_DEFAULT_MODEL = 'roformer'
 
 const DEFAULT_BASE_URL = 'https://api.runpod.ai/v2'
 

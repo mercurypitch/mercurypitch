@@ -145,10 +145,44 @@ describe('handleRunpodRequest — process', () => {
   it('400s when no file is provided', async () => {
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod' },
-      fields: { model: 'UVR-MDX-NET-Inst_HQ_3' },
+      fields: { model: 'roformer' },
     })
     const res = await handleRunpodRequest(request, url, 'POST', CFG)
     expect(res?.status).toBe(400)
+  })
+
+  it('400s an unknown model without submitting a job', async () => {
+    const spy = mockFetchOnce({ id: 'never' })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: smallFile(),
+      fields: { model: 'evil_random_weights.ckpt' },
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(400)
+    const body = (await res?.json()) as { error: string }
+    expect(body.error).toContain('Unknown model')
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('passes allowlisted models through, including the legacy name', async () => {
+    for (const model of ['roformer', 'karaoke', 'UVR-MDX-NET-Inst_HQ_3']) {
+      // Re-spying on the same global fetch accumulates calls across loop
+      // iterations — always assert on the latest submit.
+      const spy = mockFetchOnce({ id: `job-${model}` })
+      const { request, url } = processReq('/api/uvr/process', {
+        headers: { 'x-uvr-provider': 'runpod' },
+        file: smallFile(),
+        fields: { model },
+      })
+      const res = await handleRunpodRequest(request, url, 'POST', CFG)
+      expect(res?.status).toBe(200)
+      const lastCall = spy.mock.calls.at(-1)
+      const sent = JSON.parse(lastCall?.[1]?.body as string) as {
+        input: { model: string }
+      }
+      expect(sent.input.model).toBe(model)
+    }
   })
 
   it('503s a >7 MB upload when no R2 bucket is wired', async () => {
