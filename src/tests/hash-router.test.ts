@@ -212,6 +212,34 @@ describe('parseHash', () => {
     expect(result.type).toBe('unknown')
   })
 
+  // Settings sub-tab deep links (#/settings/<slug>)
+  it('parses settings section routes (practice slug maps to singing)', () => {
+    expect(parseHash('#/settings/account')).toEqual({
+      type: 'settings-section',
+      section: 'account',
+    })
+    expect(parseHash('#/settings/credits')).toEqual({
+      type: 'settings-section',
+      section: 'credits',
+    })
+    expect(parseHash('#/settings/practice')).toEqual({
+      type: 'settings-section',
+      section: 'singing',
+    })
+    expect(parseHash('#/settings/display')).toEqual({
+      type: 'settings-section',
+      section: 'display',
+    })
+  })
+
+  it('unknown settings section falls through to unknown', () => {
+    expect(parseHash('#/settings/nonsense')).toEqual({ type: 'unknown' })
+  })
+
+  it('plain #/settings still parses as the tab', () => {
+    expect(parseHash('#/settings')).toEqual({ type: 'tab', tab: 'settings' })
+  })
+
   // Stripe checkout return routes (success_url / cancel_url in
   // workers/db-worker/src/billing.ts)
   it('parses billing success and cancel returns', () => {
@@ -344,6 +372,15 @@ describe('buildHash', () => {
   it('builds guide-start section hash', () => {
     expect(buildHash({ type: 'guide-start', sectionId: 'editor' })).toBe(
       '/guide/editor',
+    )
+  })
+
+  it('builds settings-section hashes (singing -> practice slug)', () => {
+    expect(buildHash({ type: 'settings-section', section: 'credits' })).toBe(
+      '/settings/credits',
+    )
+    expect(buildHash({ type: 'settings-section', section: 'singing' })).toBe(
+      '/settings/practice',
     )
   })
 

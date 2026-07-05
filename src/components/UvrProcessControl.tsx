@@ -4,7 +4,27 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { openSettingsSection } from '@/stores/ui-store'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
+
+/** Billing/auth failures get a shortcut button in the error card — the
+ *  toast with the same action disappears after a few seconds, but the
+ *  failed-session card stays on screen. */
+function errorActionFor(
+  error: string | undefined,
+): { label: string; onClick: () => void } | null {
+  if (error === undefined) return null
+  if (error.includes('Not enough credits')) {
+    return {
+      label: 'Get credits',
+      onClick: () => openSettingsSection('credits'),
+    }
+  }
+  if (error.includes('Sign in to use cloud')) {
+    return { label: 'Sign in', onClick: () => openSettingsSection('account') }
+  }
+  return null
+}
 
 interface ProcessControlProps {
   sessionId: string
@@ -37,6 +57,8 @@ interface ProcessControlProps {
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
+  const errorAction = createMemo(() => errorActionFor(props.error))
+
   const formatTime = (ms: number): string => {
     const seconds = Math.floor(ms / 1000)
     const mins = Math.floor(seconds / 60)
@@ -298,6 +320,17 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       <Show when={props.status === 'error'}>
         <div class="error-section">
           <p class="error-text">{props.error}</p>
+          <Show when={errorAction()}>
+            {(action) => (
+              <button
+                class="process-btn process-btn-primary error-action-btn"
+                onClick={() => action().onClick()}
+                data-testid="uvr-error-action"
+              >
+                {action().label}
+              </button>
+            )}
+          </Show>
         </div>
       </Show>
 

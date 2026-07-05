@@ -4,6 +4,7 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { notifications, setNotifications } from '@/stores/notifications-store'
 import { UvrUploadControl } from '../UvrUploadControl'
 
 // Mock icons
@@ -106,29 +107,31 @@ describe('UvrUploadControl Component', () => {
       expect(defaultProps.onFileSelect).toHaveBeenCalledWith(testFile)
     })
 
-    it('shows alert for file larger than 100MB', () => {
-      vi.spyOn(window, 'alert').mockImplementation(() => {})
+    it('shows a notification for a file larger than 100MB', () => {
+      setNotifications([])
       render(() => <UvrUploadControl {...defaultProps} />)
 
       // Use cheap file to avoid allocating 100MB+ in memory
       const largeFile = createMockFileCheap('large.mp3', 101 * 1024 * 1024)
       selectFileViaInput(largeFile)
 
-      expect(window.alert).toHaveBeenCalledWith(
-        expect.stringContaining('File too large'),
+      const toast = notifications().find((n) =>
+        n.message.includes('File too large'),
       )
+      expect(toast).toBeDefined()
+      expect(toast?.action?.label).toBe('OK')
     })
 
-    it('shows alert for invalid file type', () => {
-      vi.spyOn(window, 'alert').mockImplementation(() => {})
+    it('shows a notification for an invalid file type', () => {
+      setNotifications([])
       render(() => <UvrUploadControl {...defaultProps} />)
 
       const invalidFile = createMockFile('test.pdf', 1024, 'application/pdf')
       selectFileViaInput(invalidFile)
 
-      expect(window.alert).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid file type'),
-      )
+      expect(
+        notifications().some((n) => n.message.includes('Invalid file type')),
+      ).toBe(true)
     })
   })
 
@@ -319,8 +322,8 @@ describe('UvrUploadControl Component', () => {
       expect(pill.getAttribute('title')).toContain('Cloud GPU')
     })
 
-    it('appends the size note to the too-large alert', () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    it('appends the size note to the too-large notification', () => {
+      setNotifications([])
       render(() => (
         <UvrUploadControl
           {...defaultProps}
@@ -332,10 +335,11 @@ describe('UvrUploadControl Component', () => {
         type: 'audio/mpeg',
       })
       selectFileViaInput(big)
-      expect(alertSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cloud GPU upload limit'),
-      )
-      alertSpy.mockRestore()
+      expect(
+        notifications().some((n) =>
+          n.message.includes('Cloud GPU upload limit'),
+        ),
+      ).toBe(true)
     })
 
     it('passes allowedTypes prop to file input accept attribute', () => {

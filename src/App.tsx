@@ -114,6 +114,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { openSettingsSection, settingsSection } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
@@ -625,6 +626,8 @@ const AppShell: Component<AppProps> = (props) => {
     handleShareFallback,
     handleShareShort,
     handleBillingReturn,
+    openSettingsSection,
+    settingsSection,
     activeTab,
     activeUvrView,
     activeUvrSessionId,

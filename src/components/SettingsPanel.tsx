@@ -25,6 +25,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
+import { setSettingsSection, settingsSection } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -123,9 +124,10 @@ export const SettingsPanel: Component = () => {
   }
 
   const [testCrash, setTestCrash] = createSignal(false)
-  const [activeTab, setActiveTab] = createSignal<
-    'account' | 'singing' | 'display' | 'credits'
-  >('account')
+  // Shared with the hash router / deep links (#/settings/<section>) and
+  // in-app jumps (openSettingsSection — e.g. "Get credits" toasts).
+  const activeTab = settingsSection
+  const setActiveTab = setSettingsSection
 
   return (
     <div class={styles.settingsPanel}>

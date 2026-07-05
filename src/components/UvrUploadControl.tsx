@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, ImportFile, MusicNote } from './icons'
 
 interface UploadControlProps {
@@ -52,9 +53,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     // Validate file size
     if (file.size > maxSize()) {
       const note =
-        props.maxSizeNote !== undefined ? `\n${props.maxSizeNote}.` : ''
-      alert(
+        props.maxSizeNote !== undefined ? ` ${props.maxSizeNote}.` : ''
+      showActionNotification(
         `File too large! Maximum size: ${formatFileSize(maxSize())}.${note}`,
+        'warning',
+        { label: 'OK', onClick: () => {} },
       )
       return
     }
@@ -67,7 +70,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
       !allowedTypes().includes(mimeType) &&
       !allowedTypes().includes(extension)
     ) {
-      alert('Invalid file type. Please upload MP3 or WAV files.')
+      showActionNotification(
+        'Invalid file type. Please upload MP3, WAV or FLAC files.',
+        'warning',
+        { label: 'OK', onClick: () => {} },
+      )
       return
     }
 
