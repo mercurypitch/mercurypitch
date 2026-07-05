@@ -168,6 +168,9 @@ export interface RunpodJobInput {
   stems: string[]
   audio_base64?: string
   audio_url?: string
+  /** R2 object key for inputs too big to inline (>7 MB). The handler
+   *  downloads it from S3_BUCKET with its own credentials — no public URL. */
+  audio_s3_key?: string
 }
 
 export interface BuildJobInputParams {
@@ -177,6 +180,7 @@ export interface BuildJobInputParams {
   stems?: string[]
   audioBase64?: string
   audioUrl?: string
+  audioS3Key?: string
 }
 
 export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
@@ -188,7 +192,11 @@ export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
     output_format: (p.output_format ?? 'FLAC').toUpperCase(),
     stems: p.stems ?? ['vocal', 'instrumental'],
   }
-  if (p.audioUrl !== undefined && p.audioUrl !== '') {
+  // Precedence: an R2 key (big file) or a caller URL both avoid inlining;
+  // base64 is the small-file fast path.
+  if (p.audioS3Key !== undefined && p.audioS3Key !== '') {
+    input.audio_s3_key = p.audioS3Key
+  } else if (p.audioUrl !== undefined && p.audioUrl !== '') {
     input.audio_url = p.audioUrl
   } else if (p.audioBase64 !== undefined && p.audioBase64 !== '') {
     input.audio_base64 = p.audioBase64

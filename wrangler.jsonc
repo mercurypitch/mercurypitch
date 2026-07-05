@@ -48,6 +48,16 @@
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "d7c42a4fac32488ab199890ac050ebb8" }
       ],
+      // Temp holding for server-side separation inputs too big to inline into
+      // the RunPod job payload (>7 MB). The worker streams them here under
+      // `input/`; the handler downloads them by S3 key. 1-day lifecycle rule
+      // on the `input/` prefix expires them.
+      "r2_buckets": [
+        {
+          "binding": "UVR_INPUT_BUCKET",
+          "bucket_name": "mercurypitch-uvr-output-prod"
+        }
+      ],
       // db-worker base URL — lets the worker meter RunPod jobs against the
       // credit ledger (debits no-op until a tier's credit cost is set in
       // pricingPlans, so this is safe to ship ahead of pricing).
@@ -62,6 +72,9 @@
       ],
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" }
+      ],
+      "r2_buckets": [
+        { "binding": "UVR_INPUT_BUCKET", "bucket_name": "mercurypitch-uvr-output" }
       ],
       "vars": {
         "DB_API_URL": "https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev"

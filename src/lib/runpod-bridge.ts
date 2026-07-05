@@ -13,9 +13,25 @@ import type { MeteringConfig } from './uvr-metering'
 import { debitForJob, refundJob } from './uvr-metering'
 
 // base64 inflates ~33%; RunPod's /run input cap is ~10 MB, so only inline
-// audio up to this raw size. Larger uploads must pass an `audio_url`
-// (object storage) instead — see runpod/README.md.
+// audio up to this raw size. Larger uploads (up to RUNPOD_MAX_UPLOAD_BYTES)
+// are streamed to R2 and passed to the handler by S3 key instead.
 const RUNPOD_MAX_INLINE_BYTES = 7 * 1024 * 1024
+
+// Hard upload cap for server-side separation. Files between the inline cap
+// and this go through R2 (`audio_s3_key`). Mirror of the client's
+// SERVER_MAX_UPLOAD_BYTES. Kept comfortably under the handler's 100 MB byte
+// cap and the ~12-min duration cap.
+const RUNPOD_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+/** Minimal R2 surface the bridge needs — a subset of R2Bucket, so this pure
+ *  module stays testable with a plain mock. */
+export interface UvrInputBucket {
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<unknown>
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -72,6 +88,9 @@ export async function handleRunpodRequest(
   cfg: RunpodConfig,
   /** Credit metering (debit on accept, refund on failure/cancel); null = off. */
   meter: MeteringConfig | null = null,
+  /** R2 bucket for staging inputs too big to inline (>7 MB); null = the
+   *  large-file path is unavailable (falls back to the inline-cap error). */
+  bucket: UvrInputBucket | null = null,
 ): Promise<Response | null> {
   const stripped = url.pathname.replace(/^\/api\/uvr/, '')
   const match = stripped.match(
@@ -90,7 +109,7 @@ export async function handleRunpodRequest(
     const tier = resolveTier(cfg, requested)
     const endpointId = endpointFor(cfg, tier)
     if (endpointId === null) return null
-    return startRunpodJob(request, cfg, endpointId, tier, meter)
+    return startRunpodJob(request, cfg, endpointId, tier, meter, bucket)
   }
 
   // Follow-up calls route to RunPod by the rp_<tier>_ session id, so
@@ -157,6 +176,7 @@ async function startRunpodJob(
   endpointId: string,
   tier: RunpodTier,
   meter: MeteringConfig | null,
+  bucket: UvrInputBucket | null,
 ): Promise<Response> {
   const form = await request.formData()
   const file = form.get('file')
@@ -169,19 +189,41 @@ async function startRunpodJob(
   const audioUrl = coerceFormString(form.get('audio_url'))
   const stems = parseStems(form.get('stems'))
 
+  // Hard cap first, whatever the transport.
+  if (audioUrl === undefined && file.size > RUNPOD_MAX_UPLOAD_BYTES) {
+    return json(
+      {
+        error: `File too large (max ${RUNPOD_MAX_UPLOAD_BYTES / (1024 * 1024)} MB for server processing).`,
+      },
+      413,
+    )
+  }
+
+  // Three input transports, cheapest first:
+  //   ≤7 MB  → inline base64 in the job payload (no R2 round-trip)
+  //   >7 MB  → stream to R2 under `input/`, pass the key (handler downloads
+  //            it with its own S3 creds — no public URL)
+  //   audioUrl provided by the caller → pass through untouched
   let audioBase64: string | undefined
+  let audioS3Key: string | undefined
+  let via = 'audio_url'
   if (audioUrl === undefined) {
-    if (file.size > RUNPOD_MAX_INLINE_BYTES) {
+    if (file.size <= RUNPOD_MAX_INLINE_BYTES) {
+      audioBase64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()))
+      via = 'inline'
+    } else if (bucket !== null) {
+      audioS3Key = `input/${globalThis.crypto.randomUUID()}${extFromName(file.name)}`
+      await bucket.put(audioS3Key, file.stream(), {
+        httpMetadata: { contentType: file.type || 'audio/mpeg' },
+      })
+      via = 's3'
+    } else {
+      // >7 MB but no bucket wired → the large-file path is unavailable.
       return json(
-        {
-          error:
-            'File too large for inline RunPod upload; provide an audio_url ' +
-            '(object storage) instead.',
-        },
-        413,
+        { error: 'Large-file server processing is not available right now.' },
+        503,
       )
     }
-    audioBase64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()))
   }
 
   const input = buildJobInput({
@@ -191,13 +233,13 @@ async function startRunpodJob(
     stems,
     audioUrl,
     audioBase64,
+    audioS3Key,
   })
 
   // One breadcrumb per dispatch: the session id logged on accept is the
   // correlation key across worker logs, RunPod's console and the credit
   // ledger's jobRef.
   const sizeMb = (file.size / 1_000_000).toFixed(1)
-  const via = audioUrl !== undefined ? 'audio_url' : 'inline'
   const res = await submitJob(cfg, endpointId, input)
   if (res.id === undefined || res.id === '') {
     console.error(
@@ -297,6 +339,14 @@ export function coerceFormString(
   value: FormDataEntryValue | null,
 ): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined
+}
+
+/** A safe, lowercased file extension (with dot) from an untrusted filename,
+ *  or '.mp3' when there isn't a sane one. Used for the R2 input key. */
+export function extFromName(name: string): string {
+  const dot = name.lastIndexOf('.')
+  const ext = dot >= 0 ? name.slice(dot).toLowerCase() : ''
+  return /^\.[a-z0-9]{1,5}$/.test(ext) ? ext : '.mp3'
 }
 
 /** Parse the `stems` field — a JSON array of strings — or undefined. */

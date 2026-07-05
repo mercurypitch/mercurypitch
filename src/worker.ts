@@ -1,6 +1,7 @@
 import { ContainerProxy } from '@cloudflare/containers'
-import type { KVNamespace } from '@cloudflare/workers-types'
+import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
 import { getRunpodConfig } from './lib/runpod'
+import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
@@ -43,6 +44,10 @@ export interface Env {
    *  is set on the db-worker. `wrangler secret put BILLING_SERVICE_KEY`.
    *  Refunds are skipped while unset. */
   BILLING_SERVICE_KEY?: string
+  /** R2 bucket for staging server-separation inputs too big to inline
+   *  (>7 MB). Same bucket the handler reads via S3 creds. Per-env binding in
+   *  wrangler.jsonc; when absent the large-file path is unavailable. */
+  UVR_INPUT_BUCKET?: R2Bucket
 }
 
 // Paths that serve the Voice Mirror entry (mirror.html): the canonical path
@@ -94,6 +99,9 @@ export default {
             method,
             runpod,
             getMeteringConfig(env),
+            // R2Bucket's overloaded put() doesn't structurally match the
+            // bridge's minimal interface; the runtime shape is compatible.
+            (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
           )
           if (handled !== null) return handled
         } catch (err) {

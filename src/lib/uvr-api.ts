@@ -21,14 +21,13 @@ function authHeaders(): Record<string, string> {
 }
 
 /**
- * Max upload size for SERVER (cloud GPU) processing. The worker sends audio
- * to RunPod inline as base64 inside the job JSON (`/run`, ~10 MB payload
- * limit); base64 inflates ~33%, so raw audio caps near 7 MB. Mirror of the
- * worker's RUNPOD_MAX_INLINE_BYTES — keep the two in sync. Local (on-device)
- * processing has no such transport limit and keeps the 100 MB default.
- * Raising this needs the `audio_url` path (worker → R2 → URL).
+ * Max upload size for SERVER (cloud GPU) processing. Files up to 7 MB are
+ * inlined as base64 in the RunPod job; larger ones (up to this cap) are
+ * streamed via R2 (`audio_s3_key`) by the worker. Mirror of the worker's
+ * RUNPOD_MAX_UPLOAD_BYTES — keep the two in sync. Local (on-device)
+ * processing has no transport limit and keeps the 100 MB default.
  */
-export const SERVER_MAX_UPLOAD_BYTES = 7 * 1024 * 1024
+export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 /** Local/on-device processing upload cap (in-browser model; no transport). */
 export const LOCAL_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
