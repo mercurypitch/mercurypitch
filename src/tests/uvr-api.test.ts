@@ -277,6 +277,24 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
       }),
   } as Response
 
+  it('replaces an HTML error body with a readable message', async () => {
+    // Regression: in local dev a misconfigured proxy port can hit an
+    // unrelated service whose HTML 404 page used to be shown verbatim.
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: () =>
+        Promise.resolve(
+          '<!DOCTYPE html> <html><body><h1>Page not found</h1></body></html>',
+        ),
+    } as unknown as Response)
+    const file = new File([new Uint8Array([1])], 'song.mp3')
+    await expect(
+      processAudio(file, { ...DEFAULT_PROCESS_REQUEST, provider: 'runpod' }),
+    ).rejects.toThrow(/unexpected response \(HTTP 404\)/)
+  })
+
   it('sends X-UVR-Provider when a provider is requested', async () => {
     const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
     const file = new File([new Uint8Array([1])], 'song.mp3')

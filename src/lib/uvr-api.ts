@@ -219,7 +219,13 @@ export async function processAudio(
 
   if (!response.ok) {
     const raw = await response.text()
-    let message = raw
+    // A misroute can answer with a whole HTML page (e.g. in local dev the
+    // vite proxy target port is occupied by some other service, which 404s
+    // in HTML). Never surface raw markup as the error, and cap plain-text
+    // bodies to something a human can read in a toast.
+    let message = raw.trimStart().startsWith('<')
+      ? `The processing server gave an unexpected response (HTTP ${response.status}). If you are running locally, check that the UVR container is up and the proxy port matches.`
+      : raw.slice(0, 300)
     try {
       const parsed = JSON.parse(raw) as {
         error?: string
