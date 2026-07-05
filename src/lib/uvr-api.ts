@@ -304,7 +304,11 @@ export async function healthCheck(): Promise<{
  */
 export async function pollForCompletion(
   sessionId: string,
-  onProgress: (progress: number, indeterminate?: boolean) => void,
+  onProgress: (
+    progress: number,
+    indeterminate?: boolean,
+    phase?: 'queued' | 'processing',
+  ) => void,
   onComplete: (files: OutputFile[]) => void,
   onError: (error: string) => void,
   intervalMs: number = 1000,
@@ -355,9 +359,14 @@ export async function pollForCompletion(
           return
         }
 
+        // 'Queued' means no worker has picked the job up yet (cold start /
+        // image pull) — surface that instead of pretending to estimate.
+        const phase: 'queued' | 'processing' =
+          status.message === 'Queued' ? 'queued' : 'processing'
+
         // Use server progress if available
         if (status.progress != null) {
-          onProgress(status.progress, estimateExceeded)
+          onProgress(status.progress, estimateExceeded, phase)
         } else {
           // Fallback: caller's duration-based estimate, else the server's
           // estimated_total_secs, else a flat default.
@@ -367,11 +376,11 @@ export async function pollForCompletion(
 
           if (pct >= 95 && !estimateExceeded) {
             estimateExceeded = true
-            onProgress(95, true)
+            onProgress(95, true, phase)
           } else if (estimateExceeded) {
-            onProgress(95, true)
+            onProgress(95, true, phase)
           } else {
-            onProgress(Math.min(95, pct), false)
+            onProgress(Math.min(95, pct), false, phase)
           }
         }
 
