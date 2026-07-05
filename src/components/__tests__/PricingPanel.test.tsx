@@ -29,10 +29,22 @@ const PRICING: Pricing = {
       label: 'Server (GPU)',
       description: 'Fastest',
       unit: 'song',
-      amount: null, // → "Soon"
+      amount: null, // priced in credits, not money
       currency: 'eur',
-      credits: null,
+      credits: 1, // → "1 credit / song" (live, not "Soon")
       badge: 'Default',
+      purchasable: false,
+    },
+    {
+      id: 't-cpu',
+      kind: 'tier',
+      label: 'Server (CPU)',
+      description: 'Cheaper',
+      unit: 'song',
+      amount: null, // no money price and…
+      currency: 'eur',
+      credits: null, // …no credit cost → genuinely "Soon"
+      badge: null,
       purchasable: false,
     },
   ],
@@ -94,6 +106,26 @@ describe('PricingPanel', () => {
     expect(screen.queryByTestId('credit-balance')).not.toBeInTheDocument()
   })
 
+  it('shows a credit-priced tier as its per-song cost, not "Soon"', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    render(() => <PricingPanel />)
+
+    await waitFor(() =>
+      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+    )
+    // GPU tier is live (credits set) → shows "1 credit / song".
+    expect(screen.getByText('1 credit')).toBeInTheDocument()
+    // CPU tier has neither money price nor credit cost → still "Soon".
+    const gpuCard = screen
+      .getByText('Server (GPU)')
+      .closest('[data-testid="pricing-tier"]')
+    expect(gpuCard?.textContent).not.toContain('Soon')
+    const cpuCard = screen
+      .getByText('Server (CPU)')
+      .closest('[data-testid="pricing-tier"]')
+    expect(cpuCard?.textContent).toContain('Soon')
+  })
+
   it('renders tiers/packs with Soon tags and a buyable pack', async () => {
     vi.mocked(fetchPricing).mockResolvedValue(PRICING)
     render(() => <PricingPanel />)
@@ -101,7 +133,7 @@ describe('PricingPanel', () => {
     await waitFor(() =>
       expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
     )
-    // Unset prices render as "Soon" (tier price, pack price, pack button).
+    // Unset prices render as "Soon" (CPU tier, pack price, pack button).
     expect(screen.getAllByText('Soon').length).toBeGreaterThan(0)
 
     const buyButtons = screen.getAllByTestId('pricing-buy')

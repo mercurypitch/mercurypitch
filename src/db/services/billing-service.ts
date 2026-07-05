@@ -122,3 +122,26 @@ export function formatPrice(amount: number | null, currency: string): string {
     return `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`
   }
 }
+
+/** Cost label for a separation tier. Tiers are priced in CREDITS per song,
+ *  not money — so a live tier has `amount` NULL but `credits` set, which
+ *  formatPrice alone would wrongly render as "Soon". Show the per-song credit
+ *  cost instead; fall back to formatPrice for the free tier (amount 0), any
+ *  money-priced tier, and a genuinely-unlaunched tier (no amount, no credits →
+ *  "Soon"). The unit suffix is rendered separately by the panel. */
+export function formatTierPrice(
+  plan: Pick<PricingPlan, 'amount' | 'credits' | 'currency'>,
+): string {
+  if (plan.amount == null && plan.credits != null) {
+    return `${plan.credits} credit${plan.credits === 1 ? '' : 's'}`
+  }
+  return formatPrice(plan.amount, plan.currency)
+}
+
+/** A tier is "Soon" only when it has neither a money price nor a credit
+ *  cost — i.e. not launched. Metered tiers (credits set) are available. */
+export function isTierSoon(
+  plan: Pick<PricingPlan, 'amount' | 'credits'>,
+): boolean {
+  return plan.amount == null && plan.credits == null
+}
