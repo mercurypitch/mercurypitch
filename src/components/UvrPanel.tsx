@@ -1024,24 +1024,74 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
             </div>
             <div class="header-actions">
-              <div class="uvr-mode-toggle">
-                <button
-                  class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                  title="Processing: Server GPU (1 credit per song)"
-                  onClick={() => {
-                    if (requireServerAuth()) setUvrProcessingMode('server')
-                  }}
-                  data-testid="uvr-mode-server"
-                >
-                  Server
-                </button>
-                <button
-                  class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
-                  title="Processing: Browser"
-                  onClick={() => setUvrProcessingMode('local')}
-                >
-                  Browser
-                </button>
+              <div class="uvr-mode-stack">
+                <div class="uvr-mode-toggle">
+                  <button
+                    class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+                    title="Processing: Server GPU (1 credit per song)"
+                    onClick={() => {
+                      if (requireServerAuth()) setUvrProcessingMode('server')
+                    }}
+                    data-testid="uvr-mode-server"
+                  >
+                    Server
+                  </button>
+                  <button
+                    class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+                    title="Processing: Browser"
+                    onClick={() => setUvrProcessingMode('local')}
+                  >
+                    Browser
+                  </button>
+                  <Show when={uvrProcessingMode() === 'local'}>
+                    <div class="uvr-device-toggle">
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: !uvrForceWebGpu() }}
+                        onClick={() => handleForceWebGpuToggle(false)}
+                        title="Use CPU (WASM) for vocal separation"
+                        data-testid="uvr-device-cpu"
+                      >
+                        <Cpu />
+                        <span>CPU</span>
+                      </button>
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: uvrForceWebGpu() }}
+                        onClick={() => handleForceWebGpuToggle(true)}
+                        title="Use GPU (WebGPU) for vocal separation"
+                        data-testid="uvr-device-gpu"
+                      >
+                        <Zap />
+                        <span>GPU</span>
+                      </button>
+                    </div>
+                  </Show>
+                  <Show
+                    when={
+                      uvrProcessingMode() === 'local' &&
+                      uvrModelStatus() !== 'ready'
+                    }
+                  >
+                    <span
+                      class={`model-status-badge model-status-${uvrModelStatus()}`}
+                      title={
+                        uvrModelStatus() === 'error'
+                          ? uvrModelError()
+                          : uvrModelStatus() === 'loading'
+                            ? 'Loading ONNX model...'
+                            : ''
+                      }
+                    >
+                      <Show when={uvrModelStatus() === 'loading'}>
+                        <span class="model-loading-dot" />
+                      </Show>
+                      <Show when={uvrModelStatus() === 'error'}>
+                        <span class="model-error-icon">!</span>
+                      </Show>
+                    </span>
+                  </Show>
+                </div>
                 <Show when={uvrProcessingMode() === 'server'}>
                   <button
                     class="server-cost-hint"
@@ -1051,54 +1101,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   >
                     {creditBalanceLabel()}
                   </button>
-                </Show>
-                <Show when={uvrProcessingMode() === 'local'}>
-                  <div class="uvr-device-toggle">
-                    <button
-                      class="device-toggle-btn"
-                      classList={{ active: !uvrForceWebGpu() }}
-                      onClick={() => handleForceWebGpuToggle(false)}
-                      title="Use CPU (WASM) for vocal separation"
-                      data-testid="uvr-device-cpu"
-                    >
-                      <Cpu />
-                      <span>CPU</span>
-                    </button>
-                    <button
-                      class="device-toggle-btn"
-                      classList={{ active: uvrForceWebGpu() }}
-                      onClick={() => handleForceWebGpuToggle(true)}
-                      title="Use GPU (WebGPU) for vocal separation"
-                      data-testid="uvr-device-gpu"
-                    >
-                      <Zap />
-                      <span>GPU</span>
-                    </button>
-                  </div>
-                </Show>
-                <Show
-                  when={
-                    uvrProcessingMode() === 'local' &&
-                    uvrModelStatus() !== 'ready'
-                  }
-                >
-                  <span
-                    class={`model-status-badge model-status-${uvrModelStatus()}`}
-                    title={
-                      uvrModelStatus() === 'error'
-                        ? uvrModelError()
-                        : uvrModelStatus() === 'loading'
-                          ? 'Loading ONNX model...'
-                          : ''
-                    }
-                  >
-                    <Show when={uvrModelStatus() === 'loading'}>
-                      <span class="model-loading-dot" />
-                    </Show>
-                    <Show when={uvrModelStatus() === 'error'}>
-                      <span class="model-error-icon">!</span>
-                    </Show>
-                  </span>
                 </Show>
               </div>
               <div class="uvr-view-tabs">

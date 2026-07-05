@@ -92,6 +92,9 @@
 
 .header-actions {
   display: flex;
+  /* Top-align so the two-row mode stack (toggle + credits pill) doesn't
+     stretch its siblings */
+  align-items: flex-start;
   gap: 0.25rem;
 }
 
@@ -196,11 +199,19 @@
 }
 
 /* Processing Mode Toggle */
+/* Stacks the toggle row and, in server mode, the credits pill beneath it */
+.uvr-mode-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.5rem;
+}
+
 .uvr-mode-toggle {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  margin-right: 0.5rem;
 }
 
 .mode-toggle-btn {
