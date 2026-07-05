@@ -306,6 +306,38 @@ describe('UvrUploadControl Component', () => {
       expect(screen.getByText(/50 MB/i)).toBeInTheDocument()
     })
 
+    it('shows the mode-aware cap on the size pill (server = 7 MB)', () => {
+      render(() => (
+        <UvrUploadControl
+          {...defaultProps}
+          maxSize={7 * 1024 * 1024}
+          maxSizeNote="Cloud GPU upload limit — for larger files use Browser mode"
+        />
+      ))
+      const pill = screen.getByTestId('uvr-max-size-pill')
+      expect(pill.textContent).toContain('7 MB')
+      expect(pill.getAttribute('title')).toContain('Cloud GPU')
+    })
+
+    it('appends the size note to the too-large alert', () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+      render(() => (
+        <UvrUploadControl
+          {...defaultProps}
+          maxSize={7 * 1024 * 1024}
+          maxSizeNote="Cloud GPU upload limit — for larger files use Browser mode"
+        />
+      ))
+      const big = new File([new Uint8Array(8 * 1024 * 1024)], 'big.mp3', {
+        type: 'audio/mpeg',
+      })
+      selectFileViaInput(big)
+      expect(alertSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Cloud GPU upload limit'),
+      )
+      alertSpy.mockRestore()
+    })
+
     it('passes allowedTypes prop to file input accept attribute', () => {
       render(() => (
         <UvrUploadControl

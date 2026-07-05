@@ -75,6 +75,13 @@ GPU_USD_PER_HR = float(os.getenv("RUNPOD_GPU_USD_PER_HR", "0.69"))
 # Hard cap on decoded input size (matches the FastAPI api.py guard).
 MAX_INPUT_BYTES = int(os.getenv("UVR_MAX_INPUT_BYTES", str(100 * 1024 * 1024)))
 
+# Hard cap on input DURATION. Cost scales with song length, not file size,
+# so this is the real spend guard: a small low-bitrate file can still be a
+# very long (expensive) song. Reject before the expensive separation — the
+# job then errors cheaply (download + probe only) and the worker auto-refunds
+# the credit. 0 disables the cap.
+MAX_INPUT_MINUTES = float(os.getenv("UVR_MAX_INPUT_MINUTES", "12"))
+
 # Object storage (S3-compatible — Cloudflare R2 works). When set, stems
 # are uploaded and returned as URLs instead of inline base64. This is the
 # production path; base64 is only sane for small local-test files.
@@ -366,6 +373,24 @@ def handler(job: dict) -> dict:
             model,
             output_format,
         )
+
+        # Duration guard — reject over-long songs before paying for a full
+        # separation. Probe fails open (returns 0.0 → no cap applied) so a
+        # probe hiccup never blocks a legitimate job.
+        in_duration = _audio_duration(input_path)
+        if MAX_INPUT_MINUTES > 0 and in_duration > MAX_INPUT_MINUTES * 60:
+            logger.warning(
+                "Job %s rejected: %.1f min exceeds the %.0f min cap",
+                job_id,
+                in_duration / 60,
+                MAX_INPUT_MINUTES,
+            )
+            return {
+                "error": (
+                    f"Song is too long ({in_duration / 60:.1f} min) for server "
+                    f"separation. The limit is {MAX_INPUT_MINUTES:.0f} minutes."
+                )
+            }
 
         t0 = time.time()
         separator = _get_separator(model, job_dir, output_format)
