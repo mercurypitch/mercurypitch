@@ -16,7 +16,7 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { getProcessStatus } from '@/lib/uvr-api'
+import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
@@ -1163,6 +1163,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 }}
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
+                maxSize={
+                  uvrProcessingMode() === 'server'
+                    ? SERVER_MAX_UPLOAD_BYTES
+                    : LOCAL_MAX_UPLOAD_BYTES
+                }
+                maxSizeNote={
+                  uvrProcessingMode() === 'server'
+                    ? 'Cloud GPU upload limit — for larger files use Browser mode'
+                    : undefined
+                }
               />
 
               <UvrStemUploadControl

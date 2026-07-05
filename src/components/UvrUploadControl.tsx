@@ -11,6 +11,9 @@ interface UploadControlProps {
   onFileReady?: (file: File) => void
   onProcessStart?: (sessionId: string) => void
   maxSize?: number
+  /** Tooltip on the size pill + appended to the too-large message, e.g. to
+   *  explain the smaller cloud-GPU limit and point at Browser mode. */
+  maxSizeNote?: string
   allowedTypes?: string[]
   processing?: boolean
   disabled?: boolean
@@ -48,7 +51,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
     // Validate file size
     if (file.size > maxSize()) {
-      alert(`File too large! Maximum size: ${formatFileSize(maxSize())}`)
+      const note =
+        props.maxSizeNote !== undefined ? `\n${props.maxSizeNote}.` : ''
+      alert(
+        `File too large! Maximum size: ${formatFileSize(maxSize())}.${note}`,
+      )
       return
     }
 
@@ -223,7 +230,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           <span class="format-tag">MP3</span>
           <span class="format-tag">WAV</span>
           <span class="format-tag">FLAC</span>
-          <span class="format-tag format-tag-size">
+          <span
+            class="format-tag format-tag-size"
+            title={props.maxSizeNote}
+            data-testid="uvr-max-size-pill"
+          >
             {formatFileSize(maxSize())}
           </span>
         </div>
