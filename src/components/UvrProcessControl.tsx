@@ -54,6 +54,7 @@ interface ProcessControlProps {
   onRetry?: () => void
   onNewSession?: () => void
   onDeleteAndNew?: () => void
+  onViewResults?: () => void
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
@@ -374,8 +375,12 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           </button>
         </Show>
         <Show when={props.status === 'completed'}>
-          <button class="process-btn process-btn-primary" disabled={true}>
-            <CheckCircle /> Complete
+          <button
+            class="process-btn process-btn-primary"
+            onClick={() => props.onViewResults?.()}
+            data-testid="uvr-view-results"
+          >
+            <CheckCircle /> View results
           </button>
         </Show>
       </div>

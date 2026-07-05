@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { batch, createEffect, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
+import { batch, createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
+import { fetchBillingMe } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -19,6 +20,7 @@ import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } fr
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
@@ -539,6 +541,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     handleProcessStart(sessionId, mode)
   }
 
+  // Live credit balance for the karaoke header pill; re-fetches whenever
+  // billing-store's balanceVersion bumps (checkout returns, finished jobs).
+  const [billingMe] = createResource(
+    () => balanceVersion() + 1,
+    () => fetchBillingMe(),
+  )
+  const creditBalanceLabel = (): string => {
+    const balance = billingMe()?.creditBalance
+    return balance !== undefined
+      ? `${balance} credit${balance === 1 ? '' : 's'} · 1 per song`
+      : '1 credit / song'
+  }
+
   /** Server processing needs a signed-in account (the worker's JWT gate
    *  rejects anonymous requests with a bare 401). Gate it client-side with
    *  a friendly action toast instead of letting the upload fail. */
@@ -614,6 +629,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         },
         onComplete: (result) => {
           completeUvrSession(sessionId, result.outputs, result.stemMeta)
+          if (processingMode === 'server') refreshBalance()
           // Auto-extract stem fingerprint for Shazam matching
           // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
           setTimeout(() => {
@@ -624,6 +640,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         onError: (message) => {
           setErrorUvrSession(sessionId, message)
           if (!notifyServerBillingError(message)) showError(message)
+          if (processingMode === 'server') refreshBalance()
         },
       })
     } catch (error) {
@@ -1026,13 +1043,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   Browser
                 </button>
                 <Show when={uvrProcessingMode() === 'server'}>
-                  <span
+                  <button
                     class="server-cost-hint"
-                    title="Server separation runs on a cloud GPU and uses credits from your account"
+                    title="Server separation runs on a cloud GPU and uses credits from your account. Click to manage credits."
                     data-testid="uvr-server-cost-hint"
+                    onClick={() => openSettingsSection('credits')}
                   >
-                    1 credit / song
-                  </span>
+                    {creditBalanceLabel()}
+                  </button>
                 </Show>
                 <Show when={uvrProcessingMode() === 'local'}>
                   <div class="uvr-device-toggle">
@@ -1406,6 +1424,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       void handleProcessStart(s.sessionId, s.processingMode)
                     }}
                     onNewSession={() => setCurrentView('upload')}
+                    onViewResults={() => {
+                      setCurrentView('results')
+                      props.onViewChange?.('results')
+                    }}
                     onDeleteAndNew={() => {
                       const s = sess()
                       deleteUvrSession(s.sessionId)

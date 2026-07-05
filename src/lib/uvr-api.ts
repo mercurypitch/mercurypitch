@@ -309,6 +309,9 @@ export async function pollForCompletion(
   onError: (error: string) => void,
   intervalMs: number = 1000,
   signal?: AbortSignal,
+  /** Client-side estimate (secs) for the time-based progress fallback —
+   *  beats the server's flat default when the song duration is known. */
+  estimatedSecs?: number,
 ): Promise<void> {
   const startTime = Date.now()
   const maxTimeMs = 30 * 60 * 1000 // 30 minutes absolute max
@@ -356,9 +359,10 @@ export async function pollForCompletion(
         if (status.progress != null) {
           onProgress(status.progress, estimateExceeded)
         } else {
-          // Fallback: estimate from server's estimated_total_secs or default
-          const estimatedSecs = status.estimated_total_secs ?? 120
-          const estimatedMs = Math.max(estimatedSecs * 1000, 10000)
+          // Fallback: caller's duration-based estimate, else the server's
+          // estimated_total_secs, else a flat default.
+          const totalSecs = estimatedSecs ?? status.estimated_total_secs ?? 120
+          const estimatedMs = Math.max(totalSecs * 1000, 10000)
           const pct = (elapsed / estimatedMs) * 100
 
           if (pct >= 95 && !estimateExceeded) {
