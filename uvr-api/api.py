@@ -1,7 +1,7 @@
 # ============================================================
 # UVR Audio Separator API Server
 # ============================================================
-from fastapi import FastAPI, UploadFile, BackgroundTasks, HTTPException
+from fastapi import FastAPI, Form, UploadFile, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -301,10 +301,17 @@ async def list_models():
 async def process_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile,
-    model: str = DEFAULT_MODEL,
-    output_format: str = "WAV",
-    stems: List[str] = ["vocal", "instrumental"],
-    cpu_profile: str = 'high'
+    # The app sends these as multipart FORM fields (see uvr-api.ts
+    # processAudio). They were previously declared as plain params, which
+    # FastAPI reads from the QUERY string — so the client's form values
+    # were silently ignored and the defaults always applied (unnoticed
+    # while both sides shared the same defaults).
+    model: str = Form(DEFAULT_MODEL),
+    output_format: str = Form("WAV"),
+    # JSON array string from the app; accepted for contract parity but
+    # unused — separation always produces all stems and /status lists them.
+    stems: Optional[str] = Form(None),
+    cpu_profile: str = Form('high')
 ):
     """
     Process an uploaded audio file to separate vocals and instrumental
