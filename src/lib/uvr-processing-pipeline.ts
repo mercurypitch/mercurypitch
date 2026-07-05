@@ -248,9 +248,15 @@ async function processServer(
 
   await pollForCompletion(
     response.session_id,
-    (progress, indeterminate) => {
+    (progress, indeterminate, phase) => {
       const elapsed = Date.now() - startTime
-      updateUvrSessionProgress(sessionId, progress, elapsed, indeterminate)
+      updateUvrSessionProgress(
+        sessionId,
+        progress,
+        elapsed,
+        indeterminate,
+        phase,
+      )
       callbacks.onProgress(progress)
     },
     (files: OutputFile[]) => {

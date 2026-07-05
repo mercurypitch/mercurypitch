@@ -55,10 +55,22 @@ interface ProcessControlProps {
   onNewSession?: () => void
   onDeleteAndNew?: () => void
   onViewResults?: () => void
+  phase?: 'queued' | 'processing'
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   const errorAction = createMemo(() => errorActionFor(props.error))
+
+  /** Honest copy for the indeterminate bar. 'Estimating...' hid the two
+   *  real situations users kept hitting: the job waiting for a GPU worker
+   *  (cold start / image pull after a release — can take minutes) and a
+   *  song simply running past its estimate. */
+  const waitingMessage = (): string => {
+    if (props.phase === 'queued') {
+      return 'Waiting for a GPU worker - the first song after an update can take a few minutes'
+    }
+    return 'Taking a little longer than estimated - still separating'
+  }
 
   const formatTime = (ms: number): string => {
     const seconds = Math.floor(ms / 1000)
@@ -279,7 +291,9 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               </div>
             }
           >
-            <div class="progress-text">Estimating...</div>
+            <div class="progress-text" data-testid="uvr-progress-text">
+              {waitingMessage()}
+            </div>
           </Show>
         </div>
       </Show>

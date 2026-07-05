@@ -1402,6 +1402,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     progress={sess().progress}
                     indeterminate={sess().indeterminate}
                     processingTime={sess().processingTime}
+                    phase={sess().phase}
                     error={sess().error}
                     processingMode={sess().processingMode}
                     numChunks={sess().numChunks}

@@ -135,6 +135,82 @@ describe('pollForCompletion (REQ-UV-006, REQ-UV-009)', () => {
     ).rejects.toThrow('Polling aborted')
   })
 
+  it('reports queued phase while no worker has picked up the job', async () => {
+    let polls = 0
+    vi.spyOn(global, 'fetch').mockImplementation(() => {
+      polls++
+      const body: ProcessStatusResponse =
+        polls < 3
+          ? {
+              session_id: 'x',
+              status: 'processing',
+              message: 'Queued',
+              files: [],
+            }
+          : {
+              session_id: 'x',
+              status: 'completed',
+              files: [],
+            }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(body),
+      } as Response)
+    })
+
+    const onProgress = vi.fn()
+    await pollForCompletion('x', onProgress, vi.fn(), vi.fn(), 10)
+
+    // Queued polls surface phase 'queued'; the last processing-ish poll
+    // before completion never fires onProgress with 'processing' here, so
+    // just assert queued was reported.
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Boolean),
+      'queued',
+    )
+  })
+
+  it('reports processing phase once a worker is running the job', async () => {
+    let polls = 0
+    vi.spyOn(global, 'fetch').mockImplementation(() => {
+      polls++
+      const body: ProcessStatusResponse =
+        polls < 3
+          ? {
+              session_id: 'x',
+              status: 'processing',
+              message: 'Processing',
+              files: [],
+            }
+          : {
+              session_id: 'x',
+              status: 'completed',
+              files: [],
+            }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(body),
+      } as Response)
+    })
+
+    const onProgress = vi.fn()
+    await pollForCompletion('x', onProgress, vi.fn(), vi.fn(), 10)
+
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Boolean),
+      'processing',
+    )
+    expect(onProgress).not.toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Boolean),
+      'queued',
+    )
+  })
+
   // REQ-UV-009: Timeout
   it('calls onError when max time exceeded', async () => {
     // Make polling always return 'processing' to force timeout

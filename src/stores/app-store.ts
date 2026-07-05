@@ -163,6 +163,9 @@ export interface UvrSession {
   status: UvrStatus
   progress: number
   indeterminate?: boolean
+  /** Server-job phase while processing: queued = waiting for a GPU worker
+   *  (cold start / image pull), processing = actually separating. */
+  phase?: 'queued' | 'processing'
   processingTime?: number
   error?: string
   fileHash?: string
@@ -631,6 +634,7 @@ export function updateUvrSessionProgress(
   progress: number,
   processingTime?: number,
   indeterminate?: boolean,
+  phase?: 'queued' | 'processing',
 ): void {
   const session = getUvrSession(sessionId)
   if (session) {
@@ -638,6 +642,7 @@ export function updateUvrSessionProgress(
       ...session,
       progress,
       indeterminate: indeterminate ?? false,
+      phase: phase ?? session.phase,
       processingTime:
         processingTime !== undefined ? processingTime : session.processingTime,
     }
