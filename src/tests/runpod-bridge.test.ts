@@ -497,7 +497,20 @@ describe('handleRunpodRequest — metering', () => {
     expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
   })
 
-  it('refunds a cancel of an unfinished job', async () => {
+  it('refunds a cancel of a still-queued job (no GPU spend yet)', async () => {
+    const calls = mockRoutes({
+      '/status/': { body: { status: 'IN_QUEUE' } },
+      '/cancel/': { body: {} },
+      '/api/billing/refund': { body: { refunded: 2 } },
+    })
+    const { request, url } = req('/api/uvr/session/rp_gpu_job-1')
+    const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
+    expect(res?.status).toBe(200)
+    expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(true)
+  })
+
+  it('keeps the debit when cancelling a RUNNING job (GPU time already spent)', async () => {
     const calls = mockRoutes({
       '/status/': { body: { status: 'IN_PROGRESS' } },
       '/cancel/': { body: {} },
@@ -507,7 +520,21 @@ describe('handleRunpodRequest — metering', () => {
     const res = await handleRunpodRequest(request, url, 'DELETE', CFG, METER)
     expect(res?.status).toBe(200)
     expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
-    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(true)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
+  })
+
+  it('does not refund a CANCELLED job via the status route', async () => {
+    // The cancel path already decided refundability; polling a cancelled
+    // job must not claw the credit back.
+    const calls = mockRoutes({
+      '/status/': { body: { status: 'CANCELLED' } },
+      '/api/billing/refund': { body: { refunded: 2 } },
+    })
+    const { request, url } = req('/api/uvr/status/rp_gpu_job-1')
+    const res = await handleRunpodRequest(request, url, 'GET', CFG, METER)
+    const body = (await res?.json()) as { status: string }
+    expect(body.status).toBe('error')
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(false)
   })
 
   it('does not refund deleting an already-completed session', async () => {
