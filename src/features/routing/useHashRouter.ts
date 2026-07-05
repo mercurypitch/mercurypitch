@@ -5,6 +5,7 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
+import type { SettingsSection } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
@@ -26,8 +27,12 @@ export interface UseHashRouterDeps {
   handleShareFallback: (shareType: string, shareId: string) => void
   handleShareShort: (shortId: string) => void
   /** Return from Stripe checkout — toast + balance refresh happen here;
-   *  the route itself lands on Settings (whose default sub-tab is Account). */
+   *  the route itself lands on Settings -> Credits. */
   handleBillingReturn: (outcome: 'success' | 'cancel') => void
+  /** Open Settings with a specific sub-tab (deep links + billing return). */
+  openSettingsSection: (section: SettingsSection) => void
+  /** Current Settings sub-tab — synced into #/settings/<slug>. */
+  settingsSection: Accessor<SettingsSection>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -90,15 +95,18 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       const sectionIds =
         route.sectionId === 'all' ? undefined : [route.sectionId]
       deps.startWalkthrough(sectionIds)
+    } else if (route.type === 'settings-section') {
+      deps.openSettingsSection(route.section)
+      deps.setActiveUvrSessionId(null)
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
-      deps.setActiveTab(TAB_SETTINGS)
+      deps.openSettingsSection('credits')
       deps.setActiveUvrSessionId(null)
       deps.handleBillingReturn(route.outcome)
-      // Clean the one-shot return hash to #/settings so a reload can't
-      // re-fire the toast (the tab-sync effect is muted by hashSyncing
-      // here). replaceState fires no hashchange, so this can't loop.
-      replaceHash({ type: 'tab', tab: TAB_SETTINGS })
+      // Clean the one-shot return hash so a reload can't re-fire the toast
+      // (the tab-sync effect is muted by hashSyncing here). replaceState
+      // fires no hashchange, so this can't loop.
+      replaceHash({ type: 'settings-section', section: 'credits' })
     }
     hashSyncing = false
   }
@@ -127,12 +135,26 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const tab = deps.activeTab()
     const view = deps.activeUvrView()
     const sessionId = deps.activeUvrSessionId()
+    const settingsSection = deps.settingsSection()
     const surfaceOpen =
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
+    if (tab === TAB_SETTINGS) {
+      // Settings carries its sub-tab in the URL (#/settings/<slug>) so each
+      // section is deep-linkable.
+      const route: HashRoute = {
+        type: 'settings-section',
+        section: settingsSection,
+      }
+      const expectedHash = `#${buildHash(route)}`
+      if (window.location.hash !== expectedHash) {
+        replaceHash(route)
+      }
+      return
+    }
     if (tab !== TAB_KARAOKE) {
       const expectedHash = `#/${tab}`
       if (window.location.hash !== expectedHash) {

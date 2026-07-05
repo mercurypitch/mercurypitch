@@ -8,7 +8,6 @@ import { FancyDivider } from '@/components/shared'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
-import { TAB_SETTINGS } from '@/features/tabs/constants'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -22,7 +21,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
-import { setActiveTab } from '@/stores/ui-store'
+import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
@@ -548,7 +547,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (token !== null && token !== '') return true
     showActionNotification('Sign in to use cloud GPU processing.', 'info', {
       label: 'Open Account',
-      onClick: () => setActiveTab(TAB_SETTINGS),
+      onClick: () => openSettingsSection('account'),
     })
     return false
   }
@@ -559,14 +558,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (message.includes('Not enough credits')) {
       showActionNotification(message, 'error', {
         label: 'Get credits',
-        onClick: () => setActiveTab(TAB_SETTINGS),
+        onClick: () => openSettingsSection('credits'),
       })
       return true
     }
     if (message.includes('Sign in to use cloud')) {
       showActionNotification(message, 'info', {
         label: 'Open Account',
-        onClick: () => setActiveTab(TAB_SETTINGS),
+        onClick: () => openSettingsSection('account'),
       })
       return true
     }
@@ -1385,24 +1384,29 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   provider={session()!.provider}
                   originalFileName={session()!.originalFile?.name}
                   onCancel={() => {
+                    const s = session()
+                    if (!s) return
                     cancelUvrPipeline(
-                      session()!.processingMode ?? 'server',
-                      session()!.apiSessionId,
+                      s.processingMode ?? 'server',
+                      s.apiSessionId,
                     )
-                    cancelUvrSession(session()!.sessionId)
+                    cancelUvrSession(s.sessionId)
                     setCurrentView('upload')
                   }}
                   onRetry={() => {
-                    retryUvrSession(session()!.sessionId)
-                    void handleProcessStart(
-                      session()!.sessionId,
-                      session()!.processingMode,
-                    )
+                    const s = session()
+                    if (!s) return
+                    retryUvrSession(s.sessionId)
+                    void handleProcessStart(s.sessionId, s.processingMode)
                   }}
                   onNewSession={() => setCurrentView('upload')}
                   onDeleteAndNew={() => {
-                    deleteUvrSession(session()!.sessionId)
-                    void deleteUvrSessionFromDb(session()!.sessionId)
+                    // Capture once: deleteUvrSession clears the current-session
+                    // signal, so a second session()! read here crashed the app.
+                    const s = session()
+                    if (!s) return
+                    deleteUvrSession(s.sessionId)
+                    void deleteUvrSessionFromDb(s.sessionId)
                     setCurrentView('upload')
                   }}
                 />

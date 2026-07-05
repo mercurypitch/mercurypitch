@@ -1,7 +1,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { DEFAULT_TAB, TAB_EXERCISES } from '@/features/tabs/constants'
+import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -45,6 +45,21 @@ export const setActiveTab = (tab: ActiveTab): ActiveTab => {
     }
   }
   return setActiveTabSignal(tab)
+}
+
+// ── Settings sub-tab ─────────────────────────────────────────
+// Store-backed (not SettingsPanel-local) so deep links (#/settings/account)
+// and in-app actions ("Get credits" toasts) can open a specific section.
+
+export type SettingsSection = 'account' | 'singing' | 'display' | 'credits'
+
+export const [settingsSection, setSettingsSection] =
+  createSignal<SettingsSection>('account')
+
+/** Jump to Settings with a specific sub-tab open. */
+export function openSettingsSection(section: SettingsSection): void {
+  setSettingsSection(section)
+  setActiveTab(TAB_SETTINGS)
 }
 
 // Mobile sidebar drawer open state. Store-backed (not AppShell-local) so the

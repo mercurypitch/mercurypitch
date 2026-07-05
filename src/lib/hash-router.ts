@@ -5,6 +5,7 @@
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
+import type { SettingsSection } from '@/stores/ui-store'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
@@ -24,8 +25,10 @@ export type HashRoute =
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
   /** Return from Stripe checkout (success_url / cancel_url in the
-   *  db-worker's billing.ts) — lands on Settings → Account. */
+   *  db-worker's billing.ts) — lands on Settings → Credits. */
   | { type: 'billing-return'; outcome: 'success' | 'cancel' }
+  /** A specific Settings sub-tab, e.g. #/settings/credits. */
+  | { type: 'settings-section'; section: SettingsSection }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -55,6 +58,22 @@ const VALID_GUIDE_SECTIONS: Set<string> = new Set([
   'settings-practice',
   'settings-display',
 ])
+
+// Settings sub-tab <-> URL slug. The Practice section's internal value is
+// 'singing'; its user-facing slug matches the tab label.
+const SETTINGS_SLUG_TO_SECTION: Record<string, SettingsSection | undefined> = {
+  account: 'account',
+  practice: 'singing',
+  display: 'display',
+  credits: 'credits',
+}
+
+const SETTINGS_SECTION_TO_SLUG: Record<SettingsSection, string> = {
+  account: 'account',
+  singing: 'practice',
+  display: 'display',
+  credits: 'credits',
+}
 
 function isValidTab(tab: string): tab is ActiveTab {
   return VALID_TABS.has(tab)
@@ -176,6 +195,16 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'billing-return', outcome: 'cancel' }
   }
 
+  // Match: /settings/<section> — deep link to a Settings sub-tab. The
+  // URL slug "practice" maps to the internal section value 'singing'.
+  const settingsMatch = hash.match(/^\/settings\/([a-z-]+)$/)
+  if (settingsMatch) {
+    const section = SETTINGS_SLUG_TO_SECTION[settingsMatch[1]]
+    if (section !== undefined) {
+      return { type: 'settings-section', section }
+    }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -218,6 +247,8 @@ export function buildHash(route: HashRoute): string {
         : `/guide/${route.sectionId}`
     case 'billing-return':
       return route.outcome === 'success' ? '/billing/success' : '/pricing'
+    case 'settings-section':
+      return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
     case 'unknown':
       return '/'
   }
