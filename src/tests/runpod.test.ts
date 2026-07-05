@@ -153,7 +153,7 @@ describe('requestedRunpodTier', () => {
 describe('buildJobInput', () => {
   it('applies defaults', () => {
     const input = buildJobInput({ audioBase64: 'AAAA' })
-    expect(input.model).toBe('UVR-MDX-NET-Inst_HQ_3')
+    expect(input.model).toBe('roformer')
     expect(input.output_format).toBe('FLAC')
     expect(input.stems).toEqual(['vocal', 'instrumental'])
     expect(input.filename).toBe('input')

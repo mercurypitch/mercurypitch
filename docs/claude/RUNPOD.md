@@ -87,8 +87,8 @@ measurable for real — locally (`python handler.py`) or from a deployed job.
    immutable tag, and bumping it in the endpoint settings is the controlled
    release (RunPod rolls workers onto the new image):
    ```bash
-   docker build -t <registry>/mercurypitch-uvr-runpod:v0.1.0 runpod/
-   docker push  <registry>/mercurypitch-uvr-runpod:v0.1.0
+   docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.0 runpod/
+   docker push  <registry>/mercurypitch-uvr-runpod:v0.2.0
    ```
 2. **Create the serverless endpoint(s)** in the RunPod console with the
    settings above; set the `S3_*` env vars (object storage for stem output —

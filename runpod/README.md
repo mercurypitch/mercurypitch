@@ -34,12 +34,31 @@ The handler receives RunPod's `input` object:
     "audio_base64":  "<base64>",             // small files inlined in the job (≤7 MB)
     "audio_s3_key":  "input/<uuid>.mp3",     // big files: handler downloads from S3_BUCKET
     "filename":      "song.mp3",
-    "model":         "UVR-MDX-NET-Inst_HQ_3", // optional
+    "model":         "roformer",              // optional registry name (see below)
     "output_format": "FLAC",                  // WAV | MP3 | FLAC (FLAC keeps payloads small)
     "stems":         ["vocal", "instrumental"]
   }
 }
 ```
+
+### Models
+
+`model` is a registry name resolved (and allowlisted) by the handler —
+never a raw weights filename. All weights are baked into the image.
+
+| Name | Weights | What it is |
+|---|---|---|
+| `roformer` (default) | BS-RoFormer viperx 1297 | Highest single-model quality (vocals SDR ~12.9 vs ~10 for MDX); ~2-4x slower than MDX |
+| `mdx` | UVR-MDX-NET Inst HQ_3 | The previous default; fastest tier |
+| `karaoke` | Mel-Band RoFormer karaoke | Removes only the LEAD vocal — backing vocals stay in the instrumental (its stem is labeled `(Karaoke)` and mapped to `instrumental`) |
+| `ensemble` | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | Max quality; ~2x the time of `roformer`, and ensemble members reload per job |
+
+The legacy value `UVR-MDX-NET-Inst_HQ_3` is still accepted (maps to
+`mdx`). Unknown names fail fast with the valid list — a job can't make
+the worker download arbitrary weights on billable time. When adding a
+model: extend `MODEL_REGISTRY` in `handler.py`, add the file to the
+Dockerfile bake list, rebuild with a new tag, and mirror the entry in
+`uvr-api/api.py` + `RUNPOD_ALLOWED_MODELS` in `src/lib/runpod.ts`.
 
 Precedence: `audio_s3_key` > `audio_url` > `audio_base64`. The web app's
 Cloudflare worker inlines base64 up to 7 MB (the RunPod `/run` payload
@@ -57,7 +76,8 @@ Output:
       "size": 1234, "duration": 201.3 },
     { "stem": "instrumental", "filename": "...", "data_base64": "..." } // otherwise
   ],
-  "model": "UVR-MDX-NET-Inst_HQ_3",
+  "model": "roformer",
+  "model_files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"],
   "output_format": "FLAC",
   "device": "cuda",
   "storage": "s3",
@@ -95,9 +115,10 @@ Other tunables: `UVR_DEFAULT_MODEL`, `UVR_MODEL_DIR` (default `/models`),
 | Env (endpoint default) | Job override (`input`) | Default | Meaning |
 |---|---|---|---|
 | `UVR_INVERT_USING_SPEC` | `invert_using_spec` | **on** | Derive the vocal stem by spectrogram-domain inversion instead of time-domain subtraction. Time-domain leaves phase-misalignment bleed (instrumental audibly leaking into the vocal, varying by song); spec inversion matches the in-browser separator |
-| `UVR_MDX_OVERLAP` | `mdx_overlap` | 0.25 | Chunk overlap (0.1–0.95); higher = smoother seams, slower |
+| `UVR_MDX_OVERLAP` | `mdx_overlap` | 0.25 | MDX chunk overlap (0.1–0.95); higher = smoother seams, slower |
 | `UVR_MDX_DENOISE` | `mdx_denoise` | off | MDX two-pass denoise; cleaner output at ~2x inference time |
 | `UVR_MDX_SEGMENT_SIZE` | `mdx_segment_size` | 256 | MDX segment size (64–4096) |
+| `UVR_MDXC_OVERLAP` | `mdxc_overlap` | 8 | RoFormer/MDXC chunk overlap (integer 2–50 — different semantics from the MDX fraction); higher = smoother seams, slower. RoFormer checkpoints keep their own trained segment size |
 
 The warm separator is cached per (model, quality) tuple: jobs using the
 endpoint defaults never rebuild; an override rebuilds once (a few seconds).
@@ -126,8 +147,8 @@ recommendations (min/active/max workers, FlashBoot, timeouts, GPU tier) live in
 ```bash
 # 1. Build and push the image (pinned version tag — never point the
 #    endpoint at `latest`; bumping the tag is the controlled release)
-docker build -t <registry>/mercurypitch-uvr-runpod:v0.1.0 runpod/
-docker push  <registry>/mercurypitch-uvr-runpod:v0.1.0
+docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.0 runpod/
+docker push  <registry>/mercurypitch-uvr-runpod:v0.2.0
 
 # 2. RunPod console → Serverless → New Endpoint (type: Queue)
 #    - Container image: the pushed tag

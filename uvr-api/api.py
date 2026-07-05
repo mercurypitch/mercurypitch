@@ -105,6 +105,42 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB cap on uploaded audio
 # the `model` parameter cannot traverse paths via load_model().
 _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
+# ── Model registry ──────────────────────────────────────────────
+# Quality tiers the app may request, resolved to exact weight files.
+# Mirror of MODEL_REGISTRY in runpod/handler.py (that copy is the source
+# of truth — keep them in sync). Doubles as the allowlist: anything not
+# listed is rejected. First use of a model downloads its weights into
+# model_file_dir (~0.6-1 GB for the RoFormer checkpoints).
+MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "roformer": {"files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"]},
+    "mdx": {"files": ["UVR-MDX-NET-Inst_HQ_3.onnx"]},
+    "karaoke": {
+        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"]
+    },
+    "ensemble": {
+        "files": [
+            "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+            "vocals_mel_band_roformer.ckpt",
+        ],
+        "algorithm": "avg_wave",
+    },
+}
+
+# Older clients send the MDX weights filename directly.
+_MODEL_ALIASES = {
+    "UVR-MDX-NET-Inst_HQ_3": "mdx",
+    "UVR-MDX-NET-Inst_HQ_3.onnx": "mdx",
+}
+
+DEFAULT_MODEL = os.getenv("UVR_DEFAULT_MODEL", "roformer")
+
+
+def resolve_model(name: str) -> Optional[tuple]:
+    """Map a requested model name to (registry key, spec), or None."""
+    key = _MODEL_ALIASES.get(name, name).lower()
+    spec = MODEL_REGISTRY.get(key)
+    return (key, spec) if spec is not None else None
+
 # ── Progress tracking ──────────────────────────────────────────
 
 def get_audio_duration(file_path: str) -> float:
@@ -175,8 +211,8 @@ def estimate_processing_time(duration_secs: float, file_size_bytes: int,
 class ProcessRequest(BaseModel):
     """Request to process audio file"""
     model: str = Field(
-        default="UVR-MDX-NET-Inst_HQ",
-        description="Model name for separation"
+        default="roformer",
+        description="Registry model name for separation"
     )
     output_format: str = Field(
         default="WAV",
@@ -265,7 +301,7 @@ async def list_models():
 async def process_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile,
-    model: str = 'UVR-MDX-NET-Inst_HQ_3',
+    model: str = DEFAULT_MODEL,
     output_format: str = "WAV",
     stems: List[str] = ["vocal", "instrumental"],
     cpu_profile: str = 'high'
@@ -287,6 +323,13 @@ async def process_audio(
     # Validate model name — blocks path traversal through load_model()
     if not _MODEL_RE.match(model):
         raise HTTPException(status_code=400, detail="Invalid model name")
+    resolved = resolve_model(model)
+    if resolved is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown model (use one of {sorted(MODEL_REGISTRY)})",
+        )
+    model_key, model_spec = resolved
 
     # Reject obvious non-audio uploads early (empty/octet-stream/audio-* pass).
     ctype = (file.content_type or "").lower()
@@ -329,7 +372,7 @@ async def process_audio(
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
     # Start processing in background
-    def process_task(session_id: str, input_path: str, model_name: str):
+    def process_task(session_id: str, input_path: str, spec: Dict[str, Any]):
         try:
             logger.info(f"Starting processing for session {session_id}")
 
@@ -352,19 +395,40 @@ async def process_audio(
             write_progress(session_output_dir, 0.0, "processing",
                            duration, started_at, estimated, cpu_profile)
 
-            # Initialize separator
-            separator = Separator(
+            # Initialize separator. Quality settings mirror the RunPod GPU
+            # handler (runpod/handler.py) so local output matches the paid
+            # tier: spectrogram-domain inversion avoids the time-domain
+            # phase-bleed in derived stems, and MDXC params honor each
+            # RoFormer checkpoint's trained segment size.
+            files = list(spec["files"])
+            separator_kwargs = dict(
                 output_dir=session_output_dir,
                 output_format=output_format,
-                model_file_dir="/tmp/audio-separator-models/"
+                model_file_dir="/tmp/audio-separator-models/",
+                invert_using_spec=True,
+                mdx_params={
+                    "hop_length": 1024,
+                    "segment_size": 256,
+                    "overlap": 0.25,
+                    "batch_size": 1,
+                    "enable_denoise": False,
+                },
+                mdxc_params={
+                    "segment_size": 256,
+                    "override_model_segment_size": False,
+                    "batch_size": 1,
+                    "overlap": 8,
+                    "pitch_shift": 0,
+                },
             )
-
-            if not model_name.endswith('onnx'):
-                model_name_wext = model_name + '.onnx'
-            else:
-                model_name_wext = model_name
-
-            separator.load_model(model_filename=model_name_wext)
+            if len(files) > 1:
+                separator_kwargs["ensemble_algorithm"] = spec.get(
+                    "algorithm", "avg_wave"
+                )
+            separator = Separator(**separator_kwargs)
+            separator.load_model(
+                model_filename=files if len(files) > 1 else files[0]
+            )
 
             # Run separation in a thread so we can update progress
             separation_error = [None]  # mutable container for thread exception
@@ -405,13 +469,13 @@ async def process_audio(
             except Exception:
                 pass
 
-    background_tasks.add_task(process_task, session_id, input_path, model)
+    background_tasks.add_task(process_task, session_id, input_path, model_spec)
 
     return ProcessResponse(
         session_id=session_id,
         status="processing",
         message="Processing started",
-        model=model,
+        model=model_key,
         output_format=output_format
     )
 
@@ -481,6 +545,12 @@ async def get_status(session_id: str):
                 if "(Vocals)" in filename or "vocals" in filename.lower():
                     detected = "vocal"
                 elif "(Instrumental)" in filename or "instrumental" in filename.lower():
+                    detected = "instrumental"
+                elif "(Karaoke)" in filename:
+                    # Karaoke models label the music-plus-backing-vocals stem
+                    # "(Karaoke)" — for the app's contract that IS the
+                    # instrumental. (Checked after vocal/instrumental: every
+                    # stem from these models has "karaoke" in the MODEL name.)
                     detected = "instrumental"
                 else:
                     detected = stem if stem else "unknown"

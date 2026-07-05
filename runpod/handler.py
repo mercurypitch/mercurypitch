@@ -11,10 +11,13 @@
 #     "audio_url":     "<https url the worker fetches>",   # preferred
 #     "audio_base64":  "<base64 audio>",                   # fallback (small files)
 #     "filename":      "song.mp3",
-#     "model":         "UVR-MDX-NET-Inst_HQ_3",            # optional
+#     "model":         "roformer",                         # optional registry name
 #     "output_format": "FLAC",                             # WAV | MP3 | FLAC
 #     "stems":         ["vocal", "instrumental"]           # optional
 #   }
+#
+# `model` is a REGISTRY name (roformer | mdx | karaoke | ensemble), not a
+# raw weights filename — see MODEL_REGISTRY below.
 #
 # Returns:
 #   {
@@ -77,7 +80,51 @@ logging.getLogger("audio_separator").addHandler(_lib_capture)
 # cost leak on serverless.
 MODEL_DIR = os.getenv("UVR_MODEL_DIR", "/models")
 WORK_DIR = os.getenv("UVR_WORK_DIR", "/tmp/uvr-jobs")
-DEFAULT_MODEL = os.getenv("UVR_DEFAULT_MODEL", "UVR-MDX-NET-Inst_HQ_3")
+DEFAULT_MODEL = os.getenv("UVR_DEFAULT_MODEL", "roformer")
+
+# ── Model registry ──────────────────────────────────────────────
+# Quality tiers a job may request, resolved server-side to exact weight
+# files. This doubles as the ALLOWLIST: anything not listed is rejected,
+# so a job can't make the worker download arbitrary weights on billable
+# time. Every file here must be baked into the image (see Dockerfile) —
+# keep the two in sync or a cold worker re-downloads at job time.
+#
+#   roformer  BS-RoFormer viperx 1297 — vocals SDR 12.9 vs ~10 for MDX.
+#             The default; ~2-4x slower than MDX on GPU, audibly cleaner.
+#   mdx       UVR-MDX-NET Inst HQ_3 — the previous default; fast tier.
+#   karaoke   Mel-Band RoFormer karaoke — removes only the LEAD vocal;
+#             backing vocals stay in the instrumental (karaoke-correct).
+#   ensemble  BS-RoFormer + Mel-Band RoFormer Kim averaged per stem
+#             (avg_wave) — max quality, roughly 2x the time of roformer;
+#             ensemble members reload per job (audio-separator design).
+MODEL_REGISTRY: dict[str, dict[str, Any]] = {
+    "roformer": {"files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"]},
+    "mdx": {"files": ["UVR-MDX-NET-Inst_HQ_3.onnx"]},
+    "karaoke": {
+        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"]
+    },
+    "ensemble": {
+        "files": [
+            "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+            "vocals_mel_band_roformer.ckpt",
+        ],
+        "algorithm": "avg_wave",
+    },
+}
+
+# Older app clients send the MDX weights filename as the model — keep them
+# working by mapping the legacy names onto the registry.
+_MODEL_ALIASES = {
+    "UVR-MDX-NET-Inst_HQ_3": "mdx",
+    "UVR-MDX-NET-Inst_HQ_3.onnx": "mdx",
+}
+
+
+def resolve_model(name: str) -> Optional[tuple[str, dict[str, Any]]]:
+    """Map a requested model name to (registry key, spec), or None."""
+    key = _MODEL_ALIASES.get(name, name).lower()
+    spec = MODEL_REGISTRY.get(key)
+    return (key, spec) if spec is not None else None
 
 # Load the default model once at worker startup (before serving requests)
 # rather than lazily on the first job. RunPod bills per second from the moment
@@ -116,6 +163,9 @@ INVERT_USING_SPEC = os.getenv("UVR_INVERT_USING_SPEC", "1") != "0"
 MDX_OVERLAP = float(os.getenv("UVR_MDX_OVERLAP", "0.25"))
 MDX_DENOISE = os.getenv("UVR_MDX_DENOISE", "0") != "0"
 MDX_SEGMENT_SIZE = int(os.getenv("UVR_MDX_SEGMENT_SIZE", "256"))
+# MDXC/RoFormer overlap is an integer chunk-overlap count (2-50, library
+# default 8) — different semantics from the MDX 0-1 fraction above.
+MDXC_OVERLAP = int(os.getenv("UVR_MDXC_OVERLAP", "8"))
 
 # Object storage (S3-compatible — Cloudflare R2 works). When set, stems
 # are uploaded and returned as URLs instead of inline base64. This is the
@@ -213,6 +263,7 @@ def _quality_from_input(job_input: dict) -> dict:
 
     overlap = _as_num(job_input.get("mdx_overlap"), MDX_OVERLAP)
     segment = int(_as_num(job_input.get("mdx_segment_size"), MDX_SEGMENT_SIZE))
+    mdxc_overlap = int(_as_num(job_input.get("mdxc_overlap"), MDXC_OVERLAP))
     return {
         "invert_using_spec": _as_bool(
             job_input.get("invert_using_spec"), INVERT_USING_SPEC
@@ -220,6 +271,7 @@ def _quality_from_input(job_input: dict) -> dict:
         "overlap": min(0.95, max(0.1, overlap)),
         "enable_denoise": _as_bool(job_input.get("mdx_denoise"), MDX_DENOISE),
         "segment_size": min(4096, max(64, segment)),
+        "mdxc_overlap": min(50, max(2, mdxc_overlap)),
     }
 
 
@@ -262,46 +314,69 @@ def _patch_invert_stem() -> None:
 
 
 def _get_separator(
-    model: str, output_dir: str, output_format: str, quality: dict
+    spec: dict, output_dir: str, output_format: str, quality: dict
 ):
-    """Return a Separator with `model` loaded, reusing the warm instance.
+    """Return a Separator with the spec's model(s) loaded, reusing the warm
+    instance.
 
     audio-separator auto-selects CUDAExecutionProvider when onnxruntime-gpu
     sees a GPU, so no provider plumbing is needed on NVIDIA hosts. The warm
-    instance is keyed on (model, quality): quality settings are baked into
+    instance is keyed on (files, quality): quality settings are baked into
     the Separator/model at load time, so a job with different settings
     rebuilds (a few seconds) — the steady state (env defaults) never does.
+
+    A spec with multiple files runs audio-separator's built-in ensemble:
+    each member separates into a temp dir and the stems are combined with
+    `algorithm` (default avg_wave). Member models load during separate(),
+    so ensemble jobs pay the member load time per job.
     """
     global _separator, _loaded_key
     from audio_separator.separator import Separator
 
     _patch_invert_stem()
 
-    model_file = model if model.endswith(".onnx") else f"{model}.onnx"
+    files = list(spec["files"])
+    algorithm = str(spec.get("algorithm", "avg_wave"))
     key = (
-        model_file,
+        tuple(files),
+        algorithm,
         quality["invert_using_spec"],
         quality["overlap"],
         quality["enable_denoise"],
         quality["segment_size"],
+        quality["mdxc_overlap"],
     )
 
     if _separator is None or _loaded_key != key:
         os.makedirs(MODEL_DIR, exist_ok=True)
-        _separator = Separator(
-            output_dir=output_dir,
-            output_format=output_format,
-            model_file_dir=MODEL_DIR,
-            invert_using_spec=quality["invert_using_spec"],
-            mdx_params={
+        kwargs: dict[str, Any] = {
+            "output_dir": output_dir,
+            "output_format": output_format,
+            "model_file_dir": MODEL_DIR,
+            "invert_using_spec": quality["invert_using_spec"],
+            "mdx_params": {
                 "hop_length": 1024,
                 "segment_size": quality["segment_size"],
                 "overlap": quality["overlap"],
                 "batch_size": 1,
                 "enable_denoise": quality["enable_denoise"],
             },
+            # RoFormer/MDXC models: honor each checkpoint's own trained
+            # segment size (override off) — overriding degrades quality.
+            "mdxc_params": {
+                "segment_size": 256,
+                "override_model_segment_size": False,
+                "batch_size": 1,
+                "overlap": quality["mdxc_overlap"],
+                "pitch_shift": 0,
+            },
+        }
+        if len(files) > 1:
+            kwargs["ensemble_algorithm"] = algorithm
+        _separator = Separator(**kwargs)
+        _separator.load_model(
+            model_filename=files if len(files) > 1 else files[0]
         )
-        _separator.load_model(model_filename=model_file)
         _loaded_key = key
     else:
         # Reuse the warm instance but point it at this job's output dir/format.
@@ -331,14 +406,23 @@ def init_worker() -> None:
     if not EAGER_LOAD:
         return
     try:
+        resolved = resolve_model(DEFAULT_MODEL)
+        if resolved is None:
+            logger.error(
+                "UVR_DEFAULT_MODEL %r is not in the registry %s",
+                DEFAULT_MODEL,
+                sorted(MODEL_REGISTRY),
+            )
+            return
         t0 = time.time()
         _get_separator(
-            DEFAULT_MODEL, os.path.join(WORK_DIR, "_init"), "FLAC",
+            resolved[1], os.path.join(WORK_DIR, "_init"), "FLAC",
             _quality_from_input({}),
         )
         logger.info(
-            "Pre-loaded model %s in %.1fs (device=%s)",
-            DEFAULT_MODEL,
+            "Pre-loaded model %s (%s) in %.1fs (device=%s)",
+            resolved[0],
+            resolved[1]["files"],
             time.time() - t0,
             _detect_device(),
         )
@@ -423,9 +507,11 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
 
 # audio-separator names outputs "<input>_(<Stem>)_<model>.<ext>" — match the
 # parenthesised marker first so a song called e.g. "Vocal Coach.mp3" can't
-# misclassify its instrumental stem via a bare substring hit.
+# misclassify its instrumental stem via a bare substring hit. Karaoke models
+# label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
+# contract that IS the instrumental.
 _STEM_MARKER_RE = re.compile(
-    r"\((vocals?|instrumental|drums|bass|other)\)", re.IGNORECASE
+    r"\((vocals?|instrumental|karaoke|drums|bass|other)\)", re.IGNORECASE
 )
 
 
@@ -433,8 +519,12 @@ def _classify_stem(filename: str) -> str:
     low = filename.lower()
     marker = _STEM_MARKER_RE.search(low)
     if marker:
-        key = marker.group(1).rstrip("s") if marker.group(1).startswith("vocal") else marker.group(1)
-        return key
+        raw = marker.group(1)
+        if raw.startswith("vocal"):
+            return "vocal"
+        if raw == "karaoke":
+            return "instrumental"
+        return raw
     for key in _STEM_KEYS:
         if key in low:
             return key
@@ -489,9 +579,18 @@ def handler(job: dict) -> dict:
     job_id = job.get("id") or str(uuid.uuid4())
     job_input = job.get("input") or {}
 
-    model = job_input.get("model") or DEFAULT_MODEL
+    model = str(job_input.get("model") or DEFAULT_MODEL)
     if not _MODEL_RE.match(model):
         return {"error": "Invalid model name"}
+    resolved = resolve_model(model)
+    if resolved is None:
+        return {
+            "error": (
+                f"Unknown model {model!r} (use one of "
+                f"{sorted(MODEL_REGISTRY)})"
+            )
+        }
+    model_key, model_spec = resolved
 
     output_format = str(job_input.get("output_format") or "FLAC").upper()
     if output_format not in _VALID_FORMATS:
@@ -513,14 +612,15 @@ def handler(job: dict) -> dict:
         # here is the tail of the app's rp_<tier>_<id> session id, which is
         # the correlation key across worker logs and the credit ledger.
         logger.info(
-            "Job %s start: %r (%.1f MB via %s) model=%s format=%s quality=%s",
+            "Job %s start: %r (%.1f MB via %s) model=%s%s format=%s quality=%s",
             job_id,
             os.path.basename(input_path),
             os.path.getsize(input_path) / 1_000_000,
             "s3" if job_input.get("audio_s3_key")
             else "url" if job_input.get("audio_url")
             else "base64",
-            model,
+            model_key,
+            model_spec["files"],
             output_format,
             quality,
         )
@@ -544,7 +644,7 @@ def handler(job: dict) -> dict:
             }
 
         t0 = time.time()
-        separator = _get_separator(model, job_dir, output_format, quality)
+        separator = _get_separator(model_spec, job_dir, output_format, quality)
         timings["load_model"] = round(time.time() - t0, 3)
 
         t0 = time.time()
@@ -622,7 +722,8 @@ def handler(job: dict) -> dict:
         )
         return {
             "stems": stems,
-            "model": model,
+            "model": model_key,
+            "model_files": model_spec["files"],
             "output_format": output_format,
             "device": _detect_device(),
             "storage": "s3" if use_storage else "base64",

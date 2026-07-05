@@ -46,9 +46,11 @@ export interface ProcessRequest {
   provider?: 'runpod' | 'runpod-cpu'
 }
 
-// Default processing options
+// Default processing options. `model` is a server-side registry name
+// (see runpod/handler.py MODEL_REGISTRY), not a weights filename:
+// roformer = BS-RoFormer, the high-quality default.
 export const DEFAULT_PROCESS_REQUEST: ProcessRequest = {
-  model: 'UVR-MDX-NET-Inst_HQ_3',
+  model: 'roformer',
   output_format: 'WAV',
   stems: ['vocal', 'instrumental'],
   cpu_profile: 'high',
@@ -134,32 +136,38 @@ const HealthCheckSchema = z.object({
 })
 
 /**
- * Available UVR models
+ * Server-side separation quality tiers (registry names resolved by the
+ * server — see runpod/handler.py MODEL_REGISTRY). Descriptions are the
+ * user-facing story for a future quality selector.
  */
 export const UVR_MODELS = [
   {
-    name: 'UVR-MDX-NET-Inst_HQ',
-    display: 'MDX-Net HQ',
-    quality: 'High',
+    name: 'roformer',
+    display: 'Studio (BS-RoFormer)',
+    quality: 'Highest',
     speed: 'Medium',
+    description: 'Cleanest vocals and instrumental — the default.',
   },
   {
-    name: 'UVR-MDX-NET-Karaoke_3',
-    display: 'MDX-Net Karaoke',
-    quality: 'High',
-    speed: 'Medium',
-  },
-  {
-    name: 'UVR-MDX-NET-Voc_FT',
-    display: 'MDX-Net Vocals',
-    quality: 'Medium',
+    name: 'mdx',
+    display: 'Fast (MDX-Net)',
+    quality: 'Good',
     speed: 'Fast',
+    description: 'The previous default; quicker, slightly more bleed.',
   },
   {
-    name: 'VR-Architecture',
-    display: 'VR Architecture',
+    name: 'karaoke',
+    display: 'Karaoke (keep backing vocals)',
     quality: 'High',
+    speed: 'Medium',
+    description: 'Removes only the lead vocal; harmonies stay in the mix.',
+  },
+  {
+    name: 'ensemble',
+    display: 'Ensemble (two models)',
+    quality: 'Maximum',
     speed: 'Slow',
+    description: 'Blends two top models per stem; roughly twice the time.',
   },
 ]
 

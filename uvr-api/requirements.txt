@@ -5,7 +5,9 @@
 # Audio processing
 # audio-separator[gpu]
 #  for AMD GPUs
-audio-separator
+# >=0.44.2: RoFormer registry models + built-in ensemble (same engine as
+# the RunPod GPU handler — keep versions aligned with runpod/requirements.txt)
+audio-separator>=0.44.2
 
 # Web framework
 fastapi
