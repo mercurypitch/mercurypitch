@@ -3,7 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchPricing, formatPrice, startCheckout, } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -14,6 +14,39 @@ describe('formatPrice', () => {
     expect(formatPrice(null, 'eur')).toBe('Soon')
     expect(formatPrice(0, 'eur')).toBe('Free')
     expect(formatPrice(800, 'eur')).toContain('8')
+  })
+})
+
+describe('formatTierPrice / isTierSoon', () => {
+  it('shows a live credit-priced tier as its per-song cost, not "Soon"', () => {
+    // GPU tier: no money price, priced in credits.
+    const gpu = { amount: null, credits: 1, currency: 'eur' }
+    expect(formatTierPrice(gpu)).toBe('1 credit')
+    expect(isTierSoon(gpu)).toBe(false)
+  })
+
+  it('pluralizes multi-credit tiers', () => {
+    expect(formatTierPrice({ amount: null, credits: 3, currency: 'eur' })).toBe(
+      '3 credits',
+    )
+  })
+
+  it('renders the free tier as "Free"', () => {
+    const free = { amount: 0, credits: null, currency: 'eur' }
+    expect(formatTierPrice(free)).toBe('Free')
+    expect(isTierSoon(free)).toBe(false)
+  })
+
+  it('renders an unlaunched tier (no price, no credits) as "Soon"', () => {
+    const soon = { amount: null, credits: null, currency: 'eur' }
+    expect(formatTierPrice(soon)).toBe('Soon')
+    expect(isTierSoon(soon)).toBe(true)
+  })
+
+  it('falls back to the money price for a money-priced tier', () => {
+    expect(
+      formatTierPrice({ amount: 500, credits: null, currency: 'eur' }),
+    ).toContain('5')
   })
 })
 

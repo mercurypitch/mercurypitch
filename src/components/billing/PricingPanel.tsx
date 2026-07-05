@@ -8,7 +8,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
-import { fetchBillingMe, fetchPricing, formatPrice, startCheckout, } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PricingPanel.module.css'
@@ -118,14 +118,14 @@ export const PricingPanel: Component = () => {
                       </Show>
                       <div
                         class={styles.price}
-                        classList={{ [styles.soon]: tier.amount == null }}
+                        classList={{ [styles.soon]: isTierSoon(tier) }}
                       >
-                        {formatPrice(tier.amount, tier.currency)}
+                        {formatTierPrice(tier)}
                         <Show
                           when={
                             tier.unit != null &&
-                            tier.amount != null &&
-                            tier.amount > 0
+                            (tier.credits != null ||
+                              (tier.amount != null && tier.amount > 0))
                           }
                         >
                           <span class={styles.unit}> / {tier.unit}</span>
