@@ -354,6 +354,11 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         <Show when={props.status === 'processing'}>
           <button
             class="process-btn process-btn-danger"
+            title={
+              props.processingMode === 'server' && props.phase !== 'queued'
+                ? 'Stops the job. A song already separating on the GPU still uses its credit; a queued one is refunded.'
+                : undefined
+            }
             onClick={() => props.onCancel?.()}
           >
             Cancel

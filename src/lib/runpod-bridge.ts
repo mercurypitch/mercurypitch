@@ -127,11 +127,15 @@ export async function handleRunpodRequest(
     const mapped = mapStatusToResponse(sessionId, status)
     // A job that ends in error never delivered — undo its debit. refundJob
     // is idempotent per jobRef, so repeated error polls can't double-refund.
+    // CANCELLED is excluded: only our own DELETE route cancels jobs, and it
+    // already decides whether the cancel is refundable — refunding here too
+    // would let a mid-processing cancel claw the credit back via polling.
     if (mapped.status === 'error') {
       console.error(
         `[runpod] ${sessionId} failed: ${mapped.error ?? 'unknown'} (runpod status ${status.status ?? '?'})`,
       )
-      if (meter !== null) {
+      const state = (status.status ?? '').toUpperCase()
+      if (meter !== null && state !== 'CANCELLED') {
         await refundJob(meter, sessionId)
       }
     }
@@ -144,15 +148,26 @@ export async function handleRunpodRequest(
 
   if (route === 'session' && method === 'DELETE') {
     if (meter !== null) {
-      // Refund only when the job hadn't completed — deleting a finished
-      // session is routine cleanup, not a failure.
-      const pre = await fetchJobStatus(cfg, endpointId, parsed.jobId)
-      const mapped = mapStatusToResponse(sessionId, pre)
+      // Refund only a cancel that cost us nothing: the job was still
+      // IN_QUEUE (no worker picked it up, zero GPU spend). Cancelling a
+      // RUNNING job keeps the debit — the GPU time is already paid for, and
+      // refunding it would let users burn our GPU money for free by
+      // cancelling near the end. Genuine failures are refunded by the
+      // status route, and deleting a finished session is routine cleanup.
+      // If the pre-cancel status can't be read, assume it was running.
+      let preState = 'UNKNOWN'
+      try {
+        const pre = await fetchJobStatus(cfg, endpointId, parsed.jobId)
+        preState = (pre.status ?? 'UNKNOWN').toUpperCase()
+      } catch {
+        /* transport error — keep the debit; the ledger allows manual fixes */
+      }
       await cancelJob(cfg, endpointId, parsed.jobId)
+      const refundable = preState === 'IN_QUEUE'
       console.log(
-        `[runpod] ${sessionId} cancelled (was ${mapped.status}${mapped.status !== 'completed' ? ', refunding' : ''})`,
+        `[runpod] ${sessionId} cancelled (was ${preState}${refundable ? ', refunding' : ', keeping debit'})`,
       )
-      if (mapped.status !== 'completed') {
+      if (refundable) {
         await refundJob(meter, sessionId)
       }
     } else {
