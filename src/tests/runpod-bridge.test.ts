@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig } from '@/lib/runpod'
-import { coerceFormString, decodeStemKey, handleRunpodRequest, parseStems, rejectUnconfiguredRunpod, } from '@/lib/runpod-bridge'
+import { coerceFormString, decodeStemKey, extFromName, handleRunpodRequest, parseStems, rejectUnconfiguredRunpod, } from '@/lib/runpod-bridge'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -60,6 +60,26 @@ function smallFile(): File {
     })
   }
   return f
+}
+
+/** A File that reports `size` bytes without allocating them, with a stub
+ *  stream() (the R2 upload path streams the body). */
+function bigFile(size: number, name = 'big.mp3'): File {
+  const f = new File([new Uint8Array(1)], name, { type: 'audio/mpeg' })
+  Object.defineProperty(f, 'size', { value: size })
+  Object.defineProperty(f, 'stream', {
+    value: () => new ReadableStream(),
+  })
+  return f
+}
+
+/** Minimal R2 bucket stub recording put() calls. */
+function mockBucket() {
+  return {
+    put: vi.fn((_key: string, _value?: unknown, _opts?: unknown) =>
+      Promise.resolve({}),
+    ),
+  }
 }
 
 beforeEach(() => {
@@ -131,13 +151,73 @@ describe('handleRunpodRequest — process', () => {
     expect(res?.status).toBe(400)
   })
 
-  it('413s for an oversized inline upload with no audio_url', async () => {
+  it('503s a >7 MB upload when no R2 bucket is wired', async () => {
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod' },
-      file: new File([new Uint8Array(8 * 1024 * 1024)], 'big.wav'),
+      file: bigFile(8 * 1024 * 1024, 'big.wav'),
     })
     const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(503)
+  })
+
+  it('413s an upload over the 50 MB hard cap', async () => {
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: bigFile(51 * 1024 * 1024, 'huge.wav'),
+    })
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'POST',
+      CFG,
+      null,
+      mockBucket(),
+    )
     expect(res?.status).toBe(413)
+  })
+
+  it('streams a >7 MB file to R2 and passes audio_s3_key (not base64)', async () => {
+    const spy = mockFetchOnce({ id: 'job-big' })
+    const bucket = mockBucket()
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: bigFile(20 * 1024 * 1024, 'My Song.mp3'),
+    })
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'POST',
+      CFG,
+      null,
+      bucket,
+    )
+    expect(res?.status).toBe(200)
+    // Uploaded once, under input/ with a .mp3 extension.
+    expect(bucket.put).toHaveBeenCalledTimes(1)
+    const key = bucket.put.mock.calls[0][0] as string
+    expect(key).toMatch(/^input\/[0-9a-f-]+\.mp3$/)
+    // The job carries the key, not inline base64.
+    const sent = JSON.parse(spy.mock.calls[0][1]?.body as string) as {
+      input: { audio_s3_key?: string; audio_base64?: string }
+    }
+    expect(sent.input.audio_s3_key).toBe(key)
+    expect(sent.input.audio_base64).toBeUndefined()
+  })
+
+  it('inlines a ≤7 MB file as base64 (no R2 upload)', async () => {
+    const spy = mockFetchOnce({ id: 'job-small' })
+    const bucket = mockBucket()
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: smallFile(),
+    })
+    await handleRunpodRequest(request, url, 'POST', CFG, null, bucket)
+    expect(bucket.put).not.toHaveBeenCalled()
+    const sent = JSON.parse(spy.mock.calls[0][1]?.body as string) as {
+      input: { audio_base64?: string; audio_s3_key?: string }
+    }
+    expect(sent.input.audio_base64).toBeDefined()
+    expect(sent.input.audio_s3_key).toBeUndefined()
   })
 
   it('passes audio_url through instead of inlining base64', async () => {
@@ -477,5 +557,20 @@ describe('rejectUnconfiguredRunpod', () => {
       '/api/uvr/status/123e4567-e89b-12d3-a456-426614174000',
     )
     expect(rejectUnconfiguredRunpod(request, url, 'GET')).toBeNull()
+  })
+})
+
+describe('extFromName', () => {
+  it('keeps a sane lowercased extension', () => {
+    expect(extFromName('My Song.MP3')).toBe('.mp3')
+    expect(extFromName('track.flac')).toBe('.flac')
+  })
+  it('takes the last valid segment as the extension', () => {
+    expect(extFromName('weird.name.with.wav')).toBe('.wav')
+  })
+  it('falls back to .mp3 for missing/odd extensions', () => {
+    expect(extFromName('noext')).toBe('.mp3')
+    expect(extFromName('bad.<script>')).toBe('.mp3')
+    expect(extFromName('song.verylongext')).toBe('.mp3')
   })
 })

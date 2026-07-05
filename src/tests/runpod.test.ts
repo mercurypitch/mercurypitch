@@ -172,6 +172,17 @@ describe('buildJobInput', () => {
     expect(input.audio_base64).toBeUndefined()
     expect(input.output_format).toBe('WAV')
   })
+
+  it('prefers an S3 key over url and base64', () => {
+    const input = buildJobInput({
+      audioS3Key: 'input/abc.mp3',
+      audioUrl: 'https://r2.test/song.mp3',
+      audioBase64: 'AAAA',
+    })
+    expect(input.audio_s3_key).toBe('input/abc.mp3')
+    expect(input.audio_url).toBeUndefined()
+    expect(input.audio_base64).toBeUndefined()
+  })
 })
 
 // ── mapStatusToResponse ─────────────────────────────────────────

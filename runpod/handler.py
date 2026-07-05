@@ -244,8 +244,21 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
 
     audio_url = job_input.get("audio_url")
     audio_b64 = job_input.get("audio_base64")
+    audio_s3_key = job_input.get("audio_s3_key")
 
-    if audio_url:
+    if audio_s3_key:
+        # Big inputs the worker streamed to R2 under `input/`. Download with
+        # our own S3 credentials (same bucket we upload stems to) — no public
+        # URL is ever minted for the source audio.
+        if not _storage_enabled():
+            raise ValueError("audio_s3_key given but S3 storage is not configured")
+        key = str(audio_s3_key)
+        if not re.match(r"^input/[A-Za-z0-9._-]+$", key):
+            raise ValueError("Invalid audio_s3_key")
+        _s3().download_file(S3_BUCKET, key, local_path)
+        if os.path.getsize(local_path) > MAX_INPUT_BYTES:
+            raise ValueError(f"Input exceeds {MAX_INPUT_BYTES // (1024 * 1024)} MB cap")
+    elif audio_url:
         import requests
 
         with requests.get(audio_url, stream=True, timeout=120) as resp:
@@ -268,7 +281,9 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
         with open(local_path, "wb") as fh:
             fh.write(raw)
     else:
-        raise ValueError("Job input requires 'audio_url' or 'audio_base64'")
+        raise ValueError(
+            "Job input requires 'audio_url', 'audio_base64', or 'audio_s3_key'"
+        )
 
     if os.path.getsize(local_path) == 0:
         raise ValueError("Decoded input audio is empty")

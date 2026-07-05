@@ -30,8 +30,9 @@ The handler receives RunPod's `input` object:
 ```jsonc
 {
   "input": {
-    "audio_url":     "https://.../song.mp3", // preferred — handler fetches it
-    "audio_base64":  "<base64>",             // fallback for small/local files
+    "audio_url":     "https://.../song.mp3", // handler fetches it
+    "audio_base64":  "<base64>",             // small files inlined in the job (≤7 MB)
+    "audio_s3_key":  "input/<uuid>.mp3",     // big files: handler downloads from S3_BUCKET
     "filename":      "song.mp3",
     "model":         "UVR-MDX-NET-Inst_HQ_3", // optional
     "output_format": "FLAC",                  // WAV | MP3 | FLAC (FLAC keeps payloads small)
@@ -39,6 +40,13 @@ The handler receives RunPod's `input` object:
   }
 }
 ```
+
+Precedence: `audio_s3_key` > `audio_url` > `audio_base64`. The web app's
+Cloudflare worker inlines base64 up to 7 MB (the RunPod `/run` payload
+limit) and, for larger uploads, streams the file to R2 under `input/` and
+passes `audio_s3_key` — the handler then downloads it with its own S3
+credentials (the source audio never gets a public URL). A 1-day R2
+lifecycle rule on the `input/` prefix expires those staged inputs.
 
 Output:
 
