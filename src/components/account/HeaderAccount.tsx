@@ -7,9 +7,10 @@
 // when no cloud API is configured.
 
 import type { Component } from 'solid-js'
-import { createSignal, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, Show } from 'solid-js'
 import type { MeResponse } from '@/db/services/auth-service'
 import { ensureAuth, fetchMe, logout } from '@/db/services/auth-service'
+import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './HeaderAccount.module.css'
@@ -29,7 +30,11 @@ export const HeaderAccount: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const [me, setMe] = createSignal<MeResponse | null>(null)
 
-  onMount(() => {
+  // Re-fetch on every auth transition (sign-in from Settings, Google
+  // redirect return, restored session, sign-out) — a one-shot onMount left
+  // the pill saying "Sign in" while the user was actually signed in.
+  createEffect(() => {
+    authVersion()
     if (!cloudConfigured) return
     void (async () => {
       await ensureAuth()
@@ -47,7 +52,7 @@ export const HeaderAccount: Component = () => {
 
   function openAccount(): void {
     // The full account UI lives in Settings → Account.
-    window.location.hash = '#/settings'
+    window.location.hash = '#/settings/account'
   }
 
   function handleLogout(): void {

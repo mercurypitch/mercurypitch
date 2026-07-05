@@ -219,22 +219,29 @@ describe('UvrProcessControl Component', () => {
     })
   })
 
-  describe('Complete Button', () => {
-    it('renders complete button for completed state', () => {
+  describe('View results button', () => {
+    it('renders an enabled View results button for the completed state', () => {
       const completedProps = { ...defaultProps, status: 'completed' as const }
 
       render(() => <UvrProcessControl {...completedProps} />)
 
-      expect(screen.getByText('Complete')).toBeInTheDocument()
+      const btn = screen.getByTestId('uvr-view-results')
+      expect(btn).toHaveTextContent('View results')
+      expect(btn).not.toBeDisabled()
     })
 
-    it('disables complete button', () => {
-      const completedProps = { ...defaultProps, status: 'completed' as const }
+    it('calls onViewResults when clicked', () => {
+      const onViewResults = vi.fn()
+      render(() => (
+        <UvrProcessControl
+          {...defaultProps}
+          status={'completed' as const}
+          onViewResults={onViewResults}
+        />
+      ))
 
-      render(() => <UvrProcessControl {...completedProps} />)
-
-      const completeButton = screen.getByText('Complete')
-      expect(completeButton).toBeDisabled()
+      screen.getByTestId('uvr-view-results').click()
+      expect(onViewResults).toHaveBeenCalledTimes(1)
     })
   })
 

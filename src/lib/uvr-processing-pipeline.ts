@@ -195,6 +195,27 @@ async function processLocal(
 // Server helpers
 // ---------------------------------------------------------------------------
 
+/** Song duration via an off-DOM audio element — cheap metadata-only load.
+ *  null when the browser can't parse the container (fall back to defaults). */
+function audioDurationSecs(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const audio = new Audio()
+    let settled = false
+    const done = (v: number | null) => {
+      if (settled) return
+      settled = true
+      URL.revokeObjectURL(url)
+      resolve(v)
+    }
+    audio.onloadedmetadata = () =>
+      done(Number.isFinite(audio.duration) ? audio.duration : null)
+    audio.onerror = () => done(null)
+    setTimeout(() => done(null), 3000)
+    audio.src = url
+  })
+}
+
 async function processServer(
   file: File,
   sessionId: string,
@@ -203,6 +224,15 @@ async function processServer(
   // Server mode targets the RunPod GPU tier; when RunPod isn't configured
   // on the worker the request falls through to the CPU container, so the
   // opt-in header is always safe to send.
+  // Duration-scaled progress estimate: separation runs ~7-8x realtime on
+  // the GPU tier plus fixed overhead, so a 3-min song is ~45s and an 8-min
+  // song ~90s — far better than a flat guess for the progress bar + ETA.
+  const durationSecs = await audioDurationSecs(file)
+  const estimatedSecs =
+    durationSecs !== null
+      ? Math.min(240, Math.max(30, 20 + durationSecs / 7))
+      : undefined
+
   const response = await processAudio(file, {
     ...DEFAULT_PROCESS_REQUEST,
     provider: 'runpod',
@@ -259,6 +289,8 @@ async function processServer(
     },
     callbacks.onError,
     1000,
+    undefined,
+    estimatedSecs,
   )
 }
 
