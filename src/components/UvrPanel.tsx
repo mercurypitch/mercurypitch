@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { batch, createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
-import { fetchBillingMe } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -16,7 +16,7 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
@@ -547,11 +547,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     () => balanceVersion() + 1,
     () => fetchBillingMe(),
   )
+  // Per-song cost of the model server jobs actually run — served by the
+  // pricing endpoint (tier base × model multiplier), never hardcoded.
+  const [pricing] = createResource(() => fetchPricing().catch(() => null))
+  const songCost = (): number | undefined => {
+    const cost =
+      pricing()?.uvrModelCredits?.[DEFAULT_PROCESS_REQUEST.model ?? 'roformer']
+    return cost !== undefined && cost > 0 ? cost : undefined
+  }
   const creditBalanceLabel = (): string => {
     const balance = billingMe()?.creditBalance
+    const cost = songCost()
+    const suffix = cost !== undefined ? ` · ${cost} per song` : ''
     return balance !== undefined
-      ? `${balance} credit${balance === 1 ? '' : 's'} · 1 per song`
-      : '1 credit / song'
+      ? `${balance} credit${balance === 1 ? '' : 's'}${suffix}`
+      : cost !== undefined
+        ? `${cost} credit${cost === 1 ? '' : 's'} / song`
+        : 'Credits'
   }
 
   /** Server processing needs a signed-in account (the worker's JWT gate
@@ -1028,7 +1040,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <div class="uvr-mode-toggle">
                   <button
                     class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                    title="Processing: Server GPU (1 credit per song)"
+                    title={`Processing: Server GPU${songCost() !== undefined ? ` (${songCost()} credit${songCost() === 1 ? '' : 's'} per song)` : ''}`}
                     onClick={() => {
                       if (requireServerAuth()) setUvrProcessingMode('server')
                     }}

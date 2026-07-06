@@ -31,6 +31,8 @@ import {
   mapPricingPlans,
   timingSafeEqualStr,
   uvrDebitKey,
+  uvrJobCost,
+  uvrModelCredits,
   uvrRefundKey,
   verifyStripeSignature,
 } from './billing-core'
@@ -109,8 +111,17 @@ async function handlePricing(env: Env, respond: Respond): Promise<Response> {
     'SELECT * FROM pricingPlans WHERE active = 1 ORDER BY sortOrder ASC',
   ).all<PricingRow>()
   const pricing = mapPricingPlans(results)
+  // Per-model job costs for the GPU tier (base tier credits × model
+  // multiplier) so the app can label quality choices ("1 credit" vs
+  // "2 credits · slower") without hardcoding prices.
+  const gpuBase =
+    results.find((r) => r.id === UVR_TIER_PLAN_IDS.gpu)?.credits ?? 0
   return respond(
-    { ...pricing, stripeConfigured: isStripeConfigured(env) },
+    {
+      ...pricing,
+      uvrModelCredits: uvrModelCredits(gpuBase),
+      stripeConfigured: isStripeConfigured(env),
+    },
     // Public + cacheable: pricing changes are infrequent.
     { headers: { 'Cache-Control': 'public, max-age=60' } },
   )
@@ -298,7 +309,12 @@ async function grantCheckoutCredits(
 interface DebitBody {
   tier?: string
   jobRef?: string
+  /** Registry model name (e.g. "roformer") — scales the tier's base cost
+   *  by the model's credit multiplier. Absent = base cost. */
+  model?: string
 }
+
+const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
 
 /** Debit a server-side separation job against the user's credit balance.
  *
@@ -326,13 +342,16 @@ async function handleDebit(
   if (!isValidJobRef(body.jobRef)) {
     return respond({ error: 'jobRef required' }, { status: 400 })
   }
+  if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
+    return respond({ error: 'Invalid model' }, { status: 400 })
+  }
 
   const plan = await env.DB.prepare(
     'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
   )
     .bind(UVR_TIER_PLAN_IDS[body.tier])
     .first<{ credits: number | null }>()
-  const cost = plan?.credits ?? 0
+  const cost = uvrJobCost(plan?.credits ?? 0, body.model)
 
   const ledger = await env.DB.prepare(
     'SELECT delta FROM creditLedger WHERE userId = ?',
@@ -387,7 +406,7 @@ async function handleDebit(
     )
   }
   console.log(
-    `[billing] debit ${body.jobRef}: -${cost} user=${auth.userId} balance=${balance - cost}`,
+    `[billing] debit ${body.jobRef}: -${cost}${body.model !== undefined ? ` (${body.model})` : ''} user=${auth.userId} balance=${balance - cost}`,
   )
   return respond({ debited: cost, cost, balance: balance - cost })
 }

@@ -459,10 +459,32 @@ describe('handleRunpodRequest — metering', () => {
     expect((debit?.init?.headers as Record<string, string>).Authorization).toBe(
       'Bearer tok',
     )
+    // The debit carries the model so the db-worker prices the job for what
+    // actually runs (no model field sent → the handler default = roformer).
     expect(JSON.parse(debit?.init?.body as string)).toEqual({
       tier: 'gpu',
       jobRef: 'rp_gpu_job-1',
+      model: 'roformer',
     })
+  })
+
+  it('debits with the explicitly requested model', async () => {
+    const calls = mockRoutes({
+      '/run': { body: { id: 'job-2' } },
+      '/api/billing/debit': { body: { debited: 1, balance: 9 } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      file: smallFile(),
+      fields: { model: 'mdx' },
+    })
+
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+    expect(res?.status).toBe(200)
+    const debit = calls.find((c) => c.url.includes('/api/billing/debit'))
+    expect(
+      (JSON.parse(debit?.init?.body as string) as { model: string }).model,
+    ).toBe('mdx')
   })
 
   it('cancels the job and returns 402 when the debit is refused', async () => {

@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
 
 const row = (over: Partial<PricingRow>): PricingRow => ({
   id: 'x',
@@ -72,6 +72,45 @@ describe('creditBalance', () => {
       57,
     )
     expect(creditBalance([])).toBe(0)
+  })
+})
+
+describe('uvrJobCost / uvrModelCredits', () => {
+  it('scales the tier base by the model multiplier', () => {
+    expect(uvrJobCost(1, 'mdx')).toBe(1)
+    expect(uvrJobCost(1, 'roformer')).toBe(2)
+    expect(uvrJobCost(1, 'karaoke')).toBe(2)
+    expect(uvrJobCost(1, 'ensemble')).toBe(3)
+  })
+
+  it('maps the legacy MDX filename to the base cost', () => {
+    expect(uvrJobCost(1, 'UVR-MDX-NET-Inst_HQ_3')).toBe(1)
+    expect(uvrJobCost(1, 'UVR-MDX-NET-Inst_HQ_3.onnx')).toBe(1)
+  })
+
+  it('charges the base for absent or unknown models (version skew must not refuse jobs)', () => {
+    expect(uvrJobCost(1)).toBe(1)
+    expect(uvrJobCost(1, '')).toBe(1)
+    expect(uvrJobCost(1, 'mystery-model')).toBe(1)
+  })
+
+  it('is zero across the board while the tier is unmetered', () => {
+    expect(uvrJobCost(0, 'roformer')).toBe(0)
+    expect(uvrModelCredits(0)).toEqual({
+      mdx: 0,
+      roformer: 0,
+      karaoke: 0,
+      ensemble: 0,
+    })
+  })
+
+  it('exposes absolute per-model costs for the pricing endpoint', () => {
+    expect(uvrModelCredits(1)).toEqual({
+      mdx: 1,
+      roformer: 2,
+      karaoke: 2,
+      ensemble: 3,
+    })
   })
 })
 
