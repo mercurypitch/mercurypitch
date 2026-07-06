@@ -174,6 +174,17 @@ export function collectNoteAccuracySamples(): NoteAccuracySample[] {
 }
 
 /**
+ * Map a signed cents deviation to a 0-100 accuracy score. Symmetric in
+ * pitch direction — sharp and flat are penalized equally: within +-5 cents
+ * scores a perfect 100, then it falls off 5 points per cent beyond that
+ * tolerance. (A signed check would leave sharp notes always scoring 100.)
+ */
+function centsToAccuracy(avgCents: number): number {
+  const off = Math.abs(avgCents)
+  return off <= 5 ? 100 : Math.max(0, 100 - (off - 5) * 5)
+}
+
+/**
  * Build the note-accuracy map (MIDI -> 0-100 accuracy) rendered by the
  * pitch-accuracy heatmap. Reads the decoupled `NoteAccuracySample`
  * projection rather than the raw session/`NoteResult` shape.
@@ -182,9 +193,7 @@ export function getNoteAccuracyMap(): Map<number, number> {
   const accMap = new Map<number, number[]>()
   for (const { midi, avgCents } of collectNoteAccuracySamples()) {
     if (!accMap.has(midi)) accMap.set(midi, [])
-    accMap
-      .get(midi)!
-      .push(avgCents >= -5 ? 100 : Math.max(0, 100 - Math.abs(avgCents) * 5))
+    accMap.get(midi)!.push(centsToAccuracy(avgCents))
   }
   const result = new Map<number, number>()
   for (const [midi, scores] of accMap) {
