@@ -149,24 +149,40 @@ export function endPracticeSession(): SessionResult | null {
 export interface NoteAccuracySample {
   /** MIDI note number that was practiced. */
   midi: number
-  /** Average cents deviation from the target for this note. */
+  /**
+   * Mean absolute cents deviation from the target for this note — a
+   * NON-NEGATIVE magnitude. The practice engine averages `Math.abs(cents)`
+   * per pitch sample (see `finalizeNoteResult`), so this never carries the
+   * sharp/flat sign; consumers must not infer pitch direction from it.
+   */
   avgCents: number
 }
 
 /**
  * Derive per-note accuracy samples from the persisted session history.
  *
- * This is the ONLY place that knows how the per-note stats are nested
- * inside `SessionResult -> practiceItemResult -> noteResult`. Consumers
- * depend on `NoteAccuracySample`, not on that shape, so if the session
- * format ever changes only this function needs updating.
+ * This is the single seam between the accuracy heatmap / pitch-weakness
+ * analyzer and the nested `SessionResult -> practiceItemResult ->
+ * noteResult` shape — those two consumers depend on `NoteAccuracySample`,
+ * not the raw structure. (Other features — vocal range/challenges/analysis
+ * — read different `NoteResult` fields directly and are intentionally not
+ * served by this projection.)
+ *
+ * Defensive against malformed persisted history: the store loads via a bare
+ * `JSON.parse` with no schema validator, so a stale or hand-edited entry
+ * could be missing `item`/`note` or carry a non-numeric value. Such notes
+ * are skipped rather than allowed to throw (which would take down both
+ * consumers at once) or to leak `NaN` into the averaged scores.
  */
 export function collectNoteAccuracySamples(): NoteAccuracySample[] {
   const samples: NoteAccuracySample[] = []
   for (const entry of sessionResults()) {
-    for (const pr of entry.practiceItemResult) {
-      for (const nr of pr.noteResult) {
-        samples.push({ midi: nr.item.note.midi, avgCents: nr.avgCents })
+    for (const pr of entry.practiceItemResult ?? []) {
+      for (const nr of pr.noteResult ?? []) {
+        const midi = nr?.item?.note?.midi
+        const avgCents = nr?.avgCents
+        if (!Number.isFinite(midi) || !Number.isFinite(avgCents)) continue
+        samples.push({ midi, avgCents })
       }
     }
   }
@@ -174,10 +190,18 @@ export function collectNoteAccuracySamples(): NoteAccuracySample[] {
 }
 
 /**
- * Map a signed cents deviation to a 0-100 accuracy score. Symmetric in
- * pitch direction — sharp and flat are penalized equally: within +-5 cents
- * scores a perfect 100, then it falls off 5 points per cent beyond that
- * tolerance. (A signed check would leave sharp notes always scoring 100.)
+ * Map a cents deviation to a 0-100 accuracy score for the heatmap gradient:
+ * within +-5 cents scores a perfect 100, then falls off 5 points per cent
+ * beyond that tolerance.
+ *
+ * Deliberately a CONTINUOUS curve, distinct from practice-engine's discrete
+ * accuracy bands (`centsToBand`: 100/90/75/50/0) used for scoring and
+ * ratings — the heatmap wants a smooth per-note colour ramp, not named
+ * tiers, so the two are not meant to agree numerically.
+ *
+ * Scores by magnitude via `Math.abs`. Production `avgCents` is already a
+ * non-negative magnitude (see `NoteAccuracySample`), so the abs is a guard
+ * against a hypothetical signed producer, not a live symmetry requirement.
  */
 function centsToAccuracy(avgCents: number): number {
   const off = Math.abs(avgCents)
@@ -187,20 +211,21 @@ function centsToAccuracy(avgCents: number): number {
 /**
  * Build the note-accuracy map (MIDI -> 0-100 accuracy) rendered by the
  * pitch-accuracy heatmap. Reads the decoupled `NoteAccuracySample`
- * projection rather than the raw session/`NoteResult` shape.
+ * projection rather than the raw session/`NoteResult` shape, and averages
+ * per MIDI note in a single pass (sum/count) — same result as collecting
+ * each note's scores and averaging, without the intermediate arrays.
  */
 export function getNoteAccuracyMap(): Map<number, number> {
-  const accMap = new Map<number, number[]>()
+  const acc = new Map<number, { sum: number; count: number }>()
   for (const { midi, avgCents } of collectNoteAccuracySamples()) {
-    if (!accMap.has(midi)) accMap.set(midi, [])
-    accMap.get(midi)!.push(centsToAccuracy(avgCents))
+    const entry = acc.get(midi) ?? { sum: 0, count: 0 }
+    entry.sum += centsToAccuracy(avgCents)
+    entry.count++
+    acc.set(midi, entry)
   }
   const result = new Map<number, number>()
-  for (const [midi, scores] of accMap) {
-    result.set(
-      midi,
-      Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
-    )
+  for (const [midi, { sum, count }] of acc) {
+    result.set(midi, Math.round(sum / count))
   }
   return result
 }

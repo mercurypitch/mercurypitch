@@ -9,46 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { setSessionResults } from '@/stores/practice-session-store'
 import type { ScaleDegree } from '@/types'
-
-function seedSessionWithNotes(
-  noteResults: { midi: number; avgCents: number }[],
-) {
-  setSessionResults((prev) => [
-    {
-      name: 'Test',
-      score: 60,
-      itemsCompleted: noteResults.length,
-      sessionName: 'Test',
-      completedAt: Date.now(),
-      practiceItemResult: [
-        {
-          score: 60,
-          noteCount: noteResults.length,
-          avgCents: 25,
-          itemsCompleted: noteResults.length,
-          name: 'Test',
-          mode: 'once',
-          completedAt: Date.now(),
-          noteResult: noteResults.map((n) => ({
-            item: {
-              id: 0,
-              note: { midi: n.midi, name: 'C', octave: 4, freq: 261 },
-              duration: 1,
-              startBeat: 0,
-            },
-            pitchFreq: 261,
-            pitchCents: n.avgCents,
-            time: 100,
-            rating: 'good' as const,
-            avgCents: n.avgCents,
-            targetNote: 'C4',
-          })),
-        },
-      ],
-    },
-    ...prev,
-  ])
-}
+import { seedSessionWithNotes } from './utils/session-fixtures'
 
 const scale: ScaleDegree[] = [
   { midi: 60, name: 'C', octave: 4, freq: 261.63, semitone: 0 },
@@ -61,8 +22,8 @@ afterEach(() => setSessionResults([]))
 describe('PitchAccuracyHeatmap', () => {
   it('renders per-note accuracy from session history', () => {
     seedSessionWithNotes([
-      { midi: 60, avgCents: -10 }, // flat -> 100 - (10-5)*5 = 75%
-      { midi: 64, avgCents: 30 }, // sharp -> max(0, 100 - (30-5)*5) = 0%
+      { midi: 60, avgCents: 10 }, // 10¢ off -> 100 - (10-5)*5 = 75%
+      { midi: 64, avgCents: 30 }, // 30¢ off -> max(0, 100 - (30-5)*5) = 0%
     ])
 
     render(() => <PitchAccuracyHeatmap scale={() => scale} />)
@@ -73,7 +34,7 @@ describe('PitchAccuracyHeatmap', () => {
     expect(
       screen.getByRole('button', { name: 'C4 accuracy 75%' }),
     ).toBeInTheDocument()
-    // sharp deviations are now penalized too (was a wrongly-perfect 100%)
+    // larger deviations are penalized (before the fix every note scored 100%)
     expect(
       screen.getByRole('button', { name: 'E4 accuracy 0%' }),
     ).toBeInTheDocument()

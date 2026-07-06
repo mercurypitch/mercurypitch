@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { findWeakExercises, findWeakIntervals, findWeakPitches, generateWeaknessReport, hasWeaknesses, } from '@/features/practice-intelligence/weakness-analyzer'
 import { clearExerciseHistory, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { setSessionResults } from '@/stores/practice-session-store'
+import { seedSessionWithNotes } from '../utils/session-fixtures'
 
 function clearAll() {
   clearExerciseHistory()
@@ -19,46 +20,6 @@ function seedExercise(type: string, score: number) {
     metrics: {},
     completedAt: Date.now(),
   })
-}
-
-function seedSessionWithNotes(
-  noteResults: { midi: number; avgCents: number }[],
-) {
-  setSessionResults((prev) => [
-    {
-      name: 'Test',
-      score: 60,
-      itemsCompleted: noteResults.length,
-      sessionName: 'Test',
-      completedAt: Date.now(),
-      practiceItemResult: [
-        {
-          score: 60,
-          noteCount: noteResults.length,
-          avgCents: 25,
-          itemsCompleted: noteResults.length,
-          name: 'Test',
-          mode: 'once',
-          completedAt: Date.now(),
-          noteResult: noteResults.map((n) => ({
-            item: {
-              id: 0,
-              note: { midi: n.midi, name: 'C', octave: 4, freq: 261 },
-              duration: 1,
-              startBeat: 0,
-            },
-            pitchFreq: 261,
-            pitchCents: n.avgCents,
-            time: 100,
-            rating: 'good' as const,
-            avgCents: n.avgCents,
-            targetNote: 'C4',
-          })),
-        },
-      ],
-    },
-    ...prev,
-  ])
 }
 
 describe('findWeakExercises', () => {
