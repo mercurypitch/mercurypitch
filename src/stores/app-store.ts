@@ -84,26 +84,12 @@ export function setUvrProcessingMode(mode: UvrProcessingMode): void {
 export const [uvrProcessingMode, _setUvrProcessingMode] =
   createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
-// Server-side separation quality — a registry model name resolved by the
-// server (runpod/handler.py MODEL_REGISTRY). 'roformer' = High Quality
-// (BS-RoFormer, 2 credits, slower), 'mdx' = Basic (1 credit, faster).
-export type UvrQualityModel = 'roformer' | 'mdx'
-
-const DEFAULT_UVR_QUALITY: UvrQualityModel = 'roformer'
-
-export function getUvrQualityModel(): UvrQualityModel {
-  const saved = localStorage.getItem('pitchperfect_uvr-quality-model')
-  if (saved === 'roformer' || saved === 'mdx') return saved
-  return DEFAULT_UVR_QUALITY
-}
-
-export function setUvrQualityModel(model: UvrQualityModel): void {
-  localStorage.setItem('pitchperfect_uvr-quality-model', model)
-  _setUvrQualityModel(model)
-}
-
-export const [uvrQualityModel, _setUvrQualityModel] =
-  createSignal<UvrQualityModel>(getUvrQualityModel())
+// Server-side separation runs a single quality — BS-RoFormer, the
+// pipeline's default model. Measured 2026-07-06: better, faster AND
+// cheaper than the MDX alternative on the GPU, so the Basic/HQ selector
+// was removed and the per-song price collapsed to the tier base
+// (1 credit). The `model` option on runUvrPipeline remains for future
+// tiers (karaoke, ensemble).
 
 // Force WebGPU override for local (browser) processing mode
 function getDefaultUvrWebGpu(): boolean {
@@ -1462,7 +1448,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Credits',
     targetSelector: '[data-tour="settings.credits"]',
     description:
-      'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick your default processing (device or server GPU) and server quality — Basic at 1 credit or High Quality at 2 — then check your balance and top up here.',
+      'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.',
     placement: 'bottom',
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,

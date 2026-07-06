@@ -29,7 +29,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import { formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrQualityModel, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
+import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
@@ -813,108 +813,101 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         setCurrentUvrSession({ ...session })
       }
 
-      await runUvrPipeline(
-        file,
-        sessionId,
-        mode,
-        {
-          onProgress: (pct) => {
-            setOfflineProgress(pct * 0.5) // First 50% is separation
-          },
-          onComplete: (result) => {
-            void (async () => {
-              try {
-                completeUvrSession(sessionId, result.outputs, result.stemMeta)
-
-                const s = getUvrSession(sessionId)
-                if (s) {
-                  await saveUvrSession({
-                    sessionId,
-                    status: 'completed',
-                    progress: 100,
-                    fileHash: s.fileHash,
-                    originalFileName: s.originalFile?.name ?? file.name,
-                    originalFileSize: s.originalFile?.size ?? file.size,
-                    originalFileType: s.originalFile?.mimeType ?? file.type,
-                    processingMode: mode,
-                    processingTime: s.processingTime,
-                  })
-                }
-
-                // Now fetch the vocal stem back to Float32Array to continue with pitch detection
-                if (
-                  result.outputs !== undefined &&
-                  result.outputs.vocal !== undefined
-                ) {
-                  const resp = await fetch(result.outputs.vocal)
-                  const ab = await resp.arrayBuffer()
-                  let ctx = currentAudioCtx
-                  if (!ctx) {
-                    ctx = new (
-                      typeof window.AudioContext !== 'undefined'
-                        ? window.AudioContext
-                        : (
-                            window as unknown as {
-                              webkitAudioContext: typeof AudioContext
-                            }
-                          ).webkitAudioContext
-                    )()
-                    setAudioContext(ctx)
-                  }
-                  const decoded = await ctx.decodeAudioData(ab)
-
-                  const mono = new Float32Array(decoded.length)
-                  if (decoded.numberOfChannels > 1) {
-                    const ch0 = decoded.getChannelData(0)
-                    const ch1 = decoded.getChannelData(1)
-                    for (let i = 0; i < decoded.length; i++) {
-                      mono[i] = (ch0[i] + ch1[i]) * 0.5
-                    }
-                  } else {
-                    mono.set(decoded.getChannelData(0))
-                  }
-
-                  setAnalyzedTracks((prev) =>
-                    prev.map((t) => {
-                      if (t.id === activeId)
-                        return {
-                          ...t,
-                          waveform: mono,
-                          analysisResults: [],
-                          isVocalStem: true,
-                          audioBuffer: decoded,
-                        }
-                      return t
-                    }),
-                  )
-                }
-
-                setOfflineProgress(50)
-                // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
-                await new Promise((r) => setTimeout(r, 0))
-                await analyzeUploadedAudio()
-              } catch (err) {
-                console.error('Error post-processing vocal stem:', err)
-                alert('Failed to process separated vocals. See console.')
-              } finally {
-                setIsSeparating(false)
-                setActiveUvrSessionId(undefined)
-              }
-            })()
-          },
-          onError: (err) => {
-            setErrorUvrSession(sessionId, err)
-            if (err !== 'Cancelled') {
-              console.error('Failed to separate vocals:', err)
-              alert('Failed to separate vocals. See console for details.')
-            }
-            setIsSeparating(false)
-            setActiveUvrSessionId(undefined)
-          },
+      await runUvrPipeline(file, sessionId, mode, {
+        onProgress: (pct) => {
+          setOfflineProgress(pct * 0.5) // First 50% is separation
         },
-        // Server jobs honor the user's saved quality choice (Settings/Karaoke).
-        { model: getUvrQualityModel() },
-      )
+        onComplete: (result) => {
+          void (async () => {
+            try {
+              completeUvrSession(sessionId, result.outputs, result.stemMeta)
+
+              const s = getUvrSession(sessionId)
+              if (s) {
+                await saveUvrSession({
+                  sessionId,
+                  status: 'completed',
+                  progress: 100,
+                  fileHash: s.fileHash,
+                  originalFileName: s.originalFile?.name ?? file.name,
+                  originalFileSize: s.originalFile?.size ?? file.size,
+                  originalFileType: s.originalFile?.mimeType ?? file.type,
+                  processingMode: mode,
+                  processingTime: s.processingTime,
+                })
+              }
+
+              // Now fetch the vocal stem back to Float32Array to continue with pitch detection
+              if (
+                result.outputs !== undefined &&
+                result.outputs.vocal !== undefined
+              ) {
+                const resp = await fetch(result.outputs.vocal)
+                const ab = await resp.arrayBuffer()
+                let ctx = currentAudioCtx
+                if (!ctx) {
+                  ctx = new (
+                    typeof window.AudioContext !== 'undefined'
+                      ? window.AudioContext
+                      : (
+                          window as unknown as {
+                            webkitAudioContext: typeof AudioContext
+                          }
+                        ).webkitAudioContext
+                  )()
+                  setAudioContext(ctx)
+                }
+                const decoded = await ctx.decodeAudioData(ab)
+
+                const mono = new Float32Array(decoded.length)
+                if (decoded.numberOfChannels > 1) {
+                  const ch0 = decoded.getChannelData(0)
+                  const ch1 = decoded.getChannelData(1)
+                  for (let i = 0; i < decoded.length; i++) {
+                    mono[i] = (ch0[i] + ch1[i]) * 0.5
+                  }
+                } else {
+                  mono.set(decoded.getChannelData(0))
+                }
+
+                setAnalyzedTracks((prev) =>
+                  prev.map((t) => {
+                    if (t.id === activeId)
+                      return {
+                        ...t,
+                        waveform: mono,
+                        analysisResults: [],
+                        isVocalStem: true,
+                        audioBuffer: decoded,
+                      }
+                    return t
+                  }),
+                )
+              }
+
+              setOfflineProgress(50)
+              // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
+              await new Promise((r) => setTimeout(r, 0))
+              await analyzeUploadedAudio()
+            } catch (err) {
+              console.error('Error post-processing vocal stem:', err)
+              alert('Failed to process separated vocals. See console.')
+            } finally {
+              setIsSeparating(false)
+              setActiveUvrSessionId(undefined)
+            }
+          })()
+        },
+        onError: (err) => {
+          setErrorUvrSession(sessionId, err)
+          if (err !== 'Cancelled') {
+            console.error('Failed to separate vocals:', err)
+            alert('Failed to separate vocals. See console for details.')
+          }
+          setIsSeparating(false)
+          setActiveUvrSessionId(undefined)
+        },
+      })
     } catch (err) {
       console.error('Failed to initialize separation:', err)
       alert('Failed to initialize separation. See console for details.')

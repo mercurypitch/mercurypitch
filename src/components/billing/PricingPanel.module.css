@@ -148,53 +148,6 @@
   white-space: nowrap;
 }
 
-/* Server quality chips — shown while Server (GPU) is the selected tier. */
-.qualityRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.qualityLabel {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.qualityChip {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.qualityChip:hover {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-}
-
-.qualityChipActive {
-  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
-  background: color-mix(in srgb, var(--accent) 16%, var(--bg-secondary));
-  color: var(--text-primary);
-}
-
-.qualityCost {
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.qualityChipActive .qualityCost {
-  color: var(--text-secondary);
-}
-
 .cardHead {
   display: flex;
   align-items: center;

@@ -77,10 +77,13 @@ describe('creditBalance', () => {
 
 describe('uvrJobCost / uvrModelCredits', () => {
   it('scales the tier base by the model multiplier', () => {
+    // Collapsed pricing (2026-07-06): the single server quality (roformer)
+    // costs the plain base; only the unexposed 2x-compute ensemble carries
+    // a multiplier.
     expect(uvrJobCost(1, 'mdx')).toBe(1)
-    expect(uvrJobCost(1, 'roformer')).toBe(2)
-    expect(uvrJobCost(1, 'karaoke')).toBe(2)
-    expect(uvrJobCost(1, 'ensemble')).toBe(3)
+    expect(uvrJobCost(1, 'roformer')).toBe(1)
+    expect(uvrJobCost(1, 'karaoke')).toBe(1)
+    expect(uvrJobCost(1, 'ensemble')).toBe(2)
   })
 
   it('maps the legacy MDX filename to the base cost', () => {
@@ -107,9 +110,9 @@ describe('uvrJobCost / uvrModelCredits', () => {
   it('exposes absolute per-model costs for the pricing endpoint', () => {
     expect(uvrModelCredits(1)).toEqual({
       mdx: 1,
-      roformer: 2,
-      karaoke: 2,
-      ensemble: 3,
+      roformer: 1,
+      karaoke: 1,
+      ensemble: 2,
     })
   })
 })

@@ -47,9 +47,9 @@ describe('withModelCredits', () => {
     const legacy = basePricing({ tiers: [gpuTier(1)] })
     expect(withModelCredits(legacy).uvrModelCredits).toEqual({
       mdx: 1,
-      roformer: 2,
-      karaoke: 2,
-      ensemble: 3,
+      roformer: 1,
+      karaoke: 1,
+      ensemble: 2,
     })
   })
 

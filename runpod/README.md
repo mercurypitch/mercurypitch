@@ -62,9 +62,11 @@ Dockerfile bake list, rebuild with a new tag, and mirror the entry in
 the credit multiplier in `workers/db-worker/src/billing-core.ts`.
 
 Credits: the app debits `tier base × model multiplier` per job
-(billing-core `UVR_MODEL_CREDIT_MULTIPLIERS`): `mdx` 1x, `roformer` and
-`karaoke` 2x, `ensemble` 3x — at the current 1-credit GPU base that is
-1 / 2 / 2 / 3 credits per song.
+(billing-core `UVR_MODEL_CREDIT_MULTIPLIERS`). Since the 2026-07-06
+measurements showed RoFormer is cheaper AND faster than MDX on the GPU,
+pricing collapsed to the base for every user-facing model (`mdx`,
+`roformer`, `karaoke` all 1x = **1 credit per song**); only the
+unexposed two-model `ensemble` carries a 2x multiplier.
 
 Precedence: `audio_s3_key` > `audio_url` > `audio_base64`. The web app's
 Cloudflare worker inlines base64 up to 7 MB (the RunPod `/run` payload

@@ -100,16 +100,18 @@ export function isUvrTier(value: unknown): value is UvrTier {
 }
 
 // ── Per-model pricing ────────────────────────────────────────────────
-// The tier row's `credits` is the BASE per-song cost (the fast MDX tier);
-// heavier models multiply it: RoFormer-class models take ~2-4x the GPU
-// time, the two-model ensemble roughly double that again. Keep the names
-// in sync with MODEL_REGISTRY (runpod/handler.py) and
-// RUNPOD_ALLOWED_MODELS (src/lib/runpod.ts).
+// The tier row's `credits` is the BASE per-song cost; models multiply it.
+// Measured 2026-07-06 (same folder, same image): RoFormer is CHEAPER and
+// faster than MDX on the GPU ($0.0054 vs $0.0064/song), so the single
+// server quality (BS-RoFormer) costs the plain base — 1 credit per song.
+// Only the two-model ensemble (~2x compute, not user-exposed) carries a
+// multiplier. Keep the names in sync with MODEL_REGISTRY
+// (runpod/handler.py) and RUNPOD_ALLOWED_MODELS (src/lib/runpod.ts).
 export const UVR_MODEL_CREDIT_MULTIPLIERS = {
   mdx: 1,
-  roformer: 2,
-  karaoke: 2,
-  ensemble: 3,
+  roformer: 1,
+  karaoke: 1,
+  ensemble: 2,
 } as const
 
 export type UvrModelName = keyof typeof UVR_MODEL_CREDIT_MULTIPLIERS
