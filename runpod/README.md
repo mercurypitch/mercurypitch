@@ -155,8 +155,8 @@ recommendations (min/active/max workers, FlashBoot, timeouts, GPU tier) live in
 ```bash
 # 1. Build and push the image (pinned version tag — never point the
 #    endpoint at `latest`; bumping the tag is the controlled release)
-docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.0 runpod/
-docker push  <registry>/mercurypitch-uvr-runpod:v0.2.0
+docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.1 runpod/
+docker push  <registry>/mercurypitch-uvr-runpod:v0.2.1
 
 # 2. RunPod console → Serverless → New Endpoint (type: Queue)
 #    - Container image: the pushed tag

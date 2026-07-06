@@ -3,8 +3,8 @@
 # ============================================================
 # Build & push (pinned version tag), then point a RunPod serverless
 # endpoint at the image:
-#   docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.0 runpod/
-#   docker push  <registry>/mercurypitch-uvr-runpod:v0.2.0
+#   docker build -t <registry>/mercurypitch-uvr-runpod:v0.2.1 runpod/
+#   docker push  <registry>/mercurypitch-uvr-runpod:v0.2.1
 # See runpod/README.md for the full deploy + cost-measurement runbook.
 # ============================================================
 FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
