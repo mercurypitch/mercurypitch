@@ -16,17 +16,17 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { DEFAULT_PROCESS_REQUEST, getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
+import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrQualityModel, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, uvrQualityModel, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Sparkles, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -550,11 +550,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Per-song cost of the model server jobs actually run — served by the
   // pricing endpoint (tier base × model multiplier), never hardcoded.
   const [pricing] = createResource(() => fetchPricing().catch(() => null))
-  const songCost = (): number | undefined => {
-    const cost =
-      pricing()?.uvrModelCredits?.[DEFAULT_PROCESS_REQUEST.model ?? 'roformer']
+  const costForModel = (model: string): number | undefined => {
+    const cost = pricing()?.uvrModelCredits?.[model]
     return cost !== undefined && cost > 0 ? cost : undefined
   }
+  const songCost = (): number | undefined => costForModel(uvrQualityModel())
   const creditBalanceLabel = (): string => {
     const balance = billingMe()?.creditBalance
     const cost = songCost()
@@ -635,26 +635,32 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
 
     try {
-      await runUvrPipeline(file, sessionId, processingMode, {
-        onProgress: (_pct) => {
-          // Progress already updated inside the pipeline via updateUvrSessionProgress
+      await runUvrPipeline(
+        file,
+        sessionId,
+        processingMode,
+        {
+          onProgress: (_pct) => {
+            // Progress already updated inside the pipeline via updateUvrSessionProgress
+          },
+          onComplete: (result) => {
+            completeUvrSession(sessionId, result.outputs, result.stemMeta)
+            if (processingMode === 'server') refreshBalance()
+            // Auto-extract stem fingerprint for Shazam matching
+            // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
+            setTimeout(() => {
+              void indexStemFingerprint(sessionId, file.name)
+            }, 500)
+            setCurrentView('results')
+          },
+          onError: (message) => {
+            setErrorUvrSession(sessionId, message)
+            if (!notifyServerBillingError(message)) showError(message)
+            if (processingMode === 'server') refreshBalance()
+          },
         },
-        onComplete: (result) => {
-          completeUvrSession(sessionId, result.outputs, result.stemMeta)
-          if (processingMode === 'server') refreshBalance()
-          // Auto-extract stem fingerprint for Shazam matching
-          // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
-          setTimeout(() => {
-            void indexStemFingerprint(sessionId, file.name)
-          }, 500)
-          setCurrentView('results')
-        },
-        onError: (message) => {
-          setErrorUvrSession(sessionId, message)
-          if (!notifyServerBillingError(message)) showError(message)
-          if (processingMode === 'server') refreshBalance()
-        },
-      })
+        { model: uvrQualityModel() },
+      )
     } catch (error) {
       console.error('Processing error:', error)
       const message =
@@ -1076,6 +1082,30 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       >
                         <Zap />
                         <span>GPU</span>
+                      </button>
+                    </div>
+                  </Show>
+                  <Show when={uvrProcessingMode() === 'server'}>
+                    <div class="uvr-device-toggle">
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: uvrQualityModel() === 'mdx' }}
+                        onClick={() => setUvrQualityModel('mdx')}
+                        title={`Basic quality — faster${costForModel('mdx') !== undefined ? `, ${costForModel('mdx')} credit${costForModel('mdx') === 1 ? '' : 's'} per song` : ''}`}
+                        data-testid="uvr-quality-basic"
+                      >
+                        <Zap />
+                        <span>Basic</span>
+                      </button>
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: uvrQualityModel() === 'roformer' }}
+                        onClick={() => setUvrQualityModel('roformer')}
+                        title={`High quality — cleanest vocals, takes longer${costForModel('roformer') !== undefined ? `, ${costForModel('roformer')} credit${costForModel('roformer') === 1 ? '' : 's'} per song` : ''}`}
+                        data-testid="uvr-quality-high"
+                      >
+                        <Sparkles />
+                        <span>HQ</span>
                       </button>
                     </div>
                   </Show>
