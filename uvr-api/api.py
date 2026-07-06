@@ -487,7 +487,14 @@ async def process_audio(
     )
 
 
-@app.get("/status/{session_id}", response_model=ProcessStatusResponse)
+# exclude_none: the app's zod schema (and the RunPod bridge's JSON) treat
+# progress/message/error as OPTIONAL keys — pydantic would otherwise emit
+# explicit `null`s, which fail the client's response validation.
+@app.get(
+    "/status/{session_id}",
+    response_model=ProcessStatusResponse,
+    response_model_exclude_none=True,
+)
 async def get_status(session_id: str):
     """Check processing status for a session"""
     session_output_dir = os.path.join(OUTPUT_DIR, session_id)
