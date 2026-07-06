@@ -9,6 +9,8 @@ import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
+import type { UvrProcessingMode, UvrQualityModel } from '@/stores/app-store'
+import { setUvrProcessingMode, setUvrQualityModel, uvrProcessingMode, uvrQualityModel, } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PricingPanel.module.css'
@@ -65,6 +67,38 @@ export const PricingPanel: Component = () => {
 
   const hasBadge = (b: string | null): boolean => b != null && b !== ''
 
+  // The tier cards double as the processing-default picker: clicking
+  // On-device or Server (GPU) selects where separation runs (persisted —
+  // the Karaoke page mode toggle uses the same signal and stays in sync).
+  // Server (CPU) has no endpoint yet, so its card is not selectable.
+  const tierMode = (id: string): UvrProcessingMode | null =>
+    id === 'tier-ondevice'
+      ? 'local'
+      : id === 'tier-runpod-gpu'
+        ? 'server'
+        : null
+  const tierSelected = (tier: PricingPlan): boolean =>
+    tierMode(tier.id) === uvrProcessingMode()
+  const selectTier = (tier: PricingPlan): void => {
+    const mode = tierMode(tier.id)
+    if (mode !== null) setUvrProcessingMode(mode)
+  }
+
+  // Server quality chips (shown while Server GPU is selected). Costs come
+  // from the same pricing payload (tier base × model multiplier).
+  const QUALITY_OPTIONS: {
+    model: UvrQualityModel
+    label: string
+    hint: string
+  }[] = [
+    {
+      model: 'roformer',
+      label: 'High Quality',
+      hint: 'cleanest vocals, takes longer',
+    },
+    { model: 'mdx', label: 'Basic', hint: 'faster, slightly more bleed' },
+  ]
+
   return (
     <div class={styles.panel} data-testid="pricing-panel">
       <Show when={me()}>
@@ -98,19 +132,57 @@ export const PricingPanel: Component = () => {
         {(p) => (
           <>
             <Show when={p().tiers.length > 0}>
-              <h4 class={styles.heading}>Separation speed</h4>
+              <h4 class={styles.heading}>Processing — pick your default</h4>
               <div class={styles.grid}>
                 <For each={p().tiers}>
                   {(tier, i) => (
-                    <div
+                    <button
+                      type="button"
                       class={styles.card}
-                      data-testid="pricing-tier"
+                      classList={{
+                        [styles.cardSelectable]: tierMode(tier.id) !== null,
+                        [styles.cardSelected]: tierSelected(tier),
+                        [styles.cardDisabled]: tierMode(tier.id) === null,
+                      }}
+                      disabled={tierMode(tier.id) === null}
+                      aria-pressed={tierSelected(tier)}
+                      onClick={() => selectTier(tier)}
+                      data-testid={`pricing-tier-${tier.id}`}
+                      title={
+                        tierMode(tier.id) === null
+                          ? `${tier.label} is coming soon`
+                          : `Use ${tier.label} for vocal separation`
+                      }
                       style={cardVars(i())}
                     >
                       <div class={styles.cardHead}>
                         <span class={styles.label}>{tier.label}</span>
-                        <Show when={hasBadge(tier.badge)}>
-                          <span class={styles.badge}>{tier.badge}</span>
+                        <Show
+                          when={tierSelected(tier)}
+                          fallback={
+                            <Show when={hasBadge(tier.badge)}>
+                              <span class={styles.badge}>{tier.badge}</span>
+                            </Show>
+                          }
+                        >
+                          <span class={styles.selectedTag}>
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="10"
+                              height="10"
+                              aria-hidden="true"
+                            >
+                              <path
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="4"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M4 12.5l5.5 5.5L20 6.5"
+                              />
+                            </svg>
+                            Selected
+                          </span>
                         </Show>
                       </div>
                       <Show when={tier.description != null}>
@@ -131,10 +203,45 @@ export const PricingPanel: Component = () => {
                           <span class={styles.unit}> / {tier.unit}</span>
                         </Show>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </For>
               </div>
+
+              <Show when={uvrProcessingMode() === 'server'}>
+                <div
+                  class={styles.qualityRow}
+                  data-testid="settings-uvr-quality"
+                >
+                  <span class={styles.qualityLabel}>Server quality</span>
+                  <For each={QUALITY_OPTIONS}>
+                    {(opt) => {
+                      const cost = () => p().uvrModelCredits?.[opt.model]
+                      return (
+                        <button
+                          type="button"
+                          class={styles.qualityChip}
+                          classList={{
+                            [styles.qualityChipActive]:
+                              uvrQualityModel() === opt.model,
+                          }}
+                          aria-pressed={uvrQualityModel() === opt.model}
+                          onClick={() => setUvrQualityModel(opt.model)}
+                          title={`${opt.label} — ${opt.hint}`}
+                          data-testid={`settings-uvr-quality-${opt.model}`}
+                        >
+                          {opt.label}
+                          <Show when={cost() != null && (cost() as number) > 0}>
+                            <span class={styles.qualityCost}>
+                              {` · ${cost()} credit${cost() === 1 ? '' : 's'}`}
+                            </span>
+                          </Show>
+                        </button>
+                      )
+                    }}
+                  </For>
+                </div>
+              </Show>
             </Show>
 
             <Show when={p().packs.length > 0}>

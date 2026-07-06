@@ -41,6 +41,11 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* Tier cards render as <button> (the processing picker) — neutralise UA
+     button styling so they look identical to the pack <div> cards. */
+  text-align: left;
+  font: inherit;
+  color: inherit;
   padding: 12px;
   border: 1px solid var(--border);
   border: 1px solid color-mix(in srgb, var(--card-accent) 32%, var(--border));
@@ -99,6 +104,95 @@
   .card::before {
     animation: none;
   }
+}
+
+/* Selectable tier cards — the processing-default picker. */
+.cardSelectable {
+  cursor: pointer;
+}
+
+.cardSelectable:focus-visible {
+  outline: 2px solid var(--card-accent);
+  outline-offset: 2px;
+}
+
+.cardSelected {
+  border-color: color-mix(in srgb, var(--card-accent) 85%, var(--border));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--card-accent) 45%, transparent),
+    0 6px 20px color-mix(in srgb, var(--card-accent) 22%, transparent);
+}
+
+.cardDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cardDisabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.selectedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--card-accent, var(--accent));
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Server quality chips — shown while Server (GPU) is the selected tier. */
+.qualityRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qualityLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.qualityChip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.qualityChip:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.qualityChipActive {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-secondary));
+  color: var(--text-primary);
+}
+
+.qualityCost {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qualityChipActive .qualityCost {
+  color: var(--text-secondary);
 }
 
 .cardHead {

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
@@ -13,13 +13,10 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
-import { fetchPricing } from '@/db/services/billing-service'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
-import type { UvrProcessingMode, UvrQualityModel } from '@/stores/app-store'
-import { setUvrProcessingMode, setUvrQualityModel, uvrProcessingMode, uvrQualityModel, } from '@/stores/app-store'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
@@ -40,16 +37,6 @@ export const SettingsPanel: Component = () => {
   const [showChangelog, setShowChangelog] = createSignal(false)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
   const [showRangeTest, setShowRangeTest] = createSignal(false)
-  // Per-model server job costs for the processing-defaults labels (tier
-  // base × model multiplier, served by /api/billing/pricing). Null when no
-  // cloud API is configured — labels then omit the credit numbers.
-  const [pricing] = createResource(() => fetchPricing().catch(() => null))
-  const modelCost = (model: UvrQualityModel): string => {
-    const c = pricing()?.uvrModelCredits?.[model]
-    return c !== undefined && c > 0
-      ? ` — ${c} credit${c === 1 ? '' : 's'}/song`
-      : ''
-  }
   const bandValues = createMemo(() => {
     const bands = s().bands
     return {
@@ -265,46 +252,9 @@ export const SettingsPanel: Component = () => {
               Credits pay only for faster server-side vocal separation.
               Everything that runs on your device is free, forever.
             </p>
-
-            {/* Defaults used whenever a song is separated — the Karaoke
-                page toggles override these per session and stay in sync
-                (same persisted signals). */}
-            <div class={styles.settingsRow}>
-              <label for="uvr-processing-select">Processing</label>
-              <SafeSelect
-                id="uvr-processing-select"
-                value={uvrProcessingMode()}
-                onChange={(e) => {
-                  setUvrProcessingMode(
-                    e.currentTarget.value as UvrProcessingMode,
-                  )
-                }}
-                data-testid="settings-uvr-processing"
-              >
-                <option value="local">On this device — free</option>
-                <option value="server">Server GPU — uses credits</option>
-                <option value="server-cpu" disabled>
-                  Server CPU — coming soon
-                </option>
-              </SafeSelect>
-            </div>
-            <div class={styles.settingsRow}>
-              <label for="uvr-quality-select">Server quality</label>
-              <SafeSelect
-                id="uvr-quality-select"
-                value={uvrQualityModel()}
-                onChange={(e) => {
-                  setUvrQualityModel(e.currentTarget.value as UvrQualityModel)
-                }}
-                data-testid="settings-uvr-quality"
-              >
-                <option value="roformer">
-                  {`High Quality — cleanest vocals, slower${modelCost('roformer')}`}
-                </option>
-                <option value="mdx">{`Basic — faster${modelCost('mdx')}`}</option>
-              </SafeSelect>
-            </div>
-
+            {/* The processing-default picker (tier cards + quality chips)
+                lives inside PricingPanel — the Karaoke page toggles use the
+                same persisted signals and stay in sync. */}
             <PricingPanel />
           </div>
         </Show>
