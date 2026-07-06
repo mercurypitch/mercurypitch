@@ -3,6 +3,19 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.1] - 2026-07-06
+
+### Changed
+
+- **Server separation got a serious quality upgrade**: cloud GPU processing now runs BS-RoFormer, a studio-grade separation model — vocals come out dramatically cleaner, especially on songs that used to bleed instruments into the vocal track. Still 1 credit per song, and it finishes in about half a minute.
+- **Pick your processing on the Credits page**: the On-device and Server (GPU) cards under **Settings → Credits** are now clickable — choose where your songs get separated and the Karaoke page follows along (and vice versa). The Server (GPU) option proudly wears an **HQ** mark.
+- The processing progress bar now tracks the real separation speed instead of finishing early and waiting.
+
+### Fixed
+
+- Very short clips (under ~12 seconds) get a clear "audio is too short" message instead of a cryptic server error.
+- Server processing errors now show a readable message instead of raw technical output.
+
 ## [0.6.0] - 2026-07-05
 
 ### Added

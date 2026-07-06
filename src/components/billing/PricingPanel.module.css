@@ -160,6 +160,25 @@
   color: var(--text-primary);
 }
 
+/* Small quality mark inside the Server (GPU) card label — names the
+   studio-quality model tier without competing with badge/Selected. */
+.hqTag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  vertical-align: 2px;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-accent, var(--accent)) 85%, #fff) 0%,
+    var(--card-accent, var(--accent)) 100%
+  );
+}
+
 .badge {
   font-size: 0.62rem;
   font-weight: 700;

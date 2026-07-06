@@ -242,6 +242,20 @@
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
 }
 
+/* Small quality mark inside the Server mode chip — the server tier runs
+   the studio-quality model (BS-RoFormer). Purple matches the active accent. */
+.mode-hq-pill {
+  display: inline-block;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.35rem;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: #fff;
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+}
+
 .mode-toggle-btn-disabled {
   opacity: 0.45;
   cursor: not-allowed;

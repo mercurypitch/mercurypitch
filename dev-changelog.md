@@ -6,6 +6,27 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-07-06
+
+### Added
+
+- Server-side model registry (#178): `runpod/handler.py` + `uvr-api/api.py` resolve quality-tier names (`roformer` | `mdx` | `karaoke` | `ensemble`) to exact weight files and reject everything else — the old `.onnx`-append logic could not load `.ckpt`/`.yaml` models at all, and the Cloudflare bridge previously forwarded any client `model` string (billable arbitrary-weight downloads). Legacy `UVR-MDX-NET-Inst_HQ_3` maps to `mdx`. Bridge allowlist `RUNPOD_ALLOWED_MODELS` 400s unknown names before submit/debit.
+- BS-RoFormer (`model_bs_roformer_ep_317_sdr_12.9755.ckpt`, vocals SDR ~12.9 vs ~10 for MDX) is the server default; MDXC params honor each checkpoint's trained segment size (`override_model_segment_size: false`, `mdxc_overlap` knob). Images: `v0.2.0` bakes all four checkpoints; `v0.2.1` adds the min-duration guard and bakes models before the handler COPY so handler-only edits stop re-downloading ~2.5 GB. audio-separator's built-in ensemble is wired (`ensemble` = BS-RoFormer + Mel-Band Kim, `avg_wave`) but not user-exposed.
+- Per-model credit metering: debit carries the job's model; db-worker prices `tier base x multiplier` (billing-core `UVR_MODEL_CREDIT_MULTIPLIERS`), refunds repay the exact ledger delta, `/api/billing/pricing` exposes `uvrModelCredits`, and `fetchPricing` derives the field client-side against backends that predate it (PR previews hit the prod db-worker).
+- Settings -> Credits processing picker (#184): the tier cards are the control — real `<button>`s with Selected tag, accent ring and `aria-pressed`; Server (CPU) stays a disabled "coming soon" card. Karaoke's credits pill and Server tooltip read live per-song cost from pricing.
+
+### Changed
+
+- Single server quality at 1 credit per song (#188): the 2026-07-06 apples-to-apples cost runs (same 11-song folder, same v0.2.1 image) measured RoFormer at $0.0054/28.0 s handler avg vs MDX $0.0064/33.5 s — better, faster AND cheaper, so the Basic/HQ selectors were removed, multipliers collapsed to 1x for all user-facing models (`ensemble` keeps 2x), and the `uvrQualityModel` signal was deleted (`runUvrPipeline`'s `model` option remains for future tiers). Roformer ETA divisor tightened to the measured speed (2.5 -> 8x realtime, cap 300 s).
+- The Server (GPU) surfaces carry an HQ mark (tier card + Karaoke mode toggle) naming the studio-quality model.
+
+### Fixed
+
+- Handler rejects sub-12 s inputs up front (`UVR_MIN_INPUT_SECONDS`, mirrored in the CPU container): RoFormer processes ~11 s windows and audio-separator 0.44.2 dies mid-separation with an opaque tensor-size error on shorter audio.
+- FastAPI status contract: pydantic serialized Optional fields as explicit JSON `null`s that failed the app's zod validation on every container status poll (`response_model_exclude_none` server-side; the client schema now treats null as absent).
+- `api.py` read `model`/`output_format`/`cpu_profile` as query params while the app sends multipart form fields — client values were silently ignored (masked while defaults matched). Now `Form()` fields.
+- A misrouted `/api/uvr` (e.g. the local vite proxy port occupied by an unrelated service) no longer dumps a whole HTML 404 page into the failure panel — markup bodies get a short actionable message, plain-text bodies are capped.
+
 ## [0.6.0] - 2026-07-05
 
 ### Added

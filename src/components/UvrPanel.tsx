@@ -1046,13 +1046,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <div class="uvr-mode-toggle">
                   <button
                     class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                    title={`Processing: Server GPU${songCost() !== undefined ? ` (${songCost()} credit${songCost() === 1 ? '' : 's'} per song)` : ''}`}
+                    title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
                     onClick={() => {
                       if (requireServerAuth()) setUvrProcessingMode('server')
                     }}
                     data-testid="uvr-mode-server"
                   >
                     Server
+                    <span class="mode-hq-pill">HQ</span>
                   </button>
                   <button
                     class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}

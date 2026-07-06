@@ -141,7 +141,17 @@ export const PricingPanel: Component = () => {
                       style={cardVars(i())}
                     >
                       <div class={styles.cardHead}>
-                        <span class={styles.label}>{tier.label}</span>
+                        <span class={styles.label}>
+                          {tier.label}
+                          <Show when={tierMode(tier.id) === 'server'}>
+                            <span
+                              class={styles.hqTag}
+                              title="Studio-quality separation (BS-RoFormer)"
+                            >
+                              HQ
+                            </span>
+                          </Show>
+                        </span>
                         <Show
                           when={tierSelected(tier)}
                           fallback={
