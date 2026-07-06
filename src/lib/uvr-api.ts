@@ -330,7 +330,7 @@ export async function pollForCompletion(
     indeterminate?: boolean,
     phase?: 'queued' | 'processing',
   ) => void,
-  onComplete: (files: OutputFile[]) => void,
+  onComplete: (files: OutputFile[]) => void | Promise<void>,
   onError: (error: string) => void,
   intervalMs: number = 1000,
   signal?: AbortSignal,
@@ -361,7 +361,10 @@ export async function pollForCompletion(
         const status = await getProcessStatus(sessionId)
 
         if (status.status === 'completed') {
-          onComplete(status.files)
+          // Await so callers can persist stems to IndexedDB before the session
+          // is marked complete — otherwise completion can race a page reload
+          // and leave a "completed" session with no durable local audio.
+          await onComplete(status.files)
           resolve()
           return
         }

@@ -280,37 +280,38 @@ async function processServer(
       )
       callbacks.onProgress(progress)
     },
-    (files: OutputFile[]) => {
+    async (files: OutputFile[]) => {
       const outputs: UvrSession['outputs'] = {}
       const meta: Record<string, { duration?: number; size?: number }> = {}
 
       const apiSessionId = response.session_id
 
-      for (const f of files) {
-        if (f.stem === 'vocal') {
-          outputs.vocal = f.path
-          meta.vocal = { duration: f.duration, size: f.size }
-        } else if (f.stem === 'instrumental') {
-          outputs.instrumental = f.path
-          meta.instrumental = { duration: f.duration, size: f.size }
-        }
-
-        // Download and persist stem to IndexedDB (non-blocking)
-        void (async () => {
+      // Download every stem and persist it to IndexedDB BEFORE completing.
+      // The server URLs (f.path) are ephemeral — the RunPod job output and its
+      // presigned R2 link expire within hours — so a session marked complete
+      // with only those cannot be reopened after a reload. The durable local
+      // blob is what the mixer re-hydrates from on every load, so we point
+      // outputs at a fresh object URL for it and fall back to the (temporary)
+      // server URL only if the download/persist fails.
+      await Promise.all(
+        files.map(async (f) => {
+          if (f.stem !== 'vocal' && f.stem !== 'instrumental') return
+          meta[f.stem] = { duration: f.duration, size: f.size }
           try {
             const resp = await getOutputFile(apiSessionId, f.path)
             const blob = await resp.blob()
-            await saveStemBlob(
-              sessionId,
-              f.stem as 'vocal' | 'instrumental',
-              blob,
-              f.filename,
+            await saveStemBlob(sessionId, f.stem, blob, f.filename)
+            outputs[f.stem] = URL.createObjectURL(blob)
+          } catch (err) {
+            console.warn(
+              '[uvr] stem persist failed, falling back to server URL:',
+              f.stem,
+              err,
             )
-          } catch {
-            /* non-critical */
+            outputs[f.stem] = f.path
           }
-        })()
-      }
+        }),
+      )
 
       callbacks.onComplete({ outputs, stemMeta: meta })
     },
