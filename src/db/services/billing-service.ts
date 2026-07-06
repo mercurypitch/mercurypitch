@@ -8,6 +8,9 @@
 
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+// Pure, dependency-free worker module — the single source of truth for the
+// per-model credit multipliers (also used by the db-worker's debit/pricing).
+import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../../workers/db-worker/src/billing-core'
 
 export interface PricingPlan {
   id: string
@@ -55,7 +58,23 @@ export async function fetchPricing(base?: string): Promise<Pricing | null> {
   if (b === '') return null
   const res = await fetch(`${b}/api/billing/pricing`)
   if (!res.ok) throw new Error(`Failed to load pricing: ${res.statusText}`)
-  return (await res.json()) as Pricing
+  return withModelCredits((await res.json()) as Pricing)
+}
+
+/** Fill in `uvrModelCredits` when the backend predates it (a db-worker not
+ *  yet redeployed): derive it from the GPU tier's base credits × the shared
+ *  multiplier map — the exact computation the new backend performs, from
+ *  the same imported constants, so the values can't drift. The tier base
+ *  itself still always comes from the server. */
+export function withModelCredits(pricing: Pricing): Pricing {
+  if (pricing.uvrModelCredits !== undefined) return pricing
+  const gpuBase =
+    pricing.tiers.find((t) => t.id === 'tier-runpod-gpu')?.credits ?? 0
+  const uvrModelCredits: Record<string, number> = {}
+  for (const [model, mult] of Object.entries(UVR_MODEL_CREDIT_MULTIPLIERS)) {
+    uvrModelCredits[model] = gpuBase * mult
+  }
+  return { ...pricing, uvrModelCredits }
 }
 
 /** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */

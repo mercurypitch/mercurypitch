@@ -3,10 +3,67 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
+import type { Pricing, PricingPlan } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, withModelCredits, } from '@/db/services/billing-service'
 
 afterEach(() => {
   vi.restoreAllMocks()
+})
+
+describe('withModelCredits', () => {
+  const gpuTier = (credits: number | null): PricingPlan => ({
+    id: 'tier-runpod-gpu',
+    kind: 'tier',
+    label: 'Server (GPU)',
+    description: null,
+    unit: 'song',
+    amount: null,
+    currency: 'eur',
+    credits,
+    badge: null,
+    purchasable: false,
+  })
+  const basePricing = (over: Partial<Pricing>): Pricing => ({
+    currency: 'eur',
+    tiers: [],
+    packs: [],
+    stripeConfigured: false,
+    ...over,
+  })
+
+  it('keeps server-provided uvrModelCredits untouched', () => {
+    const served = basePricing({
+      uvrModelCredits: { mdx: 5, roformer: 9, karaoke: 9, ensemble: 12 },
+    })
+    expect(withModelCredits(served).uvrModelCredits).toEqual({
+      mdx: 5,
+      roformer: 9,
+      karaoke: 9,
+      ensemble: 12,
+    })
+  })
+
+  it('derives costs from the GPU tier base when the backend predates the field', () => {
+    const legacy = basePricing({ tiers: [gpuTier(1)] })
+    expect(withModelCredits(legacy).uvrModelCredits).toEqual({
+      mdx: 1,
+      roformer: 2,
+      karaoke: 2,
+      ensemble: 3,
+    })
+  })
+
+  it('yields zero costs when the GPU tier is unmetered or absent', () => {
+    expect(withModelCredits(basePricing({})).uvrModelCredits).toEqual({
+      mdx: 0,
+      roformer: 0,
+      karaoke: 0,
+      ensemble: 0,
+    })
+    expect(
+      withModelCredits(basePricing({ tiers: [gpuTier(null)] })).uvrModelCredits,
+    ).toEqual({ mdx: 0, roformer: 0, karaoke: 0, ensemble: 0 })
+  })
 })
 
 describe('formatPrice', () => {
@@ -55,7 +112,7 @@ describe('fetchPricing', () => {
     expect(await fetchPricing('')).toBeNull()
   })
 
-  it('fetches pricing from the given base', async () => {
+  it('fetches pricing from the given base (deriving model costs when absent)', async () => {
     const body = {
       currency: 'eur',
       tiers: [],
@@ -67,7 +124,10 @@ describe('fetchPricing', () => {
       status: 200,
       json: () => Promise.resolve(body),
     } as Response)
-    expect(await fetchPricing('https://api.test')).toEqual(body)
+    expect(await fetchPricing('https://api.test')).toEqual({
+      ...body,
+      uvrModelCredits: { mdx: 0, roformer: 0, karaoke: 0, ensemble: 0 },
+    })
   })
 
   it('throws on a non-ok response', async () => {
