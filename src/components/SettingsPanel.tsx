@@ -1405,22 +1405,22 @@ export const SettingsPanel: Component = () => {
             <div class={styles.settingsDivider} />
             <div class={styles.aboutContent}>
               <div class={styles.aboutLogo}>
-                <svg viewBox="0 0 48 48" width="40" height="40">
-                  <circle
-                    cx="24"
-                    cy="24"
-                    r="22"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
+                <svg viewBox="0 0 64 64" width="44" height="44">
+                  <defs>
+                    <linearGradient id="mpAboutOrb" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#58a6ff" />
+                      <stop offset="0.52" stop-color="#2dd4bf" />
+                      <stop offset="1" stop-color="#bc8cff" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="32" cy="32" r="30" fill="url(#mpAboutOrb)" />
                   <path
-                    d="M24 8 L24 40 M12 16 Q18 10 24 16 Q30 22 36 16"
+                    d="M12 35C18.5 20 26 20 32 32S45.5 44 52 29"
                     fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    stroke="#0b0e14"
+                    stroke-width="4.6"
+                    stroke-linecap="round"
                   />
-                  <circle cx="24" cy="32" r="4" fill="currentColor" />
                 </svg>
               </div>
               <p class={styles.aboutName} data-testid="about-name">
