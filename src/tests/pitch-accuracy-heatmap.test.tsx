@@ -51,9 +51,9 @@ function seedSessionWithNotes(
 }
 
 const scale: ScaleDegree[] = [
-  { midi: 60, name: 'C', octave: 4 },
-  { midi: 64, name: 'E', octave: 4 },
-  { midi: 99, name: 'X', octave: 9 }, // no practice data
+  { midi: 60, name: 'C', octave: 4, freq: 261.63, semitone: 0 },
+  { midi: 64, name: 'E', octave: 4, freq: 329.63, semitone: 4 },
+  { midi: 99, name: 'X', octave: 9, freq: 0, semitone: 0 }, // no practice data
 ]
 
 afterEach(() => setSessionResults([]))
@@ -61,8 +61,8 @@ afterEach(() => setSessionResults([]))
 describe('PitchAccuracyHeatmap', () => {
   it('renders per-note accuracy from session history', () => {
     seedSessionWithNotes([
-      { midi: 60, avgCents: -10 }, // -> 100 - 50 = 50%
-      { midi: 64, avgCents: 30 }, // -> 100% (sharp never penalized)
+      { midi: 60, avgCents: -10 }, // flat -> 100 - (10-5)*5 = 75%
+      { midi: 64, avgCents: 30 }, // sharp -> max(0, 100 - (30-5)*5) = 0%
     ])
 
     render(() => <PitchAccuracyHeatmap scale={() => scale} />)
@@ -71,10 +71,11 @@ describe('PitchAccuracyHeatmap', () => {
     expect(screen.getByText('Note Accuracy')).toBeInTheDocument()
     // practiced keys expose their accuracy via the accessible name
     expect(
-      screen.getByRole('button', { name: 'C4 accuracy 50%' }),
+      screen.getByRole('button', { name: 'C4 accuracy 75%' }),
     ).toBeInTheDocument()
+    // sharp deviations are now penalized too (was a wrongly-perfect 100%)
     expect(
-      screen.getByRole('button', { name: 'E4 accuracy 100%' }),
+      screen.getByRole('button', { name: 'E4 accuracy 0%' }),
     ).toBeInTheDocument()
     // a scale note without data renders but carries no accuracy
     expect(

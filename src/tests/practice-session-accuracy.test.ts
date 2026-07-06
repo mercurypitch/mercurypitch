@@ -74,29 +74,37 @@ describe('getNoteAccuracyMap', () => {
   })
 
   it('scores each note and averages per midi across sessions', () => {
-    // Existing scoring: `avgCents >= -5 ? 100 : max(0, 100 - abs(avgCents)*5)`.
-    // Only flat/negative deviations beyond -5¢ are penalized; anything >= -5¢
-    // (incl. all sharp/positive deviations) scores 100.
-    // Session B (seeded last -> iterated first): 60@-10, 67@30, 72@-14
+    // Scoring: |avgCents| <= 5 -> 100, else max(0, 100 - (|avgCents| - 5) * 5).
+    // Sharp and flat are penalized equally.
+    // Session B (seeded last -> iterated first): 60@+10, 64@-10, 67@+30, 72@-3
     seedSessionWithNotes([
-      { midi: 60, avgCents: -10 },
+      { midi: 60, avgCents: 10 },
+      { midi: 64, avgCents: -10 },
       { midi: 67, avgCents: 30 },
-      { midi: 72, avgCents: -14 },
+      { midi: 72, avgCents: -3 },
     ])
-    // Session A: 60@-3, 64@-20
-    seedSessionWithNotes([
-      { midi: 60, avgCents: -3 },
-      { midi: 64, avgCents: -20 },
-    ])
+    // Session A: 60@-20
+    seedSessionWithNotes([{ midi: 60, avgCents: -20 }])
 
     const map = getNoteAccuracyMap()
-    // midi 60: -10¢ -> 100 - 50 = 50, -3¢ -> 100 (within tolerance); avg = 75
-    expect(map.get(60)).toBe(75)
-    // midi 64: -20¢ -> max(0, 100 - 100) = 0
-    expect(map.get(64)).toBe(0)
-    // midi 67: 30¢ -> 100 (positive deviations are never penalized)
-    expect(map.get(67)).toBe(100)
-    // midi 72: -14¢ -> 100 - 70 = 30
-    expect(map.get(72)).toBe(30)
+    // midi 60: +10¢ -> 100 - 25 = 75, -20¢ -> 100 - 75 = 25; avg = 50
+    expect(map.get(60)).toBe(50)
+    // midi 64: -10¢ -> 100 - 25 = 75
+    expect(map.get(64)).toBe(75)
+    // midi 67: +30¢ -> max(0, 100 - 125) = 0 (sharp notes ARE penalized now)
+    expect(map.get(67)).toBe(0)
+    // midi 72: -3¢ -> 100 (within the +-5¢ tolerance)
+    expect(map.get(72)).toBe(100)
+  })
+
+  it('penalizes sharp and flat deviations symmetrically', () => {
+    seedSessionWithNotes([
+      { midi: 60, avgCents: 12 }, // sharp
+      { midi: 64, avgCents: -12 }, // flat, same magnitude
+    ])
+    const map = getNoteAccuracyMap()
+    // both: 100 - (12 - 5) * 5 = 65
+    expect(map.get(60)).toBe(65)
+    expect(map.get(64)).toBe(65)
   })
 })
