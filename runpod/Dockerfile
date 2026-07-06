@@ -39,9 +39,6 @@ RUN python -m pip install torch torchaudio --index-url https://download.pytorch.
     && (find /usr/local/lib -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true) \
     && rm -rf /root/.cache
 
-COPY handler.py .
-COPY test_input.json .
-
 # Pre-bake every registry model so a cold worker never re-downloads weights
 # on a job. RunPod bills per second from worker start, so re-downloading
 # weights on every cold start is pure wasted spend — baking removes it.
@@ -49,6 +46,8 @@ COPY test_input.json .
 # model at build (CPU, no GPU — onnxruntime warning is normal) both fetches
 # the weights and validates the file names against the installed
 # audio-separator release. Adds ~2 GB to the image; disk is 20 GB.
+# Baked BEFORE the handler COPY on purpose: a handler-only change must not
+# invalidate this layer (each re-bake re-downloads ~2.5 GB of weights).
 RUN python -c "from audio_separator.separator import Separator; \
 import os; os.makedirs('/models', exist_ok=True); \
 s = Separator(model_file_dir='/models'); \
@@ -58,6 +57,9 @@ s = Separator(model_file_dir='/models'); \
     'mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt', \
     'vocals_mel_band_roformer.ckpt', \
 )]"
+
+COPY handler.py .
+COPY test_input.json .
 
 # The handler pre-loads this model at startup (UVR_EAGER_LOAD=1) so FlashBoot
 # can snapshot the warmed worker and restore it in ~2s on later cold starts.
