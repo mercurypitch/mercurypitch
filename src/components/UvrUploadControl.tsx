@@ -252,11 +252,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           own audio; we never fetch it from a link. Links to the Terms on the
           marketing site (single source of truth) rather than restating them. */}
       <p class="upload-rights-note">
-        Only upload audio you own or have the rights to use — please don&rsquo;t
-        rip tracks from YouTube, Spotify, Apple Music or other streaming
-        services.{' '}
+        By uploading, you accept our{' '}
         <a href={CONTENT_POLICY_URL} target="_blank" rel="noopener noreferrer">
-          Learn more
+          terms
         </a>
         .
       </p>
