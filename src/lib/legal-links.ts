@@ -15,6 +15,9 @@
 
 const LANDING_ORIGIN = 'https://about.mercurypitch.com'
 
+/** The public marketing / landing site (linked from Settings > About and the header). */
+export const WEBSITE_URL = LANDING_ORIGIN
+
 /** Terms of Use (hosted on the landing site). */
 export const TERMS_URL = `${LANDING_ORIGIN}/terms`
 
