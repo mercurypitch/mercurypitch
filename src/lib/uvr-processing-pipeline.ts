@@ -216,18 +216,20 @@ function audioDurationSecs(file: File): Promise<number | null> {
   })
 }
 
-// Duration-scaled ETA per model: separation speed differs by architecture
-// (MDX ~7-8x realtime on the GPU tier; RoFormer-class ~2-3x; the two-model
-// ensemble slower still), plus fixed overhead. Keys match the server model
-// registry (runpod/handler.py); unknown models use the roformer profile.
+// Duration-scaled ETA per model, plus fixed overhead. Divisors from the
+// 2026-07-06 11-song RTX-4090 measurements (handler wall vs song length):
+// RoFormer ran ~10-16x realtime, MDX ~7-9x — 8 and 7 keep a safety margin
+// so the bar under-promises rather than stalls at 95%. Keys match the
+// server model registry (runpod/handler.py); unknown models use the
+// roformer profile.
 const SERVER_ETA_PROFILES: Record<
   string,
   { realtimeDivisor: number; capSecs: number }
 > = {
   mdx: { realtimeDivisor: 7, capSecs: 240 },
-  roformer: { realtimeDivisor: 2.5, capSecs: 480 },
-  karaoke: { realtimeDivisor: 2.5, capSecs: 480 },
-  ensemble: { realtimeDivisor: 1.4, capSecs: 600 },
+  roformer: { realtimeDivisor: 8, capSecs: 300 },
+  karaoke: { realtimeDivisor: 8, capSecs: 300 },
+  ensemble: { realtimeDivisor: 4, capSecs: 480 },
 }
 
 async function processServer(

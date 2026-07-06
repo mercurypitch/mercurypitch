@@ -9,8 +9,8 @@ import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
-import type { UvrProcessingMode, UvrQualityModel } from '@/stores/app-store'
-import { setUvrProcessingMode, setUvrQualityModel, uvrProcessingMode, uvrQualityModel, } from '@/stores/app-store'
+import type { UvrProcessingMode } from '@/stores/app-store'
+import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PricingPanel.module.css'
@@ -82,35 +82,6 @@ export const PricingPanel: Component = () => {
   const selectTier = (tier: PricingPlan): void => {
     const mode = tierMode(tier.id)
     if (mode !== null) setUvrProcessingMode(mode)
-  }
-
-  // Server quality chips (shown while Server GPU is selected). Costs come
-  // from the same pricing payload (tier base × model multiplier).
-  const QUALITY_OPTIONS: {
-    model: UvrQualityModel
-    label: string
-    hint: string
-  }[] = [
-    {
-      model: 'roformer',
-      label: 'High Quality',
-      hint: 'cleanest vocals, takes longer',
-    },
-    { model: 'mdx', label: 'Basic', hint: 'faster, slightly more bleed' },
-  ]
-
-  // The GPU card's per-song price follows the SELECTED quality (2 credits
-  // on High Quality, 1 on Basic) — the static tier base would contradict
-  // the chips right under it.
-  const gpuJobCost = (): number | undefined => {
-    const c = loadedPricing()?.uvrModelCredits?.[uvrQualityModel()]
-    return c != null && c > 0 ? c : undefined
-  }
-  const tierPriceLabel = (tier: PricingPlan): string => {
-    const cost = tierMode(tier.id) === 'server' ? gpuJobCost() : undefined
-    return cost !== undefined
-      ? `${cost} credit${cost === 1 ? '' : 's'}`
-      : formatTierPrice(tier)
   }
 
   return (
@@ -206,7 +177,7 @@ export const PricingPanel: Component = () => {
                         class={styles.price}
                         classList={{ [styles.soon]: isTierSoon(tier) }}
                       >
-                        {tierPriceLabel(tier)}
+                        {formatTierPrice(tier)}
                         <Show
                           when={
                             tier.unit != null &&
@@ -221,41 +192,6 @@ export const PricingPanel: Component = () => {
                   )}
                 </For>
               </div>
-
-              <Show when={uvrProcessingMode() === 'server'}>
-                <div
-                  class={styles.qualityRow}
-                  data-testid="settings-uvr-quality"
-                >
-                  <span class={styles.qualityLabel}>Server quality</span>
-                  <For each={QUALITY_OPTIONS}>
-                    {(opt) => {
-                      const cost = () => p().uvrModelCredits?.[opt.model]
-                      return (
-                        <button
-                          type="button"
-                          class={styles.qualityChip}
-                          classList={{
-                            [styles.qualityChipActive]:
-                              uvrQualityModel() === opt.model,
-                          }}
-                          aria-pressed={uvrQualityModel() === opt.model}
-                          onClick={() => setUvrQualityModel(opt.model)}
-                          title={`${opt.label} — ${opt.hint}`}
-                          data-testid={`settings-uvr-quality-${opt.model}`}
-                        >
-                          {opt.label}
-                          <Show when={cost() != null && (cost() as number) > 0}>
-                            <span class={styles.qualityCost}>
-                              {` · ${cost()} credit${cost() === 1 ? '' : 's'}`}
-                            </span>
-                          </Show>
-                        </button>
-                      )
-                    }}
-                  </For>
-                </div>
-              </Show>
             </Show>
 
             <Show when={p().packs.length > 0}>
