@@ -397,6 +397,23 @@ async def process_audio(
                 f"estimated={estimated:.1f}s"
             )
 
+            # RoFormer models process ~11 s windows; shorter inputs yield
+            # zero chunks in audio-separator 0.44.2 and die mid-separation
+            # with an opaque tensor-size error. Fail early and readably
+            # (probe failure = 0.0 stays fail-open). Mirrors the RunPod
+            # handler's UVR_MIN_INPUT_SECONDS guard.
+            min_seconds = float(os.getenv("UVR_MIN_INPUT_SECONDS", "12"))
+            if min_seconds > 0 and 0 < duration < min_seconds:
+                write_progress(
+                    session_output_dir, 0.0, "error", duration, 0, 0,
+                    cpu_profile,
+                    error_msg=(
+                        f"Audio is too short ({duration:.0f} s) for "
+                        f"separation. The minimum is {min_seconds:.0f} seconds."
+                    ),
+                )
+                return
+
             # Write initial progress
             started_at = time.time()
             write_progress(session_output_dir, 0.0, "processing",
