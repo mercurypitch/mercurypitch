@@ -8,6 +8,7 @@ import { TierSelector } from '@/components/TierSelector'
 import { Tooltip } from '@/components/Tooltip'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { dismissWelcome } from '@/stores'
 import styles from './WelcomeScreen.module.css'
 
@@ -228,6 +229,30 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             Take a Tour
           </button>
         </div>
+
+        {/* Consent — the canonical Terms/Privacy live on the marketing site;
+            we link out rather than duplicate them in the app. */}
+        <p style="text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted); margin: -6px 0 16px;">
+          By continuing, you agree to our{' '}
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Terms of Use
+          </a>{' '}
+          and{' '}
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Privacy Notice
+          </a>
+          .
+        </p>
 
         {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account */}
         <a

@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, ImportFile, MusicNote } from './icons'
 
@@ -246,6 +247,19 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           </span>
         </div>
       </div>
+
+      {/* Rights notice — the legally important touchpoint. Users provide their
+          own audio; we never fetch it from a link. Links to the Terms on the
+          marketing site (single source of truth) rather than restating them. */}
+      <p class="upload-rights-note">
+        Only upload audio you own or have the rights to use — please don&rsquo;t
+        rip tracks from YouTube, Spotify, Apple Music or other streaming
+        services.{' '}
+        <a href={CONTENT_POLICY_URL} target="_blank" rel="noopener noreferrer">
+          Learn more
+        </a>
+        .
+      </p>
     </div>
   )
 }

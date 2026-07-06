@@ -15,6 +15,7 @@ import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
+import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
@@ -1546,6 +1547,36 @@ export const SettingsPanel: Component = () => {
                     />
                   </svg>
                   View on GitHub
+                </a>
+                <a
+                  href={TERMS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={styles.aboutLink}
+                  data-testid="about-terms-link"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                    />
+                  </svg>
+                  Terms of Use
+                </a>
+                <a
+                  href={PRIVACY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={styles.aboutLink}
+                  data-testid="about-privacy-link"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
+                    />
+                  </svg>
+                  Privacy Notice
                 </a>
               </div>
             </div>
