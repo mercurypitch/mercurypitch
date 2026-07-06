@@ -403,9 +403,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Cache to avoid pulling 30MB+ blobs from IndexedDB multiple times per page load
   const locallyHydratedSessions = new Set<string>()
 
-  // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
+  // Re-hydrate stem URLs from IndexedDB for any completed session. Both local
+  // and server separations persist their stems as durable blobs; the in-memory
+  // object URLs die on reload and server URLs expire, so on every load we point
+  // outputs back at fresh object URLs built from the local blobs. (Previously
+  // this was gated to local-mode, so reopened server sessions kept dead server
+  // URLs and failed to load — the "processed but can't open / retry" bug.)
   const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
-    if (session.processingMode === 'local' && session.status === 'completed') {
+    if (session.status === 'completed') {
       if (locallyHydratedSessions.has(session.sessionId)) {
         return session
       }

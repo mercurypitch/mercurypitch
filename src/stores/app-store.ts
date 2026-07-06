@@ -698,7 +698,11 @@ export function completeUvrSession(
       outputs,
       stemMeta,
       progress: 100,
-      processingTime: Date.now() - session.createdAt,
+      // Prefer the elapsed time tracked during polling
+      // (updateUvrSessionProgress). Recomputing from createdAt inflates it when
+      // a session is reused by file hash (stale createdAt) — e.g. a sub-minute
+      // job reporting ~3272 s.
+      processingTime: session.processingTime ?? Date.now() - session.createdAt,
     }
     upsertSessionInCache(updated)
     setCurrentUvrSession(updated)
