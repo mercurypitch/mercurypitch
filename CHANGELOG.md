@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.2] - 2026-07-06
+
+### Added
+
+- **Terms, Privacy, and a Website link in Settings** — quick links to our Terms of Use, Privacy Notice, and the mercurypitch.com website now live in Settings → About (plus a Website link in the header). The vocal-separation upload box shows a short "only upload audio you have the rights to" note, and first-run setup notes that continuing means you accept the Terms and Privacy Notice.
+
+### Changed
+
+- **New logo** — a gradient "Pitch-orb" mark replaces the old icon across the app: the browser tab, the installed-app / home-screen icon, and the About page.
+
 ## [0.6.1] - 2026-07-06
 
 ### Changed
