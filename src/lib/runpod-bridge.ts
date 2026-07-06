@@ -291,6 +291,9 @@ async function startRunpodJob(
       request.headers.get('Authorization'),
       tier,
       sessionId,
+      // input.model is always set (buildJobInput defaults it), so the debit
+      // is priced for the model that actually runs.
+      input.model,
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)

@@ -216,25 +216,44 @@ function audioDurationSecs(file: File): Promise<number | null> {
   })
 }
 
+// Duration-scaled ETA per model: separation speed differs by architecture
+// (MDX ~7-8x realtime on the GPU tier; RoFormer-class ~2-3x; the two-model
+// ensemble slower still), plus fixed overhead. Keys match the server model
+// registry (runpod/handler.py); unknown models use the roformer profile.
+const SERVER_ETA_PROFILES: Record<
+  string,
+  { realtimeDivisor: number; capSecs: number }
+> = {
+  mdx: { realtimeDivisor: 7, capSecs: 240 },
+  roformer: { realtimeDivisor: 2.5, capSecs: 480 },
+  karaoke: { realtimeDivisor: 2.5, capSecs: 480 },
+  ensemble: { realtimeDivisor: 1.4, capSecs: 600 },
+}
+
 async function processServer(
   file: File,
   sessionId: string,
   callbacks: ProcessingCallbacks,
+  model?: string,
 ): Promise<void> {
   // Server mode targets the RunPod GPU tier; when RunPod isn't configured
   // on the worker the request falls through to the CPU container, so the
   // opt-in header is always safe to send.
-  // Duration-scaled progress estimate: separation runs ~7-8x realtime on
-  // the GPU tier plus fixed overhead, so a 3-min song is ~45s and an 8-min
-  // song ~90s — far better than a flat guess for the progress bar + ETA.
+  const requestedModel = model ?? DEFAULT_PROCESS_REQUEST.model ?? 'roformer'
+  const eta =
+    SERVER_ETA_PROFILES[requestedModel] ?? SERVER_ETA_PROFILES.roformer
   const durationSecs = await audioDurationSecs(file)
   const estimatedSecs =
     durationSecs !== null
-      ? Math.min(240, Math.max(30, 20 + durationSecs / 7))
+      ? Math.min(
+          eta.capSecs,
+          Math.max(30, 20 + durationSecs / eta.realtimeDivisor),
+        )
       : undefined
 
   const response = await processAudio(file, {
     ...DEFAULT_PROCESS_REQUEST,
+    model: requestedModel,
     provider: 'runpod',
   })
 
@@ -308,16 +327,24 @@ export async function preInitModel(): Promise<void> {
   await getSeparator()
 }
 
+export interface UvrPipelineOptions {
+  /** Server-mode quality tier (registry name: 'roformer' | 'mdx' |
+   *  'karaoke' | 'ensemble'). Omitted = the default request's model.
+   *  Ignored in local mode (the on-device separator is MDX-only). */
+  model?: string
+}
+
 export async function runUvrPipeline(
   file: File,
   sessionId: string,
   mode: UvrProcessingMode,
   callbacks: ProcessingCallbacks,
+  options: UvrPipelineOptions = {},
 ): Promise<void> {
   if (mode === 'local') {
     await processLocal(file, sessionId, callbacks)
   } else {
-    await processServer(file, sessionId, callbacks)
+    await processServer(file, sessionId, callbacks, options.model)
   }
 }
 

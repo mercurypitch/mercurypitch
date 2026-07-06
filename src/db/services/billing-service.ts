@@ -27,6 +27,10 @@ export interface Pricing {
   currency: string
   tiers: PricingPlan[]
   packs: PricingPlan[]
+  /** Per-song credit cost by server model (registry names: roformer, mdx,
+   *  karaoke, ensemble) — tier base cost × the model's multiplier. Absent
+   *  on an older db-worker. */
+  uvrModelCredits?: Record<string, number>
   stripeConfigured: boolean
 }
 

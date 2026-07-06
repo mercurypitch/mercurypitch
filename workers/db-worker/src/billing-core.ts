@@ -99,6 +99,52 @@ export function isUvrTier(value: unknown): value is UvrTier {
   return value === 'gpu' || value === 'cpu'
 }
 
+// ── Per-model pricing ────────────────────────────────────────────────
+// The tier row's `credits` is the BASE per-song cost (the fast MDX tier);
+// heavier models multiply it: RoFormer-class models take ~2-4x the GPU
+// time, the two-model ensemble roughly double that again. Keep the names
+// in sync with MODEL_REGISTRY (runpod/handler.py) and
+// RUNPOD_ALLOWED_MODELS (src/lib/runpod.ts).
+export const UVR_MODEL_CREDIT_MULTIPLIERS = {
+  mdx: 1,
+  roformer: 2,
+  karaoke: 2,
+  ensemble: 3,
+} as const
+
+export type UvrModelName = keyof typeof UVR_MODEL_CREDIT_MULTIPLIERS
+
+/** Legacy job payloads name the MDX weights file directly. */
+const UVR_MODEL_ALIASES: Record<string, UvrModelName> = {
+  'UVR-MDX-NET-Inst_HQ_3': 'mdx',
+  'UVR-MDX-NET-Inst_HQ_3.onnx': 'mdx',
+}
+
+/** Credit cost of one job: tier base × the model's multiplier. Absent or
+ *  unknown models charge the base — an older main worker that doesn't send
+ *  a model is running the old MDX default, and pricing must never turn a
+ *  version skew into a refused job. */
+export function uvrJobCost(tierCredits: number, model?: string): number {
+  if (model === undefined || model === '') return tierCredits
+  const key = UVR_MODEL_ALIASES[model] ?? model
+  const mult =
+    (UVR_MODEL_CREDIT_MULTIPLIERS as Record<string, number>)[key] ?? 1
+  return tierCredits * mult
+}
+
+/** Absolute per-model credit costs for the pricing endpoint (UI display),
+ *  derived from the GPU tier's base cost. */
+export function uvrModelCredits(
+  tierCredits: number,
+): Record<UvrModelName, number> {
+  return {
+    mdx: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.mdx,
+    roformer: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.roformer,
+    karaoke: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.karaoke,
+    ensemble: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.ensemble,
+  }
+}
+
 /** Job refs are worker-issued session ids (`rp_<tier>_<runpodJobId>`); keep
  *  the charset tight so ledger idempotency keys stay clean. */
 const JOB_REF_RE = /^[A-Za-z0-9_-]{1,200}$/

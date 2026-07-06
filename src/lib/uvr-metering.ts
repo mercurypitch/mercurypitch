@@ -51,12 +51,15 @@ export interface DebitVerdict {
 
 /** Debit the tier's credit cost for a job, forwarding the caller's app JWT
  *  (the db-worker resolves the user from it — the debit is user-authorized,
- *  the amount is server-decided). */
+ *  the amount is server-decided). `model` scales the tier's base cost by
+ *  the model's credit multiplier (heavier models cost more GPU time); the
+ *  multiplier map lives server-side in billing-core. */
 export async function debitForJob(
   cfg: MeteringConfig,
   authorization: string | null,
   tier: RunpodTier,
   jobRef: string,
+  model?: string,
 ): Promise<DebitVerdict> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -68,7 +71,9 @@ export async function debitForJob(
     const res = await fetch(`${cfg.baseUrl}/api/billing/debit`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ tier, jobRef }),
+      body: JSON.stringify(
+        model !== undefined ? { tier, jobRef, model } : { tier, jobRef },
+      ),
     })
     if (res.status === 402) {
       const body = (await res.json().catch(() => ({}))) as Record<
