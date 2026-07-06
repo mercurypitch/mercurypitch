@@ -16,7 +16,7 @@ import { COSMIC_MELODIES, fitMelodyToRange } from '@/lib/mirror/cosmic-melodies'
 import type { AccuracyResult, F0Frame, NoteTakeResult, RangeResult, } from '@/lib/mirror/metrics'
 import { computeAccuracy, scoreMatchTake } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, renderCard, shareCard } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
@@ -46,6 +46,10 @@ const BAND_PIP: Record<NoteTakeResult['band'], string> = {
 interface CosmicModeProps {
   range: RangeResult | null
   onBack: () => void
+  /** Label for the pick-screen back button. Defaults to "Back to results"
+   *  (entered from the results screen); a deep link with no prior run passes
+   *  its own wording since there are no results to return to. */
+  backLabel?: string
 }
 
 export const CosmicMode: Component<CosmicModeProps> = (props) => {
@@ -174,11 +178,11 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
     trackFunnel('cosmic_done')
   }
 
-  async function onShare(): Promise<void> {
+  function buildCard(): HTMLCanvasElement | null {
     const scored = result()
     const pick = melody()
-    if (!scored || !pick) return
-    const card = renderCard(
+    if (!scored || !pick) return null
+    return renderCard(
       {
         result: { range: null, accuracy: scored, steadiness: null },
         glides: [sungFrames],
@@ -186,12 +190,27 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
       },
       'story',
     )
-    const blob = await cardToPngBlob(card)
-    const outcome = await shareCard(blob, 'sing-the-universe.png')
+  }
+
+  async function onShare(): Promise<void> {
+    const card = buildCard()
+    if (!card) return
+    const outcome = await shareCard(
+      await cardToPngBlob(card),
+      'sing-the-universe.png',
+    )
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
     )
+  }
+
+  async function onCopy(): Promise<void> {
+    const card = buildCard()
+    if (!card) return
+    const outcome = await copyCardToClipboard(cardToPngBlob(card))
+    if (outcome === 'copied') trackFunnel('card_shared')
+    setShareStatus(copyOutcomeMessage(outcome))
   }
 
   return (
@@ -223,7 +242,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
           class="mirror-cta mirror-cta-secondary"
           onClick={() => props.onBack()}
         >
-          Back to results
+          {props.backLabel ?? 'Back to results'}
         </button>
       </Show>
 
@@ -279,6 +298,14 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
           <button class="mirror-cta" onClick={() => void onShare()}>
             Share it
           </button>
+          <Show when={supportsImageClipboard()}>
+            <button
+              class="mirror-cta mirror-cta-secondary"
+              onClick={() => void onCopy()}
+            >
+              Copy image
+            </button>
+          </Show>
           <button
             class="mirror-cta mirror-cta-secondary"
             onClick={() => setPhase('pick')}
