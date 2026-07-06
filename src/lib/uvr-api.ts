@@ -94,12 +94,19 @@ export interface OutputFile {
 
 // ── Zod schemas for API response validation ─────────────────────
 
+/** Optional field that also tolerates explicit JSON `null`. The RunPod
+ *  bridge OMITS absent keys, but the FastAPI container (pydantic
+ *  Optional[...] fields) serializes them as `null` — both mean "absent"
+ *  in this contract, so normalize null to undefined. */
+const nullishOptional = <T extends z.ZodType>(schema: T) =>
+  schema.nullish().transform((v) => v ?? undefined)
+
 const OutputFileSchema = z.object({
   stem: z.string(),
   filename: z.string(),
   path: z.string(),
-  size: z.number().optional(),
-  duration: z.number().optional(),
+  size: nullishOptional(z.number()),
+  duration: nullishOptional(z.number()),
 })
 
 const ProcessResponseSchema = z.object({
@@ -113,12 +120,12 @@ const ProcessResponseSchema = z.object({
 const ProcessStatusResponseSchema = z.object({
   session_id: z.string(),
   status: z.enum(['processing', 'completed', 'not_started', 'error']),
-  progress: z.number().optional(),
-  estimated_total_secs: z.number().optional(),
-  cpu_profile: z.string().optional(),
-  message: z.string().optional(),
+  progress: nullishOptional(z.number()),
+  estimated_total_secs: nullishOptional(z.number()),
+  cpu_profile: nullishOptional(z.string()),
+  message: nullishOptional(z.string()),
   files: z.array(OutputFileSchema),
-  error: z.string().optional(),
+  error: nullishOptional(z.string()),
 })
 
 const ModelsResponseSchema = z.object({

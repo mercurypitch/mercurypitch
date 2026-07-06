@@ -261,6 +261,32 @@ describe('getProcessStatus error handling (REQ-UV-063)', () => {
       'Failed to get status: Not Found',
     )
   })
+
+  it('accepts pydantic-style null fields from the CPU container', async () => {
+    // Regression: the FastAPI container serializes Optional[...] fields as
+    // explicit JSON nulls (the RunPod bridge omits the keys instead); the
+    // schema must treat null as absent, not fail validation mid-poll.
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          session_id: 'e7615fd7-675e-4c80-a41a-ebd924088406',
+          status: 'processing',
+          progress: null,
+          message: null,
+          files: [],
+          error: null,
+        }),
+    } as Response)
+
+    const status = await getProcessStatus(
+      'e7615fd7-675e-4c80-a41a-ebd924088406',
+    )
+    expect(status.status).toBe('processing')
+    expect(status.progress).toBeUndefined()
+    expect(status.error).toBeUndefined()
+  })
 })
 
 describe('processAudio — server tier opt-in + 402 handling', () => {
