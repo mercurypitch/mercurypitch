@@ -58,7 +58,13 @@ The legacy value `UVR-MDX-NET-Inst_HQ_3` is still accepted (maps to
 the worker download arbitrary weights on billable time. When adding a
 model: extend `MODEL_REGISTRY` in `handler.py`, add the file to the
 Dockerfile bake list, rebuild with a new tag, and mirror the entry in
-`uvr-api/api.py` + `RUNPOD_ALLOWED_MODELS` in `src/lib/runpod.ts`.
+`uvr-api/api.py` + `RUNPOD_ALLOWED_MODELS` in `src/lib/runpod.ts` +
+the credit multiplier in `workers/db-worker/src/billing-core.ts`.
+
+Credits: the app debits `tier base × model multiplier` per job
+(billing-core `UVR_MODEL_CREDIT_MULTIPLIERS`): `mdx` 1x, `roformer` and
+`karaoke` 2x, `ensemble` 3x — at the current 1-credit GPU base that is
+1 / 2 / 2 / 3 credits per song.
 
 Precedence: `audio_s3_key` > `audio_url` > `audio_base64`. The web app's
 Cloudflare worker inlines base64 up to 7 MB (the RunPod `/run` payload
