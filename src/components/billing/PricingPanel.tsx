@@ -99,6 +99,20 @@ export const PricingPanel: Component = () => {
     { model: 'mdx', label: 'Basic', hint: 'faster, slightly more bleed' },
   ]
 
+  // The GPU card's per-song price follows the SELECTED quality (2 credits
+  // on High Quality, 1 on Basic) — the static tier base would contradict
+  // the chips right under it.
+  const gpuJobCost = (): number | undefined => {
+    const c = loadedPricing()?.uvrModelCredits?.[uvrQualityModel()]
+    return c != null && c > 0 ? c : undefined
+  }
+  const tierPriceLabel = (tier: PricingPlan): string => {
+    const cost = tierMode(tier.id) === 'server' ? gpuJobCost() : undefined
+    return cost !== undefined
+      ? `${cost} credit${cost === 1 ? '' : 's'}`
+      : formatTierPrice(tier)
+  }
+
   return (
     <div class={styles.panel} data-testid="pricing-panel">
       <Show when={me()}>
@@ -192,7 +206,7 @@ export const PricingPanel: Component = () => {
                         class={styles.price}
                         classList={{ [styles.soon]: isTierSoon(tier) }}
                       >
-                        {formatTierPrice(tier)}
+                        {tierPriceLabel(tier)}
                         <Show
                           when={
                             tier.unit != null &&
