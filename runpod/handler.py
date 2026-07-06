@@ -148,6 +148,12 @@ MAX_INPUT_BYTES = int(os.getenv("UVR_MAX_INPUT_BYTES", str(100 * 1024 * 1024)))
 # the credit. 0 disables the cap.
 MAX_INPUT_MINUTES = float(os.getenv("UVR_MAX_INPUT_MINUTES", "12"))
 
+# Minimum input duration. RoFormer models process ~11 s windows; a shorter
+# input yields zero chunks in audio-separator 0.44.2 and dies mid-separation
+# with an opaque tensor-size error ("size of tensor a (0) must match ...").
+# Reject up front with a readable message instead. 0 disables the check.
+MIN_INPUT_SECONDS = float(os.getenv("UVR_MIN_INPUT_SECONDS", "12"))
+
 # ── Separation quality knobs ────────────────────────────────────
 # Env sets the endpoint default; each job may override via `input`
 # (invert_using_spec / mdx_overlap / mdx_denoise / mdx_segment_size) for
@@ -640,6 +646,20 @@ def handler(job: dict) -> dict:
                 "error": (
                     f"Song is too long ({in_duration / 60:.1f} min) for server "
                     f"separation. The limit is {MAX_INPUT_MINUTES:.0f} minutes."
+                )
+            }
+        # Same probe, opposite bound (probe failure = 0.0 stays fail-open).
+        if MIN_INPUT_SECONDS > 0 and 0 < in_duration < MIN_INPUT_SECONDS:
+            logger.warning(
+                "Job %s rejected: %.1f s is under the %.0f s minimum",
+                job_id,
+                in_duration,
+                MIN_INPUT_SECONDS,
+            )
+            return {
+                "error": (
+                    f"Audio is too short ({in_duration:.0f} s) for server "
+                    f"separation. The minimum is {MIN_INPUT_SECONDS:.0f} seconds."
                 )
             }
 
