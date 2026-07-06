@@ -10,7 +10,7 @@
 import type { ExerciseType } from '@/features/exercises/types'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import { exerciseHistory } from '@/stores/exercise-history-store'
-import { getSessionHistory } from '@/stores/practice-session-store'
+import { collectNoteAccuracySamples } from '@/stores/practice-session-store'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -103,22 +103,17 @@ export function findWeakExercises(): WeakExercise[] {
 // ── Pitch Weaknesses ───────────────────────────────────────────
 
 export function findWeakPitches(): WeakPitch[] {
-  const sessions = getSessionHistory()
-  if (sessions.length === 0) return []
+  const samples = collectNoteAccuracySamples()
+  if (samples.length === 0) return []
 
-  // Collect cents deviations per MIDI note from noteResults
+  // Collect cents deviations per MIDI note from the decoupled samples
   const pitchData = new Map<number, { totalCents: number; count: number }>()
 
-  for (const session of sessions) {
-    for (const pr of session.practiceItemResult) {
-      for (const nr of pr.noteResult) {
-        const midi = nr.item.note.midi
-        const existing = pitchData.get(midi) ?? { totalCents: 0, count: 0 }
-        existing.totalCents += Math.abs(nr.avgCents)
-        existing.count++
-        pitchData.set(midi, existing)
-      }
-    }
+  for (const { midi, avgCents } of samples) {
+    const existing = pitchData.get(midi) ?? { totalCents: 0, count: 0 }
+    existing.totalCents += Math.abs(avgCents)
+    existing.count++
+    pitchData.set(midi, existing)
   }
 
   const results: WeakPitch[] = []
