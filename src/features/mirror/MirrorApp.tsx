@@ -22,7 +22,7 @@ import { summarize } from '@/lib/mirror/metrics'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, formatDeltaLine, renderCard, shareCard, } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
@@ -32,8 +32,11 @@ import { playReferenceTone } from './tone-player'
 
 const GLIDE_SEC = 8
 const HOLD_SEC = 6
-const REFERENCE_SEC = 1
+const REFERENCE_SEC = 1.4
 const MATCH_TAKE_SEC = 3
+// A "get ready" count-in between hearing the note and singing it back, so the
+// match task doesn't fire notes at the singer with no time to prepare.
+const MATCH_PREPARE_SEC = 2
 const FREE_SING_SEC = 40
 const MIC_CONSUMER_ID = 'voice-mirror'
 // A live mic never reads exactly zero (room noise floors around 1e-3); dead
@@ -41,10 +44,18 @@ const MIC_CONSUMER_ID = 'voice-mirror'
 // mic is muted at the OS level.
 const SILENCE_RMS = 1e-6
 
+// Deep-link fragment for the cosmic "Sing the Universe" mode. The landing page
+// links straight to /mirror#sing-the-universe, and share cards / the browser
+// URL reflect it — keep this string in sync with those. A fragment never
+// reaches the Worker, so no server route is needed; the SPA reads it here.
+const COSMIC_HASH = 'sing-the-universe'
+const isCosmicHash = (): boolean =>
+  window.location.hash.replace(/^#/, '') === COSMIC_HASH
+
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-type SubPhase = 'brief' | 'recording' | 'listening'
+type SubPhase = 'brief' | 'recording' | 'listening' | 'prepare'
 
 interface TaskCopy {
   title: string
@@ -90,7 +101,9 @@ export const MirrorApp: Component = () => {
     null | 'mic' | 'task' | 'results'
   >(null)
   const [freeResult, setFreeResult] = createSignal<FreeSingResult | null>(null)
-  const [cosmicOpen, setCosmicOpen] = createSignal(false)
+  // Initialized from the URL fragment so a /mirror#sing-the-universe deep link
+  // opens cosmic mode on the first paint (no Landing flash before onMount runs).
+  const [cosmicOpen, setCosmicOpen] = createSignal(isCosmicHash())
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -108,7 +121,17 @@ export const MirrorApp: Component = () => {
     return next
   }
 
-  onMount(() => trackFunnel('mirror_view'))
+  onMount(() => {
+    trackFunnel('mirror_view')
+    // Keep cosmic mode in sync when the fragment changes after load (manual
+    // edit, or browser back/forward). Initial deep-link is handled by the
+    // cosmicOpen initializer above.
+    const onHashChange = (): void => {
+      setCosmicOpen(isCosmicHash())
+    }
+    window.addEventListener('hashchange', onHashChange)
+    onCleanup(() => window.removeEventListener('hashchange', onHashChange))
+  })
   onCleanup(() => {
     cancelled = true
     teardownAudio()
@@ -136,7 +159,23 @@ export const MirrorApp: Component = () => {
     setMicError(null)
     setMicSilent(false)
     setRetryNotice(false)
-    setCosmicOpen(false)
+    setCosmic(false)
+  }
+
+  /** Open/close cosmic "Sing the Universe" mode, keeping the URL fragment in
+   *  sync so the mode is deep-linkable and shareable. replaceState (not push)
+   *  keeps it out of the back-button stack while making the URL truthful; the
+   *  onMount hashchange listener covers manual / forward-back fragment edits. */
+  function setCosmic(open: boolean): void {
+    setCosmicOpen(open)
+    if (open === isCosmicHash()) return
+    history.replaceState(
+      null,
+      '',
+      open
+        ? `#${COSMIC_HASH}`
+        : window.location.pathname + window.location.search,
+    )
   }
 
   /** Countdown helper driving the `remaining` signal. */
@@ -154,6 +193,12 @@ export const MirrorApp: Component = () => {
 
   async function brief(seconds: number): Promise<void> {
     setSubPhase('brief')
+    await countdown(seconds)
+  }
+
+  /** "Your turn" count-in after the reference tone, before recording. */
+  async function prepare(seconds: number): Promise<void> {
+    setSubPhase('prepare')
     await countdown(seconds)
   }
 
@@ -290,10 +335,10 @@ export const MirrorApp: Component = () => {
     trackFunnel('free_sing_done')
   }
 
-  async function onShareFree(): Promise<void> {
+  function buildFreeCard(): HTMLCanvasElement | null {
     const analysis = freeResult()
-    if (!analysis) return
-    const card = renderCard(
+    if (!analysis) return null
+    return renderCard(
       {
         result: { range: analysis.range, accuracy: null, steadiness: null },
         glides: [freeTakeFrames],
@@ -301,12 +346,24 @@ export const MirrorApp: Component = () => {
       },
       'story',
     )
-    const blob = await cardToPngBlob(card)
-    const outcome = await shareCard(blob, 'free-sing.png')
+  }
+
+  async function onShareFree(): Promise<void> {
+    const card = buildFreeCard()
+    if (!card) return
+    const outcome = await shareCard(await cardToPngBlob(card), 'free-sing.png')
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
     )
+  }
+
+  async function onCopyFree(): Promise<void> {
+    const card = buildFreeCard()
+    if (!card) return
+    const outcome = await copyCardToClipboard(cardToPngBlob(card))
+    if (outcome === 'copied') trackFunnel('card_shared')
+    setShareStatus(copyOutcomeMessage(outcome))
   }
 
   async function runFlow(): Promise<void> {
@@ -337,6 +394,9 @@ export const MirrorApp: Component = () => {
       if (audioContext) {
         await playReferenceTone(audioContext, target, REFERENCE_SEC)
       }
+      if (cancelled) return
+      // Breathing room: hear the note, then a short count-in before singing.
+      await prepare(MATCH_PREPARE_SEC)
       if (cancelled) return
       const next = dispatch({
         type: 'match-done',
@@ -382,19 +442,31 @@ export const MirrorApp: Component = () => {
     voiceprintHost?.replaceChildren(cardCanvas)
   }
 
-  async function onShare(): Promise<void> {
+  function buildStoryCard(): HTMLCanvasElement | null {
     const state = session()
-    if (!state.result) return
-    const storyCard = renderCard(
+    if (!state.result) return null
+    return renderCard(
       { result: state.result, glides: state.glides, deltaLine: deltaLine() },
       'story',
     )
-    const blob = await cardToPngBlob(storyCard)
-    const outcome = await shareCard(blob)
+  }
+
+  async function onShare(): Promise<void> {
+    const card = buildStoryCard()
+    if (!card) return
+    const outcome = await shareCard(await cardToPngBlob(card))
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
     )
+  }
+
+  async function onCopy(): Promise<void> {
+    const card = buildStoryCard()
+    if (!card) return
+    const outcome = await copyCardToClipboard(cardToPngBlob(card))
+    if (outcome === 'copied') trackFunnel('card_shared')
+    setShareStatus(copyOutcomeMessage(outcome))
   }
 
   const appUrl = (): string =>
@@ -409,7 +481,11 @@ export const MirrorApp: Component = () => {
 
   return (
     <div class="mirror-shell">
-      <Show when={session().phase === 'idle' && freePhase() === null}>
+      <Show
+        when={
+          session().phase === 'idle' && freePhase() === null && !cosmicOpen()
+        }
+      >
         <Landing onStart={(selected) => void start(selected)} />
       </Show>
 
@@ -513,6 +589,7 @@ export const MirrorApp: Component = () => {
           result={freeResult()}
           shareStatus={shareStatus()}
           onShare={() => void onShareFree()}
+          onCopy={() => void onCopyFree()}
           onAgain={() => {
             setFreeResult(null)
             void start('free')
@@ -545,6 +622,12 @@ export const MirrorApp: Component = () => {
             <Show when={subPhase() === 'listening'}>
               <div class="mirror-listening">listen…</div>
             </Show>
+            <Show when={subPhase() === 'prepare'}>
+              <div class="mirror-prepare">
+                <span class="mirror-prepare-label">your turn — sing it</span>
+                <span class="mirror-countdown">{Math.ceil(remaining())}</span>
+              </div>
+            </Show>
             <Show when={subPhase() === 'recording'}>
               <LiveViz
                 latest={() => f0?.latest() ?? null}
@@ -576,10 +659,13 @@ export const MirrorApp: Component = () => {
         </section>
       </Show>
 
-      <Show when={session().phase === 'results' && cosmicOpen()}>
+      <Show when={cosmicOpen()}>
         <CosmicMode
           range={session().result?.range ?? null}
-          onBack={() => setCosmicOpen(false)}
+          onBack={() => setCosmic(false)}
+          backLabel={
+            session().result ? 'Back to results' : 'Back to Voice Mirror'
+          }
         />
       </Show>
 
@@ -593,7 +679,8 @@ export const MirrorApp: Component = () => {
           deltaLine={deltaLine()}
           shareStatus={shareStatus()}
           onShare={() => void onShare()}
-          onCosmic={() => setCosmicOpen(true)}
+          onCopy={() => void onCopy()}
+          onCosmic={() => setCosmic(true)}
           onStartOver={() => resetAll()}
           appUrl={appUrl()}
           voiceprintRef={(el) => {
@@ -638,6 +725,7 @@ const FreeResults: Component<{
   result: FreeSingResult | null
   shareStatus: string | null
   onShare: () => void
+  onCopy: () => void
   onAgain: () => void
   onStartOver: () => void
   appUrl: string
@@ -703,6 +791,14 @@ const FreeResults: Component<{
           <button class="mirror-cta" onClick={() => props.onShare()}>
             Share my voiceprint
           </button>
+          <Show when={supportsImageClipboard()}>
+            <button
+              class="mirror-cta mirror-cta-secondary"
+              onClick={() => props.onCopy()}
+            >
+              Copy image
+            </button>
+          </Show>
           <button
             class="mirror-cta mirror-cta-secondary"
             onClick={() => props.onAgain()}
@@ -744,6 +840,7 @@ const Results: Component<{
   deltaLine: string | null
   shareStatus: string | null
   onShare: () => void
+  onCopy: () => void
   onCosmic: () => void
   onStartOver: () => void
   appUrl: string
@@ -839,6 +936,14 @@ const Results: Component<{
         <button class="mirror-cta" onClick={() => props.onShare()}>
           Share my voiceprint
         </button>
+        <Show when={supportsImageClipboard()}>
+          <button
+            class="mirror-cta mirror-cta-secondary"
+            onClick={() => props.onCopy()}
+          >
+            Copy image
+          </button>
+        </Show>
         <button
           class="mirror-cta mirror-cta-secondary"
           onClick={() => props.onCosmic()}

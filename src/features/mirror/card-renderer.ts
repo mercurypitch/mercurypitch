@@ -380,3 +380,45 @@ export async function shareCard(
   URL.revokeObjectURL(url)
   return 'downloaded'
 }
+
+export type CopyOutcome = 'copied' | 'unsupported' | 'failed'
+
+/** Whether the card can be copied here — the async Clipboard API with image
+ *  write support (desktop Chrome / Edge / Safari, and Firefox 127+). Used to
+ *  hide the copy button where it could only ever fail. */
+export function supportsImageClipboard(): boolean {
+  return (
+    typeof ClipboardItem !== 'undefined' &&
+    typeof navigator.clipboard?.write === 'function'
+  )
+}
+
+/**
+ * Copy the card PNG to the clipboard. Pass the toBlob() promise straight in
+ * (not an awaited Blob): Safari only honours a clipboard write that begins
+ * synchronously inside the click gesture, and ClipboardItem accepts a
+ * Promise<Blob> so the encode can still finish asynchronously.
+ */
+export async function copyCardToClipboard(
+  blob: Blob | Promise<Blob>,
+): Promise<CopyOutcome> {
+  if (!supportsImageClipboard()) return 'unsupported'
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+    return 'copied'
+  } catch {
+    return 'failed'
+  }
+}
+
+/** User-facing status line for a copy attempt — shared across surfaces. */
+export function copyOutcomeMessage(outcome: CopyOutcome): string {
+  switch (outcome) {
+    case 'copied':
+      return 'Copied to clipboard!'
+    case 'unsupported':
+      return 'Copy not supported here — use Share.'
+    default:
+      return 'Copy failed — use Share instead.'
+  }
+}
