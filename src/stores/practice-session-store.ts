@@ -140,22 +140,51 @@ export function endPracticeSession(): SessionResult | null {
   return result
 }
 
-export function getNoteAccuracyMap(): Map<number, number> {
-  const sessionHist = sessionResults()
-  const accMap = new Map<number, number[]>()
-  for (const entry of sessionHist) {
+/**
+ * Minimal per-note accuracy sample, decoupled from `NoteResult` /
+ * `MelodyItem` and the nested `SessionResult` shape. This is the single
+ * projection the accuracy heatmap and pitch-weakness analyzer consume, so
+ * neither has to walk the raw session-history structure itself.
+ */
+export interface NoteAccuracySample {
+  /** MIDI note number that was practiced. */
+  midi: number
+  /** Average cents deviation from the target for this note. */
+  avgCents: number
+}
+
+/**
+ * Derive per-note accuracy samples from the persisted session history.
+ *
+ * This is the ONLY place that knows how the per-note stats are nested
+ * inside `SessionResult -> practiceItemResult -> noteResult`. Consumers
+ * depend on `NoteAccuracySample`, not on that shape, so if the session
+ * format ever changes only this function needs updating.
+ */
+export function collectNoteAccuracySamples(): NoteAccuracySample[] {
+  const samples: NoteAccuracySample[] = []
+  for (const entry of sessionResults()) {
     for (const pr of entry.practiceItemResult) {
       for (const nr of pr.noteResult) {
-        if (!accMap.has(nr.item.note.midi)) accMap.set(nr.item.note.midi, [])
-        accMap
-          .get(nr.item.note.midi)!
-          .push(
-            nr.avgCents >= -5
-              ? 100
-              : Math.max(0, 100 - Math.abs(nr.avgCents) * 5),
-          )
+        samples.push({ midi: nr.item.note.midi, avgCents: nr.avgCents })
       }
     }
+  }
+  return samples
+}
+
+/**
+ * Build the note-accuracy map (MIDI -> 0-100 accuracy) rendered by the
+ * pitch-accuracy heatmap. Reads the decoupled `NoteAccuracySample`
+ * projection rather than the raw session/`NoteResult` shape.
+ */
+export function getNoteAccuracyMap(): Map<number, number> {
+  const accMap = new Map<number, number[]>()
+  for (const { midi, avgCents } of collectNoteAccuracySamples()) {
+    if (!accMap.has(midi)) accMap.set(midi, [])
+    accMap
+      .get(midi)!
+      .push(avgCents >= -5 ? 100 : Math.max(0, 100 - Math.abs(avgCents) * 5))
   }
   const result = new Map<number, number>()
   for (const [midi, scores] of accMap) {

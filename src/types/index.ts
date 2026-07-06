@@ -204,8 +204,18 @@ export interface PracticeResult {
   /** Completed at timestamp */
   completedAt: number
 
-  // FIXME: Refactor accuracy heatmap somehow differently, from sessions, but this way we need to
-  // keep the midi notes info! Though we only need noteResult.item.note.midi values
+  /**
+   * Per-note practice results. Retained intentionally — several features
+   * read these from persisted history and need more than the MIDI value:
+   * vocal challenges use `pitchFreq`/`rating`, vocal analysis uses
+   * `pitchFreq` and `item.note.{name,freq,midi}`, vocal-range detection
+   * uses `item.note.midi`.
+   *
+   * The accuracy heatmap and pitch-weakness analyzer no longer walk this
+   * shape directly: they read `NoteAccuracySample`s via
+   * `practice-session-store.collectNoteAccuracySamples()`, so they are
+   * decoupled from this session-state format.
+   */
   noteResult: NoteResult[]
 }
 
