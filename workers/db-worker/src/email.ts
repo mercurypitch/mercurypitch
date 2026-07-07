@@ -50,6 +50,7 @@ const C = {
   muted: '#8b949e',
   blue: '#58a6ff',
   green: '#3fb950',
+  purple: '#bc8cff',
 } as const
 
 function escapeHtml(s: string): string {
@@ -321,6 +322,7 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
   const preheader = 'Your account is set — a few good places to start.'
 
   const feature = (
+    accent: string,
     title: string,
     blurb: string,
     href: string,
@@ -328,7 +330,7 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
   ): string => `
                 <tr>
                   <td style="padding:0 0 14px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.panel}; border:1px solid ${C.border}; border-left:3px solid ${C.blue}; border-radius:10px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.panel}; border:1px solid ${C.border}; border-left:3px solid ${accent}; border-radius:10px;">
                       <tr>
                         <td style="padding:16px 18px;">
                           <div style="font-size:16px; font-weight:700; color:${C.text};">${title}</div>
@@ -380,9 +382,9 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                ${feature('Voice Mirror', 'A 60-second snapshot of your range, pitch accuracy and steadiness.', `${APP_URL}/mirror`, 'Try the Mirror')}
-                ${feature('Practice with real-time feedback', 'Sing along and watch your pitch land on the notes, live.', `${APP_URL}/#/singing`, 'Start singing')}
-                ${feature('Karaoke &amp; stems', 'Separate any song into vocals and backing, then sing over it.', `${APP_URL}/#/karaoke`, 'Open Karaoke')}
+                ${feature(C.blue, 'Voice Mirror', 'A 60-second snapshot of your range, pitch accuracy and steadiness.', `${APP_URL}/mirror`, 'Try the Mirror')}
+                ${feature(C.green, 'Practice with real-time feedback', 'Sing along and watch your pitch land on the notes, live.', `${APP_URL}/#/singing`, 'Start singing')}
+                ${feature(C.purple, 'Karaoke &amp; stems', 'Separate any song into vocals and backing, then sing over it.', `${APP_URL}/#/karaoke`, 'Open Karaoke')}
               </table>
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0 4px;">
