@@ -1200,6 +1200,10 @@ const AppShell: Component<AppProps> = (props) => {
     const beat = clampLoopB(currentBeat(), loopA(), totalBeats())
     if (beat <= loopA()) return
     setLoopB(beat)
+    // Setting B arms the loop right away (matches the stem-mixer): playback
+    // starts cycling A→B immediately, with no separate "enable loop" click.
+    setSeekedOutsideLoop(false)
+    setLoopEnabled(true)
   }
 
   const handleToggleLoop = () => {
@@ -1211,6 +1215,20 @@ const AppShell: Component<AppProps> = (props) => {
     setLoopA(0)
     setLoopB(0)
     setSeekedOutsideLoop(false)
+  }
+
+  // Dragging the A/B markers on the seek rail — pure bounds adjustment (the
+  // toggle still owns enabled). Clamp to the timeline and keep a minimum gap so
+  // the region can't collapse or invert. Mirrors the stem-mixer marker drag.
+  const LOOP_MIN_GAP_BEATS = 0.25
+  const handleMoveLoopA = (beat: number) => {
+    const b = loopB()
+    const upper = b > 0 ? b - LOOP_MIN_GAP_BEATS : totalBeats()
+    setLoopA(Math.max(0, Math.min(beat, upper)))
+  }
+  const handleMoveLoopB = (beat: number) => {
+    const lower = loopA() + LOOP_MIN_GAP_BEATS
+    setLoopB(Math.min(Math.max(beat, lower), totalBeats()))
   }
 
   // Manual seek from the status-bar scrubber: record whether it escaped the
@@ -2075,6 +2093,8 @@ const AppShell: Component<AppProps> = (props) => {
                         loopA={loopA}
                         loopB={loopB}
                         loopEnabled={loopEnabled}
+                        onMoveLoopA={handleMoveLoopA}
+                        onMoveLoopB={handleMoveLoopB}
                       />
                     </div>
 
