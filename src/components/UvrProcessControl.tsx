@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { openSettingsSection } from '@/stores/ui-store'
+import type { UvrStatus } from '@/types/uvr'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
 
 /** Billing/auth failures get a shortcut button in the error card — the
@@ -29,13 +30,7 @@ function errorActionFor(
 interface ProcessControlProps {
   sessionId: string
   apiSessionId?: string
-  status:
-    | 'idle'
-    | 'uploading'
-    | 'processing'
-    | 'completed'
-    | 'error'
-    | 'cancelled'
+  status: UvrStatus
   progress: number
   indeterminate?: boolean
   processingTime?: number

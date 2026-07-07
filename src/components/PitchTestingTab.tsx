@@ -820,7 +820,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         onComplete: (result) => {
           void (async () => {
             try {
-              completeUvrSession(sessionId, result.outputs, result.stemMeta)
+              await completeUvrSession(
+                sessionId,
+                result.outputs,
+                result.stemMeta,
+              )
 
               const s = getUvrSession(sessionId)
               if (s) {

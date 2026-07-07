@@ -8,7 +8,7 @@ import { FancyDivider } from '@/components/shared'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -612,9 +612,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       // Retry path: original file is no longer in memory, load from IndexedDB
       file = await getOriginalFileBlob(sessionId)
     } else {
-      // Initial path: file is in memory, save it to IndexedDB immediately
-      // so it's not lost if the session is interrupted or page reloaded
-      void saveStemBlob(sessionId, 'original', file, file.name).catch(() => {})
+      // Initial path: file is in memory — persist it durably before processing
+      // so a retry (which reads it back from IndexedDB) can't fail silently.
+      const origSave = await saveStemBlobDurable(
+        sessionId,
+        'original',
+        file,
+        file.name,
+      )
+      if (!origSave.ok) {
+        console.warn('[UvrPanel] original-file save failed:', origSave.error)
+      }
     }
     if (!file) {
       const msg = 'File lost from memory. Please start a new session.'
@@ -647,8 +655,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           onProgress: (_pct) => {
             // Progress already updated inside the pipeline via updateUvrSessionProgress
           },
-          onComplete: (result) => {
-            completeUvrSession(sessionId, result.outputs, result.stemMeta)
+          onComplete: async (result) => {
+            // Await the durable session-record write before reporting done —
+            // this is what makes a "completed" session survive a reload.
+            const persisted = await completeUvrSession(
+              sessionId,
+              result.outputs,
+              result.stemMeta,
+            )
+            if (!persisted) {
+              // Stems saved but the record write failed; reconciliation recovers
+              // it on next load (stems exist on disk) — tell the user now.
+              showNotification(
+                'Finalizing hit a storage issue — your stems are saved. Reload if the session looks off.',
+                'warning',
+              )
+            }
             if (processingMode === 'server') refreshBalance()
             // Auto-extract stem fingerprint for Shazam matching
             // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work

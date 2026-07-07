@@ -4,9 +4,9 @@
 //   • Local mode   → VocalSeparator (ONNX in Web Worker)
 // ============================================================
 
-import { saveStemBlob } from '@/db/services/uvr-service'
+import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
@@ -19,7 +19,9 @@ import { VocalSeparator } from './vocal-separator'
 
 export interface ProcessingCallbacks {
   onProgress: (pct: number) => void
-  onComplete: (result: ProcessingResult) => void
+  // May be async — the pipeline awaits it so the whole run (including the
+  // caller's durable session-record write) finishes before it resolves.
+  onComplete: (result: ProcessingResult) => void | Promise<void>
   onError: (message: string) => void
 }
 
@@ -159,19 +161,33 @@ async function processLocal(
   const vocalBlob = float32ToWavBlob(result.vocals, result.sampleRate)
   const instrBlob = float32ToWavBlob(result.instrumental, result.sampleRate)
 
-  // Persist stems to IndexedDB — must complete before onComplete so that
-  // auto-fingerprint extraction can read the vocal blob immediately.
-  await Promise.all([
-    saveStemBlob(sessionId, 'vocal', vocalBlob, `${file.name}_vocal.wav`),
-    saveStemBlob(
+  // Stems are separated — persist them durably BEFORE reporting complete, so a
+  // reload can never leave a "completed" session with no local audio.
+  setFinalizingUvrSession(sessionId)
+  const [vocalRes, instrRes] = await Promise.all([
+    saveStemBlobDurable(
+      sessionId,
+      'vocal',
+      vocalBlob,
+      `${file.name}_vocal.wav`,
+    ),
+    saveStemBlobDurable(
       sessionId,
       'instrumental',
       instrBlob,
       `${file.name}_instrumental.wav`,
     ),
-  ]).catch(() => {})
+  ])
+  if (!vocalRes.ok && !instrRes.ok) {
+    callbacks.onError(
+      vocalRes.quotaExceeded || instrRes.quotaExceeded
+        ? 'Storage is full — free up space and try again.'
+        : 'Could not save the separated stems. Please try again.',
+    )
+    return
+  }
 
-  callbacks.onComplete({
+  await callbacks.onComplete({
     outputs: {
       vocal: URL.createObjectURL(vocalBlob),
       instrumental: URL.createObjectURL(instrBlob),
@@ -283,16 +299,16 @@ async function processServer(
     async (files: OutputFile[]) => {
       const outputs: UvrSession['outputs'] = {}
       const meta: Record<string, { duration?: number; size?: number }> = {}
-
       const apiSessionId = response.session_id
 
-      // Download every stem and persist it to IndexedDB BEFORE completing.
-      // The server URLs (f.path) are ephemeral — the RunPod job output and its
-      // presigned R2 link expire within hours — so a session marked complete
-      // with only those cannot be reopened after a reload. The durable local
-      // blob is what the mixer re-hydrates from on every load, so we point
-      // outputs at a fresh object URL for it and fall back to the (temporary)
-      // server URL only if the download/persist fails.
+      // Stems live on the server only temporarily — its output / presigned R2
+      // link expire within hours — so download + persist each durably BEFORE
+      // reporting complete. The local blob is what the mixer re-hydrates from on
+      // every load; the server URL is a same-session fallback that will 404
+      // later, so we only keep it when the durable save fails.
+      setFinalizingUvrSession(sessionId)
+      let savedPlayable = false
+      let quotaHit = false
       await Promise.all(
         files.map(async (f) => {
           if (f.stem !== 'vocal' && f.stem !== 'instrumental') return
@@ -300,20 +316,38 @@ async function processServer(
           try {
             const resp = await getOutputFile(apiSessionId, f.path)
             const blob = await resp.blob()
-            await saveStemBlob(sessionId, f.stem, blob, f.filename)
-            outputs[f.stem] = URL.createObjectURL(blob)
-          } catch (err) {
-            console.warn(
-              '[uvr] stem persist failed, falling back to server URL:',
+            const res = await saveStemBlobDurable(
+              sessionId,
               f.stem,
-              err,
+              blob,
+              f.filename,
             )
+            if (res.ok) {
+              savedPlayable = true
+              outputs[f.stem] = URL.createObjectURL(blob)
+            } else {
+              if (res.quotaExceeded) quotaHit = true
+              outputs[f.stem] = f.path
+            }
+          } catch (err) {
+            console.error('[uvr] stem download/persist failed:', f.stem, err)
             outputs[f.stem] = f.path
           }
         }),
       )
 
-      callbacks.onComplete({ outputs, stemMeta: meta })
+      if (!savedPlayable) {
+        // Nothing durable landed — don't report a false "completed" that will
+        // 404 once the server URL expires.
+        callbacks.onError(
+          quotaHit
+            ? 'Storage is full — free up space and try again.'
+            : 'Could not save the separated stems locally. Please try again.',
+        )
+        return
+      }
+
+      await callbacks.onComplete({ outputs, stemMeta: meta })
     },
     callbacks.onError,
     1000,

@@ -198,10 +198,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     switch (status) {
       case 'completed':
         return <CheckCircle />
+      case 'interrupted':
       case 'error':
         return <XCircle />
       case 'cancelled':
         return <X />
+      case 'finalizing':
       case 'processing': {
         const progress = session()?.progress ?? 0
         const radius = 9
@@ -333,13 +335,17 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           {getStatusIcon(session()?.status ?? 'idle')}
         </span>
         <span class="status-text">
-          {session()?.status === 'error'
-            ? (session()?.error ?? 'Processing failed')
-            : session()?.status === 'completed'
-              ? 'Completed'
-              : session()?.status === 'processing'
-                ? `Processing... ${Math.round(session()?.progress ?? 0)}%`
-                : (session()?.status ?? 'Idle')}
+          {(() => {
+            const st = session()?.status
+            if (st === 'error') return session()?.error ?? 'Processing failed'
+            if (st === 'interrupted')
+              return session()?.error ?? 'Interrupted — please retry'
+            if (st === 'finalizing') return 'Saving stems…'
+            if (st === 'completed') return 'Completed'
+            if (st === 'processing')
+              return `Processing... ${Math.round(session()?.progress ?? 0)}%`
+            return st ?? 'Idle'
+          })()}
         </span>
         <span class="status-time">
           {(() => {
