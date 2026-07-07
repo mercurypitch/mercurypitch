@@ -33,6 +33,19 @@ export interface MidiSongPickerOptions<T> {
     songObj: SavedMidiSong | null,
   ) => void
   /**
+   * Like onSongLoaded but for switching the scored track mid-song: the
+   * controller should keep the playhead + transport (see changeScoreTrack).
+   * Falls back to onSongLoaded when not provided.
+   */
+  onScoreTrackChange?: (
+    items: T[],
+    name: string,
+    bpm: number,
+    backingItems: T[],
+    mutedIds: string[],
+    songObj: SavedMidiSong | null,
+  ) => void
+  /**
    * The picker auto-loads the first library melody on mount. Pages remount on
    * every tab visit while their controller lives app-wide — return true when
    * the controller already holds content so the remount doesn't clobber it.
@@ -108,7 +121,7 @@ export function useMidiSongPicker<T>(
     )
   }
 
-  const loadSavedSong = (song: SavedMidiSong) => {
+  const loadSavedSong = (song: SavedMidiSong, isTrackChange = false) => {
     const scoreTrack =
       song.tracks.find((t) => t.id === song.scoreTrackId) ?? song.tracks[0]
     const backing: T[] = []
@@ -122,7 +135,12 @@ export function useMidiSongPicker<T>(
       )
       .map((t) => t.id)
     setSelectedId(song.id)
-    opts.onSongLoaded(
+    // A track switch preserves the playhead/transport; a fresh load resets.
+    const handOff =
+      isTrackChange && opts.onScoreTrackChange
+        ? opts.onScoreTrackChange
+        : opts.onSongLoaded
+    handOff(
       opts.fromScoreNotes(scoreTrack.notes),
       song.name,
       song.bpm,
@@ -161,7 +179,7 @@ export function useMidiSongPicker<T>(
     }
     setTrackModalSong(null)
     setIsModalOpen(false)
-    loadSavedSong(updated)
+    loadSavedSong(updated, true)
   }
 
   const selectScoreTrack = (trackId: string) => {
@@ -181,7 +199,7 @@ export function useMidiSongPicker<T>(
       scoreTrackId: trackId,
       backingTrackIds,
     }
-    loadSavedSong(updated)
+    loadSavedSong(updated, true)
   }
 
   const importMidiFile = async (file: File) => {
