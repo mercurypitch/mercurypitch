@@ -380,10 +380,9 @@ export async function deleteUvrSessionFromDb(
     await deleteStemFingerprintData(sessionId)
 
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-    const existing = await repo.findAll({
-      where: { appSessionId: sessionId },
-      limit: 1,
-    })
+    // No limit — remove every record for this appSessionId, in case a
+    // concurrent persist ever created a duplicate row.
+    const existing = await repo.findAll({ where: { appSessionId: sessionId } })
     for (const rec of existing) {
       await repo.delete(rec.id)
     }

@@ -446,19 +446,38 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
   }
 }
 
-/** Raw upsert of one session record — throws on failure. */
-async function upsertSessionRecord(session: UvrSession): Promise<void> {
-  const db = await getDb()
-  const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-  const existing = await repo.findAll({
-    where: { appSessionId: session.sessionId } as Record<string, unknown>,
-    limit: 1,
-  })
-  if (existing.length > 0) {
-    await repo.update(existing[0].id, sessionToDbRecord(session))
-  } else {
-    await repo.create(sessionToDbRecord(session))
+// Per-session write chain so a fire-and-forget progress write can't race a
+// durable completion write and create a DUPLICATE record (both findAll → 0 →
+// create). Serializing per session id keeps upsert genuinely idempotent.
+const sessionWriteChains = new Map<string, Promise<void>>()
+
+/** Raw upsert of one session record — throws on failure. Serialized per
+ *  session id so concurrent writes for the same session run in order. */
+function upsertSessionRecord(session: UvrSession): Promise<void> {
+  const run = async (): Promise<void> => {
+    const db = await getDb()
+    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+    const existing = await repo.findAll({
+      where: { appSessionId: session.sessionId } as Record<string, unknown>,
+      limit: 1,
+    })
+    if (existing.length > 0) {
+      await repo.update(existing[0].id, sessionToDbRecord(session))
+    } else {
+      await repo.create(sessionToDbRecord(session))
+    }
   }
+  // Run after whatever is already queued for this session (success or failure).
+  const prev = sessionWriteChains.get(session.sessionId) ?? Promise.resolve()
+  const next = prev.then(run, run)
+  sessionWriteChains.set(
+    session.sessionId,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  )
+  return next
 }
 
 /** Best-effort persist (fire-and-forget) — for frequent, non-critical updates
