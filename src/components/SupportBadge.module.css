@@ -71,6 +71,14 @@
   transition: transform 0.15s ease;
 }
 
+/* Mobile: drop the version segment to keep the header account area
+   compact (the version + changelog stays reachable in Settings). */
+@media (max-width: 768px) {
+  .version {
+    display: none;
+  }
+}
+
 .support:hover .heart,
 .support:focus-visible .heart {
   transform: scale(1.15);

@@ -745,3 +745,24 @@ input:checked + .settingsSlider:before {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* Mobile: the tab row scrolls horizontally with a hidden scrollbar;
+   fade the edges so it's obvious there are more sections off-screen. */
+@media (max-width: 768px) {
+  .settingsTabs {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 14px,
+      #000 calc(100% - 14px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 14px,
+      #000 calc(100% - 14px),
+      transparent 100%
+    );
+  }
+}
