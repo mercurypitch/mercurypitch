@@ -37,13 +37,21 @@ export interface ProcessingResult {
 let separator: VocalSeparator | null = null
 
 async function getSeparator(): Promise<VocalSeparator> {
-  if (separator === null) {
-    separator = new VocalSeparator()
+  // Capture a local reference. setUvrModelStatus() below is a store write that
+  // can synchronously run reactive effects (e.g. UvrPanel's server-mode
+  // cleanup effect), and one of those may call destroyPipeline() → null the
+  // module-level `separator`. Dereferencing the module var after the write
+  // would then crash ("can't access property initialize, <sep> is null"), so
+  // everything past this point uses the stable local `sep`.
+  let sep = separator
+  if (sep === null) {
+    sep = new VocalSeparator()
+    separator = sep
   }
 
   // If already ready or currently processing, return as is.
-  if (separator.status === 'ready' || separator.status === 'processing') {
-    return separator
+  if (sep.status === 'ready' || sep.status === 'processing') {
+    return sep
   }
 
   // If idle, error, or already initializing, call initialize().
@@ -53,9 +61,9 @@ async function getSeparator(): Promise<VocalSeparator> {
 
   try {
     const forceWebGpu = uvrForceWebGpu()
-    await separator.initialize(UVR_MODEL_PATH, forceWebGpu)
+    await sep.initialize(UVR_MODEL_PATH, forceWebGpu)
     setUvrModelStatus('ready')
-    return separator
+    return sep
   } catch (err) {
     setUvrModelStatus('error')
     const msg = err instanceof Error ? err.message : String(err)

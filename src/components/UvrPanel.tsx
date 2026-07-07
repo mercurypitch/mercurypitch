@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { batch, createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
+import { batch, createEffect, createResource, createSignal, For, lazy, on, onCleanup, Show, Suspense, untrack, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
@@ -362,13 +362,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Clean up separator when switching away from local mode
-  createEffect(() => {
-    const mode = uvrProcessingMode()
-    if (mode === 'server' && uvrModelStatus() !== 'unloaded') {
-      destroyPipeline()
-    }
-  })
+  // Clean up separator when switching away from local mode. Track ONLY the mode
+  // (via on()) and read the status untracked: otherwise a status write from an
+  // in-flight local separation — e.g. getSeparator() setting 'loading' while
+  // retrying a local/WebGPU session with the global mode on 'server' — re-runs
+  // this effect mid-init and destroys the separator out from under the pipeline
+  // (the "can't access property initialize, X is null" crash).
+  createEffect(
+    on(uvrProcessingMode, (mode) => {
+      if (mode === 'server' && untrack(uvrModelStatus) !== 'unloaded') {
+        destroyPipeline()
+      }
+    }),
+  )
 
   // React to initialView prop changes (from hash navigation)
   // Note: 'mixer' is excluded here because the mixer view requires stems
@@ -655,6 +661,24 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return false
   }
 
+  /** A session card should never show a raw JS crash (a TypeError, a null
+   *  dereference). Already-legible messages (the server 503, billing, storage)
+   *  pass through untouched; an internal-looking one is replaced with guidance
+   *  the user can act on. */
+  const humanizeProcessingError = (
+    message: string,
+    mode: UvrProcessingMode,
+  ): string => {
+    const internal =
+      /is null|is undefined|is not a function|can(?:no|')t (?:read|access)|reading '|undefined is not|TypeError/i.test(
+        message,
+      )
+    if (!internal) return message
+    return mode === 'server'
+      ? 'Cloud processing hit an unexpected error. Please try again in a moment.'
+      : 'Browser processing hit an unexpected error. Reload the page and try again, or switch to Cloud Server mode.'
+  }
+
   /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
    *  separation (handleProcessStart) and a reload/foreground re-attach
    *  (handleResumeServer). The view only jumps to results / raises a toast when
@@ -689,7 +713,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       if (currentUvrSession()?.sessionId === sessionId)
         setCurrentView('results')
     },
-    onError: (message) => {
+    onError: (rawMessage) => {
+      const message = humanizeProcessingError(rawMessage, processingMode)
       setErrorUvrSession(sessionId, message)
       if (currentUvrSession()?.sessionId === sessionId) {
         if (!notifyServerBillingError(message)) showError(message)
@@ -837,8 +862,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       )
     } catch (error) {
       console.error('Processing error:', error)
-      const message =
-        error instanceof Error ? error.message : 'Processing failed'
+      const message = humanizeProcessingError(
+        error instanceof Error ? error.message : 'Processing failed',
+        processingMode,
+      )
       setErrorUvrSession(sessionId, message)
       if (!notifyServerBillingError(message)) {
         showNotification(message, 'error')
