@@ -2336,6 +2336,9 @@
 
 .rv-header-left h3 {
   margin: 0;
+  /* Tight line box so the heading's glyphs sit on the same centre line as the
+     processing-time pill (the default 1.5 line-height pushed "Stems" up). */
+  line-height: 1;
   font-size: 1.05rem;
   color: var(--fg-primary);
 }
