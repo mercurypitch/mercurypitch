@@ -24,6 +24,7 @@ import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { defaultScoreTrack } from '@/lib/midi-song'
 import { NOTE_NAMES } from '@/lib/note-utils'
+import { midiToFreq } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { GP_FILE_EXTENSIONS, parseGuitarProFile } from '@/lib/tab/gp-import'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
@@ -150,8 +151,7 @@ export function GuitarPage(props: GuitarPageProps) {
       const midi = guitar.detectedMidi()
       const clarity = guitar.detectedClarity()
       if (midi !== null && clarity > 0.4) {
-        const freq = 440 * 2 ** ((midi - 69) / 12)
-        riffTracker.addNote(midi, freq, clarity)
+        riffTracker.addNote(midi, midiToFreq(midi), clarity)
       }
     }
   })
