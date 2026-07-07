@@ -985,6 +985,7 @@ export function GuitarPage(props: GuitarPageProps) {
                 guitar.getInputTimeData() ?? new Float32Array(0)
               }
               sampleRate={() => audioEngine?.audioCtx?.sampleRate ?? 0}
+              onPlayNote={(freq) => void audioEngine?.previewNote(freq, 900)}
             />
           </Show>
         </Show>
