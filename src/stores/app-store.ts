@@ -9,7 +9,7 @@ import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcripti
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
-import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
+import { IS_DEV } from '@/lib/defaults'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 
@@ -1059,7 +1059,19 @@ export function cleanupStaleUvrSessions(): void {
   const sessions = getAllUvrSessions()
   let changed = false
   const updated = sessions.map((session) => {
-    if (session.status === 'processing' || session.status === 'uploading') {
+    // A server job whose RunPod id we persisted is RECOVERABLE — leave it for
+    // reconcileInterruptedSessions() + the UI auto-resume to re-attach and
+    // re-fetch (no re-charge). Erroring it here (before those run) is what made
+    // a reload look "interrupted" and unrecoverable. Only local jobs, or a
+    // server job with no id to recover, are errored.
+    const recoverable =
+      session.processingMode === 'server' &&
+      session.apiSessionId !== undefined &&
+      session.apiSessionId !== ''
+    if (
+      (session.status === 'processing' || session.status === 'uploading') &&
+      !recoverable
+    ) {
       changed = true
       return {
         ...session,
@@ -1086,25 +1098,14 @@ export function importUvrSession(session: UvrSession): void {
   }
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    const sessions = getAllUvrSessions()
-    const API_BASE = getUvrApiBase()
-
-    for (const session of sessions) {
-      if (
-        (session.status === 'processing' || session.status === 'uploading') &&
-        session.apiSessionId !== undefined &&
-        session.apiSessionId !== ''
-      ) {
-        fetch(`${API_BASE}/session/${session.apiSessionId}`, {
-          method: 'DELETE',
-          keepalive: true,
-        }).catch(() => {})
-      }
-    }
-  })
-}
+// Intentionally NO cancel-on-unload for in-flight server jobs. Cancelling a
+// RUNNING job on reload/close wastes GPU time the user already paid for (the
+// debit is taken at submit and is only refunded for a never-started IN_QUEUE
+// job), and — worse — it destroyed the job the next load now re-attaches to,
+// forcing a re-run and a second charge. Keeping the job alive lets the app
+// re-attach on the next load / foreground and re-fetch the stems for free
+// (RunPod ~30 min result, R2 ~24 h). Explicit user cancel still goes through
+// the Cancel button (cancelUvrPipeline).
 
 /** Refresh session output files from API data */
 export function updateUvrSessionOutputs(
