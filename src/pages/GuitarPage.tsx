@@ -6,7 +6,9 @@ import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarControlBar } from '@/components/guitar/GuitarControlBar'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
 import { GuitarFretboardModeTabs } from '@/components/guitar/GuitarFretboardModeTabs'
+import { GuitarRiffTracker } from '@/components/guitar/GuitarRiffTracker'
 import { GuitarSignalFlow } from '@/components/guitar/GuitarSignalFlow'
+import { GuitarTuner } from '@/components/guitar/GuitarTuner'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -139,6 +141,21 @@ export function GuitarPage(props: GuitarPageProps) {
     ),
   )
 
+  // Feed detected notes into the riff tracker when recording
+  createEffect(() => {
+    if (
+      fretboardMode() === 'riffTracker' &&
+      riffTracker.phase() === 'recording'
+    ) {
+      const midi = guitar.detectedMidi()
+      const clarity = guitar.detectedClarity()
+      if (midi !== null && clarity > 0.4) {
+        const freq = 440 * 2 ** ((midi - 69) / 12)
+        riffTracker.addNote(midi, freq, clarity)
+      }
+    }
+  })
+
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm
   const setDrumBpm = ctx.setDrumBpm
@@ -168,6 +185,7 @@ export function GuitarPage(props: GuitarPageProps) {
     singToFretboard,
     transcriptionTrainer,
     adaptiveJam,
+    riffTracker,
   } = ctx.modes
 
   const picker = useMidiSongPicker<GuitarSongLoadData>({
@@ -887,38 +905,64 @@ export function GuitarPage(props: GuitarPageProps) {
             </Show>
           }
         >
-          <InteractiveGuitarFretboardCanvas
-            selectedKey={fretboardKey}
-            selectedScale={fretboardScale}
-            highlightedNotes={highlightedNotes}
-            isActive={() =>
-              activeTab() === TAB_GUITAR && guitarView() === 'interactive'
+          <Show
+            when={fretboardMode() === 'tuner'}
+            fallback={
+              <Show
+                when={fretboardMode() === 'riffTracker'}
+                fallback={
+                  <InteractiveGuitarFretboardCanvas
+                    selectedKey={fretboardKey}
+                    selectedScale={fretboardScale}
+                    highlightedNotes={highlightedNotes}
+                    isActive={() =>
+                      activeTab() === TAB_GUITAR &&
+                      guitarView() === 'interactive'
+                    }
+                    lastPlayedNote={lastPlayedNote}
+                    onNotePlayed={handleFretNotePlayed}
+                    selectedChord={selectedChord}
+                    chordToneMidis={chordToneMidis}
+                    mode={fretboardMode}
+                    quizFoundMidis={noteQuiz.foundMidis}
+                    earTargetMidi={earTraining.targetMidi}
+                    earFeedback={earTraining.feedback}
+                    transcriptionResults={
+                      fretboardMode() === 'callResponse'
+                        ? callResponse.echoResults
+                        : melodyTranscription.noteResults
+                    }
+                    transcriptionPhase={
+                      fretboardMode() === 'callResponse'
+                        ? () =>
+                            callResponse.phase() === 'callEcho'
+                              ? 'listening'
+                              : 'feedback'
+                        : melodyTranscription.phase
+                    }
+                    cagedHighlight={cagedTrainer.highlightedFrets}
+                    viewFretRange={cagedTrainer.viewFretRange}
+                    singTargetMidi={singToFretboard.targetMidi}
+                  />
+                }
+              >
+                <GuitarRiffTracker state={riffTracker} />
+              </Show>
             }
-            lastPlayedNote={lastPlayedNote}
-            onNotePlayed={handleFretNotePlayed}
-            selectedChord={selectedChord}
-            chordToneMidis={chordToneMidis}
-            mode={fretboardMode}
-            quizFoundMidis={noteQuiz.foundMidis}
-            earTargetMidi={earTraining.targetMidi}
-            earFeedback={earTraining.feedback}
-            transcriptionResults={
-              fretboardMode() === 'callResponse'
-                ? callResponse.echoResults
-                : melodyTranscription.noteResults
-            }
-            transcriptionPhase={
-              fretboardMode() === 'callResponse'
-                ? () =>
-                    callResponse.phase() === 'callEcho'
-                      ? 'listening'
-                      : 'feedback'
-                : melodyTranscription.phase
-            }
-            cagedHighlight={cagedTrainer.highlightedFrets}
-            viewFretRange={cagedTrainer.viewFretRange}
-            singTargetMidi={singToFretboard.targetMidi}
-          />
+          >
+            <GuitarTuner
+              isActive={() =>
+                guitar.isMicActive() &&
+                activeTab() === TAB_GUITAR &&
+                guitarView() === 'interactive' &&
+                fretboardMode() === 'tuner'
+              }
+              getTimeData={() =>
+                guitar.getInputTimeData() ?? new Float32Array(0)
+              }
+              sampleRate={() => audioEngine?.audioCtx?.sampleRate ?? 0}
+            />
+          </Show>
         </Show>
 
         {/* Finished-run score: a non-blocking corner card (same pattern as
