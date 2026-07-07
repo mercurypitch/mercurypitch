@@ -285,7 +285,11 @@ function drawStats(
   const voiceHint = range?.voiceHint ?? null
   if (voiceHint !== null) {
     // Two pills: the voice type, and the legend whose range overlaps it.
-    const singer = singerForVoiceType(voiceHint)
+    const singer = singerForVoiceType(
+      voiceHint,
+      range?.lowMidi ?? 0,
+      range?.highMidi ?? 0,
+    )
     const pills = singer !== null ? [voiceHint, `like ${singer}`] : [voiceHint]
     drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
   }
@@ -364,6 +368,14 @@ export function cardToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
       else reject(new Error('Card export failed'))
     }, 'image/png')
   })
+}
+
+/** Append the local date (ISO, sortable) to a download name so a folder of
+ *  voiceprints tracks progress chronologically — e.g. "voiceprint-2026-07-07.png". */
+export function datedFilename(base: string): string {
+  const d = new Date()
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${base}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.png`
 }
 
 /**

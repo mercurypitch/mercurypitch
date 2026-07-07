@@ -1,27 +1,37 @@
 // ============================================================
 // Voice Mirror — famous-singer match for the share card.
 //
-// A fun "your range overlaps with a legend" pairing, keyed off the classical
-// voice type from voiceTypeHint(). Legends only — one iconic, instantly-known
-// name per voice type, spanning low to high.
+// A playful "your range overlaps with a legend" pairing, keyed off the
+// classical voice type from voiceTypeHint(). Two legends per type; singers are
+// placed by their documented SINGING classification, not their speaking voice —
+// e.g. Freddie Mercury spoke as a baritone but SANG as a tenor, so he sits
+// under Tenor (see the classical ranges in metrics.ts VOICE_TYPES).
 // ============================================================
 
-/** One mega-star per voice type. Keep names iconic and unmistakable. */
-const SINGER_BY_VOICE_TYPE: Record<string, string> = {
-  Bass: 'Johnny Cash',
-  Baritone: 'Freddie Mercury',
-  Tenor: 'Bruce Dickinson',
-  Alto: 'Adele',
-  'Mezzo-soprano': 'Whitney Houston',
-  Soprano: 'Mariah Carey',
+const SINGERS_BY_VOICE_TYPE: Record<string, readonly [string, string]> = {
+  Bass: ['Johnny Cash', 'Barry White'],
+  Baritone: ['Elvis Presley', 'Frank Sinatra'],
+  Tenor: ['Freddie Mercury', 'Bruce Dickinson'],
+  Alto: ['Amy Winehouse', 'Cher'], // contralto — the lowest female voices
+  'Mezzo-soprano': ['Adele', 'Whitney Houston'],
+  Soprano: ['Mariah Carey', 'Celine Dion'],
 }
 
 /**
- * The legendary singer whose range overlaps this voice type, or null when the
- * voice type is unknown / unmapped. It's a playful range match, not a claim
- * about timbre — the card frames it as "overlaps with", never "you sound like".
+ * A legendary singer whose range overlaps this voice type. One of two per type,
+ * chosen deterministically from the singer's DETECTED range (lowMidi+highMidi):
+ * varied across different voices, but stable for one person — the same singer
+ * shows on the card, the on-screen chip, and every re-share. Returns null for
+ * an unknown / unmapped voice type.
  */
-export function singerForVoiceType(voiceHint: string | null): string | null {
+export function singerForVoiceType(
+  voiceHint: string | null,
+  lowMidi = 0,
+  highMidi = 0,
+): string | null {
   if (voiceHint === null) return null
-  return SINGER_BY_VOICE_TYPE[voiceHint] ?? null
+  const options = SINGERS_BY_VOICE_TYPE[voiceHint]
+  if (options === undefined) return null
+  const seed = Math.abs(Math.round(lowMidi) * 3 + Math.round(highMidi))
+  return options[seed % options.length]
 }

@@ -16,7 +16,7 @@ import { COSMIC_MELODIES, fitMelodyToRange } from '@/lib/mirror/cosmic-melodies'
 import type { AccuracyResult, F0Frame, NoteTakeResult, RangeResult, } from '@/lib/mirror/metrics'
 import { computeAccuracy, scoreMatchTake } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
@@ -197,7 +197,7 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
     if (!card) return
     const outcome = await shareCard(
       await cardToPngBlob(card),
-      'sing-the-universe.png',
+      datedFilename('sing-the-universe'),
     )
     trackFunnel('card_shared')
     setShareStatus(
