@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.5] - 2026-07-07
+
+### Added
+
+- **Your voice, matched to a legend.** The Voice Mirror results and share card now pair your vocal range with a famous singer whose range overlaps yours — two legends per voice type (tenors get Freddie Mercury or Bruce Dickinson, sopranos get Mariah Carey or Celine Dion, and so on), so it's a fun, varied match rather than a fixed label.
+
+### Changed
+
+- **Voiceprint downloads are dated** — the saved image filename now includes the date (e.g. `voiceprint-2026-07-07.png`), so a folder of them sorts by day and it's easy to track your progress over time.
+
 ## [0.6.4] - 2026-07-07
 
 ### Fixed
