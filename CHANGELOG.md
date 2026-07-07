@@ -18,6 +18,8 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **Switching tracks keeps your place.** Changing which track you practise in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
 - **On-device separations retry cleanly.** Retrying a browser (WebGPU) vocal separation while Cloud mode was selected could fail with a technical error instead of running. It now re-initialises and processes, and any unexpected error shows a readable message.
+- **Switching songs on the Singing tab refreshes properly.** Loading a different melody or an imported MIDI now updates the notes and the timeline right away (and starts the new song from the beginning), instead of leaving the previous song on screen when you switched during playback or a loop.
+- **Focus mode fits long songs.** The full-screen focus view now scrolls a readable window of notes for long imported songs, instead of squeezing the whole song on screen at once.
 
 ## [0.6.6] - 2026-07-07
 
