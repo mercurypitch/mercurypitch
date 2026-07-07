@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openPlaybackSetup } from './helpers/ui'
 
 /**
  * CSS Module Refactor -- Visual Regression Audit
@@ -105,6 +105,9 @@ test.describe('CSS Module Refactor - Style Verification', () => {
   })
 
   test('dropdown-select-style has correct appearance', async ({ page }) => {
+    // The dropdown-select-style selects live in the sidebar's Playback Setup
+    // section, which is collapsed (and unmounted) by default — expand it first.
+    await openPlaybackSetup(page)
     const dropdowns = page.locator('.dropdown-select-style')
     const count = await dropdowns.count()
     expect(count).toBeGreaterThan(0)
