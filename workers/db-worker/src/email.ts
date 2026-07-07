@@ -132,7 +132,7 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
           <tr>
             <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
               <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
-                <span style="color:${C.blue};">Mercury</span>Pitch
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
               </a>
             </td>
           </tr>
@@ -363,7 +363,7 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
           <tr>
             <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
               <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
-                <span style="color:${C.blue};">Mercury</span>Pitch
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
               </a>
             </td>
           </tr>
