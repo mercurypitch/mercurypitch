@@ -8,6 +8,8 @@ import { TierSelector } from '@/components/TierSelector'
 import { Tooltip } from '@/components/Tooltip'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import { ChangelogModal } from '@/components/ChangelogModal'
+import { APP_VERSION } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { dismissWelcome } from '@/stores'
 import styles from './WelcomeScreen.module.css'
@@ -21,6 +23,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   const [micEnabled, setMicEnabled] = createSignal(false)
   const [micError, setMicError] = createSignal<string | null>(null)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
+  const [showChangelog, setShowChangelog] = createSignal(false)
 
   const handleEnableMic = async () => {
     try {
@@ -73,14 +76,21 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </svg>
         </button>
 
+        <button
+          type="button"
+          class={styles.welcomeVersionPill}
+          onClick={() => setShowChangelog(true)}
+          title={`MercuryPitch v${APP_VERSION} — what's new`}
+          aria-label="Show what's new (changelog)"
+        >
+          v{APP_VERSION}
+        </button>
+
         {/* Hero */}
-        <div class={styles.welcomeHero} style="margin-bottom: 14px;">
+        <div class={styles.welcomeHero} style="margin-bottom: 12px;">
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
             Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
-          <p class={styles.welcomeSubtitle}>
-            Your voice, visualized and refined
-          </p>
 
           {/* Quick actions: mic permission + voice-range detection */}
           <div class={styles.welcomeQuickActions}>
@@ -155,7 +165,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Quick Setup: Voice & Accuracy */}
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
           <div class="welcome-tier-select" style="margin-top: 0;">
             <div class={styles.welcomeSectionHead}>
               <p class={styles.welcomeSectionTitle}>
@@ -218,7 +228,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Actions */}
-        <div class={styles.welcomeActions} style="margin-bottom: 20px;">
+        <div class={styles.welcomeActions} style="margin-bottom: 14px;">
           <button class={styles.welcomeCta} onClick={handleClose}>
             <svg viewBox="0 0 24 24" width="18" height="18">
               <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -232,7 +242,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
 
         {/* Consent — the canonical Terms/Privacy live on the marketing site;
             we link out rather than duplicate them in the app. */}
-        <p style="text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted); margin: -6px 0 16px;">
+        <p style="text-align: center; font-size: 0.72rem; line-height: 1.45; color: var(--text-muted); margin: -2px 0 12px;">
           By continuing, you agree to our{' '}
           <a
             href={TERMS_URL}
@@ -282,6 +292,13 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
 
       <Show when={showVoiceDetector()}>
         <VoiceTypeDetectorModal onClose={() => setShowVoiceDetector(false)} />
+      </Show>
+
+      <Show when={showChangelog()}>
+        <ChangelogModal
+          open={showChangelog()}
+          onClose={() => setShowChangelog(false)}
+        />
       </Show>
     </div>
   )

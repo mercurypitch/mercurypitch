@@ -184,24 +184,24 @@
 .walkthroughDots {
   display: flex;
   align-items: center;
-  gap: 3px;
-  flex-wrap: wrap;
-  row-gap: 2px;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
   min-width: 0;
 }
 
-/* A dot is a button; content-box padding gives a tappable hit area while
-   background-clip keeps the visible dot small. Modifiers use background-color
-   (not the `background` shorthand) so the content-box clip survives. */
+/* Round dots on a single row; the current step is a wider pill. (Previously
+   used content-box padding + background-clip for a big hit area, but that left
+   the clipped background a square and wrapped to two rows — see the fix.) */
 .walkthroughDot {
-  box-sizing: content-box;
-  width: 6px;
-  height: 6px;
-  padding: 6px 3px;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: 50%;
   background-color: var(--border);
-  background-clip: content-box;
   cursor: pointer;
   transition:
     width 0.2s ease,
@@ -217,7 +217,8 @@
 }
 
 .walkthroughDotActive {
-  width: 16px;
+  width: 20px;
+  border-radius: 999px;
   background-color: var(--accent);
 }
 
