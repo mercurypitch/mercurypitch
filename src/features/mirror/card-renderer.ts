@@ -11,6 +11,7 @@
 
 import type { F0Frame, MirrorDelta, MirrorResult } from '@/lib/mirror/metrics'
 import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
+import { singerForVoiceType } from '@/lib/mirror/singer-match'
 
 export type CardFormat = 'story' | 'square'
 
@@ -283,30 +284,49 @@ function drawStats(
 
   const voiceHint = range?.voiceHint ?? null
   if (voiceHint !== null) {
-    const chip = `overlaps most with: ${voiceHint}`
-    ctx.font = `500 ${Math.round(36 * s)}px system-ui, sans-serif`
-    const chipWidth = ctx.measureText(chip).width + 72 * s
+    // Two pills: the voice type, and the legend whose range overlaps it.
+    const singer = singerForVoiceType(voiceHint)
+    const pills = singer !== null ? [voiceHint, `like ${singer}`] : [voiceHint]
+    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
+  }
+}
+
+/** Draw one or more rounded pills as a horizontal row centred on (cx, y). */
+function drawPillRow(
+  ctx: CanvasRenderingContext2D,
+  labels: string[],
+  cx: number,
+  y: number,
+  fontSize: number,
+  s: number,
+): void {
+  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
+  ctx.textAlign = 'center'
+  const padX = 34 * s
+  const gap = 18 * s
+  const h = 68 * s
+  const widths = labels.map((t) => ctx.measureText(t).width + padX * 2)
+  const total =
+    widths.reduce((a, b) => a + b, 0) + gap * Math.max(0, labels.length - 1)
+  let x = cx - total / 2
+  for (let i = 0; i < labels.length; i++) {
+    const w = widths[i]
     ctx.fillStyle = 'rgba(143, 163, 255, 0.16)'
     ctx.strokeStyle = 'rgba(143, 163, 255, 0.55)'
     ctx.lineWidth = 2
     ctx.beginPath()
-    // roundRect is missing on older Safari (< 16.4) — the chip degrades to a
-    // plain rectangle there rather than throwing away the whole card.
+    // roundRect is missing on older Safari (< 16.4) — degrade to a rectangle
+    // rather than throwing away the whole card.
     if (typeof ctx.roundRect === 'function') {
-      ctx.roundRect(
-        centerX - chipWidth / 2,
-        y - 46 * s,
-        chipWidth,
-        68 * s,
-        34 * s,
-      )
+      ctx.roundRect(x, y - 46 * s, w, h, 34 * s)
     } else {
-      ctx.rect(centerX - chipWidth / 2, y - 46 * s, chipWidth, 68 * s)
+      ctx.rect(x, y - 46 * s, w, h)
     }
     ctx.fill()
     ctx.stroke()
     ctx.fillStyle = '#cfd6ff'
-    ctx.fillText(chip, centerX, y)
+    ctx.fillText(labels[i], x + w / 2, y)
+    x += w + gap
   }
 }
 
