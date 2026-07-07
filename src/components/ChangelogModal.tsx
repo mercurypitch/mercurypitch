@@ -130,6 +130,7 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
               &times;
             </button>
           </div>
+          <div class="fancy-divider" />
           <div class="modal-body">
             <For each={changelog}>
               {(entry, i) => (

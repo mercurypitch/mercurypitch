@@ -20,8 +20,8 @@
 
 /* Wider than the default 480px modal; softer shadow. */
 .changelog-modal {
-  max-width: 620px;
-  width: 92%;
+  max-width: 680px;
+  width: 94%;
   max-height: 82vh;
   background: var(--bg-secondary);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
@@ -31,7 +31,14 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px 15px;
+  padding: 18px 20px 12px;
+  /* No plain rule — the fancy-divider below provides the accent separator. */
+  border-bottom: none;
+}
+
+/* Accent separator (the shared FancyDivider), inset to the content. */
+.changelog-modal .fancy-divider {
+  margin: 0 20px 2px;
 }
 
 /* Brand-gradient title, matching the app wordmark. */
@@ -48,7 +55,7 @@
 
 /* Body: comfy padding + a thin, unobtrusive scrollbar. */
 .changelog-modal .modal-body {
-  padding: 18px 24px 22px;
+  padding: 14px 20px 22px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
@@ -167,7 +174,8 @@
 /* ---- List ---- */
 .changelog-entries {
   margin: 0;
-  padding: 0;
+  /* Indent the bullets in from the section pill so they read as nested. */
+  padding: 0 0 0 14px;
   list-style: none;
   text-align: left;
   width: 100%;
