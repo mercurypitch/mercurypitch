@@ -7,9 +7,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
+import { computeCentsDeviation, frequencyToMidi } from '@/lib/frequency-to-note'
 import type { TunerResult, TuningPreset } from '@/lib/guitar/tuner'
-import { classifyPitch, getTargetHz, getTuningFrequencies, getTuningStringNames, STRING_LABELS, TUNER_CLOSE_CENTS, TUNER_IN_TUNE_CENTS, } from '@/lib/guitar/tuner'
+import { classifyPitch, getTuningFrequencies, getTuningStringNames, STRING_LABELS, TUNER_CLOSE_CENTS, TUNER_IN_TUNE_CENTS, } from '@/lib/guitar/tuner'
 import { PitchDetector } from '@/lib/pitch-detector'
 import styles from './GuitarTuner.module.css'
 
@@ -38,6 +39,76 @@ const COLOR_CLOSE = 'var(--color-yellow, #ffc107)'
 const COLOR_SHARP_FLAT = 'var(--color-red, #f44336)'
 const COLOR_MUTED = 'var(--bg-tertiary)'
 
+// ── Inline status icons (no text glyphs — house style) ────────
+// Small currentColor-stroked SVGs matching the project icon set.
+
+const ICON_SIZE = 14
+
+const CheckIcon: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+const CloseTuneIcon: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="1 4 1 10 7 10" />
+    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+  </svg>
+)
+
+const SharpIcon: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+)
+
+const FlatIcon: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+)
+
 // ── Props ─────────────────────────────────────────────────────
 
 interface GuitarTunerProps {
@@ -57,22 +128,39 @@ function pickNeedleColor(r: TunerResult): string {
   return COLOR_SHARP_FLAT
 }
 
-function tuneStatusLabel(r: TunerResult): string {
-  if (r.inTune) return '✓ In Tune'
-  if (r.close) return '⟳ Close'
-  return r.centsDeviation > 0 ? '↑ Sharp' : '↓ Flat'
-}
+/** Icon + label for the current tuning state (no text glyphs). */
+const TuneStatus: Component<{ result: TunerResult }> = (props) => (
+  <Switch>
+    <Match when={props.result.inTune}>
+      <CheckIcon /> In Tune
+    </Match>
+    <Match when={props.result.close}>
+      <CloseTuneIcon /> Close
+    </Match>
+    <Match when={props.result.centsDeviation > 0}>
+      <SharpIcon /> Sharp
+    </Match>
+    <Match when={props.result.centsDeviation <= 0}>
+      <FlatIcon /> Flat
+    </Match>
+  </Switch>
+)
 
 /**
  * Build a manual-override result. Returns a NEW object — never mutates
- * the input, so Solid signals fire correctly.
+ * the input, so Solid signals fire correctly. Classifies against the
+ * chosen string's target in the *selected* tuning (targetHz), not the
+ * standard-tuning frequency, so alternate presets override correctly.
  */
 function overrideResult(
   detected: TunerResult,
   manualString: string,
+  targetHz: number,
 ): TunerResult {
-  const targetHz = getTargetHz(manualString)
-  const cents = 1200 * Math.log2(detected.frequency / targetHz)
+  const cents = computeCentsDeviation(
+    frequencyToMidi(detected.frequency, false),
+    frequencyToMidi(targetHz, false),
+  )
   const absCents = Math.abs(cents)
   return {
     ...detected,
@@ -139,7 +227,16 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
 
       const detected = pitchDetector.detect(timeData)
       if (detected.clarity > TUNER_DETECT_CLARITY) {
-        const r = classifyPitch(detected.frequency, detected.clarity)
+        // Classify against the SELECTED preset's strings so alternate
+        // tunings actually retune (not just relabel).
+        const freqs = tuningFreqs()
+        const names = tuningNames()
+        const r = classifyPitch(
+          detected.frequency,
+          detected.clarity,
+          freqs,
+          names,
+        )
         if (r) {
           // Stability tracking: same string for N consecutive frames
           if (r.stringName === prevString) {
@@ -150,11 +247,14 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
           }
           setStable(stableCounter >= STABILITY_FRAMES)
 
-          // Manual string override — produces a new object, no mutation
-          const final =
-            manualString() != null && manualString() !== ''
-              ? overrideResult(r, manualString()!)
-              : r
+          // Manual string override — produces a new object, no mutation.
+          // Target the chosen string's frequency in the selected preset.
+          const ms = manualString()
+          let final = r
+          if (ms != null && ms !== '') {
+            const idx = names.indexOf(ms)
+            if (idx >= 0) final = overrideResult(r, ms, freqs[idx])
+          }
 
           setResult(final)
         }
@@ -275,7 +375,7 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
                 {r().targetHz.toFixed(1)} Hz
               </span>
               <span class={styles.tuneStatus} style={{ color: needleColor() }}>
-                {tuneStatusLabel(r())}
+                <TuneStatus result={r()} />
               </span>
               <Show when={stable() && r().inTune}>
                 <span class={styles.stableBadge}>Locked</span>

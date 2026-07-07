@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, For, on, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, Show, untrack } from 'solid-js'
 import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
@@ -142,19 +142,41 @@ export function GuitarPage(props: GuitarPageProps) {
     ),
   )
 
-  // Feed detected notes into the riff tracker when recording
-  createEffect(() => {
-    if (
-      fretboardMode() === 'riffTracker' &&
-      riffTracker.phase() === 'recording'
-    ) {
-      const midi = guitar.detectedMidi()
-      const clarity = guitar.detectedClarity()
-      if (midi !== null && clarity > 0.4) {
-        riffTracker.addNote(midi, midiToFreq(midi), clarity)
-      }
-    }
-  })
+  // Feed detected notes into the riff tracker when recording.
+  //
+  // Driven off the articulation counter, not detectedMidi(): detectedMidi
+  // de-duplicates consecutive same-pitch reads, so an E→E→E repeat wouldn't
+  // re-fire a detectedMidi effect and the repeated picks would be dropped.
+  // articulationId bumps on every distinct pick attack (incl. a re-pick of
+  // the same pitch), so each attack is captured exactly once. Pitch/clarity
+  // are read untracked — only the articulation change should trigger capture.
+  // RiffTrackerState.addNote still applies its RIFF_MIN_NOTE_GAP_MS debounce.
+  createEffect(
+    on(
+      () => guitar.articulationId(),
+      (id) => {
+        // The very first run fires with the initial counter value (0) and no
+        // real pick behind it — skip it so we don't capture a phantom note.
+        if (id === 0) return
+        // Everything else is read untracked: articulationId is the sole
+        // dependency, so capture happens once per attack and nothing else
+        // (mode/phase/pitch changes) re-triggers it.
+        untrack(() => {
+          if (
+            fretboardMode() !== 'riffTracker' ||
+            riffTracker.phase() !== 'recording'
+          ) {
+            return
+          }
+          const midi = guitar.detectedMidi()
+          const clarity = guitar.detectedClarity()
+          if (midi !== null && clarity > 0.4) {
+            riffTracker.addNote(midi, midiToFreq(midi), clarity)
+          }
+        })
+      },
+    ),
+  )
 
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm
