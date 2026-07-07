@@ -213,14 +213,11 @@ export const SettingsPanel: Component = () => {
               <button
                 type="button"
                 onClick={() => setShowWelcome(true)}
-                style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer;"
+                class={styles.getStartedBtn}
               >
                 Show welcome screen
               </button>
-              <a
-                href="/mirror"
-                style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer;"
-              >
+              <a href="/mirror" class={styles.getStartedBtn}>
                 Open Voice Mirror
               </a>
             </div>
