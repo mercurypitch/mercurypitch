@@ -6,6 +6,16 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2026-07-08
+
+### Changed
+
+- **Branded OAuth domain** (#219, #220): the db-worker now serves on dedicated custom subdomains — `api.mercurypitch.com` (prod) / `api-dev.mercurypitch.com` (dev) — via wrangler `custom_domain` routes (auto-created on deploy), alongside the existing workers.dev URLs. A dedicated host avoids shadowing the main worker's `/api/uvr/*` + `/api/share/*`. `VITE_API_BASE_URL` points the frontend at them, so the Google consent screen + the OAuth `redirect_uri` (derived from the request origin, no `auth.ts` change) show a `mercurypitch.com` host instead of `komediruzecki-2015.workers.dev`. No session loss — auth is a client-side Bearer JWT, not a worker-domain cookie.
+
+### Fixed
+
+- **Transactional emails render dark-only** (#218): the purchase thank-you + signup welcome `<head>` declared `color-scheme` / `supported-color-schemes` as `"dark light"`, so a light-mode client tried a light rendering and, with no light styles, fell back to a white background. Declared `"dark"` only so clients render the dark design regardless of the recipient's mode.
+
 ## [0.6.7] - 2026-07-07
 
 ### Added

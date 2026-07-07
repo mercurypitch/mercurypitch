@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.8] - 2026-07-08
+
+### Changed
+
+- **Google sign-in is branded.** Signing in with Google now shows a `mercurypitch.com` address on the consent screen instead of the old `…workers.dev` one.
+
+### Fixed
+
+- **Emails render dark.** The welcome and receipt emails could show up with a white background in light-mode mail apps; they now render in the dark MercuryPitch theme everywhere.
+
 ## [0.6.7] - 2026-07-07
 
 ### Added
