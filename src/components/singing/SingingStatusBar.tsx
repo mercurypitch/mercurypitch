@@ -9,11 +9,12 @@
 // Guitar song status bars.
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Accessor, Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
+import { loopRegionPct } from '@/lib/ab-loop'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { getCurrentSessionItem, practiceSession, sessionActive, sessionItemIndex, sessionMode, } from '@/stores'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -38,9 +39,9 @@ interface SingingStatusBarProps {
   onSessionSkip: () => void
   onSessionEnd: () => void
   // A-B Loop region (0 = not set)
-  loopA: () => number
-  loopB: () => number
-  loopEnabled: () => boolean
+  loopA: Accessor<number>
+  loopB: Accessor<number>
+  loopEnabled: Accessor<boolean>
 }
 
 const titleCase = (s: string): string =>
@@ -91,6 +92,12 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
     props.totalBeats() > 0
       ? (Math.max(0, props.playheadBeat()) / props.totalBeats()) * 100
       : 0
+
+  // Reactive loop-region geometry — recomputes whenever A, B or the timeline
+  // length changes (the old inline IIFE captured them once, leaving the
+  // overlay stale when a point moved).
+  const region = () =>
+    loopRegionPct(props.loopA(), props.loopB(), props.totalBeats())
 
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
@@ -159,27 +166,20 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
                 class={barStyles.fill}
                 style={{ width: `${progressPct()}%` }}
               />
-              <Show when={props.loopA() > 0 && props.loopB() > 0}>
-                {(() => {
-                  const total = props.totalBeats()
-                  if (total <= 0) return null
-                  const loopLeft = (props.loopA() / total) * 100
-                  const loopWidth =
-                    ((props.loopB() - props.loopA()) / total) * 100
-                  return (
-                    <div
-                      class={barStyles.loopRegion}
-                      classList={{
-                        [barStyles.loopRegionActive]: props.loopEnabled(),
-                      }}
-                      style={{
-                        left: `${loopLeft}%`,
-                        width: `${Math.max(0.5, loopWidth)}%`,
-                      }}
-                      data-testid="loop-region"
-                    />
-                  )
-                })()}
+              <Show when={region()}>
+                {(r) => (
+                  <div
+                    class={barStyles.loopRegion}
+                    classList={{
+                      [barStyles.loopRegionActive]: props.loopEnabled(),
+                    }}
+                    style={{
+                      left: `${r().left}%`,
+                      width: `${r().width}%`,
+                    }}
+                    data-testid="loop-region"
+                  />
+                )}
               </Show>
             </div>
             <span class={barStyles.time}>
