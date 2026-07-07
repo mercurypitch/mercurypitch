@@ -185,7 +185,10 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           currentNoteIndex={props.currentNoteIndex ?? (() => 0)}
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
-          isScrolling={() => false}
+          // Scroll a fixed window like normal mode; PitchCanvas still shows the
+          // whole song when it fits (rangeBeats <= visibleBeatWindow), so short
+          // melodies aren't affected but long songs no longer squish to fit.
+          isScrolling={() => true}
           countInBeats={() => countIn()}
           targetPitch={() => {
             const idx = props.currentNoteIndex?.() ?? 0
