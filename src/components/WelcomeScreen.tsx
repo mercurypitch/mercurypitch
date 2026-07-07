@@ -241,31 +241,8 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </button>
         </div>
 
-        {/* Consent — the canonical Terms/Privacy live on the marketing site;
-            we link out rather than duplicate them in the app. */}
-        <p style="text-align: center; font-size: 0.72rem; line-height: 1.45; color: var(--text-muted); margin: -2px 0 12px;">
-          By continuing, you agree to our{' '}
-          <a
-            href={TERMS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style="color: var(--accent); text-decoration: none;"
-          >
-            Terms of Use
-          </a>{' '}
-          and{' '}
-          <a
-            href={PRIVACY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style="color: var(--accent); text-decoration: none;"
-          >
-            Privacy Notice
-          </a>
-          .
-        </p>
-
-        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account */}
+        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account.
+            Sits right under the primary actions. */}
         <a
           href="/mirror"
           class={styles.welcomeMirrorCta}
@@ -289,6 +266,30 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             →
           </span>
         </a>
+
+        {/* Consent (last) — the canonical Terms/Privacy live on the marketing
+            site; we link out rather than duplicate them in the app. */}
+        <p style="text-align: center; font-size: 0.72rem; line-height: 1.45; color: var(--text-muted); margin: 12px 0 0;">
+          By continuing, you agree to our{' '}
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Terms of Use
+          </a>{' '}
+          and{' '}
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Privacy Notice
+          </a>
+          .
+        </p>
       </div>
 
       <Show when={showVoiceDetector()}>

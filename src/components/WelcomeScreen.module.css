@@ -256,7 +256,7 @@
 }
 
 .welcomeCta {
-  flex: 2;
+  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -419,8 +419,8 @@
     padding: 7px 13px;
   }
 
+  /* Keep the two actions side-by-side (50/50) even on mobile — saves a row. */
   .welcomeActions {
-    flex-direction: column;
     gap: 8px;
   }
 
