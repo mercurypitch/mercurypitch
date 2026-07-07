@@ -152,18 +152,21 @@ const TuneStatus: Component<{ result: TunerResult }> = (props) => (
  * chosen string's target in the *selected* tuning (targetHz), not the
  * standard-tuning frequency, so alternate presets override correctly.
  */
-function overrideResult(
-  detected: TunerResult,
+function manualTuneResult(
+  frequency: number,
+  clarity: number,
   manualString: string,
   targetHz: number,
 ): TunerResult {
   const cents = computeCentsDeviation(
-    frequencyToMidi(detected.frequency, false),
+    frequencyToMidi(frequency, false),
     frequencyToMidi(targetHz, false),
   )
   const absCents = Math.abs(cents)
   return {
-    ...detected,
+    frequency,
+    clarity,
+    midi: frequencyToMidi(frequency),
     stringName: manualString,
     stringLabel: STRING_LABELS[manualString] ?? manualString,
     targetHz,
@@ -231,31 +234,31 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
         // tunings actually retune (not just relabel).
         const freqs = tuningFreqs()
         const names = tuningNames()
-        const r = classifyPitch(
-          detected.frequency,
-          detected.clarity,
-          freqs,
-          names,
-        )
-        if (r) {
-          // Stability tracking: same string for N consecutive frames
-          if (r.stringName === prevString) {
+        const ms = manualString()
+        const manualIdx = ms != null && ms !== '' ? names.indexOf(ms) : -1
+        // Manual mode tunes to the chosen string with NO signal gate — the
+        // user declared intent, so show the deviation even when the string is
+        // far off (a fresh/slack string can sit >50 cents from everything).
+        // Auto mode keeps the gate so off-string noise can't read "in tune".
+        const final =
+          manualIdx >= 0
+            ? manualTuneResult(
+                detected.frequency,
+                detected.clarity,
+                names[manualIdx],
+                freqs[manualIdx],
+              )
+            : classifyPitch(detected.frequency, detected.clarity, freqs, names)
+
+        if (final) {
+          // Stability tracking: same string for N consecutive frames.
+          if (final.stringName === prevString) {
             stableCounter++
           } else {
             stableCounter = 0
-            prevString = r.stringName
+            prevString = final.stringName
           }
           setStable(stableCounter >= STABILITY_FRAMES)
-
-          // Manual string override — produces a new object, no mutation.
-          // Target the chosen string's frequency in the selected preset.
-          const ms = manualString()
-          let final = r
-          if (ms != null && ms !== '') {
-            const idx = names.indexOf(ms)
-            if (idx >= 0) final = overrideResult(r, ms, freqs[idx])
-          }
-
           setResult(final)
         }
       }
