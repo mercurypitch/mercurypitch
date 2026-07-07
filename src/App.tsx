@@ -1310,6 +1310,15 @@ const AppShell: Component<AppProps> = (props) => {
     songBpm: number,
     song: SavedMidiSong | null,
   ) => {
+    // Loading a different song replaces the current one, so stop the run first:
+    // while playing/paused the controller holds a *frozen* display melody +
+    // length (playbackDisplayMelody/Beats) for the in-progress run and only
+    // auto-clears it when stopped — without this, switching songs during/after
+    // a loop leaves the previous song frozen on the canvas and timeline.
+    // resetPlaybackState is synchronous (clears the display + rewinds to 0).
+    void resetPlaybackState()
+    // The old A-B loop was set against the previous song's beats — drop it.
+    handleClearLoop()
     setSingingSong(song)
     singingBacking.setBacking(backingFromSong(song))
     // A pending stopped-state seek belongs to the previous song.
