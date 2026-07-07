@@ -117,7 +117,7 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
     <Show when={props.open}>
       <div class="modal-overlay" onClick={() => props.onClose()}>
         <div
-          class="modal-content"
+          class="modal-content changelog-modal"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
@@ -125,20 +125,25 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div class="modal-header">
-            <h2>What's New</h2>
+            <h2>Changelog</h2>
             <button class="modal-close" onClick={() => props.onClose()}>
               &times;
             </button>
           </div>
+          <div class="fancy-divider" />
           <div class="modal-body">
             <For each={changelog}>
               {(entry, i) => (
                 <>
-                  {i() > 0 && <div class="fancy-divider" />}
                   <div class="changelog-version">
                     <div class="changelog-version-header">
-                      <span class="changelog-version-tag">
-                        v{entry.version}
+                      <span class="changelog-version-left">
+                        <span class="changelog-version-tag">
+                          v{entry.version}
+                        </span>
+                        <Show when={i() === 0}>
+                          <span class="changelog-latest">Latest</span>
+                        </Show>
                       </span>
                       <span class="changelog-date">{entry.date}</span>
                     </div>

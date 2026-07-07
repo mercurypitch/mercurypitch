@@ -26,7 +26,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
-import { setSettingsSection, settingsSection } from '@/stores/ui-store'
+import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -198,6 +198,32 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
             <AccountSection />
+          </div>
+
+          {/* Getting started — reopen the welcome overlay + open Voice Mirror */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Getting started</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Revisit the welcome screen (voice-range setup, the tour and more),
+              or open the Voice Mirror — a free 60-second voiceprint of your
+              range.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px;">
+              <button
+                type="button"
+                onClick={() => setShowWelcome(true)}
+                style="padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.85rem; font-weight: 600; cursor: pointer;"
+              >
+                Show welcome screen
+              </button>
+              <a
+                href="/mirror"
+                style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer;"
+              >
+                Open Voice Mirror
+              </a>
+            </div>
           </div>
 
           {/* App Mode Section */}
