@@ -14,6 +14,8 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
+import { sendSignupWelcome } from './email'
+
 export interface Env {
   DB: D1Database
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
@@ -35,6 +37,15 @@ export interface Env {
    *  worker's job refunds via X-Service-Key). Set the SAME value on both
    *  workers; refunds return 503 while unset. */
   BILLING_SERVICE_KEY?: string
+  /** Resend API key (re_...) for the purchase "thank you" email. When unset,
+   *  the email is skipped (credits are still granted). `wrangler secret put
+   *  RESEND_API_KEY`. Requires a verified sender domain in Resend. */
+  RESEND_API_KEY?: string
+  /** From address for the thank-you email, e.g.
+   *  "MercuryPitch <hello@mercurypitch.com>". Must be on a Resend-verified
+   *  domain — the root mercurypitch.com is verified; send.mercurypitch.com is
+   *  only its return-path. Defaults to hello@mercurypitch.com when unset. */
+  EMAIL_FROM?: string
 }
 
 export interface AuthUser {
@@ -430,6 +441,25 @@ function defaultDisplayName(userId: string): string {
   return `Singer-${userId.slice(0, 4)}`
 }
 
+// Fire the account welcome email — best-effort, never blocks or fails signup.
+// Skipped when Resend is unconfigured or the account has no email (anonymous).
+async function sendWelcomeEmail(
+  env: Env,
+  to: string | null | undefined,
+  displayName: string | null | undefined,
+): Promise<void> {
+  if (!env.RESEND_API_KEY || !to) return
+  try {
+    await sendSignupWelcome(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      to,
+      { displayName },
+    )
+  } catch (err) {
+    console.error(`[auth] welcome email failed (non-fatal): ${String(err)}`)
+  }
+}
+
 async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
   const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
@@ -487,6 +517,7 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
           .run()
       }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
+      await sendWelcomeEmail(env, email, body.displayName?.trim())
       return issueSession(env, row, respond)
     }
   }
@@ -495,6 +526,7 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
   await createUser(env.DB, { id, authProvider: 'password', email, passwordHash })
   await ensureProfile(env.DB, id, body.displayName?.trim() || defaultDisplayName(id))
   const row = (await findUserById(env.DB, id)) as UserRow
+  await sendWelcomeEmail(env, email, body.displayName?.trim())
   return issueSession(env, row, respond, true)
 }
 
@@ -554,6 +586,7 @@ async function resolveGoogleUser(
       )
         .bind(claims.sub, email ?? null, emailVerified ? 1 : 0, nowIso(), anon.id)
         .run()
+      await sendWelcomeEmail(env, email, claims.name)
       return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: false }
     }
   }
@@ -568,6 +601,7 @@ async function resolveGoogleUser(
     emailVerified,
   })
   await ensureProfile(env.DB, id, claims.name || defaultDisplayName(id), claims.picture)
+  await sendWelcomeEmail(env, email, claims.name)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
 

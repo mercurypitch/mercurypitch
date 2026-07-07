@@ -22,6 +22,7 @@
 
 import type { Env } from './auth'
 import { getAuth } from './auth'
+import { sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
 import {
   UVR_TIER_PLAN_IDS,
@@ -283,25 +284,73 @@ async function grantCheckoutCredits(
     return
   }
 
+  const planId = typeof metadata.planId === 'string' ? metadata.planId : null
+  const now = new Date().toISOString()
+
   // idempotencyKey ties the grant to the event, so a redelivered webhook
   // (or a retry) can never double-credit — the UNIQUE constraint drops it.
   const res = await env.DB.prepare(
     `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
      VALUES (?, ?, ?, ?, 'purchase', ?, ?)`,
   )
-    .bind(
-      crypto.randomUUID(),
-      new Date().toISOString(),
-      userId,
-      credits,
-      typeof metadata.planId === 'string' ? metadata.planId : null,
-      `evt:${eventId}`,
-    )
+    .bind(crypto.randomUUID(), now, userId, credits, planId, `evt:${eventId}`)
     .run()
   console.log(
     `[billing] checkout ${eventId}: +${credits} credits user=${userId}` +
       (res.meta.changes === 0 ? ' [duplicate, skipped]' : ''),
   )
+
+  // Purchase "thank you" email — best-effort. Only on a real (non-duplicate)
+  // grant, only when Resend is configured, and NEVER allowed to throw: the
+  // paid credits already landed and must not be undone by an email failure.
+  if (res.meta.changes > 0 && env.RESEND_API_KEY) {
+    try {
+      const info = await env.DB.prepare(
+        `SELECT u.email       AS email,
+                p.displayName AS name,
+                pp.label      AS planLabel,
+                pp.amount     AS amountMinor,
+                pp.currency   AS currency,
+                (SELECT COALESCE(SUM(delta), 0) FROM creditLedger WHERE userId = ?) AS balance
+           FROM users u
+           LEFT JOIN userProfiles p  ON p.id  = u.id
+           LEFT JOIN pricingPlans pp ON pp.id = ?
+          WHERE u.id = ?`,
+      )
+        .bind(userId, planId, userId)
+        .first<{
+          email: string | null
+          name: string | null
+          planLabel: string | null
+          amountMinor: number | null
+          currency: string | null
+          balance: number
+        }>()
+      if (info?.email) {
+        await sendPurchaseThankYou(
+          { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+          info.email,
+          {
+            displayName: info.name,
+            packLabel: info.planLabel ?? 'credit',
+            credits,
+            balance: info.balance,
+            amountMinor: info.amountMinor ?? 0,
+            currency: info.currency ?? 'eur',
+            orderDateIso: now,
+          },
+        )
+      } else {
+        console.log(
+          `[billing] checkout ${eventId}: no email on file — thank-you skipped`,
+        )
+      }
+    } catch (err) {
+      console.error(
+        `[billing] thank-you email failed (non-fatal): ${String(err)}`,
+      )
+    }
+  }
 }
 
 // ── UVR job metering (debit / refund) ────────────────────────────────
