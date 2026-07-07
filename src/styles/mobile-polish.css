@@ -1,0 +1,82 @@
+/* ============================================================
+   Mobile polish — Phase 1 quick wins (<= 768px)
+   ------------------------------------------------------------
+   Cross-cutting mobile fixes for the audit's chrome/overflow
+   issues. Kept in one file (imported LAST in the CSS group in
+   index.tsx) so the overrides win over the desktop rules in
+   app.css / uvr.css / exercises.css without editing those inline.
+   Module-scoped surfaces (HeaderAccount, SupportBadge,
+   SettingsPanel tabs) are handled in their own *.module.css.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* ── Primary tab bar ─────────────────────────────────────────
+     The bar is meant to be icon-only on mobile, but the 390px
+     block in app.css re-enabled labels (font-size:.72rem) which
+     forced the whole bar off-screen. Restore icon-only for
+     inactive tabs — higher specificity (#app-tabs .app-tab) so it
+     wins regardless of source order — and keep the ACTIVE tab
+     labelled so the current section stays legible. When the row
+     still overflows, fade the edges so it reads as scrollable. */
+  #app-tabs .app-tab {
+    font-size: 0;
+    gap: 0;
+    padding: 6px 9px;
+  }
+  #app-tabs .app-tab.active {
+    font-size: 0.72rem;
+    gap: 6px;
+    padding: 6px 12px;
+  }
+  #app-tabs.tabs-scrollable {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 16px,
+      #000 calc(100% - 16px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 16px,
+      #000 calc(100% - 16px),
+      transparent 100%
+    );
+  }
+
+  /* Header account/support fixes live in AppHeader.css — it defines
+     .header-support / .header-left and loads after this file, so its
+     mobile @media block is where those overrides must go. */
+
+  /* ── Karaoke: session group pills ────────────────────────────
+     Wrap instead of scrolling out of sight behind a hidden
+     scrollbar, and keep the per-group delete reachable on touch
+     (it is opacity:0 → :hover on desktop). */
+  .session-group-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .session-group-tab-delete-btn {
+    opacity: 0.5;
+  }
+
+  /* ── Karaoke: processing-mode + device chips ─────────────────
+     Server / Browser / CPU / GPU share one no-wrap row that runs
+     off the panel; let it wrap. */
+  .uvr-mode-toggle {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.35rem;
+  }
+  .uvr-mode-stack {
+    margin-right: 0;
+  }
+
+  /* ── Exercises: stack the two-column page header ─────────────*/
+  .exercises-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

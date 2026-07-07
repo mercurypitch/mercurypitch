@@ -82,3 +82,44 @@ header h1 {
     width: auto;
   }
 }
+
+/* ── Mobile header (<= 768px) ─────────────────────────────────────
+   Tighten the header so the account + heart fit on the first row
+   instead of wrapping to their own empty band: smaller gap/padding,
+   a smaller logo (the base 1.3rem overrides app.css's shrink), and a
+   width-capped loaded-song pill. The account/version pills themselves
+   are compacted in HeaderAccount.module.css / SupportBadge.module.css. */
+@media (max-width: 768px) {
+  header {
+    position: relative;
+    gap: 8px;
+    /* reserve the top-right corner for the pinned account/heart */
+    padding: 8px 74px 8px 12px;
+    row-gap: 4px;
+  }
+
+  .logo-btn .app-title {
+    font-size: 1.05rem;
+  }
+
+  /* Pin the compact account + heart to the top-right instead of letting
+     it wrap to its own empty band below the title. */
+  .header-support {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    margin: 0;
+    gap: 6px;
+  }
+
+  .header-melody-context {
+    max-width: 34vw;
+    overflow: hidden;
+  }
+
+  .header-melody-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

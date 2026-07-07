@@ -70,3 +70,18 @@
   color: var(--text-primary);
   border-color: var(--accent);
 }
+
+/* Mobile: compact the account to an icon so the header row stays a
+   single clean band instead of wrapping the account to its own line. */
+@media (max-width: 768px) {
+  .signInPill span,
+  .name {
+    display: none;
+  }
+  .signInPill {
+    padding: 0.32rem 0.4rem;
+  }
+  .nameBtn {
+    padding: 0.32rem 0.42rem;
+  }
+}

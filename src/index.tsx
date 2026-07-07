@@ -7,6 +7,7 @@ import '@/styles/app.css'
 import '@/styles/vocal-analysis.css'
 import '@/styles/uvr.css'
 import '@/styles/exercises.css'
+import '@/styles/mobile-polish.css'
 import { App } from './App'
 
 import { consumeGoogleRedirect } from '@/db/services/auth-service'
