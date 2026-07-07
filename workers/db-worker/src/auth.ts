@@ -39,6 +39,11 @@ export interface Env {
    *  the email is skipped (credits are still granted). `wrangler secret put
    *  RESEND_API_KEY`. Requires a verified sender domain in Resend. */
   RESEND_API_KEY?: string
+  /** From address for the thank-you email, e.g.
+   *  "MercuryPitch <noreply@send.mercurypitch.com>". Must be on a
+   *  Resend-verified domain. Set the SAME value as the landing worker.
+   *  Defaults to noreply@send.mercurypitch.com when unset. */
+  EMAIL_FROM?: string
 }
 
 export interface AuthUser {

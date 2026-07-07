@@ -327,15 +327,19 @@ async function grantCheckoutCredits(
           balance: number
         }>()
       if (info?.email) {
-        await sendPurchaseThankYou({ apiKey: env.RESEND_API_KEY }, info.email, {
-          displayName: info.name,
-          packLabel: info.planLabel ?? 'credit',
-          credits,
-          balance: info.balance,
-          amountMinor: info.amountMinor ?? 0,
-          currency: info.currency ?? 'eur',
-          orderDateIso: now,
-        })
+        await sendPurchaseThankYou(
+          { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+          info.email,
+          {
+            displayName: info.name,
+            packLabel: info.planLabel ?? 'credit',
+            credits,
+            balance: info.balance,
+            amountMinor: info.amountMinor ?? 0,
+            currency: info.currency ?? 'eur',
+            orderDateIso: now,
+          },
+        )
       } else {
         console.log(
           `[billing] checkout ${eventId}: no email on file — thank-you skipped`,
