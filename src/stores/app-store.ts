@@ -1,9 +1,10 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag, SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
+import { durableWrite } from '@/db/durable-write'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
-import { deleteAllUvrSessionsFromDb } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -159,9 +160,16 @@ export type UvrStatus =
   | 'idle'
   | 'uploading'
   | 'processing'
+  // Stems are separated but still being written to IndexedDB. The session is
+  // NOT safe to reload until this reaches 'completed' — the pipeline awaits the
+  // saves before flipping it, and a beforeunload guard warns during this window.
+  | 'finalizing'
   | 'completed'
   | 'error'
   | 'cancelled'
+  // An in-progress job whose client polling was lost to a reload. Set by
+  // reconcileInterruptedSessions() on the next load; retryable.
+  | 'interrupted'
 
 /** UVR session interface */
 export interface UvrSession {
@@ -438,26 +446,39 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
   }
 }
 
-function persistSessionToDb(session: UvrSession): void {
-  void (async () => {
-    try {
-      const db = await getDb()
-      const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+/** Raw upsert of one session record — throws on failure. */
+async function upsertSessionRecord(session: UvrSession): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+  const existing = await repo.findAll({
+    where: { appSessionId: session.sessionId } as Record<string, unknown>,
+    limit: 1,
+  })
+  if (existing.length > 0) {
+    await repo.update(existing[0].id, sessionToDbRecord(session))
+  } else {
+    await repo.create(sessionToDbRecord(session))
+  }
+}
 
-      // Upsert: find existing by appSessionId
-      const existing = await repo.findAll({
-        where: { appSessionId: session.sessionId } as Record<string, unknown>,
-        limit: 1,
-      })
-      if (existing.length > 0) {
-        await repo.update(existing[0].id, sessionToDbRecord(session))
-      } else {
-        await repo.create(sessionToDbRecord(session))
-      }
-    } catch (err) {
-      if (IS_DEV) console.warn('[SessionStore] persistSessionToDb failed:', err)
-    }
-  })()
+/** Best-effort persist (fire-and-forget) — for frequent, non-critical updates
+ *  like progress ticks. Terminal states use persistSessionDurable instead. */
+function persistSessionToDb(session: UvrSession): void {
+  void upsertSessionRecord(session).catch((err) => {
+    if (IS_DEV) console.warn('[SessionStore] persistSessionToDb failed:', err)
+  })
+}
+
+/** Durable persist — awaited + retried. Returns whether the record actually
+ *  reached IndexedDB, so the completion flow can refuse to report "done" until
+ *  it has. This is the fix for "completed session vanishes on reload". */
+export async function persistSessionDurable(
+  session: UvrSession,
+): Promise<boolean> {
+  const res = await durableWrite('persist session record', () =>
+    upsertSessionRecord(session),
+  )
+  return res.ok
 }
 
 /** Persist the entire sessions list to DB (replaces all). */
@@ -515,7 +536,8 @@ function updateCacheAndPersist(sessions: UvrSession[]): void {
   persistAllSessionsToDb(sessions)
 }
 
-function upsertSessionInCache(session: UvrSession): void {
+/** Update just the in-memory cache + reactive signal (no DB write). */
+function updateSessionCache(session: UvrSession): void {
   _setSessionsCache((prev) => {
     const idx = prev.findIndex((s) => s.sessionId === session.sessionId)
     if (idx >= 0) {
@@ -526,7 +548,17 @@ function upsertSessionInCache(session: UvrSession): void {
     return [...prev, session]
   })
   bumpSessions()
+}
+
+function upsertSessionInCache(session: UvrSession): void {
+  updateSessionCache(session)
   persistSessionToDb(session)
+}
+
+/** Remove a session from the in-memory cache (DB delete is separate). */
+function removeSessionFromCache(sessionId: string): void {
+  _setSessionsCache((prev) => prev.filter((s) => s.sessionId !== sessionId))
+  bumpSessions()
 }
 
 const [sessionStoreReady, setSessionStoreReady] = createSignal(false)
@@ -574,6 +606,65 @@ export async function initSessionStore(): Promise<void> {
 
   // Run stale-session cleanup on the loaded cache
   cleanupStaleUvrSessions()
+
+  // Repair sessions the previous run left in a wrong state, and prune ones whose
+  // paid stems were lost before the durable-write fix. Async so init isn't
+  // blocked, but every write inside is durable.
+  void reconcileInterruptedSessions()
+  void pruneOrphanedCompletedSessions()
+}
+
+/**
+ * Repair sessions left non-terminal by an interrupted job or a completion
+ * persist that failed. Runs once on load:
+ *  - in-progress (processing/uploading/finalizing) WITH stems on disk → the job
+ *    actually finished but its completion write was lost → mark 'completed'.
+ *  - in-progress WITHOUT stems → client polling died on a reload → 'interrupted'
+ *    (retryable). No credit is refunded — the server job is already gone.
+ */
+export async function reconcileInterruptedSessions(): Promise<void> {
+  const inFlight = getAllUvrSessions().filter(
+    (s) =>
+      s.status === 'processing' ||
+      s.status === 'uploading' ||
+      s.status === 'finalizing',
+  )
+  for (const s of inFlight) {
+    const hasStems = await sessionHasPlayableStems(s.sessionId)
+    const fixed: UvrSession = hasStems
+      ? { ...s, status: 'completed', progress: 100 }
+      : {
+          ...s,
+          status: 'interrupted',
+          error:
+            'Interrupted — the app was reloaded while this was processing.',
+        }
+    updateSessionCache(fixed)
+    await persistSessionDurable(fixed)
+  }
+}
+
+/**
+ * Remove 'completed' sessions whose playable stems are missing — the pre-fix
+ * data loss. They can never open, so pruning them clears the confusing
+ * "processed but can't open / retry" entries. Returns how many were pruned.
+ */
+export async function pruneOrphanedCompletedSessions(): Promise<number> {
+  const completed = getAllUvrSessions().filter((s) => s.status === 'completed')
+  let pruned = 0
+  for (const s of completed) {
+    if (!(await sessionHasPlayableStems(s.sessionId))) {
+      const ok = await deleteUvrSessionFromDb(s.sessionId)
+      if (ok) {
+        removeSessionFromCache(s.sessionId)
+        pruned++
+      }
+    }
+  }
+  if (pruned > 0) {
+    console.info(`[SessionStore] pruned ${pruned} orphaned session(s)`)
+  }
+  return pruned
 }
 
 // ── Public API (synchronous reads, fire-and-forget DB writes) ──────
@@ -684,29 +775,51 @@ export function setUvrSessionProvider(
   }
 }
 
-/** Complete UVR session with results */
-export function completeUvrSession(
-  sessionId: string,
-  outputs: UvrSession['outputs'],
-  stemMeta?: UvrSession['stemMeta'],
-): void {
+/** Mark a session as finalizing — stems separated, now being written to disk.
+ *  Shown to the user as "Saving…"; the flow must not report success until the
+ *  writes land (see completeUvrSession). */
+export function setFinalizingUvrSession(sessionId: string): void {
   const session = getUvrSession(sessionId)
   if (session) {
     const updated: UvrSession = {
       ...session,
-      status: 'completed',
-      outputs,
-      stemMeta,
+      status: 'finalizing',
       progress: 100,
-      // Prefer the elapsed time tracked during polling
-      // (updateUvrSessionProgress). Recomputing from createdAt inflates it when
-      // a session is reused by file hash (stale createdAt) — e.g. a sub-minute
-      // job reporting ~3272 s.
-      processingTime: session.processingTime ?? Date.now() - session.createdAt,
     }
-    upsertSessionInCache(updated)
+    updateSessionCache(updated)
     setCurrentUvrSession(updated)
+    persistSessionToDb(updated) // best-effort; the durable write is on complete
   }
+}
+
+/**
+ * Complete a UVR session and DURABLY persist the record before resolving.
+ * Returns whether the record reached IndexedDB — callers keep the session in
+ * 'finalizing'/'error' (not 'completed') until this resolves true, so a
+ * "completed" session always has a durable record on the next load.
+ */
+export async function completeUvrSession(
+  sessionId: string,
+  outputs: UvrSession['outputs'],
+  stemMeta?: UvrSession['stemMeta'],
+): Promise<boolean> {
+  const session = getUvrSession(sessionId)
+  if (!session) return false
+  const updated: UvrSession = {
+    ...session,
+    status: 'completed',
+    outputs,
+    stemMeta,
+    progress: 100,
+    // Prefer the elapsed time tracked during polling
+    // (updateUvrSessionProgress). Recomputing from createdAt inflates it when
+    // a session is reused by file hash (stale createdAt) — e.g. a sub-minute
+    // job reporting ~3272 s.
+    processingTime: session.processingTime ?? Date.now() - session.createdAt,
+  }
+  updateSessionCache(updated)
+  setCurrentUvrSession(updated)
+  return persistSessionDurable(updated)
 }
 
 /** Set UVR session error */
