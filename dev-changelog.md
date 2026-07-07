@@ -6,6 +6,23 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] - 2026-07-07
+
+### Added
+
+- **Guitar tuner reference tone** (#210): clicking a string button in `GuitarTuner` now plays that string's target pitch via a new optional `onPlayNote` prop, wired from `GuitarPage` to `audioEngine.previewNote(freq, 900)` (short, reduced-gain preview) — tune by ear alongside the needle. Still toggles the manual per-string target.
+
+### Changed
+
+- **Singing A-B loop: loop-on-B + draggable markers** (#212): `handleSetLoopB` now arms the loop immediately (`setLoopEnabled(true)` + clears the escape flag), matching the stem-mixer. `SingingStatusBar` gains draggable A/B markers on the seek rail — pointer-capture drag, a 0.25-beat min-gap clamp via new `handleMoveLoopA/B` in `App.tsx`, and a one-shot guard so a drag's pointer-up doesn't also seek. A reads `--accent` (blue), B reads `--red`, on both the markers and the control-bar `IconLoopPoint` buttons (`.loopBtnB`). Reuses the existing `ab-loop` math + RAF seek-back unchanged.
+- **Welcome / changelog / sidebar polish** (#205, #206): compacted first-run welcome (Voice Mirror-first, mirror-before-consent, 50/50 mobile actions, version pill → the What's New modal), branded `ChangelogModal` restyle, sidebar Playback Setup collapsed by default, smaller 3D next-note target ring, round tour-dots fix, `.getStartedBtn` hover on the settings "Getting started" buttons, two-tone email wordmark + colourful sign-up cards. Version bump to 0.6.7.
+
+### Fixed
+
+- **Track switch preserves the playhead + transport** (#208): switching the scored track of an imported multi-track MIDI ran the full load path (`stopGame` / `setPlayheadBeat(0)`), rewinding to 0:00 and stalling the play button. New `changeScoreTrack()` on the guitar and piano (falling-notes) controllers rebuilds the notes/backing and resets the score but keeps the playhead + transport (keeps playing if playing; Play/Space resume from the current beat; notes before the playhead are marked passed so they don't all fire at once). The shared song picker gains an `onScoreTrackChange` hand-off (falls back to `onSongLoaded`).
+- **Local/WebGPU separation retry no longer crashes when Cloud mode is active** (#209): `getSeparator()`'s `setUvrModelStatus('loading')` write synchronously re-ran `UvrPanel`'s server-mode cleanup effect (it read `uvrModelStatus()`), which called `destroyPipeline()` and nulled the module `separator` mid-init → "can't access property initialize, … is null". Gated that effect on the mode signal only (`on(uvrProcessingMode)` + `untrack` for the status), hardened `getSeparator` to hold a local reference across the store writes, and added `humanizeProcessingError` so no raw JS crash reaches a session card.
+- **e2e** (#213): expand the (now collapsed-by-default) sidebar Playback Setup section before asserting on its scale controls — new idempotent `openPlaybackSetup` helper; fixes 6 specs across `app` / `critical-flows` / `css-audit`.
+
 ## [0.6.6] - 2026-07-07
 
 ### Added
