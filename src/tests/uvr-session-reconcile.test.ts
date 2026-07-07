@@ -17,7 +17,8 @@ vi.mock('@/db', () => ({
 
 import type { UvrSessionRecord } from '@/db/entities'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
-import { completeUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
+import type { UvrSession } from '@/stores/app-store'
+import { cleanupStaleUvrSessions, completeUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
 
 if (typeof Blob.prototype.arrayBuffer !== 'function') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +102,56 @@ describe('reconcileInterruptedSessions', () => {
     await reconcileInterruptedSessions()
 
     expect(getUvrSession(id)?.status).toBe('completed')
+  })
+})
+
+describe('cleanupStaleUvrSessions — recoverable server jobs survive reload', () => {
+  const mk = (
+    over: Partial<UvrSession> & { sessionId: string },
+  ): UvrSession => ({
+    status: 'processing',
+    progress: 40,
+    createdAt: 1_700_000_000_000,
+    ...over,
+  })
+
+  it('leaves a server job with a persisted RunPod id processing (for auto-resume)', () => {
+    saveAllUvrSessions([
+      mk({
+        sessionId: 's-rec',
+        processingMode: 'server',
+        apiSessionId: 'rp_gpu_job1',
+      }),
+    ])
+    // This is what runs on every load before reconcile; it must NOT poison a
+    // recoverable job — that was the "reload → interrupted, can't recover" bug.
+    cleanupStaleUvrSessions()
+    expect(getUvrSession('s-rec')?.status).toBe('processing')
+    expect(getUvrSession('s-rec')?.apiSessionId).toBe('rp_gpu_job1')
+  })
+
+  it('still errors a server job with no id to recover', () => {
+    saveAllUvrSessions([mk({ sessionId: 's-noid', processingMode: 'server' })])
+    cleanupStaleUvrSessions()
+    expect(getUvrSession('s-noid')?.status).toBe('error')
+  })
+
+  it('still errors a stale local job', () => {
+    saveAllUvrSessions([mk({ sessionId: 's-local', processingMode: 'local' })])
+    cleanupStaleUvrSessions()
+    expect(getUvrSession('s-local')?.status).toBe('error')
+  })
+
+  it('resumableServerSessions picks up the recoverable job (no stems on disk)', async () => {
+    saveAllUvrSessions([
+      mk({
+        sessionId: 's-rec2',
+        processingMode: 'server',
+        apiSessionId: 'rp_gpu_job2',
+      }),
+    ])
+    const list = await resumableServerSessions()
+    expect(list.map((s) => s.sessionId)).toContain('s-rec2')
   })
 })
 

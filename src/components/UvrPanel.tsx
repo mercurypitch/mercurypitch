@@ -161,16 +161,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Guard against an accidental reload while a separation is running or its
-  // stems are still being written — reloading loses the in-flight job (no
-  // refund) or an un-persisted stem. The browser shows its native confirm.
+  // Warn on an accidental reload only when it would actually lose work:
+  // stems mid-write ('finalizing'), or a job we can't re-attach to (local, or a
+  // server job with no persisted RunPod id). A recoverable server job survives
+  // reload now — auto-resume re-attaches and re-fetches it — so no scary prompt.
   createEffect(() => {
-    const busy = getAllUvrSessionsReactive().some(
-      (s) =>
-        s.status === 'processing' ||
-        s.status === 'finalizing' ||
-        s.status === 'uploading',
-    )
+    const busy = getAllUvrSessionsReactive().some((s) => {
+      if (s.status === 'finalizing') return true
+      const recoverableServer =
+        s.processingMode === 'server' &&
+        s.apiSessionId !== undefined &&
+        s.apiSessionId !== ''
+      return (
+        (s.status === 'processing' || s.status === 'uploading') &&
+        !recoverableServer
+      )
+    })
     if (!busy) return
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault()
