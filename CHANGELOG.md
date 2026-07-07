@@ -3,6 +3,20 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.4] - 2026-07-07
+
+### Fixed
+
+- **Separated stems no longer go missing.** A song separated on the cloud GPU could later show as "processed" but refuse to open in the Stem Mixer after a reload — offering only a retry or a manual re-import. Stems are now saved to your device *before* a song is marked done, always reopened from that local copy, and never depend on the server's temporary links. The Karaoke list shows honest "Saving…" and "Interrupted" statuses, the app warns before an accidental reload while a separation is still saving, and any sessions whose stems were already lost are tidied up automatically.
+
+### Added
+
+- **Copy image on Voice Mirror cards** — every result card now has a "Copy image" button next to Share. The "Sing the Universe" cosmic mode is also directly linkable.
+
+### Changed
+
+- **Gentler Voice Mirror "Match" step** — a warmer, piano-like reference tone plus a short "your turn" count-in before you sing, so the notes no longer come at you with no time to prepare.
+
 ## [0.6.3] - 2026-07-06
 
 ### Fixed
