@@ -21,6 +21,7 @@ import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metric
 import { summarize } from '@/lib/mirror/metrics'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
+import { singerForVoiceType } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
@@ -874,12 +875,17 @@ const Results: Component<{
           <span class="mirror-hero-sub"> · {range()?.semitones} semitones</span>
         </h1>
         <Show when={range()?.voiceHint}>
-          <p
-            class="mirror-chip"
-            title="Voice classification really depends on timbre and tessitura, not range alone — this stays a hint."
-          >
-            Your range overlaps most with: {range()?.voiceHint}
-          </p>
+          {(hint) => (
+            <p
+              class="mirror-chip"
+              title="A playful range match — voice type and the legend you overlap with depend on more than range, so it stays a hint."
+            >
+              Range: {hint()}
+              <Show when={singerForVoiceType(hint())}>
+                {(singer) => <> · like {singer()}</>}
+              </Show>
+            </p>
+          )}
         </Show>
       </Show>
 
