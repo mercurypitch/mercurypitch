@@ -678,6 +678,56 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     markProgressBefore(target)
   }
 
+  // Switch the scored track WITHOUT rewinding — mirrors the guitar controller.
+  // Rebuilds the notes for the new track and resets the score, but keeps the
+  // playhead + transport: seekToBeat re-anchors the running loop (or arms the
+  // next Play) and marks passed notes. loadSong is for a fresh song (rewinds 0).
+  const changeScoreTrack = (
+    notes: FallingNote[],
+    name: string,
+    bpm: number,
+    backingItems?: FallingNote[],
+    mutedIds?: string[],
+    songObj?: SavedMidiSong | null,
+  ) => {
+    const beat = Math.max(0, playheadBeat())
+
+    audioEngine.stopAllNotes()
+    setSongNotes(notes)
+    setSelectedSongName(name)
+    setCurrentSongBpm(bpm)
+    setTotalNotes(notes.length)
+    setScore(0)
+    setCombo(0)
+    setMaxCombo(0)
+    setHitResults([])
+    setNotesMissed(0)
+    backingNotes = (backingItems ?? []).map((b) => ({
+      freq: b.targetFreq,
+      startBeat: b.startBeat,
+      duration: b.duration,
+      trackId: b.trackId,
+    }))
+    setCurrentSong(songObj ?? null)
+    setMutedTrackIds(new Set(mutedIds ?? []))
+    if (songObj) {
+      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+    }
+
+    const maxNoteBeat =
+      notes.length > 0
+        ? Math.max(...notes.map((n) => n.startBeat + n.duration))
+        : 0
+    const maxBackingBeat =
+      backingNotes.length > 0
+        ? Math.max(...backingNotes.map((n) => n.startBeat + n.duration))
+        : 0
+    setTotalBeats(Math.max(maxNoteBeat, maxBackingBeat))
+
+    // Keep the timeline + transport where they were.
+    seekToBeat(Math.min(beat, totalBeats()))
+  }
+
   const setSpeedSafe = (newSpeed: number) => {
     // When speed changes during playback or countdown, rebase gameStartTime
     // to maintain beat continuity
@@ -776,6 +826,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     finishGame,
     resetGame,
     loadSong,
+    changeScoreTrack,
     speed,
     setSpeed: setSpeedSafe,
     zoomIn,

@@ -217,6 +217,8 @@ export function GuitarPage(props: GuitarPageProps) {
     fromBackingNotes: (notes, trackId) => notes.map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       guitar.loadSong(items, name, bpm, backing, muted, song),
+    onScoreTrackChange: (items, name, bpm, backing, muted, song) =>
+      guitar.changeScoreTrack(items, name, bpm, backing, muted, song),
     // The page remounts on every tab visit; the controller (and its loaded
     // song) live in GuitarContext — don't clobber them with the first melody.
     skipAutoLoad: () => guitar.selectedSongName() !== '',

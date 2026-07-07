@@ -863,6 +863,78 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setTotalBeats(Math.max(maxNoteBeat, maxBackingBeat))
   }
 
+  // Switch which track is scored WITHOUT rewinding — a mid-song "preview" of
+  // another track. Rebuilds the notes/backing for the new track and resets the
+  // score (a fresh track = fresh score), but keeps the playhead and transport:
+  // if it was playing it keeps playing from here, if paused it stays paused
+  // here, and Play/spacebar resume from here rather than 0. (loadSong is for
+  // loading a whole new song and deliberately stops + rewinds to 0.)
+  const changeScoreTrack = (
+    items: Parameters<typeof loadSong>[0],
+    name: string,
+    bpm: number,
+    backingItems?: Parameters<typeof loadSong>[3],
+    mutedIds?: string[],
+    songObj?: SavedMidiSong | null,
+  ) => {
+    const wasPlaying = gameState() === 'playing' || gameState() === 'countdown'
+    const beat = Math.max(0, playheadBeat())
+
+    // Rebuild notes + backing (mirrors loadSong, minus stopGame/rewind/transpose
+    // reset). Derive fallingNotes synchronously so resetProgressTo below sees the
+    // new notes this tick (the derive effect only runs at batch end).
+    const notes = melodyToGuitarNotes(items)
+    const open = deriveOpenTuning(notes)
+    setBaseNotes(notes)
+    setTransposeBounds(computeTransposeBounds(notes, open))
+    setFallingNotes(revoiceNotes(notes, transpose(), open))
+    setTotalNotes(notes.length)
+    setSelectedSongName(name)
+    setSongBpm(bpm)
+    backingNotes = (backingItems ?? []).map((b) => ({
+      freq: midiToFreq(b.midi),
+      startBeat: b.startBeat,
+      duration: b.duration,
+      trackId: b.trackId,
+    }))
+    setCurrentSong(songObj ?? null)
+    setMutedTrackIds(new Set(mutedIds ?? []))
+    if (songObj) {
+      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+    }
+
+    const maxNoteBeat =
+      notes.length > 0
+        ? Math.max(...notes.map((n) => n.startBeat + n.duration))
+        : 0
+    const maxBackingBeat =
+      backingNotes.length > 0
+        ? Math.max(...backingNotes.map((n) => n.startBeat + n.duration))
+        : 0
+    setTotalBeats(Math.max(maxNoteBeat, maxBackingBeat))
+
+    // Fresh score for the new track.
+    setHitResults([])
+    setScore(0)
+    setCombo(0)
+    setMaxCombo(0)
+    setNotesMissed(0)
+
+    // Hold the timeline where it was; mark notes before it as already-passed so
+    // they don't all fire at once, and preserve the transport.
+    const clamped = Math.min(beat, totalBeats())
+    setPlayheadBeat(clamped)
+    resetProgressTo(clamped)
+    if (wasPlaying) {
+      setGameState('playing')
+      anchorPlaying(clamped)
+      startLoop() // idempotent — no-op if the loop is already running
+    } else {
+      // Idle/paused: resume (Play / spacebar) from here rather than beat 0.
+      pendingStartBeat = clamped > 0 ? clamped : null
+    }
+  }
+
   const seekToBeat = (targetBeat: number) => {
     const target = Math.max(0, Math.min(targetBeat, totalBeats()))
     setPlayheadBeat(target)
@@ -1031,6 +1103,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     strumString,
     strumKeyboard,
     loadSong,
+    changeScoreTrack,
     startGame,
     stopGame,
     pauseGame,

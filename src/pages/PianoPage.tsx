@@ -88,6 +88,8 @@ export function PianoPage(props: PianoPageProps) {
       midiNotesToFallingNotes(notes).map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       fallingNotes.loadSong(items, name, bpm, backing, muted, song),
+    onScoreTrackChange: (items, name, bpm, backing, muted, song) =>
+      fallingNotes.changeScoreTrack(items, name, bpm, backing, muted, song),
     // The page remounts on every tab visit; the controller (and its loaded
     // song) live app-wide — don't clobber them with the first library melody.
     skipAutoLoad: () => selectedSongName() !== '',
