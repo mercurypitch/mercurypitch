@@ -76,21 +76,22 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </svg>
         </button>
 
-        <button
-          type="button"
-          class={styles.welcomeVersionPill}
-          onClick={() => setShowChangelog(true)}
-          title={`MercuryPitch v${APP_VERSION} — what's new`}
-          aria-label="Show what's new (changelog)"
-        >
-          v{APP_VERSION}
-        </button>
-
         {/* Hero */}
         <div class={styles.welcomeHero} style="margin-bottom: 12px;">
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
             Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
+          <div class={styles.welcomeVersionPillRow}>
+            <button
+              type="button"
+              class={styles.welcomeVersionPill}
+              onClick={() => setShowChangelog(true)}
+              title={`MercuryPitch v${APP_VERSION} — what's new`}
+              aria-label="Show what's new (changelog)"
+            >
+              v{APP_VERSION} · What&rsquo;s new
+            </button>
+          </div>
 
           {/* Quick actions: mic permission + voice-range detection */}
           <div class={styles.welcomeQuickActions}>
