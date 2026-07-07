@@ -158,6 +158,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       onCleanup(() => window.removeEventListener('keydown', handleKeyDown))
     }
   })
+
+  // Guard against an accidental reload while a separation is running or its
+  // stems are still being written — reloading loses the in-flight job (no
+  // refund) or an un-persisted stem. The browser shows its native confirm.
+  createEffect(() => {
+    const busy = getAllUvrSessionsReactive().some(
+      (s) =>
+        s.status === 'processing' ||
+        s.status === 'finalizing' ||
+        s.status === 'uploading',
+    )
+    if (!busy) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    onCleanup(() => window.removeEventListener('beforeunload', handler))
+  })
+
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)

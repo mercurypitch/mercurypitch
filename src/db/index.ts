@@ -55,9 +55,27 @@ async function requestPersistentStorage(): Promise<void> {
   }
 }
 
+/**
+ * One-time removal of the orphaned pre-rename 'PitchPerfectDB' IndexedDB
+ * database. Nothing references it (the app uses 'MercuryPitchDB'); it only
+ * clutters the storage inspector and confuses users. Guarded so it runs once.
+ */
+function deleteLegacyDatabases(): void {
+  try {
+    if (typeof globalThis.indexedDB === 'undefined') return
+    const FLAG = 'mercurypitch_legacy_db_cleaned'
+    if (localStorage.getItem(FLAG) === '1') return
+    globalThis.indexedDB.deleteDatabase('PitchPerfectDB')
+    localStorage.setItem(FLAG, '1')
+  } catch {
+    // Non-fatal — the orphan DB just lingers.
+  }
+}
+
 /** Create a new database adapter instance. Called once at app init. */
 export async function createDatabase(): Promise<DatabaseAdapter> {
   void requestPersistentStorage()
+  deleteLegacyDatabases()
   const adapter = resolveAdapter()
 
   if (adapter instanceof HybridAdapter) {
