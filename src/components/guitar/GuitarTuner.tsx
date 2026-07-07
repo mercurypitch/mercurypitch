@@ -118,6 +118,9 @@ interface GuitarTunerProps {
   getTimeData: () => Float32Array
   /** Audio context sample rate (0 if not ready). */
   sampleRate: () => number
+  /** Play a reference tone at the given frequency, so the user can tune the
+   *  string by ear. Omitted = the note buttons only toggle the manual target. */
+  onPlayNote?: (frequency: number) => void
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -398,10 +401,15 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
                 type="button"
                 class={styles.stringBtn}
                 classList={{ [styles.stringBtnActive]: active }}
-                onClick={() =>
+                onClick={() => {
+                  // Sound the string's reference pitch (tune by ear)...
+                  props.onPlayNote?.(tuningFreqs()[idx()])
+                  // ...and focus the tuner on this string (click again to
+                  // release back to auto-detect).
                   setManualString(manualString() === name ? null : name)
-                }
-                aria-label={`Tune ${name}`}
+                }}
+                aria-label={`Play and tune ${name}`}
+                title={`Play ${name.replace(/\d/, '')} reference tone`}
                 aria-pressed={active}
               >
                 <span class={styles.stringBtnLabel}>
