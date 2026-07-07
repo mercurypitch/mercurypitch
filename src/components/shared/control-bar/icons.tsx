@@ -169,3 +169,121 @@ export const Caret = (p: { up?: boolean }) => (
     <path d={p.up === true ? 'M1 5l4-4 4 4' : 'M1 1l4 4 4-4'} />
   </svg>
 )
+
+// ── A-B Loop icons ────────────────────────────────────────────────
+
+/** Loop repeat icon (two arrows in a circle). */
+export const IconLoop = (p: { active?: boolean }) => (
+  <Svg>
+    <path
+      d="M17 2l3 3-3 3"
+      stroke={p.active === true ? '#4caf50' : 'currentColor'}
+      stroke-width="2"
+    />
+    <path
+      d="M7 22l-3-3 3-3"
+      stroke={p.active === true ? '#4caf50' : 'currentColor'}
+      stroke-width="2"
+    />
+    <path
+      d="M20 5H9a6 6 0 000 12h1"
+      stroke={p.active === true ? '#4caf50' : 'currentColor'}
+      stroke-width="2"
+    />
+    <path
+      d="M4 19h8a6 6 0 006-6"
+      stroke={p.active === true ? '#4caf50' : 'currentColor'}
+      stroke-width="2"
+    />
+  </Svg>
+)
+
+/** Set loop point A icon. */
+export const IconLoopA = (p: { set?: boolean }) => (
+  <Svg fill={p.set === true}>
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={p.set === true ? 'none' : 'currentColor'}
+      fill={p.set === true ? 'currentColor' : 'none'}
+    />
+    {p.set !== true && (
+      <text
+        x="12"
+        y="17"
+        font-size="13"
+        font-family="sans-serif"
+        text-anchor="middle"
+        font-weight="bold"
+        fill="currentColor"
+        stroke="none"
+      >
+        A
+      </text>
+    )}
+    {p.set === true && (
+      <text
+        x="12"
+        y="17"
+        font-size="13"
+        font-family="sans-serif"
+        text-anchor="middle"
+        font-weight="bold"
+        fill="#fff"
+        stroke="none"
+      >
+        A
+      </text>
+    )}
+  </Svg>
+)
+
+/** Set loop point B icon. */
+export const IconLoopB = (p: { set?: boolean }) => (
+  <Svg fill={p.set === true}>
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={p.set === true ? 'none' : 'currentColor'}
+      fill={p.set === true ? 'currentColor' : 'none'}
+    />
+    {p.set !== true && (
+      <text
+        x="12"
+        y="17"
+        font-size="13"
+        font-family="sans-serif"
+        text-anchor="middle"
+        font-weight="bold"
+        fill="currentColor"
+        stroke="none"
+      >
+        B
+      </text>
+    )}
+    {p.set === true && (
+      <text
+        x="12"
+        y="17"
+        font-size="13"
+        font-family="sans-serif"
+        text-anchor="middle"
+        font-weight="bold"
+        fill="#fff"
+        stroke="none"
+      >
+        B
+      </text>
+    )}
+  </Svg>
+)
+
+/** Clear/reset icon (×). */
+export const IconClear = () => (
+  <Svg>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </Svg>
+)

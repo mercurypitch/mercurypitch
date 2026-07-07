@@ -175,6 +175,24 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
+/* ── A-B Loop region overlay on the seek rail ──────────────── */
+
+.loopRegion {
+  position: absolute;
+  top: 2px;
+  height: 12px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+
+.loopRegionActive {
+  background: color-mix(in srgb, #4caf50 35%, transparent);
+  border-color: color-mix(in srgb, #4caf50 60%, transparent);
+}
+
 /* ── Action cluster ────────────────────────────────────────── */
 
 .actions {
