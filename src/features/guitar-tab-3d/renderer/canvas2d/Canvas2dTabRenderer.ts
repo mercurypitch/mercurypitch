@@ -374,7 +374,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
         const y = this.stringY(note.stringIndex, n)
         const p = this.project(x, y, 0)
         if (p.w <= NEAR) continue
-        const r = Math.max(7, this.cellPx(x, y, 0, maxFret) * 0.5)
+        // Keep the target ring focused on the fret cell (~60% of its width) so
+        // it doesn't crowd/touch the neighbouring fret wires when many notes
+        // are on screen.
+        const r = Math.max(5, this.cellPx(x, y, 0, maxFret) * 0.3)
         ctx.beginPath()
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
         ctx.strokeStyle = withAlpha(
