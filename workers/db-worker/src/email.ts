@@ -115,8 +115,8 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark light">
-<meta name="supported-color-schemes" content="dark light">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
@@ -347,8 +347,8 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark light">
-<meta name="supported-color-schemes" content="dark light">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
