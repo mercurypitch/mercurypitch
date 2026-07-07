@@ -314,7 +314,10 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       <button
         type="button"
         class={styles.btn}
-        classList={{ [styles.active]: props.loopB() > 0 }}
+        classList={{
+          [styles.active]: props.loopB() > 0,
+          [styles.loopBtnB]: props.loopB() > 0,
+        }}
         data-testid="loop-b-btn"
         title="Set loop end (B)"
         aria-label="Set loop end (B)"

@@ -42,6 +42,9 @@ interface SingingStatusBarProps {
   loopA: Accessor<number>
   loopB: Accessor<number>
   loopEnabled: Accessor<boolean>
+  /** Drag the A / B markers along the seek rail (in beats). */
+  onMoveLoopA?: (beat: number) => void
+  onMoveLoopB?: (beat: number) => void
 }
 
 const titleCase = (s: string): string =>
@@ -81,7 +84,15 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   const currentItem = () => getCurrentSessionItem()
   const trackCount = () => props.currentSong()?.tracks.length ?? 0
 
+  // Set for one tick after a marker drag so the click synthesized by the
+  // drag's pointer-up doesn't also seek the rail.
+  let suppressSeek = false
+
   const handleSeek = (e: MouseEvent) => {
+    if (suppressSeek) {
+      suppressSeek = false
+      return
+    }
     const rail = e.currentTarget as HTMLDivElement
     const rect = rail.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
@@ -98,6 +109,48 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   // overlay stale when a point moved).
   const region = () =>
     loopRegionPct(props.loopA(), props.loopB(), props.totalBeats())
+
+  // ── Draggable A/B loop markers on the seek rail ──────────────
+  let railEl: HTMLDivElement | undefined
+  const [dragTarget, setDragTarget] = createSignal<'A' | 'B' | null>(null)
+
+  const pctOf = (beat: number): number =>
+    props.totalBeats() > 0 ? (beat / props.totalBeats()) * 100 : 0
+
+  const beatFromClientX = (clientX: number): number => {
+    if (!railEl) return 0
+    const rect = railEl.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return ratio * props.totalBeats()
+  }
+
+  const startMarkerDrag = (which: 'A' | 'B') => (e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation() // don't let the rail read this as a seek-click
+    setDragTarget(which)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  const onMarkerDrag = (e: PointerEvent) => {
+    const which = dragTarget()
+    if (which === null) return
+    e.preventDefault()
+    const beat = beatFromClientX(e.clientX)
+    if (which === 'A') props.onMoveLoopA?.(beat)
+    else props.onMoveLoopB?.(beat)
+  }
+  const endMarkerDrag = (e: PointerEvent) => {
+    if (dragTarget() === null) return
+    const el = e.currentTarget as HTMLElement
+    if (el.hasPointerCapture?.(e.pointerId))
+      el.releasePointerCapture(e.pointerId)
+    setDragTarget(null)
+    // Swallow the click the browser fires right after this pointer-up so the
+    // rail's seek handler ignores it; clear the flag on the next macrotask.
+    suppressSeek = true
+    setTimeout(() => {
+      suppressSeek = false
+    }, 0)
+  }
 
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
@@ -157,6 +210,7 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
               )}
             </span>
             <div
+              ref={railEl}
               class={barStyles.rail}
               onClick={handleSeek}
               title="Seek"
@@ -180,6 +234,44 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
                     data-testid="loop-region"
                   />
                 )}
+              </Show>
+              {/* Draggable A / B markers — the "start point render" on A, and a
+                  movable end on B (mirrors the stem-mixer waveform markers). */}
+              <Show when={props.loopA() > 0}>
+                <div
+                  class={`${barStyles.loopMarker} ${barStyles.loopMarkerA}`}
+                  classList={{
+                    [barStyles.loopMarkerDragging]: dragTarget() === 'A',
+                  }}
+                  style={{ left: `${pctOf(props.loopA())}%` }}
+                  title="Drag to move loop start (A)"
+                  data-testid="loop-marker-a"
+                  onPointerDown={startMarkerDrag('A')}
+                  onPointerMove={onMarkerDrag}
+                  onPointerUp={endMarkerDrag}
+                  onPointerCancel={endMarkerDrag}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span class={barStyles.loopMarkerFlag}>A</span>
+                </div>
+              </Show>
+              <Show when={props.loopB() > 0}>
+                <div
+                  class={`${barStyles.loopMarker} ${barStyles.loopMarkerB}`}
+                  classList={{
+                    [barStyles.loopMarkerDragging]: dragTarget() === 'B',
+                  }}
+                  style={{ left: `${pctOf(props.loopB())}%` }}
+                  title="Drag to move loop end (B)"
+                  data-testid="loop-marker-b"
+                  onPointerDown={startMarkerDrag('B')}
+                  onPointerMove={onMarkerDrag}
+                  onPointerUp={endMarkerDrag}
+                  onPointerCancel={endMarkerDrag}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span class={barStyles.loopMarkerFlag}>B</span>
+                </div>
               </Show>
             </div>
             <span class={barStyles.time}>
