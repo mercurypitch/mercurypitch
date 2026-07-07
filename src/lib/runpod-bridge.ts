@@ -7,8 +7,8 @@
 // this orchestration is unit-testable with a mocked global fetch — see
 // src/tests/runpod-bridge.test.ts.
 
-import type { RunpodConfig, RunpodTier } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, submitJob, toSessionId, } from './runpod'
+import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
 import { debitForJob, refundJob } from './uvr-metering'
 
@@ -24,13 +24,88 @@ const RUNPOD_MAX_INLINE_BYTES = 7 * 1024 * 1024
 const RUNPOD_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 /** Minimal R2 surface the bridge needs — a subset of R2Bucket, so this pure
- *  module stays testable with a plain mock. */
+ *  module stays testable with a plain mock. `put` stages large inputs; `list` +
+ *  `get` power the durable stem-recovery fallback (serve stems straight from R2
+ *  for the ~24 h the objects live, after RunPod has forgotten the job at ~30
+ *  min). The binding is named UVR_INPUT_BUCKET but is the same bucket the
+ *  handler uploads stems to. */
 export interface UvrInputBucket {
   put(
     key: string,
     value: ReadableStream | ArrayBuffer,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<unknown>
+  list(options?: {
+    prefix?: string
+    limit?: number
+  }): Promise<{ objects: { key: string; size: number }[] }>
+  get(key: string): Promise<{ body: ReadableStream; size: number } | null>
+}
+
+/** The R2 object key prefix the handler wrote a job's stems under, ending in a
+ *  slash so a list scopes to exactly one job's stems. */
+function stemDir(prefix: string, jobId: string): string {
+  return `${prefix.replace(/\/+$/, '')}/${jobId}/`
+}
+
+function baseName(key: string): string {
+  const i = key.lastIndexOf('/')
+  return i >= 0 ? key.slice(i + 1) : key
+}
+
+/**
+ * Synthesize a completed-status response from stems still in R2 when RunPod no
+ * longer has the job (its result expires ~30 min; the R2 objects live ~24 h).
+ * Returns null when the job's stems aren't (or are no longer) in the bucket.
+ */
+async function statusFromR2(
+  bucket: UvrInputBucket,
+  prefix: string,
+  sessionId: string,
+  jobId: string,
+): Promise<BridgeStatusResponse | null> {
+  const listed = await bucket.list({ prefix: stemDir(prefix, jobId) })
+  const files = (listed.objects ?? [])
+    .map((o) => {
+      const name = baseName(o.key)
+      const stem = classifyStemFromFilename(name)
+      return {
+        stem,
+        filename: name,
+        // Same shape mapStatusToResponse emits, so the client re-fetches each
+        // stem through /output (which serves it from R2 below).
+        path: `/api/uvr/output/${sessionId}/${encodeURIComponent(stem)}`,
+        size: o.size,
+      }
+    })
+    .filter((f) => f.stem === 'vocal' || f.stem === 'instrumental')
+  if (files.length === 0) return null
+  return { session_id: sessionId, status: 'completed', progress: 100, files }
+}
+
+/**
+ * Serve a stem straight from R2 by listing the job's `<prefix>/<jobId>/` folder
+ * — the durable path when RunPod can't resolve the output anymore. Returns null
+ * when the wanted stem isn't in the bucket.
+ */
+async function serveStemFromR2(
+  bucket: UvrInputBucket,
+  prefix: string,
+  jobId: string,
+  wanted: string,
+): Promise<Response | null> {
+  const listed = await bucket.list({ prefix: stemDir(prefix, jobId) })
+  const objs = listed.objects ?? []
+  const needle = wanted.toLowerCase()
+  const match =
+    objs.find((o) => classifyStemFromFilename(baseName(o.key)) === needle) ??
+    objs.find((o) => baseName(o.key).toLowerCase() === needle)
+  if (match === undefined) return null
+  const obj = await bucket.get(match.key)
+  if (obj === null) return null
+  return new Response(obj.body, {
+    headers: { 'Content-Type': contentTypeForFilename(match.key) },
+  })
 }
 
 function json(body: unknown, status = 200): Response {
@@ -88,9 +163,13 @@ export async function handleRunpodRequest(
   cfg: RunpodConfig,
   /** Credit metering (debit on accept, refund on failure/cancel); null = off. */
   meter: MeteringConfig | null = null,
-  /** R2 bucket for staging inputs too big to inline (>7 MB); null = the
-   *  large-file path is unavailable (falls back to the inline-cap error). */
+  /** R2 bucket for staging inputs too big to inline (>7 MB) AND for the durable
+   *  stem-recovery fallback (serve stems from R2 after RunPod forgets the job);
+   *  null = both are unavailable. */
   bucket: UvrInputBucket | null = null,
+  /** Object-key prefix the handler wrote this env's stems under ("runpod" in
+   *  prod, "runpod-dev" on dev). Used to locate a job's stems in R2. */
+  stemPrefix = 'runpod',
 ): Promise<Response | null> {
   const stripped = url.pathname.replace(/^\/api\/uvr/, '')
   const match = stripped.match(
@@ -123,27 +202,86 @@ export async function handleRunpodRequest(
   }
 
   if (route === 'status' && method === 'GET') {
-    const status = await fetchJobStatus(cfg, endpointId, parsed.jobId)
-    const mapped = mapStatusToResponse(sessionId, status)
-    // A job that ends in error never delivered — undo its debit. refundJob
-    // is idempotent per jobRef, so repeated error polls can't double-refund.
-    // CANCELLED is excluded: only our own DELETE route cancels jobs, and it
-    // already decides whether the cancel is refundable — refunding here too
-    // would let a mid-processing cancel claw the credit back via polling.
-    if (mapped.status === 'error') {
-      console.error(
-        `[runpod] ${sessionId} failed: ${mapped.error ?? 'unknown'} (runpod status ${status.status ?? '?'})`,
+    // RunPod retains a job's result only ~30 min. Past that it 404s (throws) or
+    // returns an unknown state — but the stems live in R2 for ~24 h, so we can
+    // still recover a job whose client polling was lost to a reload / app-switch.
+    let status: RunpodStatus | null = null
+    try {
+      status = await fetchJobStatus(cfg, endpointId, parsed.jobId)
+    } catch (err) {
+      console.warn(
+        `[runpod] ${sessionId} status unreadable (${err instanceof Error ? err.message : String(err)}) — trying R2`,
       )
+    }
+    if (status !== null) {
+      const mapped = mapStatusToResponse(sessionId, status)
       const state = (status.status ?? '').toUpperCase()
-      if (meter !== null && state !== 'CANCELLED') {
-        await refundJob(meter, sessionId)
+      // A job that ends in error never delivered — undo its debit. refundJob is
+      // idempotent per jobRef, so repeated error polls can't double-refund.
+      // CANCELLED is excluded: only our own DELETE route cancels jobs, and it
+      // already decides whether the cancel is refundable — refunding here too
+      // would let a mid-processing cancel claw the credit back via polling.
+      if (mapped.status === 'error') {
+        console.error(
+          `[runpod] ${sessionId} failed: ${mapped.error ?? 'unknown'} (runpod status ${status.status ?? '?'})`,
+        )
+        if (meter !== null && state !== 'CANCELLED') {
+          await refundJob(meter, sessionId)
+        }
+        return json(mapped)
+      }
+      // Trust RunPod's own live/terminal answers; only an unknown/empty state
+      // (the job has been GC'd) falls through to the R2 recovery below.
+      if (
+        mapped.status === 'completed' ||
+        state === 'IN_QUEUE' ||
+        state === 'IN_PROGRESS'
+      ) {
+        return json(mapped)
       }
     }
-    return json(mapped)
+    // RunPod couldn't resolve the job. If its stems are still in R2, report it
+    // completed so the client fetches them (no re-run, no re-charge).
+    if (bucket !== null) {
+      const recovered = await statusFromR2(
+        bucket,
+        stemPrefix,
+        sessionId,
+        parsed.jobId,
+      ).catch(() => null)
+      if (recovered !== null) {
+        console.log(
+          `[runpod] ${sessionId} recovered from R2 (${recovered.files.length} stem(s))`,
+        )
+        return json(recovered)
+      }
+    }
+    // No live job and no stems in R2. If RunPod gave a definitive not-found
+    // (threw → status null), the result has expired — surface a terminal,
+    // actionable error. Otherwise keep the client polling (its 30-min wall
+    // clock bounds it) rather than killing a job over a transient blip.
+    if (status === null) {
+      return json({
+        session_id: sessionId,
+        status: 'error',
+        files: [],
+        error:
+          'Your separated stems have expired. Please separate the song again.',
+      } satisfies BridgeStatusResponse)
+    }
+    return json(mapStatusToResponse(sessionId, status))
   }
 
   if (route === 'output' && method === 'GET') {
-    return serveRunpodOutput(cfg, endpointId, sessionId, parsed.jobId, rest)
+    return serveRunpodOutput(
+      cfg,
+      endpointId,
+      sessionId,
+      parsed.jobId,
+      rest,
+      bucket,
+      stemPrefix,
+    )
   }
 
   if (route === 'session' && method === 'DELETE') {
@@ -320,38 +458,58 @@ async function startRunpodJob(
   })
 }
 
-/** Serve a finished stem: redirect to its storage URL, or stream inline
- *  base64 when the handler returned the bytes directly. */
+/** Serve a finished stem: from RunPod's job result while it lasts (redirect to
+ *  the storage URL, or stream inline base64), else straight from R2 for the
+ *  ~24 h the stem objects live after RunPod has forgotten the job. */
 async function serveRunpodOutput(
   cfg: RunpodConfig,
   endpointId: string,
   sessionId: string,
   jobId: string,
   rest: string | undefined,
+  bucket: UvrInputBucket | null,
+  stemPrefix: string,
 ): Promise<Response> {
-  const status = await fetchJobStatus(cfg, endpointId, jobId)
-  if ((status.status ?? '').toUpperCase() !== 'COMPLETED') {
-    return json({ error: 'Output not ready' }, 404)
-  }
   const wanted = decodeStemKey(rest, sessionId)
-  const stem = findStemOutput(status.output, wanted)
-  if (stem === null) {
-    return json({ error: 'Stem not found' }, 404)
+
+  // Preferred path: RunPod still has the job → use the URL/bytes it returned.
+  let status: RunpodStatus | null = null
+  try {
+    status = await fetchJobStatus(cfg, endpointId, jobId)
+  } catch {
+    /* RunPod forgot the job — fall through to R2 below. */
   }
-  if (stem.url !== undefined && stem.url !== '') {
-    return Response.redirect(stem.url, 302)
+  if (status !== null && (status.status ?? '').toUpperCase() === 'COMPLETED') {
+    const stem = findStemOutput(status.output, wanted)
+    if (stem !== null) {
+      if (stem.url !== undefined && stem.url !== '') {
+        return Response.redirect(stem.url, 302)
+      }
+      if (stem.data_base64 !== undefined && stem.data_base64 !== '') {
+        const bytes = base64ToBytes(stem.data_base64)
+        // Copy into a plain ArrayBuffer so the body type matches — the DOM lib
+        // rejects a view backed by the generic ArrayBufferLike.
+        const body = new ArrayBuffer(bytes.byteLength)
+        new Uint8Array(body).set(bytes)
+        return new Response(body, {
+          headers: { 'Content-Type': contentTypeForFilename(stem.filename) },
+        })
+      }
+    }
   }
-  if (stem.data_base64 !== undefined && stem.data_base64 !== '') {
-    const bytes = base64ToBytes(stem.data_base64)
-    // Copy into a plain ArrayBuffer so the body type matches — the DOM lib
-    // rejects a view backed by the generic ArrayBufferLike.
-    const body = new ArrayBuffer(bytes.byteLength)
-    new Uint8Array(body).set(bytes)
-    return new Response(body, {
-      headers: { 'Content-Type': contentTypeForFilename(stem.filename) },
-    })
+
+  // Durable fallback: the stem bytes outlive RunPod's job record in R2.
+  if (bucket !== null) {
+    const fromR2 = await serveStemFromR2(
+      bucket,
+      stemPrefix,
+      jobId,
+      wanted,
+    ).catch(() => null)
+    if (fromR2 !== null) return fromR2
   }
-  return json({ error: 'Stem has no payload' }, 404)
+
+  return json({ error: 'Output not ready' }, 404)
 }
 
 /** The client double-prefixes the output path (it stores the full

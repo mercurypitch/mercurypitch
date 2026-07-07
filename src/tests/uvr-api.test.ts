@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
-import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -114,6 +114,48 @@ describe('pollForCompletion (REQ-UV-006, REQ-UV-009)', () => {
     ).rejects.toThrow('Network error')
 
     expect(onError).toHaveBeenCalledWith('Network error')
+  })
+
+  it('rejects with a TerminalPollError (not a transient) on error status', async () => {
+    // A server-confirmed dead job must be distinguishable from a network blip
+    // so callers can drop the job's apiSessionId — a plain Error would be
+    // treated as recoverable.
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          session_id: 's',
+          status: 'error',
+          files: [],
+          error: 'Job failed',
+        }),
+    } as Response)
+
+    await expect(
+      pollForCompletion('s', vi.fn(), vi.fn(), vi.fn(), 10),
+    ).rejects.toBeInstanceOf(TerminalPollError)
+  })
+
+  it('treats an onComplete throw as terminal, not a retry', async () => {
+    // The completed branch must not be swallowed by the transient-retry catch:
+    // a throw there is terminal (no re-poll / re-download loop).
+    const spy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({ session_id: 's', status: 'completed', files: [] }),
+    } as Response)
+    const onComplete = vi.fn(() => {
+      throw new Error('persist blew up')
+    })
+
+    await expect(
+      pollForCompletion('s', vi.fn(), onComplete, vi.fn(), 10),
+    ).rejects.toBeInstanceOf(TerminalPollError)
+    // One status poll, one onComplete attempt — no retry loop.
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(onComplete).toHaveBeenCalledTimes(1)
   })
 
   // REQ-UV-010: AbortSignal

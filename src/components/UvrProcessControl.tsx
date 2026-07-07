@@ -50,6 +50,10 @@ interface ProcessControlProps {
   onNewSession?: () => void
   onDeleteAndNew?: () => void
   onViewResults?: () => void
+  /** Re-attach to an already-paid server job and re-fetch its stems (no new
+   *  charge). Passed only for server sessions whose RunPod id we still hold, so
+   *  a lost/backgrounded job can be recovered instead of re-run. */
+  onFetchStems?: () => void
   phase?: 'queued' | 'processing'
 }
 
@@ -62,9 +66,9 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
    *  song simply running past its estimate. */
   const waitingMessage = (): string => {
     if (props.phase === 'queued') {
-      return 'Waiting for a GPU worker - the first song after an update can take a few minutes'
+      return "Warming up the server — the first song can take a minute. You can switch away; we'll fetch your stems automatically when it's done."
     }
-    return 'Taking a little longer than estimated - still separating'
+    return 'Taking a little longer than estimated — still separating'
   }
 
   const formatTime = (ms: number): string => {
@@ -177,6 +181,23 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           title: 'Uploading file...',
           description: 'Preparing to process',
           color: 'var(--accent)',
+        }
+      case 'finalizing':
+        return {
+          icon: <Loader2 />,
+          title: 'Saving stems...',
+          description: 'Almost done',
+          color: 'var(--accent)',
+        }
+      case 'interrupted':
+        return {
+          icon: <XCircle />,
+          title: 'Separation interrupted',
+          description:
+            (props.error ?? '').length > 0
+              ? props.error
+              : 'The app was reloaded while this was processing.',
+          color: 'var(--error)',
         }
       case 'idle':
       default:
@@ -359,7 +380,16 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             Cancel
           </button>
         </Show>
-        <Show when={props.status === 'error'}>
+        <Show when={props.status === 'error' || props.status === 'interrupted'}>
+          <Show when={props.onFetchStems}>
+            <button
+              class="process-btn process-btn-primary"
+              onClick={() => props.onFetchStems?.()}
+              title="Re-fetch the stems from your already-paid job — no new charge."
+            >
+              <RotateCcw /> Fetch my stems
+            </button>
+          </Show>
           <button
             class="process-btn-icon process-btn-retry"
             onClick={() => props.onRetry?.()}
@@ -367,7 +397,9 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             <span class="process-btn-icon-svg">
               <RotateCcw />
             </span>
-            <span class="process-btn-icon-label">Retry</span>
+            <span class="process-btn-icon-label">
+              {props.processingMode === 'server' ? 'Separate again' : 'Retry'}
+            </span>
           </button>
           <button
             class="process-btn-icon process-btn-new"

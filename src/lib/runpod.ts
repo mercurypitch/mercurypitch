@@ -328,6 +328,30 @@ export function mapStatusToResponse(
   }
 }
 
+// Mirrors the handler's _classify_stem (runpod/handler.py): the parenthesised
+// marker in "<song>_(Vocals)_<model>.flac" wins over a bare substring so a song
+// literally called "Vocal Coach" can't misclassify its instrumental. Karaoke
+// models label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
+// contract that IS the instrumental. Used to recover a job's stems straight
+// from R2 by filename when RunPod no longer has the job result.
+const STEM_MARKER_RE = /\((vocals?|instrumental|karaoke|drums|bass|other)\)/i
+const STEM_KEYS = ['vocal', 'instrumental', 'drums', 'bass', 'other']
+
+export function classifyStemFromFilename(filename: string): string {
+  const low = filename.toLowerCase()
+  const marker = STEM_MARKER_RE.exec(low)
+  if (marker) {
+    const raw = marker[1]
+    if (raw.startsWith('vocal')) return 'vocal'
+    if (raw === 'karaoke') return 'instrumental'
+    return raw
+  }
+  for (const key of STEM_KEYS) {
+    if (low.includes(key)) return key
+  }
+  return 'unknown'
+}
+
 /** Find a produced stem by stem type ("vocal") or exact filename. */
 export function findStemOutput(
   out: RunpodHandlerOutput | undefined,

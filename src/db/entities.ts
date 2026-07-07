@@ -239,7 +239,12 @@ export interface PlaylistRecord extends DbEntity {
 export interface UvrSessionRecord extends DbEntity {
   appSessionId: string // matches UvrSession.sessionId from app-store
   userId: string
-  status: string // 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
+  /** RunPod job session id (`rp_<tier>_<jobId>`) for server-mode jobs. Kept
+   *  so a reload can re-attach to an in-flight job and re-fetch its stems
+   *  (RunPod result ~30 min; R2 stems ~24 h) instead of orphaning it and
+   *  re-charging a fresh separation. Absent for local (on-device) jobs. */
+  apiSessionId?: string
+  status: string // 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled' | 'interrupted'
   progress: number
   indeterminate?: boolean
   fileHash?: string // SHA-256 hex digest of the original file
