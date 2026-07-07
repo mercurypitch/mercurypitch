@@ -555,6 +555,32 @@ input:checked + .settingsSlider:before {
   border-color: var(--accent);
 }
 
+/* Getting-started actions (reopen the welcome screen / open Voice Mirror) —
+   one shared look + hover so they match the other Settings buttons. */
+.getStartedBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.getStartedBtn:hover,
+.getStartedBtn:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-tertiary));
+}
+
 .aboutLinks {
   display: flex;
   flex-wrap: wrap;
