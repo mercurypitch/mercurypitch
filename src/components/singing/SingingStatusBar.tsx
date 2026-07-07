@@ -37,6 +37,10 @@ interface SingingStatusBarProps {
   onSeek: (beat: number) => void
   onSessionSkip: () => void
   onSessionEnd: () => void
+  // A-B Loop region (0 = not set)
+  loopA: () => number
+  loopB: () => number
+  loopEnabled: () => boolean
 }
 
 const titleCase = (s: string): string =>
@@ -155,6 +159,28 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
                 class={barStyles.fill}
                 style={{ width: `${progressPct()}%` }}
               />
+              <Show when={props.loopA() > 0 && props.loopB() > 0}>
+                {(() => {
+                  const total = props.totalBeats()
+                  if (total <= 0) return null
+                  const loopLeft = (props.loopA() / total) * 100
+                  const loopWidth =
+                    ((props.loopB() - props.loopA()) / total) * 100
+                  return (
+                    <div
+                      class={barStyles.loopRegion}
+                      classList={{
+                        [barStyles.loopRegionActive]: props.loopEnabled(),
+                      }}
+                      style={{
+                        left: `${loopLeft}%`,
+                        width: `${Math.max(0.5, loopWidth)}%`,
+                      }}
+                      data-testid="loop-region"
+                    />
+                  )
+                })()}
+              </Show>
             </div>
             <span class={barStyles.time}>
               {formatTime(props.totalBeats() / (props.bpm() / 60))}

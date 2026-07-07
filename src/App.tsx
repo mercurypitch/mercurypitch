@@ -1172,6 +1172,45 @@ const AppShell: Component<AppProps> = (props) => {
   // becomes the practice melody.
   const [singingSong, setSingingSong] = createSignal<SavedMidiSong | null>(null)
 
+  // ── A-B Loop state for Singing tab ──────────────────────────
+  const [loopEnabled, setLoopEnabled] = createSignal(false)
+  const [loopA, setLoopA] = createSignal(0)
+  const [loopB, setLoopB] = createSignal(0)
+
+  const handleSetLoopA = () => {
+    const beat = currentBeat()
+    if (beat < 0) return
+    setLoopA(Math.max(0, beat))
+    // Auto-clear B if A >= B
+    if (loopB() > 0 && beat >= loopB()) setLoopB(0)
+  }
+
+  const handleSetLoopB = () => {
+    const beat = currentBeat()
+    if (beat <= loopA()) return
+    setLoopB(beat)
+  }
+
+  const handleToggleLoop = () => {
+    setLoopEnabled((v) => !v)
+  }
+
+  const handleClearLoop = () => {
+    setLoopEnabled(false)
+    setLoopA(0)
+    setLoopB(0)
+  }
+
+  // Auto-seek back to A when playhead reaches B (loop enabled)
+  createEffect(() => {
+    const beat = currentBeat()
+    if (loopEnabled() && loopB() > 0 && loopA() < loopB()) {
+      if (beat >= loopB()) {
+        playbackRuntime.seekTo(loopA())
+      }
+    }
+  })
+
   // Karaoke backing: the "heard" (non-scored) tracks play as audio while the
   // scored track stays the reference/scored melody.
   const singingBacking = useSingingBacking({
@@ -1996,6 +2035,9 @@ const AppShell: Component<AppProps> = (props) => {
                         onSeek={(beat) => playbackRuntime.seekTo(beat)}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
+                        loopA={loopA}
+                        loopB={loopB}
+                        loopEnabled={loopEnabled}
                       />
                     </div>
 
@@ -2085,6 +2127,13 @@ const AppShell: Component<AppProps> = (props) => {
                           onMicToggle={() => {
                             void handleMicToggle()
                           }}
+                          loopEnabled={loopEnabled}
+                          loopA={loopA}
+                          loopB={loopB}
+                          onSetLoopA={handleSetLoopA}
+                          onSetLoopB={handleSetLoopB}
+                          onToggleLoop={handleToggleLoop}
+                          onClearLoop={handleClearLoop}
                         />
                       </ControlOverlay>
                     </div>
