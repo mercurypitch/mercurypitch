@@ -171,35 +171,16 @@ export const Caret = (p: { up?: boolean }) => (
 )
 
 // ── A-B Loop icons ────────────────────────────────────────────────
+// The loop toggle reuses IconRepeat (its lit/unlit state comes from the
+// button's `.active` class, not a per-icon colour).
 
-/** Loop repeat icon (two arrows in a circle). */
-export const IconLoop = (p: { active?: boolean }) => (
-  <Svg>
-    <path
-      d="M17 2l3 3-3 3"
-      stroke={p.active === true ? '#4caf50' : 'currentColor'}
-      stroke-width="2"
-    />
-    <path
-      d="M7 22l-3-3 3-3"
-      stroke={p.active === true ? '#4caf50' : 'currentColor'}
-      stroke-width="2"
-    />
-    <path
-      d="M20 5H9a6 6 0 000 12h1"
-      stroke={p.active === true ? '#4caf50' : 'currentColor'}
-      stroke-width="2"
-    />
-    <path
-      d="M4 19h8a6 6 0 006-6"
-      stroke={p.active === true ? '#4caf50' : 'currentColor'}
-      stroke-width="2"
-    />
-  </Svg>
-)
-
-/** Set loop point A icon. */
-export const IconLoopA = (p: { set?: boolean }) => (
+/**
+ * A single loop-point badge — a ringed 'A' or 'B'. When `set`, the ring fills
+ * with currentColor and the letter knocks out to the card background so it stays
+ * legible on the filled disc; otherwise it's an outlined ring with the letter in
+ * currentColor. No hardcoded colours — theming rides on currentColor.
+ */
+export const IconLoopPoint = (p: { label: 'A' | 'B'; set?: boolean }) => (
   <Svg fill={p.set === true}>
     <circle
       cx="12"
@@ -208,75 +189,18 @@ export const IconLoopA = (p: { set?: boolean }) => (
       stroke={p.set === true ? 'none' : 'currentColor'}
       fill={p.set === true ? 'currentColor' : 'none'}
     />
-    {p.set !== true && (
-      <text
-        x="12"
-        y="17"
-        font-size="13"
-        font-family="sans-serif"
-        text-anchor="middle"
-        font-weight="bold"
-        fill="currentColor"
-        stroke="none"
-      >
-        A
-      </text>
-    )}
-    {p.set === true && (
-      <text
-        x="12"
-        y="17"
-        font-size="13"
-        font-family="sans-serif"
-        text-anchor="middle"
-        font-weight="bold"
-        fill="#fff"
-        stroke="none"
-      >
-        A
-      </text>
-    )}
-  </Svg>
-)
-
-/** Set loop point B icon. */
-export const IconLoopB = (p: { set?: boolean }) => (
-  <Svg fill={p.set === true}>
-    <circle
-      cx="12"
-      cy="12"
-      r="10"
-      stroke={p.set === true ? 'none' : 'currentColor'}
-      fill={p.set === true ? 'currentColor' : 'none'}
-    />
-    {p.set !== true && (
-      <text
-        x="12"
-        y="17"
-        font-size="13"
-        font-family="sans-serif"
-        text-anchor="middle"
-        font-weight="bold"
-        fill="currentColor"
-        stroke="none"
-      >
-        B
-      </text>
-    )}
-    {p.set === true && (
-      <text
-        x="12"
-        y="17"
-        font-size="13"
-        font-family="sans-serif"
-        text-anchor="middle"
-        font-weight="bold"
-        fill="#fff"
-        stroke="none"
-      >
-        B
-      </text>
-    )}
+    <text
+      x="12"
+      y="17"
+      font-size="13"
+      font-family="sans-serif"
+      text-anchor="middle"
+      font-weight="bold"
+      fill={p.set === true ? 'var(--bg-card)' : 'currentColor'}
+      stroke="none"
+    >
+      {p.label}
+    </text>
   </Svg>
 )
 

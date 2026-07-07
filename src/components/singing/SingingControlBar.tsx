@@ -16,12 +16,12 @@
 //   plus btn-mic / btn-precount via MicButton / PrecCountButton.
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Accessor, Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import styles from '@/components/shared/control-bar/control-bar.module.css'
-import { IconAnchor, IconClear, IconClock, IconFocus, IconLoop, IconLoopA, IconLoopB, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
+import { IconAnchor, IconClear, IconClock, IconFocus, IconLoopPoint, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
@@ -57,9 +57,9 @@ interface SingingControlBarProps {
   onSpeedChange: (speed: number) => void
   onMicToggle: () => void
   // A-B Loop
-  loopEnabled: () => boolean
-  loopA: () => number
-  loopB: () => number
+  loopEnabled: Accessor<boolean>
+  loopA: Accessor<number>
+  loopB: Accessor<number>
   onSetLoopA: () => void
   onSetLoopB: () => void
   onToggleLoop: () => void
@@ -309,7 +309,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         aria-label="Set loop start (A)"
         onClick={() => props.onSetLoopA()}
       >
-        <IconLoopA set={props.loopA() > 0} />
+        <IconLoopPoint label="A" set={props.loopA() > 0} />
       </button>
       <button
         type="button"
@@ -320,7 +320,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         aria-label="Set loop end (B)"
         onClick={() => props.onSetLoopB()}
       >
-        <IconLoopB set={props.loopB() > 0} />
+        <IconLoopPoint label="B" set={props.loopB() > 0} />
       </button>
       <Show when={props.loopA() > 0 && props.loopB() > 0}>
         <button
@@ -332,7 +332,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
           aria-label={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
           onClick={() => props.onToggleLoop()}
         >
-          <IconLoop active={props.loopEnabled()} />
+          <IconRepeat />
         </button>
         <button
           type="button"

@@ -76,6 +76,7 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
+import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -1173,20 +1174,30 @@ const AppShell: Component<AppProps> = (props) => {
   const [singingSong, setSingingSong] = createSignal<SavedMidiSong | null>(null)
 
   // ── A-B Loop state for Singing tab ──────────────────────────
+  // Loop math lives in the framework-free `ab-loop` helpers so the
+  // boundary/seek/geometry rules match the canonical stem-mixer loop.
   const [loopEnabled, setLoopEnabled] = createSignal(false)
   const [loopA, setLoopA] = createSignal(0)
   const [loopB, setLoopB] = createSignal(0)
+  // Mirrors the stem-mixer's `seekedOutsideLoop`: while true (the user
+  // manually seeked outside [A, B)), we stop yanking the playhead back to A
+  // until playback re-enters the region.
+  const [seekedOutsideLoop, setSeekedOutsideLoop] = createSignal(false)
 
   const handleSetLoopA = () => {
     const beat = currentBeat()
     if (beat < 0) return
     setLoopA(Math.max(0, beat))
-    // Auto-clear B if A >= B
-    if (loopB() > 0 && beat >= loopB()) setLoopB(0)
+    // Re-marking A at/after B empties the region — clear B and disable the
+    // loop so we don't enforce a backwards/degenerate boundary.
+    if (loopB() > 0 && beat >= loopB()) {
+      setLoopB(0)
+      setLoopEnabled(false)
+    }
   }
 
   const handleSetLoopB = () => {
-    const beat = currentBeat()
+    const beat = clampLoopB(currentBeat(), loopA(), totalBeats())
     if (beat <= loopA()) return
     setLoopB(beat)
   }
@@ -1199,15 +1210,41 @@ const AppShell: Component<AppProps> = (props) => {
     setLoopEnabled(false)
     setLoopA(0)
     setLoopB(0)
+    setSeekedOutsideLoop(false)
   }
 
-  // Auto-seek back to A when playhead reaches B (loop enabled)
+  // Manual seek from the status-bar scrubber: record whether it escaped the
+  // loop region so the auto-seek-back below stays suppressed until we're back
+  // inside [A, B). (Fixes: a manual seek past B used to be instantly reverted.)
+  const handleSingingSeek = (beat: number) => {
+    setSeekedOutsideLoop(isSeekOutsideLoop(beat, loopA(), loopB()))
+    playbackRuntime.seekTo(beat)
+  }
+
+  // Auto-seek back to A when the playhead reaches B (loop enabled). Only fire
+  // while the playhead is still short of the track end, so we don't race the
+  // runtime's natural-end / complete handling.
   createEffect(() => {
     const beat = currentBeat()
-    if (loopEnabled() && loopB() > 0 && loopA() < loopB()) {
-      if (beat >= loopB()) {
-        playbackRuntime.seekTo(loopA())
-      }
+    // Once playback re-enters [A, B), drop the manual-seek escape flag.
+    if (
+      seekedOutsideLoop() &&
+      loopA() < loopB() &&
+      beat >= loopA() &&
+      beat < loopB()
+    ) {
+      setSeekedOutsideLoop(false)
+    }
+    if (
+      shouldLoopBack(beat, {
+        enabled: loopEnabled(),
+        a: loopA(),
+        b: loopB(),
+        seekedOutside: seekedOutsideLoop(),
+      }) &&
+      beat < totalBeats()
+    ) {
+      playbackRuntime.seekTo(loopA())
     }
   })
 
@@ -2032,7 +2069,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentSong={singingSong}
                         playheadBeat={currentBeat}
                         totalBeats={totalBeats}
-                        onSeek={(beat) => playbackRuntime.seekTo(beat)}
+                        onSeek={handleSingingSeek}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
                         loopA={loopA}
