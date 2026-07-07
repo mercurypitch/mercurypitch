@@ -8,8 +8,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { RiffTrackerState } from '@/features/guitar-practice/RiffTrackerState'
+import { octaveFoldedDistance, parseTargetMelody, } from '@/features/guitar-practice/RiffTrackerState'
 import { midiToNoteName } from '@/lib/frequency-to-note'
-import { NOTE_NAMES } from '@/lib/note-utils'
 import styles from './GuitarRiffTracker.module.css'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -19,40 +19,45 @@ interface GuitarRiffTrackerProps {
   state: RiffTrackerState
 }
 
+// ── Status icons (no text glyphs — house style) ───────────────
+// Small currentColor SVGs matching the project icon set.
+
+const ICON_SIZE = 12
+
+/** Filled record dot. */
+const RecordDot: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8" />
+  </svg>
+)
+
+/** Filled stop square. */
+const StopSquare: Component = () => (
+  <svg
+    width={ICON_SIZE}
+    height={ICON_SIZE}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <rect x="5" y="5" width="14" height="14" rx="2" />
+  </svg>
+)
+
 // ── Helpers ───────────────────────────────────────────────────
 
 const formatTime = (ms: number) => `${(ms / 1000).toFixed(1)}s`
 
 /**
- * Parse a comma/space-separated string of note names (e.g. "E4, G4, A4")
- * or MIDI numbers (e.g. "64, 67, 69") into an array of MIDI numbers.
- */
-function parseTargetMelody(raw: string): number[] {
-  const parts = raw.split(/[, ]+/)
-  const midis: number[] = []
-  for (const part of parts) {
-    if (part === '') continue
-    const num = Number(part)
-    if (!isNaN(num) && num >= 0 && num <= 127) {
-      midis.push(num)
-    } else {
-      // Try "E4", "G#3", etc. — NOTE_NAMES is from @/lib/note-utils
-      const match = part.match(/^([A-G]#?)(\d)$/i)
-      if (match) {
-        const idx = NOTE_NAMES.indexOf(match[1].toUpperCase())
-        if (idx >= 0) {
-          const octave = parseInt(match[2])
-          midis.push((octave + 1) * 12 + idx)
-        }
-      }
-    }
-  }
-  return midis
-}
-
-/**
  * Octave-folded best-match index into target notes for a recorded note.
  * Returns the target index and distance (or -1 if none match within threshold).
+ * Reuses `octaveFoldedDistance` from RiffTrackerState (single source of truth).
  */
 function findBestTargetMatch(
   recordedMidi: number,
@@ -64,10 +69,7 @@ function findBestTargetMatch(
   let bestDist = Infinity
   for (let i = 0; i < targets.length; i++) {
     if (used.has(i)) continue
-    const dist = Math.min(
-      Math.abs((recordedMidi % 12) - (targets[i] % 12)),
-      12 - Math.abs((recordedMidi % 12) - (targets[i] % 12)),
-    )
+    const dist = octaveFoldedDistance(recordedMidi, targets[i])
     if (dist < bestDist) {
       bestDist = dist
       bestIdx = i
@@ -108,7 +110,11 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
         <span class={styles.title}>Riff Tracker</span>
         <span class={styles.phase}>
           {state.phase() === 'idle' && 'Ready'}
-          {state.phase() === 'recording' && '● Recording...'}
+          <Show when={state.phase() === 'recording'}>
+            <span class={styles.phaseRecording}>
+              <RecordDot /> Recording...
+            </span>
+          </Show>
           {state.phase() === 'reviewing' && 'Review'}
           {state.phase() === 'scoring' && 'Score'}
         </span>
@@ -122,7 +128,7 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
             onClick={() => state.startRecording()}
             aria-label="Start recording riff"
           >
-            ● Record
+            <RecordDot /> Record
           </button>
         </Show>
 
@@ -132,7 +138,7 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
             onClick={() => state.stopRecording()}
             aria-label="Stop recording"
           >
-            ■ Stop
+            <StopSquare /> Stop
           </button>
           <span class={styles.recordingTimer}>
             {formatTime(state.recordingDuration())}
@@ -147,7 +153,7 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
             onClick={() => state.startRecording()}
             aria-label="Record new riff"
           >
-            ● Re-record
+            <RecordDot /> Re-record
           </button>
           <button
             class={`${styles.btn} ${styles.btnScore}`}

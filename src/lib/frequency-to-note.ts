@@ -53,12 +53,16 @@ export function frequenciesToNoteName(frequency: number): string {
 }
 
 /**
- * Convert frequency to MIDI note number (e.g., 60 = C4)
+ * Convert frequency to MIDI note number (e.g., 60 = C4).
+ *
+ * Rounds to the nearest semitone by default. Pass `round = false` for the
+ * exact fractional MIDI value (useful for cent-accurate deviation math).
  */
-export function frequencyToMidi(frequency: number): number {
+export function frequencyToMidi(frequency: number, round = true): number {
   const A4 = 440
   const A4Note = 69
-  return Math.round(12 * Math.log2(frequency / A4) + A4Note)
+  const midi = 12 * Math.log2(frequency / A4) + A4Note
+  return round ? Math.round(midi) : midi
 }
 
 /**
@@ -85,29 +89,32 @@ export function midiToNoteName(midi: number): string {
   return `${noteNames[noteIndex]}${octave}`
 }
 
+/** Semitone index (0–11) for each natural note letter, C = 0. */
+const LETTER_SEMITONES: Record<string, number> = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
+}
+
 /**
- * Convert note string (e.g., "A3", "C#4") to MIDI note number.
+ * Convert note string (e.g., "A3", "C#4", "Bb3", "G#10") to MIDI note number.
+ *
+ * Accepts sharps (`#`) and flats (`b`), a leading letter in either case, and
+ * multi-digit / negative octaves. Returns NaN for anything unparseable.
  */
 export function noteToMidi(note: string): number {
-  const noteNames: NoteName[] = [
-    'C',
-    'C#',
-    'D',
-    'D#',
-    'E',
-    'F',
-    'F#',
-    'G',
-    'G#',
-    'A',
-    'A#',
-    'B',
-  ]
-  const match = /^([A-G]#?)(-?\d+)$/.exec(note)
+  const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(note.trim())
   if (!match) return NaN
-  const [, name, octaveStr] = match
+  const [, letter, accidental, octaveStr] = match
+  const base = LETTER_SEMITONES[letter.toUpperCase()]
+  if (base === undefined) return NaN
+  const offset = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0
   const octave = parseInt(octaveStr, 10)
-  return noteNames.indexOf(name as NoteName) + (octave + 1) * 12
+  return base + offset + (octave + 1) * 12
 }
 
 /**

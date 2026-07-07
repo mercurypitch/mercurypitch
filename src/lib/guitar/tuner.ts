@@ -10,7 +10,7 @@
 // Reuses existing constants from guitar-synth.ts (GUITAR_TUNING,
 // GUITAR_STRINGS) and note-utils.ts (midiToNoteName, NOTE_NAMES).
 
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { computeCentsDeviation, frequencyToMidi, midiToNoteName, } from '@/lib/frequency-to-note'
 import { GUITAR_STRINGS, GUITAR_TUNING } from '@/lib/guitar/guitar-synth'
 
 // ── Re-export for convenience ──────────────────────────────────
@@ -41,7 +41,8 @@ export const ALTERNATE_TUNINGS: Record<string, number[]> = {
   ],
   'Drop D': [73.42, 110.0, 146.83, 196.0, 246.94, 329.63],
   'Half Step Down': [77.78, 103.83, 138.59, 185.0, 233.08, 311.13],
-  'Open G': [98.0, 73.42, 98.0, 123.47, 146.83, 196.0],
+  // D2 G2 D3 G3 B3 D4 — low→high.
+  'Open G': [73.42, 98.0, 146.83, 196.0, 246.94, 293.66],
   DADGAD: [73.42, 110.0, 146.83, 196.0, 220.0, 293.66],
 }
 
@@ -87,49 +88,69 @@ export interface TunerResult {
 /** Standard tuning string names in display order (low→high). */
 export const STRING_NAMES = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'] as const
 
+/** Standard-tuning open-string frequencies (Hz), low→high. */
+const STANDARD_TARGETS: number[] = STRING_NAMES.map((n) => GUITAR_TUNING[n])
+
 // ── Core logic ────────────────────────────────────────────────
 
 /**
- * Map a detected frequency to the nearest guitar string.
+ * Map a detected frequency to the nearest string of a given tuning.
  * Returns the closest open-string target and cent deviation.
+ *
+ * `targets` / `names` describe the tuning to classify against (low→high,
+ * same length). Defaults to standard EADGBE so callers that don't care
+ * about alternate tunings keep working. Returns null when the nearest
+ * string is more than TUNER_MAX_SIGNAL_CENTS away — i.e. the detected
+ * pitch is off-string noise, not a real tuning attempt.
  */
 export function classifyPitch(
   frequency: number,
   clarity: number,
+  targets: number[] = STANDARD_TARGETS,
+  names: string[] = STRING_NAMES as unknown as string[],
 ): TunerResult | null {
-  if (frequency <= 0 || clarity < TUNER_MIN_CLARITY) return null
+  // NaN-safe: `!(frequency > 0)` also rejects NaN, unlike `frequency <= 0`.
+  if (!(frequency > 0) || clarity < TUNER_MIN_CLARITY) return null
 
   // Find the closest open string by semitone distance
-  let bestString: (typeof STRING_NAMES)[number] = STRING_NAMES[0]
+  let bestIndex = 0
   let bestDistance = Infinity
 
-  for (const name of STRING_NAMES) {
-    const target = GUITAR_TUNING[name]
-    const semitones = Math.abs(Math.log2(frequency / target) * 12)
+  for (let i = 0; i < targets.length; i++) {
+    const semitones = Math.abs(Math.log2(frequency / targets[i]) * 12)
     if (semitones < bestDistance) {
       bestDistance = semitones
-      bestString = name
+      bestIndex = i
     }
   }
 
-  const targetHz = GUITAR_TUNING[bestString]
-  const cents = 1200 * Math.log2(frequency / targetHz)
+  const targetHz = targets[bestIndex]
+  const bestName = names[bestIndex]
+
+  // Cents via the shared util (midi space): both operands as MIDI numbers,
+  // so 100 cents == 1 semitone exactly.
+  const cents = computeCentsDeviation(
+    frequencyToMidi(frequency, false),
+    frequencyToMidi(targetHz, false),
+  )
   const absCents = Math.abs(cents)
 
-  // MIDI note from frequency (A4 = 440 Hz = MIDI 69)
-  const midi = 69 + 12 * Math.log2(frequency / 440)
-
-  return {
+  const result: TunerResult = {
     frequency,
-    stringName: bestString,
-    stringLabel: STRING_LABELS[bestString]!,
+    stringName: bestName,
+    stringLabel: STRING_LABELS[bestName] ?? bestName,
     targetHz,
     centsDeviation: Math.round(cents * 10) / 10,
     inTune: absCents <= TUNER_IN_TUNE_CENTS,
     close: absCents <= TUNER_CLOSE_CENTS,
-    midi: Math.round(midi),
+    midi: frequencyToMidi(frequency),
     clarity,
   }
+
+  // Signal gate: reject off-string noise so it can't read "in tune".
+  if (!isTuningSignal(result)) return null
+
+  return result
 }
 
 /**
@@ -160,8 +181,5 @@ export function getTuningFrequencies(tuningName: string): number[] {
  */
 export function getTuningStringNames(tuningName: string): string[] {
   const freqs = getTuningFrequencies(tuningName)
-  return freqs.map((f) => {
-    const midi = Math.round(69 + 12 * Math.log2(f / 440))
-    return midiToNoteName(midi)
-  })
+  return freqs.map((f) => midiToNoteName(frequencyToMidi(f)))
 }

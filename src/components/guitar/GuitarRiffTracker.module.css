@@ -39,6 +39,13 @@
   border-radius: var(--radius-sm, 10px);
 }
 
+.phaseRecording {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #f44336;
+}
+
 /* ── Controls ───────────────────────────────────────────────── */
 
 .controls {
@@ -48,6 +55,9 @@
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: var(--bg-tertiary, #2a2a3e);
   color: var(--text-primary, #e0e0e0);
   border: 1px solid var(--bg-quaternary, #3a3a4e);

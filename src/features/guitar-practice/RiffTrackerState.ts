@@ -9,7 +9,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -76,9 +76,33 @@ const NEAR_MATCH_POINTS = 15
 // ── Helpers ────────────────────────────────────────────────────
 
 /** Octave-folded semitone distance between two MIDI note numbers. */
-function octaveFoldedDistance(a: number, b: number): number {
+export function octaveFoldedDistance(a: number, b: number): number {
   const diff = Math.abs((a % 12) - (b % 12))
   return Math.min(diff, 12 - diff)
+}
+
+/**
+ * Parse a comma/space-separated melody string into MIDI note numbers.
+ * Accepts note names (e.g. "E4", "Bb3", "G#10") and raw MIDI numbers
+ * (0–127). Note-name parsing is delegated to `noteToMidi`, so flats and
+ * multi-digit octaves are handled correctly. Unrecognised tokens are
+ * skipped. Kept here (not in the component) so it's unit-testable.
+ */
+export function parseTargetMelody(raw: string): number[] {
+  const parts = raw.split(/[, ]+/)
+  const midis: number[] = []
+  for (const part of parts) {
+    if (part === '') continue
+    // Prefer a raw MIDI number when the token is purely numeric.
+    if (/^\d+$/.test(part)) {
+      const num = Number(part)
+      if (num >= 0 && num <= 127) midis.push(num)
+      continue
+    }
+    const midi = noteToMidi(part)
+    if (!Number.isNaN(midi)) midis.push(midi)
+  }
+  return midis
 }
 
 // ── Factory ────────────────────────────────────────────────────

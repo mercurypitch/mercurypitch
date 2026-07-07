@@ -146,6 +146,11 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     createSignal<InstrumentType>('guitar-acoustic')
   const [detectedMidi, setDetectedMidi] = createSignal<number | null>(null)
   const [detectedClarity, setDetectedClarity] = createSignal(0)
+  // Reactive mirror of the `articulationId` counter (below). The non-reactive
+  // `let` stays the hot-path source of truth for scoring; this signal lets
+  // reactive consumers (e.g. riff capture) fire on EVERY distinct pick attack,
+  // including a repeated same pitch that `detectedMidi` de-duplicates away.
+  const [articulationIdSig, setArticulationIdSig] = createSignal(0)
   const [showUserNotes, setShowUserNotes] = createSignal(true)
   const [inputMode, setInputMode] = createSignal<'keyboard' | 'mic' | 'midi'>(
     'keyboard',
@@ -200,7 +205,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const midiEngine = new MidiEngine()
 
   midiEngine.callbacks.onNoteOn = (e) => {
-    articulationId++
+    bumpArticulation()
     setDetectedMidi(e.midi)
     setDetectedClarity(1.0)
     void audioEngine.playTone(midiToFreq(e.midi), 500)
@@ -297,6 +302,13 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   let heldMidi: number | null = null
   let silentFrames = 0
   let smoothedRms = 0
+
+  // Advance the articulation counter AND its reactive mirror in lockstep, so
+  // scoring (reads the `let`) and reactive consumers (read the signal) agree.
+  const bumpArticulation = () => {
+    articulationId++
+    setArticulationIdSig(articulationId)
+  }
 
   const toggleTrackMute = (trackId: string) => {
     const song = currentSong()
@@ -763,7 +775,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
             const m = computeMidi(detected.frequency)
             // A new pitch or a re-pick of the same pitch is a new articulation
             if (m !== null && (m !== heldMidi || isOnset)) {
-              articulationId++
+              bumpArticulation()
               heldMidi = m
               if (import.meta.env.DEV && m !== detectedMidi()) {
                 const name = `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
@@ -993,6 +1005,10 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setVisibleBeatWindow,
     detectedMidi,
     detectedClarity,
+    /** Reactive articulation counter — bumps once per distinct pick attack
+     * (new pitch, re-pick of the same pitch, or MIDI note-on). Drive
+     * per-attack capture off this and read detectedMidi() untracked. */
+    articulationId: articulationIdSig,
     startMic,
     stopMic,
     isMicActive: micOn,
