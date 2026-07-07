@@ -280,13 +280,18 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
 export interface ResendConfig {
   /** Resend API key. When absent, sending is skipped (feature off). */
   apiKey?: string
-  /** From header. Default matches email-setup.md (send. subdomain, S1). */
+  /** From header. Default hello@mercurypitch.com (Resend-verified root
+   *  domain). Override to send from a different verified address. */
   from?: string
   /** Reply-To; where human replies land. */
   replyTo?: string
 }
 
-const DEFAULT_FROM = 'MercuryPitch <noreply@send.mercurypitch.com>'
+// Friendly, replies-welcome default. Resend verifies the ROOT domain
+// (mercurypitch.com); send.mercurypitch.com is only its return-path/bounce
+// subdomain, so sending From @send.* is rejected (403). hello@ also receives
+// via Cloudflare Email Routing, so replies land. Override with EMAIL_FROM.
+const DEFAULT_FROM = 'MercuryPitch <hello@mercurypitch.com>'
 const DEFAULT_REPLY_TO = 'hello@mercurypitch.com'
 
 /**
