@@ -8,19 +8,37 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
-import type { TunerResult } from '@/lib/guitar/tuner'
-import { classifyPitch, getTargetHz, getTuningFrequencies, getTuningStringNames, STRING_LABELS, } from '@/lib/guitar/tuner'
+import type { TunerResult, TuningPreset } from '@/lib/guitar/tuner'
+import { classifyPitch, getTargetHz, getTuningFrequencies, getTuningStringNames, STRING_LABELS, TUNER_CLOSE_CENTS, TUNER_IN_TUNE_CENTS, } from '@/lib/guitar/tuner'
 import { PitchDetector } from '@/lib/pitch-detector'
 import styles from './GuitarTuner.module.css'
 
-// ── Types ──────────────────────────────────────────────────────
+// ── Tuner-specific constants ──────────────────────────────────
 
-export type TuningPreset =
-  | 'Standard'
-  | 'Drop D'
-  | 'Half Step Down'
-  | 'Open G'
-  | 'DADGAD'
+/** Frames a reading must stay on the same string before "locked". */
+const STABILITY_FRAMES = 8
+/** Minimum clarity threshold for pitch detection in tuner mode. */
+const TUNER_DETECT_CLARITY = 0.35
+/** Audio sample rate fallback when context isn't ready. */
+const DEFAULT_SAMPLE_RATE = 44100
+/** Min/max frequency range for guitar tuning (covers low E to high e). */
+const TUNABLE_FREQ_MIN = 70
+const TUNABLE_FREQ_MAX = 400
+/** Needle arc max angle in degrees (maps ±50 cents to ±this). */
+const NEEDLE_MAX_ANGLE = 45
+/** Scale factor: cents → degrees (45 / 50 = 0.9). */
+const NEEDLE_ANGLE_SCALE = NEEDLE_MAX_ANGLE / 50
+/** Display round-trip: cent decimals. */
+const CENTS_DECIMALS = 10
+
+// ── Color semantics (CSS variable names, not raw hex) ─────────
+
+const COLOR_IN_TUNE = 'var(--color-green, #4caf50)'
+const COLOR_CLOSE = 'var(--color-yellow, #ffc107)'
+const COLOR_SHARP_FLAT = 'var(--color-red, #f44336)'
+const COLOR_MUTED = 'var(--bg-tertiary)'
+
+// ── Props ─────────────────────────────────────────────────────
 
 interface GuitarTunerProps {
   /** Whether the tuner is actively listening. */
@@ -31,11 +49,41 @@ interface GuitarTunerProps {
   sampleRate: () => number
 }
 
-// ── Constants ──────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 
-const IN_TUNE_THRESHOLD = 5
-const CLOSE_THRESHOLD = 15
-const STABILITY_FRAMES = 8
+function pickNeedleColor(r: TunerResult): string {
+  if (r.inTune) return COLOR_IN_TUNE
+  if (r.close) return COLOR_CLOSE
+  return COLOR_SHARP_FLAT
+}
+
+function tuneStatusLabel(r: TunerResult): string {
+  if (r.inTune) return '✓ In Tune'
+  if (r.close) return '⟳ Close'
+  return r.centsDeviation > 0 ? '↑ Sharp' : '↓ Flat'
+}
+
+/**
+ * Build a manual-override result. Returns a NEW object — never mutates
+ * the input, so Solid signals fire correctly.
+ */
+function overrideResult(
+  detected: TunerResult,
+  manualString: string,
+): TunerResult {
+  const targetHz = getTargetHz(manualString)
+  const cents = 1200 * Math.log2(detected.frequency / targetHz)
+  const absCents = Math.abs(cents)
+  return {
+    ...detected,
+    stringName: manualString,
+    stringLabel: STRING_LABELS[manualString] ?? manualString,
+    targetHz,
+    centsDeviation: Math.round(cents * CENTS_DECIMALS) / CENTS_DECIMALS,
+    inTune: absCents <= TUNER_IN_TUNE_CENTS,
+    close: absCents <= TUNER_CLOSE_CENTS,
+  }
+}
 
 // ── Component ──────────────────────────────────────────────────
 
@@ -74,46 +122,41 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
       }
 
       const timeData = props.getTimeData()
-      if (timeData.length > 0) {
-        // Lazy-init the detector with correct sample rate
-        if (!pitchDetector) {
-          const sr = props.sampleRate()
-          pitchDetector = new PitchDetector({
-            sampleRate: sr > 0 ? sr : 44100,
-            minFrequency: 70,
-            maxFrequency: 400,
-          })
-        }
+      if (timeData.length === 0) {
+        animFrameId = requestAnimationFrame(loop)
+        return
+      }
 
-        const detected = pitchDetector!.detect(timeData)
-        if (detected.clarity > 0.35) {
-          const r = classifyPitch(detected.frequency, detected.clarity)
-          if (r) {
-            // Stability tracking: same string for N consecutive frames
-            if (r.stringName === prevString) {
-              stableCounter++
-            } else {
-              stableCounter = 0
-              prevString = r.stringName
-            }
-            setStable(stableCounter >= STABILITY_FRAMES)
+      // Lazy-init the detector with correct sample rate
+      if (!pitchDetector) {
+        const sr = props.sampleRate()
+        pitchDetector = new PitchDetector({
+          sampleRate: sr > 0 ? sr : DEFAULT_SAMPLE_RATE,
+          minFrequency: TUNABLE_FREQ_MIN,
+          maxFrequency: TUNABLE_FREQ_MAX,
+        })
+      }
 
-            // Manual string override
-            const ms = manualString()
-            if (ms != null && ms !== '') {
-              const targetHz = getTargetHz(ms)
-              const cents = 1200 * Math.log2(detected.frequency / targetHz)
-              const absCents = Math.abs(cents)
-              r.stringName = ms
-              r.stringLabel = STRING_LABELS[ms] ?? ms
-              r.targetHz = targetHz
-              r.centsDeviation = Math.round(cents * 10) / 10
-              r.inTune = absCents <= IN_TUNE_THRESHOLD
-              r.close = absCents <= CLOSE_THRESHOLD
-            }
-
-            setResult({ ...r })
+      const detected = pitchDetector.detect(timeData)
+      if (detected.clarity > TUNER_DETECT_CLARITY) {
+        const r = classifyPitch(detected.frequency, detected.clarity)
+        if (r) {
+          // Stability tracking: same string for N consecutive frames
+          if (r.stringName === prevString) {
+            stableCounter++
+          } else {
+            stableCounter = 0
+            prevString = r.stringName
           }
+          setStable(stableCounter >= STABILITY_FRAMES)
+
+          // Manual string override — produces a new object, no mutation
+          const final =
+            manualString() != null && manualString() !== ''
+              ? overrideResult(r, manualString()!)
+              : r
+
+          setResult(final)
         }
       }
 
@@ -140,20 +183,28 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
   const needleAngle = () => {
     const r = result()
     if (!r) return 0
-    // Map cents to degrees: -50 → -45deg, 0 → 0deg, +50 → +45deg
-    return Math.max(-45, Math.min(45, r.centsDeviation * 0.9))
+    return Math.max(
+      -NEEDLE_MAX_ANGLE,
+      Math.min(NEEDLE_MAX_ANGLE, r.centsDeviation * NEEDLE_ANGLE_SCALE),
+    )
   }
 
   const needleColor = () => {
     const r = result()
-    if (!r) return 'var(--bg-tertiary)'
-    if (r.inTune) return '#4caf50'
-    if (r.close) return '#ffc107'
-    return '#f44336'
+    return r ? pickNeedleColor(r) : COLOR_MUTED
   }
 
   const tuningFreqs = () => getTuningFrequencies(selectedPreset())
   const tuningNames = () => getTuningStringNames(selectedPreset())
+
+  /** Derived: is a given string name currently active? */
+  const isStringActive = (name: string) => {
+    const ms = manualString()
+    if (ms === name) return true
+    if (ms != null && ms !== '') return false
+    const r = result()
+    return r != null && r.stringName === name
+  }
 
   // ── Render ───────────────────────────────────────────────────
 
@@ -180,7 +231,6 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
 
       {/* Needle display */}
       <div class={styles.needleArea}>
-        {/* Scale labels */}
         <div class={styles.scale}>
           <span class={styles.scaleMarkL}>-50</span>
           <span class={styles.scaleMark}>-25</span>
@@ -189,7 +239,6 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
           <span class={styles.scaleMarkR}>+50</span>
         </div>
 
-        {/* Arc track */}
         <div class={styles.arcTrack}>
           <div class={styles.arcRedL} />
           <div class={styles.arcYellowL} />
@@ -198,7 +247,6 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
           <div class={styles.arcRedR} />
         </div>
 
-        {/* Needle */}
         <div
           class={styles.needle}
           style={{
@@ -207,7 +255,6 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
           }}
         />
 
-        {/* Center pivot */}
         <div class={styles.centerDot} />
       </div>
 
@@ -228,13 +275,7 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
                 {r().targetHz.toFixed(1)} Hz
               </span>
               <span class={styles.tuneStatus} style={{ color: needleColor() }}>
-                {r().inTune
-                  ? '✓ In Tune'
-                  : r().close
-                    ? '⟳ Close'
-                    : r().centsDeviation > 0
-                      ? '↑ Sharp'
-                      : '↓ Flat'}
+                {tuneStatusLabel(r())}
               </span>
               <Show when={stable() && r().inTune}>
                 <span class={styles.stableBadge}>Locked</span>
@@ -247,36 +288,28 @@ export const GuitarTuner: Component<GuitarTunerProps> = (props) => {
       {/* Per-string selector buttons */}
       <div class={styles.stringSelector}>
         <For each={tuningNames()}>
-          {(name, idx) => (
-            <button
-              type="button"
-              class={styles.stringBtn}
-              classList={{
-                [styles.stringBtnActive]:
-                  manualString() === name ||
-                  (manualString() == null &&
-                    result() != null &&
-                    result()!.stringName === name),
-              }}
-              onClick={() =>
-                setManualString(manualString() === name ? null : name)
-              }
-              aria-label={`Tune ${name}`}
-              aria-pressed={
-                manualString() === name ||
-                (manualString() == null &&
-                  result() != null &&
-                  result()!.stringName === name)
-              }
-            >
-              <span class={styles.stringBtnLabel}>
-                {name.replace(/\d/, '')}
-              </span>
-              <span class={styles.stringBtnFreq}>
-                {tuningFreqs()[idx()].toFixed(1)}
-              </span>
-            </button>
-          )}
+          {(name, idx) => {
+            const active = isStringActive(name)
+            return (
+              <button
+                type="button"
+                class={styles.stringBtn}
+                classList={{ [styles.stringBtnActive]: active }}
+                onClick={() =>
+                  setManualString(manualString() === name ? null : name)
+                }
+                aria-label={`Tune ${name}`}
+                aria-pressed={active}
+              >
+                <span class={styles.stringBtnLabel}>
+                  {name.replace(/\d/, '')}
+                </span>
+                <span class={styles.stringBtnFreq}>
+                  {tuningFreqs()[idx()].toFixed(1)}
+                </span>
+              </button>
+            )
+          }}
         </For>
       </div>
     </div>

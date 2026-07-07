@@ -9,6 +9,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { midiToNoteName } from '@/lib/frequency-to-note'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -57,31 +58,28 @@ export interface RiffTrackerState {
   reset: () => void
 }
 
-// ── Helpers ────────────────────────────────────────────────────
-
-const NOTE_NAMES = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-]
-
-function midiToNoteName(midi: number): string {
-  const name = NOTE_NAMES[midi % 12]
-  const octave = Math.floor(midi / 12) - 1
-  return `${name}${octave}`
-}
+// ── Constants ──────────────────────────────────────────────────
 
 /** Minimum ms between notes to count as separate articulations. */
-const MIN_NOTE_GAP_MS = 120
+export const RIFF_MIN_NOTE_GAP_MS = 120
+
+/** Max semitone distance (octave-folded) for a note match. */
+const MAX_MATCH_SEMITONES = 1
+
+/** Bonus points awarded when ALL target notes are correct. */
+const ALL_CORRECT_BONUS = 25
+/** Points per exact match (0 semitones). */
+const EXACT_MATCH_POINTS = 25
+/** Points per near match (1 semitone). */
+const NEAR_MATCH_POINTS = 15
+
+// ── Helpers ────────────────────────────────────────────────────
+
+/** Octave-folded semitone distance between two MIDI note numbers. */
+function octaveFoldedDistance(a: number, b: number): number {
+  const diff = Math.abs((a % 12) - (b % 12))
+  return Math.min(diff, 12 - diff)
+}
 
 // ── Factory ────────────────────────────────────────────────────
 
@@ -122,8 +120,11 @@ export function createRiffTracker(): RiffTrackerState {
     const now = performance.now()
     const timeMs = now - recordingStartMs()
 
-    // Debounce: skip if same note within MIN_NOTE_GAP_MS
-    if (midi === lastNoteMidi && timeMs - lastNoteTimeMs < MIN_NOTE_GAP_MS) {
+    // Debounce: skip if same note within the gap window
+    if (
+      midi === lastNoteMidi &&
+      timeMs - lastNoteTimeMs < RIFF_MIN_NOTE_GAP_MS
+    ) {
       return
     }
 
@@ -154,44 +155,36 @@ export function createRiffTracker(): RiffTrackerState {
 
     setPhase('scoring')
 
-    // Align recorded notes to target notes using simple greedy matching.
-    // Each target note is compared to the closest recorded note in MIDI space,
-    // allowing for octave equivalence.
+    // Greedy alignment: each target note matches the best available
+    // recorded note by octave-folded semitone distance.
     const results: Array<'correct' | 'wrong' | 'pending'> = []
     let totalScore = 0
     const used = new Set<number>()
 
-    for (let i = 0; i < targets.length; i++) {
-      const target = targets[i]
+    for (const target of targets) {
       let bestIdx = -1
       let bestDist = Infinity
 
       for (let j = 0; j < recorded.length; j++) {
         if (used.has(j)) continue
-        const rMidi = recorded[j].midi
-        // Octave-folded distance (0–6 semitones)
-        const dist = Math.min(
-          Math.abs((rMidi % 12) - (target % 12)),
-          12 - Math.abs((rMidi % 12) - (target % 12)),
-        )
+        const dist = octaveFoldedDistance(recorded[j].midi, target)
         if (dist < bestDist) {
           bestDist = dist
           bestIdx = j
         }
       }
 
-      if (bestIdx >= 0 && bestDist <= 1) {
+      if (bestIdx >= 0 && bestDist <= MAX_MATCH_SEMITONES) {
         results.push('correct')
         used.add(bestIdx)
-        totalScore += bestDist === 0 ? 25 : 15
+        totalScore += bestDist === 0 ? EXACT_MATCH_POINTS : NEAR_MATCH_POINTS
       } else {
         results.push('wrong')
       }
     }
 
-    // Bonus for getting all notes
     if (results.every((r) => r === 'correct')) {
-      totalScore += 25
+      totalScore += ALL_CORRECT_BONUS
     }
 
     setNoteResults(results)

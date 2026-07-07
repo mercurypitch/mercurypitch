@@ -8,6 +8,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { RiffTrackerState } from '@/features/guitar-practice/RiffTrackerState'
+import { midiToNoteName } from '@/lib/frequency-to-note'
+import { NOTE_NAMES } from '@/lib/note-utils'
 import styles from './GuitarRiffTracker.module.css'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -17,27 +19,63 @@ interface GuitarRiffTrackerProps {
   state: RiffTrackerState
 }
 
-// ── Constants ──────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 
-const NOTE_NAMES = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-]
+const formatTime = (ms: number) => `${(ms / 1000).toFixed(1)}s`
 
-function midiToNoteName(midi: number): string {
-  const name = NOTE_NAMES[midi % 12]
-  const octave = Math.floor(midi / 12) - 1
-  return `${name}${octave}`
+/**
+ * Parse a comma/space-separated string of note names (e.g. "E4, G4, A4")
+ * or MIDI numbers (e.g. "64, 67, 69") into an array of MIDI numbers.
+ */
+function parseTargetMelody(raw: string): number[] {
+  const parts = raw.split(/[, ]+/)
+  const midis: number[] = []
+  for (const part of parts) {
+    if (part === '') continue
+    const num = Number(part)
+    if (!isNaN(num) && num >= 0 && num <= 127) {
+      midis.push(num)
+    } else {
+      // Try "E4", "G#3", etc. — NOTE_NAMES is from @/lib/note-utils
+      const match = part.match(/^([A-G]#?)(\d)$/i)
+      if (match) {
+        const idx = NOTE_NAMES.indexOf(match[1].toUpperCase())
+        if (idx >= 0) {
+          const octave = parseInt(match[2])
+          midis.push((octave + 1) * 12 + idx)
+        }
+      }
+    }
+  }
+  return midis
+}
+
+/**
+ * Octave-folded best-match index into target notes for a recorded note.
+ * Returns the target index and distance (or -1 if none match within threshold).
+ */
+function findBestTargetMatch(
+  recordedMidi: number,
+  targets: number[],
+  used: Set<number>,
+  maxSemitones: number,
+): { index: number; dist: number } {
+  let bestIdx = -1
+  let bestDist = Infinity
+  for (let i = 0; i < targets.length; i++) {
+    if (used.has(i)) continue
+    const dist = Math.min(
+      Math.abs((recordedMidi % 12) - (targets[i] % 12)),
+      12 - Math.abs((recordedMidi % 12) - (targets[i] % 12)),
+    )
+    if (dist < bestDist) {
+      bestDist = dist
+      bestIdx = i
+    }
+  }
+  return bestDist <= maxSemitones
+    ? { index: bestIdx, dist: bestDist }
+    : { index: -1, dist: bestDist }
 }
 
 // ── Component ──────────────────────────────────────────────────
@@ -47,40 +85,11 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
 }) => {
   const [targetInput, setTargetInput] = createSignal('')
 
-  const formatTime = (ms: number) => {
-    const secs = ms / 1000
-    return `${secs.toFixed(1)}s`
-  }
-
   const handleTargetSubmit = () => {
     const raw = targetInput().trim()
     if (!raw) return
-
-    // Parse comma-separated MIDI numbers or note names
-    const parts = raw.split(/[, ]+/)
-    const midis: number[] = []
-    for (const part of parts) {
-      const num = Number(part)
-      if (!isNaN(num) && num >= 0 && num <= 127) {
-        midis.push(num)
-      } else {
-        // Try to parse as note name (e.g. "E4", "G#3")
-        const match = part.match(/^([A-G]#?)(\d)$/i)
-        if (match) {
-          const noteIdx = NOTE_NAMES.indexOf(
-            match[1].charAt(0).toUpperCase() + (match[1].length > 1 ? '#' : ''),
-          )
-          const octave = parseInt(match[2])
-          if (noteIdx >= 0) {
-            midis.push((octave + 1) * 12 + noteIdx)
-          }
-        }
-      }
-    }
-
-    if (midis.length > 0) {
-      state.setTargetMelody(midis)
-    }
+    const midis = parseTargetMelody(raw)
+    if (midis.length > 0) state.setTargetMelody(midis)
   }
 
   const scorePercent = () => {
@@ -215,32 +224,19 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
           <div class={styles.timeline}>
             <For each={state.recordedNotes()}>
               {(note) => {
-                // Determine if this note was scored
                 const isScored = state.phase() === 'scoring'
+                const dur = () => Math.max(state.recordingDuration(), 1)
                 let scoreClass = ''
                 if (isScored) {
-                  const results = state.noteResults()
-                  // Map recorded note to result (greedy, same as scoring logic)
-                  const targets = state.targetNotes()
-                  let bestDist = Infinity
-                  let bestResultIdx = -1
-                  for (let i = 0; i < targets.length; i++) {
-                    const dist = Math.min(
-                      Math.abs((note.midi % 12) - (targets[i] % 12)),
-                      12 - Math.abs((note.midi % 12) - (targets[i] % 12)),
-                    )
-                    if (dist < bestDist) {
-                      bestDist = dist
-                      bestResultIdx = i
-                    }
-                  }
-                  if (
-                    bestResultIdx >= 0 &&
-                    results[bestResultIdx] &&
-                    bestDist <= 1
-                  ) {
+                  const result = findBestTargetMatch(
+                    note.midi,
+                    state.targetNotes(),
+                    new Set(),
+                    1,
+                  )
+                  if (result.index >= 0) {
                     scoreClass =
-                      results[bestResultIdx] === 'correct'
+                      state.noteResults()[result.index] === 'correct'
                         ? styles.timelineNoteCorrect
                         : styles.timelineNoteWrong
                   }
@@ -250,7 +246,7 @@ export const GuitarRiffTracker: Component<GuitarRiffTrackerProps> = ({
                   <div
                     class={`${styles.timelineNote} ${scoreClass}`}
                     style={{
-                      left: `${(note.timeMs / Math.max(state.recordingDuration(), 1)) * 100}%`,
+                      left: `${(note.timeMs / dur()) * 100}%`,
                     }}
                     title={`${note.noteName} · ${note.frequency.toFixed(1)}Hz · ${formatTime(note.timeMs)}`}
                   >
