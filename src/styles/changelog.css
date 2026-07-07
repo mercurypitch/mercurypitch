@@ -1,3 +1,4 @@
+/* Shared gradient divider (used by FancyDivider.tsx + elsewhere). */
 .fancy-divider {
   display: flex;
   align-items: center;
@@ -15,93 +16,197 @@
   opacity: 0.7;
 }
 
-/* ===== Changelog Modal ===== */
-.changelog-version {
-  margin-bottom: 24px;
+/* ===== Changelog modal — branded, wider, polished ===== */
+
+/* Wider than the default 480px modal; softer shadow. */
+.changelog-modal {
+  max-width: 620px;
+  width: 92%;
+  max-height: 82vh;
+  background: var(--bg-secondary);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 }
 
+.changelog-modal .modal-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 15px;
+}
+
+/* Brand-gradient title, matching the app wordmark. */
+.changelog-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Body: comfy padding + a thin, unobtrusive scrollbar. */
+.changelog-modal .modal-body {
+  padding: 18px 24px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.changelog-modal .modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+.changelog-modal .modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.changelog-modal .modal-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 3px solid var(--bg-secondary);
+}
+.changelog-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ---- Version entry ---- */
+.changelog-version {
+  margin-bottom: 26px;
+}
 .changelog-version:last-child {
   margin-bottom: 0;
 }
 
 .changelog-version-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+/* Latest version gets an accent underline. */
+.changelog-version:first-child .changelog-version-header {
+  border-bottom-color: var(--accent-dim);
+}
+
+.changelog-version-left {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
 }
 
 .changelog-version-tag {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
+}
+
+.changelog-latest {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(88, 166, 255, 0.35);
 }
 
 .changelog-date {
   font-size: 0.8rem;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ---- Section (left-aligned; the pills stay) ---- */
 .changelog-section {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
-
 .changelog-section:last-child {
   margin-bottom: 0;
 }
 
 .changelog-badge {
-  display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.64rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+  padding: 3px 9px 3px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+.changelog-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .badge-added {
-  background: rgba(46, 160, 67, 0.15);
-  color: #2ea043;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 15%, transparent);
 }
-
 .badge-changed {
-  background: rgba(56, 139, 253, 0.15);
-  color: #388bfd;
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 15%, transparent);
 }
-
 .badge-fixed {
-  background: rgba(212, 167, 44, 0.15);
-  color: #d4a72c;
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 
+/* ---- List ---- */
 .changelog-entries {
   margin: 0;
-  padding-left: 14px;
-  list-style: disc;
+  padding: 0;
+  list-style: none;
   text-align: left;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .changelog-entry {
-  font-size: 0.82rem;
+  position: relative;
+  padding-left: 16px;
+  font-size: 0.85rem;
+  line-height: 1.5;
   color: var(--text-secondary);
-  line-height: 1.45;
-  margin-bottom: 2px;
+}
+.changelog-entry::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.changelog-entry strong {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
+/* ---- Inline code ---- */
 .changelog-code {
   font-family:
     'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
-  font-size: 0.76em;
+  font-size: 0.78em;
   background: var(--accent-dim);
-  border: 1px solid rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(88, 166, 255, 0.18);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 5px;
   color: var(--accent);
-  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
