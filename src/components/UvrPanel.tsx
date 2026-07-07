@@ -18,9 +18,10 @@ import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
-import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
+import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -553,6 +554,30 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       }
     }
 
+    // Same file with a server job STILL IN FLIGHT (reconcile leaves a
+    // recoverable job 'processing' with its apiSessionId, and auto-resume is
+    // likely already re-attaching): don't pay for a duplicate — attach to the
+    // existing one. Deliberately NOT for 'error'/'interrupted': a genuinely
+    // failed job would just re-surface its error, so re-uploading there means
+    // "start over". The explicit "Fetch my stems" button re-attaches an errored
+    // job when the user asks for it.
+    const inFlight = getAllUvrSessions().find(
+      (s) =>
+        s.fileHash === hash &&
+        s.processingMode === 'server' &&
+        s.apiSessionId !== undefined &&
+        s.apiSessionId !== '' &&
+        (s.status === 'processing' || s.status === 'finalizing'),
+    )
+    if (inFlight) {
+      showNotification(
+        'Reconnecting to your in-progress separation — no extra credit.',
+        'info',
+      )
+      void handleResumeServer(inFlight.sessionId, { focus: true })
+      return
+    }
+
     const mode = getUvrProcessingMode()
     if (mode === 'server' && !requireServerAuth()) return
     const sessionId = startUvrSession(
@@ -624,6 +649,124 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return false
   }
 
+  /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
+   *  separation (handleProcessStart) and a reload/foreground re-attach
+   *  (handleResumeServer). The view only jumps to results / raises a toast when
+   *  THIS session is the one on screen, so a background auto-resume updates its
+   *  card silently. */
+  const buildPipelineCallbacks = (
+    sessionId: string,
+    fileName: string,
+    processingMode: UvrProcessingMode,
+  ): ProcessingCallbacks => ({
+    onProgress: () => {
+      // Progress is written inside the pipeline via updateUvrSessionProgress.
+    },
+    onComplete: async (result) => {
+      const persisted = await completeUvrSession(
+        sessionId,
+        result.outputs,
+        result.stemMeta,
+      )
+      if (!persisted) {
+        showNotification(
+          'Finalizing hit a storage issue — your stems are saved. Reload if the session looks off.',
+          'warning',
+        )
+      }
+      if (processingMode === 'server') refreshBalance()
+      // Auto-extract stem fingerprint for Shazam matching; delay so the heavy
+      // WebGPU/WASM thread yields before the AudioContext work.
+      setTimeout(() => {
+        void indexStemFingerprint(sessionId, fileName)
+      }, 500)
+      if (currentUvrSession()?.sessionId === sessionId)
+        setCurrentView('results')
+    },
+    onError: (message) => {
+      setErrorUvrSession(sessionId, message)
+      if (currentUvrSession()?.sessionId === sessionId) {
+        if (!notifyServerBillingError(message)) showError(message)
+      }
+      if (processingMode === 'server') refreshBalance()
+    },
+  })
+
+  /** Re-attach to an in-flight / just-finished RunPod job by its persisted
+   *  apiSessionId — no new job, no new debit. `focus` brings the processing
+   *  view forward (a user-initiated fetch / re-run); omitted for the silent
+   *  background auto-resume on load. */
+  const handleResumeServer = async (
+    sessionId: string,
+    opts?: { focus?: boolean },
+  ): Promise<void> => {
+    const session = getUvrSession(sessionId)
+    if (!session || session.processingMode !== 'server') return
+    const apiId = session.apiSessionId
+    if (apiId === undefined || apiId === '') return
+    if (isServerPollActive(apiId)) return
+    if (opts?.focus ?? false) {
+      setCurrentUvrSession(session)
+      setCurrentView('processing')
+    }
+    setUvrSessionResuming(sessionId)
+    try {
+      await resumeServerSession(
+        sessionId,
+        apiId,
+        buildPipelineCallbacks(
+          sessionId,
+          session.originalFile?.name ?? 'audio',
+          'server',
+        ),
+      )
+    } catch (err) {
+      // pollForCompletion already routed a terminal failure through onError
+      // (the card reflects it); just don't leave the rejection unhandled.
+      console.warn('[UvrPanel] resume server session failed:', err)
+    }
+  }
+
+  /** On load / foreground / reconnect, re-attach to every server job we can
+   *  still recover (see resumableServerSessions), in the background. Guarded so
+   *  a job already being polled is never double-polled. */
+  const autoResumeServerSessions = async (): Promise<void> => {
+    const list = await resumableServerSessions()
+    for (const s of list) {
+      const apiId = s.apiSessionId
+      if (apiId !== undefined && apiId !== '' && !isServerPollActive(apiId)) {
+        void handleResumeServer(s.sessionId)
+      }
+    }
+  }
+
+  // Recover server separations whose client polling was lost to an iOS
+  // app-switch or a page reload: once the store is ready, and again whenever the
+  // tab returns to the foreground or the network reconnects, re-attach to any
+  // still-recoverable RunPod job and re-fetch its stems — for free — instead of
+  // leaving it orphaned and paying for a fresh separation.
+  let autoResumeStarted = false
+  createEffect(() => {
+    if (!isSessionStoreReady() || autoResumeStarted) return
+    autoResumeStarted = true
+    void autoResumeServerSessions()
+  })
+
+  createEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void autoResumeServerSessions()
+      }
+    }
+    const onOnline = () => void autoResumeServerSessions()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+    onCleanup(() => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+    })
+  })
+
   const handleProcessStart = async (
     sessionId: string,
     mode?: UvrProcessingMode,
@@ -682,40 +825,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         file,
         sessionId,
         processingMode,
-        {
-          onProgress: (_pct) => {
-            // Progress already updated inside the pipeline via updateUvrSessionProgress
-          },
-          onComplete: async (result) => {
-            // Await the durable session-record write before reporting done —
-            // this is what makes a "completed" session survive a reload.
-            const persisted = await completeUvrSession(
-              sessionId,
-              result.outputs,
-              result.stemMeta,
-            )
-            if (!persisted) {
-              // Stems saved but the record write failed; reconciliation recovers
-              // it on next load (stems exist on disk) — tell the user now.
-              showNotification(
-                'Finalizing hit a storage issue — your stems are saved. Reload if the session looks off.',
-                'warning',
-              )
-            }
-            if (processingMode === 'server') refreshBalance()
-            // Auto-extract stem fingerprint for Shazam matching
-            // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
-            setTimeout(() => {
-              void indexStemFingerprint(sessionId, file.name)
-            }, 500)
-            setCurrentView('results')
-          },
-          onError: (message) => {
-            setErrorUvrSession(sessionId, message)
-            if (!notifyServerBillingError(message)) showError(message)
-            if (processingMode === 'server') refreshBalance()
-          },
-        },
+        buildPipelineCallbacks(sessionId, file.name, processingMode),
         // Server jobs always run the single server quality (the pipeline's
         // default model, BS-RoFormer).
       )
@@ -1442,11 +1552,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
                         }}
                         onRetry={(sessionId) => {
+                          const s = getUvrSession(sessionId)
+                          // Still in flight (e.g. mid auto-resume) → re-attach for
+                          // free rather than spawning a duplicate paid job. A
+                          // failed/interrupted job means "start over" → fresh run.
+                          if (
+                            s?.processingMode === 'server' &&
+                            s.apiSessionId !== undefined &&
+                            s.apiSessionId !== '' &&
+                            (s.status === 'processing' ||
+                              s.status === 'finalizing')
+                          ) {
+                            void handleResumeServer(sessionId, { focus: true })
+                            return
+                          }
                           retryUvrSession(sessionId)
-                          void handleProcessStart(
-                            sessionId,
-                            getUvrSession(sessionId)?.processingMode,
-                          )
+                          void handleProcessStart(sessionId, s?.processingMode)
                         }}
                         onReindexStem={(sessionId) => {
                           const session = getUvrSession(sessionId)
@@ -1514,6 +1635,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       void deleteUvrSessionFromDb(s.sessionId)
                       setCurrentView('upload')
                     }}
+                    onFetchStems={
+                      sess().processingMode === 'server' &&
+                      sess().apiSessionId !== undefined &&
+                      sess().apiSessionId !== ''
+                        ? () => {
+                            void handleResumeServer(sess().sessionId, {
+                              focus: true,
+                            })
+                          }
+                        : undefined
+                    }
                   />
                 )}
               </Show>

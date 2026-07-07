@@ -393,6 +393,7 @@ function sessionToDbRecord(
   return {
     appSessionId: session.sessionId,
     userId: getUserId(),
+    apiSessionId: session.apiSessionId,
     status: session.status,
     progress: session.progress,
     indeterminate: session.indeterminate,
@@ -426,6 +427,7 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
   }
   return {
     sessionId: rec.appSessionId,
+    apiSessionId: rec.apiSessionId,
     status: rec.status as UvrStatus,
     progress: rec.progress,
     indeterminate: rec.indeterminate,
@@ -639,7 +641,10 @@ export async function initSessionStore(): Promise<void> {
  *  - in-progress (processing/uploading/finalizing) WITH stems on disk → the job
  *    actually finished but its completion write was lost → mark 'completed'.
  *  - in-progress WITHOUT stems → client polling died on a reload → 'interrupted'
- *    (retryable). No credit is refunded — the server job is already gone.
+ *    (retryable). A server job whose `apiSessionId` we persisted is RECOVERABLE:
+ *    the auto-resume (see resumableServerSessions) re-attaches to the RunPod job
+ *    and re-fetches its stems for free, so its message invites a fetch rather
+ *    than a re-run. Local jobs (no apiSessionId) are simply gone.
  */
 export async function reconcileInterruptedSessions(): Promise<void> {
   const inFlight = getAllUvrSessions().filter(
@@ -650,17 +655,62 @@ export async function reconcileInterruptedSessions(): Promise<void> {
   )
   for (const s of inFlight) {
     const hasStems = await sessionHasPlayableStems(s.sessionId)
-    const fixed: UvrSession = hasStems
-      ? { ...s, status: 'completed', progress: 100 }
-      : {
-          ...s,
-          status: 'interrupted',
-          error:
-            'Interrupted — the app was reloaded while this was processing.',
-        }
+    const recoverable =
+      s.processingMode === 'server' &&
+      s.apiSessionId !== undefined &&
+      s.apiSessionId !== ''
+    let fixed: UvrSession
+    if (hasStems) {
+      // The job finished but its completion write was lost — promote it.
+      fixed = { ...s, status: 'completed', progress: 100 }
+    } else if (recoverable) {
+      // A server job whose RunPod id we persisted: leave it in-flight (reset to
+      // a clean indeterminate "reconnecting" bar) so the UI's auto-resume
+      // re-attaches and re-fetches its stems for free — no orphaning, no
+      // re-charge. Owned by resumableServerSessions from here.
+      fixed = {
+        ...s,
+        status: 'processing',
+        indeterminate: true,
+        phase: 'queued',
+        error: undefined,
+      }
+    } else {
+      // Local job (or a server job with no id we can recover) — it's gone.
+      fixed = {
+        ...s,
+        status: 'interrupted',
+        error: 'Interrupted — the app was reloaded while this was processing.',
+      }
+    }
     updateSessionCache(fixed)
     await persistSessionDurable(fixed)
   }
+}
+
+/**
+ * Server sessions that can be re-attached to their RunPod job on this load:
+ * an `apiSessionId` we persisted, no playable stems yet, and a non-terminal or
+ * interrupted status. The UI resumes polling these (re-fetching stems for free,
+ * within RunPod's ~30 min result / R2's ~24 h window) instead of orphaning them
+ * and re-charging a fresh separation.
+ */
+export async function resumableServerSessions(): Promise<UvrSession[]> {
+  const candidates = getAllUvrSessions().filter(
+    (s) =>
+      s.processingMode === 'server' &&
+      s.apiSessionId !== undefined &&
+      s.apiSessionId !== '' &&
+      (s.status === 'interrupted' ||
+        s.status === 'processing' ||
+        s.status === 'uploading' ||
+        s.status === 'finalizing'),
+  )
+  const out: UvrSession[] = []
+  for (const s of candidates) {
+    if (!(await sessionHasPlayableStems(s.sessionId))) out.push(s)
+  }
+  return out
 }
 
 /**
@@ -745,6 +795,18 @@ export function startUvrSession(
   return sessionId
 }
 
+/** Update the live `currentUvrSession` signal ONLY when this session is the one
+ *  the user is viewing. A background auto-resume (see resumableServerSessions)
+ *  polls sessions the user may not be looking at; its progress/terminal updates
+ *  must refresh the session's card (via the cache) without yanking the current
+ *  view onto it. Foreground flows set `current` to the session before polling,
+ *  so this stays a no-op there. */
+function setCurrentSessionIfActive(updated: UvrSession): void {
+  if (currentUvrSession()?.sessionId === updated.sessionId) {
+    setCurrentUvrSession(updated)
+  }
+}
+
 /** Update UVR session progress */
 export function updateUvrSessionProgress(
   sessionId: string,
@@ -764,7 +826,23 @@ export function updateUvrSessionProgress(
         processingTime !== undefined ? processingTime : session.processingTime,
     }
     upsertSessionInCache(updated)
-    setCurrentUvrSession(updated)
+    setCurrentSessionIfActive(updated)
+  }
+}
+
+/** Drop a session's persisted RunPod job id. Called when a job reaches a
+ *  server-confirmed terminal state (failed / expired), so the recovery
+ *  affordances that key off `apiSessionId` (the "Fetch my stems" button, the
+ *  re-attach on re-upload) disappear and the user is steered to "Separate
+ *  again". NOT called on a transient/network error or a local-save failure —
+ *  those may still be recoverable, so the id is kept. */
+export function clearUvrSessionApiId(sessionId: string): void {
+  const session = getUvrSession(sessionId)
+  if (session && session.apiSessionId !== undefined) {
+    const updated: UvrSession = { ...session, apiSessionId: undefined }
+    upsertSessionInCache(updated)
+    setCurrentSessionIfActive(updated)
+    persistSessionToDb(updated)
   }
 }
 
@@ -794,6 +872,27 @@ export function setUvrSessionProvider(
   }
 }
 
+/** Flip a server session back into the processing state when re-attaching to
+ *  an in-flight RunPod job on load / foreground. No new job is submitted and no
+ *  credit is charged — the existing apiSessionId is re-polled. Starts
+ *  indeterminate/queued so the bar reads "reconnecting" until the first poll
+ *  returns real progress. */
+export function setUvrSessionResuming(sessionId: string): void {
+  const session = getUvrSession(sessionId)
+  if (session) {
+    const updated: UvrSession = {
+      ...session,
+      status: 'processing',
+      indeterminate: true,
+      phase: 'queued',
+      error: undefined,
+    }
+    updateSessionCache(updated)
+    setCurrentSessionIfActive(updated)
+    persistSessionToDb(updated)
+  }
+}
+
 /** Mark a session as finalizing — stems separated, now being written to disk.
  *  Shown to the user as "Saving…"; the flow must not report success until the
  *  writes land (see completeUvrSession). */
@@ -806,7 +905,7 @@ export function setFinalizingUvrSession(sessionId: string): void {
       progress: 100,
     }
     updateSessionCache(updated)
-    setCurrentUvrSession(updated)
+    setCurrentSessionIfActive(updated)
     persistSessionToDb(updated) // best-effort; the durable write is on complete
   }
 }
@@ -837,7 +936,7 @@ export async function completeUvrSession(
     processingTime: session.processingTime ?? Date.now() - session.createdAt,
   }
   updateSessionCache(updated)
-  setCurrentUvrSession(updated)
+  setCurrentSessionIfActive(updated)
   return persistSessionDurable(updated)
 }
 
@@ -847,7 +946,7 @@ export function setErrorUvrSession(sessionId: string, error: string): void {
   if (session) {
     const updated: UvrSession = { ...session, status: 'error', error }
     upsertSessionInCache(updated)
-    setCurrentUvrSession(updated)
+    setCurrentSessionIfActive(updated)
   }
 }
 
