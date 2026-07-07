@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { batch, createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
+import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
@@ -653,6 +654,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
 
     const processingMode = mode ?? getUvrProcessingMode()
+
+    // Storage pre-flight: WARN (don't block) if the disk is likely too full to
+    // hold the separated stems, so a paid job doesn't run only to fail to save
+    // at the end. Stems decode to WAV (~10-12x an MP3), plus the stored original.
+    if (!(await hasRoomFor(file.size * 12))) {
+      showNotification(
+        'Low on storage — the separated stems may not save. Free up space to be safe.',
+        'warning',
+      )
+    }
 
     // Set session to processing status (immutable update via store API)
     const session = getUvrSession(sessionId)
