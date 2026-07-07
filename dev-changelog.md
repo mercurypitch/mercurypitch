@@ -6,6 +6,62 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.6] - 2026-07-07
+
+### Added
+
+- **A-B loop on the Singing tab** (#200): mark A then B on the melody and loop that section. The loop math is extracted to a pure, unit-tested `src/lib/ab-loop.ts` (`shouldLoopBack`, `isSeekOutsideLoop`, `loopRegionPct`, `clampLoopB`) mirroring the stem-mixer's half-open `[A, B)` semantics and its `seekedOutsideLoop` escape flag — so a manual seek past B is no longer instantly reverted. `App.tsx` owns the signals + the auto-seek-back effect (gated on `beat < totalBeats()` to avoid racing the runtime's natural-end); `SingingStatusBar` draws a reactive loop-region overlay (no stale IIFE); `SingingControlBar` reuses the existing `IconRepeat` for the toggle and a single consolidated `IconLoopPoint`. `.loopRegionActive` uses `var(--green)` (no hardcoded hex). 21 loop-math tests.
+- **Guitar tuner + riff tracker** (#199): `src/lib/guitar/tuner.ts` `classifyPitch(frequency, clarity, targets, names)` classifies against the *selected* tuning, so presets (Standard / Drop D / Half Step Down / Open G / DADGAD) actually retune instead of only relabeling; the previously-dead `isTuningSignal` ±50-cent gate is wired in so off-string noise can't read "in tune" (manual per-string mode bypasses the gate so a far-off/fresh string still shows deviation). Open G frequencies corrected. `GuitarTuner`/`GuitarRiffTracker` components + a headless `RiffTrackerState` factory (record → timeline → score against a target melody). Riff capture is driven off a new reactive `articulationId` signal on `useGuitarPracticeController` (a lockstep mirror of the non-reactive scoring counter) so repeated same-pitch attacks aren't de-duplicated away by `detectedMidi`. Reuses `frequencyToMidi` / `computeCentsDeviation` / `noteToMidi` (the last now parses flats + multi-digit octaves); glyphs replaced with SVG icons. 33 tuner + riff tests.
+- **Transactional emails** (#202): purchase thank-you email + account sign-up welcome email.
+
+### Fixed
+
+- **Server (RunPod) stem separation now survives a reload / iOS app-switch, with no double charge** (#201, #203): the RunPod job id is persisted to IndexedDB, and the client auto-resumes an in-flight job on load / `visibilitychange` / `online` with **no new debit** (`resumeServerSession`, `activeServerPolls` guard). `pollForCompletion` rides through transient failures for a 90s grace window after first contact, and `getProcessStatus` / `getOutputFile` gained per-request timeouts, so a half-open socket can't freeze the poll. A server-confirmed dead job rejects with `TerminalPollError` and clears its persisted id. The worker bridge serves stems straight from R2 (`<RUNPOD_STEM_PREFIX>/<jobId>/`, new per-env var) for the ~24 h the objects live after RunPod forgets the job (~30 min), and returns a terminal "expired" otherwise. Removed the `beforeunload` handler that cancelled in-flight jobs on reload, and stopped `cleanupStaleUvrSessions` from erroring a recoverable session. "Fetch my stems" recovery button + friendlier "warming up" copy. New R2-fallback + terminal-error + reconcile tests.
+
+### Changed
+
+- CI: bump GitHub Actions to Node 24 (#204).
+
+## [0.6.5] - 2026-07-07
+
+### Added
+
+- Voice Mirror results/share card pairs the singer's vocal range with a legendary singer whose range overlaps — two legends per voice type (e.g. tenors get Freddie Mercury or Bruce Dickinson) for a varied match.
+
+### Changed
+
+- Voiceprint download filenames are dated (`voiceprint-YYYY-MM-DD.png`) so a folder sorts by day.
+
+## [0.6.4] - 2026-07-07
+
+### Fixed
+
+- Cloud-separated stems no longer go missing after a reload (#uvr durability): stems are persisted durably to IndexedDB *before* a session is marked done, always reopened from the local copy, and never depend on the server's temporary links. Added a `beforeunload` guard during the finalize/save window, orphan-DB cleanup + reconcile-on-load, and serialized per-session DB writes; added durability + reconciliation test suites.
+
+### Added
+
+- Storage pre-flight warning before a paid separation. Voice Mirror: "Sing the Universe" cosmic-mode deep link + copy-image button, and a warmer piano-like reference tone with a "your turn" count-in before the Match step. Succinct karaoke upload-rights notice.
+
+## [0.6.3] - 2026-07-06
+
+### Fixed
+
+- Added the missing `og-image.png` so social / Open Graph link previews render the MercuryPitch card.
+
+### Changed
+
+- Removed the header website icon (redundant with the About link).
+
+## [0.6.2] - 2026-07-06
+
+### Added
+
+- New Pitch-orb brand logo (favicon + About icon) and orb favicons. Website link in Settings → About and the header. Canonical Terms & Privacy links at consent touchpoints, pointed at about.mercurypitch.com.
+
+### Changed
+
+- Practice accuracy heatmap scores on absolute cents deviation and is decoupled from the session shape (PR #187 review follow-ups).
+
 ## [0.6.1] - 2026-07-06
 
 ### Added

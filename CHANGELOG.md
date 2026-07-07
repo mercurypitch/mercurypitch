@@ -9,6 +9,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **Loop a tricky section while you practice.** The Singing tab now has A-B loop controls — tap **A**, then **B**, to mark a passage and hit the loop button, and the playhead repeats just that stretch so you can drill it. A shaded band on the timeline shows the loop, and you can still scrub anywhere without it snapping you back to the start.
 - **Guitar tuner and riff tracker.** A built-in tuner (needle plus cents readout that auto-detects which string you're playing, with Standard, Drop D, Half Step Down, Open G, and DADGAD presets and a manual per-string mode) and a riff tracker that records what you play, lays it out on a timeline, and scores it against a target melody.
+- **Welcome and receipt emails.** You now get a welcome email when you create an account, and a thank-you email after a purchase.
 
 ### Fixed
 
