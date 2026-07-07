@@ -4,11 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { ChangelogModal } from '@/components/ChangelogModal'
 import { TierSelector } from '@/components/TierSelector'
 import { Tooltip } from '@/components/Tooltip'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
-import { ChangelogModal } from '@/components/ChangelogModal'
 import { APP_VERSION } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { dismissWelcome } from '@/stores'

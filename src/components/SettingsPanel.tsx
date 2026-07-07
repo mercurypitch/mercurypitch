@@ -26,7 +26,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
-import { setSettingsSection, settingsSection, setShowWelcome } from '@/stores/ui-store'
+import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -206,7 +206,8 @@ export const SettingsPanel: Component = () => {
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
               Revisit the welcome screen (voice-range setup, the tour and more),
-              or open the Voice Mirror — a free 60-second voiceprint of your range.
+              or open the Voice Mirror — a free 60-second voiceprint of your
+              range.
             </p>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px;">
               <button
