@@ -35,6 +35,10 @@ export interface Env {
    *  worker's job refunds via X-Service-Key). Set the SAME value on both
    *  workers; refunds return 503 while unset. */
   BILLING_SERVICE_KEY?: string
+  /** Resend API key (re_...) for the purchase "thank you" email. When unset,
+   *  the email is skipped (credits are still granted). `wrangler secret put
+   *  RESEND_API_KEY`. Requires a verified sender domain in Resend. */
+  RESEND_API_KEY?: string
 }
 
 export interface AuthUser {
