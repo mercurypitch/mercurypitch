@@ -3,6 +3,22 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.6.7] - 2026-07-07
+
+### Added
+
+- **Tune by ear.** Tap a string in the guitar tuner to hear its reference note, so you can tune to the sound as well as to the needle.
+
+### Changed
+
+- **The A-B loop is hands-on now (Singing).** Setting **B** starts the loop right away — no separate loop button — and the A and B points appear as draggable markers on the timeline (blue for A, red for B). Drag either one to fine-tune the start or end of the passage without re-tapping.
+- **A cleaner welcome screen, with a "What's New" button.** The first-run welcome is more compact and leads with the Voice Mirror, and its version badge opens this changelog any time. The sidebar's Playback Setup controls (key, scale, octave) now start collapsed to keep the panel tidy — click the section header to open them.
+
+### Fixed
+
+- **Switching tracks keeps your place.** Changing which track you practise in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
+- **On-device separations retry cleanly.** Retrying a browser (WebGPU) vocal separation while Cloud mode was selected could fail with a technical error instead of running. It now re-initialises and processes, and any unexpected error shows a readable message.
+
 ## [0.6.6] - 2026-07-07
 
 ### Added
