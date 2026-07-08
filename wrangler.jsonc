@@ -62,7 +62,7 @@
       // credit ledger (debits no-op until a tier's credit cost is set in
       // pricingPlans, so this is safe to ship ahead of pricing).
       "vars": {
-        "DB_API_URL": "https://mercury-pitch-db.komediruzecki-2015.workers.dev",
+        "DB_API_URL": "https://api.mercurypitch.com",
         // Object-key prefix RunPod's prod endpoint writes stems under in the
         // R2 output bucket (matches the `expire-runpod` 1-day lifecycle rule).
         // Lets the worker serve stems straight from R2 for ~24 h after RunPod
@@ -82,7 +82,7 @@
         { "binding": "UVR_INPUT_BUCKET", "bucket_name": "mercurypitch-uvr-output" }
       ],
       "vars": {
-        "DB_API_URL": "https://mercury-pitch-db-dev.komediruzecki-2015.workers.dev",
+        "DB_API_URL": "https://api-dev.mercurypitch.com",
         // Dev endpoint writes stems under `runpod-dev/` in the dev output
         // bucket `mercurypitch-uvr-output` (matches its `expire-runpod-dev`
         // 1-day lifecycle rule). Must equal the endpoint's S3_KEY_PREFIX.
