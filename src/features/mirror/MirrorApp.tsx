@@ -29,6 +29,8 @@ import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
 import { LiveViz, MicLevelBar } from './LiveViz'
+import type { RevealMode } from './RevealCard'
+import { RevealCard } from './RevealCard'
 import { playReferenceTone } from './tone-player'
 
 const GLIDE_SEC = 8
@@ -105,6 +107,11 @@ export const MirrorApp: Component = () => {
   // Initialized from the URL fragment so a /mirror#sing-the-universe deep link
   // opens cosmic mode on the first paint (no Landing flash before onMount runs).
   const [cosmicOpen, setCosmicOpen] = createSignal(isCosmicHash())
+  // Legend "voice twin" reveal on the results card. The style defaults to flip
+  // on a first visit and lenticular on a returning (delta) visit — the singer
+  // can also switch to compare.
+  const [revealed, setRevealed] = createSignal(false)
+  const [revealMode, setRevealMode] = createSignal<RevealMode>('flip')
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -124,6 +131,7 @@ export const MirrorApp: Component = () => {
 
   onMount(() => {
     trackFunnel('mirror_view')
+    if (import.meta.env.DEV) void maybeStartDemo()
     // Keep cosmic mode in sync when the fragment changes after load (manual
     // edit, or browser back/forward). Initial deep-link is handled by the
     // cosmicOpen initializer above.
@@ -161,6 +169,8 @@ export const MirrorApp: Component = () => {
     setMicSilent(false)
     setRetryNotice(false)
     setCosmic(false)
+    setRevealed(false)
+    setRevealMode('flip')
   }
 
   /** Open/close cosmic "Sing the Universe" mode, keeping the URL fragment in
@@ -413,6 +423,19 @@ export const MirrorApp: Component = () => {
     }
   }
 
+  /** Render the shareable voiceprint canvas and mount it into the results
+   *  host (the on-screen card front). Kept separate so both a real run and
+   *  the dev demo path paint the same way. */
+  function paintCard(
+    result: MirrorResult,
+    glides: F0Frame[][],
+    line: string,
+  ): void {
+    cardCanvas = renderCard({ result, glides, deltaLine: line }, 'square')
+    cardCanvas.className = 'mirror-voiceprint-canvas'
+    voiceprintHost?.replaceChildren(cardCanvas)
+  }
+
   function finishRun(state: MirrorSessionState): void {
     teardownAudio()
     const result = state.result
@@ -437,20 +460,66 @@ export const MirrorApp: Component = () => {
     setDeltaLine(line !== '' ? line : null)
     saveBaseline(localStorage, summary)
 
-    cardCanvas = renderCard(
-      { result, glides: state.glides, deltaLine: line },
-      'square',
-    )
+    // First visit → flip; returning (delta) visit → lenticular.
+    setRevealed(false)
+    setRevealMode(previous ? 'lenticular' : 'flip')
+
+    paintCard(result, state.glides, line)
     trackFunnel('card_generated')
-    cardCanvas.className = 'mirror-voiceprint-canvas'
-    voiceprintHost?.replaceChildren(cardCanvas)
+  }
+
+  /** Dev-only: /mirror?demo=<profile>[&delta=1] jumps straight to a results
+   *  screen built from synthetic frames (no mic), so the layout, card and
+   *  reveal can be rendered and screenshotted. Tree-shaken out of prod. */
+  async function maybeStartDemo(): Promise<void> {
+    const params = new URLSearchParams(window.location.search)
+    const profileKey = params.get('demo')
+    if (profileKey === null) return
+    const { DEMO_PROFILES, buildDemoResult } = await import('./demo-data')
+    const profile = DEMO_PROFILES[profileKey] ?? DEMO_PROFILES.baritone
+    const { result, glides } = buildDemoResult(profile)
+    const line =
+      params.get('delta') !== null
+        ? '▲ +5 semitones · accuracy +1 · steadiness −11 since Jul 7'
+        : ''
+    // Let ?mode= force a reveal style for screenshots; otherwise flip on a
+    // first visit, lenticular on a delta visit.
+    const forced = params.get('mode')
+    setRevealMode(
+      forced === 'flip' || forced === 'lenticular'
+        ? forced
+        : line !== ''
+          ? 'lenticular'
+          : 'flip',
+    )
+    setRevealed(params.get('revealed') !== null)
+    paintCard(result, glides, line)
+    setDeltaLine(line !== '' ? line : null)
+    setSession({
+      ...initialSessionState(),
+      phase: 'results',
+      glides,
+      range: result.range,
+      result,
+    })
   }
 
   function buildStoryCard(): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
+    // Once the twin is revealed, bake the legend into the shared card too.
+    const r = state.result.range
+    const legend =
+      revealed() && r
+        ? singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi)
+        : null
     return renderCard(
-      { result: state.result, glides: state.glides, deltaLine: deltaLine() },
+      {
+        result: state.result,
+        glides: state.glides,
+        deltaLine: deltaLine(),
+        legend,
+      },
       'story',
     )
   }
@@ -685,6 +754,17 @@ export const MirrorApp: Component = () => {
           result={session().result as MirrorResult}
           deltaLine={deltaLine()}
           shareStatus={shareStatus()}
+          revealed={revealed()}
+          revealMode={revealMode()}
+          onToggleReveal={() => {
+            const next = !revealed()
+            setRevealed(next)
+            if (next) trackFunnel('twin_revealed')
+          }}
+          onSetRevealMode={(m) => {
+            setRevealMode(m)
+            setRevealed(false)
+          }}
           onShare={() => void onShare()}
           onCopy={() => void onCopy()}
           onCosmic={() => setCosmic(true)}
@@ -846,6 +926,10 @@ const Results: Component<{
   result: MirrorResult
   deltaLine: string | null
   shareStatus: string | null
+  revealed: boolean
+  revealMode: RevealMode
+  onToggleReveal: () => void
+  onSetRevealMode: (mode: RevealMode) => void
   onShare: () => void
   onCopy: () => void
   onCosmic: () => void
@@ -859,133 +943,153 @@ const Results: Component<{
   const hits = (): number =>
     accuracy()?.takes.filter((t) => t.band === 'bullseye' || t.band === 'hit')
       .length ?? 0
+  const drift = (): number => steadiness()?.driftCentsPerSec ?? 0
+  const legend = (): string | null => {
+    const r = range()
+    return r ? singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi) : null
+  }
 
   return (
     <section class="mirror-panel mirror-results">
-      <div class="mirror-voiceprint" ref={props.voiceprintRef} />
-
       <Show when={props.deltaLine}>
         <p class="mirror-delta">{props.deltaLine}</p>
       </Show>
 
-      <Show
-        when={range()}
-        fallback={
-          <p class="mirror-dim">
-            We couldn't map a range this time — a quieter room usually fixes it.
-          </p>
-        }
-      >
-        <h1 class="mirror-hero">
-          {range()?.lowNote} – {range()?.highNote}
-          <span class="mirror-hero-sub"> · {range()?.semitones} semitones</span>
-        </h1>
-        <Show when={range()?.voiceHint}>
-          {(hint) => (
-            <p
-              class="mirror-chip"
-              title="A playful range match — voice type and the legend you overlap with depend on more than range, so it stays a hint."
-            >
-              Range: {hint()}
-              <Show
-                when={singerForVoiceType(
-                  hint(),
-                  range()?.lowMidi,
-                  range()?.highMidi,
+      {/* The voiceprint card centered, with the detail "notes" flanking it
+          (left / right on desktop, stacked under it on mobile). */}
+      <div class="mirror-results-grid">
+        <Show when={accuracy()}>
+          <div class="mirror-notecard mirror-notecard-left">
+            <div class="mirror-notecard-head">
+              <span class="mirror-notecard-label">Accuracy</span>
+              <span class="mirror-notecard-score">{accuracy()?.score}</span>
+            </div>
+            <div class="mirror-pips">
+              <For each={accuracy()?.takes}>
+                {(take) => (
+                  <span
+                    class={`mirror-pip mirror-pip-${take.band}`}
+                    title={`${midiToNoteNameOctave(take.targetMidi)}: ${BAND_LABEL[take.band]}`}
+                  />
                 )}
-              >
-                {(singer) => <> · like {singer()}</>}
-              </Show>
+              </For>
+            </div>
+            <p>
+              You hit {hits()} of {accuracy()?.takes.length} targets within a
+              third of a semitone
+              {hits() >= 3
+                ? ' — your ear is ahead of your control, the good order.'
+                : ' — a trainable skill, and this is the honest baseline.'}
             </p>
-          )}
-        </Show>
-      </Show>
-
-      <Show when={accuracy()}>
-        <div class="mirror-stat">
-          <h3>Accuracy {accuracy()?.score}</h3>
-          <div class="mirror-pips">
-            <For each={accuracy()?.takes}>
-              {(take) => (
-                <span
-                  class={`mirror-pip mirror-pip-${take.band}`}
-                  title={`${midiToNoteNameOctave(take.targetMidi)}: ${BAND_LABEL[take.band]}`}
-                />
-              )}
-            </For>
+            <Show when={accuracy()?.scoopMedianMs !== null}>
+              <p class="mirror-note-sub">
+                {(accuracy()?.scoopMedianMs ?? 0) > 120
+                  ? `You scoop ~${accuracy()?.scoopMedianMs} ms into notes — try landing the pitch directly.`
+                  : `Clean onset — you settle in ~${accuracy()?.scoopMedianMs} ms.`}
+              </p>
+            </Show>
           </div>
-          <p>
-            You hit {hits()} of {accuracy()?.takes.length} targets within a
-            third of a semitone
-            {hits() >= 3
-              ? ' — your ear is ahead of your control, which is the good order.'
-              : ' — matching is a trainable skill, and this is the honest baseline.'}
-          </p>
-          <Show when={accuracy()?.scoopMedianMs !== null}>
-            <p>
-              {(accuracy()?.scoopMedianMs ?? 0) > 120
-                ? `You scoop ~${accuracy()?.scoopMedianMs} ms into notes before settling — try landing the pitch directly.`
-                : `You settle onto notes in ~${accuracy()?.scoopMedianMs} ms — a clean onset.`}
-            </p>
-          </Show>
-        </div>
-      </Show>
+        </Show>
 
-      <Show when={steadiness()}>
-        <div class="mirror-stat">
-          <h3>Steadiness {steadiness()?.score}</h3>
-          <p>
-            Your hold drifted ~
-            {Math.abs(steadiness()?.driftCentsPerSec ?? 0).toFixed(1)} cents/sec{' '}
-            {(steadiness()?.driftCentsPerSec ?? 0) < 0 ? 'flat' : 'sharp'} with
-            ±{(steadiness()?.wobbleSdCents ?? 0).toFixed(0)} cents of wobble.
-          </p>
-          <Show when={steadiness()?.vibrato}>
-            <p>
-              Vibrato: {steadiness()?.vibrato?.rateHz.toFixed(1)} Hz, ±
-              {steadiness()?.vibrato?.extentCents} cents — that's a feature, not
-              wobble, and it isn't scored against you.
+        <div class="mirror-card-col">
+          <RevealCard
+            legend={legend()}
+            voiceType={range()?.voiceHint ?? null}
+            mode={props.revealMode}
+            revealed={props.revealed}
+            onToggle={props.onToggleReveal}
+            mountFront={props.voiceprintRef}
+          />
+          <Show when={legend()}>
+            <div
+              class="mirror-reveal-toggle"
+              role="group"
+              aria-label="Reveal style"
+            >
+              <button
+                type="button"
+                class={props.revealMode === 'flip' ? 'active' : ''}
+                onClick={() => props.onSetRevealMode('flip')}
+              >
+                Flip
+              </button>
+              <button
+                type="button"
+                class={props.revealMode === 'lenticular' ? 'active' : ''}
+                onClick={() => props.onSetRevealMode('lenticular')}
+              >
+                Lenticular
+              </button>
+            </div>
+          </Show>
+          <Show when={!range()}>
+            <p class="mirror-dim">
+              We couldn't map a range this time — a quieter room usually fixes
+              it.
             </p>
           </Show>
         </div>
-      </Show>
+
+        <Show when={steadiness()}>
+          <div class="mirror-notecard mirror-notecard-right">
+            <div class="mirror-notecard-head">
+              <span class="mirror-notecard-label">Steadiness</span>
+              <span class="mirror-notecard-score">{steadiness()?.score}</span>
+            </div>
+            <p>
+              Your hold drifted ~{Math.abs(drift()).toFixed(1)} cents/sec{' '}
+              {drift() < 0 ? 'flat' : 'sharp'} with ±
+              {(steadiness()?.wobbleSdCents ?? 0).toFixed(0)} cents of wobble.
+            </p>
+            <Show when={steadiness()?.vibrato}>
+              <p class="mirror-note-sub">
+                Vibrato {steadiness()?.vibrato?.rateHz.toFixed(1)} Hz, ±
+                {steadiness()?.vibrato?.extentCents} cents — a feature, not
+                scored against you.
+              </p>
+            </Show>
+          </div>
+        </Show>
+      </div>
 
       <div class="mirror-actions">
-        <button class="mirror-cta" onClick={() => props.onShare()}>
+        <button
+          class="mirror-cta mirror-cta-hero"
+          onClick={() => props.onShare()}
+        >
           Share my voiceprint
         </button>
-        <Show when={supportsImageClipboard()}>
+        <div class="mirror-actions-sub">
+          <Show when={supportsImageClipboard()}>
+            <button
+              class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+              onClick={() => props.onCopy()}
+            >
+              Copy image
+            </button>
+          </Show>
           <button
-            class="mirror-cta mirror-cta-secondary"
-            onClick={() => props.onCopy()}
+            class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+            onClick={() => props.onCosmic()}
           >
-            Copy image
+            Sing the Universe ✦
           </button>
-        </Show>
-        <button
-          class="mirror-cta mirror-cta-secondary"
-          onClick={() => props.onCosmic()}
-        >
-          Sing the Universe ✦
-        </button>
-        <a
-          class="mirror-cta mirror-cta-secondary"
-          href={props.appUrl}
-          onClick={() => trackFunnel('cta_app_click')}
-        >
-          Train in MercuryPitch
-        </a>
-        <button
-          class="mirror-cta mirror-cta-secondary"
-          onClick={() => props.onStartOver()}
-        >
+          <a
+            class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+            href={props.appUrl}
+            onClick={() => trackFunnel('cta_app_click')}
+          >
+            Train in MercuryPitch
+          </a>
+        </div>
+        <button class="mirror-textbtn" onClick={() => props.onStartOver()}>
           Start over
         </button>
       </div>
       <Show when={props.shareStatus}>
-        <p class="mirror-dim">{props.shareStatus}</p>
+        <p class="mirror-dim mirror-sharestatus">{props.shareStatus}</p>
       </Show>
-      <p class="mirror-trust">
+      <p class="mirror-foot">
         Saved on this device only — come back any time to see your delta.
       </p>
     </section>

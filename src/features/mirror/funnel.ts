@@ -26,6 +26,7 @@ export type FunnelEvent =
   | 'cta_app_click'
   | 'free_sing_done'
   | 'cosmic_done'
+  | 'twin_revealed'
 
 const STORAGE_KEY = 'mirror.funnel.v1'
 const CLIENT_ID_KEY = 'mirror.clientId.v1'
