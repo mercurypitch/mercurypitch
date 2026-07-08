@@ -3,6 +3,18 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.0] - 2026-07-08
+
+### Added
+
+- **A-B loop controls for Piano and Compose**: you can now set A and B loop markers in the Piano and Compose tabs, not just Singing. The markers appear directly on all note canvases.
+- **Draggable piano/compose markers**: easily drag the loop points to refine the repeating section.
+
+### Fixed
+
+- **Piano / Compose playback and looping bugs**: fixed an issue where the piano replayed the entire [A, B] interval at once each lap, and ensured singing pitch trails reset properly.
+- **Credit deduction for server separations**: fixed a silent failure where credits were not being deducted for server-side UVR separations due to a stale API domain configuration.
+
 ## [0.6.8] - 2026-07-08
 
 ### Changed
