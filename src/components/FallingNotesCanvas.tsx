@@ -29,6 +29,11 @@ interface FallingNotesCanvasProps {
   onClickPianoOn?: (midi: number) => void
   onClickPianoOff?: () => void
   clickPianoEnabled?: () => boolean
+  // ── A-B loop (beats; 0 = unset). Read-only markers on the falling-notes
+  //    lane; the loop is set/dragged from the song bar's seek rail. ──
+  loopA?: () => number
+  loopB?: () => number
+  loopEnabled?: () => boolean
 }
 
 interface Particle {
@@ -635,6 +640,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
     ctx.restore()
 
+    // A-B loop markers — horizontal lines across the falling-notes lane at the
+    // loop beats (read-only; set/drag them from the song bar's seek rail).
+    drawLoopMarkers(w, jLineY, beatToY)
+
     // Draw keyboard-top glow (subtle indicator where notes get consumed)
     drawKeyboardTopGlow(w, jLineY)
 
@@ -666,6 +675,91 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
     // Draw HUD overlay
     drawHUD(w, h)
+  }
+
+  // ── A-B loop markers ─────────────────────────────────────────
+  // Horizontal lines across the note lane at the loop beats, with a subtle
+  // region band between them. Mirrors the singing PitchCanvas overlay, rotated
+  // for the vertical falling-notes axis: A = --accent (#58a6ff), B = --red
+  // (#f85149), region tints green (#3fb950) once armed. Clipped to the note
+  // area [0, noteAreaH] so it never overlaps the keyboard.
+  const drawLoopMarkers = (
+    w: number,
+    noteAreaH: number,
+    beatToY: (beat: number) => number,
+  ) => {
+    if (!ctx) return
+    const a = props.loopA?.() ?? 0
+    const b = props.loopB?.() ?? 0
+    if (a <= 0 && b <= 0) return
+    const enabled = props.loopEnabled?.() ?? false
+
+    // Region band between A and B (B is further ahead, so higher on screen).
+    if (a > 0 && b > 0 && a < b) {
+      const top = Math.max(0, Math.min(noteAreaH, beatToY(b)))
+      const bottom = Math.min(noteAreaH, Math.max(0, beatToY(a)))
+      if (bottom > top) {
+        ctx.fillStyle = enabled
+          ? 'rgba(63,185,80,0.08)'
+          : 'rgba(88,166,255,0.06)'
+        ctx.fillRect(0, top, w, bottom - top)
+      }
+    }
+
+    const drawBoundary = (
+      beat: number,
+      label: 'A' | 'B',
+      line: string,
+      glow: string,
+      flagBg: string,
+    ) => {
+      const y = beatToY(beat)
+      if (y < 0 || y > noteAreaH) return
+      ctx!.save()
+      ctx!.shadowColor = glow
+      ctx!.shadowBlur = 6
+      ctx!.strokeStyle = line
+      ctx!.lineWidth = 2
+      ctx!.beginPath()
+      ctx!.moveTo(0, y)
+      ctx!.lineTo(w, y)
+      ctx!.stroke()
+      ctx!.restore()
+
+      // Flag pill at the left edge.
+      ctx!.font = 'bold 10px sans-serif'
+      ctx!.textAlign = 'center'
+      ctx!.textBaseline = 'middle'
+      const pillW = ctx!.measureText(label).width + 10
+      const pillH = 15
+      const py = Math.max(1, Math.min(noteAreaH - pillH - 1, y - pillH / 2))
+      ctx!.beginPath()
+      ctx!.roundRect(6, py, pillW, pillH, 3)
+      ctx!.fillStyle = flagBg
+      ctx!.fill()
+      ctx!.fillStyle = '#fff'
+      ctx!.fillText(label, 6 + pillW / 2, py + pillH / 2 + 0.5)
+      ctx!.textBaseline = 'alphabetic'
+    }
+
+    if (a > 0) {
+      drawBoundary(
+        a,
+        'A',
+        'rgba(88,166,255,0.85)',
+        'rgba(88,166,255,0.5)',
+        '#58a6ff',
+      )
+    }
+    if (b > 0) {
+      drawBoundary(
+        b,
+        'B',
+        'rgba(248,81,73,0.85)',
+        'rgba(248,81,73,0.5)',
+        '#f85149',
+      )
+    }
   }
 
   // ── Keyboard Top Glow ────────────────────────────────────────

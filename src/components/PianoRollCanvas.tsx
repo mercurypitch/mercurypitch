@@ -37,6 +37,10 @@ interface PianoRollCanvasProps {
   previewMelody?: () => MelodyItem[]
   /** Smoothed live pitch (fractional MIDI) for the recording needle. */
   liveMidi?: () => number | null
+  // ── A-B loop (beats; 0 = unset). Drawn on the editor's ruler + grid. ──
+  loopA?: () => number
+  loopB?: () => number
+  loopEnabled?: () => boolean
   /** Imperative bridge exposed once the editor is mounted. */
   onEditorReady?: (api: PianoRollEditorApi) => void
 }
@@ -205,6 +209,16 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   // Propagate grid visibility from settings
   createEffect(() => {
     editor?.setShowGrid(gridLinesVisible())
+  })
+
+  // Propagate the A-B loop region so the editor draws matching ruler/grid
+  // markers (the loop itself runs on the shared PlaybackRuntime).
+  createEffect(() => {
+    editor?.setLoop(
+      props.loopA?.() ?? 0,
+      props.loopB?.() ?? 0,
+      props.loopEnabled?.() ?? false,
+    )
   })
 
   return (

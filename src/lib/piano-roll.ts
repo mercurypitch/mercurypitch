@@ -509,6 +509,12 @@ export class PianoRollEditor {
   private useBallPhysics = false // Toggle between vertical dot and ball physics
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
   private isExternalPlayback = false
+  // A-B loop region (beats; 0 = unset), pushed from App so the Compose editor
+  // shows the same loop as the other tabs — labelled markers on the ruler and
+  // span lines through the grid.
+  private loopA = 0
+  private loopB = 0
+  private loopEnabled = false
   private isSeeking = false
   private _lastScrubNoteId = -1
   private _activeScrubNoteId: number | null = null
@@ -954,6 +960,93 @@ export class PianoRollEditor {
    *  edge to countInBeats*beatWidth pixels into the grid. */
   setCountInBeats(beats: number): void {
     this._countInBeats = Math.max(0, beats)
+  }
+
+  /** Set the A-B loop region (beats; 0 = unset) and redraw so the markers
+   *  update immediately whether the editor is playing or stopped. */
+  setLoop(a: number, b: number, enabled: boolean): void {
+    if (a === this.loopA && b === this.loopB && enabled === this.loopEnabled) {
+      return
+    }
+    this.loopA = a
+    this.loopB = b
+    this.loopEnabled = enabled
+    if (this.isExternalPlayback) this.drawWithPlayhead()
+    else this.draw()
+  }
+
+  /** A-B loop span on the grid canvas — a subtle region band between A and B
+   *  plus full-height boundary lines (A = --accent blue, B = --red). */
+  private drawGridLoop(
+    ctx: CanvasRenderingContext2D,
+    countInOffset: number,
+    totalHeight: number,
+  ): void {
+    const a = this.loopA
+    const b = this.loopB
+    if (a <= 0 && b <= 0) return
+    const xOf = (beat: number) => countInOffset + beat * this.beatWidth
+    if (a > 0 && b > 0 && a < b) {
+      const x1 = xOf(a)
+      ctx.fillStyle = this.loopEnabled
+        ? 'rgba(63,185,80,0.10)'
+        : 'rgba(88,166,255,0.08)'
+      ctx.fillRect(x1, 0, xOf(b) - x1, totalHeight)
+    }
+    const line = (beat: number, color: string, glow: string) => {
+      const x = xOf(beat)
+      ctx.save()
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2
+      ctx.shadowColor = glow
+      ctx.shadowBlur = 4
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, totalHeight)
+      ctx.stroke()
+      ctx.restore()
+    }
+    if (a > 0) line(a, 'rgba(88,166,255,0.85)', 'rgba(88,166,255,0.5)')
+    if (b > 0) line(b, 'rgba(248,81,73,0.85)', 'rgba(248,81,73,0.5)')
+  }
+
+  /** A-B loop markers on the ruler — a boundary tick plus a labelled flag pill
+   *  (A = --accent blue, B = --red), matching the seek-rail markers elsewhere. */
+  private drawRulerLoop(
+    ctx: CanvasRenderingContext2D,
+    countInOffset: number,
+  ): void {
+    const a = this.loopA
+    const b = this.loopB
+    if (a <= 0 && b <= 0) return
+    const xOf = (beat: number) =>
+      this.pianoWidth + countInOffset + beat * this.beatWidth
+    const flag = (beat: number, label: string, color: string) => {
+      const x = xOf(beat)
+      ctx.save()
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, this.rulerHeight)
+      ctx.stroke()
+      ctx.font = 'bold 10px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      const pillW = ctx.measureText(label).width + 8
+      const pillH = 13
+      // A flag sits to the right of its line, B to the left, so adjacent
+      // markers don't overlap.
+      const px = label === 'A' ? x : x - pillW
+      ctx.fillStyle = color
+      ctx.fillRect(px, 1, pillW, pillH)
+      ctx.fillStyle = '#fff'
+      ctx.fillText(label, px + pillW / 2, 1 + pillH / 2 + 0.5)
+      ctx.textBaseline = 'alphabetic'
+      ctx.restore()
+    }
+    if (a > 0) flag(a, 'A', '#58a6ff')
+    if (b > 0) flag(b, 'B', '#f85149')
   }
 
   setPlaybackState(state: PlaybackState): void {
@@ -3735,6 +3828,9 @@ export class PianoRollEditor {
     ctx.moveTo(0, this.rulerHeight - 1)
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
+
+    // A-B loop markers (stopped state; no count-in offset)
+    this.drawRulerLoop(ctx, 0)
   }
 
   private drawRulerWithPlayhead(): void {
@@ -3785,6 +3881,9 @@ export class PianoRollEditor {
     ctx.moveTo(0, this.rulerHeight - 1)
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
+
+    // A-B loop markers (below the playhead triangle, drawn next)
+    this.drawRulerLoop(ctx, countInOffset)
 
     // Playhead triangle — offset during count-in so it's visible
     const playheadX =
@@ -3852,6 +3951,9 @@ export class PianoRollEditor {
 
     // Live recording / take-review preview (provisional notes).
     this.drawPreviewNotes(ctx, 0)
+
+    // A-B loop span (stopped state; no count-in offset)
+    this.drawGridLoop(ctx, 0, totalHeight)
 
     // Box selection rectangle
     if (this.isBoxSelecting) {
@@ -3930,6 +4032,9 @@ export class PianoRollEditor {
 
     // Live recording preview — provisional notes captured this take.
     this.drawPreviewNotes(ctx, countInOffset)
+
+    // A-B loop span (below the playhead so the playhead stays on top)
+    this.drawGridLoop(ctx, countInOffset, totalHeight)
 
     const playheadX = countInOffset + currentBeat * this.beatWidth
 

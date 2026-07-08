@@ -1184,8 +1184,36 @@ const AppShell: Component<AppProps> = (props) => {
   // until playback re-enters the region.
   const [seekedOutsideLoop, setSeekedOutsideLoop] = createSignal(false)
 
+  // The A-B loop state is shared across tabs, but each tab has its OWN
+  // transport: Singing and Compose both drive the shared PlaybackRuntime
+  // (currentBeat / totalBeats), while Piano runs on the separate falling-notes
+  // controller (playheadBeat / seekToBeat). Route every loop operation — set
+  // A/B, clamp, marker-drag, auto-seek-back — through the ACTIVE tab's
+  // transport so the loop tracks the playhead the user is actually watching.
+  // (Before this, all of them used the singing transport, so Set A/B read a
+  // stale singing beat and the loop-back seeked a runtime the Piano tab isn't
+  // even using — the loop simply did nothing on Piano.)
+  const loopTransport = (): {
+    beat: () => number
+    total: () => number
+    seekTo: (beat: number) => void
+  } => {
+    if (activeTab() === TAB_PIANO) {
+      return {
+        beat: fallingNotes.playheadBeat,
+        total: fallingNotes.totalBeats,
+        seekTo: fallingNotes.seekToBeat,
+      }
+    }
+    return {
+      beat: currentBeat,
+      total: totalBeats,
+      seekTo: (beat: number) => playbackRuntime.seekTo(beat),
+    }
+  }
+
   const handleSetLoopA = () => {
-    const beat = currentBeat()
+    const beat = loopTransport().beat()
     if (beat < 0) return
     setLoopA(Math.max(0, beat))
     // Re-marking A at/after B empties the region — clear B and disable the
@@ -1197,7 +1225,8 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   const handleSetLoopB = () => {
-    const beat = clampLoopB(currentBeat(), loopA(), totalBeats())
+    const t = loopTransport()
+    const beat = clampLoopB(t.beat(), loopA(), t.total())
     if (beat <= loopA()) return
     setLoopB(beat)
     // Setting B arms the loop right away (matches the stem-mixer): playback
@@ -1223,27 +1252,31 @@ const AppShell: Component<AppProps> = (props) => {
   const LOOP_MIN_GAP_BEATS = 0.25
   const handleMoveLoopA = (beat: number) => {
     const b = loopB()
-    const upper = b > 0 ? b - LOOP_MIN_GAP_BEATS : totalBeats()
+    const upper = b > 0 ? b - LOOP_MIN_GAP_BEATS : loopTransport().total()
     setLoopA(Math.max(0, Math.min(beat, upper)))
   }
   const handleMoveLoopB = (beat: number) => {
     const lower = loopA() + LOOP_MIN_GAP_BEATS
-    setLoopB(Math.min(Math.max(beat, lower), totalBeats()))
+    setLoopB(Math.min(Math.max(beat, lower), loopTransport().total()))
   }
 
-  // Manual seek from the status-bar scrubber: record whether it escaped the
+  // Manual seek from a tab's scrubber/overview: record whether it escaped the
   // loop region so the auto-seek-back below stays suppressed until we're back
   // inside [A, B). (Fixes: a manual seek past B used to be instantly reverted.)
-  const handleSingingSeek = (beat: number) => {
+  // Seeks the ACTIVE tab's transport so it works on Singing, Compose and Piano.
+  const handleLoopSeek = (beat: number) => {
     setSeekedOutsideLoop(isSeekOutsideLoop(beat, loopA(), loopB()))
-    playbackRuntime.seekTo(beat)
+    loopTransport().seekTo(beat)
   }
 
   // Auto-seek back to A when the playhead reaches B (loop enabled). Only fire
   // while the playhead is still short of the track end, so we don't race the
-  // runtime's natural-end / complete handling.
+  // runtime's natural-end / complete handling. Reads the ACTIVE tab's transport
+  // (via loopTransport) so it follows the piano playhead on the Piano tab and
+  // the shared runtime on Singing/Compose.
   createEffect(() => {
-    const beat = currentBeat()
+    const t = loopTransport()
+    const beat = t.beat()
     // Once playback re-enters [A, B), drop the manual-seek escape flag.
     if (
       seekedOutsideLoop() &&
@@ -1260,9 +1293,9 @@ const AppShell: Component<AppProps> = (props) => {
         b: loopB(),
         seekedOutside: seekedOutsideLoop(),
       }) &&
-      beat < totalBeats()
+      beat < t.total()
     ) {
-      playbackRuntime.seekTo(loopA())
+      t.seekTo(loopA())
     }
   })
 
@@ -2096,7 +2129,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentSong={singingSong}
                         playheadBeat={currentBeat}
                         totalBeats={totalBeats}
-                        onSeek={handleSingingSeek}
+                        onSeek={handleLoopSeek}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
                         loopA={loopA}
@@ -2145,6 +2178,11 @@ const AppShell: Component<AppProps> = (props) => {
                         }
                         noteResults={noteResults}
                         countInBeats={() => countIn()}
+                        loopA={loopA}
+                        loopB={loopB}
+                        loopEnabled={loopEnabled}
+                        onMoveLoopA={handleMoveLoopA}
+                        onMoveLoopB={handleMoveLoopB}
                       />
                       <SingingCanvasHud
                         noteResults={noteResults}
@@ -2354,6 +2392,9 @@ const AppShell: Component<AppProps> = (props) => {
                         currentNoteIndex={() => melodyStore.currentNoteIndex()}
                         currentBeat={currentBeat}
                         countInBeats={() => countIn()}
+                        loopA={loopA}
+                        loopB={loopB}
+                        loopEnabled={loopEnabled}
                         isPlaying={editorIsPlaying}
                         isPaused={editorIsPaused}
                         isScrolling={() => false}
@@ -2472,6 +2513,9 @@ const AppShell: Component<AppProps> = (props) => {
                     onSetLoopB={handleSetLoopB}
                     onToggleLoop={handleToggleLoop}
                     onClearLoop={handleClearLoop}
+                    onMoveLoopA={handleMoveLoopA}
+                    onMoveLoopB={handleMoveLoopB}
+                    onSeek={handleLoopSeek}
                   />
                 </TabErrorBoundary>
               </Show>
