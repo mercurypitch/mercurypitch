@@ -11,7 +11,6 @@
 
 import type { F0Frame, MirrorDelta, MirrorResult } from '@/lib/mirror/metrics'
 import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
-import { singerForVoiceType } from '@/lib/mirror/singer-match'
 
 export type CardFormat = 'story' | 'square'
 
@@ -23,6 +22,9 @@ export interface CardInput {
   deltaLine?: string | null
   /** Optional headline, e.g. a cosmic melody name. Drawn above the trace. */
   title?: string | null
+  /** Famous-singer match. Left off the default (front) card so the reveal is a
+   *  surprise; passed only when exporting the revealed "voice twin" card. */
+  legend?: string | null
 }
 
 const FORMATS: Record<CardFormat, { width: number; height: number }> = {
@@ -284,13 +286,10 @@ function drawStats(
 
   const voiceHint = range?.voiceHint ?? null
   if (voiceHint !== null) {
-    // Two pills: the voice type, and the legend whose range overlaps it.
-    const singer = singerForVoiceType(
-      voiceHint,
-      range?.lowMidi ?? 0,
-      range?.highMidi ?? 0,
-    )
-    const pills = singer !== null ? [voiceHint, `like ${singer}`] : [voiceHint]
+    // The voice type stays on the card; the legend match is intentionally a
+    // reveal (§ card declutter), so its pill only appears when `legend` is set.
+    const legend = input.legend ?? null
+    const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
     drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
   }
 }

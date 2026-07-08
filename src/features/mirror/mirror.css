@@ -227,9 +227,362 @@ body {
   padding-top: 24px;
 }
 
-.mirror-voiceprint {
-  margin: 0 auto 18px;
+/* Results layout: card centered, detail "notes" flanking it (desktop) or
+   stacked beneath it (mobile). */
+.mirror-results-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-items: center;
+  gap: 20px;
+  margin: 6px 0 4px;
+}
+
+.mirror-card-col {
+  order: -1; /* card first on mobile, above the stacked notes */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
   max-width: 420px;
+}
+
+@media (min-width: 900px) {
+  .mirror-results-grid {
+    grid-template-columns: 1fr minmax(300px, 400px) 1fr;
+    gap: 26px;
+    align-items: center;
+  }
+  .mirror-card-col {
+    order: 0;
+  }
+  .mirror-notecard-left {
+    justify-self: end;
+  }
+  .mirror-notecard-right {
+    justify-self: start;
+  }
+}
+
+.mirror-notecard {
+  width: 100%;
+  max-width: 340px;
+  padding: 16px 20px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(143, 163, 255, 0.16);
+  background: rgba(20, 16, 51, 0.42);
+  backdrop-filter: blur(4px);
+  text-align: left;
+}
+
+.mirror-notecard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mirror-notecard-label {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  color: var(--mirror-dim);
+}
+
+.mirror-notecard-score {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--mirror-gold);
+  line-height: 1;
+}
+
+.mirror-notecard p {
+  color: var(--mirror-dim);
+  font-size: 0.9rem;
+  margin: 0.5em 0 0;
+}
+
+.mirror-notecard .mirror-pips {
+  justify-content: flex-start;
+  margin: 2px 0 4px;
+}
+
+.mirror-note-sub {
+  font-size: 0.82rem;
+  opacity: 0.82;
+}
+
+.mirror-voicechip {
+  margin-top: 2px;
+}
+
+.mirror-voiceprint {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ── Tappable reveal card: voiceprint (front) → legend twin (back) ── */
+.mirror-reveal {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  perspective: 1300px;
+}
+
+.mirror-reveal-card {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  cursor: default;
+  transform-style: preserve-3d;
+  transition: transform 0.16s ease-out;
+}
+.has-legend .mirror-reveal-card {
+  cursor: pointer;
+}
+
+/* Invite the tap: a soft breathing glow before the reveal. */
+.has-legend:not(.is-revealed) .mirror-reveal-card::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px rgba(255, 233, 168, 0.26),
+    0 0 34px rgba(255, 210, 120, 0.16);
+  animation: mirror-breathe 2.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes mirror-breathe {
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 233, 168, 0.5),
+      0 0 52px rgba(255, 210, 120, 0.32);
+  }
+}
+
+.mirror-reveal-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 1.15s cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+.mode-flip.is-revealed .mirror-reveal-inner {
+  transform: rotateY(900deg); /* 2.5 turns, landing on the back face */
+}
+
+.mirror-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: linear-gradient(180deg, #0b1026 0%, #141033 55%, #090714 100%);
+  box-shadow: 0 14px 46px rgba(0, 0, 0, 0.5);
+}
+.mirror-card-front {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mirror-card-front .mirror-voiceprint-canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  box-shadow: none;
+  display: block;
+}
+.mirror-card-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6% 6% 7%;
+  border: 1px solid rgba(143, 163, 255, 0.16);
+}
+
+.mirror-legend-portrait {
+  width: 62%;
+  max-width: 190px;
+}
+.mirror-legend-caption {
+  text-align: center;
+  margin-top: 2%;
+}
+.mirror-legend-kicker {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.68rem;
+  color: var(--mirror-accent);
+}
+.mirror-legend-name {
+  display: block;
+  font-size: 1.55rem;
+  color: var(--mirror-gold);
+  margin: 3px 0 1px;
+}
+.mirror-legend-epithet {
+  display: block;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--mirror-dim);
+}
+.mirror-legend-type {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(143, 163, 255, 0.72);
+  margin-top: 7px;
+}
+
+/* Lenticular overlay — the portrait shines through the data. */
+.mirror-lenticular-portrait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 0.5s ease;
+  z-index: 3;
+}
+.mirror-lenticular-portrait .mirror-legend-svg {
+  width: 74%;
+  filter: drop-shadow(0 0 16px rgba(255, 210, 120, 0.4));
+}
+.mirror-lenticular-shine {
+  position: absolute;
+  top: -30%;
+  left: 34%;
+  width: 20%;
+  height: 160%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(198, 214, 255, 0.12),
+    rgba(255, 245, 220, 0.05),
+    transparent
+  );
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 0.5s ease;
+  z-index: 4;
+}
+
+/* Reveal hint + inviting arrows. */
+.mirror-reveal-hint {
+  margin: 15px 0 0;
+  color: var(--mirror-dim);
+  font-size: 0.95rem;
+  min-height: 1.4em;
+}
+.mirror-reveal-hint.revealed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+.mirror-reveal-spark {
+  color: var(--mirror-gold);
+  margin-right: 7px;
+}
+.mirror-reveal-back {
+  font-size: 0.82rem;
+}
+.mirror-reveal-spacer {
+  height: 2px;
+}
+
+.mirror-reveal-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  transform: translateY(-50%);
+  color: var(--mirror-gold);
+  font-size: 1.4rem;
+  line-height: 0.6;
+  letter-spacing: -4px;
+  pointer-events: none;
+  text-shadow: 0 0 12px rgba(255, 210, 120, 0.7);
+}
+.mirror-reveal-arrow.left {
+  left: -30px;
+  animation: mirror-nudge-r 1.3s ease-in-out infinite;
+}
+.mirror-reveal-arrow.right {
+  right: -30px;
+  animation: mirror-nudge-l 1.3s ease-in-out infinite;
+}
+@keyframes mirror-nudge-r {
+  50% {
+    transform: translateY(-50%) translateX(7px);
+  }
+}
+@keyframes mirror-nudge-l {
+  50% {
+    transform: translateY(-50%) translateX(-7px);
+  }
+}
+@media (max-width: 480px) {
+  .mirror-reveal-arrow.left {
+    left: -16px;
+  }
+  .mirror-reveal-arrow.right {
+    right: -16px;
+  }
+}
+
+/* Reveal-style toggle (compare flip vs lenticular). */
+.mirror-reveal-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 2px auto 0;
+  border-radius: 999px;
+  background: rgba(143, 163, 255, 0.12);
+  border: 1px solid rgba(143, 163, 255, 0.2);
+}
+.mirror-reveal-toggle button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--mirror-dim);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mirror-reveal-toggle button.active {
+  background: rgba(255, 233, 168, 0.16);
+  color: var(--mirror-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-reveal-inner,
+  .mirror-reveal-card,
+  .mirror-reveal-arrow,
+  .mirror-reveal-card::after {
+    transition-duration: 0.001ms;
+    animation: none;
+  }
 }
 
 .mirror-voiceprint-canvas {
@@ -355,10 +708,74 @@ body {
   color: var(--mirror-dim);
 }
 
+/* Legend constellation portrait (reveal + gallery). */
+.mirror-legend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .mirror-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
   margin-top: 30px;
+}
+
+/* Results actions: one hero button, a row of smaller sub-buttons, then a
+   quiet text link — a clear hierarchy instead of five equal pills. */
+.mirror-results .mirror-actions {
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.mirror-cta-hero {
+  font-size: 1.18rem;
+  padding: 17px 46px;
+  margin-top: 0;
+  box-shadow: 0 10px 30px rgba(255, 196, 107, 0.22);
+}
+
+.mirror-actions-sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mirror-cta-sm {
+  margin-top: 0;
+  padding: 10px 22px;
+  font-size: 0.95rem;
+}
+
+.mirror-textbtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--mirror-dim);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px 8px;
+}
+
+.mirror-textbtn:hover {
+  color: var(--mirror-accent);
+}
+
+.mirror-sharestatus {
+  margin-top: 12px;
+}
+
+.mirror-foot {
+  color: var(--mirror-dim);
+  font-size: 0.8rem;
+  opacity: 0.62;
+  margin-top: 20px;
 }
