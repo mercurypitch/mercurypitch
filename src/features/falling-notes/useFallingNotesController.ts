@@ -247,6 +247,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           audioEngine.stopAllNotes()
           gameStartTime = now - (loopA / bps) * 1000
           markProgressBefore(loopA)
+          // Clear the finished lap's judgments so the replayed [A, B] notes
+          // return to their bright not-played colour and dim again only as the
+          // playhead re-crosses them. Score / combo / miss counters live in
+          // their own signals, so they keep tracking cumulatively.
+          setHitResults([])
           newBeat = loopA
         }
 
