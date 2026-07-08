@@ -2408,6 +2408,8 @@ const AppShell: Component<AppProps> = (props) => {
                         loopA={loopA}
                         loopB={loopB}
                         loopEnabled={loopEnabled}
+                        onMoveLoopA={handleMoveLoopA}
+                        onMoveLoopB={handleMoveLoopB}
                         isPlaying={editorIsPlaying}
                         isPaused={editorIsPaused}
                         isScrolling={() => false}

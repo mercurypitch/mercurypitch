@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
+import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
 
@@ -29,11 +30,13 @@ interface FallingNotesCanvasProps {
   onClickPianoOn?: (midi: number) => void
   onClickPianoOff?: () => void
   clickPianoEnabled?: () => boolean
-  // ── A-B loop (beats; 0 = unset). Read-only markers on the falling-notes
-  //    lane; the loop is set/dragged from the song bar's seek rail. ──
+  // ── A-B loop (beats; 0 = unset). Markers on the falling-notes lane;
+  //    draggable via onMoveLoopA/B (the note area has no other pointer use). ──
   loopA?: () => number
   loopB?: () => number
   loopEnabled?: () => boolean
+  onMoveLoopA?: (beat: number) => void
+  onMoveLoopB?: (beat: number) => void
 }
 
 interface Particle {
@@ -165,6 +168,41 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   let clickedKey: number | null = null
   let pointerDownX = 0
   let pointerDownY = 0
+  // Which A/B loop boundary the pointer is dragging in the note lane.
+  let loopDrag: 'A' | 'B' | null = null
+
+  // Beat ↔ canvas-Y mapping for the loop markers — the same formula the render
+  // uses (see beatToY in draw()), recomputed on demand so the hit-test and drag
+  // stay in lockstep with the drawn lines.
+  const loopAxis = () => {
+    const w = canvasRef?.clientWidth ?? 0
+    const h = canvasRef?.clientHeight ?? 0
+    const jLineY = h * getKeyboardStartRatio(w, h) // = kbTop = note-area height
+    const bps = jLineY / (props.visibleBeatWindow?.() ?? 8)
+    const currentBeat = props.playheadBeat()
+    return {
+      kbTop: jLineY,
+      beatToY: (beat: number) => jLineY - (beat - currentBeat) * bps,
+      beatFromClientY: (clientY: number) => {
+        if (!canvasRef || bps <= 0) return 0
+        const rect = canvasRef.getBoundingClientRect()
+        return currentBeat + (jLineY - (clientY - rect.top)) / bps
+      },
+    }
+  }
+
+  // The loop marker under the pointer, if any — only in the note area above the
+  // keyboard, so it never competes with the piano keys below.
+  const hitLoopMarker = (clientY: number): 'A' | 'B' | null => {
+    if (!canvasRef) return null
+    const a = props.loopA?.() ?? 0
+    const b = props.loopB?.() ?? 0
+    if (a <= 0 && b <= 0) return null
+    const axis = loopAxis()
+    const y = clientY - canvasRef.getBoundingClientRect().top
+    if (y < 0 || y > axis.kbTop) return null
+    return hitTestAbLoopMarker(y, a, b, axis.beatToY)
+  }
 
   // Hit-test: convert mouse/touch coordinates to MIDI note number
   const hitTestKeyboard = (clientX: number, clientY: number): number | null => {
@@ -245,6 +283,14 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     // ── Piano key click/touch handlers ─────────────────────────
 
     const onPointerDown = (e: PointerEvent) => {
+      // A press on an A/B loop marker (in the note lane) starts a drag; it
+      // works regardless of the click-piano toggle and never touches the keys.
+      const loopHit = hitLoopMarker(e.clientY)
+      if (loopHit !== null) {
+        loopDrag = loopHit
+        canvasRef?.setPointerCapture(e.pointerId)
+        return
+      }
       if (props.clickPianoEnabled?.() !== true) return
       const midi = hitTestKeyboard(e.clientX, e.clientY)
       if (midi !== null) {
@@ -257,6 +303,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     }
 
     const onPointerUp = () => {
+      if (loopDrag !== null) {
+        loopDrag = null
+        return
+      }
       if (clickedKey !== null) {
         clickedKey = null
         props.onClickPianoOff?.()
@@ -264,7 +314,20 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     }
 
     const onPointerMove = (e: PointerEvent) => {
-      if (clickedKey === null) return
+      if (loopDrag !== null) {
+        const beat = loopAxis().beatFromClientY(e.clientY)
+        if (loopDrag === 'A') props.onMoveLoopA?.(beat)
+        else props.onMoveLoopB?.(beat)
+        return
+      }
+      if (clickedKey === null) {
+        // Idle hover: show a resize cursor over a loop marker.
+        if (canvasRef !== undefined) {
+          canvasRef.style.cursor =
+            hitLoopMarker(e.clientY) !== null ? 'ns-resize' : ''
+        }
+        return
+      }
       // Ignore sub-5px movement to prevent iOS tap-jitter key switching
       const dx = e.clientX - pointerDownX
       const dy = e.clientY - pointerDownY
@@ -678,88 +741,27 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   }
 
   // ── A-B loop markers ─────────────────────────────────────────
-  // Horizontal lines across the note lane at the loop beats, with a subtle
-  // region band between them. Mirrors the singing PitchCanvas overlay, rotated
-  // for the vertical falling-notes axis: A = --accent (#58a6ff), B = --red
-  // (#f85149), region tints green (#3fb950) once armed. Clipped to the note
-  // area [0, noteAreaH] so it never overlaps the keyboard.
+  // Horizontal lines across the note lane at the loop beats (the shared
+  // overlay helper, in 'horizontal' orientation since this canvas scrolls in
+  // Y), clipped to the note area [0, noteAreaH] so it never overlaps the
+  // keyboard. Draggable — see loopAxis / hitLoopMarker below.
   const drawLoopMarkers = (
     w: number,
     noteAreaH: number,
     beatToY: (beat: number) => number,
   ) => {
     if (!ctx) return
-    const a = props.loopA?.() ?? 0
-    const b = props.loopB?.() ?? 0
-    if (a <= 0 && b <= 0) return
-    const enabled = props.loopEnabled?.() ?? false
-
-    // Region band between A and B (B is further ahead, so higher on screen).
-    if (a > 0 && b > 0 && a < b) {
-      const top = Math.max(0, Math.min(noteAreaH, beatToY(b)))
-      const bottom = Math.min(noteAreaH, Math.max(0, beatToY(a)))
-      if (bottom > top) {
-        ctx.fillStyle = enabled
-          ? 'rgba(63,185,80,0.08)'
-          : 'rgba(88,166,255,0.06)'
-        ctx.fillRect(0, top, w, bottom - top)
-      }
-    }
-
-    const drawBoundary = (
-      beat: number,
-      label: 'A' | 'B',
-      line: string,
-      glow: string,
-      flagBg: string,
-    ) => {
-      const y = beatToY(beat)
-      if (y < 0 || y > noteAreaH) return
-      ctx!.save()
-      ctx!.shadowColor = glow
-      ctx!.shadowBlur = 6
-      ctx!.strokeStyle = line
-      ctx!.lineWidth = 2
-      ctx!.beginPath()
-      ctx!.moveTo(0, y)
-      ctx!.lineTo(w, y)
-      ctx!.stroke()
-      ctx!.restore()
-
-      // Flag pill at the left edge.
-      ctx!.font = 'bold 10px sans-serif'
-      ctx!.textAlign = 'center'
-      ctx!.textBaseline = 'middle'
-      const pillW = ctx!.measureText(label).width + 10
-      const pillH = 15
-      const py = Math.max(1, Math.min(noteAreaH - pillH - 1, y - pillH / 2))
-      ctx!.beginPath()
-      ctx!.roundRect(6, py, pillW, pillH, 3)
-      ctx!.fillStyle = flagBg
-      ctx!.fill()
-      ctx!.fillStyle = '#fff'
-      ctx!.fillText(label, 6 + pillW / 2, py + pillH / 2 + 0.5)
-      ctx!.textBaseline = 'alphabetic'
-    }
-
-    if (a > 0) {
-      drawBoundary(
-        a,
-        'A',
-        'rgba(88,166,255,0.85)',
-        'rgba(88,166,255,0.5)',
-        '#58a6ff',
-      )
-    }
-    if (b > 0) {
-      drawBoundary(
-        b,
-        'B',
-        'rgba(248,81,73,0.85)',
-        'rgba(248,81,73,0.5)',
-        '#f85149',
-      )
-    }
+    drawAbLoopOverlay(ctx, {
+      a: props.loopA?.() ?? 0,
+      b: props.loopB?.() ?? 0,
+      enabled: props.loopEnabled?.() ?? false,
+      posOf: beatToY,
+      orientation: 'horizontal',
+      crossExtent: w,
+      clipMin: 0,
+      clipMax: noteAreaH,
+      flag: 'pill',
+    })
   }
 
   // ── Keyboard Top Glow ────────────────────────────────────────

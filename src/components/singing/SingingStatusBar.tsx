@@ -11,10 +11,10 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
+import { LoopSeekRail } from '@/components/shared/LoopSeekRail'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
-import { loopRegionPct } from '@/lib/ab-loop'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { getCurrentSessionItem, practiceSession, sessionActive, sessionItemIndex, sessionMode, } from '@/stores'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -84,74 +84,6 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   const currentItem = () => getCurrentSessionItem()
   const trackCount = () => props.currentSong()?.tracks.length ?? 0
 
-  // Set for one tick after a marker drag so the click synthesized by the
-  // drag's pointer-up doesn't also seek the rail.
-  let suppressSeek = false
-
-  const handleSeek = (e: MouseEvent) => {
-    if (suppressSeek) {
-      suppressSeek = false
-      return
-    }
-    const rail = e.currentTarget as HTMLDivElement
-    const rect = rail.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    props.onSeek(ratio * props.totalBeats())
-  }
-
-  const progressPct = () =>
-    props.totalBeats() > 0
-      ? (Math.max(0, props.playheadBeat()) / props.totalBeats()) * 100
-      : 0
-
-  // Reactive loop-region geometry — recomputes whenever A, B or the timeline
-  // length changes (the old inline IIFE captured them once, leaving the
-  // overlay stale when a point moved).
-  const region = () =>
-    loopRegionPct(props.loopA(), props.loopB(), props.totalBeats())
-
-  // ── Draggable A/B loop markers on the seek rail ──────────────
-  let railEl: HTMLDivElement | undefined
-  const [dragTarget, setDragTarget] = createSignal<'A' | 'B' | null>(null)
-
-  const pctOf = (beat: number): number =>
-    props.totalBeats() > 0 ? (beat / props.totalBeats()) * 100 : 0
-
-  const beatFromClientX = (clientX: number): number => {
-    if (!railEl) return 0
-    const rect = railEl.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    return ratio * props.totalBeats()
-  }
-
-  const startMarkerDrag = (which: 'A' | 'B') => (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation() // don't let the rail read this as a seek-click
-    setDragTarget(which)
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-  const onMarkerDrag = (e: PointerEvent) => {
-    const which = dragTarget()
-    if (which === null) return
-    e.preventDefault()
-    const beat = beatFromClientX(e.clientX)
-    if (which === 'A') props.onMoveLoopA?.(beat)
-    else props.onMoveLoopB?.(beat)
-  }
-  const endMarkerDrag = (e: PointerEvent) => {
-    if (dragTarget() === null) return
-    const el = e.currentTarget as HTMLElement
-    if (el.hasPointerCapture?.(e.pointerId))
-      el.releasePointerCapture(e.pointerId)
-    setDragTarget(null)
-    // Swallow the click the browser fires right after this pointer-up so the
-    // rail's seek handler ignores it; clear the flag on the next macrotask.
-    suppressSeek = true
-    setTimeout(() => {
-      suppressSeek = false
-    }, 0)
-  }
-
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
   const [elapsed, setElapsed] = createSignal(0)
@@ -209,71 +141,17 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
                 Math.max(0, props.playheadBeat()) / (props.bpm() / 60),
               )}
             </span>
-            <div
-              ref={railEl}
-              class={barStyles.rail}
-              onClick={handleSeek}
-              title="Seek"
-              data-testid="singing-seek-rail"
-            >
-              <div
-                class={barStyles.fill}
-                style={{ width: `${progressPct()}%` }}
-              />
-              <Show when={region()}>
-                {(r) => (
-                  <div
-                    class={barStyles.loopRegion}
-                    classList={{
-                      [barStyles.loopRegionActive]: props.loopEnabled(),
-                    }}
-                    style={{
-                      left: `${r().left}%`,
-                      width: `${r().width}%`,
-                    }}
-                    data-testid="loop-region"
-                  />
-                )}
-              </Show>
-              {/* Draggable A / B markers — the "start point render" on A, and a
-                  movable end on B (mirrors the stem-mixer waveform markers). */}
-              <Show when={props.loopA() > 0}>
-                <div
-                  class={`${barStyles.loopMarker} ${barStyles.loopMarkerA}`}
-                  classList={{
-                    [barStyles.loopMarkerDragging]: dragTarget() === 'A',
-                  }}
-                  style={{ left: `${pctOf(props.loopA())}%` }}
-                  title="Drag to move loop start (A)"
-                  data-testid="loop-marker-a"
-                  onPointerDown={startMarkerDrag('A')}
-                  onPointerMove={onMarkerDrag}
-                  onPointerUp={endMarkerDrag}
-                  onPointerCancel={endMarkerDrag}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span class={barStyles.loopMarkerFlag}>A</span>
-                </div>
-              </Show>
-              <Show when={props.loopB() > 0}>
-                <div
-                  class={`${barStyles.loopMarker} ${barStyles.loopMarkerB}`}
-                  classList={{
-                    [barStyles.loopMarkerDragging]: dragTarget() === 'B',
-                  }}
-                  style={{ left: `${pctOf(props.loopB())}%` }}
-                  title="Drag to move loop end (B)"
-                  data-testid="loop-marker-b"
-                  onPointerDown={startMarkerDrag('B')}
-                  onPointerMove={onMarkerDrag}
-                  onPointerUp={endMarkerDrag}
-                  onPointerCancel={endMarkerDrag}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span class={barStyles.loopMarkerFlag}>B</span>
-                </div>
-              </Show>
-            </div>
+            <LoopSeekRail
+              testIdPrefix="singing"
+              playheadBeat={props.playheadBeat}
+              totalBeats={props.totalBeats}
+              onSeek={props.onSeek}
+              loopA={props.loopA}
+              loopB={props.loopB}
+              loopEnabled={props.loopEnabled}
+              onMoveLoopA={props.onMoveLoopA}
+              onMoveLoopB={props.onMoveLoopB}
+            />
             <span class={barStyles.time}>
               {formatTime(props.totalBeats() / (props.bpm() / 60))}
             </span>

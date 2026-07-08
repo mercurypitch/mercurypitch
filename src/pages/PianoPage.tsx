@@ -185,6 +185,8 @@ export function PianoPage(props: PianoPageProps) {
           loopA={props.loopA}
           loopB={props.loopB}
           loopEnabled={props.loopEnabled}
+          onMoveLoopA={props.onMoveLoopA}
+          onMoveLoopB={props.onMoveLoopB}
         />
         <ControlOverlay
           idPrefix="piano"

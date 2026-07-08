@@ -4,6 +4,7 @@
 
 import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
+import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlideProgress, drawStaccatoShape, drawTrillProgress, SLIDE_FILL, SLIDE_STROKE, slideShapePath, STACCATO_FILL, STACCATO_STROKE, TREMOLO_FILL, TREMOLO_STROKE, TRILL_FILL, TRILL_STROKE, trillShapePath, VIBRATO_FILL, VIBRATO_STROKE, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
@@ -433,6 +434,9 @@ export interface PianoRollOptions {
   onInstrumentChange?: (instrument: InstrumentType) => void
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void
+  /** Drag the A / B loop markers on the ruler (beats). */
+  onMoveLoopA?: (beat: number) => void
+  onMoveLoopB?: (beat: number) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -515,6 +519,10 @@ export class PianoRollEditor {
   private loopA = 0
   private loopB = 0
   private loopEnabled = false
+  // Which A/B marker the pointer is dragging on the ruler (null = seeking).
+  private loopDragTarget: 'A' | 'B' | null = null
+  private onMoveLoopA?: (beat: number) => void
+  private onMoveLoopB?: (beat: number) => void
   private isSeeking = false
   private _lastScrubNoteId = -1
   private _activeScrubNoteId: number | null = null
@@ -602,6 +610,8 @@ export class PianoRollEditor {
     this.onNoteSelect = options.onNoteSelect
     this.onInstrumentChange = options.onInstrumentChange
     this.onPlaybackStateChange = options.onPlaybackStateChange
+    this.onMoveLoopA = options.onMoveLoopA
+    this.onMoveLoopB = options.onMoveLoopB
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
     this.beatWidth = this.config.beatWidth
@@ -975,78 +985,44 @@ export class PianoRollEditor {
     else this.draw()
   }
 
-  /** A-B loop span on the grid canvas — a subtle region band between A and B
-   *  plus full-height boundary lines (A = --accent blue, B = --red). */
+  /** A-B loop span on the grid canvas — a shaded region between A and B plus
+   *  full-height boundary lines (shared overlay helper). Ruler carries labels. */
   private drawGridLoop(
     ctx: CanvasRenderingContext2D,
     countInOffset: number,
     totalHeight: number,
   ): void {
-    const a = this.loopA
-    const b = this.loopB
-    if (a <= 0 && b <= 0) return
-    const xOf = (beat: number) => countInOffset + beat * this.beatWidth
-    if (a > 0 && b > 0 && a < b) {
-      const x1 = xOf(a)
-      ctx.fillStyle = this.loopEnabled
-        ? 'rgba(63,185,80,0.10)'
-        : 'rgba(88,166,255,0.08)'
-      ctx.fillRect(x1, 0, xOf(b) - x1, totalHeight)
-    }
-    const line = (beat: number, color: string, glow: string) => {
-      const x = xOf(beat)
-      ctx.save()
-      ctx.strokeStyle = color
-      ctx.lineWidth = 2
-      ctx.shadowColor = glow
-      ctx.shadowBlur = 4
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, totalHeight)
-      ctx.stroke()
-      ctx.restore()
-    }
-    if (a > 0) line(a, 'rgba(88,166,255,0.85)', 'rgba(88,166,255,0.5)')
-    if (b > 0) line(b, 'rgba(248,81,73,0.85)', 'rgba(248,81,73,0.5)')
+    drawAbLoopOverlay(ctx, {
+      a: this.loopA,
+      b: this.loopB,
+      enabled: this.loopEnabled,
+      posOf: (beat) => countInOffset + beat * this.beatWidth,
+      orientation: 'vertical',
+      crossExtent: totalHeight,
+      clipMin: 0,
+      clipMax: this.stretchedWidth,
+      flag: 'none',
+    })
   }
 
-  /** A-B loop markers on the ruler — a boundary tick plus a labelled flag pill
-   *  (A = --accent blue, B = --red), matching the seek-rail markers elsewhere. */
+  /** A-B loop markers on the ruler — a boundary tick plus a labelled flag,
+   *  A-right / B-left so adjacent markers don't overlap (shared helper). */
   private drawRulerLoop(
     ctx: CanvasRenderingContext2D,
     countInOffset: number,
   ): void {
-    const a = this.loopA
-    const b = this.loopB
-    if (a <= 0 && b <= 0) return
-    const xOf = (beat: number) =>
-      this.pianoWidth + countInOffset + beat * this.beatWidth
-    const flag = (beat: number, label: string, color: string) => {
-      const x = xOf(beat)
-      ctx.save()
-      ctx.strokeStyle = color
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, this.rulerHeight)
-      ctx.stroke()
-      ctx.font = 'bold 10px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      const pillW = ctx.measureText(label).width + 8
-      const pillH = 13
-      // A flag sits to the right of its line, B to the left, so adjacent
-      // markers don't overlap.
-      const px = label === 'A' ? x : x - pillW
-      ctx.fillStyle = color
-      ctx.fillRect(px, 1, pillW, pillH)
-      ctx.fillStyle = '#fff'
-      ctx.fillText(label, px + pillW / 2, 1 + pillH / 2 + 0.5)
-      ctx.textBaseline = 'alphabetic'
-      ctx.restore()
-    }
-    if (a > 0) flag(a, 'A', '#58a6ff')
-    if (b > 0) flag(b, 'B', '#f85149')
+    drawAbLoopOverlay(ctx, {
+      a: this.loopA,
+      b: this.loopB,
+      enabled: this.loopEnabled,
+      posOf: (beat) => this.pianoWidth + countInOffset + beat * this.beatWidth,
+      orientation: 'vertical',
+      crossExtent: this.rulerHeight,
+      clipMin: 0,
+      clipMax: this.pianoWidth + this.stretchedWidth,
+      flag: 'ruler',
+      region: false,
+    })
   }
 
   setPlaybackState(state: PlaybackState): void {
@@ -2149,13 +2125,25 @@ export class PianoRollEditor {
       { passive: false },
     )
 
-    // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
+    // Ruler drag-to-seek (click and drag on ruler to scrub playback position),
+    // or drag an A/B loop marker if the press lands on one.
     this.rulerCanvas?.addEventListener('mousedown', (e) => {
+      const hit = this.hitTestRulerLoop(e.clientX)
+      if (hit !== null) {
+        this.loopDragTarget = hit
+        return
+      }
       this.isSeeking = true
       this.seekToRulerPosition(e)
     })
 
     document.addEventListener('mousemove', (e) => {
+      if (this.loopDragTarget !== null) {
+        const beat = this.rulerBeatFromClientX(e.clientX)
+        if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
+        else this.onMoveLoopB?.(beat)
+        return
+      }
       if (this.isSeeking) {
         this.seekToRulerPosition(e)
       }
@@ -2174,6 +2162,7 @@ export class PianoRollEditor {
     )
 
     document.addEventListener('mouseup', () => {
+      this.loopDragTarget = null
       this.isSeeking = false
       this._lastScrubNoteId = -1
       if (this._activeScrubNoteId !== null) {
@@ -3552,6 +3541,32 @@ export class PianoRollEditor {
         this.ballCanvas.height,
       )
     }
+  }
+
+  /** Ruler x (canvas-content px) of a loop beat — matches drawRulerLoop's map
+   *  and seekToRulerPosition's inverse (the ruler canvas's rect already carries
+   *  the scroll translate, so no scrollLeft term is needed). */
+  private rulerXOfBeat(beat: number): number {
+    return this.pianoWidth + beat * this.beatWidth
+  }
+
+  /** The A/B loop marker under a ruler press, if any. */
+  private hitTestRulerLoop(clientX: number): 'A' | 'B' | null {
+    if (!this.rulerCanvas || (this.loopA <= 0 && this.loopB <= 0)) return null
+    const rect = this.rulerCanvas.getBoundingClientRect()
+    return hitTestAbLoopMarker(
+      clientX - rect.left,
+      this.loopA,
+      this.loopB,
+      (b) => this.rulerXOfBeat(b),
+    )
+  }
+
+  /** Invert the ruler map: clientX → beat (clamped ≥ 0). Mirrors the seek math. */
+  private rulerBeatFromClientX(clientX: number): number {
+    if (!this.rulerCanvas) return 0
+    const rect = this.rulerCanvas.getBoundingClientRect()
+    return Math.max(0, (clientX - rect.left - this.pianoWidth) / this.beatWidth)
   }
 
   private seekToRulerPosition(e: MouseEvent): void {

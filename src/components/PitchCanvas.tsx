@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, } from 'solid-js'
+import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -33,10 +34,6 @@ const CHORD_LABEL: Record<ChordType, string> = {
 const DOUBLE_CLICK_DELAY = 300 // ms — max gap for double-click detection
 const TRILL_NOTE_PLAYS = 3 // number of note plays on double-click
 const TRILL_BAR_REST = 4 // beats between each play
-
-// Pixel tolerance for grabbing an A/B loop boundary to drag (mirrors the
-// stem-mixer canvas's LOOP_HIT_PX).
-const LOOP_MARKER_HIT_PX = 8
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -358,21 +355,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const rect = canvasRef.getBoundingClientRect()
     const w = canvasRef.clientWidth
     if (w <= 0) return null
-    const px = clientX - rect.left
-    let best: 'A' | 'B' | null = null
-    let bestDist = LOOP_MARKER_HIT_PX
-    if (a > 0) {
-      const d = Math.abs(px - beatToX(a, w))
-      if (d <= bestDist) {
-        best = 'A'
-        bestDist = d
-      }
-    }
-    if (b > 0) {
-      const d = Math.abs(px - beatToX(b, w))
-      if (d <= bestDist) best = 'B'
-    }
-    return best
+    return hitTestAbLoopMarker(clientX - rect.left, a, b, (beat) =>
+      beatToX(beat, w),
+    )
   }
 
   /** Live-drag the grabbed loop boundary; reuses App's clamp handlers so the
@@ -1050,83 +1035,20 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   // A-B loop boundaries drawn straight on the note canvas — vertical markers
   // positioned by beat within the visible scrolling window (via beatToX), with
-  // a subtle region fill between them. Mirrors the stem-mixer overview and the
-  // singing seek-rail markers: A = --accent (blue), B = --red. Colours are the
-  // canvas's hardcoded dark-theme equivalents of those vars (#58a6ff / #f85149);
-  // the region tints green (#3fb950) once the loop is armed, matching the seek
-  // rail's active band.
+  // a subtle region fill between them. Shared draw helper (see ab-loop-canvas).
   const drawLoopOverlay = (w: number, h: number) => {
-    const a = props.loopA?.() ?? 0
-    const b = props.loopB?.() ?? 0
-    if (a <= 0 && b <= 0) return
-    const enabled = props.loopEnabled?.() ?? false
-
-    // Region fill between A and B (only when both are set and ordered).
-    if (a > 0 && b > 0 && a < b) {
-      const fx1 = Math.max(0, Math.min(w, beatToX(a, w)))
-      const fx2 = Math.max(0, Math.min(w, beatToX(b, w)))
-      if (fx2 > fx1) {
-        ctx!.fillStyle = enabled
-          ? 'rgba(63,185,80,0.08)'
-          : 'rgba(88,166,255,0.06)'
-        ctx!.fillRect(fx1, 0, fx2 - fx1, h)
-      }
-    }
-
-    const drawBoundary = (
-      x: number,
-      label: 'A' | 'B',
-      line: string,
-      glow: string,
-      flagBg: string,
-    ) => {
-      if (x < -2 || x > w + 2) return
-      const cx = Math.max(0, Math.min(w, x))
-      ctx!.save()
-      ctx!.shadowColor = glow
-      ctx!.shadowBlur = 6
-      ctx!.strokeStyle = line
-      ctx!.lineWidth = 2
-      ctx!.beginPath()
-      ctx!.moveTo(cx, 0)
-      ctx!.lineTo(cx, h)
-      ctx!.stroke()
-      ctx!.restore()
-
-      // Flag pill at the top (letter centred, clamped inside the canvas).
-      ctx!.font = 'bold 10px sans-serif'
-      ctx!.textAlign = 'center'
-      ctx!.textBaseline = 'middle'
-      const pillW = ctx!.measureText(label).width + 10
-      const pillH = 15
-      const px = Math.max(1, Math.min(w - pillW - 1, cx - pillW / 2))
-      ctx!.beginPath()
-      ctx!.roundRect(px, 1, pillW, pillH, 3)
-      ctx!.fillStyle = flagBg
-      ctx!.fill()
-      ctx!.fillStyle = '#fff'
-      ctx!.fillText(label, px + pillW / 2, 1 + pillH / 2 + 0.5)
-      ctx!.textBaseline = 'alphabetic'
-    }
-
-    if (a > 0) {
-      drawBoundary(
-        beatToX(a, w),
-        'A',
-        'rgba(88,166,255,0.85)',
-        'rgba(88,166,255,0.5)',
-        '#58a6ff',
-      )
-    }
-    if (b > 0) {
-      drawBoundary(
-        beatToX(b, w),
-        'B',
-        'rgba(248,81,73,0.85)',
-        'rgba(248,81,73,0.5)',
-        '#f85149',
-      )
-    }
+    if (!ctx) return
+    drawAbLoopOverlay(ctx, {
+      a: props.loopA?.() ?? 0,
+      b: props.loopB?.() ?? 0,
+      enabled: props.loopEnabled?.() ?? false,
+      posOf: (beat) => beatToX(beat, w),
+      orientation: 'vertical',
+      crossExtent: h,
+      clipMin: 0,
+      clipMax: w,
+      flag: 'pill',
+    })
   }
 
   const draw = () => {
