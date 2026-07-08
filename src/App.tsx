@@ -2306,6 +2306,13 @@ const AppShell: Component<AppProps> = (props) => {
                           onMicToggle={() => {
                             void handleMicToggle()
                           }}
+                          loopEnabled={loopEnabled}
+                          loopA={loopA}
+                          loopB={loopB}
+                          onSetLoopA={handleSetLoopA}
+                          onSetLoopB={handleSetLoopB}
+                          onToggleLoop={handleToggleLoop}
+                          onClearLoop={handleClearLoop}
                         />
                       </ControlOverlay>
                     </div>
@@ -2458,6 +2465,13 @@ const AppShell: Component<AppProps> = (props) => {
                       setSavedVol(vol)
                       audioEngine?.setVolume(vol / 100)
                     }}
+                    loopEnabled={loopEnabled}
+                    loopA={loopA}
+                    loopB={loopB}
+                    onSetLoopA={handleSetLoopA}
+                    onSetLoopB={handleSetLoopB}
+                    onToggleLoop={handleToggleLoop}
+                    onClearLoop={handleClearLoop}
                   />
                 </TabErrorBoundary>
               </Show>
