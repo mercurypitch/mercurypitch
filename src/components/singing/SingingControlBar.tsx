@@ -21,7 +21,8 @@ import { createSignal, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import styles from '@/components/shared/control-bar/control-bar.module.css'
-import { IconAnchor, IconClear, IconClock, IconFocus, IconLoopPoint, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
+import { IconAnchor, IconClock, IconFocus, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
+import { LoopControls } from '@/components/shared/control-bar/LoopControls'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
@@ -300,54 +301,16 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       </button>
 
       {/* A-B Loop controls */}
-      <button
-        type="button"
-        class={styles.btn}
-        classList={{ [styles.active]: props.loopA() > 0 }}
-        data-testid="loop-a-btn"
-        title="Set loop start (A)"
-        aria-label="Set loop start (A)"
-        onClick={() => props.onSetLoopA()}
-      >
-        <IconLoopPoint label="A" set={props.loopA() > 0} />
-      </button>
-      <button
-        type="button"
-        class={styles.btn}
-        classList={{
-          [styles.active]: props.loopB() > 0,
-          [styles.loopBtnB]: props.loopB() > 0,
-        }}
-        data-testid="loop-b-btn"
-        title="Set loop end (B)"
-        aria-label="Set loop end (B)"
-        onClick={() => props.onSetLoopB()}
-      >
-        <IconLoopPoint label="B" set={props.loopB() > 0} />
-      </button>
-      <Show when={props.loopA() > 0 && props.loopB() > 0}>
-        <button
-          type="button"
-          class={styles.btn}
-          classList={{ [styles.active]: props.loopEnabled() }}
-          data-testid="loop-toggle-btn"
-          title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
-          aria-label={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
-          onClick={() => props.onToggleLoop()}
-        >
-          <IconRepeat />
-        </button>
-        <button
-          type="button"
-          class={styles.btn}
-          data-testid="loop-clear-btn"
-          title="Clear loop points"
-          aria-label="Clear loop points"
-          onClick={() => props.onClearLoop()}
-        >
-          <IconClear />
-        </button>
-      </Show>
+      <LoopControls
+        emphasizeB
+        loopEnabled={props.loopEnabled}
+        loopA={props.loopA}
+        loopB={props.loopB}
+        onSetLoopA={props.onSetLoopA}
+        onSetLoopB={props.onSetLoopB}
+        onToggleLoop={props.onToggleLoop}
+        onClearLoop={props.onClearLoop}
+      />
 
       {/* Focus */}
       <button

@@ -37,10 +37,13 @@ interface PianoRollCanvasProps {
   previewMelody?: () => MelodyItem[]
   /** Smoothed live pitch (fractional MIDI) for the recording needle. */
   liveMidi?: () => number | null
-  // ── A-B loop (beats; 0 = unset). Drawn on the editor's ruler + grid. ──
+  // ── A-B loop (beats; 0 = unset). Drawn on the editor's ruler + grid; the
+  //    ruler markers are draggable via onMoveLoopA/B. ──
   loopA?: () => number
   loopB?: () => number
   loopEnabled?: () => boolean
+  onMoveLoopA?: (beat: number) => void
+  onMoveLoopB?: (beat: number) => void
   /** Imperative bridge exposed once the editor is mounted. */
   onEditorReady?: (api: PianoRollEditorApi) => void
 }
@@ -75,6 +78,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       onMelodyChange: props.onMelodyChange,
       onInstrumentChange: props.onInstrumentChange,
       onPlaybackStateChange: props.onPlaybackStateChange,
+      onMoveLoopA: (beat) => props.onMoveLoopA?.(beat),
+      onMoveLoopB: (beat) => props.onMoveLoopB?.(beat),
     })
     editor.setMelody(props.melody())
     editor.setScale(props.scale())
