@@ -52,6 +52,14 @@ interface PianoPageProps {
   /** Shared volume signal (used across tabs), owned by AppShell. */
   volume: Accessor<number>
   onVolumeChange: (vol: number) => void
+  // A-B Loop (shared across tabs)
+  loopEnabled: () => boolean
+  loopA: () => number
+  loopB: () => number
+  onSetLoopA: () => void
+  onSetLoopB: () => void
+  onToggleLoop: () => void
+  onClearLoop: () => void
 }
 
 /** Piano tab (TAB_PIANO): falling-notes game with toolbar + song picker. */
@@ -227,6 +235,13 @@ export function PianoPage(props: PianoPageProps) {
             zoomPercent={fallingNotes.zoomPercent}
             onZoomIn={fallingNotes.zoomIn}
             onZoomOut={fallingNotes.zoomOut}
+            loopEnabled={props.loopEnabled}
+            loopA={props.loopA}
+            loopB={props.loopB}
+            onSetLoopA={props.onSetLoopA}
+            onSetLoopB={props.onSetLoopB}
+            onToggleLoop={props.onToggleLoop}
+            onClearLoop={props.onClearLoop}
           />
         </ControlOverlay>
         {/* Finished-run score: a non-blocking corner card (same pattern as
