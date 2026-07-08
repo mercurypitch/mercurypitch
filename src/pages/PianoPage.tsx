@@ -60,6 +60,12 @@ interface PianoPageProps {
   onSetLoopB: () => void
   onToggleLoop: () => void
   onClearLoop: () => void
+  /** Drag the A / B markers on the seek rail (beats). */
+  onMoveLoopA: (beat: number) => void
+  onMoveLoopB: (beat: number) => void
+  /** Loop-aware seek (records loop-escape so scrubbing past B isn't yanked
+   *  back); falls back to the raw controller seek when absent. */
+  onSeek?: (beat: number) => void
 }
 
 /** Piano tab (TAB_PIANO): falling-notes game with toolbar + song picker. */
@@ -126,9 +132,14 @@ export function PianoPage(props: PianoPageProps) {
         playheadBeat={fallingNotes.playheadBeat}
         totalBeats={fallingNotes.totalBeats}
         songBpm={fallingNotes.currentSongBpm}
-        onSeek={fallingNotes.seekToBeat}
+        onSeek={props.onSeek ?? fallingNotes.seekToBeat}
         songName={selectedSongName}
         isPlaying={() => fallingNotes.gameState() === 'playing'}
+        loopA={props.loopA}
+        loopB={props.loopB}
+        loopEnabled={props.loopEnabled}
+        onMoveLoopA={props.onMoveLoopA}
+        onMoveLoopB={props.onMoveLoopB}
       />
       <div
         id="falling-notes-canvas-container"
@@ -171,6 +182,9 @@ export function PianoPage(props: PianoPageProps) {
           onClickPianoOn={fallingNotes.clickPianoNoteOn}
           onClickPianoOff={fallingNotes.clickPianoNoteOff}
           clickPianoEnabled={fallingNotes.clickPianoEnabled}
+          loopA={props.loopA}
+          loopB={props.loopB}
+          loopEnabled={props.loopEnabled}
         />
         <ControlOverlay
           idPrefix="piano"

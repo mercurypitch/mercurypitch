@@ -10,6 +10,7 @@ import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { ChevronDownIcon, EyeClosedIcon, EyeOpenIcon, SpeakerMutedIcon, SpeakerOpenIcon, } from '@/components/shared/midi-picker-icons'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
+import { loopRegionPct } from '@/lib/ab-loop'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -40,6 +41,14 @@ interface MidiSongStatusBarProps {
   extraActions?: JSX.Element
   /** Extra status line below the bar content (guitar GP import). */
   extraStatus?: () => string
+  // ── A-B loop (beats; 0 = unset). Optional — only the Piano bar wires these
+  //    so the seek rail shows a draggable loop region; Guitar leaves them
+  //    undefined and no overlay renders. Mirrors SingingStatusBar. ──
+  loopA?: () => number
+  loopB?: () => number
+  loopEnabled?: () => boolean
+  onMoveLoopA?: (beat: number) => void
+  onMoveLoopB?: (beat: number) => void
 }
 
 const formatTime = (t: number): string => {
@@ -70,7 +79,15 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
 
   const trackCount = () => props.currentSong()?.tracks.length ?? 0
 
+  // Set for one tick after a marker drag so the drag's synthesized pointer-up
+  // click doesn't also seek the rail.
+  let suppressSeek = false
+
   const handleSeek = (e: MouseEvent) => {
+    if (suppressSeek) {
+      suppressSeek = false
+      return
+    }
     const rail = e.currentTarget as HTMLDivElement
     const rect = rail.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
@@ -81,6 +98,50 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
     props.totalBeats() > 0
       ? (Math.max(0, props.playheadBeat()) / props.totalBeats()) * 100
       : 0
+
+  // ── Draggable A/B loop markers on the seek rail (mirrors SingingStatusBar) ──
+  let railEl: HTMLDivElement | undefined
+  const [dragTarget, setDragTarget] = createSignal<'A' | 'B' | null>(null)
+
+  const region = () =>
+    loopRegionPct(
+      props.loopA?.() ?? 0,
+      props.loopB?.() ?? 0,
+      props.totalBeats(),
+    )
+  const pctOf = (beat: number): number =>
+    props.totalBeats() > 0 ? (beat / props.totalBeats()) * 100 : 0
+  const beatFromClientX = (clientX: number): number => {
+    if (!railEl) return 0
+    const rect = railEl.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return ratio * props.totalBeats()
+  }
+  const startMarkerDrag = (which: 'A' | 'B') => (e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation() // don't let the rail read this as a seek-click
+    setDragTarget(which)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  const onMarkerDrag = (e: PointerEvent) => {
+    const which = dragTarget()
+    if (which === null) return
+    e.preventDefault()
+    const beat = beatFromClientX(e.clientX)
+    if (which === 'A') props.onMoveLoopA?.(beat)
+    else props.onMoveLoopB?.(beat)
+  }
+  const endMarkerDrag = (e: PointerEvent) => {
+    if (dragTarget() === null) return
+    const el = e.currentTarget as HTMLElement
+    if (el.hasPointerCapture?.(e.pointerId))
+      el.releasePointerCapture(e.pointerId)
+    setDragTarget(null)
+    suppressSeek = true
+    setTimeout(() => {
+      suppressSeek = false
+    }, 0)
+  }
 
   return (
     <>
@@ -113,12 +174,61 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
               )}
             </span>
             <div
+              ref={railEl}
               class={styles.rail}
               onClick={handleSeek}
               title="Seek"
               data-testid={`${props.prefix}-seek-rail`}
             >
               <div class={styles.fill} style={{ width: `${progressPct()}%` }} />
+              <Show when={region()}>
+                {(r) => (
+                  <div
+                    class={styles.loopRegion}
+                    classList={{
+                      [styles.loopRegionActive]: props.loopEnabled?.() ?? false,
+                    }}
+                    style={{ left: `${r().left}%`, width: `${r().width}%` }}
+                    data-testid="loop-region"
+                  />
+                )}
+              </Show>
+              <Show when={(props.loopA?.() ?? 0) > 0}>
+                <div
+                  class={`${styles.loopMarker} ${styles.loopMarkerA}`}
+                  classList={{
+                    [styles.loopMarkerDragging]: dragTarget() === 'A',
+                  }}
+                  style={{ left: `${pctOf(props.loopA?.() ?? 0)}%` }}
+                  title="Drag to move loop start (A)"
+                  data-testid="loop-marker-a"
+                  onPointerDown={startMarkerDrag('A')}
+                  onPointerMove={onMarkerDrag}
+                  onPointerUp={endMarkerDrag}
+                  onPointerCancel={endMarkerDrag}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span class={styles.loopMarkerFlag}>A</span>
+                </div>
+              </Show>
+              <Show when={(props.loopB?.() ?? 0) > 0}>
+                <div
+                  class={`${styles.loopMarker} ${styles.loopMarkerB}`}
+                  classList={{
+                    [styles.loopMarkerDragging]: dragTarget() === 'B',
+                  }}
+                  style={{ left: `${pctOf(props.loopB?.() ?? 0)}%` }}
+                  title="Drag to move loop end (B)"
+                  data-testid="loop-marker-b"
+                  onPointerDown={startMarkerDrag('B')}
+                  onPointerMove={onMarkerDrag}
+                  onPointerUp={endMarkerDrag}
+                  onPointerCancel={endMarkerDrag}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span class={styles.loopMarkerFlag}>B</span>
+                </div>
+              </Show>
             </div>
             <span class={styles.time}>
               {formatTime(props.totalBeats() / (props.songBpm() / 60))}
