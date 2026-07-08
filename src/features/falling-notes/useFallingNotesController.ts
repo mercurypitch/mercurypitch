@@ -158,6 +158,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   // the next startGame() begins there instead of snapping back to beat 0.
   let pendingStartBeat: number | null = null
 
+  // A-B loop (beats; 0 = unset), pushed from App via setLoop(). The wrap is
+  // handled INSIDE the RAF loop (see startLoop) rather than by an external
+  // seek, so it stays atomic with the note scheduler — an outside seek fired
+  // mid-frame would leave checkHits() replaying the whole [A, B] span at once.
+  let loopA = 0
+  let loopB = 0
+  let loopEnabled = false
+
   engine.callbacks.onMicStateChange = (active, _error) => {
     // Mic state changes are handled by the caller via isMicActive()
     void active
@@ -219,8 +227,28 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
         const elapsedBeats = (elapsedMs / 1000) * bps
 
         // During countdown, the playhead starts at -countIn() and moves towards 0
-        const newBeat =
+        let newBeat =
           gameState() === 'countdown' ? elapsedBeats - countIn() : elapsedBeats
+
+        // A-B loop: the instant the playhead reaches B, wrap back to A —
+        // atomically, BEFORE setPlayheadBeat + checkHits, re-anchoring the
+        // clock and re-arming the [A, B] notes. Doing this inline (rather than
+        // via an external seek that lands mid-frame) is what keeps the next
+        // checkHits from seeing the stale past-B beat and firing every note in
+        // the span at once. Only while actually playing, not during count-in.
+        const effectiveB = Math.min(loopB, totalBeats())
+        if (
+          gameState() === 'playing' &&
+          loopEnabled &&
+          effectiveB > 0 &&
+          loopA < effectiveB &&
+          newBeat >= effectiveB
+        ) {
+          audioEngine.stopAllNotes()
+          gameStartTime = now - (loopA / bps) * 1000
+          markProgressBefore(loopA)
+          newBeat = loopA
+        }
 
         setPlayheadBeat(newBeat)
 
@@ -323,7 +351,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       scoredNotes.length > 0
         ? Math.max(...scoredNotes.map((n) => n.startBeat + n.duration))
         : 0
+    // While an A-B loop is active the loop owns the end behavior (the RAF loop
+    // wraps B→A), so don't let the natural finish/repeat fire and fight it.
+    const loopActive =
+      loopEnabled && loopB > 0 && loopA < Math.min(loopB, totalBeats())
     if (
+      !loopActive &&
       judgedNotes.size >= scoredNotes.length &&
       currentBeat >= maxEndBeat &&
       scoredNotes.length > 0
@@ -678,6 +711,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     markProgressBefore(target)
   }
 
+  /** Set the A-B loop region (beats; 0 = unset). The RAF loop wraps B→A while
+   *  playing; nothing to redraw here (the canvas reads loop state separately). */
+  const setLoop = (a: number, b: number, enabled: boolean) => {
+    loopA = a
+    loopB = b
+    loopEnabled = enabled
+  }
+
   // Switch the scored track WITHOUT rewinding — mirrors the guitar controller.
   // Rebuilds the notes for the new track and resets the score, but keeps the
   // playhead + transport: seekToBeat re-anchors the running loop (or arms the
@@ -842,6 +883,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     toggleTrackVisibility,
     totalBeats,
     seekToBeat,
+    setLoop,
 
     // Engine (for waveform display)
     engine,

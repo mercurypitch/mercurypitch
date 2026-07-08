@@ -1269,11 +1269,19 @@ const AppShell: Component<AppProps> = (props) => {
     loopTransport().seekTo(beat)
   }
 
-  // Auto-seek back to A when the playhead reaches B (loop enabled). Only fire
-  // while the playhead is still short of the track end, so we don't race the
-  // runtime's natural-end / complete handling. Reads the ACTIVE tab's transport
-  // (via loopTransport) so it follows the piano playhead on the Piano tab and
-  // the shared runtime on Singing/Compose.
+  // Keep the Piano controller's own loop state in sync. Piano wraps B→A INSIDE
+  // its RAF loop (atomic with its note scheduler), so it is deliberately NOT
+  // driven by the auto-seek-back effect below: an external seek landing
+  // mid-frame there rewound the playhead while checkHits() still held the
+  // stale past-B beat, replaying the whole [A, B] span at once.
+  createEffect(() => {
+    fallingNotes.setLoop(loopA(), loopB(), loopEnabled())
+  })
+
+  // Auto-seek back to A when the playhead reaches B (loop enabled) — for the
+  // shared PlaybackRuntime (Singing + Compose only; Piano loops in-controller).
+  // Only fire while short of the track end, so we don't race the runtime's
+  // natural-end / complete handling.
   createEffect(() => {
     const t = loopTransport()
     const beat = t.beat()
@@ -1286,6 +1294,8 @@ const AppShell: Component<AppProps> = (props) => {
     ) {
       setSeekedOutsideLoop(false)
     }
+    // Piano's loop wrap is owned by its controller (see setLoop above).
+    if (activeTab() === TAB_PIANO) return
     if (
       shouldLoopBack(beat, {
         enabled: loopEnabled(),
@@ -1295,6 +1305,9 @@ const AppShell: Component<AppProps> = (props) => {
       }) &&
       beat < t.total()
     ) {
+      // Reset the pitch trail each lap so the green line shows only the current
+      // pass, not every overlaid loop iteration.
+      setPitchHistory([])
       t.seekTo(loopA())
     }
   })
