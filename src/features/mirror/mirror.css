@@ -376,7 +376,9 @@ body {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transition: transform 1.15s cubic-bezier(0.2, 0.72, 0.2, 1);
+  /* Gentle wind-up, then whip round and settle — a soft start (large first
+     control-point x) so it doesn't lurch at the beginning. */
+  transition: transform 1.45s cubic-bezier(0.62, 0.02, 0.25, 1);
 }
 .mode-flip.is-revealed .mirror-reveal-inner {
   transform: rotateY(900deg); /* 2.5 turns, landing on the back face */
@@ -448,6 +450,13 @@ body {
   text-transform: uppercase;
   color: rgba(143, 163, 255, 0.72);
   margin-top: 7px;
+}
+
+/* Clip the moving specular + portrait to the card once revealed. Flip mode
+   keeps overflow visible so the 3D spin isn't sliced off. */
+.mode-lenticular.is-revealed .mirror-reveal-card {
+  overflow: hidden;
+  border-radius: 18px;
 }
 
 /* Lenticular overlay — the portrait shines through the data. */
