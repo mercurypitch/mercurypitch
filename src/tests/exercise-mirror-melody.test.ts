@@ -58,9 +58,7 @@ describe('useMirrorMelodyController', () => {
     const metricsCalls: Array<Record<string, number>> = []
     const base = createMockBase({
       _setTargetPitch: (midi) => {
-        const val = typeof midi === 'function' ? midi(null) : midi
-        targetCalls.push(val)
-        return val
+        targetCalls.push(midi)
       },
       _updateMetrics: (m) => metricsCalls.push(m),
     })
