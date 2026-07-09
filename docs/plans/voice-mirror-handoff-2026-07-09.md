@@ -312,7 +312,23 @@ Amy+Celine NSFW retries 3.00 · Kurt+Bowie 3.00 · Celine face-ribbon retry
 
 ### Still open
 
-- [ ] Optional: hide the Flip/Lenticular compare toggle before release.
-- [ ] Consider drawing the full-bleed twin into the *story* export too (it
-      currently gets the medallion; the on-screen lenticular is full-bleed).
 - [ ] Croatian localization + Phase-2 leftovers (`voice-mirror-phase2.md`).
+- [ ] Free-sing surface has no reveal, so its share carries no legend
+      (deliberate for now; follow-up candidate).
+
+### Update — 2026-07-10 (share variants PR)
+
+- **Flip is the shipped reveal**; the compare toggle is gone from the UI. The
+  lenticular machinery stays in `RevealCard.tsx` (dev `?mode=lenticular`
+  still works) and its LOOK ships as the **"Share with twin"** export:
+  `drawTwinBackdrop` in `card-renderer.ts` blends the portrait full-bleed
+  behind the data (screen composite + bottom alpha mask). The medallion
+  (`drawTwinRow`) was removed — clean shares carry the legend as a name pill.
+- Two main share buttons post-reveal (clean / with twin) + a **"Pitch
+  trace"** option chip (`showTrace`) as the seed of customizable shares.
+- Layout: shell widened to 960px with panels self-capped at 640px — fixes
+  the tablet horizontal scroll (the 640px shell couldn't contain the ≥900px
+  results grid); side-rail notes top-align with the card; `overflow-x: clip`
+  as the page-level guarantee.
+- Dev-domain builds use `--mode development`, so `/mirror#<legend>` demo
+  fast lanes DO work on dev.mercurypitch.com (prod builds tree-shake them).

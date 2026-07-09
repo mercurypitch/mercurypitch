@@ -82,6 +82,14 @@ export const IconRocket: Component<IconProps> = (p) => (
   </svg>
 )
 
+/** The glide arc with a star — the pitch-trace card option. */
+export const IconTrace: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M3.5 17c4-.5 4.5-9.5 8.5-9.5s4.5 9 8.5 9.5" />
+    <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 /** Chevron pointing right — the reveal nudge arrows (mirrored via CSS). */
 export const IconChevron: Component<IconProps> = (p) => (
   <svg {...svgProps(p)}>
