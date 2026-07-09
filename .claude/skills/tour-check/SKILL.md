@@ -12,13 +12,19 @@ does exactly that and exits non-zero if any step's spotlight misses.
 
 ## Steps
 
-1. **Build and serve** a production bundle (any static server works):
+1. **Build and serve** a local-mode bundle (any static server works):
    ```sh
-   pnpm run build
+   pnpm run build:tours
    pnpm dlx serve dist -l 3005 &
    ```
+   `build:tours` builds with an **empty `VITE_API_BASE_URL`** so the app
+   runs on the local Dexie adapter with seeded definitions. Never walk a
+   plain `pnpm run build` — that bakes in the real `api.mercurypitch.com`,
+   creating a junk anonymous user in prod D1 per walk and going flaky
+   whenever the API hiccups; the walker detects this and aborts.
    To also exercise the "backend unreachable" path, build with
-   `VITE_API_BASE_URL=http://127.0.0.1:59999 pnpm run build`.
+   `VITE_API_BASE_URL=http://127.0.0.1:59999 pnpm run build` (localhost
+   targets are allowed through the walker's request blocker).
 
 2. **Walk all tours** on both viewports:
    ```sh

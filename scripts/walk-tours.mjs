@@ -7,9 +7,16 @@
 // app-store.ts, control bars, sidebar, settings panel, …).
 //
 // Usage:
-//   pnpm run build && pnpm dlx serve dist -l 3005   # or any static server
-//   node scripts/walk-tours.mjs                     # desktop viewport
-//   MOBILE=1 node scripts/walk-tours.mjs            # iPhone-sized viewport
+//   pnpm run build:tours && pnpm dlx serve dist -l 3005   # or any static server
+//   node scripts/walk-tours.mjs                           # desktop viewport
+//   MOBILE=1 node scripts/walk-tours.mjs                  # iPhone-sized viewport
+//
+// build:tours builds with an EMPTY VITE_API_BASE_URL so the app runs on
+// the local Dexie adapter. A plain production build bakes in the real
+// api.mercurypitch.com — walking that would create a junk anonymous user
+// in prod D1 per run and go flaky whenever the API hiccups, so this
+// script refuses to walk a remote-API bundle (see the HybridAdapter
+// guard below) and blocks any non-local request as a safety net.
 //
 // Env vars:
 //   BASE_URL     app URL (default http://localhost:3005)
@@ -80,6 +87,28 @@ await page.addInitScript((v) => {
 page.on('pageerror', (e) =>
   console.log('  [pageerror]', String(e).slice(0, 120)),
 )
+
+// Never let a tour walk touch a real backend: block every request that
+// leaves localhost (belt) and fail fast when the bundle was built with a
+// remote VITE_API_BASE_URL (suspenders) — that means `pnpm run build` was
+// used instead of `pnpm run build:tours`, and the walk would run against
+// cloud data instead of the seeded local Dexie DB.
+await ctx.route('**/*', (route) => {
+  const host = new URL(route.request().url()).hostname
+  if (host === 'localhost' || host === '127.0.0.1') return route.continue()
+  console.log(`  [blocked] ${route.request().url().slice(0, 100)}`)
+  return route.abort()
+})
+page.on('console', (m) => {
+  if (m.text().includes('using HybridAdapter')) {
+    console.error(
+      'FATAL: the served bundle points at a remote API (HybridAdapter). ' +
+        'Rebuild with `pnpm run build:tours` so the walk uses the local ' +
+        'Dexie adapter and seeded definitions.',
+    )
+    process.exit(1)
+  }
+})
 
 await page.goto(BASE)
 await page.waitForSelector('#app-tabs', { timeout: 30000 })

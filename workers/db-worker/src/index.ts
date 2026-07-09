@@ -28,6 +28,34 @@ const CORS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Key',
 }
 
+/**
+ * Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Requests without an
+ * Origin header always pass — that covers curl/scripts, service-to-service
+ * calls (billing X-Service-Key), Stripe webhooks, and top-level navigations
+ * (Google OAuth callback). Browsers always attach Origin to cross-origin
+ * fetch/XHR/sendBeacon, so a locally served build can never reach a
+ * deployed environment that doesn't list localhost.
+ */
+function originAllowed(request: Request, env: Env): boolean {
+  const origin = request.headers.get('Origin')
+  if (origin === null) return true
+  const allowed = env.ALLOWED_ORIGINS
+  if (allowed === undefined || allowed === '') return true
+  return allowed.split(',').some((entry) => {
+    const rule = entry.trim()
+    if (rule === origin) return true
+    if (rule === 'localhost') {
+      try {
+        const host = new URL(origin).hostname
+        return host === 'localhost' || host === '127.0.0.1'
+      } catch {
+        return false
+      }
+    }
+    return false
+  })
+}
+
 function respond(body: object | null, init?: ResponseInit): Response {
   const headers = {
     ...CORS,
@@ -692,6 +720,9 @@ async function handleMirrorEvent(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    if (!originAllowed(request, env)) {
+      return respond({ error: 'Origin not allowed' }, { status: 403 })
+    }
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
     }
