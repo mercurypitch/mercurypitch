@@ -600,6 +600,7 @@ const MIRROR_EVENTS = new Set([
   'cta_app_click',
   'free_sing_done',
   'cosmic_done',
+  'twin_revealed',
 ])
 
 // Derived numbers only (range/accuracy/steadiness) — never audio.

@@ -81,12 +81,12 @@ have every decision, prompt, cost, link and open item.
 ## 2. Decisions & agreements (chronological)
 
 1. **Layout:** card centered, chip-style detail cards flanking, hero-vs-sub
-   button hierarchy, subtle footnote. ✅ shipped.
+   button hierarchy, subtle footnote. Shipped.
 2. **Declutter:** voice-type stays on the card; `like <legend>` removed
-   everywhere pre-reveal. ✅ shipped.
+   everywhere pre-reveal. Shipped.
 3. **Legend art strategy:** constellation vector art now (ship-safe), swap to
-   AI-generated raster portraits later via `imageSrc`. ✅ hook shipped.
-4. **Reveal:** build BOTH animations to compare. ✅ shipped + artifact.
+   AI-generated raster portraits later via `imageSrc`. Hook shipped.
+4. **Reveal:** build BOTH animations to compare. Shipped + artifact.
 5. **User verdict on reveal:** **flip preferred**; flip start was too fast →
    fixed; lenticular light overshoot → fixed. Lenticular + toggle still in
    code — **open decision** whether to retire them or keep for delta visits.
@@ -138,7 +138,7 @@ have every decision, prompt, cost, link and open item.
 | Nano Banana Pro (928×1152, 4:5) | `32c482d0-91d5-482a-b578-30465ad42dd3` | 2.00 |
 | Soul 2.0 (1536×2048, 3:4, style "General") | `e4ac2c9e-cc6b-4e65-bb36-d32253301df7` | 0.12 |
 
-Raw URLs (⚠️ CDN links may expire — download/save promptly, e.g. into
+Raw URLs (note: CDN links may expire — download/save promptly, e.g. into
 `public/legends/` candidates or a scratch folder):
 
 - Nano Banana Pro:
