@@ -241,3 +241,74 @@ and continue from the open items."* If the Higgsfield MCP connector is
 attached to the new session, generation can continue there (always
 `get_cost: true` preflight + user approval first). If portrait image files are
 available locally, the assistant can view them directly with Read.
+
+---
+
+## 8. UPDATE — 2026-07-09 late session (local): Style A shipped, 14 legends live
+
+Everything in §6 up to the Croatian-localization backlog is **done**. Current
+state and the canonical recipe for adding legends:
+
+### What happened
+
+- **Style shootout** (user judged): full-chrome NBP Freddie = "too much
+  mercury silver"; Soul 2.0 likenesses uncanny (disqualified). Three Style
+  probes on Nano Banana 2 → **Style A "mercury accents" won** (warm-skin
+  caricature, thin liquid-mercury ribbons, cosmic starfield) — validated on
+  Freddie (easy) AND Bruce Dickinson (hard likeness).
+- **All 14 legends generated + wired**: the original 12, plus **Kurt Cobain**
+  and **David Bowie** (user request + assistant pick; both Baritone, honestly
+  classified — Baritone now carries 4 legends and `singerForVoiceType` takes
+  `readonly string[]`).
+- **Reveal**: BOTH styles stay (user decision). Flip default on first visit;
+  lenticular on delta visits. Lenticular upgraded to a **full-bleed
+  double-exposure**: raster twin covers the card (`object-fit: cover`,
+  `mix-blend-mode: screen`), bottom mask keeps stats legible, tilt drives a
+  parallax drift (`portraitParallax()` in `RevealCard.tsx`).
+- **Share card**: revealed story export draws a gold-ringed circular twin
+  medallion beside the pills (`drawTwinRow` in `card-renderer.ts`); the
+  portrait is preloaded/decoded at results time (`preloadLegendPortrait` in
+  `MirrorApp.tsx`) so ClipboardItem stays inside Safari's tap gesture.
+- **Demo profiles** (`/mirror?demo=…`): `bass` Cash · `baritone` Elvis ·
+  `kurt` · `bowie` · `tenor` Freddie · `alto` Amy · `mezzo` Adele ·
+  `soprano` Mariah (+ `&mode=flip|lenticular&revealed=1&delta=1`).
+
+### Canonical generation recipe (for future legends)
+
+1. Model **`nano_banana_2`** via Higgsfield MCP `generate_image`
+   (routes to `nano_banana_flash`; **1.5 cr** @1k `4:5`). Preflight with
+   `get_cost: true` when in doubt.
+2. **Style A master template** — swap only the `{subject}` clause:
+
+   > Vibrant stylized caricature illustration with bold playful exaggeration —
+   > oversized expressive head, warm natural skin tones, confident linework
+   > and rich painterly shading; thin ribbons of liquid mercury swirl around
+   > {him/her} and quicksilver glints trace {his/her} silhouette {and the
+   > microphone} — **{LEGEND, era, 3–5 signature visual attributes, pose}**,
+   > head and shoulders, three-quarter view, set against a deep
+   > indigo-to-black cosmic nebula dusted with tiny constellation stars, gold
+   > and periwinkle starlight rim-light, dark cinematic lighting,
+   > ultra-detailed, sleek and premium, no text, no watermark
+
+3. Failure modes (both auto-refund): `nsfw` false positives on female
+   celebrities → soften adjectives ("red lips", "eyes closed") and resubmit;
+   plain `failed` → resubmit verbatim.
+4. `magick in.png -quality 82 public/legends/<slug>.webp` (~120–230 KB).
+5. Wire: `imageSrc` (+ optional vector fallback) in `LegendCaricature.tsx`;
+   if it's a NEW legend also add it to `SINGERS_BY_VOICE_TYPE`
+   (singer-match.ts), extend `singer-match.test.ts`, and optionally a demo
+   profile whose `lowMidi*3+highMidi` seed (mod options.length) selects it.
+6. Verify: `/mirror?demo=…&mode=flip&revealed=1` screenshot + `pnpm check`.
+
+### Spend log (all transaction-verified)
+
+Chrome/Soul probes 2.12 · style shootout 7.62 · batch of 10 net 12.00 ·
+Amy+Celine NSFW retries 3.00 · Kurt+Bowie 3.00 · Celine face-ribbon retry
+1.5–3.0 → **≈ 29–31 cr total**; balance ≈ 358–360 of 388.79 start.
+
+### Still open
+
+- [ ] Optional: hide the Flip/Lenticular compare toggle before release.
+- [ ] Consider drawing the full-bleed twin into the *story* export too (it
+      currently gets the medallion; the on-screen lenticular is full-bleed).
+- [ ] Croatian localization + Phase-2 leftovers (`voice-mirror-phase2.md`).

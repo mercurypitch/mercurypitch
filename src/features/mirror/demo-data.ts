@@ -114,6 +114,9 @@ export interface DemoProfile {
 export const DEMO_PROFILES: Record<string, DemoProfile> = {
   bass: { lowMidi: 40, highMidi: 60, holdMidi: 48 }, // Johnny Cash
   baritone: { lowMidi: 41, highMidi: 73, holdMidi: 57 }, // Elvis (matches spec shot)
+  // Baritone carries four legends; these ranges hit the other seeds (mod 4).
+  kurt: { lowMidi: 42, highMidi: 72, holdMidi: 55 }, // Kurt Cobain
+  bowie: { lowMidi: 42, highMidi: 73, holdMidi: 57 }, // David Bowie
   tenor: { lowMidi: 48, highMidi: 74, holdMidi: 60 }, // Freddie Mercury
   alto: { lowMidi: 53, highMidi: 79, holdMidi: 65 }, // Amy Winehouse
   mezzo: { lowMidi: 57, highMidi: 83, holdMidi: 69 }, // Adele

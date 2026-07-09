@@ -63,6 +63,7 @@ const AMBIENT: Star[] = Array.from({ length: 30 }, (_, i) => {
 export const LEGENDS: Record<string, LegendArt> = {
   'Elvis Presley': {
     epithet: 'The King of Rock and Roll',
+    imageSrc: '/legends/elvis.webp',
     silhouette: [
       // Towering pompadour swept up and back.
       'M74,66 C60,22 116,10 142,34 C154,46 152,64 142,68 C136,44 92,44 86,68 Z',
@@ -90,6 +91,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Frank Sinatra': {
     epithet: 'Ol’ Blue Eyes',
+    imageSrc: '/legends/sinatra.webp',
     silhouette: [
       // Fedora: crown + wide brim (tilted, the way he wore it).
       'M82,54 C84,28 142,32 138,58 Z',
@@ -111,8 +113,13 @@ export const LEGENDS: Record<string, LegendArt> = {
     ],
   },
 
+  // imageSrc portraits: Style A "mercury accents" caricatures (Higgsfield
+  // Nano Banana 2, docs/plans/voice-mirror-handoff-2026-07-09.md §3) in
+  // public/legends/. The vector constellation stays as the fallback for any
+  // legend without an image.
   'Freddie Mercury': {
     epithet: 'Champion of the mic stand',
+    imageSrc: '/legends/freddie.webp',
     silhouette: [
       // Short hair cap.
       'M76,68 C76,50 144,50 144,68 C144,58 76,58 76,68 Z',
@@ -136,6 +143,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Johnny Cash': {
     epithet: 'The Man in Black',
+    imageSrc: '/legends/johnny-cash.webp',
     silhouette: [
       // Side-swept hair.
       'M80,66 C80,48 140,48 140,66 C140,56 106,52 80,66 Z',
@@ -156,6 +164,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Barry White': {
     epithet: 'The Walrus of Love',
+    imageSrc: '/legends/barry-white.webp',
     silhouette: [
       // Short hair.
       'M82,66 C82,54 138,54 138,66 C138,60 82,60 82,66 Z',
@@ -182,6 +191,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Amy Winehouse': {
     epithet: 'The beehive & the blues',
+    imageSrc: '/legends/amy-winehouse.webp',
     silhouette: [
       // Towering beehive.
       'M80,66 C70,8 150,8 140,66 C152,36 150,18 110,14 C70,18 68,36 80,66 Z',
@@ -208,6 +218,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   Cher: {
     epithet: 'The Goddess of Pop',
+    imageSrc: '/legends/cher.webp',
     silhouette: [
       // Very long, straight, centre-parted hair.
       'M80,58 C72,58 66,150 70,246 L90,246 C88,150 86,86 98,60 Z',
@@ -230,6 +241,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   Adele: {
     epithet: 'Voice like rolling thunder',
+    imageSrc: '/legends/adele.webp',
     silhouette: [
       // Voluminous 60s bouffant, side-swept.
       'M74,66 C58,22 106,14 126,26 C156,42 156,66 146,70 C140,44 90,44 84,68 Z',
@@ -253,6 +265,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Whitney Houston': {
     epithet: 'The Voice',
+    imageSrc: '/legends/whitney-houston.webp',
     silhouette: [
       // Big, voluminous 80s curls.
       'M70,66 C56,22 164,22 150,66 C162,40 158,16 110,12 C62,16 58,40 70,66 Z',
@@ -279,6 +292,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Bruce Dickinson': {
     epithet: 'The air-raid siren',
+    imageSrc: '/legends/bruce-dickinson.webp',
     silhouette: [
       // Wild long metal hair.
       'M76,64 C56,70 56,150 74,196 L92,186 C80,140 82,84 92,62 Z',
@@ -299,8 +313,53 @@ export const LEGENDS: Record<string, LegendArt> = {
     lines: [[3, 2]],
   },
 
+  'Kurt Cobain': {
+    epithet: 'The voice of a generation',
+    imageSrc: '/legends/kurt-cobain.webp',
+    silhouette: [
+      // Chin-length curtains of messy hair framing the face.
+      'M78,60 C64,70 66,120 74,150 L90,144 C82,116 84,80 94,62 Z',
+      'M142,60 C156,70 154,120 146,150 L130,144 C138,116 136,80 126,62 Z',
+      'M84,58 C92,46 128,46 136,58 C124,52 96,52 84,58 Z',
+      // Striped-tee band across the chest.
+      'M54,222 C82,208 138,208 166,222 L166,234 C138,220 82,220 54,234 Z',
+    ],
+    stars: [
+      { x: 96, y: 108, dim: true },
+      { x: 124, y: 108, dim: true },
+      { x: 110, y: 152 },
+      { x: 146, y: 130, r: 3 }, // mic held close
+      { x: 146, y: 160 },
+    ],
+    lines: [[3, 4]],
+  },
+
+  'David Bowie': {
+    epithet: 'The Starman',
+    imageSrc: '/legends/david-bowie.webp',
+    silhouette: [
+      // Spiky Ziggy mullet.
+      'M78,62 C74,30 100,22 110,26 C120,22 146,30 142,62 C136,40 84,40 78,62 Z',
+      'M88,34 L96,14 L102,32 Z',
+      'M106,28 L112,8 L118,28 Z',
+      'M124,32 L132,14 L138,36 Z',
+    ],
+    accent: [
+      // The Aladdin Sane lightning bolt across the right eye.
+      'M118,84 L134,84 L126,102 L136,102 L112,134 L120,110 L110,110 Z',
+    ],
+    stars: [
+      { x: 96, y: 108, dim: true },
+      { x: 110, y: 152 },
+      { x: 112, y: 10, r: 3.2 }, // the star above the starman
+      { x: 152, y: 96 },
+    ],
+    lines: [[2, 3]],
+  },
+
   'Mariah Carey': {
     epithet: 'Queen of the whistle note',
+    imageSrc: '/legends/mariah-carey.webp',
     silhouette: [
       // Long cascading waves framing the face.
       'M78,64 C66,58 64,130 74,182 L92,176 C82,128 84,84 94,62 Z',
@@ -327,6 +386,7 @@ export const LEGENDS: Record<string, LegendArt> = {
 
   'Celine Dion': {
     epithet: 'My heart will go on',
+    imageSrc: '/legends/celine-dion.webp',
     silhouette: [
       // Short, elegant hair.
       'M80,64 C80,46 140,46 140,64 C140,54 108,50 80,64 Z',

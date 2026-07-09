@@ -28,6 +28,7 @@ import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
+import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
@@ -122,6 +123,29 @@ export const MirrorApp: Component = () => {
   let starting = false
   let cardCanvas: HTMLCanvasElement | null = null
   let voiceprintHost: HTMLDivElement | undefined
+  // The twin's raster portrait, decoded ahead of the share tap: ClipboardItem
+  // must be constructed synchronously inside the gesture (Safari), so the
+  // story card can't await an image load at share time.
+  let legendImageEl: HTMLImageElement | null = null
+
+  /** Kick off decoding the legend portrait for a finished run (if any). */
+  function preloadLegendPortrait(result: MirrorResult | null): void {
+    legendImageEl = null
+    const r = result?.range ?? null
+    if (r === null) return
+    const legend = singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi)
+    if (legend === null) return
+    const src = legendArt(legend).imageSrc
+    if (src === undefined) return
+    const img = new Image()
+    img.src = src
+    img
+      .decode()
+      .then(() => {
+        legendImageEl = img
+      })
+      .catch(() => undefined) // missing file → pill-only share card
+  }
 
   const dispatch = (event: MirrorEvent): MirrorSessionState => {
     const next = reduceSession(session(), event)
@@ -160,6 +184,7 @@ export const MirrorApp: Component = () => {
     teardownAudio()
     starting = false
     cardCanvas = null
+    legendImageEl = null
     setSession(initialSessionState())
     setFreePhase(null)
     setFreeResult(null)
@@ -464,6 +489,7 @@ export const MirrorApp: Component = () => {
     setRevealed(false)
     setRevealMode(previous ? 'lenticular' : 'flip')
 
+    preloadLegendPortrait(result)
     paintCard(result, state.glides, line)
     trackFunnel('card_generated')
   }
@@ -493,6 +519,7 @@ export const MirrorApp: Component = () => {
           : 'flip',
     )
     setRevealed(params.get('revealed') !== null)
+    preloadLegendPortrait(result)
     paintCard(result, glides, line)
     setDeltaLine(line !== '' ? line : null)
     setSession({
@@ -519,6 +546,7 @@ export const MirrorApp: Component = () => {
         glides: state.glides,
         deltaLine: deltaLine(),
         legend,
+        legendImage: legendImageEl,
       },
       'story',
     )

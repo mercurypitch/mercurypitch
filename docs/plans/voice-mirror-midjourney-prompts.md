@@ -1,5 +1,12 @@
 # Voice Mirror — Legend Portraits: MidJourney Prompts (copy-paste ready)
 
+> **STATUS 2026-07-09: superseded as the primary route.** All 14 portraits
+> were generated with the **Higgsfield MCP (Nano Banana 2, Style A "mercury
+> accents", 1.5 cr/image)** — master template + recipe in
+> `voice-mirror-handoff-2026-07-09.md` §8. Keep this file only if regenerating
+> via MidJourney; note the shipped art style differs (warm-skin caricature
+> with mercury-ribbon accents, not the chrome/quicksilver look below).
+
 Twelve "voice twin" portraits, one per legend. Each block below is a **complete
 prompt** — paste it straight into MidJourney, nothing to append.
 
