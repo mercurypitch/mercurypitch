@@ -1,68 +1,1458 @@
-.galleryItem {
-  padding: 8px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  min-width: 180px;
-  flex-shrink: 0;
+/* ── Pitch Testing Tab ────────────────────────────────────── */
+.pitchTestingTab {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
 }
 
-.galleryContainer {
+.pitchTestingHeader {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.pitchTestingHeader h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pitchTestingLayout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: row;
+  gap: 0;
+}
+
+.pitchTestingControls {
+  width: 240px;
+  flex-shrink: 0;
+  padding: 12px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.pitchTestingControls .controlGroup {
+  margin-bottom: 10px;
+}
+
+.pitchTestingControls .controlGroup label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.pitchTestingControls select,
+.pitchTestingControls input[type='number'] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  margin-bottom: 2px;
+}
+
+.pitchTestingControls select:focus,
+.pitchTestingControls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pitchTestingControls .controlHint {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.pitchTestingControls .fileInput {
+  width: 100%;
+  padding: 6px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+}
+
+.pitchTestingControls .fileInfo {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.pitchTestingControls .micControls,
+.pitchTestingControls .fileControls,
+.pitchTestingControls .generateControls {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.pitchTestingControls .waveformInfo {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.micStatus {
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.micStatus.active {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.pitchTestingControls .micHint {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.pitchTestingControls :global(.btn) {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 6px;
+}
+
+.btnSm {
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+.btnPrimary {
+  background: var(--accent);
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--bg-secondary);
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnTest {
+  background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+  color: white;
+}
+
+.btnTest:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.btnTest:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnOutline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btnOutline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Algorithm header row — label + ensemble toggle */
+.pitchTestingControls .algorithmHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pitchTestingControls .ensembleToggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pitchTestingControls .ensembleToggleLabel input[type='checkbox'] {
+  margin: 0;
+  accent-color: var(--accent);
+  width: 12px;
+  height: 12px;
+}
+
+.pitchTestingControls .ensembleToggleText {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* Ensemble algorithm pills */
+.pitchTestingControls .ensemblePills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pitchTestingControls .ensemblePill {
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pitchTestingControls .ensemblePill:hover:not(:disabled) {
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+.pitchTestingControls .ensemblePill.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pitchTestingControls .ensemblePill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ensemble vote bar in live metrics */
+.pitchTestingVisualization .ensembleVoteBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ensembleVoteChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+}
+
+.detected {
+  border-color: var(--green-dim);
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.noDetect {
+  border-color: var(--red-dim);
+  background: rgba(248, 81, 73, 0.06);
+}
+
+.ensembleVoteChip .voteChipAlgo {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+}
+
+.ensembleVoteChip .voteChipNote {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ensembleVoteChip.detected .voteChipNote {
+  color: var(--green-bright);
+}
+
+.ensembleVoteChip.noDetect .voteChipNote {
+  color: var(--text-muted);
+}
+
+.pitchTestingVisualization {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pitchTestingVisualization .detectionPanel,
+.pitchTestingVisualization .resultsPanel,
+.pitchTestingVisualization .infoPanel {
+  margin-bottom: 14px;
+}
+
+.pitchTestingVisualization h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pitchTestingVisualization h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.pitchTestingVisualization .metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px;
   margin-bottom: 12px;
 }
 
-/* Custom scrollbar for gallery */
-.galleryContainer::-webkit-scrollbar {
+.pitchTestingVisualization .metricItem {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.pitchTestingVisualization .metricLabel {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.pitchTestingVisualization .metricValue {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pitchTestingVisualization .metricRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.pitchTestingVisualization .metricRow.passed {
+  color: var(--green);
+}
+
+.pitchTestingVisualization .metricRow.failed {
+  color: var(--red);
+}
+
+.pitchTestingVisualization .metricRow.result {
+  background: var(--bg-tertiary);
+}
+
+.pitchTestingVisualization .waveformDisplay {
+  margin-bottom: 12px;
+}
+
+.pitchTestingVisualization .waveformDisplayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pitchTestingVisualization .waveformDisplayHeader h4 {
+  margin: 0;
+}
+
+.pitchTestingVisualization .zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pitchTestingVisualization .zoomBtn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.pitchTestingVisualization .zoomBtn:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.pitchTestingVisualization .zoomBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pitchTestingVisualization .zoomValue {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pitchTestingVisualization .waveformCanvas {
+  height: 280px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  position: relative;
+}
+
+.pitchTestingVisualization .waveformCanvasInner {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0;
+  min-height: 0;
+}
+
+.pitchTestingVisualization .waveformCanvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pitchTestingVisualization .resizeHandle {
   height: 6px;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-radius: 0 0 6px 6px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-primary);
+  transition: background 0.15s;
 }
-.galleryContainer::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+
+.pitchTestingVisualization .resizeHandle:hover {
+  background: var(--bg-secondary);
+  border-top-color: var(--text-secondary);
+}
+
+.pitchTestingVisualization .resizeGrip {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.pitchTestingVisualization .gripDash {
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border-primary);
+  transition: background 0.15s;
+}
+
+.pitchTestingVisualization .resizeHandle:hover .gripDash {
+  background: var(--text-secondary);
+}
+
+.pitchTestingVisualization .infoPanel {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.pitchTestingVisualization .infoPanel h3 {
+  margin: 0 0 4px 0;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  text-transform: none;
+}
+
+.pitchTestingVisualization .infoPanel p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+
+.pitchTestingVisualization .lastResult {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.pitchTestingVisualization .resultDetails div {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.pitchTestingVisualization .errorList {
+  margin-top: 6px;
+}
+
+.pitchTestingVisualization .errorList p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.pitchTestingVisualization .errorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 4px;
+}
+
+.pitchTestingVisualization .errorItem {
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+/* ── Pitch Test: Sensitivity & Confidence Sliders ── */
+
+.pitchTestingControls input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
   border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+  margin: 4px 0;
+  cursor: pointer;
 }
-.galleryContainer::-webkit-scrollbar-thumb {
-  background: var(--border);
+.pitchTestingControls input[type='range']::-moz-range-track {
+  height: 6px;
   border-radius: 3px;
+  background: var(--bg-tertiary);
+  border: none;
 }
-.galleryContainer::-webkit-scrollbar-thumb:hover {
+
+/* WebKit thumb */
+.pitchTestingControls input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+.pitchTestingControls input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* Firefox thumb */
+.pitchTestingControls input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pitchTestingControls input[type='range']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pitchTestingControls input[type='range']:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+.pitchTestingControls input[type='range']:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+
+.sliderValueBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  vertical-align: middle;
+}
+
+.sliderRangeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+/* ── Pitch Test: Frequency Slider ── */
+
+.pitchTestingControls .freqSlider {
+  margin-top: 6px;
+}
+
+/* ── Pitch Test: Results Table ── */
+
+.testRunningHint {
+  font-size: 0.72rem;
+  color: var(--accent);
+  margin: 0 0 10px 0;
+  font-style: italic;
+}
+
+.testDescription {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.testSummaryBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.testSummaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  min-width: 56px;
+}
+
+.testSummaryItem.passed {
+  background: var(--green-dim);
+}
+
+.testSummaryItem.failed {
+  background: var(--red-dim);
+}
+
+.testSummaryItem.rate {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.testSummaryLabel {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 1px;
+}
+
+.testSummaryValue {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.testSummaryItem.passed .testSummaryValue {
+  color: var(--green);
+}
+
+.testSummaryItem.failed .testSummaryValue {
+  color: var(--red);
+}
+
+.testTableScroll {
+  max-height: 360px;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.testResultsTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.testResultsTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.testResultsTable th {
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.testResultsTable th:nth-child(1) {
+  width: 13%;
+}
+.testResultsTable th:nth-child(2) {
+  width: 19%;
+}
+.testResultsTable th:nth-child(3) {
+  width: 19%;
+  text-align: right;
+}
+.testResultsTable th:nth-child(4) {
+  width: 15%;
+  text-align: right;
+}
+.testResultsTable th:nth-child(5) {
+  width: 14%;
+  text-align: center;
+}
+
+.testResultsTable td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.testResultsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.testResultsTable .rowPass {
+  background: transparent;
+}
+
+.testResultsTable .rowFail {
+  background: rgba(248, 81, 73, 0.06);
+}
+
+.testNoteName {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.testNoteFreq {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.testNoteResult {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.testNoteError {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.testNoteStatus {
+  text-align: center;
+}
+
+.resultBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.resultBadge.pass {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.resultBadge.fail {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+/* Preset buttons for cents threshold */
+.presetButtons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.btnPreset {
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnPreset.active {
+  background: var(--accent-dim, rgba(0, 122, 255, 0.15));
+  border-color: var(--accent, #007aff);
+  color: var(--accent, #007aff);
+  font-weight: 600;
+}
+
+.btnPreset:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.btnPreset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* SVG Icons sizing */
+.iconSvg {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: -0.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Context-specific icon sizing */
+
+/* Note/type icons in session editor timeline */
+.itemTypeIcon .iconSvg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Pitch Algorithm Tester ── */
+
+.pitchAlgorithmTester {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.testerHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.testerHeader h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  margin-right: auto;
+}
+
+.testerLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.testerLayout.busy .testerResults {
+  opacity: 0.45;
+}
+
+.testerControls {
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-card);
+}
+
+.testerControls .section {
+  margin-bottom: 4px;
+}
+
+.testerControls .section h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.testerResults {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.algorithmList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.algorithmItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.algorithmItem:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.algorithmItem.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.algorithmItem input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.algoInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.algoName {
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.algoDesc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sample Pills */
+.samplePillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.samplePill {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.samplePill:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.samplePill.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.testerButtons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.testerPlayBtn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+.runAllBtn {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.runAllBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.testerPlayBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.testerPlayBtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.testerPlayBtn:disabled,
+.runAllBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Progress Bar */
+.progressContainer {
+  margin-top: 4px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-glow));
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.crashCopyBtn.error {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(var(--red-rgb), 0.1);
+}
+
+.crashCopyBtn.error:hover {
+  background: rgba(var(--red-rgb), 0.15);
+}
+
+.resultsSection {
+  margin-top: 20px;
+}
+
+.resultsSection h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Sample Section Dividers */
+.sampleSection {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.sampleSection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.sampleSectionHeader {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Summary Cards — compact grid */
+.overallScore {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.resultCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.resultCardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.resultAlgoName {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.resultCardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.resultScore {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.scoreMax {
+  font-size: 0.65rem;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.resultTime {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.resultOffset {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.resultOffset.good {
+  color: var(--green);
+}
+
+.resultOffset.bad {
+  color: var(--red);
+}
+
+.perfBadge {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.perfBadge.fast {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.perfBadge.slow {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+
+.perfBadge.timeout {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.perfTime {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Results Legend */
+.resultsLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendDot.good {
+  background: var(--green);
+}
+.legendDot.ok {
+  background: var(--yellow);
+}
+.legendDot.bad {
+  background: var(--red);
+}
+.legendDot.miss {
   background: var(--text-muted);
 }
 
-.galleryItem:hover {
+.detailedResults {
+  margin-top: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.noteRow {
+  display: grid;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.noteRow.noteHeader {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  padding: 6px 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 1;
+}
+
+.noteRow:last-child {
+  border-bottom: none;
+}
+
+.noteName {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.noteFreq {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.noteOffsetHdr {
+  text-align: center;
+  font-weight: 600;
+}
+
+.noteOffset {
+  text-align: center;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.noteOffset.good {
+  color: var(--green);
+}
+
+.noteOffset.ok {
+  color: var(--yellow);
+}
+
+.noteOffset.bad {
+  color: var(--red);
+}
+
+.noteOffset.miss {
+  color: var(--text-muted);
+}
+
+/* ── Session Gallery ────────────────────────────────────────── */
+
+.galleryContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.galleryItem {
+  padding: 10px;
   background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.galleryItem:hover {
+  border-color: var(--accent-glow);
 }
 
 .galleryItem.active {
-  background: var(--bg-tertiary);
-  border-color: var(--primary);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .galleryItemActions {
-  margin-top: auto;
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lyricsControls {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tagEmpty {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .lyricsBtn {
-  font-size: 0.6rem;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2px 7px;
-  border: none;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
   cursor: pointer;
-  transition: opacity 0.2s;
-  color: white;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.lyricsBtn:hover {
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
 }
 
 .lyricsBtn svg {
@@ -71,90 +1461,13 @@
   flex-shrink: 0;
 }
 
-.lyricsBtn:hover {
-  opacity: 0.8;
-}
-
 .lyricsBtnPrimary {
-  background: var(--primary);
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-dim);
 }
 
 .lyricsBtnSecondary {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-}
-
-.tagEmpty {
-  font-size: 0.6rem;
+  border-color: var(--border);
   color: var(--text-muted);
-}
-
-/* Pitch Canvas Toolbar (global so PitchCanvasToolbar can consume them) */
-:global(.pitch-canvas-toolbar) {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-}
-
-:global(.pitch-canvas-toggle) {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.15rem 0.4rem;
-  font-size: 0.55rem;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--fg-tertiary, #484f58);
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: none;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-
-:global(.pitch-canvas-toggle:hover) {
-  color: var(--fg-secondary, #8b949e);
-  border-color: var(--fg-tertiary, #484f58);
-}
-
-:global(.pitch-canvas-toggle.active) {
-  background: var(--accent, #8b5cf6);
-  border-color: var(--accent, #8b5cf6);
-  color: #fff;
-}
-
-:global(.pitch-canvas-toggle svg) {
-  flex-shrink: 0;
-}
-
-:global(.pitch-alignment-stats) {
-  font-size: 0.55rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 0.2rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  text-transform: none;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-
-:global(.pitch-alignment-stats.whisper-processing) {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  animation: sm-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes sm-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
 }

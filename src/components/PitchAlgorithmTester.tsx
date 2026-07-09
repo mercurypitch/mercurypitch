@@ -8,6 +8,7 @@ import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
 import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
 import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
+import styles from './PitchAlgorithmTester.module.css'
 
 interface PitchAlgorithmTesterProps {
   onClose?: () => void
@@ -87,9 +88,6 @@ export const PitchAlgorithmTester: Component<
         if (result) allResults.push(result)
         completed++
         setProgress(Math.round((completed / totalOps) * 100))
-        // Yield to the browser so the progress bar can paint between iterations.
-        // Fast algorithms (YIN, FFT, Autocorr) complete synchronously, which
-        // would otherwise jump from 0→100% without any visible progress.
         await new Promise((r) => setTimeout(r, 0))
       }
     }
@@ -118,18 +116,18 @@ export const PitchAlgorithmTester: Component<
   }
 
   return (
-    <div class="pitch-algorithm-tester">
-      <div class="tester-header">
+    <div class={styles.root}>
+      <div class={styles.header}>
         <h2>Pitch Algorithm Tester</h2>
       </div>
 
-      <div class="tester-layout" classList={{ busy: running() }}>
+      <div class={styles.layout} classList={{ [styles.busy]: running() }}>
         {/* Left Column: Controls */}
-        <div class="tester-controls">
+        <div class={styles.controls}>
           {/* Algorithm Selection */}
-          <div class="section">
+          <div class={styles.section}>
             <h3>Algorithms</h3>
-            <div class="algorithm-list">
+            <div class={styles.algorithmList}>
               <For each={algorithms}>
                 {(algo: {
                   id: PitchAlgorithm
@@ -137,9 +135,9 @@ export const PitchAlgorithmTester: Component<
                   description: string
                 }) => (
                   <label
+                    class={styles.algorithmItem}
                     classList={{
-                      'algorithm-item': true,
-                      selected: selectedAlgorithms().includes(algo.id),
+                      [styles.selected]: selectedAlgorithms().includes(algo.id),
                     }}
                   >
                     <input
@@ -147,9 +145,9 @@ export const PitchAlgorithmTester: Component<
                       checked={selectedAlgorithms().includes(algo.id)}
                       onChange={() => toggleAlgorithm(algo.id)}
                     />
-                    <div class="algo-info">
-                      <span class="algo-name">{algo.name}</span>
-                      <span class="algo-desc">{algo.description}</span>
+                    <div class={styles.algoInfo}>
+                      <span class={styles.algoName}>{algo.name}</span>
+                      <span class={styles.algoDesc}>{algo.description}</span>
                     </div>
                   </label>
                 )}
@@ -158,15 +156,15 @@ export const PitchAlgorithmTester: Component<
           </div>
 
           {/* Sample Selection */}
-          <div class="section">
+          <div class={styles.section}>
             <h3>Test Samples</h3>
-            <div class="sample-pill-list">
+            <div class={styles.samplePillList}>
               <For each={samples}>
                 {(sample: TestSample) => (
                   <button
+                    class={styles.samplePill}
                     classList={{
-                      'sample-pill': true,
-                      selected:
+                      [styles.selected]:
                         selectedSamples().find((s) => s.id === sample.id) !==
                         undefined,
                     }}
@@ -180,9 +178,9 @@ export const PitchAlgorithmTester: Component<
           </div>
 
           {/* Buttons */}
-          <div class="tester-buttons">
+          <div class={styles.buttons}>
             <button
-              class="tester-play-btn"
+              class={styles.runBtn}
               onClick={runSelected}
               disabled={
                 running() ||
@@ -192,79 +190,96 @@ export const PitchAlgorithmTester: Component<
             >
               {running() ? 'Running...' : 'Run Selected'}
             </button>
-            <button class="run-all-btn" onClick={runAll} disabled={running()}>
+            <button
+              class={styles.runAllBtn}
+              onClick={runAll}
+              disabled={running()}
+            >
               Run All
             </button>
           </div>
 
           {/* Progress Bar */}
           <Show when={running()}>
-            <div class="progress-container">
-              <div class="progress-bar">
+            <div class={styles.progress}>
+              <div class={styles.progressBar}>
                 <div
-                  class="progress-fill"
+                  class={styles.progressFill}
                   style={{ width: `${progress()}%` }}
                 />
               </div>
-              <span class="progress-text">{progressText()}</span>
+              <span class={styles.progressText}>{progressText()}</span>
             </div>
           </Show>
 
           {/* Legend */}
           <Show when={showResults()}>
-            <div class="results-legend">
-              <span class="legend-item">
-                <span class="legend-dot good" /> 10 perfect
+            <div class={styles.resultsLegend}>
+              <span class={styles.legendItem}>
+                <span class={`${styles.legendDot} ${styles.legendGood}`} /> 10
+                perfect
               </span>
-              <span class="legend-item">
-                <span class="legend-dot ok" /> 25 good
+              <span class={styles.legendItem}>
+                <span class={`${styles.legendDot} ${styles.legendOk}`} /> 25
+                good
               </span>
-              <span class="legend-item">
-                <span class="legend-dot bad" /> 50 okay
+              <span class={styles.legendItem}>
+                <span class={`${styles.legendDot} ${styles.legendBad}`} /> 50
+                okay
               </span>
-              <span class="legend-item">
-                <span class="legend-dot miss" /> no det
+              <span class={styles.legendItem}>
+                <span class={`${styles.legendDot} ${styles.legendMiss}`} /> no
+                det
               </span>
             </div>
           </Show>
         </div>
 
         {/* Right Column: Results */}
-        <div class="tester-results">
+        <div class={styles.results}>
           <Show when={showResults()}>
             {/* Summary Cards */}
-            <div class="overall-score">
+            <div class={styles.overallScore}>
               <For each={results()}>
                 {(result: AlgorithmResult) => {
                   const perf = getPerformanceClassification(
                     result.avgComputationTime,
                   )
+                  const perfClass: Record<string, string> = {
+                    green: styles.perfGreen,
+                    yellow: styles.perfYellow,
+                    red: styles.perfRed,
+                  }
                   const color =
                     ACCURACY_BAND_COLORS[
                       result.totalScore as keyof typeof ACCURACY_BAND_COLORS
                     ] || '#666'
 
                   return (
-                    <div class="result-card">
-                      <div class="result-card-left">
-                        <span class="result-algo-name">{result.algorithm}</span>
-                        <span class={`perf-badge ${perf.color}`}>
+                    <div class={styles.resultCard}>
+                      <div class={styles.resultCardLeft}>
+                        <span class={styles.resultAlgoName}>
+                          {result.algorithm}
+                        </span>
+                        <span
+                          class={`${styles.perfBadge} ${perfClass[perf.color]}`}
+                        >
                           {perf.label}
                         </span>
                       </div>
-                      <div class="result-card-right">
-                        <span class="result-score" style={{ color }}>
+                      <div class={styles.resultCardRight}>
+                        <span class={styles.resultScore} style={{ color }}>
                           {result.totalScore}
-                          <span class="score-max">/100</span>
+                          <span class={styles.scoreMax}>/100</span>
                         </span>
-                        <span class="result-time">
+                        <span class={styles.resultTime}>
                           {result.avgComputationTime.toFixed(1)}ms
                         </span>
                         <span
+                          class={styles.resultOffset}
                           classList={{
-                            'result-offset': true,
-                            good: result.avgOffsetCents <= 10,
-                            bad: result.avgOffsetCents > 10,
+                            [styles.good]: result.avgOffsetCents <= 10,
+                            [styles.bad]: result.avgOffsetCents > 10,
                           }}
                         >
                           {result.avgOffsetCents.toFixed(1)} off
@@ -280,28 +295,27 @@ export const PitchAlgorithmTester: Component<
             <For each={[...resultsBySample().entries()]}>
               {([sampleId, sampleResults]) => {
                 const sampleName = sampleResults[0]?.sampleName ?? sampleId
-                // Build combined notes list from first result that has them
                 const sampleObj = samples.find((s) => s.id === sampleId)
 
                 return (
-                  <div class="sample-section">
-                    <div class="sample-section-header">{sampleName}</div>
-                    <div class="detailed-results">
+                  <div class={styles.resultSection}>
+                    <div class={styles.resultSampleName}>{sampleName}</div>
+                    <div class={styles.detailedResults}>
                       <Show when={sampleObj}>
                         {(s) => (
                           <>
                             {/* Header Row */}
                             <div
-                              class="note-row note-header"
+                              class={`${styles.resultRow} ${styles.headerRow}`}
                               style={{
-                                'grid-template-columns': `60px 70px repeat(${sampleResults.length}, minmax(50px, 1fr))`,
+                                'grid-template-columns': `80px 100px repeat(${sampleResults.length}, minmax(80px, 1fr))`,
                               }}
                             >
-                              <span class="note-name">Note</span>
-                              <span class="note-freq">Freq</span>
+                              <span class={styles.resultName}>Note</span>
+                              <span class={styles.resultFreq}>Freq</span>
                               <For each={sampleResults}>
                                 {(r) => (
-                                  <span class="note-offset-hdr">
+                                  <span class={styles.resultDev}>
                                     {r.algorithm}
                                   </span>
                                 )}
@@ -311,13 +325,15 @@ export const PitchAlgorithmTester: Component<
                             <For each={s().notes}>
                               {(note: { name: string; frequency: number }) => (
                                 <div
-                                  class="note-row"
+                                  class={styles.resultRow}
                                   style={{
-                                    'grid-template-columns': `60px 70px repeat(${sampleResults.length}, minmax(50px, 1fr))`,
+                                    'grid-template-columns': `80px 100px repeat(${sampleResults.length}, minmax(80px, 1fr))`,
                                   }}
                                 >
-                                  <span class="note-name">{note.name}</span>
-                                  <span class="note-freq">
+                                  <span class={styles.resultName}>
+                                    {note.name}
+                                  </span>
+                                  <span class={styles.resultFreq}>
                                     {note.frequency.toFixed(0)} Hz
                                   </span>
                                   <For each={sampleResults}>
@@ -339,14 +355,12 @@ export const PitchAlgorithmTester: Component<
 
                                       return (
                                         <span
+                                          class={styles.resultDev}
                                           classList={{
-                                            'note-offset': true,
-                                            good:
+                                            [styles.resultDevGood]:
                                               band !== undefined && band >= 90,
-                                            ok: band === 75,
-                                            bad:
+                                            [styles.resultDevPoor]:
                                               band !== undefined && band <= 50,
-                                            miss: band === undefined,
                                           }}
                                           style={{ color }}
                                         >
@@ -368,6 +382,12 @@ export const PitchAlgorithmTester: Component<
                 )
               }}
             </For>
+          </Show>
+
+          <Show when={!showResults()}>
+            <div class={styles.emptyResults}>
+              Select algorithms and samples above, then click Run to benchmark.
+            </div>
           </Show>
         </div>
       </div>

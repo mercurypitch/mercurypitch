@@ -4,6 +4,7 @@ import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE,
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
+import styles from './AppNavTabs.module.css'
 
 export interface AppNavTabsProps {
   activeTab: () => ActiveTab
@@ -29,7 +30,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     ariaLabel: 'Singing practice',
     icon: () => (
       <svg
-        class="tab-icon"
+        class={styles.tabIcon}
         viewBox="0 0 24 24"
         width="16"
         height="16"
@@ -70,7 +71,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     ariaLabel: 'Falling notes piano',
     icon: () => (
       <svg
-        class="tab-icon"
+        class={styles.tabIcon}
         viewBox="0 0 24 24"
         width="16"
         height="16"
@@ -111,7 +112,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     id: 'tab-guitar',
     ariaLabel: 'Guitar practice',
     icon: () => (
-      <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16">
+      <svg class={styles.tabIcon} viewBox="0 0 24 24" width="16" height="16">
         {/* Diagonal acoustic guitar: headstock up-right, body down-left */}
         <g transform="rotate(45 12 12)" fill="currentColor">
           <path d="M10.7 1.6h2.6l.55 3.1h-3.7z" />
@@ -128,7 +129,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     id: 'tab-exercises',
     ariaLabel: 'Singing Exercises',
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
         <path
           fill="currentColor"
           d="M12 14c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2s2 .9 2 2v8c0 1.1-.9 2-2 2zm-1 4h2v2h-2zm-4.5-7.5c.8-.8 2-.8 2.8 0l1.4 1.4c.8.8.8 2 0 2.8-.8.8-2 .8-2.8 0L7.5 10.5zM3 13c0 5 4 9 9 9s9-4 9-9h-2c0 3.9-3.1 7-7 7s-7-3.1-7-7H3z"
@@ -144,7 +145,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         viewBox="0 0 24 24"
         width="16"
         height="16"
-        class="tab-icon"
+        class={styles.tabIcon}
         fill="none"
         stroke="currentColor"
         stroke-width="2"
@@ -162,7 +163,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     id: 'tab-community',
     ariaLabel: 'Community',
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
         <path
           fill="currentColor"
           d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
@@ -174,7 +175,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     id: 'tab-leaderboard',
     ariaLabel: 'Leaderboard',
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
         <path
           fill="currentColor"
           d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
@@ -186,7 +187,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     id: 'tab-challenges',
     ariaLabel: 'Challenges',
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
         <path
           fill="currentColor"
           d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
@@ -199,7 +200,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     ariaLabel: 'Jam session',
     icon: () => (
       <svg
-        class="tab-icon"
+        class={styles.tabIcon}
         viewBox="0 0 24 24"
         width="16"
         height="16"
@@ -220,7 +221,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     ariaLabel: 'Compose melodies',
     icon: () => (
       <svg
-        class="tab-icon"
+        class={styles.tabIcon}
         viewBox="0 0 24 24"
         width="16"
         height="16"
@@ -240,7 +241,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     ariaLabel: 'Vocal analysis',
     testId: 'tab-analysis',
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class="tab-icon">
+      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
         <path
           fill="currentColor"
           d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
@@ -254,7 +255,7 @@ const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
     testId: 'tab-settings',
     icon: () => (
       <svg
-        class="tab-icon"
+        class={styles.tabIcon}
         viewBox="0 0 24 24"
         width="16"
         height="16"

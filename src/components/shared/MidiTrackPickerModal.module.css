@@ -1,0 +1,179 @@
+/* ============================================================
+   MidiTrackPickerModal — shared track selection dialog
+   Used by MidiSongStatusBar (guitar, piano) and SingingStatusBar.
+   Uses :global() for both .gp-modal and .fn-modal prefixes since
+   the prefix is dynamic and set by the caller.
+   ============================================================ */
+
+/* Overlay — both gp and fn prefixes */
+:global(.gp-modal-overlay),
+:global(.fn-modal-overlay),
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Dialog card */
+:global(.gp-modal-content),
+:global(.fn-modal-content),
+.content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+:global(.gp-modal-header),
+:global(.fn-modal-header),
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(.gp-modal-header h3),
+:global(.fn-modal-header h3),
+.header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+/* Close button */
+:global(.gp-modal-close),
+:global(.fn-modal-close),
+.close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+:global(.gp-modal-close:hover),
+:global(.fn-modal-close:hover),
+.close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+/* Track list */
+:global(.gp-modal-list),
+:global(.fn-modal-list),
+.trackList {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* Shared track row layout */
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trackRow:last-child {
+  border-bottom: none;
+}
+
+.trackScore {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.trackHear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.trackHearDisabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.trackInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.trackName {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.trackMeta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.trackActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.trackLegend {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.trackLegend strong {
+  color: var(--text-primary);
+}
+
+/* Load Song button */
+.trackBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.trackBtn:hover {
+  opacity: 0.9;
+}

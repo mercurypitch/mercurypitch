@@ -3,6 +3,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamChatMessages, jamPeerId, jamPeers, jamPitchHistory, jamUnreadChatCount, sendJamChatMessage, setJamUnreadChatCount, } from '@/stores/jam-store'
 import { selectedCharacter } from '@/stores/settings-store'
+import jamStyles from './Jam.module.css'
 import styles from './JamChatWidget.module.css'
 
 export const JamChatWidget: Component = () => {
@@ -141,7 +142,7 @@ export const JamChatWidget: Component = () => {
           <div class={styles.inputArea}>
             <input
               type="text"
-              class="jam-input"
+              class={jamStyles.input}
               style={{ flex: 1 }}
               value={chatText()}
               onInput={(e) => setChatText(e.currentTarget.value)}
@@ -150,7 +151,7 @@ export const JamChatWidget: Component = () => {
               maxLength={500}
             />
             <button
-              class="jam-btn jam-btn-primary jam-btn-sm"
+              class={`${jamStyles.btn} ${jamStyles.btnPrimary} ${jamStyles.btnSm}`}
               onClick={handleSend}
             >
               Send

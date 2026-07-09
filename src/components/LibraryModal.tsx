@@ -18,6 +18,7 @@ import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyNa
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
 import styles from './LibraryModal.module.css'
+import modalStyles from './Modal.module.css'
 
 type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
 
@@ -566,19 +567,19 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-overlay" onClick={() => props.close()}>
+      <div class={modalStyles.modalOverlay} onClick={() => props.close()}>
         <div
-          class="library-modal"
+          class={`${modalStyles.libraryModal} library-modal`}
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Melody library"
           onClick={(e) => e.stopPropagation()}
         >
-          <div class="library-header">
+          <div class={modalStyles.libraryHeader}>
             <h2>Library</h2>
             <button
-              class="close-btn"
+              class={modalStyles.closeBtn}
               onClick={() => props.close()}
               aria-label="Close"
             >
@@ -591,37 +592,39 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
             </button>
           </div>
 
-          <div class="library-tabs">
+          <div class={modalStyles.libraryTabs}>
             <button
-              class={`library-modal-tab ${activeTab() === 'melodies' ? 'active' : ''}`}
+              class={`${modalStyles.libraryModalTab} ${activeTab() === 'melodies' ? modalStyles.active : ''}`}
               onClick={() => setActiveTab('melodies')}
               aria-label="Melodies"
               title="Melodies"
             >
               <MusicNote />
               Melodies
-              <span class="tab-count">{filteredMelodies().length}</span>
+              <span class={modalStyles.tabCount}>
+                {filteredMelodies().length}
+              </span>
             </button>
             <button
-              class={`library-modal-tab ${activeTab() === 'playlists' ? 'active' : ''}`}
+              class={`${modalStyles.libraryModalTab} ${activeTab() === 'playlists' ? modalStyles.active : ''}`}
               onClick={() => setActiveTab('playlists')}
               aria-label="Playlists"
               title="Playlists"
             >
               <Playlist />
               Playlists
-              <span class="tab-count">
+              <span class={modalStyles.tabCount}>
                 {Object.keys(library().playlists).length}
               </span>
             </button>
           </div>
 
           {activeTab() === 'melodies' ? (
-            <div class="library-content">
+            <div class={modalStyles.libraryContent}>
               {/* Search */}
               <input
                 type="text"
-                class="search-input"
+                class={modalStyles.searchInput}
                 placeholder="Search melodies..."
                 value={searchQuery()}
                 onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -654,7 +657,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       </button>
                     </div>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Name</label>
                       <input
                         type="text"
@@ -665,7 +668,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </div>
 
                     <div class={styles.formRow}>
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>BPM</label>
                         <input
                           type="number"
@@ -691,7 +694,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         />
                       </div>
 
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>Key</label>
                         <SafeSelect
                           value={createKey()}
@@ -705,7 +708,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </SafeSelect>
                       </div>
 
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>Scale</label>
                         <SafeSelect
                           value={createScale()}
@@ -720,7 +723,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Tags (comma-separated)</label>
                       <input
                         type="text"
@@ -730,7 +733,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       />
                     </div>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Notes</label>
                       <textarea
                         value={createNotes()}
@@ -740,9 +743,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       />
                     </div>
 
-                    <div class="form-actions">
+                    <div class={modalStyles.formActions}>
                       <button
-                        class="cancel-btn"
+                        class={modalStyles.cancelBtn}
                         onClick={() => {
                           setCreateName('')
                           setCreateBpm(80)
@@ -758,7 +761,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         Cancel
                       </button>
                       <button
-                        class="save-btn"
+                        class={modalStyles.saveBtn}
                         onClick={handleCreateMelody}
                         aria-label="Create melody"
                         title="Create melody"
@@ -777,7 +780,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   <div data-testid="edit-melody-form">
                     <h3>Edit Melody</h3>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Name</label>
                       <input
                         type="text"
@@ -788,7 +791,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </div>
 
                     <div class={styles.formRow}>
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>BPM</label>
                         <input
                           type="number"
@@ -811,7 +814,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         />
                       </div>
 
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>Key</label>
                         <SafeSelect
                           value={editKey()}
@@ -825,7 +828,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </SafeSelect>
                       </div>
 
-                      <div class="form-group">
+                      <div class={modalStyles.formGroup}>
                         <label>Scale</label>
                         <SafeSelect
                           value={editScale()}
@@ -838,7 +841,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Tags (comma-separated)</label>
                       <input
                         type="text"
@@ -848,7 +851,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       />
                     </div>
 
-                    <div class="form-group">
+                    <div class={modalStyles.formGroup}>
                       <label>Notes</label>
                       <textarea
                         value={editNotes()}
@@ -858,9 +861,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       />
                     </div>
 
-                    <div class="form-actions">
+                    <div class={modalStyles.formActions}>
                       <button
-                        class="cancel-btn"
+                        class={modalStyles.cancelBtn}
                         onClick={cancelEdit}
                         aria-label="Cancel"
                         title="Cancel"
@@ -869,7 +872,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         Cancel
                       </button>
                       <button
-                        class="save-btn"
+                        class={modalStyles.saveBtn}
                         onClick={handleSaveMelody}
                         aria-label="Save changes"
                         title="Save changes"
@@ -900,7 +903,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   return (
                     <>
                       <button
-                        class="action-btn play-btn"
+                        class={`${modalStyles.actionBtn} ${modalStyles.playBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handlePlay(melody)
@@ -913,7 +916,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class="action-btn load-btn"
+                        class={`${modalStyles.actionBtn} load-btn`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleLoad(melody)
@@ -929,7 +932,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class="action-btn edit-btn"
+                        class={`${modalStyles.actionBtn} ${modalStyles.editBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleEdit(melody)
@@ -945,7 +948,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class="action-btn delete-btn"
+                        class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDelete(item.id)
@@ -967,11 +970,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Selected Melody Details */}
               <Show when={selectedMelody() !== null}>
-                <div class="melody-details">
+                <div class={modalStyles.melodyDetails}>
                   <h3>Selected Melody</h3>
                   <Show when={selectedMelody()}>
                     {(m) => (
-                      <dl class="details-list">
+                      <dl class={modalStyles.detailsList}>
                         <dt>Name</dt>
                         <dd>{m().name}</dd>
                         <dt>Author</dt>
@@ -985,18 +988,28 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         <dt>Tags</dt>
                         <dd>
                           <Show when={(m().tags?.length ?? 0) > 0}>
-                            <div class="tag-pills">
+                            <div class={modalStyles.tagPills}>
                               <Show when={(m().tags as string[]).length <= 50}>
                                 <For each={m().tags as string[]}>
-                                  {(tag) => <span class="tag-pill">{tag}</span>}
+                                  {(tag) => (
+                                    <span class={modalStyles.tagPill}>
+                                      {tag}
+                                    </span>
+                                  )}
                                 </For>
                               </Show>
                               <Show when={(m().tags as string[]).length > 3}>
                                 <For each={(m().tags as string[]).slice(0, 50)}>
-                                  {(tag) => <span class="tag-pill">{tag}</span>}
+                                  {(tag) => (
+                                    <span class={modalStyles.tagPill}>
+                                      {tag}
+                                    </span>
+                                  )}
                                 </For>
                                 <Show when={(m().tags as string[]).length > 50}>
-                                  <span class="tag-pill more">
+                                  <span
+                                    class={`${modalStyles.tagPill} ${modalStyles.more}`}
+                                  >
                                     +{(m().tags as string[]).length - 50}
                                   </span>
                                 </Show>
@@ -1035,17 +1048,17 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               </Show>
             </div>
           ) : (
-            <div class="library-content">
+            <div class={modalStyles.libraryContent}>
               {/* Add melody mode */}
               <Show when={playlistEditing()?.mode === 'add-melody'}>
                 <div class={styles.playlistEditForm}>
                   <h3>Add Melody to Playlist</h3>
 
-                  <div class="form-group">
+                  <div class={modalStyles.formGroup}>
                     <label>Search melodies...</label>
                     <input
                       type="text"
-                      class="search-input"
+                      class={modalStyles.searchInput}
                       placeholder="Type to search melodies..."
                       value={addMelodySearch()}
                       onInput={(e) => setAddMelodySearch(e.currentTarget.value)}
@@ -1079,9 +1092,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     emptyMessage="No items found matching your search."
                   />
 
-                  <div class="form-actions">
+                  <div class={modalStyles.formActions}>
                     <button
-                      class="cancel-btn"
+                      class={modalStyles.cancelBtn}
                       onClick={() => {
                         setPlaylistEditing(null)
                         setAddMelodySearch('')
@@ -1093,7 +1106,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       Cancel
                     </button>
                     <button
-                      class="save-btn"
+                      class={modalStyles.saveBtn}
                       onClick={() => setPlaylistEditing(null)}
                       aria-label="Done"
                       title="Done"
@@ -1110,11 +1123,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                 <div class={styles.playlistEditForm}>
                   <h3>Create New Playlist</h3>
 
-                  <div class="form-group">
+                  <div class={modalStyles.formGroup}>
                     <label>Playlist Name</label>
                     <input
                       type="text"
-                      class="search-input"
+                      class={modalStyles.searchInput}
                       value={renameInput()}
                       onInput={(e) => setRenameInput(e.currentTarget.value)}
                       placeholder="My Playlist"
@@ -1122,9 +1135,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="form-actions">
+                  <div class={modalStyles.formActions}>
                     <button
-                      class="cancel-btn"
+                      class={modalStyles.cancelBtn}
                       onClick={cancelRename}
                       aria-label="Cancel"
                       title="Cancel"
@@ -1133,7 +1146,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       Cancel
                     </button>
                     <button
-                      class="save-btn"
+                      class={modalStyles.saveBtn}
                       onClick={_handleCreatePlaylist}
                       aria-label="Create playlist"
                       title="Create playlist"
@@ -1155,11 +1168,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                 <div class={styles.playlistEditForm}>
                   <h3>Rename Playlist</h3>
 
-                  <div class="form-group">
+                  <div class={modalStyles.formGroup}>
                     <label>New Name</label>
                     <input
                       type="text"
-                      class="search-input"
+                      class={modalStyles.searchInput}
                       value={renameInput()}
                       onInput={(e) => setRenameInput(e.currentTarget.value)}
                       placeholder="Playlist name"
@@ -1167,9 +1180,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="form-actions">
+                  <div class={modalStyles.formActions}>
                     <button
-                      class="cancel-btn"
+                      class={modalStyles.cancelBtn}
                       onClick={cancelRename}
                       aria-label="Cancel"
                       title="Cancel"
@@ -1178,7 +1191,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       Cancel
                     </button>
                     <button
-                      class="save-btn"
+                      class={modalStyles.saveBtn}
                       onClick={handleRenamePlaylist}
                       aria-label="Rename playlist"
                       title="Rename playlist"
@@ -1211,9 +1224,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     cannot be undone.
                   </p>
 
-                  <div class="form-actions">
+                  <div class={modalStyles.formActions}>
                     <button
-                      class="cancel-btn"
+                      class={modalStyles.cancelBtn}
                       onClick={cancelRename}
                       aria-label="Cancel"
                       title="Cancel"
@@ -1222,7 +1235,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       Cancel
                     </button>
                     <button
-                      class="delete-btn"
+                      class={modalStyles.deleteBtn}
                       onClick={_handleDeletePlaylist}
                       aria-label="Delete playlist"
                       title="Delete playlist"
@@ -1237,7 +1250,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               {/* Normal playlist view */}
               <Show when={playlistEditing() === null}>
                 <button
-                  class="new-btn"
+                  class={modalStyles.newBtn}
                   onClick={() => {
                     setPlaylistEditing({
                       mode: 'create',
@@ -1258,7 +1271,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                 </button>
 
                 {Object.keys(library().playlists).length === 0 && (
-                  <div class="empty-state">
+                  <div class={modalStyles.emptyState}>
                     <p>
                       No playlists yet. Create a playlist to organize your
                       melodies!
@@ -1266,7 +1279,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   </div>
                 )}
 
-                <div class="playlist-list">
+                <div class={modalStyles.playlistList}>
                   <For
                     each={
                       Object.entries(library().playlists) as [
@@ -1283,7 +1296,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     {([_id, playlist]) => {
                       return (
                         <div
-                          class="playlist-item"
+                          class={modalStyles.playlistItem}
                           draggable={dragState()?.type === 'melody'}
                           onDragStart={(e) => handleDragStartPlaylist(e, _id)}
                           onDragEnd={handleDragEnd}
@@ -1300,16 +1313,18 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             }
                           }}
                         >
-                          <div class="playlist-info">
-                            <span class="playlist-name">{playlist.name}</span>
-                            <span class="playlist-count">
+                          <div class={modalStyles.playlistInfo}>
+                            <span class={modalStyles.playlistName}>
+                              {playlist.name}
+                            </span>
+                            <span class={modalStyles.playlistCount}>
                               {playlist.melodyKeys.length} melodies ·{' '}
                               {playlist.sessionKeys?.length ?? 0} sessions
                             </span>
                           </div>
-                          <div class="item-actions">
+                          <div class={modalStyles.itemActions}>
                             <button
-                              class="action-btn play-btn"
+                              class={`${modalStyles.actionBtn} ${modalStyles.playBtn}`}
                               onClick={() => {
                                 handlePlayPlaylist(_id)
                               }}
@@ -1321,7 +1336,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               </svg>
                             </button>
                             <button
-                              class="action-btn edit-btn"
+                              class={`${modalStyles.actionBtn} ${modalStyles.editBtn}`}
                               onClick={() => startAddMelodyMode(_id)}
                               title="Add Melody"
                               aria-label="Add Melody"
@@ -1334,7 +1349,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               </svg>
                             </button>
                             <button
-                              class="action-btn delete-btn"
+                              class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn}`}
                               onClick={() =>
                                 setPlaylistEditing({
                                   mode: 'delete',

@@ -1,0 +1,447 @@
+/* ============================================================
+// Session Group Tabs (SessionGroupTabs)
+// ============================================================ */
+
+.sessionGroupTabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.sessionGroupTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sessionGroupTabWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sessionGroupTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  color: var(--fg-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sessionGroupTab:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+  border-color: var(--fg-tertiary);
+}
+
+.sessionGroupTabActive {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--fg-primary);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.08);
+}
+
+.sessionGroupTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--fg-tertiary);
+}
+
+.sessionGroupTabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.sessionGroupTabDeleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+}
+
+.sessionGroupTab:hover .sessionGroupTabDeleteBtn {
+  opacity: 0.6;
+}
+
+.sessionGroupTabDeleteBtn:hover {
+  opacity: 1;
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.sessionGroupTabActive .sessionGroupTabCount {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--accent);
+}
+
+.sessionGroupTabAdd {
+  padding: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.sessionGroupTabAdd svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sessionGroupTabEdit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 2rem;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
+}
+
+.sessionGroupTabEditInput {
+  width: 100px;
+  padding: 0.2rem 0.4rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sessionGroupTabEditInput::placeholder {
+  color: var(--fg-tertiary);
+}
+
+.sessionGroupTabEditBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sessionGroupTabEditBtn:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
+.sessionGroupTabEditBtn svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/* Context menu */
+.sessionGroupContextMenu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 120px;
+  animation: context-in 0.12s ease;
+}
+
+@keyframes context-in {
+  from {
+    transform: translateX(-50%) translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.sessionGroupContextItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+
+.sessionGroupContextItem:hover {
+  background: var(--bg-hover);
+}
+
+.sessionGroupContextItem svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.sessionGroupContextItemDanger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.sessionGroupContextBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ============================================================
+// Session Group Assignment Dropdown (UvrSessionResult)
+// ============================================================ */
+
+.sessionGroupAssign {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg-primary);
+  border-radius: 0.4rem;
+}
+
+.sessionGroupAssignLabel {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+}
+
+.sessionGroupAssignDropdown {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.sessionGroupAssignBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  gap: 0.25rem;
+}
+
+.sessionGroupAssignBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--fg-tertiary);
+}
+
+.sessionGroupAssignCurrent {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionGroupAssignChevron {
+  display: flex;
+  align-items: center;
+  color: var(--fg-tertiary);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.open {
+  transform: rotate(180deg);
+}
+
+.sessionGroupAssignChevron.open {
+  transform: rotate(180deg);
+}
+
+.sessionGroupAssignMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: assign-menu-in 0.12s ease;
+}
+
+@keyframes assign-menu-in {
+  from {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.sessionGroupAssignItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+}
+
+.sessionGroupAssignItem:hover {
+  background: var(--bg-hover);
+}
+
+.sessionGroupAssignItemActive {
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--accent);
+}
+
+.sessionGroupAssignItemCount {
+  font-size: 0.62rem;
+  color: var(--fg-tertiary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.sessionGroupAssignItemActive .sessionGroupAssignItemCount {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent);
+}
+
+.sessionGroupAssignItemRemove {
+  color: var(--error);
+  font-size: 0.72rem;
+}
+
+.sessionGroupAssignItemRemove:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.sessionGroupAssignDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+  flex-shrink: 0;
+}
+
+.sessionGroupAssignNew {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.sessionGroupAssignNewInput {
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  color: var(--fg-primary);
+  font-size: 0.72rem;
+  outline: none;
+}
+
+.sessionGroupAssignNewInput:focus {
+  border-color: var(--accent);
+}
+
+.sessionGroupAssignNewInput::placeholder {
+  color: var(--fg-tertiary);
+}
+
+.sessionGroupAssignNewBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--bg-primary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.sessionGroupAssignNewBtn:hover {
+  opacity: 0.85;
+}
+
+.sessionGroupAssignBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}

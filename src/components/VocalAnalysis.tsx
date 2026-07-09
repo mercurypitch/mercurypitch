@@ -1411,12 +1411,6 @@ export const VocalAnalysis: Component = () => {
 
   return (
     <div class="vocal-analysis-tab">
-      <style>{`
-        @keyframes live-pulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.6); }
-          50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(63, 185, 80, 0); }
-        }
-      `}</style>
       {/* Header */}
       <div class="vocal-header">
         <div class="vocal-header-content">

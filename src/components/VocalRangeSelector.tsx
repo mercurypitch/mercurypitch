@@ -4,6 +4,7 @@ import type { VocalRangeResult } from '@/lib/vocal-analyzer'
 import { detectVocalRange } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores/practice-session-store'
 import { setVocalRangePreset, vocalRangePreset } from '@/stores/settings-store'
+import styles from './TierSelector.module.css'
 
 interface VocalRangeSelectorProps {
   class?: string
@@ -40,11 +41,11 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
   }
 
   return (
-    <div class={`tier-selector ${props.class ?? ''}`}>
+    <div class={`${styles.tierSelector} ${props.class ?? ''}`}>
       {/* Auto-detect button */}
       <Show when={midiHistory().length >= 10}>
         <button
-          class="welcome-tier-btn welcome-tier-auto"
+          class={`${styles.tierBtn} ${styles.tierAuto}`}
           onClick={handleAutoDetect}
           title="Auto-detect from your singing history"
           style={{
@@ -67,7 +68,7 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
             <circle cx="12" cy="12" r="10" />
             <circle cx="12" cy="12" r="3" />
           </svg>
-          <span class="tier-name">
+          <span class={styles.tierName}>
             {detectedRange()?.confident === true
               ? `Auto: ${detectedRange()!.voiceType} (${detectedRange()!.lowNote}–${detectedRange()!.highNote})`
               : detectedRange() !== null
@@ -78,15 +79,15 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
       </Show>
 
       <div
-        class="welcome-tier-buttons"
+        class={styles.tierButtons}
         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;"
       >
         <button
-          class={`welcome-tier-btn welcome-tier-soprano${vocalRangePreset() === 'soprano' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierSoprano}${vocalRangePreset() === 'soprano' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('soprano')}
           title="High Female Voice (C4-C6)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -101,15 +102,15 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M4 12h16" />
             </svg>
           </span>
-          <span class="tier-name">Soprano</span>
+          <span class={styles.tierName}>Soprano</span>
         </button>
 
         <button
-          class={`welcome-tier-btn welcome-tier-mezzo${vocalRangePreset() === 'mezzo-soprano' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierMezzo}${vocalRangePreset() === 'mezzo-soprano' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('mezzo-soprano')}
           title="Mid-High Female Voice (A3-A5)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -124,17 +125,17 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M6 14h12" />
             </svg>
           </span>
-          <span class="tier-name" style="font-size: 0.8rem">
+          <span class={styles.tierName} style="font-size: 0.8rem">
             Mezzo
           </span>
         </button>
 
         <button
-          class={`welcome-tier-btn welcome-tier-alto${vocalRangePreset() === 'alto' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierAlto}${vocalRangePreset() === 'alto' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('alto')}
           title="Low Female Voice (F3-F5)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -149,15 +150,15 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M8 16h8" />
             </svg>
           </span>
-          <span class="tier-name">Alto</span>
+          <span class={styles.tierName}>Alto</span>
         </button>
 
         <button
-          class={`welcome-tier-btn welcome-tier-tenor${vocalRangePreset() === 'tenor' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierTenor}${vocalRangePreset() === 'tenor' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('tenor')}
           title="High Male Voice (C3-C5)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -172,15 +173,15 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M8 8h8" />
             </svg>
           </span>
-          <span class="tier-name">Tenor</span>
+          <span class={styles.tierName}>Tenor</span>
         </button>
 
         <button
-          class={`welcome-tier-btn welcome-tier-baritone${vocalRangePreset() === 'baritone' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierBaritone}${vocalRangePreset() === 'baritone' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('baritone')}
           title="Mid Male Voice (G2-G4)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -195,17 +196,17 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M6 10h12" />
             </svg>
           </span>
-          <span class="tier-name" style="font-size: 0.8rem">
+          <span class={styles.tierName} style="font-size: 0.8rem">
             Baritone
           </span>
         </button>
 
         <button
-          class={`welcome-tier-btn welcome-tier-bass${vocalRangePreset() === 'bass' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierBass}${vocalRangePreset() === 'bass' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => setVocalRangePreset('bass')}
           title="Low Male Voice (E2-E4)"
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -220,7 +221,7 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
               <path d="M4 12h16" />
             </svg>
           </span>
-          <span class="tier-name">Bass</span>
+          <span class={styles.tierName}>Bass</span>
         </button>
       </div>
     </div>

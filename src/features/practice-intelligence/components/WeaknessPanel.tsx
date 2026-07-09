@@ -6,6 +6,7 @@ import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconLock, IconMusic, IconTarget, } from '@/components/exercise-icons'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import type { MicroDrill } from '../drill-generator'
 import { generateDrills } from '../drill-generator'
 import { generateWeaknessReport } from '../weakness-analyzer'
@@ -16,7 +17,7 @@ interface WeaknessPanelProps {
   fallback?: JSX.Element
 }
 
-const drillIconCls = 'weakness-drill-icon-svg'
+const drillIconCls = piStyles.weaknessDrillIconSvg
 
 function drillIconSvg(icon: MicroDrill['icon']) {
   switch (icon) {
@@ -50,38 +51,40 @@ export const WeaknessPanel: Component<WeaknessPanelProps> = (props) => {
 
   return (
     <Show when={hasContent()} fallback={props.fallback}>
-      <div class="weakness-panel">
-        <div class="weakness-panel-title-row">
-          <h3 class="weakness-panel-title">Practice Suggestions</h3>
+      <div class={piStyles.weaknessPanel}>
+        <div class={piStyles.weaknessPanelTitleRow}>
+          <h3 class={piStyles.weaknessPanelTitle}>Practice Suggestions</h3>
           <span
-            class="weakness-panel-help"
+            class={piStyles.weaknessPanelHelp}
             title="Your exercise scores and pitch accuracy are analyzed to find weak areas and suggest focused practice drills. Exercise difficulty adjusts automatically based on your performance trends."
           >
             ?
           </span>
         </div>
-        <p class="weakness-panel-subtitle">
+        <p class={piStyles.weaknessPanelSubtitle}>
           Based on your recent practice sessions
         </p>
 
         {/* Micro-drills */}
         <Show when={drills().length > 0}>
-          <div class="weakness-drills">
+          <div class={piStyles.weaknessDrills}>
             <For each={drills()}>
               {(drill) => (
-                <div class="weakness-drill-card">
-                  <div class="weakness-drill-header">
-                    <span class="weakness-drill-icon">
+                <div class={piStyles.weaknessDrillCard}>
+                  <div class={piStyles.weaknessDrillHeader}>
+                    <span class={piStyles.weaknessDrillIcon}>
                       {drillIconSvg(drill.icon)}
                     </span>
-                    <div class="weakness-drill-info">
+                    <div class={piStyles.weaknessDrillInfo}>
                       <strong>{drill.title}</strong>
-                      <p class="weakness-drill-desc">{drill.description}</p>
-                      <p class="weakness-drill-reason">{drill.reason}</p>
+                      <p class={piStyles.weaknessDrillDesc}>
+                        {drill.description}
+                      </p>
+                      <p class={piStyles.weaknessDrillReason}>{drill.reason}</p>
                     </div>
                   </div>
                   <button
-                    class="weakness-drill-start"
+                    class={piStyles.weaknessDrillStart}
                     onClick={() =>
                       props.onStartDrill?.(drill.exerciseType, drill.config)
                     }
@@ -96,16 +99,16 @@ export const WeaknessPanel: Component<WeaknessPanelProps> = (props) => {
 
         {/* Weak pitches summary */}
         <Show when={report().weakPitches.length > 0}>
-          <div class="weakness-pitch-summary">
+          <div class={piStyles.weaknessPitchSummary}>
             <h4>Weak Notes</h4>
-            <div class="weakness-pitch-list">
+            <div class={piStyles.weaknessPitchList}>
               <For each={report().weakPitches.slice(0, 5)}>
                 {(pitch) => (
                   <span
-                    class="weakness-pitch-badge"
+                    class={piStyles.weaknessPitchBadge}
                     classList={{
-                      'pitch-bad': pitch.avgDeviation >= 30,
-                      'pitch-ok': pitch.avgDeviation < 30,
+                      [piStyles.pitchBad]: pitch.avgDeviation >= 30,
+                      [piStyles.pitchOk]: pitch.avgDeviation < 30,
                     }}
                     title={`${pitch.avgDeviation}¢ avg deviation over ${pitch.occurrences} plays`}
                   >

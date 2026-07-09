@@ -3,6 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
+import jamStyles from './Jam.module.css'
 import styles from './JamInviteModal.module.css'
 
 interface JamInviteModalProps {
@@ -39,20 +40,26 @@ export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
 
         <div class={styles.body}>
           <div class={styles.section}>
-            <label class="jam-label">Room Code</label>
+            <label class={jamStyles.label}>Room Code</label>
             <div class={styles.codeRow}>
               <code class={styles.code}>{props.roomId}</code>
-              <button class="jam-btn jam-btn-sm" onClick={handleCopyRoomId}>
+              <button
+                class={`${jamStyles.btn} ${jamStyles.btnSm}`}
+                onClick={handleCopyRoomId}
+              >
                 {roomCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>
           </div>
 
           <div class={styles.section}>
-            <label class="jam-label">Share Link</label>
+            <label class={jamStyles.label}>Share Link</label>
             <div class={styles.codeRow}>
               <code class={`${styles.code} ${styles.link}`}>{roomLink()}</code>
-              <button class="jam-btn jam-btn-sm" onClick={handleCopyLink}>
+              <button
+                class={`${jamStyles.btn} ${jamStyles.btnSm}`}
+                onClick={handleCopyLink}
+              >
                 {linkCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>

@@ -9,6 +9,7 @@ import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { ThemePicker } from '@/components/ThemePicker'
 import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
@@ -16,7 +17,7 @@ import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
-import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
+import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
@@ -26,7 +27,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
-import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
+import { setSettingsSection, settingsSection } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -198,29 +199,6 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
             <AccountSection />
-          </div>
-
-          {/* Getting started — reopen the welcome overlay + open Voice Mirror */}
-          <div class={styles.settingsSection}>
-            <h3 class={styles.settingsSectionTitle}>Getting started</h3>
-            <div class={styles.settingsDivider} />
-            <p class={styles.settingsDesc}>
-              Revisit the welcome screen (voice-range setup, the tour and more),
-              or open the Voice Mirror — a free 60-second voiceprint of your
-              range.
-            </p>
-            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px;">
-              <button
-                type="button"
-                onClick={() => setShowWelcome(true)}
-                class={styles.getStartedBtn}
-              >
-                Show welcome screen
-              </button>
-              <a href="/mirror" class={styles.getStartedBtn}>
-                Open Voice Mirror
-              </a>
-            </div>
           </div>
 
           {/* App Mode Section */}
@@ -938,20 +916,9 @@ export const SettingsPanel: Component = () => {
             </div>
 
             <div class={styles.settingsRow}>
-              <label for="vis-theme">Theme</label>
-              <label>
-                <SafeSelect
-                  id="vis-theme"
-                  value={theme()}
-                  onChange={(e) => {
-                    setTheme(e.currentTarget.value as 'dark' | 'light')
-                  }}
-                >
-                  <option value="dark">Dark</option>
-                  <option value="light">Light</option>
-                </SafeSelect>
-              </label>
-              <small>Switch between dark and light mode</small>
+              <label>Theme</label>
+              <ThemePicker />
+              <small>Pick a color theme for the app</small>
             </div>
           </div>
 

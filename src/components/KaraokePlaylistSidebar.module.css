@@ -207,12 +207,18 @@
   color: var(--text-secondary);
 }
 .itemsList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 0.4rem;
   max-height: 240px;
   overflow-y: auto;
   padding-right: 0.15rem;
+}
+
+@media (max-width: 600px) {
+  .itemsList {
+    grid-template-columns: 1fr;
+  }
 }
 
 .itemRow {
@@ -301,9 +307,20 @@
   padding: 0.35rem 0.5rem;
   font-size: 0.8rem;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 6px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.singerInput:focus {
+  border-color: var(--accent);
+}
+
+.singerInput::placeholder {
+  color: var(--text-muted);
 }
 
 .addControls {
@@ -424,8 +441,15 @@
   padding: 0.45rem 0.5rem;
   font-size: 0.82rem;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.select:focus {
+  border-color: var(--accent);
 }

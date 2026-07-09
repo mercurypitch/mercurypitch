@@ -1,6 +1,6 @@
 /* Extracted from: Modal */
 
-.modal-overlay {
+.modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -13,7 +13,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.modalContent {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -25,7 +25,7 @@
   flex-direction: column;
 }
 
-.modal-header {
+.modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,12 +33,12 @@
   border-bottom: 1px solid var(--border);
 }
 
-.modal-header h2 {
+.modalHeader h2 {
   font-size: 1.1rem;
   font-weight: 600;
 }
 
-.modal-close {
+.modalClose {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -47,17 +47,17 @@
   padding: 0 4px;
 }
 
-.modal-close:hover {
+.modalClose:hover {
   color: var(--text-primary);
 }
 
-.modal-body {
+.modalBody {
   padding: 20px;
   overflow-y: auto;
   flex: 1;
 }
 
-.modal-footer {
+.modalFooter {
   padding: 16px 20px;
   border-top: 1px solid var(--border);
   display: flex;
@@ -67,7 +67,7 @@
 
 /* Extracted from: Session Browser Modal */
 
-.session-browser {
+.sessionBrowser {
   width: min(680px, 95vw);
   max-height: 85vh;
   display: flex;
@@ -76,8 +76,8 @@
   box-sizing: border-box;
 }
 
-.session-browser .modal-header {
-  /* The generic .modal-header is a centered column (for confirm dialogs);
+.sessionBrowser .modalHeader {
+  /* The generic .modalHeader is a centered column (for confirm dialogs);
      this modal wants the title left and the close button top-right. */
   flex-direction: row;
   justify-content: space-between;
@@ -86,11 +86,11 @@
   margin-bottom: 12px;
 }
 
-.session-browser .session-categories {
+.sessionBrowser .sessionCategories {
   margin: 0 0 12px 0;
 }
 
-.session-card {
+.sessionCard {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -101,7 +101,7 @@
   margin-bottom: 4px;
 }
 
-.modal-close-btn {
+.modalCloseBtn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -115,23 +115,23 @@
   flex-shrink: 0;
 }
 
-.modal-close-btn:hover {
+.modalCloseBtn:hover {
   color: var(--text-primary);
   background: var(--bg-tertiary);
 }
 
-.modal-close-btn svg {
+.modalCloseBtn svg {
   display: block;
 }
 
-.session-categories {
+.sessionCategories {
   display: flex;
   gap: 6px;
   margin: 12px 0;
   flex-wrap: wrap;
 }
 
-.session-cat-btn {
+.sessionCatBtn {
   padding: 6px 14px;
   border-radius: 16px;
   border: 1px solid var(--border);
@@ -142,13 +142,13 @@
   transition: all 0.12s;
 }
 
-.session-cat-btn.active {
+.sessionCatBtn.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
 
-.session-list {
+.sessionList {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -157,7 +157,7 @@
   padding-bottom: 8px;
 }
 
-.session-card {
+.sessionCard {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -167,40 +167,40 @@
   gap: 6px;
 }
 
-.session-card-header {
+.sessionCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.session-name {
+.sessionName {
   font-weight: 600;
   font-size: 0.92rem;
   color: var(--text-primary);
 }
 
-.session-difficulty {
+.sessionDifficulty {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.session-description {
+.sessionDescription {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.4;
 }
 
-.session-meta {
+.sessionMeta {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.session-category-badge {
+.sessionCategoryBadge {
   background: var(--bg-secondary);
   color: var(--text-muted);
   font-size: 0.68rem;
@@ -210,13 +210,13 @@
   letter-spacing: 0.03em;
 }
 
-.session-item-count,
-.session-duration {
+.sessionItemCount,
+.sessionDuration {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.session-start-btn {
+.sessionStartBtn {
   align-self: flex-end;
   padding: 6px 18px;
   background: var(--accent);
@@ -229,13 +229,13 @@
   transition: background 0.12s;
 }
 
-.session-start-btn:hover {
+.sessionStartBtn:hover {
   background: #4e9eff;
 }
 
 /* Extracted from: Library Modal */
 
-.library-modal {
+.libraryModal {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -249,7 +249,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-.library-header {
+.libraryHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -257,19 +257,19 @@
   border-bottom: 1px solid var(--border);
 }
 
-.library-header h2 {
+.libraryHeader h2 {
   font-size: 1.2rem;
   margin: 0;
 }
 
-.library-tabs {
+.libraryTabs {
   display: flex;
   gap: 0;
   padding: 0 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.library-modal-tab {
+.libraryModalTab {
   position: relative;
   padding: 10px 20px;
   border: none;
@@ -284,7 +284,7 @@
   gap: 8px;
 }
 
-.library-modal-tab::after {
+.libraryModalTab::after {
   content: '';
   position: absolute;
   bottom: -1px;
@@ -296,20 +296,20 @@
   transition: background 0.15s ease;
 }
 
-.library-modal-tab:hover {
+.libraryModalTab:hover {
   color: var(--text-primary);
 }
 
-.library-modal-tab.active {
+.libraryModalTab.active {
   color: var(--accent);
   font-weight: 600;
 }
 
-.library-modal-tab.active::after {
+.libraryModalTab.active::after {
   background: var(--accent);
 }
 
-.tab-count {
+.tabCount {
   font-size: 0.7rem;
   font-weight: 600;
   padding: 1px 7px;
@@ -319,12 +319,12 @@
   line-height: 1.4;
 }
 
-.library-modal-tab.active .tab-count {
+.libraryModalTab.active .tabCount {
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.library-content {
+.libraryContent {
   padding: 20px;
   overflow-y: auto;
   flex: 1;
@@ -332,7 +332,7 @@
   scroll-behavior: smooth;
 }
 
-.search-input {
+.searchInput {
   width: 100%;
   padding: 10px 14px;
   background: var(--bg-tertiary);
@@ -344,11 +344,11 @@
   outline: none;
 }
 
-.search-input:focus {
+.searchInput:focus {
   border-color: var(--accent);
 }
 
-.new-btn {
+.newBtn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -365,14 +365,14 @@
   margin-bottom: 16px;
 }
 
-.new-btn:hover {
+.newBtn:hover {
   background: var(--accent);
   color: #fff;
 }
 
 /* Extracted from: Presets Library Modal */
 
-.preset-list {
+.presetList {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -381,7 +381,7 @@
   padding: 4px;
 }
 
-.preset-card {
+.presetCard {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -392,25 +392,25 @@
   transition: all 0.15s;
 }
 
-.preset-card:hover {
+.presetCard:hover {
   border-color: var(--accent);
   background: var(--bg-card);
 }
 
-.preset-card-header {
+.presetCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
 
-.preset-name {
+.presetName {
   font-weight: 600;
   font-size: 0.92rem;
   color: var(--text-primary);
 }
 
-.preset-difficulty {
+.presetDifficulty {
   font-size: 0.7rem;
   font-weight: 600;
   padding: 2px 8px;
@@ -419,21 +419,21 @@
   letter-spacing: 0.03em;
 }
 
-.preset-description {
+.presetDescription {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.4;
 }
 
-.preset-meta {
+.presetMeta {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.preset-category-badge {
+.presetCategoryBadge {
   background: var(--bg-secondary);
   color: var(--text-muted);
   font-size: 0.68rem;
@@ -443,17 +443,17 @@
   letter-spacing: 0.03em;
 }
 
-.preset-item-count {
+.presetItemCount {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.preset-duration {
+.presetDuration {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.preset-start-btn {
+.presetStartBtn {
   align-self: flex-start;
   padding: 8px 20px;
   background: var(--accent);
@@ -466,13 +466,13 @@
   margin-top: 4px;
 }
 
-.preset-start-btn:hover {
+.presetStartBtn:hover {
   background: #4e9eff;
 }
 
 /* Extracted from: Close Button for Modals */
 
-.close-btn {
+.closeBtn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -485,12 +485,12 @@
   justify-content: center;
 }
 
-.close-btn:hover {
+.closeBtn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.close-btn svg {
+.closeBtn svg {
   display: block;
 }
 
@@ -500,7 +500,7 @@
   once you had >10 melodies. The minmax(220px, 1fr) lets it gracefully
   fall back to 2 / 1 columns on narrow screens.
 */
-.library-list {
+.libraryList {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
@@ -510,21 +510,21 @@
   scrollbar-width: thin;
 }
 
-.library-list::-webkit-scrollbar {
+.libraryList::-webkit-scrollbar {
   width: 8px;
 }
-.library-list::-webkit-scrollbar-thumb {
+.libraryList::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
 }
 
 @media (max-width: 900px) {
-  .library-list {
+  .libraryList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 600px) {
-  .library-list {
+  .libraryList {
     grid-template-columns: 1fr;
   }
 }
@@ -535,7 +535,7 @@
   title + 4 action buttons could not coexist on one line without
   truncating.
 */
-.library-item {
+.libraryItem {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -549,41 +549,41 @@
   min-width: 0;
 }
 
-.library-item .item-actions {
+.libraryItem .itemActions {
   display: flex;
   gap: 4px;
   justify-content: flex-end;
   flex-wrap: wrap;
 }
 
-.library-item:hover {
+.libraryItem:hover {
   border-color: var(--border);
   background: var(--bg-card);
 }
 
-.library-item.selected {
+.libraryItem.selected {
   border-color: var(--accent);
   background: var(--accent-dim);
 }
 
-.item-main {
+.itemMain {
   flex: 1;
   min-width: 0;
 }
 
-.item-title {
+.itemTitle {
   font-weight: 600;
   font-size: 0.9rem;
   margin-bottom: 2px;
 }
 
-.item-author {
+.itemAuthor {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-left: 8px;
 }
 
-.item-meta {
+.itemMeta {
   font-size: 0.72rem;
   color: var(--text-muted);
   display: flex;
@@ -592,14 +592,14 @@
   flex-wrap: wrap;
 }
 
-.item-tags {
+.itemTags {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
 
-.tag-pill {
+.tagPill {
   font-size: 0.6rem;
   padding: 2px 6px;
   background: var(--accent-dim);
@@ -609,25 +609,25 @@
   display: inline-block;
 }
 
-.tag-pill.more {
+.tagPill.more {
   font-size: 0.55rem;
   padding: 2px 5px;
 }
 
-.tag-pills {
+.tagPills {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
   min-height: 1.5rem;
 }
 
-.item-actions {
+.itemActions {
   display: flex;
   gap: 4px;
   margin-left: 12px;
 }
 
-.action-btn {
+.actionBtn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -642,47 +642,51 @@
   transition: all 0.15s;
 }
 
-.action-btn:hover:not(:disabled) {
+.actionBtn:hover:not(:disabled) {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.play-btn:hover {
+.playBtn:hover {
   color: var(--accent);
 }
 
-.load-btn:hover {
+.loadBtn:hover {
   color: var(--green);
 }
 
-.edit-btn:hover {
+.editBtn:hover {
   color: var(--purple);
 }
 
-.delete-btn:hover {
+.deleteBtn:hover {
   color: var(--red);
 }
 
-.delete-btn:disabled,
-.play-btn:disabled,
-.load-btn:disabled,
-.edit-btn:disabled {
+.copyBtn {
+  background: var(--accent-dim);
+}
+
+.deleteBtn:disabled,
+.playBtn:disabled,
+.loadBtn:disabled,
+.editBtn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.empty-state {
+.emptyState {
   text-align: center;
   padding: 40px 20px;
   color: var(--text-muted);
 }
 
-.empty-state p {
+.emptyState p {
   margin: 0;
   font-size: 0.9rem;
 }
 
-.melody-details {
+.melodyDetails {
   margin-top: 20px;
   padding: 16px;
   background: var(--bg-secondary);
@@ -690,37 +694,37 @@
   border-top: 1px solid var(--border);
 }
 
-.melody-details h3 {
+.melodyDetails h3 {
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 12px 0;
 }
 
-.details-list {
+.detailsList {
   display: grid;
   grid-template-columns: 80px 1fr;
   gap: 6px 12px;
   font-size: 0.8rem;
 }
 
-.details-list dt {
+.detailsList dt {
   color: var(--text-muted);
   grid-column: 1;
 }
 
-.details-list dd {
+.detailsList dd {
   color: var(--text-primary);
   font-weight: 500;
   grid-column: 2;
 }
 
-.playlist-list {
+.playlistList {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.playlist-item {
+.playlistItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -729,58 +733,59 @@
   border-radius: 6px;
 }
 
-.playlist-info {
+.playlistInfo {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
 }
 
-.playlist-name {
+.playlistName {
   font-weight: 600;
   font-size: 0.9rem;
 }
 
-.playlist-count {
+.playlistCount {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.playlist-item.drag-over {
+.playlistItem.dragOver {
   border: 2px dashed var(--accent);
   background: var(--bg-secondary);
 }
 
-.playlist-item.drag-over .playlist-name {
+.playlistItem.dragOver .playlistName {
   color: var(--accent);
   font-weight: 700;
 }
 
 /* Extracted from: Session Library Modal */
 
-.edit-session-form {
+.editSessionForm {
   padding: 20px;
 }
 
-.edit-session-form h3 {
+.editSessionForm h3 {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0 0 16px 0;
 }
 
-.form-group {
+.formGroup {
   margin-bottom: 16px;
 }
 
-.form-group label {
+.formGroup label {
   display: block;
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
-.form-group input,
-.form-group select {
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
   width: 100%;
   padding: 10px 12px;
   background: var(--bg-tertiary);
@@ -788,48 +793,77 @@
   border-radius: 6px;
   color: var(--text-primary);
   font-size: 0.9rem;
+  font-family: inherit;
   outline: none;
+  resize: vertical;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
   border-color: var(--accent);
 }
 
-.form-actions {
+.formActions {
   display: flex;
   gap: 8px;
   margin-top: 20px;
 }
 
-.cancel-btn {
+.cancelBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 20px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
-.cancel-btn:hover {
+.cancelBtn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.cancelBtn:hover {
   background: var(--bg-secondary);
 }
 
-.save-btn {
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 20px;
   background: var(--accent);
   border: none;
   border-radius: 6px;
   color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
-.save-btn:hover {
+.saveBtn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.saveBtn:hover {
   background: #4090e0;
 }
 
 /* Fix for SessionLibraryModal */
-.session-library-item .item-main {
+.sessionLibraryItem .itemMain {
   display: flex;
   flex-direction: column;
   gap: 6px;

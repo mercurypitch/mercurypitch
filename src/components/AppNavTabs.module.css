@@ -1,0 +1,50 @@
+/* ============================================================
+   AppNavTabs — Navigation tab bar styles
+   Migrated from AppHeader.css
+   ============================================================ */
+
+/* App tabs — kept as :global() because AppNavTabs uses
+   querySelector('.app-tab.active') for scroll-into-view */
+:global(.app-tab) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:global(.app-tab):hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.app-tab.active) {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.tabIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+:global(.app-tab.active) .tabIcon {
+  opacity: 1;
+}

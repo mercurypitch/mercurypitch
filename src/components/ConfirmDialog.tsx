@@ -1,14 +1,13 @@
 // ============================================================
 // ConfirmDialog — small reusable "are you sure?" modal for destructive
-// actions. Mirrors the session-delete prompt (it reuses the global
-// .delete-confirm-* styles in uvr.css), so every confirm in the app
-// reads the same. Focus, Tab-cycling, Escape and focus-restore are
+// actions. Focus, Tab-cycling, Escape and focus-restore are
 // handled by the shared useFocusTrap, matching the app's other modals.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
 import { createUniqueId, Show } from 'solid-js'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import styles from './ConfirmDialog.module.css'
 import { Trash2 } from './icons'
 
 interface ConfirmDialogProps {
@@ -34,10 +33,14 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
 
   return (
     <Show when={props.open}>
-      <div class="delete-confirm-overlay" onClick={() => props.onCancel()}>
+      <div
+        class={styles.overlay}
+        data-testid="confirm-overlay"
+        onClick={() => props.onCancel()}
+      >
         <div
           ref={dialogRef}
-          class="delete-confirm-dialog"
+          class={styles.dialog}
           role="alertdialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -46,15 +49,17 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
         >
           <h4 id={titleId}>{props.title}</h4>
           <p id={bodyId}>{props.message}</p>
-          <div class="delete-confirm-actions">
+          <div class={styles.actions}>
             <button
-              class="delete-confirm-cancel"
+              class={styles.cancel}
+              data-testid="confirm-cancel"
               onClick={() => props.onCancel()}
             >
               Cancel
             </button>
             <button
-              class="delete-confirm-delete"
+              class={styles.delete}
+              data-testid="confirm-delete"
               onClick={() => props.onConfirm()}
             >
               <Trash2 /> {props.confirmLabel ?? 'Delete'}

@@ -9,13 +9,22 @@ import type { AudioEngine } from './audio-engine'
 import type { PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
 
+// Accuracy constants (cents deviation thresholds)
+const CENTS_PERFECT = 10
+const CENTS_EXCELLENT = 25
+const CENTS_GOOD = 50
+const SCORE_PERFECT = 100
+const SCORE_EXCELLENT = 90
+const SCORE_GOOD = 75
+const SCORE_OKAY = 50
+
 // Accuracy bands (threshold in cents → band score)
 const DEFAULT_BANDS: { threshold: number; band: number }[] = [
-  { threshold: 0, band: 100 },
-  { threshold: 10, band: 90 },
-  { threshold: 25, band: 75 },
-  { threshold: 50, band: 50 },
-  { threshold: 999, band: 0 },
+  { threshold: 0, band: SCORE_PERFECT },
+  { threshold: CENTS_PERFECT, band: SCORE_EXCELLENT },
+  { threshold: CENTS_EXCELLENT, band: SCORE_GOOD },
+  { threshold: CENTS_GOOD, band: SCORE_OKAY },
+  { threshold: Number.MAX_SAFE_INTEGER, band: 0 },
 ]
 
 export interface PracticeEngineCallbacks {
@@ -484,13 +493,11 @@ export function centsToRating(
   avgCents: number | null,
   _bands?: { threshold: number; band: number }[],
 ): AccuracyRating {
-  // Use fixed thresholds matching the old app (not configurable) for rating labels
-  // Bands are used only for the numeric score calculation
   if (avgCents === null) return 'off'
-  if (avgCents <= 5) return 'perfect'
-  if (avgCents <= 15) return 'excellent'
-  if (avgCents <= 25) return 'good'
-  if (avgCents <= 50) return 'okay'
+  if (avgCents <= CENTS_PERFECT / 2) return 'perfect'
+  if (avgCents <= CENTS_PERFECT * 1.5) return 'excellent'
+  if (avgCents <= CENTS_EXCELLENT) return 'good'
+  if (avgCents <= CENTS_GOOD) return 'okay'
   return 'off'
 }
 
@@ -509,13 +516,13 @@ export function centsToBand(
 export function ratingToScore(rating: AccuracyRating): number {
   switch (rating) {
     case 'perfect':
-      return 100
+      return SCORE_PERFECT
     case 'excellent':
-      return 90
+      return SCORE_EXCELLENT
     case 'good':
-      return 75
+      return SCORE_GOOD
     case 'okay':
-      return 50
+      return SCORE_OKAY
     case 'off':
       return 0
   }

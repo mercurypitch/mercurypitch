@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconFire, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
@@ -307,11 +308,11 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
   // so the practice-intel area is never empty. A function so each use gets its
   // own element (the two fallbacks are mutually exclusive, but never share a node).
   const gettingStarted = () => (
-    <div class="weakness-panel">
-      <div class="weakness-panel-title-row">
-        <h3 class="weakness-panel-title">Get started</h3>
+    <div class={piStyles.weaknessPanel}>
+      <div class={piStyles.weaknessPanelTitleRow}>
+        <h3 class={piStyles.weaknessPanelTitle}>Get started</h3>
       </div>
-      <p class="weakness-panel-subtitle">
+      <p class={piStyles.weaknessPanelSubtitle}>
         Warm up with{' '}
         <button
           class="exercise-start-link"

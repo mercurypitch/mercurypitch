@@ -1,6 +1,7 @@
 import type { Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { IconCheckSolid, IconMusicNote, IconSheetMusic, } from '@/components/hidden-features-icons'
+import modalStyles from '@/components/Modal.module.css'
 import styles from './MelodyLibraryList.module.css'
 
 export type LibraryEntryKind = 'melody' | 'session'
@@ -91,7 +92,7 @@ export const MelodyLibraryList: Component<MelodyLibraryListProps> = (props) => {
 
   return (
     <div
-      class={`${mode() === 'multi' ? styles.melodySelectList : 'library-list'} ${props.className ?? ''}`}
+      class={`${mode() === 'multi' ? styles.melodySelectList : modalStyles.libraryList} ${props.className ?? ''}`}
     >
       <Show
         when={filteredEntries().length > 0}
