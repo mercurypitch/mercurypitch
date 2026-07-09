@@ -136,7 +136,9 @@ export const PitchAlgorithmTester: Component<
                 }) => (
                   <label
                     class={styles.algorithmItem}
-                    classList={{ [styles.selected]: selectedAlgorithms().includes(algo.id) }}
+                    classList={{
+                      [styles.selected]: selectedAlgorithms().includes(algo.id),
+                    }}
                   >
                     <input
                       type="checkbox"
@@ -188,7 +190,11 @@ export const PitchAlgorithmTester: Component<
             >
               {running() ? 'Running...' : 'Run Selected'}
             </button>
-            <button class={styles.runAllBtn} onClick={runAll} disabled={running()}>
+            <button
+              class={styles.runAllBtn}
+              onClick={runAll}
+              disabled={running()}
+            >
               Run All
             </button>
           </div>
@@ -210,16 +216,20 @@ export const PitchAlgorithmTester: Component<
           <Show when={showResults()}>
             <div class={styles.resultsLegend}>
               <span class={styles.legendItem}>
-                <span class={`${styles.legendDot} ${styles.legendGood}`} /> 10 perfect
+                <span class={`${styles.legendDot} ${styles.legendGood}`} /> 10
+                perfect
               </span>
               <span class={styles.legendItem}>
-                <span class={`${styles.legendDot} ${styles.legendOk}`} /> 25 good
+                <span class={`${styles.legendDot} ${styles.legendOk}`} /> 25
+                good
               </span>
               <span class={styles.legendItem}>
-                <span class={`${styles.legendDot} ${styles.legendBad}`} /> 50 okay
+                <span class={`${styles.legendDot} ${styles.legendBad}`} /> 50
+                okay
               </span>
               <span class={styles.legendItem}>
-                <span class={`${styles.legendDot} ${styles.legendMiss}`} /> no det
+                <span class={`${styles.legendDot} ${styles.legendMiss}`} /> no
+                det
               </span>
             </div>
           </Show>
@@ -248,8 +258,12 @@ export const PitchAlgorithmTester: Component<
                   return (
                     <div class={styles.resultCard}>
                       <div class={styles.resultCardLeft}>
-                        <span class={styles.resultAlgoName}>{result.algorithm}</span>
-                        <span class={`${styles.perfBadge} ${perfClass[perf.color]}`}>
+                        <span class={styles.resultAlgoName}>
+                          {result.algorithm}
+                        </span>
+                        <span
+                          class={`${styles.perfBadge} ${perfClass[perf.color]}`}
+                        >
                           {perf.label}
                         </span>
                       </div>
@@ -316,7 +330,9 @@ export const PitchAlgorithmTester: Component<
                                     'grid-template-columns': `80px 100px repeat(${sampleResults.length}, minmax(80px, 1fr))`,
                                   }}
                                 >
-                                  <span class={styles.resultName}>{note.name}</span>
+                                  <span class={styles.resultName}>
+                                    {note.name}
+                                  </span>
                                   <span class={styles.resultFreq}>
                                     {note.frequency.toFixed(0)} Hz
                                   </span>

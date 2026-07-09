@@ -58,7 +58,10 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
   }
 
   return (
-    <div class={styles.sessionGroupTabs} onContextMenu={(e) => e.preventDefault()}>
+    <div
+      class={styles.sessionGroupTabs}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {/* "All" tab */}
       <button
         class={styles.sessionGroupTab}

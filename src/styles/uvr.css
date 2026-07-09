@@ -303,8 +303,6 @@
   color: var(--fg-primary);
 }
 
-
-
 /* Collapsible section header (clickable title + chevron) */
 .uvr-collapse-toggle {
   display: flex;
@@ -352,7 +350,6 @@
   border-color: var(--accent);
 }
 
-
 .uvr-settings {
   flex: 1;
   overflow-y: auto;
@@ -361,7 +358,6 @@
   flex-direction: column;
   gap: 1.5rem;
 }
-
 
 /* Section Header Actions */
 .section-header-actions {
@@ -2491,7 +2487,6 @@
 .device-toggle-btn.active svg {
   color: var(--accent);
 }
-
 
 /* ============================================================
 // Mobile Layout Overrides

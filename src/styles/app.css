@@ -990,7 +990,6 @@ input:checked + .settings-slider:before {
 /* -- Tabs (leaderboard + category) -- */
 
 .leaderboard-tab .icon-svg,
-
 .tab-count {
   font-size: 0.65rem;
   opacity: 0.6;
@@ -2659,8 +2658,6 @@ input[type='range'] {
   color: var(--text-secondary, var(--text-muted));
 }
 
-
-
 /* === Restored missing CSS from restored-legacy.css === */
 
 .view-btn.active {
@@ -2810,4 +2807,3 @@ input[type='range'] {
   border-radius: 12px;
   border: 1px dashed rgba(255, 255, 255, 0.08);
 }
-

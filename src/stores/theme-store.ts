@@ -84,8 +84,7 @@ export const [theme, setThemeInternal] = createPersistedSignal<ThemeMode>(
   THEME_KEY,
   'dark',
   {
-    validator: (v): v is ThemeMode =>
-      THEME_PRESETS.includes(v as ThemeMode),
+    validator: (v): v is ThemeMode => THEME_PRESETS.includes(v as ThemeMode),
   },
 )
 

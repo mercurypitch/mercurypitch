@@ -5,7 +5,7 @@
   gap: 0.4rem;
   margin-top: 0.5rem;
 }
-.stemManage-btn {
+.stemManageBtn {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -16,15 +16,20 @@
   border: 1px solid var(--border, #30363d);
   border-radius: 999px;
   cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
 }
-.stemManage-btn:hover {
+.stemManageBtn:hover {
   border-color: var(--accent, #58a6ff);
   color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-tertiary);
 }
-.stemManage-btn svg {
+.stemManageBtn svg {
   width: 13px;
   height: 13px;
+  flex-shrink: 0;
 }
-.stemManage-btn--busy {
+.stemManageBtnBusy {
   opacity: 0.5;
   pointer-events: none;
+}

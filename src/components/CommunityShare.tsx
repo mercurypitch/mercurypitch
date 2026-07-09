@@ -834,12 +834,16 @@ export const CommunityShare: Component = () => {
             <div class={profileStyles.profileHeader}>
               <div class={profileStyles.profileAvatar}>{IconUser()}</div>
               <div class={profileStyles.profileInfo}>
-                <h2 class={profileStyles.profileName}>{currentProfile()?.displayName}</h2>
+                <h2 class={profileStyles.profileName}>
+                  {currentProfile()?.displayName}
+                </h2>
                 <p class={profileStyles.profileBio}>{currentProfile()?.bio}</p>
                 <div class={profileStyles.profileStatsRow}>
                   <div class={profileStyles.statCard}>
                     <span class={profileStyles.statCardLabel}>Streak</span>
-                    <span class={`${profileStyles.statValue} ${profileStyles.statValueStreak}`}>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueStreak}`}
+                    >
                       {currentProfile()?.streak} <IconStreak />
                     </span>
                   </div>
@@ -851,13 +855,17 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class={profileStyles.statCard}>
                     <span class={profileStyles.statCardLabel}>Best Score</span>
-                    <span class={`${profileStyles.statValue} ${profileStyles.statValueScore}`}>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueScore}`}
+                    >
                       {currentProfile()?.bestScore}%
                     </span>
                   </div>
                   <div class={profileStyles.statCard}>
                     <span class={profileStyles.statCardLabel}>Accuracy</span>
-                    <span class={`${profileStyles.statValue} ${profileStyles.statValueAccuracy}`}>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueAccuracy}`}
+                    >
                       {currentProfile()?.accuracy}%
                     </span>
                   </div>

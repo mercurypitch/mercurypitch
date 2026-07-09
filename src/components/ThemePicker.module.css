@@ -37,7 +37,9 @@
 
 .cardActive {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 16px var(--accent-glow);
 }
 
 .swatch {

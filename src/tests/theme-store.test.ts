@@ -111,7 +111,9 @@ describe('Theme Store', () => {
     it('should set theme to midnight', () => {
       setTheme('midnight')
       expect(appStore.theme()).toBe('midnight')
-      expect(document.documentElement.getAttribute('data-theme')).toBe('midnight')
+      expect(document.documentElement.getAttribute('data-theme')).toBe(
+        'midnight',
+      )
     })
 
     it('should set theme to forest', () => {

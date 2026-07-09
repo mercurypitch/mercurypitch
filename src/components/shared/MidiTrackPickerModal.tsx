@@ -78,7 +78,8 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                   <label
                     class={styles.trackHear}
                     classList={{
-                      [styles.trackHearDisabled]: props.pendingScoreId() === t.id,
+                      [styles.trackHearDisabled]:
+                        props.pendingScoreId() === t.id,
                     }}
                   >
                     <input

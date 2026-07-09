@@ -218,7 +218,10 @@ export const JamPanel: Component = () => {
           </div>
 
           <div class={jamStyles.actions}>
-            <button class={`${jamStyles.btn} ${jamStyles.btnPrimary}`} onClick={handleCreate}>
+            <button
+              class={`${jamStyles.btn} ${jamStyles.btnPrimary}`}
+              onClick={handleCreate}
+            >
               Create Room
             </button>
           </div>
@@ -281,7 +284,9 @@ export const JamPanel: Component = () => {
           >
             <div class={panelStyles.sidebarInner}>
               <div class={jamStyles.status}>
-                <span class={`${jamStyles.statusDot} ${jamStyles.statusDotActive}`} />
+                <span
+                  class={`${jamStyles.statusDot} ${jamStyles.statusDotActive}`}
+                />
                 <span>
                   {jamConnectedPeers().length} peer
                   {jamConnectedPeers().length !== 1 ? 's' : ''} connected

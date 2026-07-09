@@ -43,7 +43,10 @@ export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
             <label class={jamStyles.label}>Room Code</label>
             <div class={styles.codeRow}>
               <code class={styles.code}>{props.roomId}</code>
-              <button class={`${jamStyles.btn} ${jamStyles.btnSm}`} onClick={handleCopyRoomId}>
+              <button
+                class={`${jamStyles.btn} ${jamStyles.btnSm}`}
+                onClick={handleCopyRoomId}
+              >
                 {roomCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>
@@ -53,7 +56,10 @@ export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
             <label class={jamStyles.label}>Share Link</label>
             <div class={styles.codeRow}>
               <code class={`${styles.code} ${styles.link}`}>{roomLink()}</code>
-              <button class={`${jamStyles.btn} ${jamStyles.btnSm}`} onClick={handleCopyLink}>
+              <button
+                class={`${jamStyles.btn} ${jamStyles.btnSm}`}
+                onClick={handleCopyLink}
+              >
                 {linkCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>

@@ -33,7 +33,11 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
 
   return (
     <Show when={props.open}>
-      <div class={styles.overlay} data-testid="confirm-overlay" onClick={() => props.onCancel()}>
+      <div
+        class={styles.overlay}
+        data-testid="confirm-overlay"
+        onClick={() => props.onCancel()}
+      >
         <div
           ref={dialogRef}
           class={styles.dialog}

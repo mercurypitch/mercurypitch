@@ -1020,12 +1020,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="view-tab view-tab-sing"
                   classList={{
                     active: currentView() === 'shazam-listen',
-                 }}
+                  }}
                   onClick={() => {
                     setCurrentView('shazam-listen')
                     props.onViewChange?.('shazam-listen')
                     props.onSessionChange?.(null)
-                 }}
+                  }}
                   data-testid="uvr-tab-sing"
                 >
                   <SingMic />
@@ -1035,12 +1035,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="view-tab"
                   classList={{
                     active: currentView() === 'upload',
-                 }}
+                  }}
                   onClick={() => {
                     setCurrentView('upload')
                     props.onViewChange?.('upload')
                     props.onSessionChange?.(null)
-                 }}
+                  }}
                   data-testid="uvr-tab-upload"
                 >
                   <ImportFile />
@@ -1056,7 +1056,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
                     onClick={() => {
                       if (requireServerAuth()) setUvrProcessingMode('server')
-                   }}
+                    }}
                     data-testid="uvr-mode-server"
                   >
                     Server
@@ -1073,7 +1073,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <div class="uvr-device-toggle">
                       <button
                         class="device-toggle-btn"
-                        classList={{ active: !uvrForceWebGpu()}}
+                        classList={{ active: !uvrForceWebGpu() }}
                         onClick={() => handleForceWebGpuToggle(false)}
                         title="Use CPU (WASM) for vocal separation"
                         data-testid="uvr-device-cpu"
@@ -1083,7 +1083,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       </button>
                       <button
                         class="device-toggle-btn"
-                        classList={{ active: uvrForceWebGpu()}}
+                        classList={{ active: uvrForceWebGpu() }}
                         onClick={() => handleForceWebGpuToggle(true)}
                         title="Use GPU (WebGPU) for vocal separation"
                         data-testid="uvr-device-gpu"
@@ -1132,7 +1132,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="uvr-view-tabs">
                 <button
                   class="view-tab"
-                  classList={{ active: showGuide()}}
+                  classList={{ active: showGuide() }}
                   onClick={() => setShowGuide(!showGuide())}
                 >
                   <Music />
@@ -1140,7 +1140,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </button>
                 <button
                   class="view-tab"
-                  classList={{ active: showSettings()}}
+                  classList={{ active: showSettings() }}
                   onClick={() => setShowSettings(!showSettings())}
                 >
                   <Settings />
@@ -1173,8 +1173,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           )}
 
           {showSettings() && (
-            <div class={guideStyles.guideModal} onClick={() => setShowSettings(false)}>
-              <div class={guideStyles.guideContainer} onClick={(e) => e.stopPropagation()}>
+            <div
+              class={guideStyles.guideModal}
+              onClick={() => setShowSettings(false)}
+            >
+              <div
+                class={guideStyles.guideContainer}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div class={guideStyles.guideHeader}>
                   <h3>Karaoke Settings</h3>
                   <button
@@ -1201,11 +1207,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <UvrUploadControl
                 onFileSelect={(file) => {
                   void handleFileSelect(file)
-               }}
+                }}
                 onFileReady={(file) => setSelectedFile(file)}
                 onProcessStart={(file) => {
                   void handleProcessStart(file)
-               }}
+                }}
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
                 maxSize={
@@ -1257,7 +1263,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <ChevronUp />
                   </Show>
                 </button>
-                <div style={{ display: 'flex', gap: '8px'}}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <Show when={allSessions().length > 0}>
                     <Show
                       when={
@@ -1274,7 +1280,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void exportGroup(gid, (pct: number) =>
                             setExportProgress(pct),
                           ).finally(() => setIsExporting(false))
-                       }}
+                        }}
                         disabled={isExporting()}
                         title="Export this group's sessions to a ZIP file"
                       >
@@ -1293,13 +1299,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   <label
                     class="section-action-btn icon-only"
                     title="Import sessions from a ZIP file"
-                    style={{ cursor: isImporting() ? 'default' : 'pointer'}}
+                    style={{ cursor: isImporting() ? 'default' : 'pointer' }}
                   >
                     <ImportFile />
                     <input
                       type="file"
                       accept=".zip"
-                      style={{ display: 'none'}}
+                      style={{ display: 'none' }}
                       onChange={(e) => void handleImportZip(e)}
                       disabled={isImporting()}
                     />
@@ -1330,21 +1336,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </Show>
 
               <Show when={sessionGalleryOpen() && allSessions().length > 0}>
-                <div class={ guideStyles.uvrSessionSearch }>
+                <div class={guideStyles.uvrSessionSearch}>
                   <Search />
                   <input
-                    class={ guideStyles.uvrSessionSearchInput }
+                    class={guideStyles.uvrSessionSearchInput}
                     type="text"
                     placeholder="Search songs by name…"
                     value={sessionSearch()}
                     onInput={(e) => setSessionSearch(e.currentTarget.value)}
                   />
                   <Show when={sessionSearch().trim() !== ''}>
-                    <span class={ guideStyles.uvrSessionSearchCount }>
+                    <span class={guideStyles.uvrSessionSearchCount}>
                       {filteredSessions().length} found
                     </span>
                     <button
-                      class={ guideStyles.uvrSessionSearchClear }
+                      class={guideStyles.uvrSessionSearchClear}
                       title="Clear search"
                       onClick={() => setSessionSearch('')}
                     >
@@ -1378,7 +1384,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         )}
                         onView={() => {
                           void handleSessionView(s.sessionId)
-                       }}
+                        }}
                         onExport={(sessionId) => {
                           if (isExporting()) return
                           setIsExporting(true)
@@ -1386,23 +1392,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void exportSession(sessionId, (pct) =>
                             setExportProgress(pct),
                           ).finally(() => setIsExporting(false))
-                       }}
+                        }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
-                       }}
+                        }}
                         onRetry={(sessionId) => {
                           retryUvrSession(sessionId)
                           void handleProcessStart(
                             sessionId,
                             getUvrSession(sessionId)?.processingMode,
                           )
-                       }}
+                        }}
                         onReindexStem={(sessionId) => {
                           const session = getUvrSession(sessionId)
                           const fileName =
                             session?.originalFile?.name ?? 'Unknown'
                           void indexStemFingerprint(sessionId, fileName)
-                       }}
+                        }}
                       />
                     )}
                   </For>
@@ -1446,23 +1452,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       )
                       cancelUvrSession(s.sessionId)
                       setCurrentView('upload')
-                   }}
+                    }}
                     onRetry={() => {
                       const s = sess()
                       retryUvrSession(s.sessionId)
                       void handleProcessStart(s.sessionId, s.processingMode)
-                   }}
+                    }}
                     onNewSession={() => setCurrentView('upload')}
                     onViewResults={() => {
                       setCurrentView('results')
                       props.onViewChange?.('results')
-                   }}
+                    }}
                     onDeleteAndNew={() => {
                       const s = sess()
                       deleteUvrSession(s.sessionId)
                       void deleteUvrSessionFromDb(s.sessionId)
                       setCurrentView('upload')
-                   }}
+                    }}
                   />
                 )}
               </Show>
@@ -1477,7 +1483,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     'border-radius': '8px',
                     'font-size': '13px',
                     color: 'var(--color-text-muted, #94a3b8)',
-                 }}
+                  }}
                 >
                   <span
                     style={{
@@ -1488,7 +1494,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       'border-radius': '50%',
                       animation: 'spin 0.8s linear infinite',
                       display: 'inline-block',
-                   }}
+                    }}
                   />
                   Indexing vocal stem for Shazam matching...
                 </div>
@@ -1504,7 +1510,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     display: 'flex',
                     'align-items': 'center',
                     'flex-wrap': 'wrap',
-                 }}
+                  }}
                 >
                   <span
                     class="process-filename-pill"
@@ -1531,13 +1537,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     originalFileName={sess().originalFile?.name}
                     onStartPractice={(mode) => {
                       void handlePracticeStart(mode)
-                   }}
+                    }}
                     onStartMix={(stems) => {
                       void handleMixStart(stems)
-                   }}
+                    }}
                     onExport={(type) => {
                       void handleExport(type)
-                   }}
+                    }}
                   />
                 )}
               </Show>
@@ -1573,7 +1579,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     setMixerAutoPlay(false)
                     setMixerInitialSeekSec(undefined)
                     setCurrentView(prevView())
-                 }}
+                  }}
                 />
               </Show>
             </div>
@@ -1606,7 +1612,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   }
                   setMatchCandidates(candidates)
                   setCurrentView('shazam-results')
-               }}
+                }}
                 onAutoJump={(candidate) => {
                   if (
                     candidate.source === 'stem' &&
@@ -1621,7 +1627,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   } else {
                     props.onSelectMelody?.(candidate.melodyId)
                   }
-               }}
+                }}
                 onCancel={() => setCurrentView('upload')}
                 onSwitchToUpload={() => setCurrentView('upload')}
               />
@@ -1637,17 +1643,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 hummingNormalized={hummingNormalized()}
                 onOpenMelody={(melodyId) => {
                   props.onSelectMelody?.(melodyId)
-               }}
+                }}
                 onOpenStemMixer={(sessionId, matchOffsetSec) => {
                   setMixerInitialSeekSec(matchOffsetSec)
                   setMixerAutoPlay(matchOffsetSec !== undefined)
                   void handleOpenMixerFromHistory(sessionId, { vocal: true })
                   props.onOpenStemMixer?.(sessionId)
-               }}
+                }}
                 onTryAgain={() => {
                   setMatchCandidates([])
                   setCurrentView('shazam-listen')
-               }}
+                }}
               />
             </Suspense>
           </Show>
@@ -1660,7 +1666,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             onClick={() => {
               setShowImportGroupSelect(false)
               setImportFile(null)
-           }}
+            }}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
               <h4>Import to Group</h4>
@@ -1677,7 +1683,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   classList={{
                     [sgStyles.sessionGroupAssignItemActive]:
                       importTargetGroupId() === null,
-                 }}
+                  }}
                   onClick={() => setImportTargetGroupId(null)}
                 >
                   No group
@@ -1689,7 +1695,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       classList={{
                         [sgStyles.sessionGroupAssignItemActive]:
                           importTargetGroupId() === group.id,
-                     }}
+                      }}
                       onClick={() => setImportTargetGroupId(group.id)}
                     >
                       {group.name}
@@ -1709,7 +1715,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   onInput={(e) => setNewImportGroupName(e.currentTarget.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void handleCreateImportGroup()
-                 }}
+                  }}
                 />
                 <button
                   class={sgStyles.sessionGroupAssignNewBtn}
@@ -1725,7 +1731,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   onClick={() => {
                     setShowImportGroupSelect(false)
                     setImportFile(null)
-                 }}
+                  }}
                 >
                   Cancel
                 </button>

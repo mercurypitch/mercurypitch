@@ -94,7 +94,9 @@ describe('ConfirmDialog', () => {
     const { container } = render(() => (
       <ConfirmDialog {...baseProps} open={true} confirmLabel="Remove" />
     ))
-    const confirmBtn = container.querySelector('[data-testid="confirm-delete"]')!
+    const confirmBtn = container.querySelector(
+      '[data-testid="confirm-delete"]',
+    )!
     expect(confirmBtn.textContent).toContain('Remove')
     expect(confirmBtn.textContent).not.toContain('Delete')
   })

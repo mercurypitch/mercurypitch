@@ -41,7 +41,9 @@ export const JamPeerList: Component<JamPeerListProps> = (props) => {
         <h3 class={styles.peerHeading}>Peers ({props.peers.length})</h3>
         <For each={props.peers}>
           {(peer) => (
-            <div class={`${styles.peerItem} ${peerItemStates[peer.connectionState]}`}>
+            <div
+              class={`${styles.peerItem} ${peerItemStates[peer.connectionState]}`}
+            >
               <div class={styles.peerInfo}>
                 <span
                   class={`${styles.peerDot} ${peerDotStates[peer.connectionState]}`}

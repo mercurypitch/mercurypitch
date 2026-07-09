@@ -608,7 +608,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             <div class={srStyles.stemManage}>
               <label
                 class={srStyles.stemManageBtn}
-                classList={{ [srStyles.stemManageBtnBusy]: stemBusy() === 'vocal' }}
+                classList={{
+                  [srStyles.stemManageBtnBusy]: stemBusy() === 'vocal',
+                }}
                 title={hasVocal() ? 'Replace vocal stem' : 'Add a vocal stem'}
               >
                 <Voice />

@@ -290,11 +290,17 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                         <span class={styles.itemMeta}>
                           {melodyData!.items.length} notes
                         </span>
-                        <span class={styles.itemMeta}>{melodyData!.bpm} BPM</span>
+                        <span class={styles.itemMeta}>
+                          {melodyData!.bpm} BPM
+                        </span>
                       </Show>
 
                       <Show when={isMelody && melodyData === undefined}>
-                        <span class={`${styles.itemMeta} ${styles.itemMetaMissing}`}>Missing melody</span>
+                        <span
+                          class={`${styles.itemMeta} ${styles.itemMetaMissing}`}
+                        >
+                          Missing melody
+                        </span>
                       </Show>
 
                       <Show
