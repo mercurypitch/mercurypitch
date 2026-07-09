@@ -2,6 +2,37 @@
   "$comment": "Definition seed data shared by the local Dexie seeder (src/db/seed.ts) and the remote D1 seeding script (scripts/seed-remote-db.mjs). Definitions only — no per-user mock data. Challenge completion is real: one drill run scoring >= targetScore completes the challenge, so descriptions describe the drill that is actually scored. rewardBadgeId references a badge by NAME (ids are generated at seed time).",
   "challengeDefinitions": [
     {
+      "category": "basics",
+      "title": "Hold Your Note",
+      "description": "Pick a comfortable note and hold it steady — your first win is one breath away",
+      "difficulty": "beginner",
+      "icon": "leaf",
+      "targetScore": 40,
+      "rewardBadgeId": "First Victory",
+      "isActive": true,
+      "sortOrder": 1
+    },
+    {
+      "category": "basics",
+      "title": "Steady Voice",
+      "description": "Keep the held note centered — smooth and even from start to finish",
+      "difficulty": "beginner",
+      "icon": "music",
+      "targetScore": 55,
+      "isActive": true,
+      "sortOrder": 2
+    },
+    {
+      "category": "basics",
+      "title": "Rock Solid",
+      "description": "A long, confident hold with barely any drift",
+      "difficulty": "intermediate",
+      "icon": "diamond",
+      "targetScore": 70,
+      "isActive": true,
+      "sortOrder": 3
+    },
+    {
       "category": "high-notes",
       "title": "High Note Hero",
       "description": "Glide up the siren to C5 territory and land the top notes cleanly",
@@ -10,7 +41,7 @@
       "targetScore": 75,
       "rewardBadgeId": "High & Mighty",
       "isActive": true,
-      "sortOrder": 1
+      "sortOrder": 4
     },
     {
       "category": "high-notes",
@@ -20,7 +51,7 @@
       "icon": "fire",
       "targetScore": 85,
       "isActive": true,
-      "sortOrder": 2
+      "sortOrder": 5
     },
     {
       "category": "high-notes",
@@ -30,7 +61,7 @@
       "icon": "rocket",
       "targetScore": 90,
       "isActive": true,
-      "sortOrder": 3
+      "sortOrder": 6
     },
     {
       "category": "low-notes",
@@ -41,7 +72,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Bass Foundation",
       "isActive": true,
-      "sortOrder": 4
+      "sortOrder": 7
     },
     {
       "category": "low-notes",
@@ -51,7 +82,7 @@
       "icon": "volume",
       "targetScore": 85,
       "isActive": true,
-      "sortOrder": 5
+      "sortOrder": 8
     },
     {
       "category": "speed",
@@ -59,10 +90,10 @@
       "description": "Attack the staccato run cleanly — crisp starts, no scooping",
       "difficulty": "beginner",
       "icon": "bolt",
-      "targetScore": 60,
+      "targetScore": 55,
       "rewardBadgeId": "Speed Demon",
       "isActive": true,
-      "sortOrder": 6
+      "sortOrder": 9
     },
     {
       "category": "speed",
@@ -72,7 +103,7 @@
       "icon": "stopwatch",
       "targetScore": 80,
       "isActive": true,
-      "sortOrder": 7
+      "sortOrder": 10
     },
     {
       "category": "speed",
@@ -82,7 +113,7 @@
       "icon": "eagle",
       "targetScore": 90,
       "isActive": true,
-      "sortOrder": 8
+      "sortOrder": 11
     },
     {
       "category": "perfect",
@@ -93,7 +124,7 @@
       "targetScore": 80,
       "rewardBadgeId": "Perfect Start",
       "isActive": true,
-      "sortOrder": 9
+      "sortOrder": 12
     },
     {
       "category": "perfect",
@@ -103,7 +134,7 @@
       "icon": "diamond",
       "targetScore": 92,
       "isActive": true,
-      "sortOrder": 10
+      "sortOrder": 13
     },
     {
       "category": "scales",
@@ -114,7 +145,7 @@
       "targetScore": 70,
       "rewardBadgeId": "Scale Scholar",
       "isActive": true,
-      "sortOrder": 11
+      "sortOrder": 14
     },
     {
       "category": "scales",
@@ -124,7 +155,7 @@
       "icon": "moon",
       "targetScore": 80,
       "isActive": true,
-      "sortOrder": 12
+      "sortOrder": 15
     },
     {
       "category": "intervals",
@@ -135,7 +166,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Interval Ace",
       "isActive": true,
-      "sortOrder": 13
+      "sortOrder": 16
     },
     {
       "category": "intervals",
@@ -145,7 +176,7 @@
       "icon": "eagle",
       "targetScore": 88,
       "isActive": true,
-      "sortOrder": 14
+      "sortOrder": 17
     },
     {
       "category": "harmony",
@@ -156,7 +187,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Harmony Builder",
       "isActive": true,
-      "sortOrder": 15
+      "sortOrder": 18
     },
     {
       "category": "harmony",
@@ -166,7 +197,7 @@
       "icon": "diamond",
       "targetScore": 85,
       "isActive": true,
-      "sortOrder": 16
+      "sortOrder": 19
     },
     {
       "category": "agility",
@@ -177,7 +208,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Agile Voice",
       "isActive": true,
-      "sortOrder": 17
+      "sortOrder": 20
     },
     {
       "category": "agility",
@@ -187,7 +218,7 @@
       "icon": "star",
       "targetScore": 88,
       "isActive": true,
-      "sortOrder": 18
+      "sortOrder": 21
     },
     {
       "category": "range",
@@ -198,7 +229,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Full Spectrum",
       "isActive": true,
-      "sortOrder": 19
+      "sortOrder": 22
     },
     {
       "category": "dynamic",
@@ -209,7 +240,7 @@
       "targetScore": 75,
       "rewardBadgeId": "Dynamic Control",
       "isActive": true,
-      "sortOrder": 20
+      "sortOrder": 23
     },
     {
       "category": "call-response",
@@ -220,10 +251,19 @@
       "targetScore": 80,
       "rewardBadgeId": "Echo Artist",
       "isActive": true,
-      "sortOrder": 21
+      "sortOrder": 24
     }
   ],
   "badgeDefinitions": [
+    {
+      "name": "First Victory",
+      "description": "Complete a basics challenge",
+      "icon": "rocket",
+      "tier": "bronze",
+      "category": "basics",
+      "unlockCondition": "Complete any basics challenge",
+      "sortOrder": 1
+    },
     {
       "name": "First Steps",
       "description": "Complete your first challenge",
@@ -231,7 +271,7 @@
       "tier": "bronze",
       "category": "challenges",
       "unlockCondition": "Complete 1 challenge",
-      "sortOrder": 1
+      "sortOrder": 2
     },
     {
       "name": "On Fire",
@@ -240,7 +280,7 @@
       "tier": "bronze",
       "category": "streak",
       "unlockCondition": "Maintain a 7-day practice streak",
-      "sortOrder": 2
+      "sortOrder": 3
     },
     {
       "name": "High & Mighty",
@@ -249,7 +289,7 @@
       "tier": "silver",
       "category": "high-notes",
       "unlockCondition": "Complete any high note challenge",
-      "sortOrder": 3
+      "sortOrder": 4
     },
     {
       "name": "Speed Demon",
@@ -258,7 +298,7 @@
       "tier": "silver",
       "category": "speed",
       "unlockCondition": "Complete any speed challenge",
-      "sortOrder": 4
+      "sortOrder": 5
     },
     {
       "name": "Perfect Start",
@@ -267,7 +307,7 @@
       "tier": "silver",
       "category": "perfect",
       "unlockCondition": "Complete any perfect pitch challenge",
-      "sortOrder": 5
+      "sortOrder": 6
     },
     {
       "name": "Scale Scholar",
@@ -276,7 +316,7 @@
       "tier": "bronze",
       "category": "scales",
       "unlockCondition": "Complete any scale challenge",
-      "sortOrder": 6
+      "sortOrder": 7
     },
     {
       "name": "Bass Foundation",
@@ -285,7 +325,7 @@
       "tier": "bronze",
       "category": "low-notes",
       "unlockCondition": "Complete any low note challenge",
-      "sortOrder": 7
+      "sortOrder": 8
     },
     {
       "name": "Interval Ace",
@@ -294,7 +334,7 @@
       "tier": "silver",
       "category": "intervals",
       "unlockCondition": "Complete any interval challenge",
-      "sortOrder": 8
+      "sortOrder": 9
     },
     {
       "name": "Harmony Builder",
@@ -303,7 +343,7 @@
       "tier": "silver",
       "category": "harmony",
       "unlockCondition": "Complete any harmony challenge",
-      "sortOrder": 9
+      "sortOrder": 10
     },
     {
       "name": "Agile Voice",
@@ -312,7 +352,7 @@
       "tier": "silver",
       "category": "agility",
       "unlockCondition": "Complete any agility challenge",
-      "sortOrder": 10
+      "sortOrder": 11
     },
     {
       "name": "Full Spectrum",
@@ -321,7 +361,7 @@
       "tier": "gold",
       "category": "range",
       "unlockCondition": "Complete any range challenge",
-      "sortOrder": 11
+      "sortOrder": 12
     },
     {
       "name": "Dynamic Control",
@@ -330,7 +370,7 @@
       "tier": "silver",
       "category": "dynamic",
       "unlockCondition": "Complete any dynamics challenge",
-      "sortOrder": 12
+      "sortOrder": 13
     },
     {
       "name": "Echo Artist",
@@ -339,7 +379,7 @@
       "tier": "silver",
       "category": "call-response",
       "unlockCondition": "Complete any call & response challenge",
-      "sortOrder": 13
+      "sortOrder": 14
     },
     {
       "name": "Streak Master",
@@ -348,7 +388,7 @@
       "tier": "gold",
       "category": "streak",
       "unlockCondition": "Reach a 14-day practice streak",
-      "sortOrder": 14
+      "sortOrder": 15
     },
     {
       "name": "All Star",
@@ -357,7 +397,7 @@
       "tier": "gold",
       "category": "meta",
       "unlockCondition": "Complete all bronze-tier badges",
-      "sortOrder": 15
+      "sortOrder": 16
     }
   ],
   "achievementDefinitions": [

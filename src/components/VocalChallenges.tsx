@@ -12,7 +12,7 @@ import { authVersion } from '@/db/services/user-service'
 import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/challenges/challenge-attempt'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { launchDrill } from '@/stores/ui-store'
-import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
+import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconLeaf, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
@@ -52,6 +52,8 @@ export interface ChallengeProgress {
   completedDate?: number
   /** Badge (id or name) granted on completion */
   rewardBadgeId?: string
+  /** Difficulty — beginner challenges get a gentler drill note set */
+  difficulty: string
 }
 
 export interface UserBadge {
@@ -107,7 +109,11 @@ const [selectedChallenge, setSelectedChallenge] =
  * target is met — there is no manual "update progress" step.
  */
 function startChallengeDrill(challenge: ChallengeProgress): void {
-  const drill = generateChallengeDrill(challenge.type, challenge.name)
+  const drill = generateChallengeDrill(
+    challenge.type,
+    challenge.name,
+    challenge.difficulty,
+  )
   beginChallengeAttempt({
     challengeId: challenge.id,
     title: challenge.name,
@@ -125,7 +131,7 @@ function startChallengeDrill(challenge: ChallengeProgress): void {
 
 export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] =
-    createSignal<ChallengeType>('high-notes')
+    createSignal<ChallengeType>('basics')
 
   // Open the challenge detail modal (stats + drill launch).
   function handleStartChallenge(challenge: ChallengeProgress) {
@@ -216,6 +222,7 @@ export const VocalChallenges: Component = () => {
               ? new Date(dbProg.completedAt).getTime()
               : undefined,
           rewardBadgeId: d.rewardBadgeId,
+          difficulty: d.difficulty,
         }
       })
   }
@@ -386,7 +393,11 @@ export const VocalChallenges: Component = () => {
                 class="challenge-practice-btn"
                 onClick={() => startChallengeDrill(challenge)}
                 title={
-                  generateChallengeDrill(challenge.type, challenge.name).tip
+                  generateChallengeDrill(
+                    challenge.type,
+                    challenge.name,
+                    challenge.difficulty,
+                  ).tip
                 }
               >
                 Practice
@@ -494,7 +505,11 @@ interface ChallengeModalProps {
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   const drillTip = () =>
-    generateChallengeDrill(props.challenge.type, props.challenge.name).tip
+    generateChallengeDrill(
+      props.challenge.type,
+      props.challenge.name,
+      props.challenge.difficulty,
+    ).tip
 
   return (
     <div class="challenge-modal">
@@ -606,6 +621,7 @@ const CHALLENGE_CATEGORIES: ReadonlyArray<{
   name: string
   icon: Component
 }> = [
+  { id: 'basics', name: 'Basics', icon: IconLeaf },
   { id: 'high-notes', name: 'High Notes', icon: IconMicChallenge },
   { id: 'low-notes', name: 'Low Notes', icon: IconGuitarChallenge },
   { id: 'speed', name: 'Speed', icon: IconBoltChallenge },
