@@ -1559,6 +1559,37 @@ input:checked + .settings-slider:before {
 /* These use global class names (not CSS modules) because LibraryTab.tsx
    builds class strings dynamically and pill-disabled state is shared
    across components. */
+.session-item-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  line-height: 1.2;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  user-select: none;
+}
+.session-item-pill.clickable {
+  cursor: pointer;
+}
+.session-item-pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.15);
+}
+.session-item-pill.melody-pill {
+  cursor: pointer;
+}
 
 @media (hover: hover) {
   .session-item-pill.melody-pill:hover {
@@ -1570,7 +1601,26 @@ input:checked + .settings-slider:before {
   }
 }
 
+.session-item-pill.melody-pill:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.session-item-pill.selected {
+  background: rgba(126, 231, 135, 0.1);
+  border-color: var(--green);
+  color: var(--green);
+}
 /* Disabled state — active during playback */
+.session-item-pill.pill-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto;
+  filter: grayscale(0.4);
+}
+.session-item-pill.pill-disabled:hover {
+  background: inherit;
+  transform: none;
+}
 
 /* ===== Global State Utilities ===== */
 .active {
