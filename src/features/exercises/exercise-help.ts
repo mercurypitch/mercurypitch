@@ -97,6 +97,7 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     body: [
       'An "arpeggio" is a chord sung one note at a time, usually with bigger jumps than a scale (for example 1-3-5-8).',
       'Aim for each target directly instead of sliding up to it. Hearing the note in your head before you sing helps you land it.',
+      'Two ways to play: "Note by note" plays one note at a time for you to copy, while "Echo the phrase" plays the whole arpeggio first and you sing it back from memory — a harder mode that trains your inner ear, one steady note per beat.',
       'You are scored on how accurately you hit each note of the arpeggio.',
     ],
   },

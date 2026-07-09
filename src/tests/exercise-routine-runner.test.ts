@@ -82,9 +82,7 @@ describe('useRoutineRunnerController', () => {
     const base = createMockBase({
       _updateMetrics: (m) => metricsCalls.push(m),
       _setTargetPitch: (v) => {
-        const val = typeof v === 'function' ? v(null) : v
-        targetCalls.push(val)
-        return val
+        targetCalls.push(v)
       },
     })
     const audioEngine = { playTone: async () => {} }

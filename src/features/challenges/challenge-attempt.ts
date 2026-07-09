@@ -19,8 +19,10 @@ import { getUserId } from '@/db/seed'
 import { checkAndGrantBadges, grantBadgeByRef, } from '@/db/services/badge-grant-engine'
 import { loadChallengeProgress, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { saveSessionRecord } from '@/db/services/session-service'
+import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { showNotification } from '@/stores/notifications-store'
+import { saveChallengeTrace } from './challenge-trace'
 
 export interface ChallengeAttemptTarget {
   challengeId: string
@@ -111,6 +113,19 @@ export async function recordChallengeAttempt(entry: {
   }
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
+
+  // Keep the best take's pitch contour for this challenge (pitch-race share
+  // video / duet-with-past-self). The base exercise published the trace just
+  // before the result fired; a fresh matching-type trace is this run's.
+  const trace = lastRunTrace()
+  if (
+    trace !== null &&
+    trace.type === attempt.exercise &&
+    Date.now() - trace.completedAt < 10_000
+  ) {
+    saveChallengeTrace(attempt.challengeId, score, trace)
+  }
+
   try {
     const allProgress = await loadChallengeProgress()
     const prev =
