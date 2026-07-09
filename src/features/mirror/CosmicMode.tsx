@@ -20,6 +20,7 @@ import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, 
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
+import { IconCopy, IconShare } from './icons'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import { playReferenceTone } from './tone-player'
 
@@ -296,14 +297,17 @@ export const CosmicMode: Component<CosmicModeProps> = (props) => {
         <p class="mirror-dim">{melody()?.source}</p>
         <div class="mirror-actions">
           <button class="mirror-cta" onClick={() => void onShare()}>
+            <IconShare size={20} />
             Share it
           </button>
           <Show when={supportsImageClipboard()}>
             <button
               class="mirror-cta mirror-cta-secondary"
               onClick={() => void onCopy()}
+              title="Copy the card image to the clipboard"
             >
-              Copy image
+              <IconCopy />
+              Copy
             </button>
           </Show>
           <button

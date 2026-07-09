@@ -110,7 +110,10 @@ body {
 }
 
 .mirror-cta {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   appearance: none;
   border: 0;
   border-radius: 999px;
@@ -124,6 +127,11 @@ body {
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.15s ease;
+}
+
+.mirror-icon {
+  flex: none;
+  vertical-align: -3px;
 }
 
 .mirror-cta:hover {
@@ -227,8 +235,9 @@ body {
   padding-top: 24px;
 }
 
-/* Results layout: card centered, detail "notes" flanking it (desktop) or
-   stacked beneath it (mobile). */
+/* Results layout: card + reveal controls in the hero column, the detail
+   "notes" stacked in a slim side rail (desktop) or beneath (mobile) — the
+   card keeps its size instead of being squeezed between two flanks. */
 .mirror-results-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -245,23 +254,31 @@ body {
   align-items: center;
   gap: 14px;
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
 }
 
 @media (min-width: 900px) {
   .mirror-results-grid {
-    grid-template-columns: 1fr minmax(300px, 400px) 1fr;
-    gap: 26px;
-    align-items: center;
+    grid-template-columns: minmax(360px, 500px) minmax(270px, 330px);
+    justify-content: center;
+    align-items: start;
+    gap: 16px 32px;
   }
   .mirror-card-col {
     order: 0;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    max-width: 500px;
   }
   .mirror-notecard-left {
-    justify-self: end;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
   }
   .mirror-notecard-right {
-    justify-self: start;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
   }
 }
 
@@ -274,6 +291,20 @@ body {
   background: rgba(20, 16, 51, 0.42);
   backdrop-filter: blur(4px);
   text-align: left;
+}
+
+/* Compact side-rail notes on desktop — the card carries the visual weight. */
+@media (min-width: 900px) {
+  .mirror-notecard {
+    max-width: none;
+    padding: 13px 16px 14px;
+  }
+  .mirror-notecard-score {
+    font-size: 1.8rem;
+  }
+  .mirror-notecard p {
+    font-size: 0.85rem;
+  }
 }
 
 .mirror-notecard-head {
@@ -328,7 +359,7 @@ body {
 .mirror-reveal {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  /* Sized by .mirror-card-col (460 mobile / 500 desktop). */
   margin: 0 auto;
   perspective: 1300px;
 }
@@ -415,6 +446,34 @@ body {
   padding: 6% 6% 7%;
   border: 1px solid rgba(143, 163, 255, 0.16);
 }
+/* Raster twins go full-bleed on the back face — same integration as the
+   lenticular, only the animation differs. The caption overlays a scrim. */
+.mirror-card-back.has-image {
+  padding: 0;
+  justify-content: flex-end;
+}
+.mirror-back-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Bias the 4:5 → 1:1 crop upward: faces live in the upper half. */
+  object-position: center 18%;
+}
+.mirror-back-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 7, 20, 0.14) 0%,
+    transparent 26%,
+    transparent 52%,
+    rgba(9, 7, 20, 0.62) 78%,
+    rgba(9, 7, 20, 0.92) 100%
+  );
+  pointer-events: none;
+}
 
 .mirror-legend-portrait {
   width: 62%;
@@ -424,12 +483,21 @@ body {
   text-align: center;
   margin-top: 2%;
 }
+.mirror-card-back.has-image .mirror-legend-caption {
+  position: relative; /* above the scrim */
+  margin: 0 0 5%;
+  text-shadow: 0 1px 10px rgba(9, 7, 20, 0.9);
+}
 .mirror-legend-kicker {
   display: block;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.68rem;
   color: var(--mirror-accent);
+}
+.mirror-legend-kicker .mirror-icon {
+  vertical-align: -1px;
+  margin-right: 3px;
 }
 .mirror-legend-name {
   display: block;
@@ -475,16 +543,16 @@ body {
   -webkit-mask-image: linear-gradient(
     180deg,
     rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 48%,
-    rgba(0, 0, 0, 0.55) 66%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 1) 54%,
+    rgba(0, 0, 0, 0.68) 72%,
+    rgba(0, 0, 0, 0.45) 100%
   );
   mask-image: linear-gradient(
     180deg,
     rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 48%,
-    rgba(0, 0, 0, 0.55) 66%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 1) 54%,
+    rgba(0, 0, 0, 0.68) 72%,
+    rgba(0, 0, 0, 0.45) 100%
   );
 }
 .mirror-lenticular-img {
@@ -493,6 +561,8 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Bias the 4:5 → 1:1 crop upward so the face stays in view. */
+  object-position: center 22%;
   /* Follows the parallax transform from RevealCard; ease the settle. */
   transition: transform 0.18s ease-out;
 }
@@ -782,8 +852,9 @@ body {
 
 .mirror-cta-sm {
   margin-top: 0;
-  padding: 10px 22px;
-  font-size: 0.95rem;
+  padding: 9px 18px;
+  font-size: 0.92rem;
+  gap: 8px;
 }
 
 .mirror-textbtn {
