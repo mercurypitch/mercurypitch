@@ -3,6 +3,21 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.2] - 2026-07-10
+
+### Added
+
+- **Nine colour themes and a visual theme picker.** Open Settings and choose from Dark, Light, Midnight, Forest, Ocean, Cyberpunk, Rose, Amber and Slate — each shown with a live preview swatch, and your pick is remembered.
+- **A consistent design system.** Buttons, dropdowns and segmented toggles across the app now share one set of styles, so spacing, colours, focus rings and hover states line up everywhere.
+
+### Changed
+
+- **App-wide styling cleanup.** Component styles were reorganised into per-component modules for a more consistent, maintainable look — no change to day-to-day use.
+
+### Fixed
+
+- **Status and hover colours now resolve in every theme.** Hover backgrounds and success/warning/error accents that previously showed as blank now render correctly across all nine themes.
+
 ## [0.7.1] - 2026-07-10
 
 ### Added
