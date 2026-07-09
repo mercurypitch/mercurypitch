@@ -332,3 +332,10 @@ Amy+Celine NSFW retries 3.00 · Kurt+Bowie 3.00 · Celine face-ribbon retry
   as the page-level guarantee.
 - Dev-domain builds use `--mode development`, so `/mirror#<legend>` demo
   fast lanes DO work on dev.mercurypitch.com (prod builds tree-shake them).
+- **Saved takes (prod feature):** every finished guided run persists to
+  `mirror.attempts.v1` (max 12, numbering keeps counting) and the URL becomes
+  `/mirror#take-N` — returnable after navigating away, reveal reset on
+  restore (`src/lib/mirror/attempts.ts` + tests). One fragment router handles
+  cosmic + takes + dev demos on load AND hashchange (hash edits react live
+  now). After the first reveal the on-screen front card keeps the twin's
+  circular medallion (`metTwin`); "Open MercuryPitch" opens a new tab.

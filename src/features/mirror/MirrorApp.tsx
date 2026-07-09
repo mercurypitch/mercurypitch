@@ -11,9 +11,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
+import { attemptByTake, parseTakeHash, saveAttempt, takeHash, } from '@/lib/mirror/attempts'
 import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
 import type { FreeSingResult } from '@/lib/mirror/free-sing'
 import { computeFreeSing } from '@/lib/mirror/free-sing'
@@ -116,6 +117,9 @@ export const MirrorApp: Component = () => {
   const [revealMode, setRevealMode] = createSignal<RevealMode>('flip')
   // Card option: include the pitch glide trace on shared/copied cards.
   const [includeTrace, setIncludeTrace] = createSignal(true)
+  // Sticky "has met their twin" — after the first reveal the front data card
+  // keeps the circular twin medallion (the surprise is already spent).
+  const [metTwin, setMetTwin] = createSignal(false)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -161,17 +165,24 @@ export const MirrorApp: Component = () => {
     return next
   }
 
+  /** One fragment router for load AND hashchange: cosmic mode, saved takes
+   *  (#take-N, a real feature) and — in dev builds — the demo fast lanes, so
+   *  editing the hash or using back/forward reacts without a reload. */
+  function applyHash(): void {
+    setCosmicOpen(isCosmicHash())
+    const take = parseTakeHash(window.location.hash)
+    if (take !== null) {
+      restoreAttempt(take)
+      return
+    }
+    if (import.meta.env.DEV) void maybeStartDemo()
+  }
+
   onMount(() => {
     trackFunnel('mirror_view')
-    if (import.meta.env.DEV) void maybeStartDemo()
-    // Keep cosmic mode in sync when the fragment changes after load (manual
-    // edit, or browser back/forward). Initial deep-link is handled by the
-    // cosmicOpen initializer above.
-    const onHashChange = (): void => {
-      setCosmicOpen(isCosmicHash())
-    }
-    window.addEventListener('hashchange', onHashChange)
-    onCleanup(() => window.removeEventListener('hashchange', onHashChange))
+    applyHash()
+    window.addEventListener('hashchange', applyHash)
+    onCleanup(() => window.removeEventListener('hashchange', applyHash))
   })
   onCleanup(() => {
     cancelled = true
@@ -206,6 +217,15 @@ export const MirrorApp: Component = () => {
     setRevealed(false)
     setRevealMode('flip')
     setIncludeTrace(true)
+    setMetTwin(false)
+    // Drop a #take-N fragment so the landing isn't re-restored on reload.
+    if (parseTakeHash(window.location.hash) !== null) {
+      history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search,
+      )
+    }
   }
 
   /** Open/close cosmic "Sing the Universe" mode, keeping the URL fragment in
@@ -459,17 +479,38 @@ export const MirrorApp: Component = () => {
   }
 
   /** Render the shareable voiceprint canvas and mount it into the results
-   *  host (the on-screen card front). Kept separate so both a real run and
-   *  the dev demo path paint the same way. */
+   *  host (the on-screen card front). Kept separate so real runs, restored
+   *  takes and the dev demo path all paint the same way. Once the twin has
+   *  been met, the front card carries the medallion too. */
   function paintCard(
     result: MirrorResult,
     glides: F0Frame[][],
     line: string,
+    withMedallion = false,
   ): void {
-    cardCanvas = renderCard({ result, glides, deltaLine: line }, 'square')
+    cardCanvas = renderCard(
+      {
+        result,
+        glides,
+        deltaLine: line,
+        legend: withMedallion ? singerForRange(result.range) : null,
+        legendImage: withMedallion ? legendImage() : null,
+      },
+      'square',
+    )
     cardCanvas.className = 'mirror-voiceprint-canvas'
     voiceprintHost?.replaceChildren(cardCanvas)
   }
+
+  // Once the singer has met their twin (first reveal), the on-screen data
+  // card keeps the circular medallion — repaint when the portrait lands.
+  createEffect(() => {
+    if (!metTwin()) return
+    if (legendImage() === null) return
+    const state = session()
+    if (state.phase !== 'results' || state.result === null) return
+    paintCard(state.result, state.glides, deltaLine() ?? '', true)
+  })
 
   function finishRun(state: MirrorSessionState): void {
     teardownAudio()
@@ -503,6 +544,39 @@ export const MirrorApp: Component = () => {
     preloadLegendPortrait(result)
     paintCard(result, state.glides, line)
     trackFunnel('card_generated')
+
+    // Persist the run as take N and make the URL returnable: /mirror#take-N
+    // restores this exact results page after navigating away.
+    const attempt = saveAttempt(localStorage, {
+      result,
+      glides: state.glides,
+      deltaLine: line,
+    })
+    if (attempt !== null) {
+      history.replaceState(null, '', `#${takeHash(attempt.n)}`)
+    }
+  }
+
+  /** Restore a saved take (deep link / back-forward): the results page as it
+   *  was when that run finished, reveal reset so the twin stays a tap away. */
+  function restoreAttempt(n: number): boolean {
+    const attempt = attemptByTake(localStorage, n)
+    if (attempt === null) return false
+    setMetTwin(false)
+    setRevealed(false)
+    setRevealMode('flip')
+    setIncludeTrace(true)
+    setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
+    preloadLegendPortrait(attempt.result)
+    paintCard(attempt.result, attempt.glides, attempt.deltaLine)
+    setSession({
+      ...initialSessionState(),
+      phase: 'results',
+      glides: attempt.glides,
+      range: attempt.result.range,
+      result: attempt.result,
+    })
+    return true
   }
 
   /** Dev-only: /mirror?demo=<profile>[&delta=1] jumps straight to a results
@@ -535,7 +609,9 @@ export const MirrorApp: Component = () => {
     // reachable here even though the shipped reveal is flip-only).
     const forced = params.get('mode')
     setRevealMode(forced === 'lenticular' ? 'lenticular' : 'flip')
-    setRevealed(fromHash || params.get('revealed') !== null)
+    const startRevealed = fromHash || params.get('revealed') !== null
+    setRevealed(startRevealed)
+    setMetTwin(startRevealed)
     preloadLegendPortrait(result)
     paintCard(result, glides, line)
     setDeltaLine(line !== '' ? line : null)
@@ -814,7 +890,10 @@ export const MirrorApp: Component = () => {
           onToggleReveal={() => {
             const next = !revealed()
             setRevealed(next)
-            if (next) trackFunnel('twin_revealed')
+            if (next) {
+              setMetTwin(true) // the front card keeps the medallion from now on
+              trackFunnel('twin_revealed')
+            }
           }}
           onShare={() => void onShare()}
           onShareTwin={() => void onShare(true)}
@@ -950,6 +1029,8 @@ const FreeResults: Component<{
           <a
             class="mirror-cta mirror-cta-secondary"
             href={props.appUrl}
+            target="_blank"
+            rel="noopener"
             onClick={() => trackFunnel('cta_app_click')}
           >
             <IconRocket />
@@ -1158,6 +1239,8 @@ const Results: Component<{
           <a
             class="mirror-cta mirror-cta-secondary mirror-cta-sm"
             href={props.appUrl}
+            target="_blank"
+            rel="noopener"
             onClick={() => trackFunnel('cta_app_click')}
           >
             <IconRocket />
