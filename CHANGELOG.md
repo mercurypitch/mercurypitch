@@ -3,6 +3,18 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.1] - 2026-07-10
+
+### Added
+
+- **Meet your voice twin.** The Voice Mirror's results card now hides a famous singer whose range overlaps yours — tap the card to reveal them. Two reveal styles to play with: a 3D **flip**, or a **lenticular** blend where the legend shines through your data and the card tilts with your cursor.
+- **Fourteen legends, one cosmic style.** Johnny Cash, Barry White, Elvis, Sinatra, Kurt Cobain, David Bowie, Freddie Mercury, Bruce Dickinson, Amy Winehouse, Cher, Adele, Whitney Houston, Mariah Carey and Celine Dion — each drawn as a "liquid mercury" caricature on the mirror's starfield.
+- **Your twin on the share card.** Once revealed, the voiceprint you share includes the legend in a gold-ringed portrait medallion next to your voice type.
+
+### Changed
+
+- **Roomier mirror results.** The voiceprint card is bigger (with Accuracy and Steadiness in a compact side rail on wide screens), and the action buttons are tighter with new star-themed icons — one-tap **Copy** and **Open MercuryPitch**.
+
 ## [0.7.0] - 2026-07-08
 
 ### Added
