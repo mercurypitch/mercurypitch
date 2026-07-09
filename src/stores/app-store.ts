@@ -2443,7 +2443,7 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Challenge categories',
     description:
-      'High notes, low notes, speed, perfect pitch, scales, intervals, harmony, dynamics and more — each category has its own set of drill-backed goals.',
+      'Start with the Basics warm-ups, then explore high notes, low notes, speed, perfect pitch, scales, intervals, harmony, dynamics and more — each category has its own set of drill-backed goals.',
     targetSelector: '.category-tabs',
     placement: 'bottom',
     requiredTab: TAB_CHALLENGES,

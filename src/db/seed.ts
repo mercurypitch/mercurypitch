@@ -10,11 +10,21 @@ import seedData from './seed-data.json'
 import { getUserId as getPersistedUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
-// v2: challenge/badge definitions became a real content set (all categories,
-// honest targets, reward links) and the fake per-user progress/badge seeds
-// were dropped — bumping the flag re-runs the definition upsert once so
-// existing local DBs pick up the new content.
-const SEEDED_FLAG = 'db_seeded_v2'
+/** djb2 over a string, hex-encoded — tiny, deterministic, dependency-free. */
+function contentHash(input: string): string {
+  let hash = 5381
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) >>> 0
+  }
+  return hash.toString(16)
+}
+
+// The seed flag is derived from the seed-data content itself, so ANY edit to
+// seed-data.json re-runs the definition upsert exactly once per DB — no
+// manual version bumps to forget. Old flags (db_seeded_v1/v2/older hashes)
+// simply linger unread. Definitions upsert by title/name with stable ids,
+// so re-running never detaches per-user progress.
+const SEEDED_FLAG = `db_seeded_${contentHash(JSON.stringify(seedData))}`
 
 // ── Helper ──────────────────────────────────────────────────────
 

@@ -11,8 +11,21 @@ export interface ChallengeDrill {
 
 const drillConfigs: Record<
   ChallengeType,
-  { exercise: ExerciseType; notes: string[]; tip: string }
+  {
+    exercise: ExerciseType
+    notes: string[]
+    /** Smaller, central note set used when the challenge is 'beginner' —
+     *  a first-session singer should be able to win (targets sit near the
+     *  ~85% success sweet spot, not at expert precision). */
+    beginnerNotes?: string[]
+    tip: string
+  }
 > = {
+  basics: {
+    exercise: 'long-note',
+    notes: ['C4'],
+    tip: 'Pick any note that feels easy and hold it steady — smooth breath, no push',
+  },
   'high-notes': {
     exercise: 'siren',
     notes: ['C4', 'E4', 'G4', 'C5', 'E5'],
@@ -26,6 +39,7 @@ const drillConfigs: Record<
   speed: {
     exercise: 'staccato-precision',
     notes: ['C4', 'E4', 'G4', 'C5', 'G4', 'E4', 'C4'],
+    beginnerNotes: ['C4', 'E4', 'G4'],
     tip: 'Attack each note crisply and accurately — no scooping',
   },
   perfect: {
@@ -36,6 +50,7 @@ const drillConfigs: Record<
   scales: {
     exercise: 'scale-runner',
     notes: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
+    beginnerNotes: ['C4', 'D4', 'E4', 'F4', 'G4'],
     tip: 'Move smoothly through each degree of the scale — even tone throughout',
   },
   intervals: {
@@ -73,10 +88,17 @@ const drillConfigs: Record<
 export function generateChallengeDrill(
   challengeType: ChallengeType,
   challengeName: string,
+  difficulty?: string,
 ): ChallengeDrill {
   const config = drillConfigs[challengeType] ?? drillConfigs.perfect
+  const notes =
+    difficulty === 'beginner' && config.beginnerNotes !== undefined
+      ? config.beginnerNotes
+      : config.notes
   return {
-    ...config,
+    exercise: config.exercise,
+    notes,
+    tip: config.tip,
     challengeType,
     challengeName,
   }
