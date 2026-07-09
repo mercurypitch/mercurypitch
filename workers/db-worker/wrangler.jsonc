@@ -12,7 +12,10 @@
     // `wrangler secret put <NAME>` (per env). GOOGLE_CLIENT_SECRET powers
     // the redirect sign-in flow; this worker's /api/auth/google/callback
     // URL must be an Authorized redirect URI on the Google OAuth client.
-    "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+    // Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Local `wrangler
+    // dev` (pnpm dev:db, no --env) accepts only localhost origins.
+    "ALLOWED_ORIGINS": "localhost"
   },
   "d1_databases": [
     {
@@ -46,7 +49,10 @@
         { "pattern": "api-dev.mercurypitch.com", "custom_domain": true }
       ],
       "vars": {
-        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        // Dev is the testing environment: the dev frontend plus any
+        // localhost port (local vite, previews, tour walks) may call it.
+        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost"
       },
       "d1_databases": [
         {
@@ -61,7 +67,13 @@
       "name": "mercury-pitch-db",
       "routes": [{ "pattern": "api.mercurypitch.com", "custom_domain": true }],
       "vars": {
-        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
+        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        // PROD IS STRICT: only the real app domains. No localhost — a
+        // locally served build must never reach the prod DB (this is what
+        // let tour walks/previews create thousands of junk anonymous
+        // users). Requests without an Origin header still pass (Stripe
+        // webhooks, OAuth callback navigation, admin curl/seed scripts).
+        "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com"
       },
       "d1_databases": [
         {
