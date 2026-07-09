@@ -108,19 +108,34 @@ export interface DemoProfile {
   holdMidi: number
 }
 
-// One profile per voice type, ranges chosen so voiceTypeHint() lands on the
-// intended type (and its deterministic legend). Handy for eyeballing every
-// caricature end-to-end.
+// One profile per voice type AND one per legend, ranges chosen so
+// voiceTypeHint() lands on the intended type and the range seed
+// (lowMidi*3 + highMidi, mod the type's legend count — see singer-match.ts)
+// picks that exact legend. `/mirror#<key>` (dev) jumps straight to the
+// revealed result — handy for eyeballing every caricature end-to-end.
 export const DEMO_PROFILES: Record<string, DemoProfile> = {
+  // Voice-type keys.
   bass: { lowMidi: 40, highMidi: 60, holdMidi: 48 }, // Johnny Cash
   baritone: { lowMidi: 41, highMidi: 73, holdMidi: 57 }, // Elvis (matches spec shot)
-  // Baritone carries four legends; these ranges hit the other seeds (mod 4).
-  kurt: { lowMidi: 42, highMidi: 72, holdMidi: 55 }, // Kurt Cobain
-  bowie: { lowMidi: 42, highMidi: 73, holdMidi: 57 }, // David Bowie
   tenor: { lowMidi: 48, highMidi: 74, holdMidi: 60 }, // Freddie Mercury
   alto: { lowMidi: 53, highMidi: 79, holdMidi: 65 }, // Amy Winehouse
   mezzo: { lowMidi: 57, highMidi: 83, holdMidi: 69 }, // Adele
   soprano: { lowMidi: 60, highMidi: 86, holdMidi: 72 }, // Mariah Carey
+  // Legend keys (seed mod walks each type's options).
+  cash: { lowMidi: 40, highMidi: 60, holdMidi: 48 }, // 180 % 2 = 0
+  barry: { lowMidi: 40, highMidi: 61, holdMidi: 50 }, // 181 % 2 = 1
+  elvis: { lowMidi: 41, highMidi: 73, holdMidi: 57 }, // 196 % 4 = 0
+  sinatra: { lowMidi: 42, highMidi: 71, holdMidi: 56 }, // 197 % 4 = 1
+  kurt: { lowMidi: 42, highMidi: 72, holdMidi: 55 }, // 198 % 4 = 2
+  bowie: { lowMidi: 42, highMidi: 73, holdMidi: 57 }, // 199 % 4 = 3
+  freddie: { lowMidi: 48, highMidi: 74, holdMidi: 60 }, // 218 % 2 = 0
+  bruce: { lowMidi: 48, highMidi: 75, holdMidi: 61 }, // 219 % 2 = 1
+  amy: { lowMidi: 53, highMidi: 79, holdMidi: 65 }, // 238 % 2 = 0
+  cher: { lowMidi: 53, highMidi: 80, holdMidi: 66 }, // 239 % 2 = 1
+  adele: { lowMidi: 57, highMidi: 83, holdMidi: 69 }, // 254 % 2 = 0
+  whitney: { lowMidi: 57, highMidi: 84, holdMidi: 70 }, // 255 % 2 = 1
+  mariah: { lowMidi: 60, highMidi: 86, holdMidi: 72 }, // 266 % 2 = 0
+  celine: { lowMidi: 60, highMidi: 87, holdMidi: 73 }, // 267 % 2 = 1
 }
 
 /** Build a full MirrorResult + raw glides from a profile, via the real metrics. */
