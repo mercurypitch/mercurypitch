@@ -497,12 +497,20 @@ export const MirrorApp: Component = () => {
 
   /** Dev-only: /mirror?demo=<profile>[&delta=1] jumps straight to a results
    *  screen built from synthetic frames (no mic), so the layout, card and
-   *  reveal can be rendered and screenshotted. Tree-shaken out of prod. */
+   *  reveal can be rendered and screenshotted. /mirror#<legend> (e.g.
+   *  #freddie, #cher) is the fast-lane shorthand: that legend's profile,
+   *  already revealed. Tree-shaken out of prod. */
   async function maybeStartDemo(): Promise<void> {
     const params = new URLSearchParams(window.location.search)
-    const profileKey = params.get('demo')
-    if (profileKey === null) return
+    const queryKey = params.get('demo')
+    const hashKey = window.location.hash.replace(/^#/, '')
+    if (queryKey === null && hashKey === '') return
     const { DEMO_PROFILES, buildDemoResult } = await import('./demo-data')
+    // Hash shorthand only counts when it names a profile — other fragments
+    // (e.g. #sing-the-universe) belong to their own features.
+    const fromHash = queryKey === null && hashKey in DEMO_PROFILES
+    if (queryKey === null && !fromHash) return
+    const profileKey = queryKey ?? hashKey
     const profile = DEMO_PROFILES[profileKey] ?? DEMO_PROFILES.baritone
     const { result, glides } = buildDemoResult(profile)
     const line =
@@ -519,7 +527,7 @@ export const MirrorApp: Component = () => {
           ? 'lenticular'
           : 'flip',
     )
-    setRevealed(params.get('revealed') !== null)
+    setRevealed(fromHash || params.get('revealed') !== null)
     preloadLegendPortrait(result)
     paintCard(result, glides, line)
     setDeltaLine(line !== '' ? line : null)

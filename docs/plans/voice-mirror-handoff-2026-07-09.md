@@ -269,9 +269,13 @@ state and the canonical recipe for adding legends:
   medallion beside the pills (`drawTwinRow` in `card-renderer.ts`); the
   portrait is preloaded/decoded at results time (`preloadLegendPortrait` in
   `MirrorApp.tsx`) so ClipboardItem stays inside Safari's tap gesture.
-- **Demo profiles** (`/mirror?demo=…`): `bass` Cash · `baritone` Elvis ·
-  `kurt` · `bowie` · `tenor` Freddie · `alto` Amy · `mezzo` Adele ·
-  `soprano` Mariah (+ `&mode=flip|lenticular&revealed=1&delta=1`).
+- **Demo profiles** (`/mirror?demo=…`, dev-only): voice-type keys (`bass`,
+  `baritone`, `tenor`, `alto`, `mezzo`, `soprano`) plus one key per legend
+  (`cash barry elvis sinatra kurt bowie freddie bruce amy cher adele whitney
+  mariah celine`) whose range seed picks exactly that legend
+  (+ `&mode=flip|lenticular&revealed=1&delta=1`). Fast lane:
+  **`/mirror#<legend-key>`** (e.g. `#freddie`, `#cher`) jumps straight to the
+  already-revealed result for that legend.
 
 ### Canonical generation recipe (for future legends)
 
