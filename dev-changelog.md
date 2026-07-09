@@ -6,6 +6,91 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2026-07-08
+
+### Changed
+
+- **Branded OAuth domain** (#219, #220): the db-worker now serves on dedicated custom subdomains — `api.mercurypitch.com` (prod) / `api-dev.mercurypitch.com` (dev) — via wrangler `custom_domain` routes (auto-created on deploy), alongside the existing workers.dev URLs. A dedicated host avoids shadowing the main worker's `/api/uvr/*` + `/api/share/*`. `VITE_API_BASE_URL` points the frontend at them, so the Google consent screen + the OAuth `redirect_uri` (derived from the request origin, no `auth.ts` change) show a `mercurypitch.com` host instead of `komediruzecki-2015.workers.dev`. No session loss — auth is a client-side Bearer JWT, not a worker-domain cookie.
+
+### Fixed
+
+- **Transactional emails render dark-only** (#218): the purchase thank-you + signup welcome `<head>` declared `color-scheme` / `supported-color-schemes` as `"dark light"`, so a light-mode client tried a light rendering and, with no light styles, fell back to a white background. Declared `"dark"` only so clients render the dark design regardless of the recipient's mode.
+
+## [0.6.7] - 2026-07-07
+
+### Added
+
+- **Guitar tuner reference tone** (#210): clicking a string button in `GuitarTuner` now plays that string's target pitch via a new optional `onPlayNote` prop, wired from `GuitarPage` to `audioEngine.previewNote(freq, 900)` (short, reduced-gain preview) — tune by ear alongside the needle. Still toggles the manual per-string target.
+
+### Changed
+
+- **Singing A-B loop: loop-on-B + draggable markers** (#212): `handleSetLoopB` now arms the loop immediately (`setLoopEnabled(true)` + clears the escape flag), matching the stem-mixer. `SingingStatusBar` gains draggable A/B markers on the seek rail — pointer-capture drag, a 0.25-beat min-gap clamp via new `handleMoveLoopA/B` in `App.tsx`, and a one-shot guard so a drag's pointer-up doesn't also seek. A reads `--accent` (blue), B reads `--red`, on both the markers and the control-bar `IconLoopPoint` buttons (`.loopBtnB`). Reuses the existing `ab-loop` math + RAF seek-back unchanged.
+- **Welcome / changelog / sidebar polish** (#205, #206): compacted first-run welcome (Voice Mirror-first, mirror-before-consent, 50/50 mobile actions, version pill → the What's New modal), branded `ChangelogModal` restyle, sidebar Playback Setup collapsed by default, smaller 3D next-note target ring, round tour-dots fix, `.getStartedBtn` hover on the settings "Getting started" buttons, two-tone email wordmark + colourful sign-up cards. Version bump to 0.6.7.
+
+### Fixed
+
+- **Track switch preserves the playhead + transport** (#208): switching the scored track of an imported multi-track MIDI ran the full load path (`stopGame` / `setPlayheadBeat(0)`), rewinding to 0:00 and stalling the play button. New `changeScoreTrack()` on the guitar and piano (falling-notes) controllers rebuilds the notes/backing and resets the score but keeps the playhead + transport (keeps playing if playing; Play/Space resume from the current beat; notes before the playhead are marked passed so they don't all fire at once). The shared song picker gains an `onScoreTrackChange` hand-off (falls back to `onSongLoaded`).
+- **Local/WebGPU separation retry no longer crashes when Cloud mode is active** (#209): `getSeparator()`'s `setUvrModelStatus('loading')` write synchronously re-ran `UvrPanel`'s server-mode cleanup effect (it read `uvrModelStatus()`), which called `destroyPipeline()` and nulled the module `separator` mid-init → "can't access property initialize, … is null". Gated that effect on the mode signal only (`on(uvrProcessingMode)` + `untrack` for the status), hardened `getSeparator` to hold a local reference across the store writes, and added `humanizeProcessingError` so no raw JS crash reaches a session card.
+- **Singing song-change refreshes the canvas + timeline** (#215): `handleSingingSongLoaded` now calls `resetPlaybackState()` before loading the new melody. While playing/paused the playback controller holds a *frozen* `playbackDisplayMelody` / `playbackDisplayBeats` for the in-progress run (its auto-clear effect only fires when stopped), so switching songs mid/after a run — e.g. during A-B loop testing — left the previous song frozen on the canvas + timeline. Also clears the old A-B loop, whose beats belonged to the previous song.
+- **Focus mode scrolls instead of squishing long songs** (#215): `FocusMode` passed `isScrolling={() => false}` to `PitchCanvas`, forcing the fit-whole-song `beatToX` branch (divide by the whole range, not the visible window); now `true`, so short melodies still render whole (`rangeBeats <= visibleBeatWindow`) but long songs scroll a fixed window like normal mode.
+- **e2e** (#213): expand the (now collapsed-by-default) sidebar Playback Setup section before asserting on its scale controls — new idempotent `openPlaybackSetup` helper; fixes 6 specs across `app` / `critical-flows` / `css-audit`.
+
+## [0.6.6] - 2026-07-07
+
+### Added
+
+- **A-B loop on the Singing tab** (#200): mark A then B on the melody and loop that section. The loop math is extracted to a pure, unit-tested `src/lib/ab-loop.ts` (`shouldLoopBack`, `isSeekOutsideLoop`, `loopRegionPct`, `clampLoopB`) mirroring the stem-mixer's half-open `[A, B)` semantics and its `seekedOutsideLoop` escape flag — so a manual seek past B is no longer instantly reverted. `App.tsx` owns the signals + the auto-seek-back effect (gated on `beat < totalBeats()` to avoid racing the runtime's natural-end); `SingingStatusBar` draws a reactive loop-region overlay (no stale IIFE); `SingingControlBar` reuses the existing `IconRepeat` for the toggle and a single consolidated `IconLoopPoint`. `.loopRegionActive` uses `var(--green)` (no hardcoded hex). 21 loop-math tests.
+- **Guitar tuner + riff tracker** (#199): `src/lib/guitar/tuner.ts` `classifyPitch(frequency, clarity, targets, names)` classifies against the *selected* tuning, so presets (Standard / Drop D / Half Step Down / Open G / DADGAD) actually retune instead of only relabeling; the previously-dead `isTuningSignal` ±50-cent gate is wired in so off-string noise can't read "in tune" (manual per-string mode bypasses the gate so a far-off/fresh string still shows deviation). Open G frequencies corrected. `GuitarTuner`/`GuitarRiffTracker` components + a headless `RiffTrackerState` factory (record → timeline → score against a target melody). Riff capture is driven off a new reactive `articulationId` signal on `useGuitarPracticeController` (a lockstep mirror of the non-reactive scoring counter) so repeated same-pitch attacks aren't de-duplicated away by `detectedMidi`. Reuses `frequencyToMidi` / `computeCentsDeviation` / `noteToMidi` (the last now parses flats + multi-digit octaves); glyphs replaced with SVG icons. 33 tuner + riff tests.
+- **Transactional emails** (#202): purchase thank-you email + account sign-up welcome email.
+
+### Fixed
+
+- **Server (RunPod) stem separation now survives a reload / iOS app-switch, with no double charge** (#201, #203): the RunPod job id is persisted to IndexedDB, and the client auto-resumes an in-flight job on load / `visibilitychange` / `online` with **no new debit** (`resumeServerSession`, `activeServerPolls` guard). `pollForCompletion` rides through transient failures for a 90s grace window after first contact, and `getProcessStatus` / `getOutputFile` gained per-request timeouts, so a half-open socket can't freeze the poll. A server-confirmed dead job rejects with `TerminalPollError` and clears its persisted id. The worker bridge serves stems straight from R2 (`<RUNPOD_STEM_PREFIX>/<jobId>/`, new per-env var) for the ~24 h the objects live after RunPod forgets the job (~30 min), and returns a terminal "expired" otherwise. Removed the `beforeunload` handler that cancelled in-flight jobs on reload, and stopped `cleanupStaleUvrSessions` from erroring a recoverable session. "Fetch my stems" recovery button + friendlier "warming up" copy. New R2-fallback + terminal-error + reconcile tests.
+
+### Changed
+
+- CI: bump GitHub Actions to Node 24 (#204).
+
+## [0.6.5] - 2026-07-07
+
+### Added
+
+- Voice Mirror results/share card pairs the singer's vocal range with a legendary singer whose range overlaps — two legends per voice type (e.g. tenors get Freddie Mercury or Bruce Dickinson) for a varied match.
+
+### Changed
+
+- Voiceprint download filenames are dated (`voiceprint-YYYY-MM-DD.png`) so a folder sorts by day.
+
+## [0.6.4] - 2026-07-07
+
+### Fixed
+
+- Cloud-separated stems no longer go missing after a reload (#uvr durability): stems are persisted durably to IndexedDB *before* a session is marked done, always reopened from the local copy, and never depend on the server's temporary links. Added a `beforeunload` guard during the finalize/save window, orphan-DB cleanup + reconcile-on-load, and serialized per-session DB writes; added durability + reconciliation test suites.
+
+### Added
+
+- Storage pre-flight warning before a paid separation. Voice Mirror: "Sing the Universe" cosmic-mode deep link + copy-image button, and a warmer piano-like reference tone with a "your turn" count-in before the Match step. Succinct karaoke upload-rights notice.
+
+## [0.6.3] - 2026-07-06
+
+### Fixed
+
+- Added the missing `og-image.png` so social / Open Graph link previews render the MercuryPitch card.
+
+### Changed
+
+- Removed the header website icon (redundant with the About link).
+
+## [0.6.2] - 2026-07-06
+
+### Added
+
+- New Pitch-orb brand logo (favicon + About icon) and orb favicons. Website link in Settings → About and the header. Canonical Terms & Privacy links at consent touchpoints, pointed at about.mercurypitch.com.
+
+### Changed
+
+- Practice accuracy heatmap scores on absolute cents deviation and is decoupled from the session shape (PR #187 review follow-ups).
+
 ## [0.6.1] - 2026-07-06
 
 ### Added

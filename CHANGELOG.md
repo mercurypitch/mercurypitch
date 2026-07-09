@@ -3,6 +3,82 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.0] - 2026-07-08
+
+### Added
+
+- **A-B loop controls for Piano and Compose**: you can now set A and B loop markers in the Piano and Compose tabs, not just Singing. The markers appear directly on all note canvases.
+- **Draggable piano/compose markers**: easily drag the loop points to refine the repeating section.
+
+### Fixed
+
+- **Piano / Compose playback and looping bugs**: fixed an issue where the piano replayed the entire [A, B] interval at once each lap, and ensured singing pitch trails reset properly.
+- **Credit deduction for server separations**: fixed a silent failure where credits were not being deducted for server-side UVR separations due to a stale API domain configuration.
+
+## [0.6.8] - 2026-07-08
+
+### Changed
+
+- **Google sign-in is branded.** Signing in with Google now shows a `mercurypitch.com` address on the consent screen instead of the old `…workers.dev` one.
+
+### Fixed
+
+- **Emails render dark.** The welcome and receipt emails could show up with a white background in light-mode mail apps; they now render in the dark MercuryPitch theme everywhere.
+
+## [0.6.7] - 2026-07-07
+
+### Added
+
+- **Tune by ear.** Tap a string in the guitar tuner to hear its reference note, so you can tune to the sound as well as to the needle.
+
+### Changed
+
+- **The A-B loop is hands-on now (Singing).** Setting **B** starts the loop right away — no separate loop button — and the A and B points appear as draggable markers on the timeline (blue for A, red for B). Drag either one to fine-tune the start or end of the passage without re-tapping.
+- **A cleaner welcome screen, with a "What's New" button.** The first-run welcome is more compact and leads with the Voice Mirror, and its version badge opens this changelog any time. The sidebar's Playback Setup controls (key, scale, octave) now start collapsed to keep the panel tidy — click the section header to open them.
+
+### Fixed
+
+- **Switching tracks keeps your place.** Changing which track you practise in an imported MIDI song no longer snaps the timeline back to the start — the 3D guitar and piano keep playing from where you were (the score resets for the new track), and Play / Space resume from the current spot.
+- **On-device separations retry cleanly.** Retrying a browser (WebGPU) vocal separation while Cloud mode was selected could fail with a technical error instead of running. It now re-initialises and processes, and any unexpected error shows a readable message.
+- **Switching songs on the Singing tab refreshes properly.** Loading a different melody or an imported MIDI now updates the notes and the timeline right away (and starts the new song from the beginning), instead of leaving the previous song on screen when you switched during playback or a loop.
+- **Focus mode fits long songs.** The full-screen focus view now scrolls a readable window of notes for long imported songs, instead of squeezing the whole song on screen at once.
+
+## [0.6.6] - 2026-07-07
+
+### Added
+
+- **Loop a tricky section while you practice.** The Singing tab now has A-B loop controls — tap **A**, then **B**, to mark a passage and hit the loop button, and the playhead repeats just that stretch so you can drill it. A shaded band on the timeline shows the loop, and you can still scrub anywhere without it snapping you back to the start.
+- **Guitar tuner and riff tracker.** A built-in tuner (needle plus cents readout that auto-detects which string you're playing, with Standard, Drop D, Half Step Down, Open G, and DADGAD presets and a manual per-string mode) and a riff tracker that records what you play, lays it out on a timeline, and scores it against a target melody.
+- **Welcome and receipt emails.** You now get a welcome email when you create an account, and a thank-you email after a purchase.
+
+### Fixed
+
+- **Cloud separations survive a reload or app-switch — with no double charge.** A song separating on the cloud GPU could get stuck on "waiting for a GPU worker" if you switched apps or reloaded, and re-running it charged a second credit. The app now reconnects to the in-progress job automatically (no extra credit), keeps the job running across a reload instead of cancelling it, and can re-fetch your finished stems from storage for up to 24 hours if the browser missed them. The waiting message is friendlier, with a "Fetch my stems" button as a backup.
+
+## [0.6.5] - 2026-07-07
+
+### Added
+
+- **Your voice, matched to a legend.** The Voice Mirror results and share card now pair your vocal range with a famous singer whose range overlaps yours — two legends per voice type (tenors get Freddie Mercury or Bruce Dickinson, sopranos get Mariah Carey or Celine Dion, and so on), so it's a fun, varied match rather than a fixed label.
+
+### Changed
+
+- **Voiceprint downloads are dated** — the saved image filename now includes the date (e.g. `voiceprint-2026-07-07.png`), so a folder of them sorts by day and it's easy to track your progress over time.
+
+## [0.6.4] - 2026-07-07
+
+### Fixed
+
+- **Separated stems no longer go missing.** A song separated on the cloud GPU could later show as "processed" but refuse to open in the Stem Mixer after a reload — offering only a retry or a manual re-import. Stems are now saved to your device *before* a song is marked done, always reopened from that local copy, and never depend on the server's temporary links. The Karaoke list shows honest "Saving…" and "Interrupted" statuses, the app warns before an accidental reload while a separation is still saving, and any sessions whose stems were already lost are tidied up automatically.
+
+### Added
+
+- **Copy image on Voice Mirror cards** — every result card now has a "Copy image" button next to Share. The "Sing the Universe" cosmic mode is also directly linkable.
+
+### Changed
+
+- **Gentler Voice Mirror "Match" step** — a warmer, piano-like reference tone plus a short "your turn" count-in before you sing, so the notes no longer come at you with no time to prepare.
+
 ## [0.6.3] - 2026-07-06
 
 ### Fixed
