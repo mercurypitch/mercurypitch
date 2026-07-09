@@ -2,21 +2,18 @@
 // VocalChallenges — Practice challenges & achievements
 // ============================================================
 
-import type { Component, JSX } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 import modalStyles from '@/components/Modal.module.css'
-import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
-import { getUserId } from '@/db/seed'
-import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
-import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
+import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
+import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
+import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/challenges/challenge-attempt'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
-import { TAB_SINGING } from '@/features/tabs/constants'
-import { storageGet, storageRemove, storageSet } from '@/lib/storage'
-import { getSessionHistory } from '@/stores'
-import { launchDrill, setActiveTab } from '@/stores/ui-store'
-import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
+import { launchDrill } from '@/stores/ui-store'
+import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
@@ -24,18 +21,10 @@ import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, Ic
 // Types
 // ============================================================
 
-export type ChallengeType =
-  | 'high-notes'
-  | 'low-notes'
-  | 'speed'
-  | 'perfect'
-  | 'scales'
-  | 'intervals'
-  | 'harmony'
-  | 'agility'
-  | 'range'
-  | 'dynamic'
-  | 'call-response'
+// One shared category vocabulary: the UI tabs use the DB's challenge
+// categories directly, so a new category is a seed-data + constants change,
+// never a type drift (6 UI-only tabs used to render permanently empty).
+export type ChallengeType = ChallengeCategory
 
 export interface ChallengeProgress {
   /** Challenge ID */
@@ -50,22 +39,20 @@ export interface ChallengeProgress {
   icon: Component | string
   /** Target percentage */
   targetScore: number
-  /** Current score */
+  /** Score of the latest attempt */
   currentScore: number
-  /** Progress percentage */
+  /** Best score across attempts */
+  bestScore: number
+  /** Attempts recorded so far */
+  attempts: number
+  /** Progress percentage (best score, 0-100) */
   progress: number
   /** Status */
-  status: 'not-started' | 'in-progress' | 'completed' | 'locked'
-  /** Unlocked date */
-  unlockedDate?: number
+  status: 'not-started' | 'in-progress' | 'completed'
   /** Completion date */
   completedDate?: number
-  /** Array of actual scores achieved */
-  actualScores?: number[]
-}
-
-export interface UserChallengeProgress {
-  [challengeId: string]: ChallengeProgress
+  /** Badge (id or name) granted on completion */
+  rewardBadgeId?: string
 }
 
 export interface UserBadge {
@@ -107,153 +94,45 @@ export interface UserAchievement {
 }
 
 // ============================================================
-// ============================================================
 // Component
 // ============================================================
 
-// Export signals and functions for use in other components
-export const [showChallengeModal, setShowChallengeModal] = createSignal(false)
-export const [selectedChallenge, setSelectedChallenge] =
+const [showChallengeModal, setShowChallengeModal] = createSignal(false)
+const [selectedChallenge, setSelectedChallenge] =
   createSignal<ChallengeProgress | null>(null)
 
-interface ResultModalState {
-  title: string
-  message: string
-  icon: () => JSX.Element
-  actionLabel?: string
-  onAction?: () => void
+/**
+ * Arm the challenge attempt context and launch its drill. The drill's score
+ * comes back through the exercise-history store → challenge-attempt return
+ * path, which records the attempt and completes the challenge when the
+ * target is met — there is no manual "update progress" step.
+ */
+function startChallengeDrill(challenge: ChallengeProgress): void {
+  const drill = generateChallengeDrill(challenge.type, challenge.name)
+  beginChallengeAttempt({
+    challengeId: challenge.id,
+    title: challenge.name,
+    category: challenge.type,
+    exercise: drill.exercise,
+    targetScore: challenge.targetScore,
+    rewardBadgeId: challenge.rewardBadgeId,
+  })
+  launchDrill({
+    exercise: drill.exercise,
+    notes: drill.notes,
+    challengeName: drill.challengeName,
+  })
 }
-
-const [resultModal, setResultModal] = createSignal<ResultModalState | null>(
-  null,
-)
 
 export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] =
     createSignal<ChallengeType>('high-notes')
 
-  // Update challenge progress (also saves to DB)
-  function updateChallengeProgress(
-    challengeId: string,
-    score: number,
-    completed: boolean,
-  ) {
-    const progress: UserChallengeProgress = userProgress() ?? {}
-    const progressKey = `ch-${challengeId}`
-    const saved = progress[progressKey] ?? {
-      id: challengeId,
-      type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
-      name: challengeId,
-      description: `Challenge progress for ${challengeId}`,
-      icon: IconMicChallenge,
-      targetScore: 100,
-      currentScore: 0,
-      progress: 0,
-      status: 'not-started' as const,
-      unlockedDate: undefined,
-      completedDate: undefined,
-      actualScores: [],
-    }
-
-    saved.currentScore = score
-    saved.progress = Math.min(100, score)
-    ;(saved.actualScores || []).push(score)
-
-    if (completed) {
-      saved.status = 'completed'
-      saved.completedDate = Date.now()
-      if (saved.unlockedDate === undefined) {
-        saved.unlockedDate = Date.now()
-      }
-    } else if (score >= 80) {
-      saved.status = 'in-progress'
-      if (saved.unlockedDate === undefined) {
-        saved.unlockedDate = Date.now()
-      }
-    } else if (score >= 50) {
-      saved.status = 'in-progress'
-    }
-
-    progress[progressKey] = saved
-    saveProgress(progress)
-
-    // Also save to DB, then award any badges the completion unlocked
-    // (grant check reads the just-saved progress, so chain after the save).
-    const def = dbChallengeDefs().find((d) => d.id === challengeId)
-    if (def) {
-      void saveChallengeProgress({
-        userId: getUserId(),
-        challengeId,
-        progress: saved.progress,
-        currentScore: saved.currentScore,
-        bestScore: Math.max(...(saved.actualScores ?? [saved.currentScore])),
-        status: saved.status === 'completed' ? 'completed' : 'active',
-        completed: saved.status === 'completed',
-        attempts: saved.actualScores?.length ?? 1,
-      })
-        .then(() => checkAndGrantBadges())
-        .catch(() => {})
-    }
-  }
-
-  // Start challenge handler
+  // Open the challenge detail modal (stats + drill launch).
   function handleStartChallenge(challenge: ChallengeProgress) {
-    const sessions = getSessionHistory()
-
-    if (challenge.status === 'completed') {
-      const completedScore = challenge.actualScores?.[0] ?? 0
-      setResultModal({
-        title: 'Challenge Completed!',
-        message: `"${challenge.name}" was completed with a score of ${completedScore}%. ${challenge.actualScores?.length ?? 1} session(s) played.`,
-        icon: () => <IconSparkle />,
-        actionLabel: 'Close',
-      })
-      return
-    }
-
-    if (challenge.status === 'in-progress') {
-      const scores = challenge.actualScores || []
-      const avgScore =
-        scores.length > 0
-          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-          : 0
-      setResultModal({
-        title: 'Continue Challenge',
-        message: `"${challenge.name}" is in progress. Current average: ${avgScore}% (${challenge.actualScores?.length ?? 0} session(s)).`,
-        icon: () => <IconRefreshSimple />,
-        actionLabel: 'Continue Practice',
-        onAction: () => {
-          setSelectedChallenge(challenge)
-          setShowChallengeModal(true)
-        },
-      })
-      return
-    }
-
-    // Get recent session scores to pre-fill progress
-    const recentSessions = sessions.slice(-3)
-    const sessionScores = recentSessions.map((s) => s.score || 0)
-    const avgScore =
-      sessionScores.length > 0
-        ? Math.round(
-            sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length,
-          )
-        : 0
-
-    setResultModal({
-      title: challenge.name,
-      message: `Your recent average score: ${avgScore}%. Start this challenge?`,
-      icon: () => renderIcon(challenge.icon),
-      actionLabel: 'Start',
-      onAction: () => {
-        setSelectedChallenge(challenge)
-        setShowChallengeModal(true)
-      },
-    })
+    setSelectedChallenge(challenge)
+    setShowChallengeModal(true)
   }
-
-  // Load session history for real progress tracking
-  const sessionHistory = createMemo(() => getSessionHistory())
 
   // DB-backed data signals
   const [dbChallengeDefs, setDbChallengeDefs] = createSignal<
@@ -271,25 +150,18 @@ export const VocalChallenges: Component = () => {
     DBUserAchievement[]
   >([])
 
-  // Challenge progress stored in localStorage (legacy fallback)
-  const [userProgress, setUserProgress] =
-    createSignal<UserChallengeProgress | null>(null)
+  // Streak display — same source as the badge engine and leaderboard
+  // (streak-service), not a local reimplementation.
+  const [currentStreak, setCurrentStreak] = createSignal(0)
 
-  // Streak display (derived from real session history)
-  const currentStreak = createMemo(() => {
-    const sessions = sessionHistory()
-    const scores = sessions.filter((s) => s.score !== undefined && s.score > 70)
-    if (scores.length === 0) return 0
-    return calculateStreak(scores.map((s) => s.completedAt || 0))
-  })
-
-  // Load data from DB (with legacy localStorage fallback); reloads
-  // when the signed-in identity changes.
+  // Load data from DB; reloads when the signed-in identity changes and
+  // after every recorded challenge attempt (drill scores land while the
+  // user is on the Exercises tab).
   createEffect(() => {
     authVersion()
+    challengeAttemptVersion()
     void (async () => {
-      // Load challenge definitions & progress from DB
-      const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] =
+      const [defs, prog, badgeDefs, userBadges, achDefs, userAchs, streak] =
         await Promise.all([
           loadChallengeDefinitions(),
           loadChallengeProgress(),
@@ -297,6 +169,7 @@ export const VocalChallenges: Component = () => {
           loadUserBadges(),
           loadAchievementDefinitions(),
           loadUserAchievements(),
+          getCurrentStreak(),
         ])
       setDbChallengeDefs(defs)
       setDbChallengeProg(prog)
@@ -304,47 +177,9 @@ export const VocalChallenges: Component = () => {
       setDbUserBadges(userBadges)
       setDbAchievementDefs(achDefs)
       setDbUserAchievements(userAchs)
-
-      // Legacy localStorage fallback
-      const stored = storageGet<UserChallengeProgress>('pp_challenge_progress')
-      if (stored !== null) {
-        setUserProgress(stored)
-      }
+      setCurrentStreak(streak)
     })()
   })
-
-  // Save user progress to localStorage + DB
-  const saveProgress = (progress: UserChallengeProgress | null) => {
-    setUserProgress(progress)
-    if (progress) {
-      storageSet('pp_challenge_progress', progress)
-    } else {
-      storageRemove('pp_challenge_progress')
-    }
-  }
-
-  // Calculate streak from array of timestamps
-  function calculateStreak(dates: number[]): number {
-    if (dates.length === 0) return 0
-
-    const sorted = [...dates].sort((a, b) => b - a)
-    const today = new Date().setHours(0, 0, 0, 0)
-    const oneDay = 24 * 60 * 60 * 1000
-
-    let streak = 0
-    let currentDate = today
-
-    for (const date of sorted) {
-      if (date >= currentDate - oneDay) {
-        streak++
-        currentDate -= oneDay
-      } else {
-        break
-      }
-    }
-
-    return streak
-  }
 
   // Map icon name strings (from DB) to SVG components
   function iconForName(name: string): Component | string {
@@ -357,81 +192,33 @@ export const VocalChallenges: Component = () => {
     return 'not-started'
   }
 
-  // Challenges data (merged with real progress)
+  // Challenges data (definitions merged with the user's real progress)
   function getChallengesForCategory(
     category: ChallengeType,
   ): ChallengeProgress[] {
-    const defs = dbChallengeDefs()
-    const progress = userProgress()
-
-    if (defs.length > 0) {
-      return defs
-        .filter((d) => d.category === category)
-        .map((d) => {
-          const dbProg = dbChallengeProg().find((p) => p.challengeId === d.id)
-          const localProg = progress?.[`ch-${d.id}`]
-          return {
-            id: d.id,
-            type: d.category,
-            name: d.title,
-            description: d.description,
-            icon: iconForName(d.icon),
-            targetScore: d.targetScore,
-            currentScore: dbProg?.currentScore ?? localProg?.currentScore ?? 0,
-            progress: dbProg?.progress ?? localProg?.progress ?? 0,
-            status: dbProg
-              ? mapDbStatus(dbProg.status)
-              : (localProg?.status ?? 'not-started'),
-            unlockedDate: localProg?.unlockedDate,
-            completedDate: localProg?.completedDate,
-            actualScores: localProg?.actualScores ?? [],
-          }
-        })
-    }
-
-    // Fall back to mock data, merged with localStorage progress
-    let challenges: ChallengeProgress[] = []
-    switch (category) {
-      case 'high-notes':
-        challenges = mockChallenges.filter((c) => c.type === 'high-notes')
-        break
-      case 'low-notes':
-        challenges = mockChallenges.filter((c) => c.type === 'low-notes')
-        break
-      case 'speed':
-        challenges = mockChallenges.filter((c) => c.type === 'speed')
-        break
-      case 'perfect':
-        challenges = mockChallenges.filter((c) => c.type === 'perfect')
-        break
-      case 'scales':
-        challenges = mockChallenges.filter((c) => c.type === 'scales')
-        break
-      case 'intervals':
-        challenges = mockChallenges.filter((c) => c.type === 'intervals')
-        break
-      case 'harmony':
-        challenges = mockChallenges.filter((c) => c.type === 'harmony')
-        break
-      case 'agility':
-        challenges = mockChallenges.filter((c) => c.type === 'agility')
-        break
-      case 'range':
-        challenges = mockChallenges.filter((c) => c.type === 'range')
-        break
-      case 'dynamic':
-        challenges = mockChallenges.filter((c) => c.type === 'dynamic')
-        break
-      case 'call-response':
-        challenges = mockChallenges.filter((c) => c.type === 'call-response')
-        break
-    }
-
-    return challenges.map((c) => {
-      const storedProgress = (progress || {})[`ch-${c.id}`]
-      if (storedProgress !== undefined) return storedProgress
-      return c
-    })
+    return dbChallengeDefs()
+      .filter((d) => d.category === category)
+      .map((d) => {
+        const dbProg = dbChallengeProg().find((p) => p.challengeId === d.id)
+        return {
+          id: d.id,
+          type: d.category,
+          name: d.title,
+          description: d.description,
+          icon: iconForName(d.icon),
+          targetScore: d.targetScore,
+          currentScore: dbProg?.currentScore ?? 0,
+          bestScore: dbProg?.bestScore ?? 0,
+          attempts: dbProg?.attempts ?? 0,
+          progress: dbProg?.progress ?? 0,
+          status: dbProg ? mapDbStatus(dbProg.status) : 'not-started',
+          completedDate:
+            dbProg?.completedAt !== undefined
+              ? new Date(dbProg.completedAt).getTime()
+              : undefined,
+          rewardBadgeId: d.rewardBadgeId,
+        }
+      })
   }
 
   // Get filtered challenges with real progress
@@ -439,182 +226,41 @@ export const VocalChallenges: Component = () => {
     getChallengesForCategory(activeCategory()),
   )
 
-  // Calculate user badges (DB-backed with mock fallback)
+  // User badges — earned state comes from the grant engine's records only.
   function getBadges(): UserBadge[] {
-    const badgeDefs = dbBadgeDefs()
-    if (badgeDefs.length > 0) {
-      return badgeDefs.map((def) => {
-        const userBadge = dbUserBadges().find((ub) => ub.badgeId === def.id)
-        return {
-          id: def.id,
-          name: def.name,
-          description: def.description,
-          icon: iconForName(def.icon),
-          tier: def.tier,
-          earned: !!userBadge,
-          earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
-        }
-      })
-    }
-
-    // Fall back to mock data with session-based computation
-    const sessions = sessionHistory()
-    const totalSessions = sessions.length
-    const bestScore =
-      sessions.length > 0 ? Math.max(...sessions.map((s) => s.score || 0)) : 0
-    const avgScore =
-      sessions.length > 0
-        ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
-        : 0
-    const streak = calculateStreak(sessions.map((s) => s.completedAt || 0))
-
-    return mockBadges.map((badge) => {
-      let earned = false
-      let earnedDate: number
-
-      switch (badge.id) {
-        case 'b1':
-          earned = totalSessions > 0
-          earnedDate =
-            totalSessions > 0
-              ? (sessions[0].completedAt ?? Date.now())
-              : Date.now()
-          break
-        case 'b2':
-          earned = streak >= 7
-          earnedDate =
-            streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
-          break
-        case 'b3':
-          earned = bestScore >= 90
-          earnedDate = bestScore >= 90 ? Date.now() : Date.now()
-          break
-        case 'b4':
-          earned = bestScore >= 95
-          earnedDate = bestScore >= 95 ? Date.now() : Date.now()
-          break
-        case 'b5':
-          earned = avgScore >= 90
-          earnedDate = avgScore >= 90 ? Date.now() : Date.now()
-          break
-        case 'b6':
-          earned = totalSessions >= 10
-          earnedDate =
-            totalSessions >= 10
-              ? (sessions[0].completedAt ?? Date.now())
-              : Date.now()
-          break
-        case 'b7':
-          earned = streak >= 14
-          earnedDate =
-            streak >= 14
-              ? Date.now() - streak * 24 * 60 * 60 * 1000
-              : Date.now()
-          break
-        default:
-          earned = false
-          earnedDate = Date.now()
-      }
-
+    return dbBadgeDefs().map((def) => {
+      const userBadge = dbUserBadges().find((ub) => ub.badgeId === def.id)
       return {
-        ...badge,
-        earned,
-        earnedDate,
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        icon: iconForName(def.icon),
+        tier: def.tier,
+        earned: !!userBadge,
+        earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
       }
     })
   }
 
-  // Calculate user achievements (DB-backed with mock fallback)
+  // User achievements — progress/unlocked come from the grant engine only.
   function getAchievements(): UserAchievement[] {
-    const achDefs = dbAchievementDefs()
-    if (achDefs.length > 0) {
-      return achDefs.map((def) => {
-        const userAch = dbUserAchievements().find(
-          (ua) => ua.achievementId === def.id,
-        )
-        return {
-          id: def.id,
-          name: def.name,
-          description: def.description,
-          icon: iconForName(def.icon),
-          points: def.points,
-          unlocked: userAch?.unlocked ?? false,
-          unlockedDate:
-            userAch?.unlockedAt !== undefined
-              ? new Date(userAch.unlockedAt).getTime()
-              : undefined,
-          progress: userAch?.progress ?? 0,
-          required: def.required,
-        }
-      })
-    }
-
-    // Fall back to mock data with session-based computation
-    const sessions = sessionHistory()
-    const totalSessions = sessions.length
-    const bestScore =
-      sessions.length > 0 ? Math.max(...sessions.map((s) => s.score || 0)) : 0
-    const avgScore =
-      sessions.length > 0
-        ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
-        : 0
-
-    // Track high note completions
-    let highNoteCount = 0
-    sessions.forEach((session) => {
-      if (session.practiceItemResult !== undefined) {
-        session.practiceItemResult.forEach((item) => {
-          if (item.noteResult !== undefined) {
-            item.noteResult.forEach((note) => {
-              if (note.pitchFreq > 880 && note.rating === 'perfect') {
-                highNoteCount++
-              }
-            })
-          }
-        })
-      }
-    })
-
-    return mockAchievements.map((ach) => {
-      let unlocked = false
-      let progress = 0
-
-      switch (ach.id) {
-        case 'a1':
-          progress = totalSessions
-          unlocked = totalSessions >= 10
-          break
-        case 'a2':
-          progress = totalSessions
-          unlocked = totalSessions >= 50
-          break
-        case 'a3':
-          progress = Math.min(highNoteCount / 10, 3)
-          unlocked = highNoteCount >= 30
-          break
-        case 'a4':
-          progress = highNoteCount
-          unlocked = highNoteCount >= 100
-          break
-        case 'a5':
-          progress = bestScore
-          unlocked = bestScore >= 100
-          break
-        case 'a6':
-          progress = Math.min(avgScore, 10)
-          unlocked = avgScore >= 95 && totalSessions >= 5
-          break
-        case 'a7':
-          progress = Math.min(totalSessions / 2, 20)
-          unlocked = totalSessions >= 40
-          break
-      }
-
+    return dbAchievementDefs().map((def) => {
+      const userAch = dbUserAchievements().find(
+        (ua) => ua.achievementId === def.id,
+      )
       return {
-        ...ach,
-        unlocked,
-        progress,
-        required: ach.required,
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        icon: iconForName(def.icon),
+        points: def.points,
+        unlocked: userAch?.unlocked ?? false,
+        unlockedDate:
+          userAch?.unlockedAt !== undefined
+            ? new Date(userAch.unlockedAt).getTime()
+            : undefined,
+        progress: userAch?.progress ?? 0,
+        required: def.required,
       }
     })
   }
@@ -622,13 +268,14 @@ export const VocalChallenges: Component = () => {
   const badges = createMemo(() => getBadges())
   const achievements = createMemo(() => getAchievements())
 
-  // Check if category is locked based on actual progress
-  const isCategoryLocked = (categoryId: string): boolean => {
-    if (categoryId === 'scales') {
-      return challenges().filter((c) => c.type === 'scales').length === 0
-    }
-    return false
-  }
+  // Category tabs with real definition counts (no hardcoded numbers, no
+  // fake locks — every category has seeded, drill-backed content).
+  const categories = createMemo(() =>
+    CHALLENGE_CATEGORIES.map((cat) => ({
+      ...cat,
+      count: dbChallengeDefs().filter((d) => d.category === cat.id).length,
+    })),
+  )
 
   return (
     <div class="vocal-challenges">
@@ -655,26 +302,17 @@ export const VocalChallenges: Component = () => {
 
       {/* Category Tabs */}
       <div class="category-tabs">
-        <For each={challengeCategories()}>
-          {(cat) => {
-            const locked = isCategoryLocked(cat.id)
-            return (
-              <button
-                class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat.id as ChallengeType)}
-                disabled={locked}
-              >
-                <span class="cat-icon">{renderIcon(cat.icon)}</span>
-                <span class="cat-name">{cat.name}</span>
-                <span class="cat-count">{cat.count}</span>
-                {locked && (
-                  <span class="cat-locked">
-                    <IconLockSimple />
-                  </span>
-                )}
-              </button>
-            )
-          }}
+        <For each={categories()}>
+          {(cat) => (
+            <button
+              class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
+              onClick={() => setActiveCategory(cat.id)}
+            >
+              <span class="cat-icon">{renderIcon(cat.icon)}</span>
+              <span class="cat-name">{cat.name}</span>
+              <span class="cat-count">{cat.count}</span>
+            </button>
+          )}
         </For>
       </div>
 
@@ -694,7 +332,6 @@ export const VocalChallenges: Component = () => {
                 <div class="challenge-status">
                   {challenge.status === 'completed' && <IconCheckSolid />}
                   {challenge.status === 'in-progress' && <IconRefreshSimple />}
-                  {challenge.status === 'locked' && <IconLockSimple />}
                 </div>
               </div>
 
@@ -703,17 +340,17 @@ export const VocalChallenges: Component = () => {
                 <p class="challenge-desc">{challenge.description}</p>
 
                 <div class="challenge-stats">
-                  <div class="stat-item">
+                  <div class="stat-item" title="Target score">
                     <span class="stat-icon">
                       <IconTarget />
                     </span>
                     <span class="stat-value">{challenge.targetScore}%</span>
                   </div>
-                  <div class="stat-item">
+                  <div class="stat-item" title="Best score">
                     <span class="stat-icon">
                       <IconChart />
                     </span>
-                    <span class="stat-value">{challenge.progress}%</span>
+                    <span class="stat-value">{challenge.bestScore}%</span>
                   </div>
                 </div>
               </div>
@@ -731,7 +368,9 @@ export const VocalChallenges: Component = () => {
                   />
                 </div>
                 <span class="progress-label">
-                  {challenge.progress}% to {challenge.targetScore}%
+                  {challenge.status === 'completed'
+                    ? `Completed — best ${challenge.bestScore}%`
+                    : `Best ${challenge.bestScore}% of ${challenge.targetScore}% target`}
                 </span>
               </div>
 
@@ -739,33 +378,20 @@ export const VocalChallenges: Component = () => {
                 class={`challenge-action-btn ${challenge.status}`}
                 onClick={() => handleStartChallenge(challenge)}
               >
-                {challenge.status === 'completed' && 'View Complete'}
+                {challenge.status === 'completed' && 'View Details'}
                 {challenge.status === 'in-progress' && 'Continue'}
                 {challenge.status === 'not-started' && 'Start Challenge'}
-                {challenge.status === 'locked' && 'Locked'}
               </button>
 
-              <Show when={challenge.status !== 'locked'}>
-                <button
-                  class="challenge-practice-btn"
-                  onClick={() => {
-                    const drill = generateChallengeDrill(
-                      challenge.type,
-                      challenge.name,
-                    )
-                    launchDrill({
-                      exercise: drill.exercise,
-                      notes: drill.notes,
-                      challengeName: drill.challengeName,
-                    })
-                  }}
-                  title={
-                    generateChallengeDrill(challenge.type, challenge.name).tip
-                  }
-                >
-                  Practice
-                </button>
-              </Show>
+              <button
+                class="challenge-practice-btn"
+                onClick={() => startChallengeDrill(challenge)}
+                title={
+                  generateChallengeDrill(challenge.type, challenge.name).tip
+                }
+              >
+                Practice
+              </button>
             </div>
           )}
         </For>
@@ -848,61 +474,11 @@ export const VocalChallenges: Component = () => {
       <Show when={showChallengeModal() && selectedChallenge()}>
         <ChallengeModal
           challenge={selectedChallenge()!}
-          updateProgress={updateChallengeProgress}
           onClose={() => {
             setShowChallengeModal(false)
             setSelectedChallenge(null)
           }}
-          onComplete={() => {
-            setShowChallengeModal(false)
-            setSelectedChallenge(null)
-            setResultModal({
-              title: 'Challenge Completed!',
-              message: 'Great job! Keep it up!',
-              icon: () => <IconSparkle />,
-              actionLabel: 'Close',
-            })
-          }}
         />
-      </Show>
-
-      {/* Result Modal */}
-      <Show when={resultModal()}>
-        <div class="challenge-modal">
-          <div class="modal-backdrop" onClick={() => setResultModal(null)} />
-          <div class={modalStyles.modalContent}>
-            <button
-              class={modalStyles.modalClose}
-              onClick={() => setResultModal(null)}
-            >
-              <IconCloseSimple />
-            </button>
-            <div class={modalStyles.modalHeader}>
-              <span class="modal-icon">{resultModal()!.icon()}</span>
-              <h2 class="modal-title">{resultModal()!.title}</h2>
-              <p class="modal-desc">{resultModal()!.message}</p>
-            </div>
-            <div class="modal-actions">
-              {resultModal()!.onAction && (
-                <button
-                  class="modal-btn primary"
-                  onClick={() => {
-                    resultModal()!.onAction!()
-                    setResultModal(null)
-                  }}
-                >
-                  {resultModal()!.actionLabel ?? 'OK'}
-                </button>
-              )}
-              <button
-                class={`modal-btn ${resultModal()!.onAction ? 'secondary' : 'primary'}`}
-                onClick={() => setResultModal(null)}
-              >
-                {resultModal()!.onAction ? 'Cancel' : 'Close'}
-              </button>
-            </div>
-          </div>
-        </div>
       </Show>
     </div>
   )
@@ -915,32 +491,11 @@ export const VocalChallenges: Component = () => {
 interface ChallengeModalProps {
   challenge: ChallengeProgress
   onClose: () => void
-  onComplete: () => void
-  updateProgress?: (
-    challengeId: string,
-    score: number,
-    completed: boolean,
-  ) => void
 }
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
-  // Evaluate the user's recent practice sessions against the target and
-  // persist progress (marks the challenge complete if the average meets it).
-  const handleUpdateProgress = () => {
-    const sessions = getSessionHistory()
-    const recentSessions = sessions.slice(-5)
-    if (recentSessions.length === 0) {
-      props.onComplete()
-      return
-    }
-    const avgScore =
-      recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) /
-      recentSessions.length
-
-    const completed = avgScore >= props.challenge.targetScore
-    props.updateProgress?.(props.challenge.id, Math.round(avgScore), completed)
-    props.onComplete()
-  }
+  const drillTip = () =>
+    generateChallengeDrill(props.challenge.type, props.challenge.name).tip
 
   return (
     <div class="challenge-modal">
@@ -967,14 +522,12 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
             <span class="stat-value">{props.challenge.targetScore}%</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Your Progress</span>
-            <span class="stat-value">{props.challenge.progress}%</span>
+            <span class="stat-label">Best Score</span>
+            <span class="stat-value">{props.challenge.bestScore}%</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label">Sessions</span>
-            <span class="stat-value">
-              {props.challenge.actualScores?.length ?? 0}
-            </span>
+            <span class="stat-label">Attempts</span>
+            <span class="stat-value">{props.challenge.attempts}</span>
           </div>
         </div>
 
@@ -982,17 +535,34 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
           <h3>
             <IconPaper /> How to Complete
           </h3>
-          <ul class="instructions-list">
-            <li>Practice the target notes for at least 5 minutes</li>
-            <li>
-              Try to achieve {props.challenge.targetScore}% or higher accuracy
-            </li>
-            <li>Practice at least 3 sessions this week</li>
-            <li>
-              Come back and tap <strong>Update Progress</strong> to score your
-              recent sessions
-            </li>
-          </ul>
+          <Show
+            when={props.challenge.status !== 'completed'}
+            fallback={
+              <ul class="instructions-list">
+                <li>
+                  Completed
+                  {props.challenge.completedDate !== undefined
+                    ? ` on ${new Date(props.challenge.completedDate).toLocaleDateString()}`
+                    : ''}{' '}
+                  with a best score of {props.challenge.bestScore}%
+                </li>
+                <li>Run the drill again any time to beat your best</li>
+              </ul>
+            }
+          >
+            <ul class="instructions-list">
+              <li>
+                Press <strong>Practice Drill</strong> to launch the matching
+                exercise — its score is recorded as an attempt automatically
+              </li>
+              <li>
+                Score {props.challenge.targetScore}% or higher on a single run
+                to complete the challenge
+              </li>
+              <li>Retry as often as you like — your best score is kept</li>
+              <li>{drillTip()}</li>
+            </ul>
+          </Show>
         </div>
 
         <div class="modal-progress-large">
@@ -1006,25 +576,24 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
             />
           </div>
           <span class="progress-text-large">
-            {props.challenge.progress}% to {props.challenge.targetScore}%
+            {props.challenge.status === 'completed'
+              ? `Completed — best ${props.challenge.bestScore}%`
+              : `Best ${props.challenge.bestScore}% of ${props.challenge.targetScore}% target`}
           </span>
         </div>
 
         <div class="modal-actions">
           <button class="modal-btn secondary" onClick={() => props.onClose()}>
-            Cancel
-          </button>
-          <button class="modal-btn" onClick={handleUpdateProgress}>
-            Update Progress
+            Close
           </button>
           <button
             class="modal-btn primary"
             onClick={() => {
-              setActiveTab(TAB_SINGING)
+              startChallengeDrill(props.challenge)
               props.onClose()
             }}
           >
-            Start Practice
+            Practice Drill
           </button>
         </div>
       </div>
@@ -1033,444 +602,25 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
 }
 
 // ============================================================
-// Mock Data
+// Category catalog (counts come from the seeded definitions)
 // ============================================================
 
-const challengeCategories = () => [
-  {
-    id: 'high-notes' as const,
-    name: 'High Notes',
-    icon: IconMicChallenge,
-    count: 3,
-  },
-  {
-    id: 'low-notes' as const,
-    name: 'Low Notes',
-    icon: IconGuitarChallenge,
-    count: 2,
-  },
-  { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
-  { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
-  { id: 'scales' as const, name: 'Scales', icon: IconMusicChallenge, count: 2 },
-  {
-    id: 'intervals' as const,
-    name: 'Intervals',
-    icon: IconArrowUpDown,
-    count: 2,
-  },
-  { id: 'harmony' as const, name: 'Harmony', icon: IconLayers, count: 2 },
-  { id: 'agility' as const, name: 'Agility', icon: IconZap, count: 2 },
-  { id: 'range' as const, name: 'Range', icon: IconSiren, count: 1 },
-  { id: 'dynamic' as const, name: 'Dynamics', icon: IconExpand, count: 1 },
-  {
-    id: 'call-response' as const,
-    name: 'Call & Response',
-    icon: IconReply,
-    count: 1,
-  },
-]
-
-const mockChallenges: ChallengeProgress[] = [
-  {
-    id: 'c1',
-    type: 'high-notes',
-    name: 'High Note Hero',
-    description: 'Achieve 90%+ accuracy on C5 and higher notes',
-    icon: IconMicChallenge,
-    targetScore: 90,
-    currentScore: 75,
-    progress: 75,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 5,
-  },
-  {
-    id: 'c2',
-    type: 'high-notes',
-    name: 'Belting Master',
-    description: 'Maintain belting range (D4-C5) for 3 consecutive songs',
-    icon: IconFireChallenge,
-    targetScore: 100,
-    currentScore: 65,
-    progress: 65,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
-  },
-  {
-    id: 'c3',
-    type: 'high-notes',
-    name: 'Above It All',
-    description: 'Reach F5 at least 5 times in practice sessions',
-    icon: IconRocket,
-    targetScore: 50,
-    currentScore: 10,
-    progress: 10,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c4',
-    type: 'low-notes',
-    name: 'Deep Note King',
-    description: 'Achieve 90%+ accuracy on E3 and lower notes',
-    icon: IconGuitarChallenge,
-    targetScore: 90,
-    currentScore: 88,
-    progress: 88,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
-  },
-  {
-    id: 'c5',
-    type: 'low-notes',
-    name: 'Subwoofer Sound',
-    description: 'Maintain low register (E2-D4) consistently',
-    icon: IconVolume,
-    targetScore: 100,
-    currentScore: 20,
-    progress: 20,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c6',
-    type: 'speed',
-    name: 'Scale Speedster',
-    description: 'Complete a 3-octave scale in under 20 seconds',
-    icon: IconBoltChallenge,
-    targetScore: 60,
-    currentScore: 30,
-    progress: 30,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
-  },
-  {
-    id: 'c7',
-    type: 'speed',
-    name: 'Rapid Fire',
-    description: 'Hit 10 notes in under 3 seconds',
-    icon: IconStopwatch,
-    targetScore: 80,
-    currentScore: 45,
-    progress: 45,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 4,
-  },
-  {
-    id: 'c8',
-    type: 'speed',
-    name: 'Climbing Eagle',
-    description: 'Ascend 2 octaves in under 5 seconds',
-    icon: IconEagle,
-    targetScore: 50,
-    currentScore: 5,
-    progress: 5,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c9',
-    type: 'perfect',
-    name: 'Perfect Pitch Pilot',
-    description: 'Hit 100% accuracy in a 10-note sequence',
-    icon: IconTarget,
-    targetScore: 100,
-    currentScore: 85,
-    progress: 85,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 6,
-  },
-  {
-    id: 'c10',
-    type: 'perfect',
-    name: 'Crystal Clear',
-    description: 'Maintain 95%+ clarity across 3 sessions',
-    icon: IconDiamond,
-    targetScore: 95,
-    currentScore: 60,
-    progress: 60,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c11',
-    type: 'scales',
-    name: 'Major Scale Master',
-    description: 'Practice all 12 major scales this month',
-    icon: IconKeyboardChallenge,
-    targetScore: 12,
-    currentScore: 5,
-    progress: 42,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 8,
-  },
-  {
-    id: 'c12',
-    type: 'scales',
-    name: 'Minor Scale Sage',
-    description: 'Complete 8 minor scale practice sessions',
-    icon: IconMoon,
-    targetScore: 8,
-    currentScore: 3,
-    progress: 38,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
-  },
-  {
-    id: 'c13',
-    type: 'intervals',
-    name: 'Interval Pro',
-    description: 'Achieve 85%+ accuracy on all interval types',
-    icon: IconArrowUpDown,
-    targetScore: 85,
-    currentScore: 60,
-    progress: 71,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
-  },
-  {
-    id: 'c14',
-    type: 'intervals',
-    name: 'Eagle Ear',
-    description: 'Identify and sing 5 different intervals perfectly',
-    icon: IconEagle,
-    targetScore: 90,
-    currentScore: 45,
-    progress: 50,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
-  },
-  {
-    id: 'c15',
-    type: 'harmony',
-    name: 'Chord Whisperer',
-    description: 'Stack 4-note chords with 90%+ accuracy per note',
-    icon: IconLayers,
-    targetScore: 90,
-    currentScore: 55,
-    progress: 61,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 4,
-  },
-  {
-    id: 'c16',
-    type: 'harmony',
-    name: 'Drone Master',
-    description: 'Lock into 6 intervals against a sustained drone',
-    icon: IconDiamond,
-    targetScore: 85,
-    currentScore: 70,
-    progress: 82,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
-  },
-  {
-    id: 'c17',
-    type: 'agility',
-    name: 'Note Ninja',
-    description: 'Hit staccato notes with 90%+ precision',
-    icon: IconZap,
-    targetScore: 90,
-    currentScore: 40,
-    progress: 44,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c18',
-    type: 'agility',
-    name: 'Arpeggio Ace',
-    description: 'Jump through 4 arpeggio patterns flawlessly',
-    icon: IconLayers,
-    targetScore: 85,
-    currentScore: 30,
-    progress: 35,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c19',
-    type: 'range',
-    name: 'Range Rover',
-    description: 'Glide smoothly across a full 2-octave range',
-    icon: IconSiren,
-    targetScore: 80,
-    currentScore: 50,
-    progress: 63,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
-  },
-  {
-    id: 'c20',
-    type: 'dynamic',
-    name: 'Swell Rider',
-    description: 'Hold notes with controlled dynamic swells at 85%+ accuracy',
-    icon: IconExpand,
-    targetScore: 85,
-    currentScore: 35,
-    progress: 41,
-    status: 'not-started',
-    unlockedDate: undefined,
-  },
-  {
-    id: 'c21',
-    type: 'call-response',
-    name: 'Echo Champion',
-    description: 'Reproduce melodic phrases with 90%+ pitch accuracy',
-    icon: IconReply,
-    targetScore: 90,
-    currentScore: 65,
-    progress: 72,
-    status: 'in-progress',
-    unlockedDate: Date.now() - 1000 * 60 * 60 * 24 * 1,
-  },
-]
-
-const mockBadges: UserBadge[] = [
-  {
-    id: 'b1',
-    name: 'First Steps',
-    description: 'Complete your first challenge',
-    icon: IconLeaf,
-    tier: 'bronze',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 10,
-    earned: true,
-  },
-  {
-    id: 'b2',
-    name: 'On Fire',
-    description: 'Maintain a 7-day practice streak',
-    icon: IconFireChallenge,
-    tier: 'bronze',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 7,
-    earned: true,
-  },
-  {
-    id: 'b3',
-    name: 'High & Mighty',
-    description: 'Complete a high note challenge',
-    icon: IconMicChallenge,
-    tier: 'silver',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 5,
-    earned: true,
-  },
-  {
-    id: 'b4',
-    name: 'Speed Demon',
-    description: 'Complete a speed challenge',
-    icon: IconBoltChallenge,
-    tier: 'silver',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
-    earned: true,
-  },
-  {
-    id: 'b5',
-    name: 'Perfect Start',
-    description: 'Complete a perfect pitch challenge',
-    icon: IconTarget,
-    tier: 'silver',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
-    earned: true,
-  },
-  {
-    id: 'b6',
-    name: 'Scale Scholar',
-    description: 'Complete a scale challenge',
-    icon: IconMusicChallenge,
-    tier: 'bronze',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 15,
-    earned: true,
-  },
-  {
-    id: 'b7',
-    name: 'Streak Master',
-    description: 'Reach a 14-day practice streak',
-    icon: IconCrown,
-    tier: 'gold',
-    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 14,
-    earned: false,
-  },
-  {
-    id: 'b8',
-    name: 'All Star',
-    description: 'Complete all bronze badges',
-    icon: IconSparkle,
-    tier: 'gold',
-    earnedDate: 0,
-    earned: false,
-  },
-]
-
-const mockAchievements: UserAchievement[] = [
-  {
-    id: 'a1',
-    name: '10 Notes',
-    description: 'Complete 10 practice sessions',
-    icon: IconPaper,
-    points: 10,
-    unlocked: true,
-    progress: 45,
-    required: 50,
-  },
-  {
-    id: 'a2',
-    name: '50 Sessions',
-    description: 'Complete 50 practice sessions',
-    icon: IconChart,
-    points: 25,
-    unlocked: true,
-    progress: 45,
-    required: 50,
-  },
-  {
-    id: 'a3',
-    name: '3 Octaves',
-    description: 'Cover 3 octaves in one run',
-    icon: IconKeyboardChallenge,
-    points: 15,
-    unlocked: false,
-    progress: 1,
-    required: 3,
-  },
-  {
-    id: 'a4',
-    name: 'High Note Master',
-    description: 'Hit C5 or higher 100 times',
-    icon: IconMicChallenge,
-    points: 30,
-    unlocked: false,
-    progress: 15,
-    required: 100,
-  },
-  {
-    id: 'a5',
-    name: 'Perfect Run',
-    description: 'Get 100% accuracy on a run',
-    icon: IconTarget,
-    points: 50,
-    unlocked: false,
-    progress: 0,
-    required: 1,
-  },
-  {
-    id: 'a6',
-    name: 'Speed Demon',
-    description: 'Hit 10 notes in 3 seconds',
-    icon: IconBoltChallenge,
-    points: 20,
-    unlocked: false,
-    progress: 2,
-    required: 10,
-  },
-  {
-    id: 'a7',
-    name: 'Scale Explorer',
-    description: 'Practice 20 different scales',
-    icon: IconMusicChallenge,
-    points: 25,
-    unlocked: false,
-    progress: 8,
-    required: 20,
-  },
+const CHALLENGE_CATEGORIES: ReadonlyArray<{
+  id: ChallengeType
+  name: string
+  icon: Component
+}> = [
+  { id: 'high-notes', name: 'High Notes', icon: IconMicChallenge },
+  { id: 'low-notes', name: 'Low Notes', icon: IconGuitarChallenge },
+  { id: 'speed', name: 'Speed', icon: IconBoltChallenge },
+  { id: 'perfect', name: 'Perfect Pitch', icon: IconTarget },
+  { id: 'scales', name: 'Scales', icon: IconMusicChallenge },
+  { id: 'intervals', name: 'Intervals', icon: IconArrowUpDown },
+  { id: 'harmony', name: 'Harmony', icon: IconLayers },
+  { id: 'agility', name: 'Agility', icon: IconZap },
+  { id: 'range', name: 'Range', icon: IconSiren },
+  { id: 'dynamic', name: 'Dynamics', icon: IconExpand },
+  { id: 'call-response', name: 'Call & Response', icon: IconReply },
 ]
 
 function getChallengeProgressColor(progress: number): string {
