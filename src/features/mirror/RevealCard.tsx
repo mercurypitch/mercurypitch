@@ -19,6 +19,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { IconSpark } from './icons'
 import { legendArt, LegendCaricature } from './LegendCaricature'
 
 export type RevealMode = 'flip' | 'lenticular'
@@ -55,13 +56,17 @@ export const RevealCard: Component<{
   // Lenticular interleave: tilt shifts how much of the portrait shines through.
   const legendOpacity = (): number => {
     if (props.mode !== 'lenticular' || !props.revealed) return 0
-    return Math.max(0.3, Math.min(0.95, 0.7 - tilt().y / 34))
+    return Math.max(0.32, Math.min(0.95, 0.74 - tilt().y / 34))
   }
 
   // The full-bleed portrait drifts gently against the card tilt (parallax),
   // which is what sells the "two layers inside one card" lenticular depth.
+  // Scale stays small so the crop hides as little of the art as possible.
   const portraitParallax = (): string =>
-    `translate(${(tilt().y * 1.1).toFixed(1)}px, ${(-tilt().x * 1.1).toFixed(1)}px) scale(1.08)`
+    `translate(${(tilt().y * 0.9).toFixed(1)}px, ${(-tilt().x * 0.9).toFixed(1)}px) scale(1.045)`
+
+  const imageSrc = (): string | undefined =>
+    legendArt(props.legend ?? '').imageSrc
 
   return (
     <div
@@ -104,13 +109,33 @@ export const RevealCard: Component<{
             class="mirror-card-face mirror-card-front"
             ref={props.mountFront}
           />
-          <div class="mirror-card-face mirror-card-back">
+          <div
+            class="mirror-card-face mirror-card-back"
+            classList={{ 'has-image': imageSrc() !== undefined }}
+          >
             <Show when={hasLegend()}>
-              <div class="mirror-legend-portrait">
-                <LegendCaricature legend={props.legend ?? ''} />
-              </div>
+              {/* Raster twin: full-bleed art + caption over a scrim — the
+                  same integration as the lenticular, flip is just the
+                  animation. Vector fallback keeps the framed layout. */}
+              <Show
+                when={imageSrc()}
+                fallback={
+                  <div class="mirror-legend-portrait">
+                    <LegendCaricature legend={props.legend ?? ''} />
+                  </div>
+                }
+              >
+                {(src) => (
+                  <>
+                    <img class="mirror-back-img" src={src()} alt="" />
+                    <div class="mirror-back-scrim" />
+                  </>
+                )}
+              </Show>
               <div class="mirror-legend-caption">
-                <span class="mirror-legend-kicker">✦ your voice twin</span>
+                <span class="mirror-legend-kicker">
+                  <IconSpark size={10} /> your voice twin
+                </span>
                 <strong class="mirror-legend-name">{props.legend}</strong>
                 <span class="mirror-legend-epithet">
                   {legendArt(props.legend ?? '').epithet}
@@ -135,7 +160,7 @@ export const RevealCard: Component<{
             style={{ opacity: String(legendOpacity()) }}
           >
             <Show
-              when={legendArt(props.legend ?? '').imageSrc}
+              when={imageSrc()}
               fallback={<LegendCaricature legend={props.legend ?? ''} />}
             >
               {(src) => (
@@ -163,7 +188,9 @@ export const RevealCard: Component<{
           when={props.revealed}
           fallback={
             <p class="mirror-reveal-hint">
-              <span class="mirror-reveal-spark">✦</span>
+              <span class="mirror-reveal-spark">
+                <IconSpark size={13} />
+              </span>
               {props.mode === 'flip'
                 ? 'tap to meet your voice twin'
                 : 'tap, then tilt, to meet your voice twin'}

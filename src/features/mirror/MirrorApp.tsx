@@ -28,6 +28,7 @@ import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
+import { IconCopy, IconGalaxy, IconRocket, IconShare } from './icons'
 import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
@@ -904,14 +905,17 @@ const FreeResults: Component<{
         </Show>
         <div class="mirror-actions">
           <button class="mirror-cta" onClick={() => props.onShare()}>
+            <IconShare size={20} />
             Share my voiceprint
           </button>
           <Show when={supportsImageClipboard()}>
             <button
               class="mirror-cta mirror-cta-secondary"
               onClick={() => props.onCopy()}
+              title="Copy the voiceprint image to the clipboard"
             >
-              Copy image
+              <IconCopy />
+              Copy
             </button>
           </Show>
           <button
@@ -925,7 +929,8 @@ const FreeResults: Component<{
             href={props.appUrl}
             onClick={() => trackFunnel('cta_app_click')}
           >
-            Train in MercuryPitch
+            <IconRocket />
+            Open MercuryPitch
           </a>
           <button
             class="mirror-cta mirror-cta-secondary"
@@ -1085,6 +1090,7 @@ const Results: Component<{
           class="mirror-cta mirror-cta-hero"
           onClick={() => props.onShare()}
         >
+          <IconShare size={20} />
           Share my voiceprint
         </button>
         <div class="mirror-actions-sub">
@@ -1092,22 +1098,26 @@ const Results: Component<{
             <button
               class="mirror-cta mirror-cta-secondary mirror-cta-sm"
               onClick={() => props.onCopy()}
+              title="Copy the voiceprint image to the clipboard"
             >
-              Copy image
+              <IconCopy />
+              Copy
             </button>
           </Show>
           <button
             class="mirror-cta mirror-cta-secondary mirror-cta-sm"
             onClick={() => props.onCosmic()}
           >
-            Sing the Universe ✦
+            <IconGalaxy />
+            Sing the Universe
           </button>
           <a
             class="mirror-cta mirror-cta-secondary mirror-cta-sm"
             href={props.appUrl}
             onClick={() => trackFunnel('cta_app_click')}
           >
-            Train in MercuryPitch
+            <IconRocket />
+            Open MercuryPitch
           </a>
         </div>
         <button class="mirror-textbtn" onClick={() => props.onStartOver()}>
