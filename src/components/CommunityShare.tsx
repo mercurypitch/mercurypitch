@@ -837,26 +837,26 @@ export const CommunityShare: Component = () => {
                 <h2 class={profileStyles.profileName}>{currentProfile()?.displayName}</h2>
                 <p class={profileStyles.profileBio}>{currentProfile()?.bio}</p>
                 <div class={profileStyles.profileStatsRow}>
-                  <div class={profileStyles.statBadge}>
-                    <span class={profileStyles.statLabel}>Streak</span>
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Streak</span>
                     <span class={`${profileStyles.statValue} ${profileStyles.statValueStreak}`}>
                       {currentProfile()?.streak} <IconStreak />
                     </span>
                   </div>
-                  <div class={profileStyles.statBadge}>
-                    <span class={profileStyles.statLabel}>Sessions</span>
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Sessions</span>
                     <span class={profileStyles.statValue}>
                       {currentProfile()?.totalSessions}
                     </span>
                   </div>
-                  <div class={profileStyles.statBadge}>
-                    <span class={profileStyles.statLabel}>Best Score</span>
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Best Score</span>
                     <span class={`${profileStyles.statValue} ${profileStyles.statValueScore}`}>
                       {currentProfile()?.bestScore}%
                     </span>
                   </div>
-                  <div class={profileStyles.statBadge}>
-                    <span class={profileStyles.statLabel}>Accuracy</span>
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Accuracy</span>
                     <span class={`${profileStyles.statValue} ${profileStyles.statValueAccuracy}`}>
                       {currentProfile()?.accuracy}%
                     </span>
