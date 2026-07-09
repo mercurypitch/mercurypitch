@@ -68,8 +68,29 @@ export function scoreNoteAccuracy(
   if (history.length === 0) return 0
 
   const recentSamples = trailingSamplesByTime(history, windowMs)
+  return scoreSamples(recentSamples, targetMidi)
+}
 
-  const deviations = recentSamples
+/**
+ * Score an explicit time slice of the history against a target note —
+ * `[startSec, endSec)` in exercise-elapsed seconds (the samples' `time`
+ * epoch). This is the aligned variant used by phrase/echo scoring: each
+ * expected note only sees the samples of ITS slot, so singing the right
+ * notes in the wrong order does not score (unlike a window-wide best-match).
+ */
+export function scoreNoteInRange(
+  history: PitchSample[],
+  targetMidi: number,
+  startSec: number,
+  endSec: number,
+): number {
+  const slice = history.filter((p) => p.time >= startSec && p.time < endSec)
+  return scoreSamples(slice, targetMidi)
+}
+
+/** Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. */
+function scoreSamples(samples: PitchSample[], targetMidi: number): number {
+  const deviations = samples
     .filter((p) => p.freq > 0)
     .map((p) => {
       const midi = freqToExactMidi(p.freq)
