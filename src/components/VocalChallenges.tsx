@@ -5,6 +5,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
+import modalStyles from '@/components/Modal.module.css'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
@@ -869,11 +870,14 @@ export const VocalChallenges: Component = () => {
       <Show when={resultModal()}>
         <div class="challenge-modal">
           <div class="modal-backdrop" onClick={() => setResultModal(null)} />
-          <div class="modal-content">
-            <button class="modal-close" onClick={() => setResultModal(null)}>
+          <div class={modalStyles.modalContent}>
+            <button
+              class={modalStyles.modalClose}
+              onClick={() => setResultModal(null)}
+            >
               <IconCloseSimple />
             </button>
-            <div class="modal-header">
+            <div class={modalStyles.modalHeader}>
               <span class="modal-icon">{resultModal()!.icon()}</span>
               <h2 class="modal-title">{resultModal()!.title}</h2>
               <p class="modal-desc">{resultModal()!.message}</p>
@@ -941,12 +945,15 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   return (
     <div class="challenge-modal">
       <div class="modal-backdrop" onClick={() => props.onClose?.()} />
-      <div class="modal-content">
-        <button class="modal-close" onClick={() => props.onClose?.()}>
+      <div class={modalStyles.modalContent}>
+        <button
+          class={modalStyles.modalClose}
+          onClick={() => props.onClose?.()}
+        >
           <IconCloseSimple />
         </button>
 
-        <div class="modal-header">
+        <div class={modalStyles.modalHeader}>
           <span class="modal-icon">{renderIcon(props.challenge.icon)}</span>
           <div>
             <h2 class="modal-title">{props.challenge.name}</h2>

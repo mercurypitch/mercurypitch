@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { CheckCircle, MusicNote, Play, X } from '@/components/icons'
+import modalStyles from '@/components/Modal.module.css'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { keyName, setScaleType, showActionNotification, showNotification, } from '@/stores'
@@ -179,21 +180,21 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   return (
     <Show when={props.isOpen}>
       <div
-        class="modal-overlay"
+        class={modalStyles.modalOverlay}
         onClick={() => {
           props.onClose()
         }}
       >
         <div
-          class={['modal-content', styles.scaleBuilder].join(' ')}
+          class={[modalStyles.modalContent, styles.scaleBuilder].join(' ')}
           onClick={(e) => {
             e.stopPropagation()
           }}
         >
-          <div class="modal-header">
+          <div class={modalStyles.modalHeader}>
             <h2>Custom Scale Builder</h2>
             <button
-              class="modal-close"
+              class={modalStyles.modalClose}
               onClick={() => {
                 props.onClose()
               }}
@@ -202,7 +203,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
             </button>
           </div>
 
-          <div class="modal-body">
+          <div class={modalStyles.modalBody}>
             <p class={styles.scaleDesc}>
               Select the notes to include in your custom scale. Click the note
               buttons to toggle them on/off.
@@ -305,7 +306,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
             </Show>
           </div>
 
-          <div class="modal-footer">
+          <div class={modalStyles.modalFooter}>
             <button
               class={styles.btnSecondary}
               onClick={saveScale}

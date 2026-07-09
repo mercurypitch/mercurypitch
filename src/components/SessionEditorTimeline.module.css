@@ -1,14 +1,12 @@
 /* ============================================================
-   SessionEditorTimeline — Global timeline styles
-   Extracted from SessionEditor.module.css so raw kebab-case
-   classes in SessionEditorTimeline.tsx resolve globally.
+   SessionEditorTimeline — Visual timeline for session items
    ============================================================ */
 
-.session-editor-timeline {
+.root {
   margin-top: 12px;
 }
 
-.timeline-track {
+.track {
   width: 100%;
   overflow-x: auto;
   background: var(--bg-tertiary);
@@ -16,7 +14,7 @@
   border: 1px solid var(--border);
 }
 
-.timeline-items {
+.items {
   display: flex;
   align-items: stretch;
   min-width: 100%;
@@ -24,14 +22,14 @@
   padding: 8px;
 }
 
-.end-zone {
+.endZone {
   flex-grow: 1;
   min-width: 48px;
   align-items: flex-start;
   padding-left: 12px;
 }
 
-.timeline-item {
+.item {
   display: flex;
   flex-direction: column;
   padding: 10px 14px;
@@ -46,27 +44,27 @@
     box-shadow 0.2s;
 }
 
-.timeline-item:hover {
+.item:hover {
   border-color: var(--accent);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.timeline-item:active {
+.item:active {
   cursor: grabbing;
 }
 
-.item-header {
+.itemHeader {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
 }
 
-.item-type-icon {
+.itemTypeIcon {
   font-size: 12px;
 }
 
-.item-label {
+.itemLabel {
   flex: 1;
   font-size: 13px;
   font-weight: 500;
@@ -75,7 +73,7 @@
   white-space: nowrap;
 }
 
-.item-delete-btn {
+.itemDeleteBtn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,12 +88,12 @@
   line-height: 1;
 }
 
-.item-delete-btn:hover {
+.itemDeleteBtn:hover {
   background: var(--red);
   color: var(--bg-primary);
 }
 
-.item-details {
+.itemDetails {
   font-size: 11px;
   color: var(--text-secondary);
   display: flex;
@@ -103,11 +101,16 @@
   gap: 2px;
 }
 
-.item-start-beat {
+.itemStartBeat {
   font-family: monospace;
 }
 
-.timeline-drop-zone {
+.itemDuration {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.dropZone {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -124,24 +127,24 @@
   text-align: center;
 }
 
-.timeline-drop-zone:hover {
+.dropZone:hover {
   border-color: var(--accent);
   background: var(--accent-dim);
 }
 
-.rest-placeholder {
+.restPlaceholder {
   font-size: 18px;
   line-height: 1;
   color: var(--text-secondary);
 }
 
-.rest-hint {
+.restHint {
   font-size: 10px;
   color: var(--text-secondary);
   margin-top: 4px;
 }
 
-.timeline-footer {
+.footer {
   margin-top: 12px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
@@ -149,8 +152,7 @@
   color: var(--text-secondary);
 }
 
-/* Shared item-meta (used by SessionEditorTimeline, originally in Modal.module.css) */
-.item-meta {
+.itemMeta {
   font-size: 0.72rem;
   color: var(--text-muted);
   display: flex;
@@ -159,14 +161,18 @@
   flex-wrap: wrap;
 }
 
-/* empty-state (used by SessionEditorTimeline) */
-.empty-state {
+.itemMetaMissing {
+  composes: itemMeta;
+  color: var(--red);
+}
+
+.emptyState {
   text-align: center;
   padding: 40px 20px;
   color: var(--text-muted);
 }
 
-.empty-state p {
+.emptyState p {
   margin: 0;
   font-size: 0.9rem;
 }

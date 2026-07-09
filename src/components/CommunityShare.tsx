@@ -4,6 +4,9 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import tabStyles from '@/components/AppNavTabs.module.css'
+import profileStyles from '@/components/CommunityShare.module.css'
+import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
@@ -621,7 +624,7 @@ export const CommunityShare: Component = () => {
       <div class="search-filter-bar">
         <input
           type="text"
-          class="search-input"
+          class={modalStyles.searchInput}
           placeholder="Search melodies, sessions..."
           value={searchQuery()}
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -650,9 +653,11 @@ export const CommunityShare: Component = () => {
               class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span class="tab-icon">{tab.icon()}</span>
+              <span class={tabStyles.tabIcon}>{tab.icon()}</span>
               <span class="tab-name">{tab.name}</span>
-              {tab.count > 0 && <span class="tab-count">{tab.count}</span>}
+              {tab.count > 0 && (
+                <span class={modalStyles.tabCount}>{tab.count}</span>
+              )}
             </button>
           )}
         </For>
@@ -687,7 +692,7 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="melody-footer">
                     <button
-                      class="action-btn copy-btn"
+                      class={`${modalStyles.actionBtn} ${modalStyles.copyBtn}`}
                       onClick={() => copyShareLink('melody', melody.id)}
                       aria-label="Copy link"
                       title="Copy link"
@@ -697,7 +702,7 @@ export const CommunityShare: Component = () => {
                       </span>
                     </button>
                     <button
-                      class="action-btn view-btn"
+                      class={`${modalStyles.actionBtn} view-btn`}
                       aria-label="View"
                       title="View"
                     >
@@ -710,7 +715,7 @@ export const CommunityShare: Component = () => {
               )}
             </For>
             {displayMelodies().length === 0 && (
-              <div class="empty-state">
+              <div class={modalStyles.emptyState}>
                 <span class="empty-icon">{IconMelody()}</span>
                 <h3>No melodies shared yet</h3>
                 <p>
@@ -735,12 +740,12 @@ export const CommunityShare: Component = () => {
             <For each={displaySessions()}>
               {(session) => (
                 <div
-                  class="session-card"
+                  class={modalStyles.sessionCard}
                   data-share-type="session"
                   data-share-id={session.id}
                 >
                   <div class="session-header">
-                    <h3 class="session-name">{session.name}</h3>
+                    <h3 class={modalStyles.sessionName}>{session.name}</h3>
                     <div class="session-scores">
                       <For each={session.results}>
                         {(score) => (
@@ -763,13 +768,13 @@ export const CommunityShare: Component = () => {
                   <div class="session-stats">
                     <div class="stat-item">
                       <span class="stat-icon">{IconSession()}</span>
-                      <span class="stat-value">
+                      <span class={profileStyles.statValue}>
                         {session.results.length} runs
                       </span>
                     </div>
                     <div class="stat-item">
                       <span class="stat-icon">{IconStats()}</span>
-                      <span class="stat-value">
+                      <span class={profileStyles.statValue}>
                         {Math.round(
                           session.results.reduce((a, b) => a + b, 0) /
                             session.results.length,
@@ -780,7 +785,7 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="session-footer">
                     <button
-                      class="action-btn copy-btn"
+                      class={`${modalStyles.actionBtn} ${modalStyles.copyBtn}`}
                       onClick={() => copyShareLink('session', session.id)}
                       aria-label="Copy link"
                       title="Copy link"
@@ -790,7 +795,7 @@ export const CommunityShare: Component = () => {
                       </span>
                     </button>
                     <button
-                      class="action-btn view-btn"
+                      class={`${modalStyles.actionBtn} view-btn`}
                       aria-label="View"
                       title="View"
                     >
@@ -803,7 +808,7 @@ export const CommunityShare: Component = () => {
               )}
             </For>
             {displaySessions().length === 0 && (
-              <div class="empty-state">
+              <div class={modalStyles.emptyState}>
                 <span class="empty-icon">{IconSession()}</span>
                 <h3>No sessions shared yet</h3>
                 <p>
@@ -824,35 +829,43 @@ export const CommunityShare: Component = () => {
         </Show>
 
         <Show when={activeTab() === 'profile'}>
-          <div class="profile-container">
+          <div class={profileStyles.profileContainer}>
             {/* Profile Header */}
-            <div class="profile-header">
-              <div class="profile-avatar">{IconUser()}</div>
-              <div class="profile-info">
-                <h2 class="profile-name">{currentProfile()?.displayName}</h2>
-                <p class="profile-bio">{currentProfile()?.bio}</p>
-                <div class="profile-stats-row">
-                  <div class="stat-badge">
-                    <span class="stat-label">Streak</span>
-                    <span class="stat-value streak">
+            <div class={profileStyles.profileHeader}>
+              <div class={profileStyles.profileAvatar}>{IconUser()}</div>
+              <div class={profileStyles.profileInfo}>
+                <h2 class={profileStyles.profileName}>
+                  {currentProfile()?.displayName}
+                </h2>
+                <p class={profileStyles.profileBio}>{currentProfile()?.bio}</p>
+                <div class={profileStyles.profileStatsRow}>
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Streak</span>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueStreak}`}
+                    >
                       {currentProfile()?.streak} <IconStreak />
                     </span>
                   </div>
-                  <div class="stat-badge">
-                    <span class="stat-label">Sessions</span>
-                    <span class="stat-value">
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Sessions</span>
+                    <span class={profileStyles.statValue}>
                       {currentProfile()?.totalSessions}
                     </span>
                   </div>
-                  <div class="stat-badge">
-                    <span class="stat-label">Best Score</span>
-                    <span class="stat-value score">
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Best Score</span>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueScore}`}
+                    >
                       {currentProfile()?.bestScore}%
                     </span>
                   </div>
-                  <div class="stat-badge">
-                    <span class="stat-label">Accuracy</span>
-                    <span class="stat-value accuracy">
+                  <div class={profileStyles.statCard}>
+                    <span class={profileStyles.statCardLabel}>Accuracy</span>
+                    <span
+                      class={`${profileStyles.statValue} ${profileStyles.statValueAccuracy}`}
+                    >
                       {currentProfile()?.accuracy}%
                     </span>
                   </div>
@@ -861,7 +874,7 @@ export const CommunityShare: Component = () => {
             </div>
 
             {/* Progress charts — derived from your real practice history */}
-            <div class="profile-charts">
+            <div class={profileStyles.profileCharts}>
               <div class="chart-card">
                 <h3>Recent Scores</h3>
                 <Show

@@ -7,6 +7,7 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
 import { IconAlertTriangle, IconArrowLeft, IconBooks, IconDownload, IconLink, IconMusicNote, } from '@/components/hidden-features-icons'
 import type { MelodyItem } from '@/types'
+import styles from './SharePage.module.css'
 
 export const SharePage: Component = () => {
   const [contentType, setContentType] = createSignal<string>('')
@@ -63,8 +64,8 @@ export const SharePage: Component = () => {
   }
 
   return (
-    <div class="share-page">
-      <div class="share-container">
+    <div class={styles.sharePage}>
+      <div class={styles.shareContainer}>
         <Show when={error()}>
           <div class="error-state">
             <span class="error-icon">
@@ -134,18 +135,18 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
   )
 
   return (
-    <div class="share-content">
-      <div class="share-header">
+    <div class={styles.shareContent}>
+      <div class={styles.shareHeader}>
         <h1>
-          <span class="share-header-icon">
+          <span class={styles.shareHeaderIcon}>
             <IconMusicNote />
           </span>
           {props.content.name}
         </h1>
-        <p class="share-subtitle">Shared by {props.content.author}</p>
+        <p class={styles.shareSubtitle}>Shared by {props.content.author}</p>
       </div>
 
-      <div class="share-body">
+      <div class={styles.shareBody}>
         <div class="info-section">
           <h3>Melody Details</h3>
           <div class="info-grid">
@@ -224,9 +225,9 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
         </div>
       </div>
 
-      <div class="share-footer">
+      <div class={styles.shareFooter}>
         <button
-          class="share-btn"
+          class={styles.shareBtn}
           onClick={() => props.onShare('melody', props.content.id)}
         >
           <IconLink /> Share Again
@@ -255,18 +256,18 @@ interface SessionShareProps {
 
 const SessionShareContent: Component<SessionShareProps> = (props) => {
   return (
-    <div class="share-content">
-      <div class="share-header">
+    <div class={styles.shareContent}>
+      <div class={styles.shareHeader}>
         <h1>
-          <span class="share-header-icon">
+          <span class={styles.shareHeaderIcon}>
             <IconBooks />
           </span>
           {props.content.name}
         </h1>
-        <p class="share-subtitle">Shared by {props.content.author}</p>
+        <p class={styles.shareSubtitle}>Shared by {props.content.author}</p>
       </div>
 
-      <div class="share-body">
+      <div class={styles.shareBody}>
         <div class="info-section">
           <h3>Session Results</h3>
           <div class="results-list">
@@ -327,9 +328,9 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
         </div>
       </div>
 
-      <div class="share-footer">
+      <div class={styles.shareFooter}>
         <button
-          class="share-btn"
+          class={styles.shareBtn}
           onClick={() => props.onShare('session', props.content.id)}
         >
           <IconLink /> Share Again

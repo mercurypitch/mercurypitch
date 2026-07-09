@@ -16,12 +16,12 @@ interface NoteListProps {
 }
 
 const BAND_CLASSES: Record<number | 'off', string> = {
-  100: 'band-perfect',
-  90: 'band-excellent',
-  75: 'band-good',
-  50: 'band-okay',
-  0: 'band-off',
-  off: 'band-off',
+  100: styles.bandPerfect,
+  90: styles.bandExcellent,
+  75: styles.bandGood,
+  50: styles.bandOkay,
+  0: styles.bandOff,
+  off: styles.bandOff,
 }
 
 export const NoteList: Component<NoteListProps> = (props) => {
@@ -71,7 +71,12 @@ export const NoteList: Component<NoteListProps> = (props) => {
 
           return (
             <div
-              class={`note-item ${isRest ? 'rest-item' : ''} ${isActive() ? 'active' : ''} ${bandCls()}`}
+              classList={{
+                [styles.noteItem]: true,
+                [styles.restItem]: isRest,
+                [styles.active]: isActive(),
+                [bandCls()]: bandCls() !== '',
+              }}
               data-midi={midi}
             >
               <div class={styles.noteDot} />

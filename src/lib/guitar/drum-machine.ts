@@ -414,7 +414,9 @@ export class DrumMachine {
   dispose(): void {
     this.stop()
     if (this.ctx) {
-      this.ctx.close().catch(() => {})
+      this.ctx
+        .close()
+        .catch((err) => console.info('[DrumMachine] AudioContext close:', err))
     }
     this.ctx = null
     this._listeners.clear()

@@ -1,4 +1,4 @@
-#pitch-reference {
+.root {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -6,33 +6,28 @@
   text-align: center;
   flex-shrink: 0;
 }
-
-#pitch-reference h3 {
+.title {
   font-size: 0.68rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 4px;
 }
-
-#detected-note {
+.noteName {
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--accent);
   line-height: 1.1;
 }
-
-#detected-freq {
+.frequency {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin-bottom: 6px;
 }
-
-#cents-display {
+.centsDisplay {
   margin-top: 4px;
 }
-
-#cents-bar {
+.centsBar {
   height: 6px;
   background: var(--bg-tertiary);
   border-radius: 3px;
@@ -40,8 +35,7 @@
   overflow: visible;
   margin-bottom: 6px;
 }
-
-.cents-center {
+.centsCenter {
   position: absolute;
   left: 50%;
   top: -2px;
@@ -51,8 +45,7 @@
   transform: translateX(-50%);
   z-index: 1;
 }
-
-#cents-marker {
+.marker {
   position: absolute;
   top: -2px;
   width: 10px;
@@ -66,19 +59,17 @@
   z-index: 2;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 }
-
-#cents-marker.in-tune {
+.inTune {
   background: var(--green);
   box-shadow: 0 0 8px var(--green);
 }
-#cents-marker.sharp {
+.sharp {
   background: var(--yellow);
 }
-#cents-marker.flat {
+.flat {
   background: var(--blue);
 }
-
-.cents-labels {
+.labels {
   display: flex;
   justify-content: space-between;
   font-size: 0.6rem;

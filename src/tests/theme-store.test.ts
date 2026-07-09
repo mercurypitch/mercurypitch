@@ -54,19 +54,26 @@ describe('Theme Store', () => {
   })
 
   describe('toggleTheme', () => {
-    it('should toggle from dark to light', () => {
+    it('should cycle from dark to light', () => {
       setTheme('dark')
       toggleTheme()
       expect(appStore.theme()).toBe('light')
     })
 
-    it('should toggle from light to dark', () => {
+    it('should cycle from light to midnight', () => {
       setTheme('light')
+      toggleTheme()
+      expect(appStore.theme()).toBe('midnight')
+    })
+
+    it('should cycle through all themes and wrap around', () => {
+      setTheme('slate')
       toggleTheme()
       expect(appStore.theme()).toBe('dark')
     })
 
     it('should persist toggled theme', () => {
+      setTheme('dark')
       toggleTheme()
       expect(localStorage.getItem('pitchperfect_theme')).toBe('light')
     })
@@ -97,6 +104,31 @@ describe('Theme Store', () => {
       setTheme('dark')
       initTheme()
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    })
+  })
+
+  describe('new themes', () => {
+    it('should set theme to midnight', () => {
+      setTheme('midnight')
+      expect(appStore.theme()).toBe('midnight')
+      expect(document.documentElement.getAttribute('data-theme')).toBe(
+        'midnight',
+      )
+    })
+
+    it('should set theme to forest', () => {
+      setTheme('forest')
+      expect(appStore.theme()).toBe('forest')
+    })
+
+    it('should set theme to ocean', () => {
+      setTheme('ocean')
+      expect(appStore.theme()).toBe('ocean')
+    })
+
+    it('should set theme to cyberpunk', () => {
+      setTheme('cyberpunk')
+      expect(appStore.theme()).toBe('cyberpunk')
     })
   })
 

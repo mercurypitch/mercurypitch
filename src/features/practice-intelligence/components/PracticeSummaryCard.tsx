@@ -10,6 +10,7 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import type { NoteResult } from '@/types'
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '../trends-computer'
 import { generateWeaknessReport } from '../weakness-analyzer'
@@ -66,7 +67,7 @@ export const PracticeSummaryCard: Component<PracticeSummaryCardProps> = (
     <div id="score-card" class="practice-summary-card">
       {/* Sparkline */}
       <Show when={recentScores().length >= 2}>
-        <div class="summary-sparkline">
+        <div class={piStyles.summarySparkline}>
           <SparklineChart data={recentScores()} width={200} height={40} />
         </div>
       </Show>
@@ -107,23 +108,23 @@ export const PracticeSummaryCard: Component<PracticeSummaryCardProps> = (
 
       {/* Trends summary */}
       <Show when={stats().totalSessions > 1}>
-        <div class="summary-trends">
-          <div class="summary-trend-row">
-            <span class="summary-trend-label">This Week</span>
-            <span class="summary-trend-value">
+        <div class={piStyles.summaryTrends}>
+          <div class={piStyles.summaryTrendRow}>
+            <span class={piStyles.summaryTrendLabel}>This Week</span>
+            <span class={piStyles.summaryTrendValue}>
               {stats().sessionsThisWeek} session
               {stats().sessionsThisWeek !== 1 ? 's' : ''}· {stats().overallAvg}%
               avg
             </span>
           </div>
           <Show when={improvement() !== null}>
-            <div class="summary-trend-row">
-              <span class="summary-trend-label">Trend</span>
+            <div class={piStyles.summaryTrendRow}>
+              <span class={piStyles.summaryTrendLabel}>Trend</span>
               <span
-                class="summary-trend-value"
+                class={piStyles.summaryTrendValue}
                 classList={{
-                  'trend-up': improvement()! > 0,
-                  'trend-down': improvement()! < 0,
+                  [piStyles.trendUp]: improvement()! > 0,
+                  [piStyles.trendDown]: improvement()! < 0,
                 }}
               >
                 {improvement()! > 0 ? '↑' : improvement()! < 0 ? '↓' : '→'}{' '}
@@ -132,9 +133,11 @@ export const PracticeSummaryCard: Component<PracticeSummaryCardProps> = (
             </div>
           </Show>
           <Show when={recentScores().length >= 5}>
-            <div class="summary-trend-row">
-              <span class="summary-trend-label">Last 5 avg</span>
-              <span class="summary-trend-value">{stats().rolling.last5}%</span>
+            <div class={piStyles.summaryTrendRow}>
+              <span class={piStyles.summaryTrendLabel}>Last 5 avg</span>
+              <span class={piStyles.summaryTrendValue}>
+                {stats().rolling.last5}%
+              </span>
             </div>
           </Show>
         </div>
@@ -142,13 +145,13 @@ export const PracticeSummaryCard: Component<PracticeSummaryCardProps> = (
 
       {/* Weak spots */}
       <Show when={weaknesses().length > 0}>
-        <div class="summary-weakness">
+        <div class={piStyles.summaryWeakness}>
           <h4>Watch These Notes</h4>
-          <div class="summary-weakness-notes">
+          <div class={piStyles.summaryWeaknessNotes}>
             <For each={weaknesses()}>
               {(p) => (
                 <span
-                  class="summary-weakness-badge"
+                  class={piStyles.summaryWeaknessBadge}
                   title={`${p.avgDeviation}¢ deviation`}
                 >
                   {p.noteName} {p.avgDeviation}¢

@@ -1,23 +1,13 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
-import '@/styles/characters.css'
 import type { CharacterName } from '@/stores/settings-store'
 import { CHARACTER_INFO, selectedCharacter, setSelectedCharacter, } from '@/stores/settings-store'
+import styles from './CharacterIcons.module.css'
 
 interface CharacterIconsProps {
   onSelect?: (name: CharacterName) => void
 }
 
-/**
- * Character picker. Selection is now persisted in the settings store
- * (`selectedCharacter`) so EngineContext can react to changes and swap
- * the playback instrument when "Character Sounds" is enabled in
- * Settings.
- *
- * Each button carries a small "i" badge that toggles an inline info panel
- * below the grid — hover title attributes don't exist on touch devices, so
- * this is how mobile users read who a character is.
- */
 export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
   const characters: CharacterName[] = [
     'aria',
@@ -43,15 +33,9 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
   }
 
   onMount(() => {
-    // Close on outside clicks by containment, NOT stopPropagation: Solid
-    // delegates onClick to a document-level listener, so both the badge's
-    // handler and this closer run on the same node and stopPropagation
-    // can't order them — a badge click would open and instantly close.
     const close = (e: MouseEvent) => {
       const target = e.target as Element | null
-      if (target?.closest('.character-info-badge, .character-info-panel')) {
-        return
-      }
+      if (target?.closest(`.${styles.infoBadge}, .${styles.infoPanel}`)) return
       setInfoFor(null)
     }
     document.addEventListener('click', close)
@@ -60,24 +44,24 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
 
   return (
     <>
-      <div id="character-icons" class="character-icons-grid">
+      <div id="character-icons" class={styles.grid}>
         <For each={characters}>
           {(name) => (
-            <div class="character-icon-cell">
+            <div class={styles.cell}>
               <button
-                class={`character-icon-btn ${selectedCharacter() === name ? 'selected' : ''} character-${name} ${selectedCharacter() === name ? 'selected-anim' : ''}`}
+                class={`${styles.btn} ${selectedCharacter() === name ? styles.selected : ''} ${styles[name] ?? ''} ${selectedCharacter() === name ? styles.selectedAnim : ''}`}
                 onClick={() => handleSelect(name)}
                 title={`${CHARACTER_INFO[name].displayName} (${CHARACTER_INFO[name].title}) - ${CHARACTER_INFO[name].description}`}
               >
                 <img
                   src={`characters/${name}_idle.svg`}
                   alt={CHARACTER_INFO[name].displayName}
-                  class="character-icon-img"
+                  class={styles.iconImg}
                 />
               </button>
               <button
                 type="button"
-                class="character-info-badge"
+                class={styles.infoBadge}
                 aria-label={`About ${CHARACTER_INFO[name].displayName}`}
                 aria-expanded={infoFor() === name}
                 onClick={() => toggleInfo(name)}
@@ -103,12 +87,12 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
       <Show when={infoFor()}>
         {(name) => (
           <div
-            class="character-info-panel"
+            class={styles.infoPanel}
             role="note"
             onClick={(e) => e.stopPropagation()}
           >
             <strong>{CHARACTER_INFO[name()].displayName}</strong>
-            <span class="character-info-panel-title">
+            <span class={styles.infoPanelTitle}>
               {CHARACTER_INFO[name()].title}
             </span>
             <p>{CHARACTER_INFO[name()].description}</p>

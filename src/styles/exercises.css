@@ -446,14 +446,6 @@
   background: var(--accent-hover, #4f46e5);
 }
 
-.exercise-btn-secondary {
-  /* --bg-accent is not defined globally — without the fallback these
-     buttons rendered with a transparent background (plain-text look). */
-  background: var(--bg-accent, rgba(99, 102, 241, 0.12));
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
 .exercise-error {
   padding: 8px 14px;
   border-radius: 6px;
@@ -1223,64 +1215,6 @@
 .slide-metric-value {
   font-size: 1rem;
   font-weight: 700;
-}
-
-/* ── Result Overlay ──────────────────────────────────────── */
-
-.exercise-result-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 14px;
-  gap: 10px;
-  z-index: 10;
-  animation: result-fade-in 0.3s ease;
-}
-
-@keyframes result-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.exercise-result-score {
-  font-size: 3.5rem;
-  font-weight: 800;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
-}
-
-.exercise-result-score-good {
-  color: #22c55e;
-  text-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-}
-
-.exercise-result-score-ok {
-  color: #eab308;
-  text-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
-}
-
-.exercise-result-score-poor {
-  color: #ef4444;
-  text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-}
-
-.exercise-result-label {
-  font-size: 0.88rem;
-  /* Always on the dark result overlay (rgba(0,0,0,0.75)) regardless of
-     theme, so use a fixed light color rather than a theme token. */
-  color: #d6dde5;
-  margin-bottom: 8px;
-  text-align: center;
-  line-height: 1.5;
 }
 
 /* ── Pitch Hold Exercise ───────────────────────────────────── */

@@ -9,6 +9,7 @@ import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
+import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
 import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
@@ -183,18 +184,18 @@ export const JamPanel: Component = () => {
   }
 
   return (
-    <div class="jam-panel">
+    <div class={jamStyles.panel}>
       {/* ── Idle: connect screen ─────────────────────────────────── */}
       <Show when={jamState() === 'idle'}>
-        <div class="jam-connect">
-          <h2 class="jam-title">Jam Session</h2>
-          <p class="jam-desc" style={{ 'font-style': 'italic' }}>
+        <div class={jamStyles.connect}>
+          <h2 class={jamStyles.title}>Jam Session</h2>
+          <p class={jamStyles.desc} style={{ 'font-style': 'italic' }}>
             "Where words fail, music speaks."
           </p>
 
-          <div class="jam-field">
+          <div class={jamStyles.field}>
             <label
-              class="jam-label"
+              class={jamStyles.label}
               for="jam-display-name"
               style={{ 'text-transform': 'none', 'letter-spacing': 'normal' }}
             >
@@ -202,7 +203,7 @@ export const JamPanel: Component = () => {
             </label>
             <input
               id="jam-display-name"
-              class="jam-input"
+              class={jamStyles.input}
               type="text"
               value={displayName()}
               onInput={(e) => setDisplayName(e.currentTarget.value)}
@@ -216,23 +217,26 @@ export const JamPanel: Component = () => {
             />
           </div>
 
-          <div class="jam-actions">
-            <button class="jam-btn jam-btn-primary" onClick={handleCreate}>
+          <div class={jamStyles.actions}>
+            <button
+              class={`${jamStyles.btn} ${jamStyles.btnPrimary}`}
+              onClick={handleCreate}
+            >
               Create Room
             </button>
           </div>
 
-          <div class="jam-divider">
+          <div class={jamStyles.divider}>
             <span>or join existing</span>
           </div>
 
-          <div class="jam-field">
-            <label class="jam-label" for="jam-room-id">
+          <div class={jamStyles.field}>
+            <label class={jamStyles.label} for="jam-room-id">
               Room code
             </label>
             <input
               id="jam-room-id"
-              class="jam-input jam-input-mono"
+              class={`${jamStyles.input} ${jamStyles.inputMono}`}
               type="text"
               value={joinRoomId()}
               onInput={(e) => setJoinRoomId(e.currentTarget.value)}
@@ -251,7 +255,7 @@ export const JamPanel: Component = () => {
           </div>
 
           <button
-            class="jam-btn jam-btn-secondary"
+            class={`${jamStyles.btn} ${jamStyles.btnSecondary}`}
             onClick={handleJoin}
             disabled={joining() || joinRoomId().trim() === ''}
           >
@@ -259,14 +263,14 @@ export const JamPanel: Component = () => {
           </button>
 
           <Show when={jamError()}>
-            <p class="jam-error">{jamError()}</p>
+            <p class={jamStyles.error}>{jamError()}</p>
           </Show>
         </div>
       </Show>
 
       {/* ── Connecting ───────────────────────────────────────────── */}
       <Show when={jamState() === 'connecting'}>
-        <div class="jam-connecting">
+        <div class={jamStyles.connecting}>
           <p>Connecting to jam room...</p>
         </div>
       </Show>
@@ -279,14 +283,16 @@ export const JamPanel: Component = () => {
             class={`${panelStyles.sidebar} ${sidebarOpen() ? panelStyles.sidebarOpen : ''}`}
           >
             <div class={panelStyles.sidebarInner}>
-              <div class="jam-status">
-                <span class="jam-status-dot jam-status-dot-active" />
+              <div class={jamStyles.status}>
+                <span
+                  class={`${jamStyles.statusDot} ${jamStyles.statusDotActive}`}
+                />
                 <span>
                   {jamConnectedPeers().length} peer
                   {jamConnectedPeers().length !== 1 ? 's' : ''} connected
                 </span>
                 <Show when={jamIsMuted()}>
-                  <span class="jam-muted-indicator">(muted)</span>
+                  <span class={jamStyles.mutedIndicator}>(muted)</span>
                 </Show>
               </div>
               <JamPeerList peers={jamPeers()} />
@@ -301,10 +307,10 @@ export const JamPanel: Component = () => {
           {/* ── Main content ───────────────────────────────────── */}
           <div class={panelStyles.mainArea}>
             {/* Top bar: room info + controls */}
-            <div class="jam-room-header">
-              <div class="jam-room-info">
+            <div class={jamStyles.roomHeader}>
+              <div class={jamStyles.roomInfo}>
                 <div class={panelStyles.titleRow}>
-                  <h2 class="jam-title">Jam {fancyRoomName()}</h2>
+                  <h2 class={jamStyles.title}>Jam {fancyRoomName()}</h2>
                   <div class={panelStyles.peerBadges}>
                     <span
                       class={panelStyles.peerBadge}
@@ -340,9 +346,9 @@ export const JamPanel: Component = () => {
                   </div>
                 </div>
                 <div class={panelStyles.roomIdRow}>
-                  <span class="jam-room-id-badge">{jamRoomId()}</span>
+                  <span class={jamStyles.roomIdBadge}>{jamRoomId()}</span>
                   <button
-                    class="jam-btn jam-btn-sm"
+                    class={`${jamStyles.btn} ${jamStyles.btnSm}`}
                     onClick={() => {
                       navigator.clipboard
                         .writeText(jamRoomId() ?? '')
@@ -357,7 +363,7 @@ export const JamPanel: Component = () => {
                 <div class={panelStyles.roomLinkRow}>
                   <code class={panelStyles.roomLink}>{roomLink()}</code>
                   <button
-                    class="jam-btn jam-btn-sm"
+                    class={`${jamStyles.btn} ${jamStyles.btnSm}`}
                     onClick={() => {
                       navigator.clipboard.writeText(roomLink()).catch(() => {})
                       setLinkCopied(true)
@@ -368,10 +374,10 @@ export const JamPanel: Component = () => {
                   </button>
                 </div>
               </div>
-              <div class="jam-room-actions">
+              <div class={jamStyles.roomActions}>
                 {/* Sidebar toggle */}
                 <button
-                  class={`jam-icon-btn ${sidebarOpen() ? 'jam-icon-btn-on' : 'jam-icon-btn-neutral'}`}
+                  class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}
                   onClick={() => setSidebarOpen((v) => !v)}
                   title={
                     sidebarOpen() ? 'Hide peers panel' : 'Show peers panel'
@@ -396,7 +402,7 @@ export const JamPanel: Component = () => {
 
                 {/* Microphone toggle */}
                 <button
-                  class={`jam-icon-btn ${jamIsMuted() ? 'jam-icon-btn-off' : 'jam-icon-btn-on'}`}
+                  class={`${jamStyles.iconBtn} ${jamIsMuted() ? jamStyles.iconBtnOff : jamStyles.iconBtnOn}`}
                   onClick={toggleJamMute}
                   title={jamIsMuted() ? 'Unmute microphone' : 'Mute microphone'}
                 >
@@ -441,7 +447,7 @@ export const JamPanel: Component = () => {
 
                 {/* Camera toggle */}
                 <button
-                  class={`jam-icon-btn ${jamVideoEnabled() ? 'jam-icon-btn-on' : 'jam-icon-btn-off'}`}
+                  class={`${jamStyles.iconBtn} ${jamVideoEnabled() ? jamStyles.iconBtnOn : jamStyles.iconBtnOff}`}
                   onClick={() => void toggleJamVideo()}
                   title={
                     jamVideoEnabled() ? 'Turn camera off' : 'Turn camera on'
@@ -483,7 +489,7 @@ export const JamPanel: Component = () => {
 
                 {/* Invite */}
                 <button
-                  class="jam-icon-btn jam-icon-btn-neutral"
+                  class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral}`}
                   onClick={() => setShowInvite(true)}
                   title="Invite people"
                 >
@@ -506,7 +512,7 @@ export const JamPanel: Component = () => {
 
                 {/* Leave */}
                 <button
-                  class="jam-icon-btn jam-icon-btn-danger"
+                  class={`${jamStyles.iconBtn} ${jamStyles.iconBtnDanger}`}
                   onClick={leaveJamRoom}
                   title="Leave room"
                 >
@@ -669,7 +675,7 @@ export const JamPanel: Component = () => {
             </div>
 
             <Show when={jamError()}>
-              <p class="jam-error">{jamError()}</p>
+              <p class={jamStyles.error}>{jamError()}</p>
             </Show>
           </div>
         </div>

@@ -6,7 +6,7 @@
    ============================================================ */
 
 /* ── Weakness Panel ("Practice Suggestions" in the exercises menu) ── */
-.weakness-panel {
+.weaknessPanel {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -16,19 +16,19 @@
   margin: 0 auto 16px;
 }
 
-.weakness-panel-title-row {
+.weaknessPanelTitleRow {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.weakness-panel-title {
+.weaknessPanelTitle {
   margin: 0;
   font-size: 1rem;
   color: var(--text-primary);
 }
 
-.weakness-panel-help {
+.weaknessPanelHelp {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -42,19 +42,19 @@
   cursor: help;
 }
 
-.weakness-panel-subtitle {
+.weaknessPanelSubtitle {
   margin: 2px 0 12px 0;
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.weakness-drills {
+.weaknessDrills {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.weakness-drill-card {
+.weaknessDrillCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -65,14 +65,14 @@
   border-radius: 8px;
 }
 
-.weakness-drill-header {
+.weaknessDrillHeader {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   min-width: 0;
 }
 
-.weakness-drill-icon {
+.weaknessDrillIcon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,33 +84,33 @@
   color: var(--accent);
 }
 
-.weakness-drill-icon-svg {
+.weaknessDrillIconSvg {
   width: 18px;
   height: 18px;
 }
 
-.weakness-drill-info {
+.weaknessDrillInfo {
   min-width: 0;
 }
 
-.weakness-drill-info strong {
+.weaknessDrillInfo strong {
   font-size: 0.9rem;
   color: var(--text-primary);
 }
 
-.weakness-drill-desc {
+.weaknessDrillDesc {
   margin: 2px 0 0 0;
   font-size: 0.8rem;
   color: var(--text-secondary, var(--text-muted));
 }
 
-.weakness-drill-reason {
+.weaknessDrillReason {
   margin: 2px 0 0 0;
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
-.weakness-drill-start {
+.weaknessDrillStart {
   flex-shrink: 0;
   padding: 6px 14px;
   background: var(--accent);
@@ -122,27 +122,27 @@
   cursor: pointer;
 }
 
-.weakness-drill-start:hover {
+.weaknessDrillStart:hover {
   opacity: 0.9;
 }
 
-.weakness-pitch-summary {
+.weaknessPitchSummary {
   margin-top: 12px;
 }
 
-.weakness-pitch-summary h4 {
+.weaknessPitchSummary h4 {
   margin: 0 0 8px 0;
   font-size: 0.8rem;
   color: var(--text-primary);
 }
 
-.weakness-pitch-list {
+.weaknessPitchList {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.weakness-pitch-badge {
+.weaknessPitchBadge {
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -151,18 +151,18 @@
   color: var(--text-secondary, var(--text-muted));
 }
 
-.weakness-pitch-badge.pitch-bad {
+.weaknessPitchBadge.pitchBad {
   background: rgba(248, 81, 73, 0.15);
   color: #f85149;
 }
 
-.weakness-pitch-badge.pitch-ok {
+.weaknessPitchBadge.pitchOk {
   background: rgba(210, 153, 34, 0.15);
   color: var(--yellow, #d29922);
 }
 
 /* ── Difficulty badge (on exercise cards) ── */
-.difficulty-indicator {
+.difficultyIndicator {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -173,7 +173,7 @@
   background: var(--bg-tertiary);
 }
 
-.difficulty-dot {
+.difficultyDot {
   display: inline-block;
   width: 7px;
   height: 7px;
@@ -181,30 +181,30 @@
   background: currentColor;
 }
 
-.diff-beginner {
+.diffBeginner {
   color: var(--green, #3fb950);
 }
-.diff-easy {
+.diffEasy {
   color: var(--teal, #39c5cf);
 }
-.diff-medium {
+.diffMedium {
   color: var(--accent, #58a6ff);
 }
-.diff-hard {
+.diffHard {
   color: var(--yellow, #d29922);
 }
-.diff-expert {
+.diffExpert {
   color: #f85149;
 }
 
 /* ── Practice Summary Card — trends + weak-spot additions ── */
-.summary-sparkline {
+.summarySparkline {
   display: flex;
   justify-content: center;
   margin-bottom: 8px;
 }
 
-.summary-trends {
+.summaryTrends {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -214,50 +214,50 @@
   border-radius: 8px;
 }
 
-.summary-trend-row {
+.summaryTrendRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.summary-trend-label {
+.summaryTrendLabel {
   font-size: 0.78rem;
   color: var(--text-muted);
 }
 
-.summary-trend-value {
+.summaryTrendValue {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.summary-trend-value.trend-up {
+.summaryTrendValue.trendUp {
   color: var(--green, #3fb950);
 }
 
-.summary-trend-value.trend-down {
+.summaryTrendValue.trendDown {
   color: #f85149;
 }
 
-.summary-weakness {
+.summaryWeakness {
   margin-top: 12px;
 }
 
-.summary-weakness h4 {
+.summaryWeakness h4 {
   margin: 0 0 8px 0;
   font-size: 0.85rem;
   color: var(--text-primary);
 }
 
-.summary-weakness-notes {
+.summaryWeaknessNotes {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 10px;
 }
 
-.summary-weakness-badge {
+.summaryWeaknessBadge {
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -267,11 +267,11 @@
 }
 
 /* ── Trend visualisations ── */
-.calendar-heatmap {
+.calendarHeatmap {
   display: block;
   max-width: 100%;
 }
 
-.sparkline-chart {
+.sparklineChart {
   display: block;
 }

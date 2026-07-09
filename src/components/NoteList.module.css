@@ -219,14 +219,14 @@
   background: var(--green);
 }
 
-:global(#note-list .noteItem.restItem) {
+:global(#note-list) .noteItem.restItem {
   border-style: dashed;
   border-color: rgba(139, 148, 158, 0.45);
   background: rgba(139, 148, 158, 0.1);
   color: var(--text-secondary);
 }
 
-:global(#note-list .noteItem.restItem .noteDot) {
+:global(#note-list) .noteItem.restItem .noteDot {
   background: transparent;
   border: 1px dashed rgba(139, 148, 158, 0.65);
 }

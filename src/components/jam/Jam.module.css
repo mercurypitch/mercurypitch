@@ -1,6 +1,18 @@
-/* ── Jam Panel ────────────────────────────────────────────────────── */
+/* ── Jam Shared Styles ──────────────────────────────────────────── */
 
-.jam-panel {
+@keyframes jamPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Panel */
+.panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -9,7 +21,7 @@
   animation: fadeIn 0.25s ease;
 }
 
-.jam-connect {
+.connect {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -21,7 +33,7 @@
   padding: 24px;
 }
 
-.jam-title {
+.title {
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -29,7 +41,7 @@
   text-align: center;
 }
 
-.jam-desc {
+.desc {
   font-size: 0.875rem;
   color: var(--text-secondary, #8b949e);
   margin: 0;
@@ -37,13 +49,13 @@
   text-align: center;
 }
 
-.jam-field {
+.field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.jam-label {
+.label {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-secondary, #8b949e);
@@ -51,7 +63,7 @@
   letter-spacing: 0.03em;
 }
 
-.jam-input {
+.input {
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -64,26 +76,26 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.jam-input:focus {
+.input:focus {
   border-color: var(--accent);
   box-shadow:
     0 0 0 2px rgba(88, 166, 255, 0.2),
     inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.jam-input-mono {
+.inputMono {
   font-family:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
 }
 
-.jam-actions {
+.actions {
   display: flex;
   gap: 8px;
 }
 
-.jam-btn {
+.btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,78 +114,78 @@
   white-space: nowrap;
 }
 
-.jam-btn:hover {
+.btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
 
-.jam-btn:active {
+.btn:active {
   transform: translateY(0);
 }
 
-.jam-btn:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-.jam-btn-primary {
+.btnPrimary {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
   box-shadow: 0 2px 8px var(--accent-glow, rgba(88, 166, 255, 0.3));
 }
 
-.jam-btn-primary:hover {
+.btnPrimary:hover {
   background: #79b8ff;
   border-color: #79b8ff;
   box-shadow: 0 4px 12px var(--accent-glow, rgba(88, 166, 255, 0.4));
 }
 
-.jam-btn-secondary {
+.btnSecondary {
   width: 100%;
 }
 
-.jam-btn-sm {
+.btnSm {
   padding: 6px 12px;
   font-size: 0.8rem;
   border-radius: 6px;
 }
 
-.jam-btn-muted {
+.btnMuted {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-.jam-btn-danger {
+.btnDanger {
   border-color: var(--red, #f85149);
   color: var(--red, #f85149);
   background: rgba(248, 81, 73, 0.05);
 }
 
-.jam-btn-danger:hover {
+.btnDanger:hover {
   background: rgba(248, 81, 73, 0.15);
   border-color: var(--red, #f85149);
 }
 
-.jam-divider {
+.divider {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin: 1.5rem 0;
 }
 
-.jam-divider::before,
-.jam-divider::after {
+.divider::before,
+.divider::after {
   content: '';
   flex: 1;
   height: 2px;
   border-radius: 1px;
 }
 
-.jam-divider::before {
+.divider::before {
   background: linear-gradient(
     90deg,
     var(--border) 0%,
@@ -182,7 +194,7 @@
   );
 }
 
-.jam-divider::after {
+.divider::after {
   background: linear-gradient(
     90deg,
     var(--accent) 0%,
@@ -191,7 +203,7 @@
   );
 }
 
-.jam-divider span {
+.divider span {
   font-size: 0.75rem;
   color: var(--fg-tertiary, var(--text-secondary));
   white-space: nowrap;
@@ -200,7 +212,7 @@
   letter-spacing: 0.05em;
 }
 
-.jam-error {
+.error {
   font-size: 0.85rem;
   color: var(--red, #f85149);
   margin: 0;
@@ -210,7 +222,7 @@
   border-radius: 6px;
 }
 
-.jam-connecting {
+.connecting {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -221,28 +233,28 @@
   font-size: 0.9rem;
 }
 
-/* ── Active Session ───────────────────────────────────────────────── */
+/* ── Active Session ─────────────────────────────────────────────── */
 
-.jam-active {
+.active {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.jam-room-header {
+.roomHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.jam-room-info {
+.roomInfo {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.jam-room-id-badge {
+.roomIdBadge {
   padding: 3px 10px;
   font-size: 0.75rem;
   font-family:
@@ -253,15 +265,15 @@
   border-radius: 4px;
 }
 
-.jam-room-actions {
+.roomActions {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-/* ── Icon buttons ───────────────────────────────────────────────────── */
+/* ── Icon Buttons ───────────────────────────────────────────────── */
 
-.jam-icon-btn {
+.iconBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -278,71 +290,67 @@
   position: relative;
 }
 
-.jam-icon-btn:hover {
+.iconBtn:hover {
   transform: scale(1.08);
 }
 
-.jam-icon-btn:active {
+.iconBtn:active {
   transform: scale(0.95);
 }
 
-/* Active / on state — subtle accent glow */
-.jam-icon-btn-on {
+.iconBtnOn {
   background: rgba(88, 166, 255, 0.12);
   border: 1px solid rgba(88, 166, 255, 0.3);
   color: var(--accent, #58a6ff);
   box-shadow: 0 0 0 0 rgba(88, 166, 255, 0);
 }
 
-.jam-icon-btn-on:hover {
+.iconBtnOn:hover {
   background: rgba(88, 166, 255, 0.2);
   box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
 }
 
-/* Off / muted state — red tint with strike-through feel */
-.jam-icon-btn-off {
+.iconBtnOff {
   background: rgba(248, 81, 73, 0.12);
   border: 1px solid rgba(248, 81, 73, 0.35);
   color: var(--red, #f85149);
 }
 
-.jam-icon-btn-off:hover {
+.iconBtnOff:hover {
   background: rgba(248, 81, 73, 0.22);
   box-shadow: 0 0 8px rgba(248, 81, 73, 0.25);
 }
 
-/* Neutral — for invite, copy etc. */
-.jam-icon-btn-neutral {
+.iconBtnNeutral {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border);
   color: var(--fg-secondary);
 }
 
-.jam-icon-btn-neutral:hover {
+.iconBtnNeutral:hover {
   background: rgba(255, 255, 255, 0.12);
   color: var(--fg-primary);
   border-color: var(--accent);
 }
 
-/* Danger — leave room */
-.jam-icon-btn-danger {
+.iconBtnDanger {
   background: rgba(248, 81, 73, 0.1);
   border: 1px solid rgba(248, 81, 73, 0.25);
   color: var(--red, #f85149);
 }
 
-.jam-icon-btn-danger:hover {
+.iconBtnDanger:hover {
   background: rgba(248, 81, 73, 0.22);
   border-color: var(--red, #f85149);
   box-shadow: 0 0 10px rgba(248, 81, 73, 0.3);
 }
 
-.jam-icon-btn svg {
+.iconBtn svg {
   pointer-events: none;
   flex-shrink: 0;
 }
 
-.jam-status {
+.status {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -353,7 +361,7 @@
   border-radius: 6px;
 }
 
-.jam-status-dot {
+.statusDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -361,45 +369,34 @@
   flex-shrink: 0;
 }
 
-.jam-status-dot-active {
+.statusDotActive {
   background: var(--green, #3fb950);
 }
 
-.jam-status-dot-active::after {
+.statusDotActive::after {
   content: '';
   display: block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--green, #3fb950);
-  animation: jam-pulse 2s ease-out infinite;
+  animation: jamPulse 2s ease-out infinite;
 }
 
-.jam-muted-indicator {
+.mutedIndicator {
   color: var(--red, #f85149);
   font-weight: 500;
 }
 
-@keyframes jam-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
+/* ── Peer List ──────────────────────────────────────────────────── */
 
-/* ── Peer List ────────────────────────────────────────────────────── */
-
-.jam-peer-list {
+.peerList {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.jam-peer-empty {
+.peerEmpty {
   color: var(--text-secondary, #8b949e);
   font-size: 0.875rem;
   font-style: italic;
@@ -408,14 +405,14 @@
   margin: 0;
 }
 
-.jam-peer-heading {
+.peerHeading {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px;
 }
 
-.jam-peer-item {
+.peerItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -427,29 +424,29 @@
   transition: border-color 0.2s ease;
 }
 
-.jam-peer-item.jam-peer-connected {
+.peerItem.peerConnected {
   border-color: rgba(63, 185, 80, 0.25);
 }
 
-.jam-peer-item.jam-peer-connecting {
+.peerItem.peerConnecting {
   border-color: rgba(210, 153, 34, 0.25);
 }
 
-.jam-peer-item.jam-peer-disconnected {
+.peerItem.peerDisconnected {
   opacity: 0.55;
 }
 
-.jam-peer-item.jam-peer-failed {
+.peerItem.peerFailed {
   border-color: rgba(248, 81, 73, 0.25);
 }
 
-.jam-peer-info {
+.peerInfo {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.jam-peer-dot {
+.peerDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -457,41 +454,41 @@
   flex-shrink: 0;
 }
 
-.jam-peer-dot-connected {
+.peerDotConnected {
   background: var(--green, #3fb950);
 }
 
-.jam-peer-dot-connecting {
+.peerDotConnecting {
   background: #d29922;
-  animation: jam-pulse 1s ease-out infinite;
+  animation: jamPulse 1s ease-out infinite;
 }
 
-.jam-peer-dot-disconnected {
+.peerDotDisconnected {
   background: var(--text-secondary, #8b949e);
 }
 
-.jam-peer-dot-failed {
+.peerDotFailed {
   background: var(--red, #f85149);
 }
 
-.jam-peer-name {
+.peerName {
   font-size: 0.875rem;
   color: var(--text-primary);
 }
 
-.jam-peer-meta {
+.peerMeta {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
 
-.jam-peer-state {
+.peerState {
   font-size: 0.78rem;
   color: var(--text-secondary, #8b949e);
 }
 
-.jam-peer-latency {
+.peerLatency {
   font-size: 0.78rem;
   font-family:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -501,9 +498,9 @@
   border-radius: 4px;
 }
 
-/* ── Video Grid ─────────────────────────────────────────────────────── */
+/* ── Video Grid ─────────────────────────────────────────────────── */
 
-.jam-video-grid {
+.videoGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
@@ -511,7 +508,7 @@
   overflow-y: auto;
 }
 
-.jam-video-tile {
+.videoTile {
   position: relative;
   aspect-ratio: 4 / 3;
   background: var(--bg-primary, #0d1117);
@@ -520,14 +517,14 @@
   overflow: hidden;
 }
 
-.jam-video-feed {
+.videoFeed {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.jam-video-label {
+.videoLabel {
   position: absolute;
   bottom: 4px;
   left: 4px;
@@ -539,7 +536,7 @@
   pointer-events: none;
 }
 
-.jam-video-off {
+.videoOff {
   position: absolute;
   inset: 0;
   display: flex;
@@ -550,13 +547,13 @@
   background: var(--bg-primary, #0d1117);
 }
 
-.jam-video-local .jam-video-feed {
+.videoLocal .videoFeed {
   transform: scaleX(-1);
 }
 
-/* ── Chat ────────────────────────────────────────────────────────────── */
+/* ── Chat ───────────────────────────────────────────────────────── */
 
-.jam-chat {
+.chat {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -565,7 +562,7 @@
   overflow: hidden;
 }
 
-.jam-chat-messages {
+.chatMessages {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -575,7 +572,7 @@
   scroll-behavior: smooth;
 }
 
-.jam-chat-msg {
+.chatMsg {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -585,30 +582,30 @@
   line-height: 1.35;
 }
 
-.jam-chat-msg-own .jam-chat-author {
+.chatMsgOwn .chatAuthor {
   color: var(--accent);
 }
 
-.jam-chat-author {
+.chatAuthor {
   font-weight: 600;
   color: var(--green, #3fb950);
   flex-shrink: 0;
 }
 
-.jam-chat-text {
+.chatText {
   color: var(--text-primary);
   word-break: break-word;
   flex: 1;
 }
 
-.jam-chat-time {
+.chatTime {
   font-size: 0.7rem;
   color: var(--text-secondary, #8b949e);
   flex-shrink: 0;
   margin-left: auto;
 }
 
-.jam-chat-input {
+.chatInput {
   display: flex;
   gap: 6px;
   padding: 8px 10px;
@@ -616,7 +613,7 @@
   background: var(--bg-primary, #0d1117);
 }
 
-.jam-chat-input .jam-input {
+.chatInput .input {
   flex: 1;
   background: var(--bg-tertiary);
 }

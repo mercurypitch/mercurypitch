@@ -1,7 +1,10 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
+import { FancyDivider } from '@/components/shared/FancyDivider'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import rawChangelog from '../../CHANGELOG.md?raw'
+import styles from './ChangelogModal.module.css'
 
 interface VersionEntry {
   version: string
@@ -81,14 +84,14 @@ function renderSegment(seg: TextSegment) {
     case 'bold':
       return <strong>{seg.text}</strong>
     case 'code':
-      return <code class="changelog-code">{seg.text}</code>
+      return <code class={styles.code}>{seg.text}</code>
     default:
       return seg.text
   }
 }
 
 const ChangelogItem = (props: { item: string }) => (
-  <li class="changelog-entry">
+  <li class={styles.entry}>
     <For each={parseInlineMarkdown(props.item)}>
       {(seg) => renderSegment(seg)}
     </For>
@@ -96,9 +99,9 @@ const ChangelogItem = (props: { item: string }) => (
 )
 
 function sectionBadgeClass(label: string): string {
-  if (label === 'Added') return 'changelog-badge badge-added'
-  if (label === 'Changed') return 'changelog-badge badge-changed'
-  return 'changelog-badge badge-fixed'
+  if (label === 'Added') return `${styles.badge} ${styles.badgeAdded}`
+  if (label === 'Changed') return `${styles.badge} ${styles.badgeChanged}`
+  return `${styles.badge} ${styles.badgeFixed}`
 }
 
 interface ChangelogModalProps {
@@ -115,45 +118,41 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
 
   return (
     <Show when={props.open}>
-      <div class="modal-overlay" onClick={() => props.onClose()}>
+      <div class={modalStyles.modalOverlay} onClick={() => props.onClose()}>
         <div
-          class="modal-content changelog-modal"
+          class={modalStyles.modalContent}
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Changelog"
           onClick={(e) => e.stopPropagation()}
         >
-          <div class="modal-header">
-            <h2>Changelog</h2>
-            <button class="modal-close" onClick={() => props.onClose()}>
+          <div class={modalStyles.modalHeader}>
+            <h2>What's New</h2>
+            <button
+              class={modalStyles.modalClose}
+              onClick={() => props.onClose()}
+            >
               &times;
             </button>
           </div>
-          <div class="fancy-divider" />
-          <div class="modal-body">
+          <div class={modalStyles.modalBody}>
             <For each={changelog}>
               {(entry, i) => (
                 <>
-                  <div class="changelog-version">
-                    <div class="changelog-version-header">
-                      <span class="changelog-version-left">
-                        <span class="changelog-version-tag">
-                          v{entry.version}
-                        </span>
-                        <Show when={i() === 0}>
-                          <span class="changelog-latest">Latest</span>
-                        </Show>
-                      </span>
-                      <span class="changelog-date">{entry.date}</span>
+                  {i() > 0 && <FancyDivider />}
+                  <div class={styles.version}>
+                    <div class={styles.versionHeader}>
+                      <span class={styles.versionTag}>v{entry.version}</span>
+                      <span class={styles.date}>{entry.date}</span>
                     </div>
                     <For each={entry.sections}>
                       {(section) => (
-                        <div class="changelog-section">
+                        <div class={styles.section}>
                           <span class={sectionBadgeClass(section.label)}>
                             {section.label}
                           </span>
-                          <ul class="changelog-entries">
+                          <ul class={styles.entries}>
                             <For each={section.items}>
                               {(item) => <ChangelogItem item={item} />}
                             </For>

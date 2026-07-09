@@ -38,8 +38,6 @@ const SessionEditor = lazy(async () =>
 )
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
-import './components/TierSelector.css'
-import './components/SessionEditorTimeline.css'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
