@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import modalStyles from '@/components/Modal.module.css'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'

@@ -3,7 +3,6 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import styles from './PitchTestingTab.module.css'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { OfflinePitchCanvas } from '@/components/OfflinePitchCanvas'
 import { PitchCanvasToolbar } from '@/components/PitchCanvasToolbar'
@@ -35,6 +34,7 @@ import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import { FileText } from './icons'
+import styles from './PitchTestingTab.module.css'
 
 interface PitchTestingTabProps {
   onClose?: () => void

@@ -244,19 +244,17 @@ export function GuitarPage(props: GuitarPageProps) {
         extraActions={
           <>
             <SegmentedControl
-              label="Sound"
-              dataTour="guitar.instruments"
+              ariaLabel="Sound"
               options={[
                 { value: 'guitar-acoustic', label: 'Acoustic' },
                 { value: 'guitar-electric', label: 'Electric' },
                 { value: 'bass', label: 'Bass' },
               ]}
-              value={() => guitar.instrumentType()}
+              value={guitar.instrumentType()}
               onChange={(v) => guitar.setInstrumentType(v as InstrumentType)}
             />
             <SegmentedControl
               ariaLabel="View"
-              dataTour="guitar.view-toggle"
               options={[
                 {
                   value: 'interactive',
@@ -266,7 +264,7 @@ export function GuitarPage(props: GuitarPageProps) {
                 { value: 'hero', label: 'Practice' },
                 { value: '3d', label: '3D' },
               ]}
-              value={guitarView}
+              value={guitarView()}
               onChange={setGuitarView}
             />
             <button

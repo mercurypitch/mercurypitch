@@ -8,9 +8,9 @@
 import type { Component, JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { createManualStemSession } from '@/db/services/manual-stem-service'
-import styles from './UvrStemUploadControl.module.css'
 import { showNotification } from '@/stores/notifications-store'
 import { Music, Voice, X } from './icons'
+import styles from './UvrStemUploadControl.module.css'
 
 interface UvrStemUploadControlProps {
   onCreated?: (sessionId: string) => void

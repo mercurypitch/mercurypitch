@@ -1,8 +1,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
-import styles from './CharacterIcons.module.css'
 import type { CharacterName } from '@/stores/settings-store'
 import { CHARACTER_INFO, selectedCharacter, setSelectedCharacter, } from '@/stores/settings-store'
+import styles from './CharacterIcons.module.css'
 
 interface CharacterIconsProps {
   onSelect?: (name: CharacterName) => void

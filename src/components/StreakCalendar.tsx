@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For } from 'solid-js'
-import styles from './StreakCalendar.module.css'
 import { sessionResults } from '@/stores'
+import styles from './StreakCalendar.module.css'
 
 interface StreakCalendarProps {
   days?: number

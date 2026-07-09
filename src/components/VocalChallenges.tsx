@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import modalStyles from '@/components/Modal.module.css'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
+import modalStyles from '@/components/Modal.module.css'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'

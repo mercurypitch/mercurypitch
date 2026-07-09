@@ -7,8 +7,8 @@
 import type { Component, JSX } from 'solid-js'
 import { createUniqueId, Show } from 'solid-js'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { Trash2 } from './icons'
 import styles from './ConfirmDialog.module.css'
+import { Trash2 } from './icons'
 
 interface ConfirmDialogProps {
   open: boolean

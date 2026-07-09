@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconLock, IconMusic, IconTarget, } from '@/components/exercise-icons'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import type { MicroDrill } from '../drill-generator'
 import { generateDrills } from '../drill-generator'
 import { generateWeaknessReport } from '../weakness-analyzer'

@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, For } from 'solid-js'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { getSessionHistory } from '@/stores/practice-session-store'
 
 interface CalendarHeatmapProps {

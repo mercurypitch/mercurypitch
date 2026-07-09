@@ -3,8 +3,8 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
-import styles from './JamInviteModal.module.css'
 import jamStyles from './Jam.module.css'
+import styles from './JamInviteModal.module.css'
 
 interface JamInviteModalProps {
   roomId: string

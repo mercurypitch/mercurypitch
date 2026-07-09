@@ -1,9 +1,9 @@
-import modalStyles from '@/components/Modal.module.css'
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import styles from './ChangelogModal.module.css'
 import rawChangelog from '../../CHANGELOG.md?raw'
+import styles from './ChangelogModal.module.css'
 
 interface VersionEntry {
   version: string

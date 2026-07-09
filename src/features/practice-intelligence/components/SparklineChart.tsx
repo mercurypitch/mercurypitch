@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, Show } from 'solid-js'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 
 interface SparklineChartProps {
   data: number[]

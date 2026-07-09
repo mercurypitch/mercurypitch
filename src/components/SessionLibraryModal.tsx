@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import modalStyles from '@/components/Modal.module.css'
 import { createMemo, createSignal, Show } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { usePlayback } from '@/contexts/PlaybackContext'

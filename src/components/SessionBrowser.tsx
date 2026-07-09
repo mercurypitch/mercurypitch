@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import modalStyles from '@/components/Modal.module.css'
 import { createSignal, For } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import type { SessionCategory, SessionDifficulty, SessionTemplate, } from '@/types'
 

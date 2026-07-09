@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, Show } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { difficultyLabel } from '../adaptive-difficulty'
 import { getDifficulty } from '../difficulty-store'
 

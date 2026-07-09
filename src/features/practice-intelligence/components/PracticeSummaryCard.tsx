@@ -7,10 +7,10 @@
 // improvement insights.
 
 import type { Component } from 'solid-js'
-import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, For, Show } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import type { NoteResult } from '@/types'
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '../trends-computer'
 import { generateWeaknessReport } from '../weakness-analyzer'

@@ -4,7 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { THEME_INFO, type ThemeMode, theme, setTheme, } from '@/stores/theme-store'
+import type { ThemeMode } from '@/stores/theme-store'
+import { setTheme, theme, THEME_INFO } from '@/stores/theme-store'
 import styles from './ThemePicker.module.css'
 
 export const ThemePicker: Component = () => {
