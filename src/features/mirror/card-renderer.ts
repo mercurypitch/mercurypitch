@@ -357,14 +357,20 @@ function drawStats(
     // IS the portrait, so it keeps the plain pill row.
     const legend = input.legend ?? null
     const portrait = input.legendImage ?? null
-    if (
-      legend !== null &&
-      portrait !== null &&
-      input.twinBackdrop !== true &&
-      isStory
-    ) {
+    if (legend !== null && portrait !== null && input.twinBackdrop !== true) {
       // The medallion IS the twin — no "like <name>" pill needed beside it.
-      drawTwinRow(ctx, portrait, [voiceHint], centerX, y, Math.round(36 * s), s)
+      // The square (on-screen front) card gets a smaller circle so it clears
+      // the wordmark footer.
+      drawTwinRow(
+        ctx,
+        portrait,
+        [voiceHint],
+        centerX,
+        y,
+        Math.round(36 * s),
+        s,
+        isStory ? 66 : 46,
+      )
     } else {
       const pills =
         legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
@@ -383,8 +389,9 @@ function drawTwinRow(
   y: number,
   fontSize: number,
   s: number,
+  baseRadius = 66,
 ): void {
-  const radius = 66 * s
+  const radius = baseRadius * s
   const gap = 26 * s
   ctx.font = `500 ${fontSize}px system-ui, sans-serif`
   const padX = 34 * s
