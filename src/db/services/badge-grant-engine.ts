@@ -76,15 +76,13 @@ function isBadgeEarned(
       const bronze = allBadges.filter((b) => b.tier === 'bronze')
       return bronze.length > 0 && bronze.every((b) => earnedBadgeIds.has(b.id))
     }
-    // Category badges map 1:1 to a completed challenge of that category.
-    case 'high-notes':
-    case 'low-notes':
-    case 'speed':
-    case 'perfect':
-    case 'scales':
-      return stats.completedCategories.has(badge.category)
     default:
-      return false
+      // Category badges map 1:1 to a completed challenge of that category
+      // (high-notes, low-notes, speed, perfect, scales, intervals, harmony,
+      // agility, range, dynamic, call-response, ...). Matching on the
+      // category string keeps new challenge categories self-serving: seed a
+      // badge with the same category and it grants on first completion.
+      return stats.completedCategories.has(badge.category)
   }
 }
 
@@ -119,6 +117,35 @@ function evalAchievement(
       // '3 Octaves', 'High Note Master', 'Speed Demon', 'Scale Explorer'
       // need per-note metrics we don't record yet — skip.
       return null
+  }
+}
+
+/**
+ * Grant one badge directly, referenced by id or by name (challenge
+ * definitions carry `rewardBadgeId`; seed data links it by badge name since
+ * ids are generated at seed time). Idempotent and silent on failure — same
+ * contract as checkAndGrantBadges.
+ */
+export async function grantBadgeByRef(ref: string): Promise<void> {
+  try {
+    const [badges, userBadges] = await Promise.all([
+      loadBadgeDefinitions(),
+      loadUserBadges(),
+    ])
+    const badge = badges.find((b) => b.id === ref || b.name === ref)
+    if (badge === undefined) return
+    if (userBadges.some((ub) => ub.badgeId === badge.id)) return
+
+    const db = await getDb()
+    const repo = db.getRepository<UserBadge>('userBadges')
+    await repo.create({
+      userId: getUserId(),
+      badgeId: badge.id,
+      earnedAt: new Date().toISOString(),
+    })
+    showNotification(`Badge unlocked: ${badge.name}`, 'success')
+  } catch {
+    // Signed out or transient failure — ignore.
   }
 }
 

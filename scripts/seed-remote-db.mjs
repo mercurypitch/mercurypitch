@@ -4,8 +4,10 @@
 //
 // Seeds challenge/badge/achievement definitions (from
 // src/db/seed-data.json) into a running db-worker instance.
-// Definitions only — no per-user mock data. Idempotent: a table
-// that already has rows is skipped.
+// Definitions only — no per-user mock data. Idempotent MERGE keyed
+// by title/name: missing rows are created, rows whose seeded fields
+// changed are updated (content updates), and rows keep their ids so
+// per-user progress stays attached. Extra rows are left alone.
 //
 // Usage:
 //   node scripts/seed-remote-db.mjs --url http://localhost:8788 --admin-key dev-admin-key
@@ -31,9 +33,9 @@ if (baseUrl === '' || adminKey === '') {
 }
 
 const TABLES = [
-  ['challengeDefinitions', seedData.challengeDefinitions],
-  ['badgeDefinitions', seedData.badgeDefinitions],
-  ['achievements', seedData.achievementDefinitions],
+  ['challengeDefinitions', seedData.challengeDefinitions, 'title'],
+  ['badgeDefinitions', seedData.badgeDefinitions, 'name'],
+  ['achievements', seedData.achievementDefinitions, 'name'],
 ]
 
 async function request(path, init) {
@@ -45,23 +47,37 @@ async function request(path, init) {
   return res.json()
 }
 
-for (const [table, rows] of TABLES) {
-  const { count } = await request(`${table}/count`)
-  if (count > 0) {
-    console.log(`${table}: ${count} rows already present — skipped`)
-    continue
-  }
+function writeRow(method, path, row) {
+  return request(path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': adminKey,
+    },
+    body: JSON.stringify(row),
+  })
+}
+
+for (const [table, rows, key] of TABLES) {
+  const existing = await request(`${table}?limit=200`)
+  const byKey = new Map(existing.map((row) => [row[key], row]))
+
+  let created = 0
+  let updated = 0
   for (const row of rows) {
-    await request(table, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Admin-Key': adminKey,
-      },
-      body: JSON.stringify(row),
-    })
+    const found = byKey.get(row[key])
+    if (found === undefined) {
+      await writeRow('POST', table, row)
+      created++
+    } else if (Object.keys(row).some((field) => row[field] !== found[field])) {
+      await writeRow('PATCH', `${table}/${found.id}`, row)
+      updated++
+    }
   }
-  console.log(`${table}: seeded ${rows.length} rows`)
+  console.log(
+    `${table}: ${created} created, ${updated} updated, ` +
+      `${rows.length - created - updated} unchanged`,
+  )
 }
 
 console.log(`Done — ${baseUrl} definitions are in place.`)

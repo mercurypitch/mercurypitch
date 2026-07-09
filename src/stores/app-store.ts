@@ -2443,7 +2443,7 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Challenge categories',
     description:
-      'High notes, low notes, speed, perfect pitch, scales, intervals, harmony, dynamics and more — each category has its own set, and some unlock as you progress.',
+      'High notes, low notes, speed, perfect pitch, scales, intervals, harmony, dynamics and more — each category has its own set of drill-backed goals.',
     targetSelector: '.category-tabs',
     placement: 'bottom',
     requiredTab: TAB_CHALLENGES,
@@ -2451,7 +2451,7 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Take on a challenge',
     description:
-      'Pick a card to attempt it — Start tracks your progress, and Practice jumps straight into a matching drill.',
+      'Practice launches the matching drill, and its score counts as an attempt automatically — meet the target on a single run to complete the challenge and earn its badge.',
     targetSelector: '.challenges-grid',
     placement: 'top',
     requiredTab: TAB_CHALLENGES,

@@ -52,6 +52,7 @@ import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { initSettingsSync } from '@/db/services/settings-service'
+import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
@@ -303,6 +304,9 @@ const AppShell: Component<AppProps> = (props) => {
     setPendingDrill(null)
     setAutoStartExercise(false)
     clearLaunchOverride()
+    // Backing out of the exercise abandons any armed challenge attempt —
+    // a later unrelated run must not count toward the challenge.
+    clearChallengeAttempt()
   }
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
@@ -1150,6 +1154,7 @@ const AppShell: Component<AppProps> = (props) => {
       // Drop one-shot intents aimed at the hidden tab.
       setJamRoomToJoin(null)
       setPendingDrill(null)
+      clearChallengeAttempt()
       setAutoStartExercise(false)
       setInitialUvrView(null)
       setInitialUvrSessionId(null)
