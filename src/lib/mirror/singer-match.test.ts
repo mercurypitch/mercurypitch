@@ -4,7 +4,7 @@ import { singerForVoiceType } from './singer-match'
 
 const OPTIONS: Record<string, string[]> = {
   Bass: ['Johnny Cash', 'Barry White'],
-  Baritone: ['Elvis Presley', 'Frank Sinatra'],
+  Baritone: ['Elvis Presley', 'Frank Sinatra', 'Kurt Cobain', 'David Bowie'],
   Tenor: ['Freddie Mercury', 'Bruce Dickinson'],
   Alto: ['Amy Winehouse', 'Cher'],
   'Mezzo-soprano': ['Adele', 'Whitney Houston'],
@@ -12,7 +12,7 @@ const OPTIONS: Record<string, string[]> = {
 }
 
 describe('singerForVoiceType', () => {
-  it('returns one of the two legends for each voice type', () => {
+  it('returns one of the legends for each voice type', () => {
     for (const [type, options] of Object.entries(OPTIONS)) {
       expect(options).toContain(singerForVoiceType(type, 43, 67))
     }
@@ -28,6 +28,14 @@ describe('singerForVoiceType', () => {
     // seed = lowMidi*3 + highMidi; 48*3+72=216 (even → [0]), 48*3+73=217 (odd → [1])
     expect(singerForVoiceType('Tenor', 48, 72)).toBe('Freddie Mercury')
     expect(singerForVoiceType('Tenor', 48, 73)).toBe('Bruce Dickinson')
+  })
+
+  it('reaches every Baritone legend across different ranges', () => {
+    // seed mod 4 walks the four options: 42*3+70=196 → 0 … 42*3+73=199 → 3.
+    expect(singerForVoiceType('Baritone', 42, 70)).toBe('Elvis Presley')
+    expect(singerForVoiceType('Baritone', 42, 71)).toBe('Frank Sinatra')
+    expect(singerForVoiceType('Baritone', 42, 72)).toBe('Kurt Cobain')
+    expect(singerForVoiceType('Baritone', 42, 73)).toBe('David Bowie')
   })
 
   it('places Freddie Mercury under Tenor, never Baritone', () => {

@@ -1,18 +1,26 @@
 # Voice Mirror — Legend "Voice Twin" Portraits
 
+> **STATUS 2026-07-09: DONE — all 14 legends ship with raster portraits** in
+> `public/legends/` (Style A "mercury accents" caricatures generated via the
+> Higgsfield MCP; see `voice-mirror-handoff-2026-07-09.md` §8 for the master
+> prompt template + generation recipe, costs and failure modes). The roster
+> also grew: **Kurt Cobain** and **David Bowie** joined Baritone
+> (`kurt-cobain.webp`, `david-bowie.webp`). MidJourney (below) remains an
+> *alternate* generation route only.
+
 The results card hides the famous-singer match until the singer taps it (the
 reveal). The back / overlay shows the legend as art. Two art tiers:
 
-1. **Constellation portraits (shipping now).** Pure SVG in
+1. **Constellation portraits (fallback).** Pure SVG in
    `src/features/mirror/LegendCaricature.tsx` — a shared nebula bust + each
    legend's signature (Elvis pompadour, Sinatra fedora, Amy beehive, Celine's
    heart-hand, Mariah's whistle-note …) traced as a gold constellation over an
-   ambient starfield. Tiny, vector-crisp, and drawn in the *same* visual
-   language as the voiceprint card so it blends instead of sitting on top.
+   ambient starfield. Renders automatically for any legend without an
+   `imageSrc`.
 
-2. **Richer raster portraits (optional upgrade).** Generate per-legend art in
-   MidJourney and drop it into the exact same frame — no code changes beyond
-   pointing a legend at its image.
+2. **Raster portraits (shipping).** Per-legend Style A caricatures, wired via
+   `imageSrc` — the reveal back face, the full-bleed lenticular overlay and
+   the share-card medallion all use them.
 
 ## How to swap a richer image in
 

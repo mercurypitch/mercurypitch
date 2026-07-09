@@ -25,6 +25,10 @@ export interface CardInput {
   /** Famous-singer match. Left off the default (front) card so the reveal is a
    *  surprise; passed only when exporting the revealed "voice twin" card. */
   legend?: string | null
+  /** Pre-decoded twin portrait, drawn as a medallion beside the legend pill on
+   *  the story card. An element (not a URL) so card building stays synchronous
+   *  — Safari only honours clipboard writes that begin inside the tap. */
+  legendImage?: CanvasImageSource | null
 }
 
 const FORMATS: Record<CardFormat, { width: number; height: number }> = {
@@ -290,8 +294,86 @@ function drawStats(
     // reveal (§ card declutter), so its pill only appears when `legend` is set.
     const legend = input.legend ?? null
     const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
-    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
+    const portrait = input.legendImage ?? null
+    // The revealed story card gets the twin's portrait medallion beside the
+    // pills; the square card is too tight (and is the pre-reveal front anyway).
+    if (legend !== null && portrait !== null && isStory) {
+      drawTwinRow(ctx, portrait, pills, centerX, y, Math.round(36 * s), s)
+    } else {
+      drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
+    }
   }
+}
+
+/** Portrait medallion + pills as one centred row — the revealed voice twin. */
+function drawTwinRow(
+  ctx: CanvasRenderingContext2D,
+  portrait: CanvasImageSource,
+  labels: string[],
+  cx: number,
+  y: number,
+  fontSize: number,
+  s: number,
+): void {
+  const radius = 66 * s
+  const gap = 26 * s
+  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
+  const padX = 34 * s
+  const pillGap = 18 * s
+  const pillWidths = labels.map((t) => ctx.measureText(t).width + padX * 2)
+  const pillsTotal =
+    pillWidths.reduce((a, b) => a + b, 0) +
+    pillGap * Math.max(0, labels.length - 1)
+  const total = radius * 2 + gap + pillsTotal
+  const circleX = cx - total / 2 + radius
+  const circleY = y - 12 * s
+
+  // Cover-crop the (4:5) portrait into the circle.
+  const srcW =
+    portrait instanceof HTMLImageElement
+      ? portrait.naturalWidth
+      : (portrait as HTMLCanvasElement).width
+  const srcH =
+    portrait instanceof HTMLImageElement
+      ? portrait.naturalHeight
+      : (portrait as HTMLCanvasElement).height
+  const side = Math.min(srcW, srcH)
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.drawImage(
+    portrait,
+    (srcW - side) / 2,
+    // Bias the crop toward the top of the portrait — that's where the face is.
+    Math.max(0, (srcH - side) / 4),
+    side,
+    side,
+    circleX - radius,
+    circleY - radius,
+    radius * 2,
+    radius * 2,
+  )
+  ctx.restore()
+
+  // Gold ring with a soft glow, matching the card's star language.
+  ctx.strokeStyle = 'rgba(255, 233, 168, 0.85)'
+  ctx.lineWidth = 3
+  ctx.shadowColor = 'rgba(255, 210, 120, 0.55)'
+  ctx.shadowBlur = 18
+  ctx.beginPath()
+  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+
+  drawPillRow(
+    ctx,
+    labels,
+    circleX + radius + gap + pillsTotal / 2,
+    y,
+    fontSize,
+    s,
+  )
 }
 
 /** Draw one or more rounded pills as a horizontal row centred on (cx, y). */

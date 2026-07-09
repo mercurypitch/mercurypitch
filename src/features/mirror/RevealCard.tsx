@@ -55,8 +55,13 @@ export const RevealCard: Component<{
   // Lenticular interleave: tilt shifts how much of the portrait shines through.
   const legendOpacity = (): number => {
     if (props.mode !== 'lenticular' || !props.revealed) return 0
-    return Math.max(0.28, Math.min(0.92, 0.62 - tilt().y / 34))
+    return Math.max(0.3, Math.min(0.95, 0.7 - tilt().y / 34))
   }
+
+  // The full-bleed portrait drifts gently against the card tilt (parallax),
+  // which is what sells the "two layers inside one card" lenticular depth.
+  const portraitParallax = (): string =>
+    `translate(${(tilt().y * 1.1).toFixed(1)}px, ${(-tilt().x * 1.1).toFixed(1)}px) scale(1.08)`
 
   return (
     <div
@@ -120,13 +125,28 @@ export const RevealCard: Component<{
           </div>
         </div>
 
-        {/* Lenticular overlay — the portrait shines through the data. */}
+        {/* Lenticular overlay — the twin shines through the data. Raster
+            portraits go full-bleed (cover) so the card melts into the
+            caricature; the vector constellation stays for legends without
+            an image. A bottom mask keeps the stats text legible. */}
         <Show when={props.mode === 'lenticular' && hasLegend()}>
           <div
             class="mirror-lenticular-portrait"
             style={{ opacity: String(legendOpacity()) }}
           >
-            <LegendCaricature legend={props.legend ?? ''} />
+            <Show
+              when={legendArt(props.legend ?? '').imageSrc}
+              fallback={<LegendCaricature legend={props.legend ?? ''} />}
+            >
+              {(src) => (
+                <img
+                  class="mirror-lenticular-img"
+                  src={src()}
+                  alt=""
+                  style={{ transform: portraitParallax() }}
+                />
+              )}
+            </Show>
           </div>
           <div
             class="mirror-lenticular-shine"
