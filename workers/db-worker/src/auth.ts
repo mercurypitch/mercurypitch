@@ -28,6 +28,17 @@ export interface Env {
   ADMIN_KEY?: string
   /** Comma-separated extra app origins allowed as Google returnTo targets. */
   APP_ORIGINS?: string
+  /**
+   * Comma-separated browser origins allowed to call this worker. Requests
+   * WITHOUT an Origin header (curl/scripts, service-to-service calls,
+   * Stripe webhooks, top-level navigations like the Google OAuth callback)
+   * always pass. The literal entry `localhost` allows any localhost /
+   * 127.0.0.1 origin on any port and scheme. Unset = no gate (bare local
+   * wrangler). Purpose: locally served builds must never write to deployed
+   * DBs — prod user pollution from tour walks/previews proved this has to
+   * be enforced server-side, not by client-side discipline.
+   */
+  ALLOWED_ORIGINS?: string
   /** Stripe secret key (sk_...). `wrangler secret put STRIPE_SECRET_KEY`.
    *  When unset, checkout/portal return "not configured" and billing is inert. */
   STRIPE_SECRET_KEY?: string
