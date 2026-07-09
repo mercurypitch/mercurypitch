@@ -21,7 +21,7 @@ import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metric
 import { summarize } from '@/lib/mirror/metrics'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
-import { singerForVoiceType } from '@/lib/mirror/singer-match'
+import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
@@ -128,13 +128,15 @@ export const MirrorApp: Component = () => {
   // must be constructed synchronously inside the gesture (Safari), so the
   // story card can't await an image load at share time.
   let legendImageEl: HTMLImageElement | null = null
+  let legendLoadSeq = 0
 
   /** Kick off decoding the legend portrait for a finished run (if any). */
   function preloadLegendPortrait(result: MirrorResult | null): void {
     legendImageEl = null
-    const r = result?.range ?? null
-    if (r === null) return
-    const legend = singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi)
+    // A decode that resolves after a newer run started must not win — the
+    // shared medallion would show the previous run's twin.
+    const seq = ++legendLoadSeq
+    const legend = singerForRange(result?.range ?? null)
     if (legend === null) return
     const src = legendArt(legend).imageSrc
     if (src === undefined) return
@@ -143,7 +145,7 @@ export const MirrorApp: Component = () => {
     img
       .decode()
       .then(() => {
-        legendImageEl = img
+        if (seq === legendLoadSeq) legendImageEl = img
       })
       .catch(() => undefined) // missing file → pill-only share card
   }
@@ -186,6 +188,7 @@ export const MirrorApp: Component = () => {
     starting = false
     cardCanvas = null
     legendImageEl = null
+    legendLoadSeq++ // invalidate any in-flight portrait decode
     setSession(initialSessionState())
     setFreePhase(null)
     setFreeResult(null)
@@ -513,9 +516,13 @@ export const MirrorApp: Component = () => {
     const profileKey = queryKey ?? hashKey
     const profile = DEMO_PROFILES[profileKey] ?? DEMO_PROFILES.baritone
     const { result, glides } = buildDemoResult(profile)
+    // Built by the real formatter so ?delta=1 screenshots stay pixel-faithful.
     const line =
       params.get('delta') !== null
-        ? '▲ +5 semitones · accuracy +1 · steadiness −11 since Jul 7'
+        ? formatDeltaLine(
+            { semitones: 5, accuracy: 1, steadiness: -11 },
+            new Date('2026-07-07'),
+          )
         : ''
     // Let ?mode= force a reveal style for screenshots; otherwise flip on a
     // first visit, lenticular on a delta visit.
@@ -545,10 +552,7 @@ export const MirrorApp: Component = () => {
     if (!state.result) return null
     // Once the twin is revealed, bake the legend into the shared card too.
     const r = state.result.range
-    const legend =
-      revealed() && r
-        ? singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi)
-        : null
+    const legend = revealed() ? singerForRange(r) : null
     return renderCard(
       {
         result: state.result,
@@ -799,8 +803,10 @@ export const MirrorApp: Component = () => {
             if (next) trackFunnel('twin_revealed')
           }}
           onSetRevealMode={(m) => {
+            // Keep the revealed state across a style switch — a user who has
+            // already met their twin shouldn't lose it (or the twin on a
+            // subsequent share) just for comparing animations.
             setRevealMode(m)
-            setRevealed(false)
           }}
           onShare={() => void onShare()}
           onCopy={() => void onCopy()}
@@ -985,9 +991,19 @@ const Results: Component<{
     accuracy()?.takes.filter((t) => t.band === 'bullseye' || t.band === 'hit')
       .length ?? 0
   const drift = (): number => steadiness()?.driftCentsPerSec ?? 0
-  const legend = (): string | null => {
+  const legend = (): string | null => singerForRange(range())
+
+  // The card's data lives only in canvas pixels; this is its spoken and
+  // machine-readable summary (RevealCard aria-label).
+  const frontLabel = (): string | undefined => {
     const r = range()
-    return r ? singerForVoiceType(r.voiceHint, r.lowMidi, r.highMidi) : null
+    if (r === null) return undefined
+    const extras = [
+      accuracy() !== null ? `accuracy ${accuracy()?.score}` : null,
+      steadiness() !== null ? `steadiness ${steadiness()?.score}` : null,
+    ].filter((s): s is string => s !== null)
+    const tail = extras.length > 0 ? `, ${extras.join(', ')}` : ''
+    return `Your voiceprint: ${r.lowNote} to ${r.highNote}, ${r.semitones} semitones${tail}`
   }
 
   return (
@@ -1038,6 +1054,7 @@ const Results: Component<{
             voiceType={range()?.voiceHint ?? null}
             mode={props.revealMode}
             revealed={props.revealed}
+            frontLabel={frontLabel()}
             onToggle={props.onToggleReveal}
             mountFront={props.voiceprintRef}
           />
@@ -1093,7 +1110,7 @@ const Results: Component<{
         </Show>
       </div>
 
-      <div class="mirror-actions">
+      <div class="mirror-actions mirror-actions-hero">
         <button
           class="mirror-cta mirror-cta-hero"
           onClick={() => props.onShare()}

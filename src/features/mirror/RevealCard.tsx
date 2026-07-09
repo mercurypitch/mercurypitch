@@ -7,19 +7,20 @@
 // returning/delta visit):
 //
 //   flip       — the card spins a few turns in 3D and lands on its
-//                back face: the legend's constellation portrait + name.
+//                back face: the legend's portrait + name.
 //   lenticular — the portrait shines through the data; on a pointer
 //                device, moving the cursor tilts the card in 3D and
 //                the data + legend interleave with a moving specular.
 //
 // The front face is mounted by the parent (it hosts the shareable
 // voiceprint canvas); this component owns the 3D, the tilt and the
-// reveal state.
+// reveal state. A raster portrait that fails to load falls back to
+// the vector constellation, so the reveal never lands on a blank.
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
-import { IconSpark } from './icons'
+import { createEffect, createSignal, Show } from 'solid-js'
+import { IconChevron, IconSpark } from './icons'
 import { legendArt, LegendCaricature } from './LegendCaricature'
 
 export type RevealMode = 'flip' | 'lenticular'
@@ -29,12 +30,25 @@ export const RevealCard: Component<{
   voiceType: string | null
   mode: RevealMode
   revealed: boolean
+  /** Spoken/selectable summary of the front card (range, scores) — the data
+   *  only exists as canvas pixels, so this is its accessibility surface. */
+  frontLabel?: string
   onToggle: () => void
   /** Ref for the front face — the parent mounts the voiceprint canvas here. */
   mountFront: (el: HTMLDivElement) => void
 }> = (props) => {
-  const [tilt, setTilt] = createSignal({ x: 0, y: 0, active: false })
+  const [tilt, setTilt] = createSignal({ x: 0, y: 0 })
+  const [portraitBroken, setPortraitBroken] = createSignal(false)
   const hasLegend = (): boolean => props.legend !== null && props.legend !== ''
+
+  // A missing/renamed webp must not leave a blank back face — drop to the
+  // vector constellation instead. Reset when the legend changes.
+  createEffect(() => {
+    void props.legend
+    setPortraitBroken(false)
+  })
+  const portraitSrc = (): string | undefined =>
+    portraitBroken() ? undefined : legendArt(props.legend ?? '').imageSrc
 
   const onMove = (e: PointerEvent): void => {
     if (props.mode !== 'lenticular' || !props.revealed) return
@@ -42,10 +56,10 @@ export const RevealCard: Component<{
     const r = el.getBoundingClientRect()
     const px = (e.clientX - r.left) / r.width - 0.5
     const py = (e.clientY - r.top) / r.height - 0.5
-    setTilt({ x: -py * 14, y: px * 18, active: true })
+    setTilt({ x: -py * 14, y: px * 18 })
   }
   const onLeave = (): void => {
-    setTilt({ x: 0, y: 0, active: false })
+    setTilt({ x: 0, y: 0 })
   }
 
   const cardTransform = (): string =>
@@ -65,9 +79,6 @@ export const RevealCard: Component<{
   const portraitParallax = (): string =>
     `translate(${(tilt().y * 0.9).toFixed(1)}px, ${(-tilt().x * 0.9).toFixed(1)}px) scale(1.045)`
 
-  const imageSrc = (): string | undefined =>
-    legendArt(props.legend ?? '').imageSrc
-
   return (
     <div
       class="mirror-reveal"
@@ -80,12 +91,12 @@ export const RevealCard: Component<{
     >
       <Show when={hasLegend() && !props.revealed}>
         <span class="mirror-reveal-arrow left" aria-hidden="true">
-          <span>❯</span>
-          <span>❯</span>
+          <IconChevron size={22} />
+          <IconChevron size={22} />
         </span>
         <span class="mirror-reveal-arrow right" aria-hidden="true">
-          <span>❮</span>
-          <span>❮</span>
+          <IconChevron size={22} />
+          <IconChevron size={22} />
         </span>
       </Show>
 
@@ -98,10 +109,12 @@ export const RevealCard: Component<{
         onPointerLeave={onLeave}
         aria-label={
           !hasLegend()
-            ? 'Your voiceprint'
+            ? (props.frontLabel ?? 'Your voiceprint')
             : props.revealed
               ? 'Show your voiceprint'
-              : 'Reveal your voice twin'
+              : props.frontLabel !== undefined
+                ? `${props.frontLabel}. Reveal your voice twin`
+                : 'Reveal your voice twin'
         }
       >
         <div class="mirror-reveal-inner">
@@ -111,14 +124,14 @@ export const RevealCard: Component<{
           />
           <div
             class="mirror-card-face mirror-card-back"
-            classList={{ 'has-image': imageSrc() !== undefined }}
+            classList={{ 'has-image': portraitSrc() !== undefined }}
           >
             <Show when={hasLegend()}>
               {/* Raster twin: full-bleed art + caption over a scrim — the
                   same integration as the lenticular, flip is just the
                   animation. Vector fallback keeps the framed layout. */}
               <Show
-                when={imageSrc()}
+                when={portraitSrc()}
                 fallback={
                   <div class="mirror-legend-portrait">
                     <LegendCaricature legend={props.legend ?? ''} />
@@ -127,7 +140,12 @@ export const RevealCard: Component<{
               >
                 {(src) => (
                   <>
-                    <img class="mirror-back-img" src={src()} alt="" />
+                    <img
+                      class="mirror-back-img"
+                      src={src()}
+                      alt=""
+                      onError={() => setPortraitBroken(true)}
+                    />
                     <div class="mirror-back-scrim" />
                   </>
                 )}
@@ -160,7 +178,7 @@ export const RevealCard: Component<{
             style={{ opacity: String(legendOpacity()) }}
           >
             <Show
-              when={imageSrc()}
+              when={portraitSrc()}
               fallback={<LegendCaricature legend={props.legend ?? ''} />}
             >
               {(src) => (
@@ -169,6 +187,7 @@ export const RevealCard: Component<{
                   src={src()}
                   alt=""
                   style={{ transform: portraitParallax() }}
+                  onError={() => setPortraitBroken(true)}
                 />
               )}
             </Show>
@@ -198,7 +217,10 @@ export const RevealCard: Component<{
           }
         >
           <p class="mirror-reveal-hint revealed">
-            <span class="mirror-chip mirror-voicechip">
+            <span
+              class="mirror-chip mirror-voicechip"
+              title="A playful range match — voice type and the legend you overlap with depend on more than range, so it stays a hint."
+            >
               {props.voiceType} · like {props.legend}
             </span>
             <button

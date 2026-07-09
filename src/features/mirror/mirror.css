@@ -288,8 +288,9 @@ body {
   padding: 16px 20px 18px;
   border-radius: 16px;
   border: 1px solid rgba(143, 163, 255, 0.16);
+  /* No backdrop-filter: the only thing behind is the flat page gradient, so
+     a blur pass would cost scroll performance for identical pixels. */
   background: rgba(20, 16, 51, 0.42);
-  backdrop-filter: blur(4px);
   text-align: left;
 }
 
@@ -349,12 +350,6 @@ body {
   margin-top: 2px;
 }
 
-.mirror-voiceprint {
-  margin: 0 auto;
-  width: 100%;
-  max-width: 420px;
-}
-
 /* ── Tappable reveal card: voiceprint (front) → legend twin (back) ── */
 .mirror-reveal {
   position: relative;
@@ -382,24 +377,28 @@ body {
   cursor: pointer;
 }
 
-/* Invite the tap: a soft breathing glow before the reveal. */
+/* Invite the tap: a soft breathing glow before the reveal. The shadow is
+   static and only opacity animates, so the pulse runs on the compositor
+   instead of repainting a 500px halo every frame. */
 .has-legend:not(.is-revealed) .mirror-reveal-card::after {
   content: '';
   position: absolute;
   inset: -6px;
   border-radius: 22px;
   box-shadow:
-    0 0 0 1px rgba(255, 233, 168, 0.26),
-    0 0 34px rgba(255, 210, 120, 0.16);
+    0 0 0 1px rgba(255, 233, 168, 0.5),
+    0 0 52px rgba(255, 210, 120, 0.32);
   animation: mirror-breathe 2.6s ease-in-out infinite;
   pointer-events: none;
   z-index: 5;
 }
 @keyframes mirror-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
   50% {
-    box-shadow:
-      0 0 0 1px rgba(255, 233, 168, 0.5),
-      0 0 52px rgba(255, 210, 120, 0.32);
+    opacity: 1;
   }
 }
 
@@ -618,13 +617,20 @@ body {
   top: 50%;
   z-index: 4;
   display: flex;
+  align-items: center;
   transform: translateY(-50%);
   color: var(--mirror-gold);
-  font-size: 1.4rem;
-  line-height: 0.6;
-  letter-spacing: -4px;
   pointer-events: none;
-  text-shadow: 0 0 12px rgba(255, 210, 120, 0.7);
+  filter: drop-shadow(0 0 8px rgba(255, 210, 120, 0.7));
+}
+/* Two overlapping chevrons per side; the trailing one fades. */
+.mirror-reveal-arrow .mirror-icon + .mirror-icon {
+  margin-left: -14px;
+  opacity: 0.45;
+}
+/* The right-side pair points inward (toward the card). */
+.mirror-reveal-arrow.right .mirror-icon {
+  transform: scaleX(-1);
 }
 .mirror-reveal-arrow.left {
   left: -30px;
@@ -687,13 +693,6 @@ body {
     transition-duration: 0.001ms;
     animation: none;
   }
-}
-
-.mirror-voiceprint-canvas {
-  width: 100%;
-  height: auto;
-  border-radius: 18px;
-  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.45);
 }
 
 .mirror-hero {
@@ -827,9 +826,10 @@ body {
   margin-top: 30px;
 }
 
-/* Results actions: one hero button, a row of smaller sub-buttons, then a
-   quiet text link — a clear hierarchy instead of five equal pills. */
-.mirror-results .mirror-actions {
+/* Guided-results actions: one hero button, a row of smaller sub-buttons,
+   then a quiet text link — a clear hierarchy instead of five equal pills.
+   Scoped by class so FreeResults' flat row keeps its wrapped layout. */
+.mirror-actions.mirror-actions-hero {
   flex-direction: column;
   align-items: center;
   gap: 14px;

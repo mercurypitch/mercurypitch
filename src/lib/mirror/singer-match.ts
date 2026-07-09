@@ -10,6 +10,8 @@
 // LegendCaricature.tsx.
 // ============================================================
 
+import type { RangeResult } from './metrics'
+
 const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> = {
   Bass: ['Johnny Cash', 'Barry White'],
   // Baritone is the most common male voice, so it carries the most variety.
@@ -34,7 +36,19 @@ export function singerForVoiceType(
 ): string | null {
   if (voiceHint === null) return null
   const options = SINGERS_BY_VOICE_TYPE[voiceHint]
-  if (options === undefined) return null
+  // The length guard keeps a future empty roster from turning `seed % 0`
+  // into options[NaN] === undefined, which would leak past `=== null` checks.
+  if (options === undefined || options.length === 0) return null
   const seed = Math.abs(Math.round(lowMidi) * 3 + Math.round(highMidi))
   return options[seed % options.length]
+}
+
+/** The legend for a detected range — the one derivation shared by the chip,
+ *  the reveal, the portrait preload and the story-card export, so they can
+ *  never disagree about who the twin is. */
+export function singerForRange(
+  range: Pick<RangeResult, 'voiceHint' | 'lowMidi' | 'highMidi'> | null,
+): string | null {
+  if (range === null) return null
+  return singerForVoiceType(range.voiceHint, range.lowMidi, range.highMidi)
 }

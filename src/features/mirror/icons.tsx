@@ -3,8 +3,8 @@
 //
 // Hand-drawn 24-grid strokes with tiny four-point sparkles so the
 // buttons read as part of the star theme. Mirror-local on purpose:
-// importing the app's icon set would pull app-shell modules into
-// the standalone mirror bundle.
+// the mirror keeps its own set so its standalone bundle never grows
+// app imports, and so every glyph carries the sparkle styling.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
@@ -79,6 +79,13 @@ export const IconRocket: Component<IconProps> = (p) => (
     <path d="m13.8 15.1-1.1 3.6-1.6-2.5" />
     <path d="M7.2 16.8 4 20" />
     <circle cx="19.6" cy="17.6" r="0.95" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+/** Chevron pointing right — the reveal nudge arrows (mirrored via CSS). */
+export const IconChevron: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="m9 4.5 7.5 7.5L9 19.5" />
   </svg>
 )
 
