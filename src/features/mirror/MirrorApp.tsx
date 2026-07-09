@@ -549,9 +549,9 @@ export const MirrorApp: Component = () => {
   }
 
   /** The exported story card in two variants: the clean data card (legend as
-   *  a name pill once revealed) or the twin card — the legend's portrait
-   *  blended behind the data, the lenticular look baked into pixels. Both
-   *  honour the "pitch trace" card option. */
+   *  a circular medallion + name pill once revealed) or the twin card — the
+   *  portrait blended behind the data, the lenticular look baked into
+   *  pixels. Both honour the "pitch trace" card option. */
   function buildStoryCard(withTwin: boolean): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
@@ -562,7 +562,9 @@ export const MirrorApp: Component = () => {
         glides: state.glides,
         deltaLine: deltaLine(),
         legend,
-        legendImage: withTwin ? legendImage() : null,
+        // The portrait rides along on both variants: full-bleed backdrop when
+        // withTwin, circular medallion beside the pills on the clean card.
+        legendImage: legendImage(),
         twinBackdrop: withTwin,
         showTrace: includeTrace(),
       },
