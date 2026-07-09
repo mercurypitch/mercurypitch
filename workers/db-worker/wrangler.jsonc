@@ -31,20 +31,13 @@
       "invocation_logs": true
     }
   },
-  // Reachable on both the workers.dev URL and a dedicated custom subdomain
-  // per env (api.mercurypitch.com / api-dev.mercurypitch.com). A dedicated
-  // host — not a /api/* route on the shared mercurypitch.com domain — avoids
-  // shadowing the main worker's /api/uvr/* and /api/share/* routes. wrangler
-  // auto-creates the custom domain + DNS record on deploy (the zone is on
-  // Cloudflare). The frontend points at the right worker via VITE_API_BASE_URL
-  // per build; the OAuth /api/auth/google/callback is derived from the
-  // request origin, so it follows whichever host the frontend uses.
+  // Deployed via workers.dev URLs (no custom-domain routes: the main
+  // worker owns /api/uvr/* and /api/share/* on those domains, so a
+  // broad /api/* route here would shadow them). The frontend points
+  // at the right worker via VITE_API_BASE_URL per build.
   "env": {
     "dev": {
       "name": "mercury-pitch-db-dev",
-      "routes": [
-        { "pattern": "api-dev.mercurypitch.com", "custom_domain": true }
-      ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
       },
@@ -59,7 +52,6 @@
     },
     "prod": {
       "name": "mercury-pitch-db",
-      "routes": [{ "pattern": "api.mercurypitch.com", "custom_domain": true }],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com"
       },

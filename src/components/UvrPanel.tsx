@@ -3,13 +3,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { batch, createEffect, createResource, createSignal, For, lazy, on, onCleanup, Show, Suspense, untrack, } from 'solid-js'
+import { batch, createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, } from 'solid-js'
 import { FancyDivider } from '@/components/shared'
-import { hasRoomFor } from '@/db/durable-write'
+import guideStyles from '@/components/UvrPanel.module.css'
+import sgStyles from '@/components/SessionGroupTabs.module.css'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -18,10 +19,9 @@ import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
-import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
-import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { cancelUvrPipeline, destroyPipeline, getActiveProvider, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -160,32 +160,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       onCleanup(() => window.removeEventListener('keydown', handleKeyDown))
     }
   })
-
-  // Warn on an accidental reload only when it would actually lose work:
-  // stems mid-write ('finalizing'), or a job we can't re-attach to (local, or a
-  // server job with no persisted RunPod id). A recoverable server job survives
-  // reload now — auto-resume re-attaches and re-fetches it — so no scary prompt.
-  createEffect(() => {
-    const busy = getAllUvrSessionsReactive().some((s) => {
-      if (s.status === 'finalizing') return true
-      const recoverableServer =
-        s.processingMode === 'server' &&
-        s.apiSessionId !== undefined &&
-        s.apiSessionId !== ''
-      return (
-        (s.status === 'processing' || s.status === 'uploading') &&
-        !recoverableServer
-      )
-    })
-    if (!busy) return
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ''
-    }
-    window.addEventListener('beforeunload', handler)
-    onCleanup(() => window.removeEventListener('beforeunload', handler))
-  })
-
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
@@ -362,19 +336,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Clean up separator when switching away from local mode. Track ONLY the mode
-  // (via on()) and read the status untracked: otherwise a status write from an
-  // in-flight local separation — e.g. getSeparator() setting 'loading' while
-  // retrying a local/WebGPU session with the global mode on 'server' — re-runs
-  // this effect mid-init and destroys the separator out from under the pipeline
-  // (the "can't access property initialize, X is null" crash).
-  createEffect(
-    on(uvrProcessingMode, (mode) => {
-      if (mode === 'server' && untrack(uvrModelStatus) !== 'unloaded') {
-        destroyPipeline()
-      }
-    }),
-  )
+  // Clean up separator when switching away from local mode
+  createEffect(() => {
+    const mode = uvrProcessingMode()
+    if (mode === 'server' && uvrModelStatus() !== 'unloaded') {
+      destroyPipeline()
+    }
+  })
 
   // React to initialView prop changes (from hash navigation)
   // Note: 'mixer' is excluded here because the mixer view requires stems
@@ -566,30 +534,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       }
     }
 
-    // Same file with a server job STILL IN FLIGHT (reconcile leaves a
-    // recoverable job 'processing' with its apiSessionId, and auto-resume is
-    // likely already re-attaching): don't pay for a duplicate — attach to the
-    // existing one. Deliberately NOT for 'error'/'interrupted': a genuinely
-    // failed job would just re-surface its error, so re-uploading there means
-    // "start over". The explicit "Fetch my stems" button re-attaches an errored
-    // job when the user asks for it.
-    const inFlight = getAllUvrSessions().find(
-      (s) =>
-        s.fileHash === hash &&
-        s.processingMode === 'server' &&
-        s.apiSessionId !== undefined &&
-        s.apiSessionId !== '' &&
-        (s.status === 'processing' || s.status === 'finalizing'),
-    )
-    if (inFlight) {
-      showNotification(
-        'Reconnecting to your in-progress separation — no extra credit.',
-        'info',
-      )
-      void handleResumeServer(inFlight.sessionId, { focus: true })
-      return
-    }
-
     const mode = getUvrProcessingMode()
     if (mode === 'server' && !requireServerAuth()) return
     const sessionId = startUvrSession(
@@ -661,143 +605,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return false
   }
 
-  /** A session card should never show a raw JS crash (a TypeError, a null
-   *  dereference). Already-legible messages (the server 503, billing, storage)
-   *  pass through untouched; an internal-looking one is replaced with guidance
-   *  the user can act on. */
-  const humanizeProcessingError = (
-    message: string,
-    mode: UvrProcessingMode,
-  ): string => {
-    const internal =
-      /is null|is undefined|is not a function|can(?:no|')t (?:read|access)|reading '|undefined is not|TypeError/i.test(
-        message,
-      )
-    if (!internal) return message
-    return mode === 'server'
-      ? 'Cloud processing hit an unexpected error. Please try again in a moment.'
-      : 'Browser processing hit an unexpected error. Reload the page and try again, or switch to Cloud Server mode.'
-  }
-
-  /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
-   *  separation (handleProcessStart) and a reload/foreground re-attach
-   *  (handleResumeServer). The view only jumps to results / raises a toast when
-   *  THIS session is the one on screen, so a background auto-resume updates its
-   *  card silently. */
-  const buildPipelineCallbacks = (
-    sessionId: string,
-    fileName: string,
-    processingMode: UvrProcessingMode,
-  ): ProcessingCallbacks => ({
-    onProgress: () => {
-      // Progress is written inside the pipeline via updateUvrSessionProgress.
-    },
-    onComplete: async (result) => {
-      const persisted = await completeUvrSession(
-        sessionId,
-        result.outputs,
-        result.stemMeta,
-      )
-      if (!persisted) {
-        showNotification(
-          'Finalizing hit a storage issue — your stems are saved. Reload if the session looks off.',
-          'warning',
-        )
-      }
-      if (processingMode === 'server') refreshBalance()
-      // Auto-extract stem fingerprint for Shazam matching; delay so the heavy
-      // WebGPU/WASM thread yields before the AudioContext work.
-      setTimeout(() => {
-        void indexStemFingerprint(sessionId, fileName)
-      }, 500)
-      if (currentUvrSession()?.sessionId === sessionId)
-        setCurrentView('results')
-    },
-    onError: (rawMessage) => {
-      const message = humanizeProcessingError(rawMessage, processingMode)
-      setErrorUvrSession(sessionId, message)
-      if (currentUvrSession()?.sessionId === sessionId) {
-        if (!notifyServerBillingError(message)) showError(message)
-      }
-      if (processingMode === 'server') refreshBalance()
-    },
-  })
-
-  /** Re-attach to an in-flight / just-finished RunPod job by its persisted
-   *  apiSessionId — no new job, no new debit. `focus` brings the processing
-   *  view forward (a user-initiated fetch / re-run); omitted for the silent
-   *  background auto-resume on load. */
-  const handleResumeServer = async (
-    sessionId: string,
-    opts?: { focus?: boolean },
-  ): Promise<void> => {
-    const session = getUvrSession(sessionId)
-    if (!session || session.processingMode !== 'server') return
-    const apiId = session.apiSessionId
-    if (apiId === undefined || apiId === '') return
-    if (isServerPollActive(apiId)) return
-    if (opts?.focus ?? false) {
-      setCurrentUvrSession(session)
-      setCurrentView('processing')
-    }
-    setUvrSessionResuming(sessionId)
-    try {
-      await resumeServerSession(
-        sessionId,
-        apiId,
-        buildPipelineCallbacks(
-          sessionId,
-          session.originalFile?.name ?? 'audio',
-          'server',
-        ),
-      )
-    } catch (err) {
-      // pollForCompletion already routed a terminal failure through onError
-      // (the card reflects it); just don't leave the rejection unhandled.
-      console.warn('[UvrPanel] resume server session failed:', err)
-    }
-  }
-
-  /** On load / foreground / reconnect, re-attach to every server job we can
-   *  still recover (see resumableServerSessions), in the background. Guarded so
-   *  a job already being polled is never double-polled. */
-  const autoResumeServerSessions = async (): Promise<void> => {
-    const list = await resumableServerSessions()
-    for (const s of list) {
-      const apiId = s.apiSessionId
-      if (apiId !== undefined && apiId !== '' && !isServerPollActive(apiId)) {
-        void handleResumeServer(s.sessionId)
-      }
-    }
-  }
-
-  // Recover server separations whose client polling was lost to an iOS
-  // app-switch or a page reload: once the store is ready, and again whenever the
-  // tab returns to the foreground or the network reconnects, re-attach to any
-  // still-recoverable RunPod job and re-fetch its stems — for free — instead of
-  // leaving it orphaned and paying for a fresh separation.
-  let autoResumeStarted = false
-  createEffect(() => {
-    if (!isSessionStoreReady() || autoResumeStarted) return
-    autoResumeStarted = true
-    void autoResumeServerSessions()
-  })
-
-  createEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        void autoResumeServerSessions()
-      }
-    }
-    const onOnline = () => void autoResumeServerSessions()
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('online', onOnline)
-    onCleanup(() => {
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('online', onOnline)
-    })
-  })
-
   const handleProcessStart = async (
     sessionId: string,
     mode?: UvrProcessingMode,
@@ -807,17 +614,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       // Retry path: original file is no longer in memory, load from IndexedDB
       file = await getOriginalFileBlob(sessionId)
     } else {
-      // Initial path: file is in memory — persist it durably before processing
-      // so a retry (which reads it back from IndexedDB) can't fail silently.
-      const origSave = await saveStemBlobDurable(
-        sessionId,
-        'original',
-        file,
-        file.name,
-      )
-      if (!origSave.ok) {
-        console.warn('[UvrPanel] original-file save failed:', origSave.error)
-      }
+      // Initial path: file is in memory, save it to IndexedDB immediately
+      // so it's not lost if the session is interrupted or page reloaded
+      void saveStemBlob(sessionId, 'original', file, file.name).catch(() => {})
     }
     if (!file) {
       const msg = 'File lost from memory. Please start a new session.'
@@ -828,16 +627,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
 
     const processingMode = mode ?? getUvrProcessingMode()
-
-    // Storage pre-flight: WARN (don't block) if the disk is likely too full to
-    // hold the separated stems, so a paid job doesn't run only to fail to save
-    // at the end. Stems decode to WAV (~10-12x an MP3), plus the stored original.
-    if (!(await hasRoomFor(file.size * 12))) {
-      showNotification(
-        'Low on storage — the separated stems may not save. Free up space to be safe.',
-        'warning',
-      )
-    }
 
     // Set session to processing status (immutable update via store API)
     const session = getUvrSession(sessionId)
@@ -856,16 +645,33 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         file,
         sessionId,
         processingMode,
-        buildPipelineCallbacks(sessionId, file.name, processingMode),
+        {
+          onProgress: (_pct) => {
+            // Progress already updated inside the pipeline via updateUvrSessionProgress
+          },
+          onComplete: (result) => {
+            completeUvrSession(sessionId, result.outputs, result.stemMeta)
+            if (processingMode === 'server') refreshBalance()
+            // Auto-extract stem fingerprint for Shazam matching
+            // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
+            setTimeout(() => {
+              void indexStemFingerprint(sessionId, file.name)
+            }, 500)
+            setCurrentView('results')
+          },
+          onError: (message) => {
+            setErrorUvrSession(sessionId, message)
+            if (!notifyServerBillingError(message)) showError(message)
+            if (processingMode === 'server') refreshBalance()
+          },
+        },
         // Server jobs always run the single server quality (the pipeline's
         // default model, BS-RoFormer).
       )
     } catch (error) {
       console.error('Processing error:', error)
-      const message = humanizeProcessingError(
-        error instanceof Error ? error.message : 'Processing failed',
-        processingMode,
-      )
+      const message =
+        error instanceof Error ? error.message : 'Processing failed'
       setErrorUvrSession(sessionId, message)
       if (!notifyServerBillingError(message)) {
         showNotification(message, 'error')
@@ -1214,12 +1020,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="view-tab view-tab-sing"
                   classList={{
                     active: currentView() === 'shazam-listen',
-                  }}
+                 }}
                   onClick={() => {
                     setCurrentView('shazam-listen')
                     props.onViewChange?.('shazam-listen')
                     props.onSessionChange?.(null)
-                  }}
+                 }}
                   data-testid="uvr-tab-sing"
                 >
                   <SingMic />
@@ -1229,12 +1035,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="view-tab"
                   classList={{
                     active: currentView() === 'upload',
-                  }}
+                 }}
                   onClick={() => {
                     setCurrentView('upload')
                     props.onViewChange?.('upload')
                     props.onSessionChange?.(null)
-                  }}
+                 }}
                   data-testid="uvr-tab-upload"
                 >
                   <ImportFile />
@@ -1250,7 +1056,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
                     onClick={() => {
                       if (requireServerAuth()) setUvrProcessingMode('server')
-                    }}
+                   }}
                     data-testid="uvr-mode-server"
                   >
                     Server
@@ -1267,7 +1073,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <div class="uvr-device-toggle">
                       <button
                         class="device-toggle-btn"
-                        classList={{ active: !uvrForceWebGpu() }}
+                        classList={{ active: !uvrForceWebGpu()}}
                         onClick={() => handleForceWebGpuToggle(false)}
                         title="Use CPU (WASM) for vocal separation"
                         data-testid="uvr-device-cpu"
@@ -1277,7 +1083,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       </button>
                       <button
                         class="device-toggle-btn"
-                        classList={{ active: uvrForceWebGpu() }}
+                        classList={{ active: uvrForceWebGpu()}}
                         onClick={() => handleForceWebGpuToggle(true)}
                         title="Use GPU (WebGPU) for vocal separation"
                         data-testid="uvr-device-gpu"
@@ -1326,7 +1132,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="uvr-view-tabs">
                 <button
                   class="view-tab"
-                  classList={{ active: showGuide() }}
+                  classList={{ active: showGuide()}}
                   onClick={() => setShowGuide(!showGuide())}
                 >
                   <Music />
@@ -1334,7 +1140,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </button>
                 <button
                   class="view-tab"
-                  classList={{ active: showSettings() }}
+                  classList={{ active: showSettings()}}
                   onClick={() => setShowSettings(!showSettings())}
                 >
                   <Settings />
@@ -1350,12 +1156,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         {/* Main Content */}
         <div class="panel-content">
           {showGuide() && (
-            <div class="guide-modal">
-              <div class="guide-container">
-                <div class="guide-header">
+            <div class={guideStyles.guideModal}>
+              <div class={guideStyles.guideContainer}>
+                <div class={guideStyles.guideHeader}>
                   <h3>Vocal Separation Guide</h3>
                   <button
-                    class="guide-close"
+                    class={guideStyles.guideClose}
                     onClick={() => setShowGuide(false)}
                   >
                     <X />
@@ -1367,12 +1173,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           )}
 
           {showSettings() && (
-            <div class="guide-modal" onClick={() => setShowSettings(false)}>
-              <div class="guide-container" onClick={(e) => e.stopPropagation()}>
-                <div class="guide-header">
+            <div class={guideStyles.guideModal} onClick={() => setShowSettings(false)}>
+              <div class={guideStyles.guideContainer} onClick={(e) => e.stopPropagation()}>
+                <div class={guideStyles.guideHeader}>
                   <h3>Karaoke Settings</h3>
                   <button
-                    class="guide-close"
+                    class={guideStyles.guideClose}
                     onClick={() => setShowSettings(false)}
                   >
                     <X />
@@ -1395,11 +1201,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <UvrUploadControl
                 onFileSelect={(file) => {
                   void handleFileSelect(file)
-                }}
+               }}
                 onFileReady={(file) => setSelectedFile(file)}
                 onProcessStart={(file) => {
                   void handleProcessStart(file)
-                }}
+               }}
                 processing={session()?.status === 'processing'}
                 disabled={allSessions().some((s) => s.status === 'processing')}
                 maxSize={
@@ -1451,7 +1257,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <ChevronUp />
                   </Show>
                 </button>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px'}}>
                   <Show when={allSessions().length > 0}>
                     <Show
                       when={
@@ -1468,7 +1274,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void exportGroup(gid, (pct: number) =>
                             setExportProgress(pct),
                           ).finally(() => setIsExporting(false))
-                        }}
+                       }}
                         disabled={isExporting()}
                         title="Export this group's sessions to a ZIP file"
                       >
@@ -1487,13 +1293,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   <label
                     class="section-action-btn icon-only"
                     title="Import sessions from a ZIP file"
-                    style={{ cursor: isImporting() ? 'default' : 'pointer' }}
+                    style={{ cursor: isImporting() ? 'default' : 'pointer'}}
                   >
                     <ImportFile />
                     <input
                       type="file"
                       accept=".zip"
-                      style={{ display: 'none' }}
+                      style={{ display: 'none'}}
                       onChange={(e) => void handleImportZip(e)}
                       disabled={isImporting()}
                     />
@@ -1524,21 +1330,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </Show>
 
               <Show when={sessionGalleryOpen() && allSessions().length > 0}>
-                <div class="uvr-session-search">
+                <div class={ guideStyles.uvrSessionSearch }>
                   <Search />
                   <input
-                    class="uvr-session-search-input"
+                    class={ guideStyles.uvrSessionSearchInput }
                     type="text"
                     placeholder="Search songs by name…"
                     value={sessionSearch()}
                     onInput={(e) => setSessionSearch(e.currentTarget.value)}
                   />
                   <Show when={sessionSearch().trim() !== ''}>
-                    <span class="uvr-session-search-count">
+                    <span class={ guideStyles.uvrSessionSearchCount }>
                       {filteredSessions().length} found
                     </span>
                     <button
-                      class="uvr-session-search-clear"
+                      class={ guideStyles.uvrSessionSearchClear }
                       title="Clear search"
                       onClick={() => setSessionSearch('')}
                     >
@@ -1572,7 +1378,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         )}
                         onView={() => {
                           void handleSessionView(s.sessionId)
-                        }}
+                       }}
                         onExport={(sessionId) => {
                           if (isExporting()) return
                           setIsExporting(true)
@@ -1580,34 +1386,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void exportSession(sessionId, (pct) =>
                             setExportProgress(pct),
                           ).finally(() => setIsExporting(false))
-                        }}
+                       }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
-                        }}
+                       }}
                         onRetry={(sessionId) => {
-                          const s = getUvrSession(sessionId)
-                          // Still in flight (e.g. mid auto-resume) → re-attach for
-                          // free rather than spawning a duplicate paid job. A
-                          // failed/interrupted job means "start over" → fresh run.
-                          if (
-                            s?.processingMode === 'server' &&
-                            s.apiSessionId !== undefined &&
-                            s.apiSessionId !== '' &&
-                            (s.status === 'processing' ||
-                              s.status === 'finalizing')
-                          ) {
-                            void handleResumeServer(sessionId, { focus: true })
-                            return
-                          }
                           retryUvrSession(sessionId)
-                          void handleProcessStart(sessionId, s?.processingMode)
-                        }}
+                          void handleProcessStart(
+                            sessionId,
+                            getUvrSession(sessionId)?.processingMode,
+                          )
+                       }}
                         onReindexStem={(sessionId) => {
                           const session = getUvrSession(sessionId)
                           const fileName =
                             session?.originalFile?.name ?? 'Unknown'
                           void indexStemFingerprint(sessionId, fileName)
-                        }}
+                       }}
                       />
                     )}
                   </For>
@@ -1651,34 +1446,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       )
                       cancelUvrSession(s.sessionId)
                       setCurrentView('upload')
-                    }}
+                   }}
                     onRetry={() => {
                       const s = sess()
                       retryUvrSession(s.sessionId)
                       void handleProcessStart(s.sessionId, s.processingMode)
-                    }}
+                   }}
                     onNewSession={() => setCurrentView('upload')}
                     onViewResults={() => {
                       setCurrentView('results')
                       props.onViewChange?.('results')
-                    }}
+                   }}
                     onDeleteAndNew={() => {
                       const s = sess()
                       deleteUvrSession(s.sessionId)
                       void deleteUvrSessionFromDb(s.sessionId)
                       setCurrentView('upload')
-                    }}
-                    onFetchStems={
-                      sess().processingMode === 'server' &&
-                      sess().apiSessionId !== undefined &&
-                      sess().apiSessionId !== ''
-                        ? () => {
-                            void handleResumeServer(sess().sessionId, {
-                              focus: true,
-                            })
-                          }
-                        : undefined
-                    }
+                   }}
                   />
                 )}
               </Show>
@@ -1693,7 +1477,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     'border-radius': '8px',
                     'font-size': '13px',
                     color: 'var(--color-text-muted, #94a3b8)',
-                  }}
+                 }}
                 >
                   <span
                     style={{
@@ -1704,7 +1488,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       'border-radius': '50%',
                       animation: 'spin 0.8s linear infinite',
                       display: 'inline-block',
-                    }}
+                   }}
                   />
                   Indexing vocal stem for Shazam matching...
                 </div>
@@ -1720,7 +1504,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     display: 'flex',
                     'align-items': 'center',
                     'flex-wrap': 'wrap',
-                  }}
+                 }}
                 >
                   <span
                     class="process-filename-pill"
@@ -1747,13 +1531,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     originalFileName={sess().originalFile?.name}
                     onStartPractice={(mode) => {
                       void handlePracticeStart(mode)
-                    }}
+                   }}
                     onStartMix={(stems) => {
                       void handleMixStart(stems)
-                    }}
+                   }}
                     onExport={(type) => {
                       void handleExport(type)
-                    }}
+                   }}
                   />
                 )}
               </Show>
@@ -1789,7 +1573,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     setMixerAutoPlay(false)
                     setMixerInitialSeekSec(undefined)
                     setCurrentView(prevView())
-                  }}
+                 }}
                 />
               </Show>
             </div>
@@ -1822,7 +1606,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   }
                   setMatchCandidates(candidates)
                   setCurrentView('shazam-results')
-                }}
+               }}
                 onAutoJump={(candidate) => {
                   if (
                     candidate.source === 'stem' &&
@@ -1837,7 +1621,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   } else {
                     props.onSelectMelody?.(candidate.melodyId)
                   }
-                }}
+               }}
                 onCancel={() => setCurrentView('upload')}
                 onSwitchToUpload={() => setCurrentView('upload')}
               />
@@ -1853,17 +1637,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 hummingNormalized={hummingNormalized()}
                 onOpenMelody={(melodyId) => {
                   props.onSelectMelody?.(melodyId)
-                }}
+               }}
                 onOpenStemMixer={(sessionId, matchOffsetSec) => {
                   setMixerInitialSeekSec(matchOffsetSec)
                   setMixerAutoPlay(matchOffsetSec !== undefined)
                   void handleOpenMixerFromHistory(sessionId, { vocal: true })
                   props.onOpenStemMixer?.(sessionId)
-                }}
+               }}
                 onTryAgain={() => {
                   setMatchCandidates([])
                   setCurrentView('shazam-listen')
-                }}
+               }}
               />
             </Suspense>
           </Show>
@@ -1876,7 +1660,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             onClick={() => {
               setShowImportGroupSelect(false)
               setImportFile(null)
-            }}
+           }}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
               <h4>Import to Group</h4>
@@ -1885,15 +1669,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 ungrouped.
               </p>
               <div
-                class="session-group-assign-menu"
+                class={sgStyles.sessionGroupAssignMenu}
                 style="position: static; box-shadow: none; margin-bottom: 0.75rem;"
               >
                 <button
-                  class="session-group-assign-item"
+                  class={sgStyles.sessionGroupAssignItem}
                   classList={{
-                    'session-group-assign-item--active':
+                    [sgStyles.sessionGroupAssignItemActive]:
                       importTargetGroupId() === null,
-                  }}
+                 }}
                   onClick={() => setImportTargetGroupId(null)}
                 >
                   No group
@@ -1901,34 +1685,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <For each={getGroupsReactive()}>
                   {(group) => (
                     <button
-                      class="session-group-assign-item"
+                      class={sgStyles.sessionGroupAssignItem}
                       classList={{
-                        'session-group-assign-item--active':
+                        [sgStyles.sessionGroupAssignItemActive]:
                           importTargetGroupId() === group.id,
-                      }}
+                     }}
                       onClick={() => setImportTargetGroupId(group.id)}
                     >
                       {group.name}
-                      <span class="session-group-assign-item-count">
+                      <span class={sgStyles.sessionGroupAssignItemCount}>
                         {group.sessionIds.length}
                       </span>
                     </button>
                   )}
                 </For>
               </div>
-              <div class="session-group-assign-new">
+              <div class={sgStyles.sessionGroupAssignNew}>
                 <input
                   type="text"
-                  class="session-group-assign-new-input"
+                  class={sgStyles.sessionGroupAssignNewInput}
                   placeholder="Or create a new group..."
                   value={newImportGroupName()}
                   onInput={(e) => setNewImportGroupName(e.currentTarget.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') void handleCreateImportGroup()
-                  }}
+                 }}
                 />
                 <button
-                  class="session-group-assign-new-btn"
+                  class={sgStyles.sessionGroupAssignNewBtn}
                   onClick={() => void handleCreateImportGroup()}
                   disabled={importGroupCreating()}
                 >
@@ -1941,7 +1725,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   onClick={() => {
                     setShowImportGroupSelect(false)
                     setImportFile(null)
-                  }}
+                 }}
                 >
                   Cancel
                 </button>

@@ -50,7 +50,7 @@ export function MicSensitivityControls(props: {
         </span>
         <SegmentedControl
           options={TIERS}
-          value={accuracyTier}
+          value={accuracyTier()}
           onChange={applyAccuracyTier}
           ariaLabel="Scoring strictness"
           grow
@@ -63,7 +63,7 @@ export function MicSensitivityControls(props: {
         <span style={{ 'font-size': '0.7rem', opacity: '0.7' }}>Room</span>
         <SegmentedControl
           options={ROOMS}
-          value={sensitivityPreset}
+          value={sensitivityPreset()}
           onChange={applySensitivityPreset}
           ariaLabel="Room noise"
           grow

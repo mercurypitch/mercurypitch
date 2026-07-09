@@ -982,3 +982,188 @@ Keeps your existing styles, only adjusts layout
     border-bottom: none;
   }
 }
+
+
+/* === Migrated from restored-legacy.css (live rules only) === */
+
+.octave-value {
+  min-width: 16px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0 2px;
+}
+
+.roll-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 2px;
+  user-select: none;
+}
+
+.roll-scroll-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-scroll-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-scroll-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.roll-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  /* Align items to start so the wrapper doesn't stretch to fill the height */
+  align-items: stretch;
+}
+
+.roll-grid-wrapper {
+  /* Do not grow beyond content, but shrink if needed */
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.roll-grid-body {
+  /* Do not grow beyond explicitly set height in normal mode */
+  flex: 0 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--piano-width, 62px) 1fr;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.roll-ruler-container {
+  flex-shrink: 0;
+  height: var(--ruler-height, 28px);
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.roll-piano {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
+  position: sticky;
+  left: 0;
+}
+
+.roll-ruler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.roll-grid {
+  display: block;
+}
+
+.roll-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.roll-pitch-track-btn {
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.roll-pitch-track-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-pitch-track-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.roll-pitch-track {
+  width: 100%;
+  height: 80px;
+  display: block;
+  border-top: 1px solid var(--border);
+  background: #0d1117;
+}
+
+.scale-note-btn.white-key {
+  background: var(--bg-tertiary);
+}
+
+.scale-note-btn.black-key {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.scale-note-btn.black-key.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.app-sidebar #scale-info .octave-value {
+  min-width: 24px;
+  color: #7ee787;
+  font-weight: 800;
+  text-align: center;
+}
+
+#note-list .note-item.rest-item {
+  border-style: dashed;
+  border-color: rgba(139, 148, 158, 0.45);
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
+}
+
+#note-list .note-item.rest-item .note-dot {
+  background: transparent;
+  border: 1px dashed rgba(139, 148, 158, 0.65);
+}
+

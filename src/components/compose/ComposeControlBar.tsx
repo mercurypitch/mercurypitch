@@ -12,7 +12,6 @@ import { createSignal, For, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import styles from '@/components/shared/control-bar/control-bar.module.css'
 import { IconClock, IconMetronome, IconPause, IconPlay, IconRecord, IconShare, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
-import { LoopControls } from '@/components/shared/control-bar/LoopControls'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { bpm, micActive, micWaveVisible, setBpm, toggleMicWaveVisible, } from '@/stores'
@@ -35,14 +34,6 @@ interface ComposeControlBarProps {
   onRecordToggle: () => void
   onShareMelody: () => void
   onMicToggle: () => void
-  // A-B Loop
-  loopEnabled: () => boolean
-  loopA: () => number
-  loopB: () => number
-  onSetLoopA: () => void
-  onSetLoopB: () => void
-  onToggleLoop: () => void
-  onClearLoop: () => void
 }
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -151,17 +142,6 @@ export const ComposeControlBar: Component<ComposeControlBarProps> = (props) => {
       >
         <IconMetronome />
       </button>
-
-      {/* A-B Loop controls */}
-      <LoopControls
-        loopEnabled={props.loopEnabled}
-        loopA={props.loopA}
-        loopB={props.loopB}
-        onSetLoopA={props.onSetLoopA}
-        onSetLoopB={props.onSetLoopB}
-        onToggleLoop={props.onToggleLoop}
-        onClearLoop={props.onClearLoop}
-      />
 
       {/* Share */}
       <button

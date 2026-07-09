@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, openPlaybackSetup, openSingingControls, switchSettingsTab, switchTab, } from '@/e2e/helpers/ui'
+import { dismissOverlays, openSingingControls, switchSettingsTab, switchTab, } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
@@ -774,7 +774,6 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('sidebar scale controls work', async ({ page }) => {
-      await openPlaybackSetup(page)
       // Key select
       const keySelect = page.locator('#key-select')
       await expect(keySelect).toBeVisible()

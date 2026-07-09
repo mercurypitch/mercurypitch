@@ -4,7 +4,6 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
-import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
 
@@ -30,13 +29,6 @@ interface FallingNotesCanvasProps {
   onClickPianoOn?: (midi: number) => void
   onClickPianoOff?: () => void
   clickPianoEnabled?: () => boolean
-  // ── A-B loop (beats; 0 = unset). Markers on the falling-notes lane;
-  //    draggable via onMoveLoopA/B (the note area has no other pointer use). ──
-  loopA?: () => number
-  loopB?: () => number
-  loopEnabled?: () => boolean
-  onMoveLoopA?: (beat: number) => void
-  onMoveLoopB?: (beat: number) => void
 }
 
 interface Particle {
@@ -168,41 +160,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   let clickedKey: number | null = null
   let pointerDownX = 0
   let pointerDownY = 0
-  // Which A/B loop boundary the pointer is dragging in the note lane.
-  let loopDrag: 'A' | 'B' | null = null
-
-  // Beat ↔ canvas-Y mapping for the loop markers — the same formula the render
-  // uses (see beatToY in draw()), recomputed on demand so the hit-test and drag
-  // stay in lockstep with the drawn lines.
-  const loopAxis = () => {
-    const w = canvasRef?.clientWidth ?? 0
-    const h = canvasRef?.clientHeight ?? 0
-    const jLineY = h * getKeyboardStartRatio(w, h) // = kbTop = note-area height
-    const bps = jLineY / (props.visibleBeatWindow?.() ?? 8)
-    const currentBeat = props.playheadBeat()
-    return {
-      kbTop: jLineY,
-      beatToY: (beat: number) => jLineY - (beat - currentBeat) * bps,
-      beatFromClientY: (clientY: number) => {
-        if (!canvasRef || bps <= 0) return 0
-        const rect = canvasRef.getBoundingClientRect()
-        return currentBeat + (jLineY - (clientY - rect.top)) / bps
-      },
-    }
-  }
-
-  // The loop marker under the pointer, if any — only in the note area above the
-  // keyboard, so it never competes with the piano keys below.
-  const hitLoopMarker = (clientY: number): 'A' | 'B' | null => {
-    if (!canvasRef) return null
-    const a = props.loopA?.() ?? 0
-    const b = props.loopB?.() ?? 0
-    if (a <= 0 && b <= 0) return null
-    const axis = loopAxis()
-    const y = clientY - canvasRef.getBoundingClientRect().top
-    if (y < 0 || y > axis.kbTop) return null
-    return hitTestAbLoopMarker(y, a, b, axis.beatToY)
-  }
 
   // Hit-test: convert mouse/touch coordinates to MIDI note number
   const hitTestKeyboard = (clientX: number, clientY: number): number | null => {
@@ -283,14 +240,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     // ── Piano key click/touch handlers ─────────────────────────
 
     const onPointerDown = (e: PointerEvent) => {
-      // A press on an A/B loop marker (in the note lane) starts a drag; it
-      // works regardless of the click-piano toggle and never touches the keys.
-      const loopHit = hitLoopMarker(e.clientY)
-      if (loopHit !== null) {
-        loopDrag = loopHit
-        canvasRef?.setPointerCapture(e.pointerId)
-        return
-      }
       if (props.clickPianoEnabled?.() !== true) return
       const midi = hitTestKeyboard(e.clientX, e.clientY)
       if (midi !== null) {
@@ -303,10 +252,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     }
 
     const onPointerUp = () => {
-      if (loopDrag !== null) {
-        loopDrag = null
-        return
-      }
       if (clickedKey !== null) {
         clickedKey = null
         props.onClickPianoOff?.()
@@ -314,20 +259,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     }
 
     const onPointerMove = (e: PointerEvent) => {
-      if (loopDrag !== null) {
-        const beat = loopAxis().beatFromClientY(e.clientY)
-        if (loopDrag === 'A') props.onMoveLoopA?.(beat)
-        else props.onMoveLoopB?.(beat)
-        return
-      }
-      if (clickedKey === null) {
-        // Idle hover: show a resize cursor over a loop marker.
-        if (canvasRef !== undefined) {
-          canvasRef.style.cursor =
-            hitLoopMarker(e.clientY) !== null ? 'ns-resize' : ''
-        }
-        return
-      }
+      if (clickedKey === null) return
       // Ignore sub-5px movement to prevent iOS tap-jitter key switching
       const dx = e.clientX - pointerDownX
       const dy = e.clientY - pointerDownY
@@ -703,10 +635,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
     ctx.restore()
 
-    // A-B loop markers — horizontal lines across the falling-notes lane at the
-    // loop beats (read-only; set/drag them from the song bar's seek rail).
-    drawLoopMarkers(w, jLineY, beatToY)
-
     // Draw keyboard-top glow (subtle indicator where notes get consumed)
     drawKeyboardTopGlow(w, jLineY)
 
@@ -738,30 +666,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
     // Draw HUD overlay
     drawHUD(w, h)
-  }
-
-  // ── A-B loop markers ─────────────────────────────────────────
-  // Horizontal lines across the note lane at the loop beats (the shared
-  // overlay helper, in 'horizontal' orientation since this canvas scrolls in
-  // Y), clipped to the note area [0, noteAreaH] so it never overlaps the
-  // keyboard. Draggable — see loopAxis / hitLoopMarker below.
-  const drawLoopMarkers = (
-    w: number,
-    noteAreaH: number,
-    beatToY: (beat: number) => number,
-  ) => {
-    if (!ctx) return
-    drawAbLoopOverlay(ctx, {
-      a: props.loopA?.() ?? 0,
-      b: props.loopB?.() ?? 0,
-      enabled: props.loopEnabled?.() ?? false,
-      posOf: beatToY,
-      orientation: 'horizontal',
-      crossExtent: w,
-      clipMin: 0,
-      clipMax: noteAreaH,
-      flag: 'pill',
-    })
   }
 
   // ── Keyboard Top Glow ────────────────────────────────────────

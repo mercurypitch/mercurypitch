@@ -99,25 +99,6 @@ export async function openSingingControls(page: Page) {
   }
 }
 
-/**
- * Expand the sidebar's "Playback Setup" section (the key / scale / octave
- * controls), which is collapsed by default. Idempotent. The section body is
- * rendered behind a Solid `<Show>`, so those controls do not exist in the DOM
- * until it's open — call this before asserting on `#key-select`,
- * `#scale-select` or the octave controls. Targets the header's stable
- * `data-collapsible` hook (also used by the guide tour to reveal sections).
- */
-export async function openPlaybackSetup(page: Page) {
-  const header = page.locator('[data-collapsible="sidebar-playback-open"]')
-  if ((await header.count()) === 0) return
-  if ((await header.getAttribute('aria-expanded')) !== 'true') {
-    await header.click()
-    await expect(header).toHaveAttribute('aria-expanded', 'true', {
-      timeout: 5000,
-    })
-  }
-}
-
 export async function goToAndWait(page: Page, url: string) {
   await page.goto(url)
   await page.waitForLoadState('networkidle')

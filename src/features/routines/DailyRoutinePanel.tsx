@@ -8,6 +8,7 @@ import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { showNotification } from '@/stores/notifications-store'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
+import styles from './DailyRoutinePanel.module.css'
 import type { SegmentKind } from './types'
 import type { RoutineLength } from './use-daily-routine'
 import { routinePrefs, setRoutinePrefs, useDailyRoutine, } from './use-daily-routine'
@@ -33,9 +34,9 @@ export const DailyRoutinePanel: Component = () => {
   const [shareProgress, setShareProgress] = createSignal(0)
 
   return (
-    <div class="daily-routine-panel">
+    <div class={styles.panel}>
       <div
-        class="daily-routine-header"
+        class={styles.header}
         onClick={() => setExpanded((e) => !e)}
         role="button"
         tabIndex={0}
@@ -43,18 +44,18 @@ export const DailyRoutinePanel: Component = () => {
           if (e.key === 'Enter' || e.key === ' ') setExpanded((ex) => !ex)
         }}
       >
-        <span class="daily-routine-title">Daily Practice</span>
+        <span class={styles.title}>Daily Practice</span>
         <Show when={routine.template() && !routine.isComplete()}>
-          <span class="daily-routine-badge">
+          <span class={styles.badge}>
             {routine.completedSegments().length}/
             {routine.template()!.segments.length}
           </span>
         </Show>
         <Show when={routine.isComplete()}>
-          <span class="daily-routine-badge complete">Done</span>
+          <span class={`${styles.badge} ${styles.badgeComplete}`}>Done</span>
         </Show>
         <svg
-          class={`daily-routine-chevron${expanded() ? ' open' : ''}`}
+          class={`${styles.chevron}${expanded() ? ` ${styles.chevronOpen}` : ''}`}
           viewBox="0 0 24 24"
           width="14"
           height="14"
@@ -67,14 +68,14 @@ export const DailyRoutinePanel: Component = () => {
       </div>
 
       <Show when={expanded()}>
-        <div class="daily-routine-body">
+        <div class={styles.body}>
           <Show
             when={routine.template()}
             fallback={
-              <div class="daily-routine-empty">
+              <div class={styles.empty}>
                 <p>No routine for today yet.</p>
-                <div class="daily-routine-prefs">
-                  <label class="daily-routine-pref">
+                <div class={styles.prefs}>
+                  <label class={styles.pref}>
                     <span>Focus</span>
                     <select
                       value={routinePrefs().focus}
@@ -92,7 +93,7 @@ export const DailyRoutinePanel: Component = () => {
                       </For>
                     </select>
                   </label>
-                  <label class="daily-routine-pref">
+                  <label class={styles.pref}>
                     <span>Length</span>
                     <select
                       value={routinePrefs().length}
@@ -109,30 +110,27 @@ export const DailyRoutinePanel: Component = () => {
                     </select>
                   </label>
                 </div>
-                <button
-                  class="daily-routine-btn"
-                  onClick={() => routine.generate()}
-                >
+                <button class={styles.btn} onClick={() => routine.generate()}>
                   Generate Today's Routine
                 </button>
               </div>
             }
           >
-            <div class="daily-routine-meta">
-              <span class="daily-routine-name">{routine.template()!.name}</span>
-              <span class="daily-routine-time">
+            <div class={styles.meta}>
+              <span class={styles.name}>{routine.template()!.name}</span>
+              <span class={styles.time}>
                 ~{Math.round(routine.totalDurationSec() / 60)} min
               </span>
             </div>
 
-            <div class="daily-routine-progress-bar">
+            <div class={styles.progressBar}>
               <div
-                class="daily-routine-progress-fill"
+                class={styles.progressFill}
                 style={{ width: `${routine.progress()}%` }}
               />
             </div>
 
-            <div class="daily-routine-segments">
+            <div class={styles.segments}>
               <For each={routine.segmentStatuses()}>
                 {(item) => {
                   const seg = item.seg
@@ -142,20 +140,20 @@ export const DailyRoutinePanel: Component = () => {
                   const segNotes = seg.config.notes ?? []
                   return (
                     <div
-                      class={`daily-routine-segment${done ? ' done' : ''}${current ? ' current' : ''}`}
+                      class={`${styles.segment}${done ? ` ${styles.segmentDone}` : ''}${current ? ` ${styles.segmentCurrent}` : ''}`}
                     >
-                      <span class="daily-routine-segment-icon">
+                      <span class={styles.segmentIcon}>
                         {done ? (
                           <IconCheck size={13} />
                         ) : (
                           segmentIcons[seg.type]()
                         )}
                       </span>
-                      <span class="daily-routine-segment-type">
+                      <span class={styles.segmentType}>
                         {segmentLabels[seg.type]}
                         {segExercise ? `: ${segExercise}` : ''}
                       </span>
-                      <span class="daily-routine-segment-dur">
+                      <span class={styles.segmentDur}>
                         {Math.round(seg.durationSec / 60)}m
                       </span>
                       <Show when={current && !done}>
@@ -165,7 +163,7 @@ export const DailyRoutinePanel: Component = () => {
                             <>
                               {seg.type === 'challenge-prep' && (
                                 <button
-                                  class="daily-routine-segment-start-btn"
+                                  class={styles.segmentStartBtn}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setActiveTab(TAB_CHALLENGES)
@@ -178,7 +176,7 @@ export const DailyRoutinePanel: Component = () => {
                               {(seg.type === 'warmup' ||
                                 seg.type === 'cooldown') && (
                                 <button
-                                  class="daily-routine-segment-start-btn"
+                                  class={styles.segmentStartBtn}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     // The guided warmup runs this segment's
@@ -198,7 +196,7 @@ export const DailyRoutinePanel: Component = () => {
                                 </button>
                               )}
                               <button
-                                class="daily-routine-segment-done-btn"
+                                class={styles.segmentDoneBtn}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   routine.completeSegment()
@@ -211,7 +209,7 @@ export const DailyRoutinePanel: Component = () => {
                           }
                         >
                           <button
-                            class="daily-routine-segment-start-btn"
+                            class={styles.segmentStartBtn}
                             onClick={(e) => {
                               e.stopPropagation()
                               startExercise(segExercise!, { notes: segNotes })
@@ -221,7 +219,7 @@ export const DailyRoutinePanel: Component = () => {
                             ▶
                           </button>
                           <button
-                            class="daily-routine-segment-done-btn"
+                            class={styles.segmentDoneBtn}
                             onClick={(e) => {
                               e.stopPropagation()
                               routine.completeSegment()
@@ -239,20 +237,20 @@ export const DailyRoutinePanel: Component = () => {
             </div>
 
             <Show when={routine.isComplete()}>
-              <div class="daily-routine-complete-msg">
+              <div class={styles.completeMsg}>
                 Routine complete! Great work today.
               </div>
             </Show>
 
-            <div class="daily-routine-actions">
+            <div class={styles.actions}>
               <button
-                class="daily-routine-btn secondary"
+                class={`${styles.btn} ${styles.btnSecondary}`}
                 onClick={() => routine.reset()}
               >
                 New Routine
               </button>
               <button
-                class="daily-routine-btn secondary"
+                class={`${styles.btn} ${styles.btnSecondary}`}
                 disabled={isSharing()}
                 onClick={() => {
                   if (isSharing()) return

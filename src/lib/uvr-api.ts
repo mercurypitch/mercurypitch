@@ -7,38 +7,6 @@ import { getAuthToken } from '@/db/services/user-service'
 
 const API_BASE = '/api/uvr'
 
-/** Per-request cap for a status poll. Without it, a socket left half-open by an
- *  iOS app-switch (frozen page → resumed with a dead connection) never settles,
- *  and the whole setTimeout poll chain stalls on that one hung fetch — the
- *  "stuck on Waiting for a GPU worker forever" bug. On timeout we abort and let
- *  the poll retry. */
-const STATUS_FETCH_TIMEOUT_MS = 15_000
-/** Stem downloads are larger (a few MB over an R2 redirect); give them room. */
-const OUTPUT_FETCH_TIMEOUT_MS = 60_000
-
-/** fetch() with an AbortController timeout. Composes with a caller-supplied
- *  signal (either aborting wins). Throws AbortError on timeout. */
-async function fetchWithTimeout(
-  input: string,
-  timeoutMs: number,
-  init?: RequestInit,
-): Promise<Response> {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
-  const outer = init?.signal
-  const onOuterAbort = () => ctrl.abort()
-  if (outer) {
-    if (outer.aborted) ctrl.abort()
-    else outer.addEventListener('abort', onOuterAbort, { once: true })
-  }
-  try {
-    return await fetch(input, { ...init, signal: ctrl.signal })
-  } finally {
-    clearTimeout(timer)
-    if (outer) outer.removeEventListener('abort', onOuterAbort)
-  }
-}
-
 /**
  * Authorization header for state-changing UVR calls. The production worker
  * gates non-GET /api/uvr/* behind a valid app JWT (see src/worker.ts); GET
@@ -305,13 +273,8 @@ export async function processAudio(
  */
 export async function getProcessStatus(
   sessionId: string,
-  signal?: AbortSignal,
 ): Promise<ProcessStatusResponse> {
-  const response = await fetchWithTimeout(
-    `${API_BASE}/status/${sessionId}`,
-    STATUS_FETCH_TIMEOUT_MS,
-    signal ? { signal } : undefined,
-  )
+  const response = await fetch(`${API_BASE}/status/${sessionId}`)
   if (!response.ok) {
     throw new Error(`Failed to get status: ${response.statusText}`)
   }
@@ -325,10 +288,7 @@ export async function getOutputFile(
   sessionId: string,
   path: string,
 ): Promise<Response> {
-  return fetchWithTimeout(
-    `${API_BASE}/output/${sessionId}/${encodeURIComponent(path)}`,
-    OUTPUT_FETCH_TIMEOUT_MS,
-  )
+  return fetch(`${API_BASE}/output/${sessionId}/${encodeURIComponent(path)}`)
 }
 
 /**
@@ -360,18 +320,6 @@ export async function healthCheck(): Promise<{
   }
   return HealthCheckSchema.parse(await response.json())
 }
-/** Rejection from pollForCompletion for a server-CONFIRMED dead job — a failed
- *  or expired separation, or a completion handler that threw. Distinct from a
- *  transient network rejection so callers can drop a job's `apiSessionId` (kill
- *  its recovery affordances) only when re-attaching is genuinely hopeless. */
-export class TerminalPollError extends Error {
-  readonly terminal = true
-  constructor(message: string) {
-    super(message)
-    this.name = 'TerminalPollError'
-  }
-}
-
 /**
  * Poll for processing completion with timeout and abort support
  */
@@ -392,15 +340,7 @@ export async function pollForCompletion(
 ): Promise<void> {
   const startTime = Date.now()
   const maxTimeMs = 30 * 60 * 1000 // 30 minutes absolute max
-  // Once the job is confirmed reachable, keep polling through transient status
-  // failures (a per-request timeout, an offline blip, a 5xx) for this long
-  // before giving up — a single hiccup (e.g. an iOS app-switch leaving a dead
-  // socket) must not kill a separation the server is still happily running. A
-  // hard failure on the very first poll still surfaces immediately.
-  const failGraceMs = 90_000
   let estimateExceeded = false
-  let hadSuccess = false
-  let lastOkAt = startTime
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
@@ -418,35 +358,20 @@ export async function pollForCompletion(
       }
 
       try {
-        const status = await getProcessStatus(sessionId, signal)
-        hadSuccess = true
-        lastOkAt = Date.now()
+        const status = await getProcessStatus(sessionId)
 
         if (status.status === 'completed') {
           // Await so callers can persist stems to IndexedDB before the session
           // is marked complete — otherwise completion can race a page reload
-          // and leave a "completed" session with no durable local audio. Its
-          // own try/catch: a completion-handler throw is TERMINAL, not a
-          // transient network blip the outer catch would otherwise retry.
-          try {
-            await onComplete(status.files)
-          } catch (completionErr) {
-            const msg =
-              completionErr instanceof Error
-                ? completionErr.message
-                : 'Failed to finalize the separation'
-            onError(msg)
-            reject(new TerminalPollError(msg))
-            return
-          }
+          // and leave a "completed" session with no durable local audio.
+          await onComplete(status.files)
           resolve()
           return
         }
 
         if (status.status === 'error') {
-          const msg = status.error ?? 'Processing failed'
-          onError(msg)
-          reject(new TerminalPollError(msg))
+          onError(status.error ?? 'Processing failed')
+          reject(new Error(status.error ?? 'Processing failed'))
           return
         }
 
@@ -454,7 +379,7 @@ export async function pollForCompletion(
           const errMsg =
             'Processing server restarted unexpectedly. Please retry.'
           onError(errMsg)
-          reject(new TerminalPollError(errMsg))
+          reject(new Error(errMsg))
           return
         }
 
@@ -487,25 +412,6 @@ export async function pollForCompletion(
           void poll()
         }, intervalMs)
       } catch (error) {
-        // A real cancel (the caller's signal) is terminal.
-        if (signal?.aborted ?? false) {
-          reject(new DOMException('Polling aborted', 'AbortError'))
-          return
-        }
-        // Otherwise this is a transient failure — a status-fetch timeout (the
-        // classic iOS resume-with-a-dead-socket case), an offline blip, a 5xx.
-        // Once the job has been reached at least once, keep polling until the
-        // grace window since the last good status is exhausted; the job is very
-        // likely still running server-side. A first-poll failure surfaces now.
-        if (hadSuccess && Date.now() - lastOkAt <= failGraceMs) {
-          setTimeout(
-            () => {
-              void poll()
-            },
-            Math.max(intervalMs, 2000),
-          )
-          return
-        }
         onError(error instanceof Error ? error.message : 'Unknown error')
         reject(error)
       }

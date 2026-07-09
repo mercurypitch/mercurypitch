@@ -16,13 +16,12 @@
 //   plus btn-mic / btn-precount via MicButton / PrecCountButton.
 // ============================================================
 
-import type { Accessor, Component } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import styles from '@/components/shared/control-bar/control-bar.module.css'
 import { IconAnchor, IconClock, IconFocus, IconMetronome, IconOnce, IconPause, IconPlay, IconRepeat, IconRest, IconSession, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
-import { LoopControls } from '@/components/shared/control-bar/LoopControls'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, } from '@/features/tabs/constants'
@@ -57,14 +56,6 @@ interface SingingControlBarProps {
   speed: number
   onSpeedChange: (speed: number) => void
   onMicToggle: () => void
-  // A-B Loop
-  loopEnabled: Accessor<boolean>
-  loopA: Accessor<number>
-  loopB: Accessor<number>
-  onSetLoopA: () => void
-  onSetLoopB: () => void
-  onToggleLoop: () => void
-  onClearLoop: () => void
 }
 
 // Glyphs + NumberStepper are shared across the per-tab bars — see
@@ -299,18 +290,6 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       >
         <IconWave />
       </button>
-
-      {/* A-B Loop controls */}
-      <LoopControls
-        emphasizeB
-        loopEnabled={props.loopEnabled}
-        loopA={props.loopA}
-        loopB={props.loopB}
-        onSetLoopA={props.onSetLoopA}
-        onSetLoopB={props.onSetLoopB}
-        onToggleLoop={props.onToggleLoop}
-        onClearLoop={props.onClearLoop}
-      />
 
       {/* Focus */}
       <button

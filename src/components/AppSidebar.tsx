@@ -203,7 +203,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <CollapsibleSection
           title="Playback Setup"
           storageKey="sidebar-playback-open"
-          defaultOpen={false}
         >
           <div class={styles.scaleInfo} data-tour="singing.key-scale">
             <SafeSelect

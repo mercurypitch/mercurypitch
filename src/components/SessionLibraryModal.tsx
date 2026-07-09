@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import { createMemo, createSignal, Show } from 'solid-js'
 import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
@@ -134,19 +135,19 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-overlay" onClick={() => props.close()}>
+      <div class={modalStyles.modalOverlay} onClick={() => props.close()}>
         <div
-          class="library-modal"
+          class={modalStyles.libraryModal}
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Session library"
           onClick={(e) => e.stopPropagation()}
         >
-          <div class="library-header">
+          <div class={modalStyles.libraryHeader}>
             <h2>Practice Sessions</h2>
             <button
-              class="close-btn"
+              class={modalStyles.closeBtn}
               onClick={() => props.close()}
               aria-label="Close"
             >
@@ -159,17 +160,17 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
             </button>
           </div>
 
-          <div class="library-content">
+          <div class={modalStyles.libraryContent}>
             <input
               type="text"
-              class="search-input"
+              class={modalStyles.searchInput}
               placeholder="Search sessions..."
               value={searchQuery()}
               onInput={(e) => setSearchQuery(e.currentTarget.value)}
             />
 
             <button
-              class="new-btn"
+              class={modalStyles.newBtn}
               onClick={() => {
                 console.info('[SessionLibraryModal] New Session clicked')
                 const newSession = createSession(
@@ -200,7 +201,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
             <MelodyLibraryList
               mode="single"
-              className="session-library-item"
+              className={modalStyles.sessionLibraryItem}
               kinds={['session']}
               entries={filteredSessionItems()}
               draggable={dragState()?.type === 'playlist'}
@@ -217,7 +218,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                 return (
                   <>
                     <button
-                      class="action-btn play-btn"
+                      class={`${modalStyles.actionBtn} play-btn`}
                       onClick={() => handlePlay(session)}
                       title="Play"
                       aria-label="Play"
@@ -227,7 +228,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                       </svg>
                     </button>
                     <button
-                      class="action-btn edit-btn"
+                      class={`${modalStyles.actionBtn} edit-btn`}
                       onClick={() => handleEdit(session)}
                       title="Edit"
                       aria-label="Edit"
@@ -240,7 +241,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                       </svg>
                     </button>
                     <button
-                      class="action-btn delete-btn"
+                      class={`${modalStyles.actionBtn} delete-btn`}
                       onClick={() => handleDelete(session.id)}
                       title="Delete"
                       aria-label="Delete"

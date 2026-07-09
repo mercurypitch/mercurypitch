@@ -8,6 +8,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { createManualStemSession } from '@/db/services/manual-stem-service'
+import styles from './UvrStemUploadControl.module.css'
 import { showNotification } from '@/stores/notifications-store'
 import { Music, Voice, X } from './icons'
 
@@ -71,16 +72,16 @@ export const UvrStemUploadControl: Component<UvrStemUploadControlProps> = (
   }
 
   return (
-    <div class="stem-upload">
-      <div class="stem-upload-header">
+    <div class={styles.stemUpload}>
+      <div class={styles.stemUploadHeader}>
         <h5>Upload pre-separated stems</h5>
-        <span class="stem-upload-hint">
+        <span class={styles.stemUploadHint}>
           No separation — packaged as a session
         </span>
       </div>
 
       <input
-        class="stem-upload-name"
+        class={styles.stemUploadName}
         type="text"
         placeholder="Song name…"
         value={songName()}
@@ -88,7 +89,7 @@ export const UvrStemUploadControl: Component<UvrStemUploadControlProps> = (
         disabled={busy()}
       />
 
-      <div class="stem-upload-pickers">
+      <div class={styles.stemUploadPickers}>
         <StemPicker
           label="Vocal"
           icon={<Voice />}
@@ -108,7 +109,7 @@ export const UvrStemUploadControl: Component<UvrStemUploadControlProps> = (
       </div>
 
       <button
-        class="stem-upload-submit"
+        class={styles.stemUploadSubmit}
         onClick={() => void submit()}
         disabled={!canSubmit()}
       >
@@ -128,12 +129,12 @@ const StemPicker: Component<{
 }> = (props) => {
   return (
     <div
-      class="stem-picker"
+      class={styles.stemPicker}
       classList={{ 'stem-picker--set': props.file !== null }}
     >
-      <label class="stem-picker-label">
+      <label class={styles.stemPickerLabel}>
         {props.icon}
-        <span class="stem-picker-text">
+        <span class={styles.stemPickerText}>
           <Show
             when={props.file}
             fallback={`Choose ${props.label.toLowerCase()}`}
@@ -151,7 +152,7 @@ const StemPicker: Component<{
       </label>
       <Show when={props.file}>
         <button
-          class="stem-picker-clear"
+          class={styles.stemPickerClear}
           title={`Remove ${props.label.toLowerCase()}`}
           onClick={() => props.onClear()}
         >

@@ -48,7 +48,7 @@ describe('ConfirmDialog', () => {
         onCancel={onCancel}
       />
     ))
-    fireEvent.click(container.querySelector('.delete-confirm-delete')!)
+    fireEvent.click(container.querySelector('[data-testid="confirm-delete"]')!)
     expect(onConfirm).toHaveBeenCalledTimes(1)
     expect(onCancel).not.toHaveBeenCalled()
   })
@@ -58,7 +58,7 @@ describe('ConfirmDialog', () => {
     const { container } = render(() => (
       <ConfirmDialog {...baseProps} open={true} onCancel={onCancel} />
     ))
-    fireEvent.click(container.querySelector('.delete-confirm-cancel')!)
+    fireEvent.click(container.querySelector('[data-testid="confirm-cancel"]')!)
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
@@ -67,7 +67,7 @@ describe('ConfirmDialog', () => {
     const { container } = render(() => (
       <ConfirmDialog {...baseProps} open={true} onCancel={onCancel} />
     ))
-    const overlay = container.querySelector('.delete-confirm-overlay')!
+    const overlay = container.querySelector('[data-testid="confirm-overlay"]')!
     fireEvent.click(overlay)
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
@@ -94,7 +94,7 @@ describe('ConfirmDialog', () => {
     const { container } = render(() => (
       <ConfirmDialog {...baseProps} open={true} confirmLabel="Remove" />
     ))
-    const confirmBtn = container.querySelector('.delete-confirm-delete')!
+    const confirmBtn = container.querySelector('[data-testid="confirm-delete"]')!
     expect(confirmBtn.textContent).toContain('Remove')
     expect(confirmBtn.textContent).not.toContain('Delete')
   })

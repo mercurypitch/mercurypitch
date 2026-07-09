@@ -1,5 +1,7 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { Button } from '@/components/shared/Button'
+import styles from './SessionCelebration.module.css'
 
 export interface CelebrationData {
   score: number
@@ -14,9 +16,9 @@ interface SessionCelebrationProps {
 }
 
 function scoreClass(score: number): string {
-  if (score >= 80) return 'celebration-score-high'
-  if (score >= 50) return 'celebration-score-mid'
-  return 'celebration-score-low'
+  if (score >= 80) return styles.scoreHigh
+  if (score >= 50) return styles.scoreMid
+  return styles.scoreLow
 }
 
 function scoreLabel(score: number): string {
@@ -39,16 +41,16 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
 ) => {
   return (
     <Show when={props.data}>
-      <div class="celebration-backdrop" onClick={() => props.onClose?.()}>
+      <div class={styles.backdrop} onClick={() => props.onClose?.()}>
         <div
-          class="celebration-modal"
+          class={styles.modal}
           role="dialog"
           aria-modal="true"
           aria-labelledby="celebration-label-text"
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            class="celebration-close"
+            class={styles.close}
             aria-label="Close results"
             onClick={() => props.onClose?.()}
           >
@@ -60,36 +62,32 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
             </svg>
           </button>
 
-          <div class="celebration-content">
-            <div class={`celebration-score ${scoreClass(props.data!.score)}`}>
-              <span class="celebration-score-value">{props.data!.score}</span>
-              <span class="celebration-score-unit">%</span>
+          <div class={styles.content}>
+            <div class={`${styles.score} ${scoreClass(props.data!.score)}`}>
+              <span class={styles.scoreValue}>{props.data!.score}</span>
+              <span class={styles.scoreUnit}>%</span>
             </div>
 
-            <div class="celebration-label" id="celebration-label-text">
+            <div class={styles.label} id="celebration-label-text">
               {scoreLabel(props.data!.score)}
             </div>
 
             <Show when={props.data!.bestWindow}>
-              <div class="celebration-best-moment">
+              <div class={styles.bestMoment}>
                 Best moment: {props.data!.bestWindow!.score}% (
-                {(
-                  (props.data!.bestWindow!.endMs -
-                    props.data!.bestWindow!.startMs) /
-                  1000
-                ).toFixed(1)}
+                {(props.data!.bestWindow!.endMs -
+                  props.data!.bestWindow!.startMs) /
+                  1000}
                 s window)
               </div>
             </Show>
 
-            <div class="celebration-metrics">
+            <div class={styles.metrics}>
               <For each={Object.entries(props.data!.metrics)}>
                 {([key, val]) => (
-                  <div class="celebration-metric">
-                    <span class="celebration-metric-label">
-                      {metricLabel(key)}
-                    </span>
-                    <span class="celebration-metric-value">
+                  <div class={styles.metric}>
+                    <span class={styles.metricLabel}>{metricLabel(key)}</span>
+                    <span class={styles.metricValue}>
                       {typeof val === 'number' ? Math.round(val) : val}
                     </span>
                   </div>
@@ -97,9 +95,9 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
               </For>
             </div>
 
-            <button class="celebration-btn" onClick={() => props.onClose?.()}>
+            <Button variant="primary" onClick={() => props.onClose?.()}>
               Continue
-            </button>
+            </Button>
           </div>
         </div>
       </div>

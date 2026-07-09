@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import modalStyles from '@/components/Modal.module.css'
 import { createSignal, For } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import type { SessionCategory, SessionDifficulty, SessionTemplate, } from '@/types'
@@ -66,16 +67,16 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
 
   return (
     <div
-      class="modal-overlay"
+      class={modalStyles.modalOverlay}
       onClick={(e) => {
         if (e.target === e.currentTarget) props.onClose()
       }}
     >
-      <div class="modal-content session-browser">
-        <div class="modal-header">
+      <div class={`${modalStyles.modalContent} ${modalStyles.sessionBrowser}`}>
+        <div class={modalStyles.modalHeader}>
           <h2>Practice Sessions</h2>
           <button
-            class="modal-close-btn"
+            class={modalStyles.modalCloseBtn}
             onClick={() => props.onClose()}
             title="Close"
             aria-label="Close"
@@ -89,11 +90,11 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
           </button>
         </div>
 
-        <div class="session-categories">
+        <div class={modalStyles.sessionCategories}>
           <For each={categories}>
             {(cat) => (
               <button
-                class={`session-cat-btn ${activeCategory() === cat ? 'active' : ''}`}
+                class={`${modalStyles.sessionCatBtn} ${activeCategory() === cat ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
                 {cat === 'all' ? 'All' : (CATEGORY_LABELS[cat] ?? cat)}
@@ -102,33 +103,35 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
           </For>
         </div>
 
-        <div class="session-list">
+        <div class={modalStyles.sessionList}>
           <For each={filteredSessions()}>
             {(session) => (
-              <div class="session-card">
-                <div class="session-card-header">
-                  <span class="session-name">{session.name}</span>
+              <div class={modalStyles.sessionCard}>
+                <div class={modalStyles.sessionCardHeader}>
+                  <span class={modalStyles.sessionName}>{session.name}</span>
                   <span
-                    class="session-difficulty"
+                    class={modalStyles.sessionDifficulty}
                     style={{ color: DIFFICULTY_COLORS[session.difficulty] }}
                   >
                     {session.difficulty}
                   </span>
                 </div>
-                <p class="session-description">{session.description}</p>
-                <div class="session-meta">
-                  <span class="session-category-badge">
+                <p class={modalStyles.sessionDescription}>
+                  {session.description}
+                </p>
+                <div class={modalStyles.sessionMeta}>
+                  <span class={modalStyles.sessionCategoryBadge}>
                     {CATEGORY_LABELS[session.category] ?? session.category}
                   </span>
-                  <span class="session-item-count">
+                  <span class={modalStyles.sessionItemCount}>
                     {session.items.length} items
                   </span>
-                  <span class="session-duration">
+                  <span class={modalStyles.sessionDuration}>
                     ~{estimateDuration(session.items)}
                   </span>
                 </div>
                 <button
-                  class="session-start-btn"
+                  class={modalStyles.sessionStartBtn}
                   onClick={() => {
                     props.onStartSession(session)
                   }}

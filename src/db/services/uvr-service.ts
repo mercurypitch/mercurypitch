@@ -3,39 +3,12 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { DurableWriteResult } from '@/db/durable-write'
-import { durableWrite } from '@/db/durable-write'
 import type { SessionGroupRecord, UvrSessionRecord, UvrStemBlob, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { IS_DEV } from '@/lib/defaults'
 
 // ── Stem Blob Operations ─────────────────────────────────────────
 
-/** Raw write — throws on failure. Callers pick the wrapper that fits:
- *  saveStemBlob (never throws) for non-critical paths, or saveStemBlobDurable
- *  (retries + reports) for the paid stem/original data that must not be lost. */
-async function writeStemBlob(
-  sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
-  blob: Blob,
-  fileName: string,
-): Promise<string> {
-  const db = await getDb()
-  const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-  const data = await blob.arrayBuffer()
-  const created = await repo.create({
-    sessionId,
-    stemType,
-    mimeType:
-      blob.type || (fileName.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'),
-    data,
-    size: blob.size,
-    fileName,
-  })
-  return created.id
-}
-
-/** Best-effort save — logs and returns null on failure (never throws). */
 export async function saveStemBlob(
   sessionId: string,
   stemType: 'vocal' | 'instrumental' | 'original',
@@ -43,57 +16,22 @@ export async function saveStemBlob(
   fileName: string,
 ): Promise<string | null> {
   try {
-    return await writeStemBlob(sessionId, stemType, blob, fileName)
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const data = await blob.arrayBuffer()
+    const created = await repo.create({
+      sessionId,
+      stemType,
+      mimeType:
+        blob.type || (fileName.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'),
+      data,
+      size: blob.size,
+      fileName,
+    })
+    return created.id
   } catch (err) {
-    // console.error (not dev-gated): a lost stem is a real, paid-for defect.
-    console.error('[UvrService] saveStemBlob failed:', stemType, err)
+    if (IS_DEV) console.warn('[UvrService] saveStemBlob failed:', err)
     return null
-  }
-}
-
-/** Durable save — awaited, retried once, returns a result the caller must act
- *  on (surface an error, fail the session) rather than silently losing audio. */
-export function saveStemBlobDurable(
-  sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
-  blob: Blob,
-  fileName: string,
-): Promise<DurableWriteResult<string>> {
-  return durableWrite(`save ${stemType} stem`, () =>
-    writeStemBlob(sessionId, stemType, blob, fileName),
-  )
-}
-
-/** How many stem blobs exist for a session — used to reconcile a session whose
- *  completion persist may have failed, and to prune orphaned "completed" rows. */
-export async function countStemBlobs(sessionId: string): Promise<number> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await repo.findAll({ where: { sessionId } })
-    return blobs.length
-  } catch (err) {
-    if (IS_DEV) console.warn('[UvrService] countStemBlobs failed:', err)
-    return 0
-  }
-}
-
-/** Whether a session has at least one playable stem (vocal or instrumental)
- *  persisted locally. The original blob alone doesn't make a session openable. */
-export async function sessionHasPlayableStems(
-  sessionId: string,
-): Promise<boolean> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await repo.findAll({ where: { sessionId } })
-    return blobs.some(
-      (b) => b.stemType === 'vocal' || b.stemType === 'instrumental',
-    )
-  } catch (err) {
-    if (IS_DEV)
-      console.warn('[UvrService] sessionHasPlayableStems failed:', err)
-    return false
   }
 }
 
@@ -213,17 +151,19 @@ export async function saveStemFingerprintData(
     const db = await getDb()
     const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
 
-    // Upsert as create-then-delete: write the new row first, and only prune the
-    // old ones once it succeeds. Delete-then-create would wipe the existing
-    // fingerprint if the create threw (quota, lock), losing recoverable data.
-    const existing = await repo.findAll({ where: { sessionId } })
-    const created = await repo.create({
+    // Upsert: delete existing entry for this session
+    const existing = await repo.findAll({
+      where: { sessionId },
+      limit: 1,
+    })
+    for (const entry of existing) {
+      await repo.delete(entry.id)
+    }
+
+    await repo.create({
       sessionId,
       fingerprintJson: JSON.stringify(fingerprint),
     })
-    for (const entry of existing) {
-      if (entry.id !== created.id) await repo.delete(entry.id)
-    }
     return true
   } catch (err) {
     if (IS_DEV)
@@ -362,34 +302,33 @@ export async function findSessionByFileHash(
   }
 }
 
-export async function deleteUvrSessionFromDb(
-  sessionId: string,
-): Promise<boolean> {
+export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
   try {
     const db = await getDb()
 
-    // Blobs first, then fingerprint, then the session record LAST — so if a
-    // step fails the session row still exists and the user can retry the
-    // delete, rather than a deleted session leaving orphaned blobs behind.
+    // Delete associated stem blobs
     const blobRepo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await blobRepo.findAll({ where: { sessionId } })
+    const blobs = await blobRepo.findAll({
+      where: { sessionId },
+    })
     for (const blob of blobs) {
       await blobRepo.delete(blob.id)
     }
 
+    // Delete stem fingerprint
     await deleteStemFingerprintData(sessionId)
 
+    // Delete session record
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-    // No limit — remove every record for this appSessionId, in case a
-    // concurrent persist ever created a duplicate row.
-    const existing = await repo.findAll({ where: { appSessionId: sessionId } })
+    const existing = await repo.findAll({
+      where: { appSessionId: sessionId },
+      limit: 1,
+    })
     for (const rec of existing) {
       await repo.delete(rec.id)
     }
-    return true
   } catch (err) {
-    console.error('[UvrService] deleteUvrSessionFromDb failed:', err)
-    return false
+    if (IS_DEV) console.warn('[UvrService] deleteUvrSessionFromDb failed:', err)
   }
 }
 

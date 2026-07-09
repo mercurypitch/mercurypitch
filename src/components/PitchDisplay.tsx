@@ -1,23 +1,22 @@
 // ============================================================
 // PitchDisplay — Shows detected pitch with cents indicator
-// (mirrors #pitch-reference in the original JS app)
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createMemo } from 'solid-js'
 import type { PitchResult } from '@/types'
+import styles from './PitchDisplay.module.css'
 
 interface PitchDisplayProps {
   pitch: () => PitchResult | null
   targetNote: () => string | null
 }
 
-// Map cents to a CSS class for the marker color
 function centsClass(cents: number): string {
   const abs = Math.abs(cents)
-  if (abs <= 10) return 'in-tune'
-  if (cents > 0) return 'sharp'
-  return 'flat'
+  if (abs <= 10) return styles.inTune
+  if (cents > 0) return styles.sharp
+  return styles.flat
 }
 
 export const PitchDisplay: Component<PitchDisplayProps> = (props) => {
@@ -33,7 +32,6 @@ export const PitchDisplay: Component<PitchDisplayProps> = (props) => {
     return `${p.frequency.toFixed(1)} Hz`
   })
 
-  // Map cents (-50 to +50) to left percentage (0% to 100%)
   const markerLeft = createMemo(() => {
     const p = props.pitch()
     if (!p || !p.noteName) return '50%'
@@ -48,20 +46,19 @@ export const PitchDisplay: Component<PitchDisplayProps> = (props) => {
   })
 
   return (
-    <div id="pitch-reference">
-      <h3>Your Pitch</h3>
-      <div id="detected-note">{noteDisplay()}</div>
-      <div id="detected-freq">{freqDisplay()}</div>
-      <div id="cents-display">
-        <div id="cents-bar">
+    <div class={styles.root}>
+      <h3 class={styles.title}>Your Pitch</h3>
+      <div class={styles.noteName}>{noteDisplay()}</div>
+      <div class={styles.frequency}>{freqDisplay()}</div>
+      <div class={styles.centsDisplay}>
+        <div class={styles.centsBar}>
           <div
-            id="cents-marker"
-            class={markerClass()}
+            class={`${styles.marker} ${markerClass()}`}
             style={{ left: markerLeft() }}
           />
-          <div class="cents-center" />
+          <div class={styles.centsCenter} />
         </div>
-        <div class="cents-labels">
+        <div class={styles.labels}>
           <span>-50</span>
           <span>0</span>
           <span>+50</span>

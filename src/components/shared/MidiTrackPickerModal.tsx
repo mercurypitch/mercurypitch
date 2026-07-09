@@ -1,8 +1,6 @@
 // ============================================================
 // MidiTrackPickerModal — choose which MIDI track to score / hear
 // Shared by the guitar + piano (falling-notes) song pickers.
-// The modal shell uses the caller's class prefix ('gp' | 'fn') so each
-// feature keeps its existing CSS; the inner rows use shared gp-* classes.
 // ============================================================
 
 import type { Component } from 'solid-js'
@@ -10,6 +8,7 @@ import { For, Show } from 'solid-js'
 import { CloseIcon } from '@/components/shared/midi-picker-icons'
 import type { MidiSongTrack } from '@/lib/midi-song'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
+import styles from './MidiTrackPickerModal.module.css'
 
 interface MidiTrackPickerModalProps {
   song: () => SavedMidiSong
@@ -23,12 +22,7 @@ interface MidiTrackPickerModalProps {
   setPendingBackingIds: (ids: Set<string>) => void
   onApply: () => void
   onClose: () => void
-  /**
-   * Hide the "Hear" (backing audio) column entirely (unused now that Singing
-   * also plays backing; kept for callers that want a score-only picker).
-   */
   hideBacking?: boolean
-  /** Override the "Score" legend hint (e.g. "the track you sing against"). */
   scoreHint?: string
 }
 
@@ -53,7 +47,7 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
             <CloseIcon />
           </button>
         </div>
-        <div class="gp-track-legend">
+        <div class={styles.trackLegend}>
           <span>
             <strong>Score</strong>:{' '}
             {props.scoreHint ??
@@ -70,8 +64,8 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
         <div class={`${props.prefix}-modal-list`}>
           <For each={props.song().tracks}>
             {(t: MidiSongTrack) => (
-              <div class="gp-track-row">
-                <label class="gp-track-score">
+              <div class={styles.trackRow}>
+                <label class={styles.trackScore}>
                   <input
                     type="radio"
                     name={props.radioName}
@@ -82,9 +76,9 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                 </label>
                 <Show when={props.hideBacking !== true}>
                   <label
-                    class="gp-track-hear"
+                    class={styles.trackHear}
                     classList={{
-                      'gp-track-hear-disabled': props.pendingScoreId() === t.id,
+                      [styles.trackHearDisabled]: props.pendingScoreId() === t.id,
                     }}
                   >
                     <input
@@ -104,9 +98,9 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                     Hear
                   </label>
                 </Show>
-                <div class="gp-track-info">
-                  <div class="gp-item-name">{t.name}</div>
-                  <div class="gp-item-meta">
+                <div class={styles.trackInfo}>
+                  <div class={styles.trackName}>{t.name}</div>
+                  <div class={styles.trackMeta}>
                     {t.instrumentName} &middot; {t.noteCount} notes
                   </div>
                 </div>
@@ -114,8 +108,8 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
             )}
           </For>
         </div>
-        <div class="gp-track-actions">
-          <button class="gp-btn gp-btn-play" onClick={() => props.onApply()}>
+        <div class={styles.trackActions}>
+          <button class={styles.trackBtn} onClick={() => props.onApply()}>
             Load Song
           </button>
         </div>

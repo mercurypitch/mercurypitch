@@ -1,0 +1,449 @@
+/* ============================================================
+   PitchAlgorithmTester — Algorithm benchmarking UI
+   ============================================================ */
+
+.root {
+  padding: 20px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  min-height: 0;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.layout.busy {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.algorithmList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.algorithmItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.algorithmItem:hover {
+  border-color: var(--accent-glow);
+  background: var(--bg-card);
+}
+
+.algorithmItem.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.algorithmItem input {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.algoInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.algoName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.algoDesc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.samplePillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.samplePill {
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.samplePill:hover {
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.samplePill.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.runBtn {
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--accent);
+  color: #fff;
+}
+
+.runBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.runBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.runAllBtn {
+  composes: runBtn;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.runAllBtn:hover:not(:disabled) {
+  border-color: var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.progress {
+  margin-top: 8px;
+  position: relative;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.resultSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resultRow {
+  overflow-x: auto;
+}
+
+.resultSampleName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.resultRow {
+  display: grid;
+  grid-template-columns: 80px 100px repeat(auto-fill, minmax(80px, 1fr));
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.resultRow.headerRow {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.resultName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.resultFreq {
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.resultDev {
+  font-family: monospace;
+  text-align: right;
+}
+
+.resultDevGood {
+  color: var(--green);
+}
+
+.resultDevPoor {
+  color: var(--red);
+}
+
+.resultClass {
+  text-align: right;
+  font-weight: 600;
+}
+
+.emptyResults {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* ── Summary cards ──────────────────────────────────────────── */
+
+.overallScore {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.resultCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.resultCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resultAlgoName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.perfBadge {
+  font-size: 0.62rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.perfGreen {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.perfYellow {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow);
+}
+
+.perfRed {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--red);
+}
+
+.resultCardRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.resultScore {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.scoreMax {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.resultTime {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.resultOffset {
+  font-size: 0.72rem;
+  font-family: monospace;
+}
+
+.resultOffset.good {
+  color: var(--green);
+}
+
+.resultOffset.bad {
+  color: var(--red);
+}
+
+.detailedResults {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  gap: 4px;
+}
+
+/* ── Legend ─────────────────────────────────────────────────── */
+
+.resultsLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.legendDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendGood {
+  background: var(--green);
+}
+
+.legendOk {
+  background: var(--yellow);
+}
+
+.legendBad {
+  background: var(--orange);
+}
+
+.legendMiss {
+  background: var(--text-muted);
+}

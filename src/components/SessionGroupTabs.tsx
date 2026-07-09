@@ -7,6 +7,7 @@ import { createSignal, For, Show } from 'solid-js'
 import type { SessionGroupRecord } from '@/db'
 import { createGroup, deleteGroupWithSessions, getGroupsReactive, renameGroup, } from '@/stores/app-store'
 import { CheckSmall, DeleteGroup, FilePlus, Pencil, X } from './icons'
+import styles from './SessionGroupTabs.module.css'
 
 interface SessionGroupTabsProps {
   activeGroupId: string | null
@@ -57,12 +58,12 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
   }
 
   return (
-    <div class="session-group-tabs" onContextMenu={(e) => e.preventDefault()}>
+    <div class={styles.sessionGroupTabs} onContextMenu={(e) => e.preventDefault()}>
       {/* "All" tab */}
       <button
-        class="session-group-tab"
+        class={styles.sessionGroupTab}
         classList={{
-          'session-group-tab--active': props.activeGroupId === null,
+          [styles.sessionGroupTabActive]: props.activeGroupId === null,
         }}
         onClick={() => props.onSelectGroup(null)}
         data-testid="group-tab-all"
@@ -73,21 +74,21 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
       <For each={groups()}>
         {(group) => (
           <div
-            class="session-group-tab-wrapper"
+            class={styles.sessionGroupTabWrapper}
             style={{ position: 'relative' }}
           >
             <Show
               when={editingId() === group.id}
               fallback={
                 <div
-                  class="session-group-tab"
+                  class={styles.sessionGroupTab}
                   classList={{
-                    'session-group-tab--active':
+                    [styles.sessionGroupTabActive]:
                       props.activeGroupId === group.id,
                   }}
                 >
                   <button
-                    class="session-group-tab-label"
+                    class={styles.sessionGroupTabLabel}
                     onClick={() => props.onSelectGroup(group.id)}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -96,12 +97,12 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                     data-testid={`group-tab-${group.id}`}
                   >
                     {group.name}
-                    <span class="session-group-tab-count">
+                    <span class={styles.sessionGroupTabCount}>
                       {group.sessionIds.length}
                     </span>
                   </button>
                   <button
-                    class="session-group-tab-delete-btn"
+                    class={styles.sessionGroupTabDeleteBtn}
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDelete(group.id)
@@ -114,11 +115,11 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                 </div>
               }
             >
-              <div class="session-group-tab-edit">
+              <div class={styles.sessionGroupTabEdit}>
                 <input
                   ref={editInputRef}
                   type="text"
-                  class="session-group-tab-edit-input"
+                  class={styles.sessionGroupTabEditInput}
                   value={editName()}
                   onInput={(e) => setEditName(e.currentTarget.value)}
                   onKeyDown={(e) => {
@@ -127,13 +128,13 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                   }}
                 />
                 <button
-                  class="session-group-tab-edit-btn"
+                  class={styles.sessionGroupTabEditBtn}
                   onClick={() => handleRename(group.id)}
                 >
                   <CheckSmall />
                 </button>
                 <button
-                  class="session-group-tab-edit-btn"
+                  class={styles.sessionGroupTabEditBtn}
                   onClick={() => setEditingId(null)}
                 >
                   <X />
@@ -144,11 +145,11 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
             {/* Context menu */}
             <Show when={contextGroupId() === group.id}>
               <div
-                class="session-group-context-menu"
+                class={styles.sessionGroupContextMenu}
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
-                  class="session-group-context-item"
+                  class={styles.sessionGroupContextItem}
                   onClick={() => {
                     setContextGroupId(null)
                     startRename(group)
@@ -157,14 +158,14 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                   <Pencil /> Rename
                 </button>
                 <button
-                  class="session-group-context-item session-group-context-item--danger"
+                  class={`${styles.sessionGroupContextItem} ${styles.sessionGroupContextItemDanger}`}
                   onClick={() => handleDelete(group.id)}
                 >
                   <DeleteGroup /> Delete group & sessions
                 </button>
               </div>
               <div
-                class="session-group-context-backdrop"
+                class={styles.sessionGroupContextBackdrop}
                 onClick={() => setContextGroupId(null)}
                 onContextMenu={(e) => {
                   e.preventDefault()
@@ -181,7 +182,7 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
         when={editingId() === '__new__'}
         fallback={
           <button
-            class="session-group-tab session-group-tab--add"
+            class={`${styles.sessionGroupTab} ${styles.sessionGroupTabAdd}`}
             onClick={() => {
               setEditingId('__new__')
               setEditName('')
@@ -194,11 +195,11 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
           </button>
         }
       >
-        <div class="session-group-tab-edit">
+        <div class={styles.sessionGroupTabEdit}>
           <input
             ref={addInputRef}
             type="text"
-            class="session-group-tab-edit-input"
+            class={styles.sessionGroupTabEditInput}
             placeholder="Group name"
             value={editName()}
             onInput={(e) => setEditName(e.currentTarget.value)}
@@ -210,11 +211,11 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
               }
             }}
           />
-          <button class="session-group-tab-edit-btn" onClick={handleCreate}>
+          <button class={styles.sessionGroupTabEditBtn} onClick={handleCreate}>
             <CheckSmall />
           </button>
           <button
-            class="session-group-tab-edit-btn"
+            class={styles.sessionGroupTabEditBtn}
             onClick={() => {
               setEditingId(null)
               setEditName('')

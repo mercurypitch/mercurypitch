@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import styles from './PitchTestingTab.module.css'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { OfflinePitchCanvas } from '@/components/OfflinePitchCanvas'
 import { PitchCanvasToolbar } from '@/components/PitchCanvasToolbar'
@@ -34,7 +35,6 @@ import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import { FileText } from './icons'
-import styles from './PitchTestingTab.module.css'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -820,11 +820,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         onComplete: (result) => {
           void (async () => {
             try {
-              await completeUvrSession(
-                sessionId,
-                result.outputs,
-                result.stemMeta,
-              )
+              completeUvrSession(sessionId, result.outputs, result.stemMeta)
 
               const s = getUvrSession(sessionId)
               if (s) {
@@ -1364,30 +1360,30 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   })
 
   return (
-    <div class="pitch-testing-tab">
-      <div class="pitch-testing-header">
+    <div class={styles.pitchTestingTab}>
+      <div class={styles.pitchTestingHeader}>
         <h2>Pitch Detection Testing</h2>
         {props.onClose && (
-          <button class="close-btn" onclick={props.onClose}>
+          <button class={styles.closeBtn} onclick={props.onClose}>
             ×
           </button>
         )}
       </div>
 
-      <div class="pitch-testing-layout">
+      <div class={styles.pitchTestingLayout}>
         {/* Left Panel - Controls */}
-        <div class="pitch-testing-controls">
-          <div class="control-group">
-            <div class="algorithm-header-row">
+        <div class={styles.pitchTestingControls}>
+          <div class={styles.controlGroup}>
+            <div class={styles.algorithmHeaderRow}>
               <label>Algorithm</label>
-              <label class="ensemble-toggle-label">
+              <label class={styles.ensembleToggleLabel}>
                 <input
                   type="checkbox"
                   checked={ensembleMode()}
                   disabled={isDetecting() || isRunningTest()}
                   onChange={(e) => setEnsembleMode(e.currentTarget.checked)}
                 />
-                <span class="ensemble-toggle-text">Ensemble</span>
+                <span class={styles.ensembleToggleText}>Ensemble</span>
               </label>
             </div>
             <Show
@@ -1407,7 +1403,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </SafeSelect>
               }
             >
-              <div class="ensemble-pills">
+              <div class={styles.ensemblePills}>
                 <For each={detectors()}>
                   {(d) => {
                     const algo = d.algorithm as AlgorithmId
@@ -1430,10 +1426,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </div>
 
           <Show when={ensembleMode() || selectedAlgorithm() !== 'swift'}>
-            <div class="control-group">
+            <div class={styles.controlGroup}>
               <label>
                 Sensitivity{' '}
-                <span class="slider-value-badge">{sensitivity()}</span>
+                <span class={styles.sliderValueBadge}>{sensitivity()}</span>
               </label>
               <input
                 type="range"
@@ -1453,16 +1449,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   }
                 }}
               />
-              <div class="slider-range-labels">
+              <div class={styles.sliderRangeLabels}>
                 <span>1</span>
                 <span>10</span>
               </div>
             </div>
 
-            <div class="control-group">
+            <div class={styles.controlGroup}>
               <label>
                 Min Confidence{' '}
-                <span class="slider-value-badge">
+                <span class={styles.sliderValueBadge}>
                   {minConfidence().toFixed(1)}
                 </span>
               </label>
@@ -1484,21 +1480,21 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   }
                 }}
               />
-              <div class="slider-range-labels">
+              <div class={styles.sliderRangeLabels}>
                 <span>0.1</span>
                 <span>0.9</span>
               </div>
             </div>
           </Show>
 
-          <div class="control-group">
+          <div class={styles.controlGroup}>
             <label>
               Cents Threshold{' '}
-              <span class="slider-value-badge">{centsThreshold()}¢</span>
+              <span class={styles.sliderValueBadge}>{centsThreshold()}¢</span>
             </label>
-            <div class="preset-buttons">
+            <div class={styles.presetButtons}>
               <button
-                class="btn btn-preset"
+                class={`btn ${styles.btnPreset}`}
                 classList={{ active: centsThreshold() === 0 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(0)}
@@ -1506,7 +1502,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 Perfect (0¢)
               </button>
               <button
-                class="btn btn-preset"
+                class={`btn ${styles.btnPreset}`}
                 classList={{ active: centsThreshold() === 5 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(5)}
@@ -1514,7 +1510,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 Great (±5¢)
               </button>
               <button
-                class="btn btn-preset"
+                class={`btn ${styles.btnPreset}`}
                 classList={{ active: centsThreshold() === 10 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(10)}
@@ -1532,13 +1528,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               disabled={isRunningTest()}
               onInput={(e) => setCentsThreshold(Number(e.currentTarget.value))}
             />
-            <div class="slider-range-labels">
+            <div class={styles.sliderRangeLabels}>
               <span>0¢</span>
               <span>20¢</span>
             </div>
           </div>
 
-          <div class="control-group">
+          <div class={styles.controlGroup}>
             <label for="detection-mode-select">Detection Mode</label>
             <SafeSelect
               id="detection-mode-select"
@@ -1556,33 +1552,35 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           {/* Microphone Mode UI */}
           <Show when={detectionMode() === 'mic'}>
-            <div class="mic-controls">
+            <div class={styles.micControls}>
               {!audioContext() && (
                 <>
                   <button
-                    class="btn btn-primary btn-sm"
+                    class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
                     onclick={() => void startMicrophoneInput()}
                   >
                     Enable Microphone
                   </button>
-                  <span class="mic-hint">
+                  <span class={styles.micHint}>
                     Allows live testing with your voice or instrument
                   </span>
                 </>
               )}
               {audioContext() && (
                 <button
-                  class="btn btn-secondary btn-sm"
+                  class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
                   onclick={stopMicrophoneInput}
                 >
                   Stop Microphone
                 </button>
               )}
               {audioContext() && (
-                <span class="mic-status active">Microphone Active</span>
+                <span class={`${styles.micStatus} active`}>
+                  Microphone Active
+                </span>
               )}
               {!audioContext() && (
-                <span class="mic-status">Microphone Inactive</span>
+                <span class={styles.micStatus}>Microphone Inactive</span>
               )}
             </div>
           </Show>
@@ -1590,7 +1588,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           {/* File Upload Mode UI */}
           <Show when={detectionMode() === 'file'}>
             <div
-              class="file-controls"
+              class={styles.fileControls}
               style={{
                 display: 'flex',
                 'flex-direction': 'column',
@@ -1607,7 +1605,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 }}
               >
                 <label
-                  class="btn btn-secondary btn-sm"
+                  class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
                   style={{
                     display: 'inline-flex',
                     'align-items': 'center',
@@ -1648,7 +1646,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}
                 >
                   <button
-                    class="btn btn-primary btn-sm"
+                    class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
                     onclick={() => {
                       void analyzeUploadedAudio()
                     }}
@@ -1659,7 +1657,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       : 'Analyze Pitch'}
                   </button>
                   <button
-                    class="btn btn-outline btn-sm"
+                    class={`btn ${styles.btnOutline} ${styles.btnSm}`}
                     style={{ transition: 'all 0.2s', cursor: 'pointer' }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.filter = 'brightness(1.2)')
@@ -1684,7 +1682,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </button>
                   <Show when={isSeparating()}>
                     <button
-                      class="btn btn-sm"
+                      class={`btn ${styles.btnSm}`}
                       style={{
                         background: 'var(--danger)',
                         color: 'white',
@@ -1707,7 +1705,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     }
                   >
                     <button
-                      class="btn btn-sm"
+                      class={`btn ${styles.btnSm}`}
                       style={{
                         background: 'var(--danger)',
                         color: 'white',
@@ -1741,27 +1739,27 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </div>
               </Show>
               <Show when={!fileWaveform()}>
-                <span class="file-info">No file loaded</span>
+                <span class={styles.fileInfo}>No file loaded</span>
               </Show>
             </div>
           </Show>
 
           {/* Generate Mode UI */}
           <Show when={detectionMode() === 'generate'}>
-            <div class="generate-controls">
+            <div class={styles.generateControls}>
               <button
-                class="btn btn-secondary btn-sm"
+                class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
                 onclick={loadGeneratedWaveform}
               >
                 Regenerate Waveform
               </button>
-              <span class="waveform-info">
+              <span class={styles.waveformInfo}>
                 Generated: {frequency()} Hz • 0.5 s
               </span>
             </div>
           </Show>
 
-          <div class="control-group">
+          <div class={styles.controlGroup}>
             <label>Test Frequency (Hz)</label>
             <input
               type="number"
@@ -1771,7 +1769,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             />
             <input
               type="range"
-              class="freq-slider"
+              class={styles.freqSlider}
               min="0"
               max={FREQ_SLIDER_STEPS}
               value={freqToSliderVal(frequency())}
@@ -1780,11 +1778,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 setFrequency(sliderValToFreq(Number(e.currentTarget.value)))
               }}
             />
-            <span class="control-hint">{frequency()} Hz</span>
+            <span class={styles.controlHint}>{frequency()} Hz</span>
           </div>
 
           <button
-            class="btn btn-primary"
+            class={`btn ${styles.btnPrimary}`}
             onclick={startLiveDetection}
             disabled={isDetecting() || isRunningTest()}
           >
@@ -1792,7 +1790,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </button>
 
           <button
-            class="btn btn-secondary"
+            class={`btn ${styles.btnSecondary}`}
             onclick={stopAll}
             disabled={!isDetecting() && !isRunningTest()}
           >
@@ -1800,38 +1798,40 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </button>
 
           <button
-            class="btn btn-test"
+            class={`btn ${styles.btnTest}`}
             onclick={runTest}
             disabled={isRunningTest() || isDetecting()}
           >
             {isRunningTest() ? 'Running Test...' : 'Run Benchmark'}
           </button>
 
-          <button class="btn btn-outline" onclick={resetAll}>
+          <button class={`btn ${styles.btnOutline}`} onclick={resetAll}>
             Reset All
           </button>
         </div>
 
         {/* Right Panel - Visualization */}
-        <div class="pitch-testing-visualization">
+        <div class={styles.pitchTestingVisualization}>
           {/* Live Detection Display */}
           <Show when={isDetecting()}>
-            <div class="detection-panel">
+            <div class={styles.detectionPanel}>
               <h3>Live Detection</h3>
 
               <Show when={ensembleMode() && ensembleTickResults().length > 0}>
-                <div class="ensemble-vote-bar">
+                <div class={styles.ensembleVoteBar}>
                   <For each={ensembleTickResults()}>
                     {(item) => (
                       <div
                         classList={{
-                          'ensemble-vote-chip': true,
-                          detected: item.result !== null,
-                          'no-detect': item.result === null,
+                          [styles.ensembleVoteChip]: true,
+                          [styles.detected]: item.result !== null,
+                          [styles.noDetect]: item.result === null,
                         }}
                       >
-                        <span class="vote-chip-algo">{item.algorithm}</span>
-                        <span class="vote-chip-note">
+                        <span class={styles.voteChipAlgo}>
+                          {item.algorithm}
+                        </span>
+                        <span class={styles.voteChipNote}>
                           {item.result?.noteName ?? '—'}
                         </span>
                       </div>
@@ -1840,69 +1840,69 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </div>
               </Show>
 
-              <div class="metrics-grid">
-                <div class="metric-item">
-                  <span class="metric-label">Status</span>
-                  <span class="metric-value">
+              <div class={styles.metricsGrid}>
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Status</span>
+                  <span class={styles.metricValue}>
                     {latestResult() ? 'detected' : 'listening...'}
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">Frequency</span>
-                  <span class="metric-value">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Frequency</span>
+                  <span class={styles.metricValue}>
                     {latestResult()?.frequency.toFixed(2) ?? '—'} Hz
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">Note</span>
-                  <span class="metric-value">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Note</span>
+                  <span class={styles.metricValue}>
                     {latestResult()?.noteName ?? '—'}
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">Midi</span>
-                  <span class="metric-value">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Midi</span>
+                  <span class={styles.metricValue}>
                     {latestResult()?.midi.toFixed(0) ?? '—'}
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">Cents</span>
-                  <span class="metric-value">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Cents</span>
+                  <span class={styles.metricValue}>
                     {latestResult()?.cents.toFixed(1) ?? '—'}
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>
                     {ensembleMode() ? 'Agreement' : 'Clarity'}
                   </span>
-                  <span class="metric-value">
+                  <span class={styles.metricValue}>
                     {latestResult()?.clarity.toFixed(2) ?? '—'}
                   </span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-label">Detections</span>
-                  <span class="metric-value">
+                <div class={styles.metricItem}>
+                  <span class={styles.metricLabel}>Detections</span>
+                  <span class={styles.metricValue}>
                     {liveResults().filter(Boolean).length}
                   </span>
                 </div>
               </div>
 
               {/* Waveform and Frequency Over Time */}
-              <div class="waveform-display">
-                <div class="waveform-display-header">
+              <div class={styles.waveformDisplay}>
+                <div class={styles.waveformDisplayHeader}>
                   <h4>Detection Over Time</h4>
-                  <div class="zoom-controls">
+                  <div class={styles.zoomControls}>
                     <button
-                      class="zoom-btn"
+                      class={styles.zoomBtn}
                       onclick={zoomOut}
                       disabled={zoomLevel() <= 1}
                       title="Zoom out"
                     >
                       −
                     </button>
-                    <span class="zoom-value">{zoomLevel()}x</span>
+                    <span class={styles.zoomValue}>{zoomLevel()}x</span>
                     <button
-                      class="zoom-btn"
+                      class={styles.zoomBtn}
                       onclick={zoomIn}
                       disabled={zoomLevel() >= 8}
                       title="Zoom in"
@@ -1912,10 +1912,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </div>
                 </div>
                 <div
-                  class="waveform-canvas"
+                  class={styles.waveformCanvas}
                   style={{ height: `${waveformHeight}px` }}
                 >
-                  <div class="waveform-canvas-inner">
+                  <div class={styles.waveformCanvasInner}>
                     <PitchOverTimeCanvas
                       samples={pitchSamples}
                       isDetecting={isDetecting}
@@ -1925,11 +1925,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       scaleNotes={currentScale}
                     />
                   </div>
-                  <div class="resize-handle" onMouseDown={onResizeMouseDown}>
-                    <div class="resize-grip">
-                      <span class="grip-dash" />
-                      <span class="grip-dash" />
-                      <span class="grip-dash" />
+                  <div
+                    class={styles.resizeHandle}
+                    onMouseDown={onResizeMouseDown}
+                  >
+                    <div class={styles.resizeGrip}>
+                      <span class={styles.gripDash} />
+                      <span class={styles.gripDash} />
+                      <span class={styles.gripDash} />
                     </div>
                   </div>
                 </div>
@@ -1945,7 +1948,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               !isDetecting()
             }
           >
-            <div class="results-panel">
+            <div class={styles.resultsPanel}>
               <h4
                 style={{
                   margin: '0 0 12px 0',
@@ -2069,9 +2072,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </div>
 
               <Show when={fileWaveform() !== null}>
-                <div class="waveform-display">
+                <div class={styles.waveformDisplay}>
                   <div
-                    class="waveform-display-header"
+                    class={styles.waveformDisplayHeader}
                     style={{
                       display: 'flex',
                       'justify-content': 'space-between',
@@ -2180,10 +2183,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     </span>
                   </div>
                   <div
-                    class="waveform-canvas"
+                    class={styles.waveformCanvas}
                     style={{ height: `${waveformHeight}px` }}
                   >
-                    <div class="waveform-canvas-inner">
+                    <div class={styles.waveformCanvasInner}>
                       <OfflinePitchCanvas
                         waveform={fileWaveform()}
                         durationSec={fileDuration()}
@@ -2195,11 +2198,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         alignedWords={activeAlignment().alignedWords}
                       />
                     </div>
-                    <div class="resize-handle" onMouseDown={onResizeMouseDown}>
-                      <div class="resize-grip">
-                        <span class="grip-dash" />
-                        <span class="grip-dash" />
-                        <span class="grip-dash" />
+                    <div
+                      class={styles.resizeHandle}
+                      onMouseDown={onResizeMouseDown}
+                    >
+                      <div class={styles.resizeGrip}>
+                        <span class={styles.gripDash} />
+                        <span class={styles.gripDash} />
+                        <span class={styles.gripDash} />
                       </div>
                     </div>
                   </div>
@@ -2210,11 +2216,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           {/* Test Results Display */}
           <Show when={testResults().noteResults.length > 0 || isRunningTest()}>
-            <div class="results-panel">
+            <div class={styles.resultsPanel}>
               <h3>Test Results</h3>
 
               <Show when={isRunningTest()}>
-                <p class="test-running-hint">
+                <p class={styles.testRunningHint}>
                   Running benchmark on {TEST_FREQUENCIES.length} notes with{' '}
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble`
@@ -2226,7 +2232,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <Show
                 when={!isRunningTest() && testResults().noteResults.length > 0}
               >
-                <p class="test-description">
+                <p class={styles.testDescription}>
                   {TEST_FREQUENCIES.length} pentatonic notes from C2 (65.41 Hz)
                   to C6 (1046.5 Hz), tested with{' '}
                   {ensembleMode()
@@ -2237,25 +2243,29 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </p>
               </Show>
 
-              <div class="test-summary-bar">
-                <div class="test-summary-item">
-                  <span class="test-summary-label">Total</span>
-                  <span class="test-summary-value">
+              <div class={styles.testSummaryBar}>
+                <div class={styles.testSummaryItem}>
+                  <span class={styles.testSummaryLabel}>Total</span>
+                  <span class={styles.testSummaryValue}>
                     {testResults().passed + testResults().failed}
                   </span>
                 </div>
-                <div class="test-summary-item passed">
-                  <span class="test-summary-label">Passed</span>
-                  <span class="test-summary-value">{testResults().passed}</span>
+                <div class={`${styles.testSummaryItem} passed`}>
+                  <span class={styles.testSummaryLabel}>Passed</span>
+                  <span class={styles.testSummaryValue}>
+                    {testResults().passed}
+                  </span>
                 </div>
-                <div class="test-summary-item failed">
-                  <span class="test-summary-label">Failed</span>
-                  <span class="test-summary-value">{testResults().failed}</span>
+                <div class={`${styles.testSummaryItem} failed`}>
+                  <span class={styles.testSummaryLabel}>Failed</span>
+                  <span class={styles.testSummaryValue}>
+                    {testResults().failed}
+                  </span>
                 </div>
                 <Show when={testResults().passed + testResults().failed > 0}>
-                  <div class="test-summary-item rate">
-                    <span class="test-summary-label">Rate</span>
-                    <span class="test-summary-value">
+                  <div class={`${styles.testSummaryItem} rate`}>
+                    <span class={styles.testSummaryLabel}>Rate</span>
+                    <span class={styles.testSummaryValue}>
                       {(
                         (testResults().passed /
                           (testResults().passed + testResults().failed)) *
@@ -2268,8 +2278,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </div>
 
               <Show when={testResults().noteResults.length > 0}>
-                <div class="test-table-scroll">
-                  <table class="test-results-table">
+                <div class={styles.testTableScroll}>
+                  <table class={styles.testResultsTable}>
                     <thead>
                       <tr>
                         <th>Note</th>
@@ -2288,26 +2298,30 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                               'row-fail': !nr.passed,
                             }}
                           >
-                            <td class="test-note-name">{nr.noteName}</td>
-                            <td class="test-note-freq">
+                            <td class={styles.testNoteName}>{nr.noteName}</td>
+                            <td class={styles.testNoteFreq}>
                               {nr.targetFreq.toFixed(2)}
                             </td>
-                            <td class="test-note-result">
+                            <td class={styles.testNoteResult}>
                               {nr.detectedFreq !== null
                                 ? `${nr.detectedFreq.toFixed(1)}`
                                 : '—'}
                             </td>
-                            <td class="test-note-error">
+                            <td class={styles.testNoteError}>
                               {nr.errorCents !== null
                                 ? `${nr.errorCents < 0.05 ? '0.0' : nr.errorCents.toFixed(1)}¢ / ${nr.errorHz!.toFixed(1)} Hz`
                                 : '—'}
                             </td>
-                            <td class="test-note-status">
+                            <td class={styles.testNoteStatus}>
                               <Show when={nr.passed}>
-                                <span class="result-badge pass">Pass</span>
+                                <span class={`${styles.resultBadge} pass`}>
+                                  Pass
+                                </span>
                               </Show>
                               <Show when={!nr.passed}>
-                                <span class="result-badge fail">Fail</span>
+                                <span class={`${styles.resultBadge} fail`}>
+                                  Fail
+                                </span>
                               </Show>
                             </td>
                           </tr>
@@ -2325,7 +2339,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             when={!ensembleMode() && currentDetector() !== undefined}
             fallback={
               <Show when={ensembleMode()}>
-                <div class="info-panel">
+                <div class={styles.infoPanel}>
                   <Show when={isSeparating()}>
                     <div
                       class="processing-progress"
@@ -2335,11 +2349,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         gap: '10px',
                       }}
                     >
-                      <span class="progress-text">
+                      <span class={styles.progressText}>
                         Separating... {Math.round(offlineProgress())}%
                       </span>
                       <button
-                        class="btn btn-secondary"
+                        class={`btn ${styles.btnSecondary}`}
                         style={{ padding: '4px 8px', 'font-size': '12px' }}
                         onClick={() =>
                           cancelUvrPipeline(
@@ -2364,9 +2378,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     wins; clarity breaks ties.
                   </p>
                   <Show when={ensembleTickResults().length > 0}>
-                    <div class="last-result">
+                    <div class={styles.lastResult}>
                       <h4>Last Tick Per-Algorithm</h4>
-                      <div class="result-details">
+                      <div class={styles.resultDetails}>
                         <For each={ensembleTickResults()}>
                           {(item) => (
                             <div>
@@ -2384,14 +2398,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </Show>
             }
           >
-            <div class="info-panel">
+            <div class={styles.infoPanel}>
               <h3>{currentDetector()?.getName()}</h3>
               <p>{currentDetector()?.getDescription()}</p>
 
               {currentDetector()?.getMetrics().lastResult !== null && (
-                <div class="last-result">
+                <div class={styles.lastResult}>
                   <h4>Last Detection</h4>
-                  <div class="result-details">
+                  <div class={styles.resultDetails}>
                     <div>
                       Frequency:{' '}
                       {currentDetector()

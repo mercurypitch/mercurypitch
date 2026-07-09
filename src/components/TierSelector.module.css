@@ -1,17 +1,13 @@
 /* ============================================================
-   TierSelector — Global tier selection button styles
-   Extracted from WelcomeScreen.module.css so TierSelector's
-   raw kebab-case classes resolve globally in WelcomeScreen,
-   SettingsPanel, and anywhere else TierSelector is used.
+   TierSelector — Shared tier selection button styles
+   Used by TierSelector and VocalRangeSelector
    ============================================================ */
 
-/* Shared TierSelector wrapper — used by SettingsPanel */
-.tier-selector {
+.tierSelector {
   /* Layout inherited from parent context */
 }
 
-/* Quick tier select wrapper (WelcomeScreen) */
-.welcome-tier-select {
+.tierSelect {
   margin-top: 20px;
   padding: 14px 16px;
   background: linear-gradient(
@@ -23,20 +19,20 @@
   border: 1px solid rgba(48, 54, 61, 0.6);
 }
 
-.welcome-tier-label {
+.tierLabel {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin: 0 0 10px;
   text-align: center;
 }
 
-.welcome-tier-buttons {
+.tierButtons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
-.welcome-tier-btn {
+.tierBtn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -52,7 +48,20 @@
   transition: all 0.2s ease;
 }
 
-.tier-icon-wrap {
+@media (hover: hover) {
+  .tierBtn:hover {
+    border-color: var(--accent-glow);
+    background: var(--bg-card);
+  }
+  .tierBtn:hover .tierIconWrap {
+    border-color: var(--accent-glow);
+  }
+  .tierBtn:hover .tierIconWrap svg {
+    opacity: 0.85;
+  }
+}
+
+.tierIconWrap {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,257 +73,248 @@
   transition: all 0.2s ease;
 }
 
-.tier-icon-wrap svg {
+.tierIconWrap svg {
   opacity: 0.6;
   transition: opacity 0.2s ease;
 }
 
-.welcome-tier-btn .tier-name {
+.tierName {
   font-weight: 600;
   font-size: 0.78rem;
   line-height: 1.2;
 }
 
-.welcome-tier-btn .tier-desc {
+.tierDesc {
   font-size: 0.65rem;
   color: var(--text-muted);
   line-height: 1;
   opacity: 0.7;
 }
 
-/* Hover — desktop only */
-@media (hover: hover) {
-  .welcome-tier-btn:hover {
-    border-color: var(--accent-glow);
-    background: var(--bg-card);
-  }
-  .welcome-tier-btn:hover .tier-icon-wrap {
-    border-color: var(--accent-glow);
-  }
-  .welcome-tier-btn:hover .tier-icon-wrap svg {
-    opacity: 0.85;
-  }
-}
-
 /* Per-tier accent colors */
-.welcome-tier-learning {
+.tierLearning {
   border-color: rgba(34, 197, 94, 0.35);
 }
-.welcome-tier-learning .tier-icon-wrap {
+.tierLearning .tierIconWrap {
   background: rgba(34, 197, 94, 0.08);
   border-color: rgba(34, 197, 94, 0.2);
 }
-.welcome-tier-learning .tier-icon-wrap svg {
+.tierLearning .tierIconWrap svg {
   color: #22c55e;
 }
 
-.welcome-tier-singer {
+.tierSinger {
   border-color: rgba(245, 158, 11, 0.35);
 }
-.welcome-tier-singer .tier-icon-wrap {
+.tierSinger .tierIconWrap {
   background: rgba(245, 158, 11, 0.08);
   border-color: rgba(245, 158, 11, 0.2);
 }
-.welcome-tier-singer .tier-icon-wrap svg {
+.tierSinger .tierIconWrap svg {
   color: #f59e0b;
 }
 
-.welcome-tier-professional {
+.tierProfessional {
   border-color: rgba(139, 92, 246, 0.35);
 }
-.welcome-tier-professional .tier-icon-wrap {
+.tierProfessional .tierIconWrap {
   background: rgba(139, 92, 246, 0.08);
   border-color: rgba(139, 92, 246, 0.2);
 }
-.welcome-tier-professional .tier-icon-wrap svg {
+.tierProfessional .tierIconWrap svg {
   color: #8b5cf6;
 }
 
+.tierAuto {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+.tierAuto .tierIconWrap {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.tierAuto .tierIconWrap svg {
+  color: #6366f1;
+}
+
 /* Active / selected state */
-.welcome-tier-btn.tier-active {
+.tierActive {
   color: var(--text-primary);
 }
-.welcome-tier-learning.tier-active {
+
+.tierLearning.tierActive {
   border-color: #22c55e;
   background: rgba(34, 197, 94, 0.12);
   box-shadow: 0 0 14px rgba(34, 197, 94, 0.15);
 }
-.welcome-tier-learning.tier-active .tier-icon-wrap {
+.tierLearning.tierActive .tierIconWrap {
   background: rgba(34, 197, 94, 0.2);
   border-color: rgba(34, 197, 94, 0.5);
 }
-.welcome-tier-learning.tier-active .tier-icon-wrap svg {
+.tierLearning.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-.welcome-tier-singer.tier-active {
+.tierSinger.tierActive {
   border-color: #f59e0b;
   background: rgba(245, 158, 11, 0.12);
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.15);
 }
-.welcome-tier-singer.tier-active .tier-icon-wrap {
+.tierSinger.tierActive .tierIconWrap {
   background: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.5);
 }
-.welcome-tier-singer.tier-active .tier-icon-wrap svg {
+.tierSinger.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-.welcome-tier-professional.tier-active {
+.tierProfessional.tierActive {
   border-color: #8b5cf6;
   background: rgba(139, 92, 246, 0.12);
   box-shadow: 0 0 14px rgba(139, 92, 246, 0.15);
 }
-.welcome-tier-professional.tier-active .tier-icon-wrap {
+.tierProfessional.tierActive .tierIconWrap {
   background: rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.5);
 }
-.welcome-tier-professional.tier-active .tier-icon-wrap svg {
+.tierProfessional.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Vocal Range Selector Accents */
-
-/* Soprano: Pink */
-.welcome-tier-soprano {
+/* Vocal Range Selector per-tier accents */
+.tierSoprano {
   border-color: rgba(236, 72, 153, 0.35);
 }
-.welcome-tier-soprano .tier-icon-wrap {
+.tierSoprano .tierIconWrap {
   background: rgba(236, 72, 153, 0.08);
   border-color: rgba(236, 72, 153, 0.2);
 }
-.welcome-tier-soprano .tier-icon-wrap svg {
+.tierSoprano .tierIconWrap svg {
   color: #ec4899;
 }
-.welcome-tier-soprano.tier-active {
+.tierSoprano.tierActive {
   border-color: #ec4899;
   background: rgba(236, 72, 153, 0.12);
   box-shadow: 0 0 14px rgba(236, 72, 153, 0.15);
 }
-.welcome-tier-soprano.tier-active .tier-icon-wrap {
+.tierSoprano.tierActive .tierIconWrap {
   background: rgba(236, 72, 153, 0.2);
   border-color: rgba(236, 72, 153, 0.5);
 }
-.welcome-tier-soprano.tier-active .tier-icon-wrap svg {
+.tierSoprano.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Mezzo: Orange */
-.welcome-tier-mezzo {
+.tierMezzo {
   border-color: rgba(249, 115, 22, 0.35);
 }
-.welcome-tier-mezzo .tier-icon-wrap {
+.tierMezzo .tierIconWrap {
   background: rgba(249, 115, 22, 0.08);
   border-color: rgba(249, 115, 22, 0.2);
 }
-.welcome-tier-mezzo .tier-icon-wrap svg {
+.tierMezzo .tierIconWrap svg {
   color: #f97316;
 }
-.welcome-tier-mezzo.tier-active {
+.tierMezzo.tierActive {
   border-color: #f97316;
   background: rgba(249, 115, 22, 0.12);
   box-shadow: 0 0 14px rgba(249, 115, 22, 0.15);
 }
-.welcome-tier-mezzo.tier-active .tier-icon-wrap {
+.tierMezzo.tierActive .tierIconWrap {
   background: rgba(249, 115, 22, 0.2);
   border-color: rgba(249, 115, 22, 0.5);
 }
-.welcome-tier-mezzo.tier-active .tier-icon-wrap svg {
+.tierMezzo.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Alto: Green */
-.welcome-tier-alto {
+.tierAlto {
   border-color: rgba(34, 197, 94, 0.35);
 }
-.welcome-tier-alto .tier-icon-wrap {
+.tierAlto .tierIconWrap {
   background: rgba(34, 197, 94, 0.08);
   border-color: rgba(34, 197, 94, 0.2);
 }
-.welcome-tier-alto .tier-icon-wrap svg {
+.tierAlto .tierIconWrap svg {
   color: #22c55e;
 }
-.welcome-tier-alto.tier-active {
+.tierAlto.tierActive {
   border-color: #22c55e;
   background: rgba(34, 197, 94, 0.12);
   box-shadow: 0 0 14px rgba(34, 197, 94, 0.15);
 }
-.welcome-tier-alto.tier-active .tier-icon-wrap {
+.tierAlto.tierActive .tierIconWrap {
   background: rgba(34, 197, 94, 0.2);
   border-color: rgba(34, 197, 94, 0.5);
 }
-.welcome-tier-alto.tier-active .tier-icon-wrap svg {
+.tierAlto.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Tenor: Blue */
-.welcome-tier-tenor {
+.tierTenor {
   border-color: rgba(59, 130, 246, 0.35);
 }
-.welcome-tier-tenor .tier-icon-wrap {
+.tierTenor .tierIconWrap {
   background: rgba(59, 130, 246, 0.08);
   border-color: rgba(59, 130, 246, 0.2);
 }
-.welcome-tier-tenor .tier-icon-wrap svg {
+.tierTenor .tierIconWrap svg {
   color: #3b82f6;
 }
-.welcome-tier-tenor.tier-active {
+.tierTenor.tierActive {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.12);
   box-shadow: 0 0 14px rgba(59, 130, 246, 0.15);
 }
-.welcome-tier-tenor.tier-active .tier-icon-wrap {
+.tierTenor.tierActive .tierIconWrap {
   background: rgba(59, 130, 246, 0.2);
   border-color: rgba(59, 130, 246, 0.5);
 }
-.welcome-tier-tenor.tier-active .tier-icon-wrap svg {
+.tierTenor.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Baritone: Purple */
-.welcome-tier-baritone {
+.tierBaritone {
   border-color: rgba(168, 85, 247, 0.35);
 }
-.welcome-tier-baritone .tier-icon-wrap {
+.tierBaritone .tierIconWrap {
   background: rgba(168, 85, 247, 0.08);
   border-color: rgba(168, 85, 247, 0.2);
 }
-.welcome-tier-baritone .tier-icon-wrap svg {
+.tierBaritone .tierIconWrap svg {
   color: #a855f7;
 }
-.welcome-tier-baritone.tier-active {
+.tierBaritone.tierActive {
   border-color: #a855f7;
   background: rgba(168, 85, 247, 0.12);
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.15);
 }
-.welcome-tier-baritone.tier-active .tier-icon-wrap {
+.tierBaritone.tierActive .tierIconWrap {
   background: rgba(168, 85, 247, 0.2);
   border-color: rgba(168, 85, 247, 0.5);
 }
-.welcome-tier-baritone.tier-active .tier-icon-wrap svg {
+.tierBaritone.tierActive .tierIconWrap svg {
   opacity: 1;
 }
 
-/* Bass: Cyan */
-.welcome-tier-bass {
+.tierBass {
   border-color: rgba(6, 182, 212, 0.35);
 }
-.welcome-tier-bass .tier-icon-wrap {
+.tierBass .tierIconWrap {
   background: rgba(6, 182, 212, 0.08);
   border-color: rgba(6, 182, 212, 0.2);
 }
-.welcome-tier-bass .tier-icon-wrap svg {
+.tierBass .tierIconWrap svg {
   color: #06b6d4;
 }
-.welcome-tier-bass.tier-active {
+.tierBass.tierActive {
   border-color: #06b6d4;
   background: rgba(6, 182, 212, 0.12);
   box-shadow: 0 0 14px rgba(6, 182, 212, 0.15);
 }
-.welcome-tier-bass.tier-active .tier-icon-wrap {
+.tierBass.tierActive .tierIconWrap {
   background: rgba(6, 182, 212, 0.2);
   border-color: rgba(6, 182, 212, 0.5);
 }
-.welcome-tier-bass.tier-active .tier-icon-wrap svg {
+.tierBass.tierActive .tierIconWrap svg {
   opacity: 1;
 }

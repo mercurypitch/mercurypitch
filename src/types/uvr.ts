@@ -6,18 +6,13 @@
 export type UvrMode = 'separate' | 'instrumental' | 'vocal'
 
 /** UVR processing status */
-// Keep in sync with UvrStatus in src/stores/app-store.ts.
 export type UvrStatus =
   | 'idle'
   | 'uploading'
   | 'processing'
-  // Stems separated, being written to IndexedDB — not safe to reload yet.
-  | 'finalizing'
   | 'completed'
   | 'error'
   | 'cancelled'
-  // In-progress job whose polling was lost to a reload; retryable.
-  | 'interrupted'
 
 /** UVR VR architecture options */
 export type UvrArchitecture =

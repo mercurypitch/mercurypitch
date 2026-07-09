@@ -20,7 +20,6 @@ import { createChordProgression } from '@/features/guitar-practice/ChordProgress
 import { createEarTraining } from '@/features/guitar-practice/EarTrainingPanel'
 import { createMelodyTranscription } from '@/features/guitar-practice/MelodyTranscriptionState'
 import { createNoteLocatorQuiz } from '@/features/guitar-practice/NoteLocatorQuiz'
-import { createRiffTracker } from '@/features/guitar-practice/RiffTrackerState'
 import { createSingToFretboard } from '@/features/guitar-practice/SingToFretboardState'
 import { createTranscriptionTrainer } from '@/features/guitar-practice/TranscriptionTrainerState'
 import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
@@ -61,7 +60,6 @@ export interface GuitarModes {
   singToFretboard: ReturnType<typeof createSingToFretboard>
   transcriptionTrainer: ReturnType<typeof createTranscriptionTrainer>
   adaptiveJam: ReturnType<typeof createAdaptiveJam>
-  riffTracker: ReturnType<typeof createRiffTracker>
 }
 
 export interface GuitarContextValue {
@@ -151,7 +149,6 @@ export function GuitarProvider(props: { children: JSX.Element }) {
     drumMachine,
     setSelectedChord,
   )
-  const riffTracker = createRiffTracker()
 
   const handleFretNotePlayed = (
     midi: number,
@@ -227,14 +224,6 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       practiceEngine.stopMic()
     }
 
-    // Tuner & RiffTracker: auto-start the guitar controller mic on enter,
-    // stop on leave (only if this source started it).
-    if (mode === 'tuner' || mode === 'riffTracker') {
-      if (!guitar.isMicActive()) {
-        void guitar.startMic()
-      }
-    }
-
     // transcriptionTrainer: stop when leaving mode
     if (mode !== 'transcriptionTrainer') {
       transcriptionTrainer.stop()
@@ -281,7 +270,6 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       singToFretboard,
       transcriptionTrainer,
       adaptiveJam,
-      riffTracker,
     },
     onFretNotePlayed: handleFretNotePlayed,
   }

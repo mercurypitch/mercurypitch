@@ -1,5 +1,6 @@
 import type { Component, JSX } from 'solid-js'
 import { splitProps } from 'solid-js'
+import styles from './SafeSelect.module.css'
 
 /**
  * SafeSelect — Drop-in replacement for native `<select>` that documents
@@ -49,7 +50,7 @@ import { splitProps } from 'solid-js'
 export const SafeSelect: Component<
   JSX.SelectHTMLAttributes<HTMLSelectElement>
 > = (props) => {
-  const [local, selectProps] = splitProps(props, ['ref'])
+  const [local, selectProps] = splitProps(props, ['ref', 'class', 'classList'])
 
   const checkAncestorTransform = (el: HTMLSelectElement) => {
     // Forward the ref if provided
@@ -60,10 +61,6 @@ export const SafeSelect: Component<
     // Dev-only: walk up the DOM tree and warn if any ancestor has transform
     if (import.meta.env.DEV) {
       const checkFn = () => {
-        // Deferred dev-only check: bail if the element was unmounted or the
-        // env (e.g. a test's jsdom) was torn down before this callback ran,
-        // so the leaked timer can't throw `window is not defined`.
-        if (typeof window === 'undefined' || !el.isConnected) return
         let current: HTMLElement | null = el.parentElement
         while (current) {
           const style = window.getComputedStyle(current)
@@ -93,5 +90,12 @@ export const SafeSelect: Component<
     }
   }
 
-  return <select ref={(el) => checkAncestorTransform(el)} {...selectProps} />
+  return (
+    <select
+      ref={(el) => checkAncestorTransform(el)}
+      class={[styles.select, local.class].filter(Boolean).join(' ')}
+      classList={local.classList}
+      {...selectProps}
+    />
+  )
 }

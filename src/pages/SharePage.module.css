@@ -1,0 +1,144 @@
+/* Share Page Styles */
+.sharePage {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.shareContainer {
+  width: 100%;
+  max-width: 800px;
+}
+
+.shareContent {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.shareHeader h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+}
+
+.shareSubtitle {
+  margin: 0 0 24px 0;
+  color: var(--text-muted);
+}
+
+.shareBody {
+  margin-bottom: 32px;
+}
+
+.info-section,
+.details-section {
+  margin-bottom: 24px;
+}
+
+.info-section h3,
+.details-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.info-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.result-index {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.result-score {
+  font-weight: 600;
+  font-size: 1.1rem;
+  --score: 85%;
+  background: linear-gradient(
+    90deg,
+    var(--score-color, var(--accent)) var(--score),
+    var(--bg-primary) 0
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stats-row {
+  display: flex;
+  gap: 16px;
+}
+
+.tags-section {
+  margin-bottom: 24px;
+}
+
+.tags-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tags-container .tag {
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  font-size: 0.875rem;
+}
+
+
+.shareHeaderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  flex-shrink: 0;
+}

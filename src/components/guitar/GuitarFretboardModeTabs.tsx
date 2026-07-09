@@ -13,8 +13,6 @@ export type FretboardMode =
   | 'singToFretboard'
   | 'transcriptionTrainer'
   | 'adaptiveJam'
-  | 'tuner'
-  | 'riffTracker'
 
 const MODES: Array<{ value: FretboardMode; label: string }> = [
   { value: 'explore', label: 'Explore' },
@@ -28,8 +26,6 @@ const MODES: Array<{ value: FretboardMode; label: string }> = [
   { value: 'singToFretboard', label: 'Sing' },
   { value: 'transcriptionTrainer', label: 'Transcribe' },
   { value: 'adaptiveJam', label: 'Adaptive Jam' },
-  { value: 'tuner', label: 'Tuner' },
-  { value: 'riffTracker', label: 'Riff Tracker' },
 ]
 
 export interface GuitarFretboardModeTabsProps {

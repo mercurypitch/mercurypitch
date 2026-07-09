@@ -61,18 +61,6 @@
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-/* B loop point reads red (vs the blue-accent A) so the A/B pair is legible. */
-.loopBtnB.active {
-  color: var(--red);
-  border-color: color-mix(in srgb, var(--red) 45%, transparent);
-  background: color-mix(in srgb, var(--red) 16%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--red) 28%, transparent);
-}
-.loopBtnB.active:hover {
-  color: var(--red);
-  background: color-mix(in srgb, var(--red) 22%, transparent);
-}
-
 .btnDisabled,
 .btn:disabled {
   opacity: 0.35;

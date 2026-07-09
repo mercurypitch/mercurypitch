@@ -62,7 +62,7 @@ export async function createManualStemSession(
   }
 
   const urls = await hydrateStemUrls(sessionId)
-  await completeUvrSession(sessionId, urls ?? {}, stemMeta)
+  completeUvrSession(sessionId, urls ?? {}, stemMeta)
   // Cosmetic tag so the UI can show "Uploaded stems" vs "Separated".
   setUvrSessionProvider(sessionId, 'manual')
   return sessionId
@@ -87,9 +87,5 @@ export async function setSessionStem(
     [stemType]: { duration: await decodeDuration(file), size: file.size },
   }
   // Merge so any generated MIDI URLs on the session are preserved.
-  await completeUvrSession(
-    sessionId,
-    { ...session?.outputs, ...urls },
-    stemMeta,
-  )
+  completeUvrSession(sessionId, { ...session?.outputs, ...urls }, stemMeta)
 }

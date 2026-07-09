@@ -8,6 +8,7 @@ import { createSignal, For, Show } from 'solid-js'
 import { IconMusicNote, IconPause, IconPiano, } from '@/components/hidden-features-icons'
 import { bpm, melodyStore, setActiveUserSession, userSession } from '@/stores'
 import type { MelodyData, SessionItem } from '@/types'
+import styles from './SessionEditorTimeline.module.css'
 
 interface SessionEditorTimelineProps {
   sessionItems: SessionItem[]
@@ -201,12 +202,12 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   }
 
   return (
-    <div class="session-editor-timeline">
-      <div class="timeline-track">
-        <div class="timeline-items">
+    <div class={styles.root}>
+      <div class={styles.track}>
+        <div class={styles.items}>
           {props.sessionItems.length === 0 && (
             <div
-              class="empty-state"
+              class={styles.emptyState}
               onDragOver={(e) => handleDragOver(e, 0)}
               onDrop={(e) => handleDrop(e, 0)}
             >
@@ -221,13 +222,13 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
           */}
           {props.sessionItems.length > 0 && (
             <div
-              class="timeline-drop-zone rest-zone"
+              class={styles.dropZone}
               onClick={() => addRestAtSlot(-1)}
               onDragOver={(e) => handleDragOver(e, 0)}
               onDrop={(e) => handleDrop(e, 0)}
             >
-              <span class="rest-placeholder">+</span>
-              <span class="rest-hint">Add Rest</span>
+              <span class={styles.restPlaceholder}>+</span>
+              <span class={styles.restHint}>Add Rest</span>
             </div>
           )}
 
@@ -248,7 +249,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
               return (
                 <>
                   <div
-                    class="timeline-item"
+                    class={styles.item}
                     draggable={true}
                     onTouchStart={(e) => handleTouchStart(e, item, index())}
                     onTouchMove={handleTouchMove}
@@ -258,8 +259,8 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                     onDrop={(e) => handleDrop(e, index())}
                     onDragEnd={handleDragEnd}
                   >
-                    <div class="item-header">
-                      <span class="item-type-icon">
+                    <div class={styles.itemHeader}>
+                      <span class={styles.itemTypeIcon}>
                         {item.type === 'melody' ? (
                           <IconMusicNote />
                         ) : (item.type as string) === 'scale' ? (
@@ -268,9 +269,9 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                           <IconPause />
                         )}
                       </span>
-                      <span class="item-label">{itemLabel}</span>
+                      <span class={styles.itemLabel}>{itemLabel}</span>
                       <button
-                        class="item-delete-btn"
+                        class={styles.itemDeleteBtn}
                         onClick={(e) => {
                           e.stopPropagation()
                           props.onDeleteItem(item.id)
@@ -280,20 +281,20 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                         ×
                       </button>
                     </div>
-                    <div class="item-details">
-                      <span class="item-start-beat">
+                    <div class={styles.itemDetails}>
+                      <span class={styles.itemStartBeat}>
                         Start: {item.startBeat}
                       </span>
 
                       <Show when={isMelody && melodyData !== undefined}>
-                        <span class="item-meta">
+                        <span class={styles.itemMeta}>
                           {melodyData!.items.length} notes
                         </span>
-                        <span class="item-meta">{melodyData!.bpm} BPM</span>
+                        <span class={styles.itemMeta}>{melodyData!.bpm} BPM</span>
                       </Show>
 
                       <Show when={isMelody && melodyData === undefined}>
-                        <span class="item-meta missing">Missing melody</span>
+                        <span class={`${styles.itemMeta} ${styles.itemMetaMissing}`}>Missing melody</span>
                       </Show>
 
                       <Show
@@ -304,7 +305,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                           item.restMs > 0
                         }
                       >
-                        <span class="item-duration">
+                        <span class={styles.itemDuration}>
                           Duration: {getRestDuration(item.restMs!)}
                         </span>
                       </Show>
@@ -317,20 +318,20 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                           item.scaleType !== null
                         }
                       >
-                        <span class="item-meta">{item.scaleType}</span>
+                        <span class={styles.itemMeta}>{item.scaleType}</span>
                       </Show>
                     </div>
                   </div>
 
                   {index() < props.sessionItems.length - 1 && (
                     <div
-                      class="timeline-drop-zone rest-zone"
+                      class={styles.dropZone}
                       onClick={() => addRestAtSlot(index())}
                       onDragOver={(e) => handleDragOver(e, index())}
                       onDrop={(e) => handleDrop(e, index())}
                     >
-                      <span class="rest-placeholder">+</span>
-                      <span class="rest-hint">Add Rest</span>
+                      <span class={styles.restPlaceholder}>+</span>
+                      <span class={styles.restHint}>Add Rest</span>
                     </div>
                   )}
                 </>
@@ -340,7 +341,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
           {props.sessionItems.length > 0 && (
             <div
-              class="timeline-drop-zone rest-zone end-zone"
+              class={`${styles.dropZone} ${styles.endZone}`}
               onDragOver={(e) => handleDragOver(e, props.sessionItems.length)}
               onDrop={(e) => handleDrop(e, props.sessionItems.length)}
               onClick={() =>
@@ -363,15 +364,15 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                 )
               }
             >
-              <span class="rest-placeholder">+</span>
-              <span class="rest-hint">Add Rest</span>
+              <span class={styles.restPlaceholder}>+</span>
+              <span class={styles.restHint}>Add Rest</span>
             </div>
           )}
         </div>
       </div>
 
-      <div class="timeline-footer">
-        <span class="timeline-info">
+      <div class={styles.footer}>
+        <span>
           {props.sessionItems.length} item
           {props.sessionItems.length !== 1 ? 's' : ''}
           {props.sessionItems.length > 0 && (

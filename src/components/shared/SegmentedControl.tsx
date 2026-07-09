@@ -1,60 +1,51 @@
-// ============================================================
-// SegmentedControl — compact pill-group toggle (one active
-// segment). Used in the song status bars (guitar sound + view).
-// ============================================================
+import type { JSX } from 'solid-js'
+import { For } from 'solid-js'
+import styles from './SegmentedControl.module.css'
 
-import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
-import styles from './status-bar/SongStatusBar.module.css'
-
-export interface SegmentedOption<T extends string> {
+export interface SegmentedControlOption<T extends string> {
   value: T
-  label: string
+  label: JSX.Element
+  icon?: JSX.Element
   title?: string
-  /** Optional data-tour hook on this segment (tours navigate via these). */
+  dataTestId?: string
   dataTour?: string
+  disabled?: boolean
 }
 
 interface SegmentedControlProps<T extends string> {
-  options: readonly SegmentedOption<T>[]
-  value: () => T
+  options: SegmentedControlOption<T>[]
+  value: T
   onChange: (value: T) => void
-  /** Small muted label rendered inside the pill track (e.g. "Sound"). */
-  label?: string
-  /** Accessible group name; falls back to the label. */
-  ariaLabel?: string
-  dataTour?: string
-  /** Stretch to the host's width, segments sharing it evenly (sidebar rows). */
+  disabled?: boolean
+  class?: string
   grow?: boolean
+  ariaLabel?: string
+  dataTestId?: string
 }
 
 export function SegmentedControl<T extends string>(
   props: SegmentedControlProps<T>,
-): ReturnType<Component> {
+) {
   return (
     <div
-      class={styles.segmented}
-      classList={{ [styles.segGrow]: props.grow === true }}
-      role="radiogroup"
-      aria-label={props.ariaLabel ?? props.label}
-      data-tour={props.dataTour}
+      class={`${styles.segmentedControl} ${props.class !== undefined ? props.class : ''}`}
+      role="group"
+      aria-label={props.ariaLabel}
+      data-testid={props.dataTestId}
     >
-      <Show when={props.label}>
-        <span class={styles.segLabel}>{props.label}</span>
-      </Show>
       <For each={props.options}>
-        {(opt) => (
+        {(option) => (
           <button
+            class={styles.segmentBtn}
+            classList={{ [styles.active]: props.value === option.value }}
+            onClick={() => props.onChange(option.value)}
+            disabled={props.disabled}
             type="button"
-            class={styles.segBtn}
-            classList={{ [styles.segActive]: props.value() === opt.value }}
-            role="radio"
-            aria-checked={props.value() === opt.value}
-            title={opt.title}
-            data-tour={opt.dataTour}
-            onClick={() => props.onChange(opt.value)}
+            title={option.title}
+            data-testid={option.dataTestId}
           >
-            {opt.label}
+            {option.icon}
+            {option.label}
           </button>
         )}
       </For>

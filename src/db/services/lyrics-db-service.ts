@@ -26,12 +26,16 @@ export async function saveLyricsToDb(
     const db = await getDb()
     const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
 
-    // Upsert as create-then-delete so a failed write never wipes existing
-    // lyrics (delete-then-create loses them if the create throws).
+    // Upsert: delete existing entry for this session
     const existing = await repo.findAll({
       where: { sessionId } as Record<string, unknown>,
+      limit: 1,
     })
-    const created = await repo.create({
+    for (const entry of existing) {
+      await repo.delete(entry.id)
+    }
+
+    await repo.create({
       sessionId,
       text: data.text,
       format: data.format,
@@ -53,11 +57,8 @@ export async function saveLyricsToDb(
           : undefined,
       fontSize: data.fontSize,
     })
-    for (const entry of existing) {
-      if (entry.id !== created.id) await repo.delete(entry.id)
-    }
   } catch (err) {
-    console.error('[LyricsDB] saveLyricsToDb failed:', err)
+    if (IS_DEV) console.warn('[LyricsDB] saveLyricsToDb failed:', err)
   }
 }
 

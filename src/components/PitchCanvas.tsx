@@ -4,7 +4,6 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, } from 'solid-js'
-import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -63,14 +62,6 @@ interface PitchCanvasProps {
   /** Number of count-in beats (0 = no count-in). During count-in the
    *  canvas shifts right so the playhead sweeps through a visible runway. */
   countInBeats?: () => number
-  // ── A-B loop (beats; 0 = unset) — the same signals the seek rail uses ──
-  loopA?: () => number
-  loopB?: () => number
-  loopEnabled?: () => boolean
-  /** Drag the A / B boundary on the canvas (beats). Mirror of the seek-rail
-   *  markers, so both editors share App's clamp/min-gap handlers. */
-  onMoveLoopA?: (beat: number) => void
-  onMoveLoopB?: (beat: number) => void
 }
 
 /** Map a per-note rating to (fill, stroke, text) triple for the
@@ -151,8 +142,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let isSeeking = false
-  // Which A-B loop boundary the pointer is currently dragging on the canvas.
-  let loopDrag: 'A' | 'B' | null = null
   let needsRedraw = true
   let lastPitchLength = 0
   // Last live mic frequency we drew — lets the throttled loop repaint while the
@@ -202,39 +191,16 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       window as unknown as { pitchCanvasAudioEngine: typeof audioEngine }
     ).pitchCanvasAudioEngine = audioEngine
 
-    // Pointer handlers: a press on an A/B loop marker starts a marker drag;
-    // otherwise it scrubs the playhead (handleSeek). The marker hit-test takes
-    // priority over seeking, mirroring the stem-mixer canvas.
+    // Mouse handlers for dragging the playhead
     const onMouseDown = (e: MouseEvent) => {
-      const hit = hitTestLoopMarker(e.clientX)
-      if (hit) {
-        loopDrag = hit
-        needsRedraw = true
-        return
-      }
       isSeeking = true
       handleSeek(e)
     }
     const onMouseMove = (e: MouseEvent) => {
-      if (loopDrag) {
-        dragLoopMarker(e.clientX)
-        return
-      }
-      if (isSeeking) {
-        handleSeek(e)
-        return
-      }
-      // Idle hover over the canvas: show the resize cursor on a marker.
-      if (canvasRef !== undefined && e.target === canvasRef) {
-        canvasRef.style.cursor = hitTestLoopMarker(e.clientX) ? 'ew-resize' : ''
-      }
+      if (isSeeking) handleSeek(e)
     }
     const onMouseUp = () => {
       isSeeking = false
-      if (loopDrag) {
-        loopDrag = null
-        needsRedraw = true
-      }
     }
     canvasRef.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mousemove', onMouseMove)
@@ -244,13 +210,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const onClick = (e: MouseEvent) => {
       if (props.isPlaying() || props.isPaused()) return
       if (trillActive()) return
-      if (hitTestLoopMarker(e.clientX)) return // grabbing a marker, not a note
       handleNoteSingleClick(e)
     }
     const onDblClick = (e: MouseEvent) => {
       if (props.isPlaying() || props.isPaused()) return
       if (trillActive()) return
-      if (hitTestLoopMarker(e.clientX)) return
       handleNoteDoubleClick(e)
     }
     canvasRef.addEventListener('click', onClick)
@@ -299,77 +263,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     })
   })
 
-  // ── A-B loop window math ─────────────────────────────────────
-  // The visible scrolling window as {start, beats}: the same mapping beatToX
-  // uses forward (beat → x), exposed so pointer code can invert it (x → beat)
-  // for scrubbing and loop-marker dragging. Called only on pointer events, so
-  // the per-call object never touches the hot per-note render path.
-  const getWindow = (): { start: number; beats: number } => {
-    const ci = props.countInBeats?.() ?? 0
-    const cBeat = props.currentBeat()
-    const totalBeats = Math.max(1, props.totalBeats())
-    const TRANSITION_ZONE = 0.5
-    let effectiveCi = ci
-    if (ci > 0) {
-      if (cBeat <= -TRANSITION_ZONE) {
-        effectiveCi = ci
-      } else if (cBeat >= TRANSITION_ZONE) {
-        effectiveCi = 0
-      } else {
-        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
-        const eased = 1 - Math.pow(1 - t, 3)
-        effectiveCi = ci * (1 - eased)
-      }
-    }
-    const rangeStart = -effectiveCi
-    const rangeBeats = totalBeats - rangeStart
-    if (!props.isScrolling() || rangeBeats <= visibleBeatWindow) {
-      return { start: rangeStart, beats: Math.max(1, rangeBeats) }
-    }
-    const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
-    let windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
-    windowStart = Math.max(
-      rangeStart,
-      Math.min(windowStart, totalBeats - windowBeats),
-    )
-    return { start: windowStart, beats: windowBeats }
-  }
-
-  /** Invert beatToX: map a clientX pixel to a beat in the visible window. */
-  const beatFromClientX = (clientX: number): number => {
-    if (!canvasRef) return 0
-    const rect = canvasRef.getBoundingClientRect()
-    const w = canvasRef.clientWidth
-    if (w <= 0) return 0
-    const { start, beats } = getWindow()
-    return ((clientX - rect.left) / w) * beats + start
-  }
-
-  /** Hit-test the A/B loop boundaries — returns the grabbed marker, or null.
-   *  Uses beatToX so it matches exactly where the markers are drawn. */
-  const hitTestLoopMarker = (clientX: number): 'A' | 'B' | null => {
-    if (!canvasRef) return null
-    const a = props.loopA?.() ?? 0
-    const b = props.loopB?.() ?? 0
-    if (a <= 0 && b <= 0) return null
-    const rect = canvasRef.getBoundingClientRect()
-    const w = canvasRef.clientWidth
-    if (w <= 0) return null
-    return hitTestAbLoopMarker(clientX - rect.left, a, b, (beat) =>
-      beatToX(beat, w),
-    )
-  }
-
-  /** Live-drag the grabbed loop boundary; reuses App's clamp handlers so the
-   *  min-gap rules match the seek-rail markers exactly. */
-  const dragLoopMarker = (clientX: number): void => {
-    if (loopDrag === null) return
-    const beat = beatFromClientX(clientX)
-    if (loopDrag === 'A') props.onMoveLoopA?.(beat)
-    else props.onMoveLoopB?.(beat)
-    needsRedraw = true
-  }
-
   /**
    * Click-to-seek inside the practice canvas.
    *
@@ -398,11 +291,47 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // implementation is gone. While stopped we still do nothing
     // (no playhead to drag).
     if (!props.isPlaying() && !props.isPaused()) return
+
+    const rect = canvasRef.getBoundingClientRect()
+
+    const x = e.clientX - rect.left
     const w = canvasRef.clientWidth
     if (w <= 0) return
+    const totalBeats = props.totalBeats()
+    const ci = props.countInBeats?.() ?? 0
+    const cBeat = props.currentBeat()
+
+    // Smooth count-in transition (same as beatToX)
+    const TRANSITION_ZONE = 0.5
+    let effectiveCi = ci
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        effectiveCi = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        effectiveCi = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3)
+        effectiveCi = ci * (1 - eased)
+      }
+    }
+
+    const rangeStart = -effectiveCi
+    const rangeBeats = totalBeats - rangeStart
+    const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
+    let windowStart: number
+    if (rangeBeats <= visibleBeatWindow) {
+      windowStart = rangeStart
+    } else {
+      windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
+      windowStart = Math.max(
+        rangeStart,
+        Math.min(windowStart, totalBeats - windowBeats),
+      )
+    }
     const seekBeat = Math.max(
       0,
-      Math.min(props.totalBeats(), beatFromClientX(e.clientX)),
+      Math.min(totalBeats, (x / w) * windowBeats + windowStart),
     )
     eventBus.dispatch('pitchperfect:seekToBeat', { beat: seekBeat })
   }
@@ -1031,24 +960,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
       }
     }
-  }
-
-  // A-B loop boundaries drawn straight on the note canvas — vertical markers
-  // positioned by beat within the visible scrolling window (via beatToX), with
-  // a subtle region fill between them. Shared draw helper (see ab-loop-canvas).
-  const drawLoopOverlay = (w: number, h: number) => {
-    if (!ctx) return
-    drawAbLoopOverlay(ctx, {
-      a: props.loopA?.() ?? 0,
-      b: props.loopB?.() ?? 0,
-      enabled: props.loopEnabled?.() ?? false,
-      posOf: (beat) => beatToX(beat, w),
-      orientation: 'vertical',
-      crossExtent: h,
-      clipMin: 0,
-      clipMax: w,
-      flag: 'pill',
-    })
   }
 
   const draw = () => {
@@ -1898,10 +1809,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
 
     ctx.restore()
-
-    // A-B loop boundaries — above the notes but below the playhead so the
-    // playhead stays visible when it crosses a marker.
-    drawLoopOverlay(w, h)
 
     // Playhead: vertical line at current beat position, always on top
     // and not affected by the scroll transform. Drawn on canvas so it

@@ -1,0 +1,110 @@
+/* Guide Modal */
+.guideModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.guideContainer {
+  background: var(--bg-secondary);
+  border-radius: 1rem;
+  width: 620px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+}
+
+.guideHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  flex-shrink: 0;
+}
+
+.guideHeader h3 {
+  margin: 0;
+  color: var(--fg-primary);
+}
+
+.guideClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--fg-primary);
+  cursor: pointer;
+}
+
+
+.guideClose:hover {
+  background: var(--bg-hover);
+}
+
+/* Session search bar */
+.uvrSessionSearch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  color: var(--fg-tertiary, #768390);
+}
+.uvrSessionSearch:focus-within {
+  border-color: var(--accent, #58a6ff);
+}
+.uvrSessionSearch svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.uvrSessionSearch-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.85rem;
+}
+.uvrSessionSearch-count {
+  font-size: 0.72rem;
+  color: var(--fg-tertiary, #768390);
+  white-space: nowrap;
+}
+.uvrSessionSearch-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg-tertiary, #768390);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.uvrSessionSearch-clear:hover {
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-primary, #c9d1d9);
+}
+.uvrSessionSearch-clear svg {
+  width: 13px;
+  height: 13px;

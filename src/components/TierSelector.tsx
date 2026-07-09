@@ -5,6 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { accuracyTier, applyAccuracyTier } from '@/stores/settings-store'
+import styles from './TierSelector.module.css'
 
 interface TierSelectorProps {
   /** Optional extra CSS class on the wrapper */
@@ -13,14 +14,14 @@ interface TierSelectorProps {
 
 export const TierSelector: Component<TierSelectorProps> = (props) => {
   return (
-    <div class={`tier-selector ${props.class ?? ''}`}>
-      <div class="welcome-tier-buttons">
+    <div class={`${styles.tierSelector} ${props.class ?? ''}`}>
+      <div class={styles.tierButtons}>
         <button
-          class={`welcome-tier-btn welcome-tier-learning${accuracyTier() === 'learning' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierLearning}${accuracyTier() === 'learning' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => applyAccuracyTier('learning')}
           title="Perfect within 15 cents. Great for beginners starting out."
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -36,15 +37,15 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
               <path d="M10 14c0-1.1.9-2 2-2s2 .9 2 2" />
             </svg>
           </span>
-          <span class="tier-name">Learning</span>
-          <span class="tier-desc">&plusmn;15 cents</span>
+          <span class={styles.tierName}>Learning</span>
+          <span class={styles.tierDesc}>&plusmn;15 cents</span>
         </button>
         <button
-          class={`welcome-tier-btn welcome-tier-singer${accuracyTier() === 'singer' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierSinger}${accuracyTier() === 'singer' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => applyAccuracyTier('singer')}
           title="Perfect within 8 cents. Good for intermediate singers."
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -61,15 +62,15 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
               <line x1="8" y1="22" x2="16" y2="22" />
             </svg>
           </span>
-          <span class="tier-name">Singer</span>
-          <span class="tier-desc">&plusmn;8 cents</span>
+          <span class={styles.tierName}>Singer</span>
+          <span class={styles.tierDesc}>&plusmn;8 cents</span>
         </button>
         <button
-          class={`welcome-tier-btn welcome-tier-professional${accuracyTier() === 'professional' ? ' tier-active' : ''}`}
+          class={`${styles.tierBtn} ${styles.tierProfessional}${accuracyTier() === 'professional' ? ` ${styles.tierActive}` : ''}`}
           onClick={() => applyAccuracyTier('professional')}
           title="Perfect within 0 cents. Advanced virtuoso level."
         >
-          <span class="tier-icon-wrap">
+          <span class={styles.tierIconWrap}>
             <svg
               viewBox="0 0 24 24"
               width="22"
@@ -83,8 +84,8 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           </span>
-          <span class="tier-name">Professional</span>
-          <span class="tier-desc">&plusmn;0 cents</span>
+          <span class={styles.tierName}>Professional</span>
+          <span class={styles.tierDesc}>&plusmn;0 cents</span>
         </button>
       </div>
     </div>

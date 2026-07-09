@@ -25,7 +25,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 28px 32px 20px;
+  padding: 32px 36px 28px;
   text-align: center;
   width: 420px;
   max-width: 92vw;
@@ -96,31 +96,10 @@
   font-size: inherit;
 }
 
-/* Version pill under the title (centered) — opens the changelog. */
-.welcomeVersionPillRow {
-  margin-top: 6px;
-}
-
-.welcomeVersionPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.welcomeVersionPill:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
+.welcomeSubtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 
 /* Quick actions row (hero): mic permission + find-my-voice pills */
@@ -256,7 +235,7 @@
 }
 
 .welcomeCta {
-  flex: 1;
+  flex: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -302,8 +281,8 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin: 0;
-  padding: 9px 16px;
+  margin: 0 0 20px;
+  padding: 11px 18px;
   border-radius: 999px;
   border: 1.5px solid transparent;
   background:
@@ -419,8 +398,8 @@
     padding: 7px 13px;
   }
 
-  /* Keep the two actions side-by-side (50/50) even on mobile — saves a row. */
   .welcomeActions {
+    flex-direction: column;
     gap: 8px;
   }
 

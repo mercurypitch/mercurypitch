@@ -52,20 +52,6 @@ interface PianoPageProps {
   /** Shared volume signal (used across tabs), owned by AppShell. */
   volume: Accessor<number>
   onVolumeChange: (vol: number) => void
-  // A-B Loop (shared across tabs)
-  loopEnabled: () => boolean
-  loopA: () => number
-  loopB: () => number
-  onSetLoopA: () => void
-  onSetLoopB: () => void
-  onToggleLoop: () => void
-  onClearLoop: () => void
-  /** Drag the A / B markers on the seek rail (beats). */
-  onMoveLoopA: (beat: number) => void
-  onMoveLoopB: (beat: number) => void
-  /** Loop-aware seek (records loop-escape so scrubbing past B isn't yanked
-   *  back); falls back to the raw controller seek when absent. */
-  onSeek?: (beat: number) => void
 }
 
 /** Piano tab (TAB_PIANO): falling-notes game with toolbar + song picker. */
@@ -102,8 +88,6 @@ export function PianoPage(props: PianoPageProps) {
       midiNotesToFallingNotes(notes).map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       fallingNotes.loadSong(items, name, bpm, backing, muted, song),
-    onScoreTrackChange: (items, name, bpm, backing, muted, song) =>
-      fallingNotes.changeScoreTrack(items, name, bpm, backing, muted, song),
     // The page remounts on every tab visit; the controller (and its loaded
     // song) live app-wide — don't clobber them with the first library melody.
     skipAutoLoad: () => selectedSongName() !== '',
@@ -132,14 +116,9 @@ export function PianoPage(props: PianoPageProps) {
         playheadBeat={fallingNotes.playheadBeat}
         totalBeats={fallingNotes.totalBeats}
         songBpm={fallingNotes.currentSongBpm}
-        onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+        onSeek={fallingNotes.seekToBeat}
         songName={selectedSongName}
         isPlaying={() => fallingNotes.gameState() === 'playing'}
-        loopA={props.loopA}
-        loopB={props.loopB}
-        loopEnabled={props.loopEnabled}
-        onMoveLoopA={props.onMoveLoopA}
-        onMoveLoopB={props.onMoveLoopB}
       />
       <div
         id="falling-notes-canvas-container"
@@ -182,11 +161,6 @@ export function PianoPage(props: PianoPageProps) {
           onClickPianoOn={fallingNotes.clickPianoNoteOn}
           onClickPianoOff={fallingNotes.clickPianoNoteOff}
           clickPianoEnabled={fallingNotes.clickPianoEnabled}
-          loopA={props.loopA}
-          loopB={props.loopB}
-          loopEnabled={props.loopEnabled}
-          onMoveLoopA={props.onMoveLoopA}
-          onMoveLoopB={props.onMoveLoopB}
         />
         <ControlOverlay
           idPrefix="piano"
@@ -251,13 +225,6 @@ export function PianoPage(props: PianoPageProps) {
             zoomPercent={fallingNotes.zoomPercent}
             onZoomIn={fallingNotes.zoomIn}
             onZoomOut={fallingNotes.zoomOut}
-            loopEnabled={props.loopEnabled}
-            loopA={props.loopA}
-            loopB={props.loopB}
-            onSetLoopA={props.onSetLoopA}
-            onSetLoopB={props.onSetLoopB}
-            onToggleLoop={props.onToggleLoop}
-            onClearLoop={props.onClearLoop}
           />
         </ControlOverlay>
         {/* Finished-run score: a non-blocking corner card (same pattern as

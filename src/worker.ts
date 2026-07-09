@@ -45,14 +45,9 @@ export interface Env {
    *  Refunds are skipped while unset. */
   BILLING_SERVICE_KEY?: string
   /** R2 bucket for staging server-separation inputs too big to inline
-   *  (>7 MB). Same bucket the handler reads via S3 creds AND writes stems to;
-   *  the bridge also serves stems from it for ~24 h after RunPod forgets a job.
-   *  Per-env binding in wrangler.jsonc; when absent both paths are unavailable. */
+   *  (>7 MB). Same bucket the handler reads via S3 creds. Per-env binding in
+   *  wrangler.jsonc; when absent the large-file path is unavailable. */
   UVR_INPUT_BUCKET?: R2Bucket
-  /** Object-key prefix RunPod wrote this env's stems under in UVR_INPUT_BUCKET
-   *  ("runpod" in prod, "runpod-dev" on dev). Lets the worker locate a job's
-   *  stems in R2 for the durable recovery fallback. Defaults to "runpod". */
-  RUNPOD_STEM_PREFIX?: string
 }
 
 // Paths that serve the Voice Mirror entry (mirror.html): the canonical path
@@ -107,7 +102,6 @@ export default {
             // R2Bucket's overloaded put() doesn't structurally match the
             // bridge's minimal interface; the runtime shape is compatible.
             (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
-            env.RUNPOD_STEM_PREFIX ?? 'runpod',
           )
           if (handled !== null) return handled
         } catch (err) {

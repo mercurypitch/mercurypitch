@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createMemo, For } from 'solid-js'
+import styles from './StreakCalendar.module.css'
 import { sessionResults } from '@/stores'
 
 interface StreakCalendarProps {
@@ -50,12 +51,12 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   })
 
   function cellClass(count: number): string {
-    if (count === 0) return 'sc-cell sc-empty'
+    if (count === 0) return `${styles.cell} ${styles.empty}`
     const intensity = maxCount() > 0 ? count / maxCount() : 0
-    if (intensity <= 0.25) return 'sc-cell sc-low'
-    if (intensity <= 0.5) return 'sc-cell sc-mid'
-    if (intensity <= 0.75) return 'sc-cell sc-high'
-    return 'sc-cell sc-max'
+    if (intensity <= 0.25) return `${styles.cell} ${styles.low}`
+    if (intensity <= 0.5) return `${styles.cell} ${styles.mid}`
+    if (intensity <= 0.75) return `${styles.cell} ${styles.high}`
+    return `${styles.cell} ${styles.max}`
   }
 
   function formatDate(dateStr: string): string {
@@ -68,11 +69,11 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
   }
 
   return (
-    <div class="streak-calendar">
-      <div class="sc-grid">
+    <div class={styles.calendar}>
+      <div class={styles.grid}>
         <For each={weeks()}>
           {(week) => (
-            <div class="sc-week">
+            <div class={styles.week}>
               <For each={week}>
                 {(day) => (
                   <div
@@ -85,14 +86,14 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
           )}
         </For>
       </div>
-      <div class="sc-legend">
-        <span class="sc-legend-label">Less</span>
-        <div class="sc-cell sc-empty" />
-        <div class="sc-cell sc-low" />
-        <div class="sc-cell sc-mid" />
-        <div class="sc-cell sc-high" />
-        <div class="sc-cell sc-max" />
-        <span class="sc-legend-label">More</span>
+      <div class={styles.legend}>
+        <span class={styles.legendLabel}>Less</span>
+        <div class={`${styles.cell} ${styles.empty}`} />
+        <div class={`${styles.cell} ${styles.low}`} />
+        <div class={`${styles.cell} ${styles.mid}`} />
+        <div class={`${styles.cell} ${styles.high}`} />
+        <div class={`${styles.cell} ${styles.max}`} />
+        <span class={styles.legendLabel}>More</span>
       </div>
     </div>
   )

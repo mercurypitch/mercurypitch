@@ -21,9 +21,8 @@ import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metric
 import { summarize } from '@/lib/mirror/metrics'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
-import { singerForVoiceType } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
@@ -352,10 +351,7 @@ export const MirrorApp: Component = () => {
   async function onShareFree(): Promise<void> {
     const card = buildFreeCard()
     if (!card) return
-    const outcome = await shareCard(
-      await cardToPngBlob(card),
-      datedFilename('free-sing'),
-    )
+    const outcome = await shareCard(await cardToPngBlob(card), 'free-sing.png')
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
@@ -458,10 +454,7 @@ export const MirrorApp: Component = () => {
   async function onShare(): Promise<void> {
     const card = buildStoryCard()
     if (!card) return
-    const outcome = await shareCard(
-      await cardToPngBlob(card),
-      datedFilename('voiceprint'),
-    )
+    const outcome = await shareCard(await cardToPngBlob(card))
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
@@ -881,23 +874,12 @@ const Results: Component<{
           <span class="mirror-hero-sub"> · {range()?.semitones} semitones</span>
         </h1>
         <Show when={range()?.voiceHint}>
-          {(hint) => (
-            <p
-              class="mirror-chip"
-              title="A playful range match — voice type and the legend you overlap with depend on more than range, so it stays a hint."
-            >
-              Range: {hint()}
-              <Show
-                when={singerForVoiceType(
-                  hint(),
-                  range()?.lowMidi,
-                  range()?.highMidi,
-                )}
-              >
-                {(singer) => <> · like {singer()}</>}
-              </Show>
-            </p>
-          )}
+          <p
+            class="mirror-chip"
+            title="Voice classification really depends on timbre and tessitura, not range alone — this stays a hint."
+          >
+            Your range overlaps most with: {range()?.voiceHint}
+          </p>
         </Show>
       </Show>
 

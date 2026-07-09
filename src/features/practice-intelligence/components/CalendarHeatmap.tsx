@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, For } from 'solid-js'
 import { getSessionHistory } from '@/stores/practice-session-store'
 
@@ -94,7 +95,7 @@ export const CalendarHeatmap: Component<CalendarHeatmapProps> = (props) => {
       width={svgWidth()}
       height={svgHeight()}
       viewBox={`0 0 ${svgWidth()} ${svgHeight()}`}
-      class="calendar-heatmap"
+      class={piStyles.calendarHeatmap}
       aria-label="Practice activity heatmap"
       role="img"
     >

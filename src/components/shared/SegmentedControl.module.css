@@ -1,0 +1,60 @@
+.segmentedControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.05));
+  padding: 3px;
+  border-radius: 2rem;
+}
+
+.segmentBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2rem;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.segmentBtn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.segmentBtn:hover:not(.active):not(:disabled) {
+  color: var(--fg-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.segmentBtn:hover:not(.active):not(:disabled) svg {
+  color: var(--fg-primary);
+}
+
+.segmentBtn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-glow);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-dim);
+}
+
+.segmentBtn.active svg {
+  color: var(--accent);
+}
+
+.segmentBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -4,12 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { ChangelogModal } from '@/components/ChangelogModal'
 import { TierSelector } from '@/components/TierSelector'
 import { Tooltip } from '@/components/Tooltip'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
-import { APP_VERSION } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { dismissWelcome } from '@/stores'
 import styles from './WelcomeScreen.module.css'
@@ -23,7 +21,6 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   const [micEnabled, setMicEnabled] = createSignal(false)
   const [micError, setMicError] = createSignal<string | null>(null)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
-  const [showChangelog, setShowChangelog] = createSignal(false)
 
   const handleEnableMic = async () => {
     try {
@@ -77,21 +74,13 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </button>
 
         {/* Hero */}
-        <div class={styles.welcomeHero} style="margin-bottom: 12px;">
+        <div class={styles.welcomeHero} style="margin-bottom: 14px;">
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
             Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
-          <div class={styles.welcomeVersionPillRow}>
-            <button
-              type="button"
-              class={styles.welcomeVersionPill}
-              onClick={() => setShowChangelog(true)}
-              title={`MercuryPitch v${APP_VERSION} — what's new`}
-              aria-label="Show what's new (changelog)"
-            >
-              v{APP_VERSION} · What&rsquo;s new
-            </button>
-          </div>
+          <p class={styles.welcomeSubtitle}>
+            Your voice, visualized and refined
+          </p>
 
           {/* Quick actions: mic permission + voice-range detection */}
           <div class={styles.welcomeQuickActions}>
@@ -166,7 +155,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Quick Setup: Voice & Accuracy */}
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
           <div class="welcome-tier-select" style="margin-top: 0;">
             <div class={styles.welcomeSectionHead}>
               <p class={styles.welcomeSectionTitle}>
@@ -229,7 +218,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Actions */}
-        <div class={styles.welcomeActions} style="margin-bottom: 14px;">
+        <div class={styles.welcomeActions} style="margin-bottom: 20px;">
           <button class={styles.welcomeCta} onClick={handleClose}>
             <svg viewBox="0 0 24 24" width="18" height="18">
               <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -241,8 +230,31 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </button>
         </div>
 
-        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account.
-            Sits right under the primary actions. */}
+        {/* Consent — the canonical Terms/Privacy live on the marketing site;
+            we link out rather than duplicate them in the app. */}
+        <p style="text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted); margin: -6px 0 16px;">
+          By continuing, you agree to our{' '}
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Terms of Use
+          </a>{' '}
+          and{' '}
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color: var(--accent); text-decoration: none;"
+          >
+            Privacy Notice
+          </a>
+          .
+        </p>
+
+        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account */}
         <a
           href="/mirror"
           class={styles.welcomeMirrorCta}
@@ -266,41 +278,10 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             →
           </span>
         </a>
-
-        {/* Consent (last) — the canonical Terms/Privacy live on the marketing
-            site; we link out rather than duplicate them in the app. */}
-        <p style="text-align: center; font-size: 0.72rem; line-height: 1.45; color: var(--text-muted); margin: 12px 0 0;">
-          By continuing, you agree to our{' '}
-          <a
-            href={TERMS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style="color: var(--accent); text-decoration: none;"
-          >
-            Terms of Use
-          </a>{' '}
-          and{' '}
-          <a
-            href={PRIVACY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style="color: var(--accent); text-decoration: none;"
-          >
-            Privacy Notice
-          </a>
-          .
-        </p>
       </div>
 
       <Show when={showVoiceDetector()}>
         <VoiceTypeDetectorModal onClose={() => setShowVoiceDetector(false)} />
-      </Show>
-
-      <Show when={showChangelog()}>
-        <ChangelogModal
-          open={showChangelog()}
-          onClose={() => setShowChangelog(false)}
-        />
       </Show>
     </div>
   )

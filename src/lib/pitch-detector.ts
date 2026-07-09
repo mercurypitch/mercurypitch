@@ -126,7 +126,12 @@ export class PitchDetector {
     if (this.swiftDetector) {
       this.swiftDetector
         .init(ortModule as typeof ort | MockOnnxModule)
-        .catch(() => {})
+        .catch((err) =>
+          console.info(
+            '[PitchDetector] ONNX init failed, using fallback:',
+            err,
+          ),
+        )
     }
   }
 

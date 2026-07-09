@@ -1,0 +1,30 @@
+/* Add / replace stems on a session card */
+.stemManage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.stemManage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.stemManage-btn:hover {
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary, #c9d1d9);
+}
+.stemManage-btn svg {
+  width: 13px;
+  height: 13px;
+}
+.stemManage-btn--busy {
+  opacity: 0.5;
+  pointer-events: none;

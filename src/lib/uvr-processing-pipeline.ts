@@ -4,13 +4,13 @@
 //   • Local mode   → VocalSeparator (ONNX in Web Worker)
 // ============================================================
 
-import { saveStemBlobDurable } from '@/db/services/uvr-service'
+import { saveStemBlob } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
-import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, TerminalPollError, } from './uvr-api'
+import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, } from './uvr-api'
 import { VocalSeparator } from './vocal-separator'
 
 // ---------------------------------------------------------------------------
@@ -19,9 +19,7 @@ import { VocalSeparator } from './vocal-separator'
 
 export interface ProcessingCallbacks {
   onProgress: (pct: number) => void
-  // May be async — the pipeline awaits it so the whole run (including the
-  // caller's durable session-record write) finishes before it resolves.
-  onComplete: (result: ProcessingResult) => void | Promise<void>
+  onComplete: (result: ProcessingResult) => void
   onError: (message: string) => void
 }
 
@@ -37,21 +35,13 @@ export interface ProcessingResult {
 let separator: VocalSeparator | null = null
 
 async function getSeparator(): Promise<VocalSeparator> {
-  // Capture a local reference. setUvrModelStatus() below is a store write that
-  // can synchronously run reactive effects (e.g. UvrPanel's server-mode
-  // cleanup effect), and one of those may call destroyPipeline() → null the
-  // module-level `separator`. Dereferencing the module var after the write
-  // would then crash ("can't access property initialize, <sep> is null"), so
-  // everything past this point uses the stable local `sep`.
-  let sep = separator
-  if (sep === null) {
-    sep = new VocalSeparator()
-    separator = sep
+  if (separator === null) {
+    separator = new VocalSeparator()
   }
 
   // If already ready or currently processing, return as is.
-  if (sep.status === 'ready' || sep.status === 'processing') {
-    return sep
+  if (separator.status === 'ready' || separator.status === 'processing') {
+    return separator
   }
 
   // If idle, error, or already initializing, call initialize().
@@ -61,9 +51,9 @@ async function getSeparator(): Promise<VocalSeparator> {
 
   try {
     const forceWebGpu = uvrForceWebGpu()
-    await sep.initialize(UVR_MODEL_PATH, forceWebGpu)
+    await separator.initialize(UVR_MODEL_PATH, forceWebGpu)
     setUvrModelStatus('ready')
-    return sep
+    return separator
   } catch (err) {
     setUvrModelStatus('error')
     const msg = err instanceof Error ? err.message : String(err)
@@ -169,33 +159,21 @@ async function processLocal(
   const vocalBlob = float32ToWavBlob(result.vocals, result.sampleRate)
   const instrBlob = float32ToWavBlob(result.instrumental, result.sampleRate)
 
-  // Stems are separated — persist them durably BEFORE reporting complete, so a
-  // reload can never leave a "completed" session with no local audio.
-  setFinalizingUvrSession(sessionId)
-  const [vocalRes, instrRes] = await Promise.all([
-    saveStemBlobDurable(
-      sessionId,
-      'vocal',
-      vocalBlob,
-      `${file.name}_vocal.wav`,
-    ),
-    saveStemBlobDurable(
+  // Persist stems to IndexedDB — must complete before onComplete so that
+  // auto-fingerprint extraction can read the vocal blob immediately.
+  await Promise.all([
+    saveStemBlob(sessionId, 'vocal', vocalBlob, `${file.name}_vocal.wav`),
+    saveStemBlob(
       sessionId,
       'instrumental',
       instrBlob,
       `${file.name}_instrumental.wav`,
     ),
-  ])
-  if (!vocalRes.ok && !instrRes.ok) {
-    callbacks.onError(
-      vocalRes.quotaExceeded || instrRes.quotaExceeded
-        ? 'Storage is full — free up space and try again.'
-        : 'Could not save the separated stems. Please try again.',
-    )
-    return
-  }
+  ]).catch((err) =>
+    console.error('[UVR] Failed to write processed stems:', err),
+  )
 
-  await callbacks.onComplete({
+  callbacks.onComplete({
     outputs: {
       vocal: URL.createObjectURL(vocalBlob),
       instrumental: URL.createObjectURL(instrBlob),
@@ -256,117 +234,6 @@ const SERVER_ETA_PROFILES: Record<
   ensemble: { realtimeDivisor: 4, capSecs: 480 },
 }
 
-// Jobs currently being polled (keyed by the RunPod apiSessionId), so an
-// auto-resume on load and a foreground/online re-kick can't run two poll loops
-// against the same job at once. Cleared when the poll settles.
-const activeServerPolls = new Set<string>()
-
-/** Whether a poll loop is already running for this RunPod job. */
-export function isServerPollActive(apiSessionId: string): boolean {
-  return activeServerPolls.has(apiSessionId)
-}
-
-/**
- * Poll a submitted RunPod job to completion, then download + durably persist
- * its stems. Shared by a fresh submit (processServer) and a reload/foreground
- * re-attach (resumeServerSession) — the re-attach path is what makes a job that
- * finished while the client was backgrounded recoverable for free, instead of
- * orphaned and re-charged.
- */
-async function pollAndPersistServer(
-  sessionId: string,
-  apiSessionId: string,
-  callbacks: ProcessingCallbacks,
-  estimatedSecs?: number,
-): Promise<void> {
-  if (activeServerPolls.has(apiSessionId)) return
-  activeServerPolls.add(apiSessionId)
-
-  const startTime = Date.now()
-
-  try {
-    await pollForCompletion(
-      apiSessionId,
-      (progress, indeterminate, phase) => {
-        const elapsed = Date.now() - startTime
-        updateUvrSessionProgress(
-          sessionId,
-          progress,
-          elapsed,
-          indeterminate,
-          phase,
-        )
-        callbacks.onProgress(progress)
-      },
-      async (files: OutputFile[]) => {
-        const outputs: UvrSession['outputs'] = {}
-        const meta: Record<string, { duration?: number; size?: number }> = {}
-
-        // Stems live on the server only temporarily — its output / presigned R2
-        // link expire within hours — so download + persist each durably BEFORE
-        // reporting complete. The local blob is what the mixer re-hydrates from
-        // on every load; the server URL is a same-session fallback that will 404
-        // later, so we only keep it when the durable save fails.
-        setFinalizingUvrSession(sessionId)
-        let savedPlayable = false
-        let quotaHit = false
-        await Promise.all(
-          files.map(async (f) => {
-            if (f.stem !== 'vocal' && f.stem !== 'instrumental') return
-            meta[f.stem] = { duration: f.duration, size: f.size }
-            try {
-              const resp = await getOutputFile(apiSessionId, f.path)
-              const blob = await resp.blob()
-              const res = await saveStemBlobDurable(
-                sessionId,
-                f.stem,
-                blob,
-                f.filename,
-              )
-              if (res.ok) {
-                savedPlayable = true
-                outputs[f.stem] = URL.createObjectURL(blob)
-              } else {
-                if (res.quotaExceeded) quotaHit = true
-                outputs[f.stem] = f.path
-              }
-            } catch (err) {
-              console.error('[uvr] stem download/persist failed:', f.stem, err)
-              outputs[f.stem] = f.path
-            }
-          }),
-        )
-
-        if (!savedPlayable) {
-          // Nothing durable landed — don't report a false "completed" that will
-          // 404 once the server URL expires.
-          callbacks.onError(
-            quotaHit
-              ? 'Storage is full — free up space and try again.'
-              : 'Could not save the separated stems locally. Please try again.',
-          )
-          return
-        }
-
-        await callbacks.onComplete({ outputs, stemMeta: meta })
-      },
-      callbacks.onError,
-      1000,
-      undefined,
-      estimatedSecs,
-    )
-  } catch (err) {
-    // Server-confirmed dead job (failed / expired, or a completion-handler
-    // throw): drop its RunPod id so the recovery UI stops offering a hopeless
-    // re-attach. Transient/network rejections keep the id — the job may still
-    // be alive and recover on the next foreground/online re-kick.
-    if (err instanceof TerminalPollError) clearUvrSessionApiId(sessionId)
-    throw err
-  } finally {
-    activeServerPolls.delete(apiSessionId)
-  }
-}
-
 async function processServer(
   file: File,
   sessionId: string,
@@ -398,33 +265,63 @@ async function processServer(
     throw new Error('Failed to start processing')
   }
 
-  // Persist the RunPod job id FIRST — durably enough that a reload before the
-  // first progress tick can still re-attach to (and re-fetch) this job.
   setUvrSessionApiId(sessionId, response.session_id)
 
-  await pollAndPersistServer(
-    sessionId,
+  const startTime = Date.now()
+
+  await pollForCompletion(
     response.session_id,
-    callbacks,
+    (progress, indeterminate, phase) => {
+      const elapsed = Date.now() - startTime
+      updateUvrSessionProgress(
+        sessionId,
+        progress,
+        elapsed,
+        indeterminate,
+        phase,
+      )
+      callbacks.onProgress(progress)
+    },
+    async (files: OutputFile[]) => {
+      const outputs: UvrSession['outputs'] = {}
+      const meta: Record<string, { duration?: number; size?: number }> = {}
+
+      const apiSessionId = response.session_id
+
+      // Download every stem and persist it to IndexedDB BEFORE completing.
+      // The server URLs (f.path) are ephemeral — the RunPod job output and its
+      // presigned R2 link expire within hours — so a session marked complete
+      // with only those cannot be reopened after a reload. The durable local
+      // blob is what the mixer re-hydrates from on every load, so we point
+      // outputs at a fresh object URL for it and fall back to the (temporary)
+      // server URL only if the download/persist fails.
+      await Promise.all(
+        files.map(async (f) => {
+          if (f.stem !== 'vocal' && f.stem !== 'instrumental') return
+          meta[f.stem] = { duration: f.duration, size: f.size }
+          try {
+            const resp = await getOutputFile(apiSessionId, f.path)
+            const blob = await resp.blob()
+            await saveStemBlob(sessionId, f.stem, blob, f.filename)
+            outputs[f.stem] = URL.createObjectURL(blob)
+          } catch (err) {
+            console.warn(
+              '[uvr] stem persist failed, falling back to server URL:',
+              f.stem,
+              err,
+            )
+            outputs[f.stem] = f.path
+          }
+        }),
+      )
+
+      callbacks.onComplete({ outputs, stemMeta: meta })
+    },
+    callbacks.onError,
+    1000,
+    undefined,
     estimatedSecs,
   )
-}
-
-/**
- * Re-attach to an in-flight (or just-finished) RunPod job by its persisted
- * apiSessionId — no new job, no new debit. Used on load and on foreground to
- * recover a server separation whose client polling was lost to an iOS
- * app-switch or a page reload. Resolves once the job completes (stems
- * downloaded + persisted) or errors; a no-op if the job is already being
- * polled.
- */
-export async function resumeServerSession(
-  sessionId: string,
-  apiSessionId: string,
-  callbacks: ProcessingCallbacks,
-): Promise<void> {
-  if (activeServerPolls.has(apiSessionId)) return
-  await pollAndPersistServer(sessionId, apiSessionId, callbacks)
 }
 
 // ---------------------------------------------------------------------------

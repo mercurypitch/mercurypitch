@@ -4,6 +4,9 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import confirmStyles from '@/components/ConfirmDialog.module.css'
+import sgStyles from '@/components/SessionGroupTabs.module.css'
+import srStyles from '@/components/UvrSessionResult.module.css'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
@@ -198,12 +201,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     switch (status) {
       case 'completed':
         return <CheckCircle />
-      case 'interrupted':
       case 'error':
         return <XCircle />
       case 'cancelled':
         return <X />
-      case 'finalizing':
       case 'processing': {
         const progress = session()?.progress ?? 0
         const radius = 9
@@ -335,17 +336,13 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           {getStatusIcon(session()?.status ?? 'idle')}
         </span>
         <span class="status-text">
-          {(() => {
-            const st = session()?.status
-            if (st === 'error') return session()?.error ?? 'Processing failed'
-            if (st === 'interrupted')
-              return session()?.error ?? 'Interrupted — please retry'
-            if (st === 'finalizing') return 'Saving stems…'
-            if (st === 'completed') return 'Completed'
-            if (st === 'processing')
-              return `Processing... ${Math.round(session()?.progress ?? 0)}%`
-            return st ?? 'Idle'
-          })()}
+          {session()?.status === 'error'
+            ? (session()?.error ?? 'Processing failed')
+            : session()?.status === 'completed'
+              ? 'Completed'
+              : session()?.status === 'processing'
+                ? `Processing... ${Math.round(session()?.progress ?? 0)}%`
+                : (session()?.status ?? 'Idle')}
         </span>
         <span class="status-time">
           {(() => {
@@ -412,38 +409,38 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </div>
 
       {/* Group Assignment */}
-      <div class="session-group-assign">
-        <span class="session-group-assign-label">Group</span>
-        <div class="session-group-assign-dropdown">
+      <div class={sgStyles.sessionGroupAssign}>
+        <span class={sgStyles.sessionGroupAssignLabel}>Group</span>
+        <div class={sgStyles.sessionGroupAssignDropdown}>
           <button
-            class="session-group-assign-btn"
+            class={sgStyles.sessionGroupAssignBtn}
             onClick={() => setShowGroupSelect(!showGroupSelect())}
             title="Assign to group"
           >
-            <span class="session-group-assign-current">
+            <span class={sgStyles.sessionGroupAssignCurrent}>
               {currentGroup()?.name ?? 'No group'}
             </span>
             <span
-              class="session-group-assign-chevron"
-              classList={{ open: showGroupSelect() }}
+              class={sgStyles.sessionGroupAssignChevron}
+              classList={{ [sgStyles.open]: showGroupSelect() }}
             >
               <ChevronDown size={12} />
             </span>
           </button>
           <Show when={showGroupSelect()}>
-            <div class="session-group-assign-menu">
+            <div class={sgStyles.sessionGroupAssignMenu}>
               <For each={groups()}>
                 {(group) => (
                   <button
-                    class="session-group-assign-item"
+                    class={sgStyles.sessionGroupAssignItem}
                     classList={{
-                      'session-group-assign-item--active':
+                      [sgStyles.sessionGroupAssignItemActive]:
                         session()?.groupId === group.id,
                     }}
                     onClick={() => void handleGroupChange(group.id)}
                   >
                     {group.name}
-                    <span class="session-group-assign-item-count">
+                    <span class={sgStyles.sessionGroupAssignItemCount}>
                       {group.sessionIds.length}
                     </span>
                   </button>
@@ -451,17 +448,17 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               </For>
               <Show when={session()?.groupId}>
                 <button
-                  class="session-group-assign-item session-group-assign-item--remove"
+                  class={`${sgStyles.sessionGroupAssignItem} ${sgStyles.sessionGroupAssignItemRemove}`}
                   onClick={() => void handleRemoveFromGroup()}
                 >
                   Remove from group
                 </button>
               </Show>
-              <div class="session-group-assign-divider" />
-              <div class="session-group-assign-new">
+              <div class={sgStyles.sessionGroupAssignDivider} />
+              <div class={sgStyles.sessionGroupAssignNew}>
                 <input
                   type="text"
-                  class="session-group-assign-new-input"
+                  class={sgStyles.sessionGroupAssignNewInput}
                   placeholder="New group name"
                   value={newGroupName()}
                   onInput={(e) => setNewGroupName(e.currentTarget.value)}
@@ -472,7 +469,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                   onClick={(e) => e.stopPropagation()}
                 />
                 <button
-                  class="session-group-assign-new-btn"
+                  class={sgStyles.sessionGroupAssignNewBtn}
                   onClick={() => void handleCreateAndAssign()}
                 >
                   Create & assign
@@ -608,10 +605,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
           {/* Add / replace uploaded stems — icon-only, single row */}
           <Show when={session()?.status === 'completed'}>
-            <div class="stem-manage">
+            <div class={srStyles.stemManage}>
               <label
-                class="stem-manage-btn"
-                classList={{ 'stem-manage-btn--busy': stemBusy() === 'vocal' }}
+                class={srStyles.stemManageBtn}
+                classList={{ [srStyles.stemManageBtnBusy]: stemBusy() === 'vocal' }}
                 title={hasVocal() ? 'Replace vocal stem' : 'Add a vocal stem'}
               >
                 <Voice />
@@ -627,9 +624,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 />
               </label>
               <label
-                class="stem-manage-btn"
+                class={srStyles.stemManageBtn}
                 classList={{
-                  'stem-manage-btn--busy': stemBusy() === 'instrumental',
+                  [srStyles.stemManageBtnBusy]: stemBusy() === 'instrumental',
                 }}
                 title={
                   hasInstrumental()
@@ -724,11 +721,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Delete Confirmation Modal */}
       <Show when={showDeleteConfirm()}>
         <div
-          class="delete-confirm-overlay"
+          class={confirmStyles.overlay}
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
-            class="delete-confirm-dialog"
+            class={confirmStyles.dialog}
             onClick={(e) => e.stopPropagation()}
           >
             <h4>Delete Session</h4>
@@ -736,14 +733,14 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               This action cannot be undone. The session and all generated files
               will be permanently removed.
             </p>
-            <div class="delete-confirm-actions">
+            <div class={confirmStyles.actions}>
               <button
-                class="delete-confirm-cancel"
+                class={confirmStyles.cancel}
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel
               </button>
-              <button class="delete-confirm-delete" onClick={confirmDelete}>
+              <button class={confirmStyles.delete} onClick={confirmDelete}>
                 <Trash2 /> Delete
               </button>
             </div>

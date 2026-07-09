@@ -4,6 +4,7 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { JamPeer } from '@/lib/jam/types'
+import styles from './Jam.module.css'
 
 interface JamPeerListProps {
   peers: JamPeer[]
@@ -16,29 +17,43 @@ const STATE_LABELS: Record<JamPeer['connectionState'], string> = {
   failed: 'failed',
 }
 
+const peerItemStates: Record<JamPeer['connectionState'], string> = {
+  connecting: styles.peerConnecting,
+  connected: styles.peerConnected,
+  disconnected: styles.peerDisconnected,
+  failed: styles.peerFailed,
+}
+
+const peerDotStates: Record<JamPeer['connectionState'], string> = {
+  connecting: styles.peerDotConnecting,
+  connected: styles.peerDotConnected,
+  disconnected: styles.peerDotDisconnected,
+  failed: styles.peerDotFailed,
+}
+
 export const JamPeerList: Component<JamPeerListProps> = (props) => {
   return (
-    <div class="jam-peer-list">
+    <div class={styles.peerList}>
       <Show
         when={props.peers.length > 0}
-        fallback={<p class="jam-peer-empty">Waiting for peers to join...</p>}
+        fallback={<p class={styles.peerEmpty}>Waiting for peers to join...</p>}
       >
-        <h3 class="jam-peer-heading">Peers ({props.peers.length})</h3>
+        <h3 class={styles.peerHeading}>Peers ({props.peers.length})</h3>
         <For each={props.peers}>
           {(peer) => (
-            <div class={`jam-peer-item jam-peer-${peer.connectionState}`}>
-              <div class="jam-peer-info">
+            <div class={`${styles.peerItem} ${peerItemStates[peer.connectionState]}`}>
+              <div class={styles.peerInfo}>
                 <span
-                  class={`jam-peer-dot jam-peer-dot-${peer.connectionState}`}
+                  class={`${styles.peerDot} ${peerDotStates[peer.connectionState]}`}
                 />
-                <span class="jam-peer-name">{peer.displayName}</span>
+                <span class={styles.peerName}>{peer.displayName}</span>
               </div>
-              <div class="jam-peer-meta">
-                <span class="jam-peer-state">
+              <div class={styles.peerMeta}>
+                <span class={styles.peerState}>
                   {STATE_LABELS[peer.connectionState]}
                 </span>
                 <Show when={peer.latency > 0}>
-                  <span class="jam-peer-latency">{peer.latency}ms</span>
+                  <span class={styles.peerLatency}>{peer.latency}ms</span>
                 </Show>
               </div>
             </div>

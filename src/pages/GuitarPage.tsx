@@ -1,14 +1,12 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, For, on, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
 import { GuitarControlBar } from '@/components/guitar/GuitarControlBar'
 import { GuitarFretboardCanvas } from '@/components/guitar/GuitarFretboardCanvas'
 import { GuitarFretboardModeTabs } from '@/components/guitar/GuitarFretboardModeTabs'
-import { GuitarRiffTracker } from '@/components/guitar/GuitarRiffTracker'
 import { GuitarSignalFlow } from '@/components/guitar/GuitarSignalFlow'
-import { GuitarTuner } from '@/components/guitar/GuitarTuner'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -24,7 +22,6 @@ import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { defaultScoreTrack } from '@/lib/midi-song'
 import { NOTE_NAMES } from '@/lib/note-utils'
-import { midiToFreq } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { GP_FILE_EXTENSIONS, parseGuitarProFile } from '@/lib/tab/gp-import'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
@@ -142,42 +139,6 @@ export function GuitarPage(props: GuitarPageProps) {
     ),
   )
 
-  // Feed detected notes into the riff tracker when recording.
-  //
-  // Driven off the articulation counter, not detectedMidi(): detectedMidi
-  // de-duplicates consecutive same-pitch reads, so an E→E→E repeat wouldn't
-  // re-fire a detectedMidi effect and the repeated picks would be dropped.
-  // articulationId bumps on every distinct pick attack (incl. a re-pick of
-  // the same pitch), so each attack is captured exactly once. Pitch/clarity
-  // are read untracked — only the articulation change should trigger capture.
-  // RiffTrackerState.addNote still applies its RIFF_MIN_NOTE_GAP_MS debounce.
-  createEffect(
-    on(
-      () => guitar.articulationId(),
-      (id) => {
-        // The very first run fires with the initial counter value (0) and no
-        // real pick behind it — skip it so we don't capture a phantom note.
-        if (id === 0) return
-        // Everything else is read untracked: articulationId is the sole
-        // dependency, so capture happens once per attack and nothing else
-        // (mode/phase/pitch changes) re-triggers it.
-        untrack(() => {
-          if (
-            fretboardMode() !== 'riffTracker' ||
-            riffTracker.phase() !== 'recording'
-          ) {
-            return
-          }
-          const midi = guitar.detectedMidi()
-          const clarity = guitar.detectedClarity()
-          if (midi !== null && clarity > 0.4) {
-            riffTracker.addNote(midi, midiToFreq(midi), clarity)
-          }
-        })
-      },
-    ),
-  )
-
   const drumMachine = ctx.drumMachine
   const drumBpm = ctx.drumBpm
   const setDrumBpm = ctx.setDrumBpm
@@ -207,7 +168,6 @@ export function GuitarPage(props: GuitarPageProps) {
     singToFretboard,
     transcriptionTrainer,
     adaptiveJam,
-    riffTracker,
   } = ctx.modes
 
   const picker = useMidiSongPicker<GuitarSongLoadData>({
@@ -217,8 +177,6 @@ export function GuitarPage(props: GuitarPageProps) {
     fromBackingNotes: (notes, trackId) => notes.map((n) => ({ ...n, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       guitar.loadSong(items, name, bpm, backing, muted, song),
-    onScoreTrackChange: (items, name, bpm, backing, muted, song) =>
-      guitar.changeScoreTrack(items, name, bpm, backing, muted, song),
     // The page remounts on every tab visit; the controller (and its loaded
     // song) live in GuitarContext — don't clobber them with the first melody.
     skipAutoLoad: () => guitar.selectedSongName() !== '',
@@ -929,65 +887,38 @@ export function GuitarPage(props: GuitarPageProps) {
             </Show>
           }
         >
-          <Show
-            when={fretboardMode() === 'tuner'}
-            fallback={
-              <Show
-                when={fretboardMode() === 'riffTracker'}
-                fallback={
-                  <InteractiveGuitarFretboardCanvas
-                    selectedKey={fretboardKey}
-                    selectedScale={fretboardScale}
-                    highlightedNotes={highlightedNotes}
-                    isActive={() =>
-                      activeTab() === TAB_GUITAR &&
-                      guitarView() === 'interactive'
-                    }
-                    lastPlayedNote={lastPlayedNote}
-                    onNotePlayed={handleFretNotePlayed}
-                    selectedChord={selectedChord}
-                    chordToneMidis={chordToneMidis}
-                    mode={fretboardMode}
-                    quizFoundMidis={noteQuiz.foundMidis}
-                    earTargetMidi={earTraining.targetMidi}
-                    earFeedback={earTraining.feedback}
-                    transcriptionResults={
-                      fretboardMode() === 'callResponse'
-                        ? callResponse.echoResults
-                        : melodyTranscription.noteResults
-                    }
-                    transcriptionPhase={
-                      fretboardMode() === 'callResponse'
-                        ? () =>
-                            callResponse.phase() === 'callEcho'
-                              ? 'listening'
-                              : 'feedback'
-                        : melodyTranscription.phase
-                    }
-                    cagedHighlight={cagedTrainer.highlightedFrets}
-                    viewFretRange={cagedTrainer.viewFretRange}
-                    singTargetMidi={singToFretboard.targetMidi}
-                  />
-                }
-              >
-                <GuitarRiffTracker state={riffTracker} />
-              </Show>
+          <InteractiveGuitarFretboardCanvas
+            selectedKey={fretboardKey}
+            selectedScale={fretboardScale}
+            highlightedNotes={highlightedNotes}
+            isActive={() =>
+              activeTab() === TAB_GUITAR && guitarView() === 'interactive'
             }
-          >
-            <GuitarTuner
-              isActive={() =>
-                guitar.isMicActive() &&
-                activeTab() === TAB_GUITAR &&
-                guitarView() === 'interactive' &&
-                fretboardMode() === 'tuner'
-              }
-              getTimeData={() =>
-                guitar.getInputTimeData() ?? new Float32Array(0)
-              }
-              sampleRate={() => audioEngine?.audioCtx?.sampleRate ?? 0}
-              onPlayNote={(freq) => void audioEngine?.previewNote(freq, 900)}
-            />
-          </Show>
+            lastPlayedNote={lastPlayedNote}
+            onNotePlayed={handleFretNotePlayed}
+            selectedChord={selectedChord}
+            chordToneMidis={chordToneMidis}
+            mode={fretboardMode}
+            quizFoundMidis={noteQuiz.foundMidis}
+            earTargetMidi={earTraining.targetMidi}
+            earFeedback={earTraining.feedback}
+            transcriptionResults={
+              fretboardMode() === 'callResponse'
+                ? callResponse.echoResults
+                : melodyTranscription.noteResults
+            }
+            transcriptionPhase={
+              fretboardMode() === 'callResponse'
+                ? () =>
+                    callResponse.phase() === 'callEcho'
+                      ? 'listening'
+                      : 'feedback'
+                : melodyTranscription.phase
+            }
+            cagedHighlight={cagedTrainer.highlightedFrets}
+            viewFretRange={cagedTrainer.viewFretRange}
+            singTargetMidi={singToFretboard.targetMidi}
+          />
         </Show>
 
         {/* Finished-run score: a non-blocking corner card (same pattern as

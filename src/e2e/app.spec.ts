@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, openPlaybackSetup, openSingingControls, switchSettingsTab, } from '@/e2e/helpers/ui'
+import { dismissOverlays, openSingingControls, switchSettingsTab, } from '@/e2e/helpers/ui'
 
 test.describe('MercuryPitch App', () => {
   test.beforeEach(async ({ page }) => {
@@ -83,21 +83,18 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('sidebar scale controls are visible', async ({ page }) => {
-    await openPlaybackSetup(page)
     await expect(page.locator('#key-select')).toBeVisible()
     await expect(page.locator('#scale-select')).toBeVisible()
     await expect(page.locator('[data-testid="octave-ctrl"]')).toBeVisible()
   })
 
   test('key selector changes the value', async ({ page }) => {
-    await openPlaybackSetup(page)
     const keySelect = page.locator('#key-select')
     await keySelect.selectOption('G')
     await expect(keySelect).toHaveValue('G')
   })
 
   test('scale selector has major and minor options', async ({ page }) => {
-    await openPlaybackSetup(page)
     const scaleSelect = page.locator('#scale-select')
     await expect(scaleSelect).toBeVisible()
     await expect(scaleSelect.locator('option[value="major"]')).toBeAttached()
@@ -324,7 +321,6 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('octave shift buttons change octave value', async ({ page }) => {
-    await openPlaybackSetup(page)
     const octaveDisplay = page.locator('[data-testid="octave-value"]')
     const initialOctave = await octaveDisplay.textContent()
     const higherBtn = page.locator('[data-testid="octave-btn-up"]')

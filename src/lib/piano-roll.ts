@@ -4,7 +4,6 @@
 
 import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
-import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlideProgress, drawStaccatoShape, drawTrillProgress, SLIDE_FILL, SLIDE_STROKE, slideShapePath, STACCATO_FILL, STACCATO_STROKE, TREMOLO_FILL, TREMOLO_STROKE, TRILL_FILL, TRILL_STROKE, trillShapePath, VIBRATO_FILL, VIBRATO_STROKE, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
@@ -434,9 +433,6 @@ export interface PianoRollOptions {
   onInstrumentChange?: (instrument: InstrumentType) => void
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void
-  /** Drag the A / B loop markers on the ruler (beats). */
-  onMoveLoopA?: (beat: number) => void
-  onMoveLoopB?: (beat: number) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -513,16 +509,6 @@ export class PianoRollEditor {
   private useBallPhysics = false // Toggle between vertical dot and ball physics
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
   private isExternalPlayback = false
-  // A-B loop region (beats; 0 = unset), pushed from App so the Compose editor
-  // shows the same loop as the other tabs — labelled markers on the ruler and
-  // span lines through the grid.
-  private loopA = 0
-  private loopB = 0
-  private loopEnabled = false
-  // Which A/B marker the pointer is dragging on the ruler (null = seeking).
-  private loopDragTarget: 'A' | 'B' | null = null
-  private onMoveLoopA?: (beat: number) => void
-  private onMoveLoopB?: (beat: number) => void
   private isSeeking = false
   private _lastScrubNoteId = -1
   private _activeScrubNoteId: number | null = null
@@ -610,8 +596,6 @@ export class PianoRollEditor {
     this.onNoteSelect = options.onNoteSelect
     this.onInstrumentChange = options.onInstrumentChange
     this.onPlaybackStateChange = options.onPlaybackStateChange
-    this.onMoveLoopA = options.onMoveLoopA
-    this.onMoveLoopB = options.onMoveLoopB
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
     this.beatWidth = this.config.beatWidth
@@ -970,59 +954,6 @@ export class PianoRollEditor {
    *  edge to countInBeats*beatWidth pixels into the grid. */
   setCountInBeats(beats: number): void {
     this._countInBeats = Math.max(0, beats)
-  }
-
-  /** Set the A-B loop region (beats; 0 = unset) and redraw so the markers
-   *  update immediately whether the editor is playing or stopped. */
-  setLoop(a: number, b: number, enabled: boolean): void {
-    if (a === this.loopA && b === this.loopB && enabled === this.loopEnabled) {
-      return
-    }
-    this.loopA = a
-    this.loopB = b
-    this.loopEnabled = enabled
-    if (this.isExternalPlayback) this.drawWithPlayhead()
-    else this.draw()
-  }
-
-  /** A-B loop span on the grid canvas — a shaded region between A and B plus
-   *  full-height boundary lines (shared overlay helper). Ruler carries labels. */
-  private drawGridLoop(
-    ctx: CanvasRenderingContext2D,
-    countInOffset: number,
-    totalHeight: number,
-  ): void {
-    drawAbLoopOverlay(ctx, {
-      a: this.loopA,
-      b: this.loopB,
-      enabled: this.loopEnabled,
-      posOf: (beat) => countInOffset + beat * this.beatWidth,
-      orientation: 'vertical',
-      crossExtent: totalHeight,
-      clipMin: 0,
-      clipMax: this.stretchedWidth,
-      flag: 'none',
-    })
-  }
-
-  /** A-B loop markers on the ruler — a boundary tick plus a labelled flag,
-   *  A-right / B-left so adjacent markers don't overlap (shared helper). */
-  private drawRulerLoop(
-    ctx: CanvasRenderingContext2D,
-    countInOffset: number,
-  ): void {
-    drawAbLoopOverlay(ctx, {
-      a: this.loopA,
-      b: this.loopB,
-      enabled: this.loopEnabled,
-      posOf: (beat) => this.pianoWidth + countInOffset + beat * this.beatWidth,
-      orientation: 'vertical',
-      crossExtent: this.rulerHeight,
-      clipMin: 0,
-      clipMax: this.pianoWidth + this.stretchedWidth,
-      flag: 'ruler',
-      region: false,
-    })
   }
 
   setPlaybackState(state: PlaybackState): void {
@@ -2125,25 +2056,13 @@ export class PianoRollEditor {
       { passive: false },
     )
 
-    // Ruler drag-to-seek (click and drag on ruler to scrub playback position),
-    // or drag an A/B loop marker if the press lands on one.
+    // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
     this.rulerCanvas?.addEventListener('mousedown', (e) => {
-      const hit = this.hitTestRulerLoop(e.clientX)
-      if (hit !== null) {
-        this.loopDragTarget = hit
-        return
-      }
       this.isSeeking = true
       this.seekToRulerPosition(e)
     })
 
     document.addEventListener('mousemove', (e) => {
-      if (this.loopDragTarget !== null) {
-        const beat = this.rulerBeatFromClientX(e.clientX)
-        if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
-        else this.onMoveLoopB?.(beat)
-        return
-      }
       if (this.isSeeking) {
         this.seekToRulerPosition(e)
       }
@@ -2162,7 +2081,6 @@ export class PianoRollEditor {
     )
 
     document.addEventListener('mouseup', () => {
-      this.loopDragTarget = null
       this.isSeeking = false
       this._lastScrubNoteId = -1
       if (this._activeScrubNoteId !== null) {
@@ -3543,32 +3461,6 @@ export class PianoRollEditor {
     }
   }
 
-  /** Ruler x (canvas-content px) of a loop beat — matches drawRulerLoop's map
-   *  and seekToRulerPosition's inverse (the ruler canvas's rect already carries
-   *  the scroll translate, so no scrollLeft term is needed). */
-  private rulerXOfBeat(beat: number): number {
-    return this.pianoWidth + beat * this.beatWidth
-  }
-
-  /** The A/B loop marker under a ruler press, if any. */
-  private hitTestRulerLoop(clientX: number): 'A' | 'B' | null {
-    if (!this.rulerCanvas || (this.loopA <= 0 && this.loopB <= 0)) return null
-    const rect = this.rulerCanvas.getBoundingClientRect()
-    return hitTestAbLoopMarker(
-      clientX - rect.left,
-      this.loopA,
-      this.loopB,
-      (b) => this.rulerXOfBeat(b),
-    )
-  }
-
-  /** Invert the ruler map: clientX → beat (clamped ≥ 0). Mirrors the seek math. */
-  private rulerBeatFromClientX(clientX: number): number {
-    if (!this.rulerCanvas) return 0
-    const rect = this.rulerCanvas.getBoundingClientRect()
-    return Math.max(0, (clientX - rect.left - this.pianoWidth) / this.beatWidth)
-  }
-
   private seekToRulerPosition(e: MouseEvent): void {
     const rect = this.rulerCanvas?.getBoundingClientRect()
     if (!rect || !this.gridContainer) return
@@ -3843,9 +3735,6 @@ export class PianoRollEditor {
     ctx.moveTo(0, this.rulerHeight - 1)
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
-
-    // A-B loop markers (stopped state; no count-in offset)
-    this.drawRulerLoop(ctx, 0)
   }
 
   private drawRulerWithPlayhead(): void {
@@ -3896,9 +3785,6 @@ export class PianoRollEditor {
     ctx.moveTo(0, this.rulerHeight - 1)
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
-
-    // A-B loop markers (below the playhead triangle, drawn next)
-    this.drawRulerLoop(ctx, countInOffset)
 
     // Playhead triangle — offset during count-in so it's visible
     const playheadX =
@@ -3966,9 +3852,6 @@ export class PianoRollEditor {
 
     // Live recording / take-review preview (provisional notes).
     this.drawPreviewNotes(ctx, 0)
-
-    // A-B loop span (stopped state; no count-in offset)
-    this.drawGridLoop(ctx, 0, totalHeight)
 
     // Box selection rectangle
     if (this.isBoxSelecting) {
@@ -4047,9 +3930,6 @@ export class PianoRollEditor {
 
     // Live recording preview — provisional notes captured this take.
     this.drawPreviewNotes(ctx, countInOffset)
-
-    // A-B loop span (below the playhead so the playhead stays on top)
-    this.drawGridLoop(ctx, countInOffset, totalHeight)
 
     const playheadX = countInOffset + currentBeat * this.beatWidth
 
@@ -4632,7 +4512,11 @@ export class PianoRollEditor {
         }
         if (sourceMidi !== undefined) {
           const { name, octave } = midiToNote(sourceMidi + iv)
-          btn.innerHTML = `${name}${octave}&nbsp;<small>(${iv > 0 ? '+' : ''}${iv})</small>`
+          const small = document.createElement('small')
+          small.textContent = `(${iv > 0 ? '+' : ''}${iv})`
+          btn.textContent = ''
+          btn.appendChild(document.createTextNode(`${name}${octave} `))
+          btn.appendChild(small)
         } else {
           btn.textContent = iv > 0 ? `+${iv}` : `${iv}`
         }

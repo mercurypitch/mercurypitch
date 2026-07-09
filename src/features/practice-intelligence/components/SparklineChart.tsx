@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { createMemo, Show } from 'solid-js'
 
 interface SparklineChartProps {
@@ -63,7 +64,7 @@ export const SparklineChart: Component<SparklineChartProps> = (props) => {
           width={w()}
           height={h()}
           viewBox={`0 0 ${w()} ${h()}`}
-          class="sparkline-chart"
+          class={piStyles.sparklineChart}
           aria-label="Score trend sparkline"
           role="img"
         >

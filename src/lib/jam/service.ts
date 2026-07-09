@@ -90,13 +90,19 @@ export function createJamService(callbacks: JamCallbacks) {
       callbacks.onPeerLeft(peerId)
     },
     onOffer: (from, sdp) => {
-      handleOffer(from, sdp).catch(() => {})
+      handleOffer(from, sdp).catch((err) =>
+        console.warn('[Jam] handleOffer failed:', err),
+      )
     },
     onAnswer: (from, sdp) => {
-      handleAnswer(from, sdp).catch(() => {})
+      handleAnswer(from, sdp).catch((err) =>
+        console.warn('[Jam] handleAnswer failed:', err),
+      )
     },
     onIceCandidate: (from, candidate) => {
-      handleIceCandidate(from, candidate).catch(() => {})
+      handleIceCandidate(from, candidate).catch((err) =>
+        console.info('[Jam] ICE candidate failed:', err),
+      )
     },
   })
 

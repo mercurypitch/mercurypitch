@@ -73,26 +73,11 @@ function bigFile(size: number, name = 'big.mp3'): File {
   return f
 }
 
-/** Minimal R2 bucket stub: records put() calls and serves list()/get() from a
- *  fixed set of objects (for the stem-recovery fallback tests). */
-function mockBucket(
-  objects: { key: string; size: number }[] = [],
-  bodies: Record<string, ReadableStream> = {},
-) {
+/** Minimal R2 bucket stub recording put() calls. */
+function mockBucket() {
   return {
     put: vi.fn((_key: string, _value?: unknown, _opts?: unknown) =>
       Promise.resolve({}),
-    ),
-    list: vi.fn((opts?: { prefix?: string; limit?: number }) => {
-      const prefix = opts?.prefix ?? ''
-      return Promise.resolve({
-        objects: objects.filter((o) => o.key.startsWith(prefix)),
-      })
-    }),
-    get: vi.fn((key: string) =>
-      Promise.resolve(
-        bodies[key] !== undefined ? { body: bodies[key], size: 1 } : null,
-      ),
     ),
   }
 }
@@ -328,57 +313,6 @@ describe('handleRunpodRequest — status', () => {
     const res = await handleRunpodRequest(request, url, 'GET', GPU_ONLY)
     expect(res?.status).toBe(404)
   })
-
-  it('recovers a forgotten job from R2 when RunPod 404s the status', async () => {
-    // RunPod no longer has the job (result expired ~30 min) → status throws.
-    mockFetchOnce({}, false, 404)
-    const bucket = mockBucket([
-      { key: 'runpod/job-9/My Song_(Vocals)_roformer.flac', size: 111 },
-      { key: 'runpod/job-9/My Song_(Instrumental)_roformer.flac', size: 222 },
-    ])
-    const { request, url } = req('/api/uvr/status/rp_gpu_job-9')
-    const res = await handleRunpodRequest(
-      request,
-      url,
-      'GET',
-      CFG,
-      null,
-      bucket,
-      'runpod',
-    )
-    const body = (await res?.json()) as {
-      status: string
-      files: { stem: string; path: string }[]
-    }
-    expect(body.status).toBe('completed')
-    expect(body.files.map((f) => f.stem).sort()).toEqual([
-      'instrumental',
-      'vocal',
-    ])
-    expect(body.files.find((f) => f.stem === 'vocal')?.path).toBe(
-      '/api/uvr/output/rp_gpu_job-9/vocal',
-    )
-    // Scoped the list to exactly this job's stem folder.
-    expect(bucket.list).toHaveBeenCalledWith({ prefix: 'runpod/job-9/' })
-  })
-
-  it('reports expired (terminal) when RunPod 404s and R2 has no stems', async () => {
-    mockFetchOnce({}, false, 404)
-    const bucket = mockBucket([])
-    const { request, url } = req('/api/uvr/status/rp_gpu_gone')
-    const res = await handleRunpodRequest(
-      request,
-      url,
-      'GET',
-      CFG,
-      null,
-      bucket,
-      'runpod',
-    )
-    const body = (await res?.json()) as { status: string; error: string }
-    expect(body.status).toBe('error')
-    expect(body.error).toMatch(/expired/i)
-  })
 })
 
 // ── output ──────────────────────────────────────────────────────
@@ -421,46 +355,6 @@ describe('handleRunpodRequest — output', () => {
     mockFetchOnce({ status: 'IN_PROGRESS' })
     const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
     const res = await handleRunpodRequest(request, url, 'GET', CFG)
-    expect(res?.status).toBe(404)
-  })
-
-  it('serves a stem straight from R2 when RunPod no longer has the job', async () => {
-    // RunPod 404s the status; the stem bytes still live in R2 (~24 h).
-    mockFetchOnce({}, false, 404)
-    const key = 'runpod/job-7/Song_(Vocals)_roformer.flac'
-    const bucket = mockBucket([{ key, size: 10 }], {
-      [key]: new ReadableStream(),
-    })
-    const { request, url } = req('/api/uvr/output/rp_gpu_job-7/vocal')
-    const res = await handleRunpodRequest(
-      request,
-      url,
-      'GET',
-      CFG,
-      null,
-      bucket,
-      'runpod',
-    )
-    expect(res?.status).toBe(200)
-    expect(res?.headers.get('content-type')).toBe('audio/flac')
-    expect(bucket.get).toHaveBeenCalledWith(key)
-  })
-
-  it('still 404s from R2 when the wanted stem is not in the bucket', async () => {
-    mockFetchOnce({}, false, 404)
-    const bucket = mockBucket([
-      { key: 'runpod/job-8/Song_(Instrumental)_roformer.flac', size: 10 },
-    ])
-    const { request, url } = req('/api/uvr/output/rp_gpu_job-8/vocal')
-    const res = await handleRunpodRequest(
-      request,
-      url,
-      'GET',
-      CFG,
-      null,
-      bucket,
-      'runpod',
-    )
     expect(res?.status).toBe(404)
   })
 })

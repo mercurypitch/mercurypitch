@@ -9,9 +9,8 @@
 // Guitar song status bars.
 // ============================================================
 
-import type { Accessor, Component } from 'solid-js'
+import type { Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
-import { LoopSeekRail } from '@/components/shared/LoopSeekRail'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
@@ -38,13 +37,6 @@ interface SingingStatusBarProps {
   onSeek: (beat: number) => void
   onSessionSkip: () => void
   onSessionEnd: () => void
-  // A-B Loop region (0 = not set)
-  loopA: Accessor<number>
-  loopB: Accessor<number>
-  loopEnabled: Accessor<boolean>
-  /** Drag the A / B markers along the seek rail (in beats). */
-  onMoveLoopA?: (beat: number) => void
-  onMoveLoopB?: (beat: number) => void
 }
 
 const titleCase = (s: string): string =>
@@ -83,6 +75,18 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
   const isSequence = () => sessionMode()
   const currentItem = () => getCurrentSessionItem()
   const trackCount = () => props.currentSong()?.tracks.length ?? 0
+
+  const handleSeek = (e: MouseEvent) => {
+    const rail = e.currentTarget as HTMLDivElement
+    const rect = rail.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    props.onSeek(ratio * props.totalBeats())
+  }
+
+  const progressPct = () =>
+    props.totalBeats() > 0
+      ? (Math.max(0, props.playheadBeat()) / props.totalBeats()) * 100
+      : 0
 
   // Wall-clock elapsed while a session/playback run is live (the old
   // SessionPlayer banner's timer, folded into the bar).
@@ -141,17 +145,17 @@ export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
                 Math.max(0, props.playheadBeat()) / (props.bpm() / 60),
               )}
             </span>
-            <LoopSeekRail
-              testIdPrefix="singing"
-              playheadBeat={props.playheadBeat}
-              totalBeats={props.totalBeats}
-              onSeek={props.onSeek}
-              loopA={props.loopA}
-              loopB={props.loopB}
-              loopEnabled={props.loopEnabled}
-              onMoveLoopA={props.onMoveLoopA}
-              onMoveLoopB={props.onMoveLoopB}
-            />
+            <div
+              class={barStyles.rail}
+              onClick={handleSeek}
+              title="Seek"
+              data-testid="singing-seek-rail"
+            >
+              <div
+                class={barStyles.fill}
+                style={{ width: `${progressPct()}%` }}
+              />
+            </div>
             <span class={barStyles.time}>
               {formatTime(props.totalBeats() / (props.bpm() / 60))}
             </span>
