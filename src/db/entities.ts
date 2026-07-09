@@ -62,6 +62,7 @@ export interface SessionRecord extends DbEntity {
 // ── Challenges ──────────────────────────────────────────────────
 
 export type ChallengeCategory =
+  | 'basics'
   | 'high-notes'
   | 'low-notes'
   | 'speed'
