@@ -29,6 +29,9 @@ html,
 body {
   margin: 0;
   min-height: 100vh;
+  /* The page must never scroll sideways (reveal arrows and the results grid
+     are the widest things; both are contained, this is the guarantee). */
+  overflow-x: clip;
 }
 
 body {
@@ -48,8 +51,11 @@ body {
   line-height: 1.5;
 }
 
+/* The shell is wide enough for the results' card + side-rail grid; every
+   other panel caps itself at the classic 640px column. (A 640px shell with a
+   wider grid inside was the horizontal-scroll bug on tablets.) */
 .mirror-shell {
-  max-width: 640px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 24px 20px 64px;
   min-height: 100vh;
@@ -60,6 +66,13 @@ body {
 
 .mirror-panel {
   text-align: center;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.mirror-panel.mirror-results {
+  max-width: 960px;
 }
 
 .mirror-panel h1 {
@@ -260,6 +273,8 @@ body {
 @media (min-width: 900px) {
   .mirror-results-grid {
     grid-template-columns: minmax(360px, 500px) minmax(270px, 330px);
+    /* Row 1 hugs the first note so the rail stacks tight from the card top. */
+    grid-template-rows: auto 1fr;
     justify-content: center;
     align-items: start;
     gap: 16px 32px;
@@ -273,7 +288,8 @@ body {
   .mirror-notecard-left {
     grid-column: 2;
     grid-row: 1;
-    align-self: end;
+    /* Top-aligned with the card's top edge (row 2 takes the leftover). */
+    align-self: start;
   }
   .mirror-notecard-right {
     grid-column: 2;
@@ -659,32 +675,6 @@ body {
   }
 }
 
-/* Reveal-style toggle (compare flip vs lenticular). */
-.mirror-reveal-toggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  margin: 2px auto 0;
-  border-radius: 999px;
-  background: rgba(143, 163, 255, 0.12);
-  border: 1px solid rgba(143, 163, 255, 0.2);
-}
-.mirror-reveal-toggle button {
-  appearance: none;
-  border: 0;
-  background: none;
-  color: var(--mirror-dim);
-  font-family: inherit;
-  font-size: 0.8rem;
-  padding: 5px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.mirror-reveal-toggle button.active {
-  background: rgba(255, 233, 168, 0.16);
-  color: var(--mirror-gold);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .mirror-reveal-inner,
   .mirror-reveal-card,
@@ -841,6 +831,48 @@ body {
   padding: 17px 46px;
   margin-top: 0;
   box-shadow: 0 10px 30px rgba(255, 196, 107, 0.22);
+}
+
+/* The two main shares side by side (wrapping on narrow screens). */
+.mirror-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* "Share with twin" — the brand gradient so the pair reads gold + cosmic. */
+.mirror-cta-twin {
+  background: linear-gradient(
+    135deg,
+    var(--mirror-brand-a),
+    var(--mirror-brand-b)
+  );
+  color: #0b1026;
+  box-shadow: 0 10px 30px rgba(140, 130, 255, 0.28);
+}
+
+/* Small pressed-state chip for card options (pitch trace on/off). */
+.mirror-optchip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 163, 255, 0.3);
+  background: transparent;
+  color: var(--mirror-dim);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.mirror-optchip.on {
+  color: var(--mirror-gold);
+  border-color: rgba(255, 233, 168, 0.5);
 }
 
 .mirror-actions-sub {

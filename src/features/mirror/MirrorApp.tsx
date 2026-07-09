@@ -28,7 +28,7 @@ import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
-import { IconCopy, IconGalaxy, IconRocket, IconShare } from './icons'
+import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconTrace, } from './icons'
 import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
@@ -109,11 +109,13 @@ export const MirrorApp: Component = () => {
   // Initialized from the URL fragment so a /mirror#sing-the-universe deep link
   // opens cosmic mode on the first paint (no Landing flash before onMount runs).
   const [cosmicOpen, setCosmicOpen] = createSignal(isCosmicHash())
-  // Legend "voice twin" reveal on the results card. The style defaults to flip
-  // on a first visit and lenticular on a returning (delta) visit — the singer
-  // can also switch to compare.
+  // Legend "voice twin" reveal on the results card. Flip is the shipped
+  // reveal; the lenticular machinery is kept behind the dev-only ?mode=
+  // override (its on-card look ships as the "Share with twin" export).
   const [revealed, setRevealed] = createSignal(false)
   const [revealMode, setRevealMode] = createSignal<RevealMode>('flip')
+  // Card option: include the pitch glide trace on shared/copied cards.
+  const [includeTrace, setIncludeTrace] = createSignal(true)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -126,15 +128,18 @@ export const MirrorApp: Component = () => {
   let voiceprintHost: HTMLDivElement | undefined
   // The twin's raster portrait, decoded ahead of the share tap: ClipboardItem
   // must be constructed synchronously inside the gesture (Safari), so the
-  // story card can't await an image load at share time.
-  let legendImageEl: HTMLImageElement | null = null
+  // story card can't await an image load at share time. A signal so the
+  // "Share with twin" button appears the moment the decode lands.
+  const [legendImage, setLegendImage] = createSignal<HTMLImageElement | null>(
+    null,
+  )
   let legendLoadSeq = 0
 
   /** Kick off decoding the legend portrait for a finished run (if any). */
   function preloadLegendPortrait(result: MirrorResult | null): void {
-    legendImageEl = null
+    setLegendImage(null)
     // A decode that resolves after a newer run started must not win — the
-    // shared medallion would show the previous run's twin.
+    // twin card would show the previous run's twin.
     const seq = ++legendLoadSeq
     const legend = singerForRange(result?.range ?? null)
     if (legend === null) return
@@ -145,7 +150,7 @@ export const MirrorApp: Component = () => {
     img
       .decode()
       .then(() => {
-        if (seq === legendLoadSeq) legendImageEl = img
+        if (seq === legendLoadSeq) setLegendImage(img)
       })
       .catch(() => undefined) // missing file → pill-only share card
   }
@@ -187,7 +192,7 @@ export const MirrorApp: Component = () => {
     teardownAudio()
     starting = false
     cardCanvas = null
-    legendImageEl = null
+    setLegendImage(null)
     legendLoadSeq++ // invalidate any in-flight portrait decode
     setSession(initialSessionState())
     setFreePhase(null)
@@ -200,6 +205,7 @@ export const MirrorApp: Component = () => {
     setCosmic(false)
     setRevealed(false)
     setRevealMode('flip')
+    setIncludeTrace(true)
   }
 
   /** Open/close cosmic "Sing the Universe" mode, keeping the URL fragment in
@@ -489,9 +495,10 @@ export const MirrorApp: Component = () => {
     setDeltaLine(line !== '' ? line : null)
     saveBaseline(localStorage, summary)
 
-    // First visit → flip; returning (delta) visit → lenticular.
+    // Flip is the one shipped reveal (the lenticular look lives on as the
+    // "Share with twin" export; the animation stays reachable via ?mode=).
     setRevealed(false)
-    setRevealMode(previous ? 'lenticular' : 'flip')
+    setRevealMode('flip')
 
     preloadLegendPortrait(result)
     paintCard(result, state.glides, line)
@@ -524,16 +531,10 @@ export const MirrorApp: Component = () => {
             new Date('2026-07-07'),
           )
         : ''
-    // Let ?mode= force a reveal style for screenshots; otherwise flip on a
-    // first visit, lenticular on a delta visit.
+    // ?mode= can force a reveal style for screenshots (lenticular stays
+    // reachable here even though the shipped reveal is flip-only).
     const forced = params.get('mode')
-    setRevealMode(
-      forced === 'flip' || forced === 'lenticular'
-        ? forced
-        : line !== ''
-          ? 'lenticular'
-          : 'flip',
-    )
+    setRevealMode(forced === 'lenticular' ? 'lenticular' : 'flip')
     setRevealed(fromHash || params.get('revealed') !== null)
     preloadLegendPortrait(result)
     paintCard(result, glides, line)
@@ -547,30 +548,37 @@ export const MirrorApp: Component = () => {
     })
   }
 
-  function buildStoryCard(): HTMLCanvasElement | null {
+  /** The exported story card in two variants: the clean data card (legend as
+   *  a name pill once revealed) or the twin card — the legend's portrait
+   *  blended behind the data, the lenticular look baked into pixels. Both
+   *  honour the "pitch trace" card option. */
+  function buildStoryCard(withTwin: boolean): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
-    // Once the twin is revealed, bake the legend into the shared card too.
-    const r = state.result.range
-    const legend = revealed() ? singerForRange(r) : null
+    const legend = revealed() ? singerForRange(state.result.range) : null
     return renderCard(
       {
         result: state.result,
         glides: state.glides,
         deltaLine: deltaLine(),
         legend,
-        legendImage: legendImageEl,
+        legendImage: withTwin ? legendImage() : null,
+        twinBackdrop: withTwin,
+        showTrace: includeTrace(),
       },
       'story',
     )
   }
 
-  async function onShare(): Promise<void> {
-    const card = buildStoryCard()
+  /** Whether the twin share/copy variant is possible right now. */
+  const twinReady = (): boolean => revealed() && legendImage() !== null
+
+  async function onShare(withTwin = false): Promise<void> {
+    const card = buildStoryCard(withTwin && twinReady())
     if (!card) return
     const outcome = await shareCard(
       await cardToPngBlob(card),
-      datedFilename('voiceprint'),
+      datedFilename(withTwin ? 'voice-twin' : 'voiceprint'),
     )
     trackFunnel('card_shared')
     setShareStatus(
@@ -579,7 +587,8 @@ export const MirrorApp: Component = () => {
   }
 
   async function onCopy(): Promise<void> {
-    const card = buildStoryCard()
+    // Copy mirrors the richest available variant: twin once revealed.
+    const card = buildStoryCard(twinReady())
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')
@@ -797,18 +806,16 @@ export const MirrorApp: Component = () => {
           shareStatus={shareStatus()}
           revealed={revealed()}
           revealMode={revealMode()}
+          twinReady={twinReady()}
+          includeTrace={includeTrace()}
+          onToggleTrace={() => setIncludeTrace((v) => !v)}
           onToggleReveal={() => {
             const next = !revealed()
             setRevealed(next)
             if (next) trackFunnel('twin_revealed')
           }}
-          onSetRevealMode={(m) => {
-            // Keep the revealed state across a style switch — a user who has
-            // already met their twin shouldn't lose it (or the twin on a
-            // subsequent share) just for comparing animations.
-            setRevealMode(m)
-          }}
           onShare={() => void onShare()}
+          onShareTwin={() => void onShare(true)}
           onCopy={() => void onCopy()}
           onCosmic={() => setCosmic(true)}
           onStartOver={() => resetAll()}
@@ -975,9 +982,14 @@ const Results: Component<{
   shareStatus: string | null
   revealed: boolean
   revealMode: RevealMode
+  /** Twin share/copy variant available (revealed + portrait decoded). */
+  twinReady: boolean
+  /** Card option: include the pitch glide trace on shared cards. */
+  includeTrace: boolean
+  onToggleTrace: () => void
   onToggleReveal: () => void
-  onSetRevealMode: (mode: RevealMode) => void
   onShare: () => void
+  onShareTwin: () => void
   onCopy: () => void
   onCosmic: () => void
   onStartOver: () => void
@@ -1058,28 +1070,6 @@ const Results: Component<{
             onToggle={props.onToggleReveal}
             mountFront={props.voiceprintRef}
           />
-          <Show when={legend()}>
-            <div
-              class="mirror-reveal-toggle"
-              role="group"
-              aria-label="Reveal style"
-            >
-              <button
-                type="button"
-                class={props.revealMode === 'flip' ? 'active' : ''}
-                onClick={() => props.onSetRevealMode('flip')}
-              >
-                Flip
-              </button>
-              <button
-                type="button"
-                class={props.revealMode === 'lenticular' ? 'active' : ''}
-                onClick={() => props.onSetRevealMode('lenticular')}
-              >
-                Lenticular
-              </button>
-            </div>
-          </Show>
           <Show when={!range()}>
             <p class="mirror-dim">
               We couldn't map a range this time — a quieter room usually fixes
@@ -1111,12 +1101,39 @@ const Results: Component<{
       </div>
 
       <div class="mirror-actions mirror-actions-hero">
+        {/* Two main shares once the twin is revealed: the clean data card
+            (legend as a name pill) and the twin card with the portrait
+            blended behind the data. */}
+        <div class="mirror-share-row">
+          <button
+            class="mirror-cta mirror-cta-hero"
+            onClick={() => props.onShare()}
+            title="Share the clean voiceprint card"
+          >
+            <IconShare size={20} />
+            Share voiceprint
+          </button>
+          <Show when={props.twinReady}>
+            <button
+              class="mirror-cta mirror-cta-hero mirror-cta-twin"
+              onClick={() => props.onShareTwin()}
+              title="Share the card with your twin's portrait behind the data"
+            >
+              <IconSpark size={18} />
+              Share with twin
+            </button>
+          </Show>
+        </div>
         <button
-          class="mirror-cta mirror-cta-hero"
-          onClick={() => props.onShare()}
+          type="button"
+          class="mirror-optchip"
+          classList={{ on: props.includeTrace }}
+          aria-pressed={props.includeTrace}
+          onClick={() => props.onToggleTrace()}
+          title="Include the pitch glide trace on shared cards"
         >
-          <IconShare size={20} />
-          Share my voiceprint
+          <IconTrace size={15} />
+          Pitch trace {props.includeTrace ? 'on' : 'off'}
         </button>
         <div class="mirror-actions-sub">
           <Show when={supportsImageClipboard()}>

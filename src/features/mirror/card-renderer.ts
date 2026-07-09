@@ -23,12 +23,17 @@ export interface CardInput {
   /** Optional headline, e.g. a cosmic melody name. Drawn above the trace. */
   title?: string | null
   /** Famous-singer match. Left off the default (front) card so the reveal is a
-   *  surprise; passed only when exporting the revealed "voice twin" card. */
+   *  surprise; once revealed it appears as a "like <legend>" name pill. */
   legend?: string | null
-  /** Pre-decoded twin portrait, drawn as a medallion beside the legend pill on
-   *  the story card. An element (not a URL) so card building stays synchronous
-   *  — Safari only honours clipboard writes that begin inside the tap. */
+  /** Pre-decoded twin portrait for the twin-backdrop variant. An element (not
+   *  a URL) so card building stays synchronous — Safari only honours
+   *  clipboard writes that begin inside the tap. */
   legendImage?: CanvasImageSource | null
+  /** Blend the portrait full-bleed behind the data — the on-screen lenticular
+   *  look baked into the export ("Share with twin"). */
+  twinBackdrop?: boolean
+  /** Card option: draw the glide trace + pulsar (default true). */
+  showTrace?: boolean
 }
 
 const FORMATS: Record<CardFormat, { width: number; height: number }> = {
@@ -79,16 +84,71 @@ export function renderCard(
   if (!ctx) return canvas
 
   drawBackground(ctx, width, height)
+  const portrait = input.legendImage ?? null
+  if (input.twinBackdrop === true && portrait !== null) {
+    drawTwinBackdrop(ctx, portrait, width, height)
+  }
 
   const isStory = format === 'story'
   const traceTop = isStory ? height * 0.16 : height * 0.17
   const traceBottom = isStory ? height * 0.62 : height * 0.55
   drawDeltaBadge(ctx, input, width)
-  drawVoiceTrace(ctx, input, width, traceTop, traceBottom)
+  if (input.showTrace !== false) {
+    drawVoiceTrace(ctx, input, width, traceTop, traceBottom)
+  }
   drawStats(ctx, input, width, height, traceBottom, isStory)
   drawFooter(ctx, width, height)
 
   return canvas
+}
+
+/**
+ * The twin's portrait blended behind the data — cover-fit with a face-biased
+ * crop, screen-composited over the nebula, and alpha-masked toward the bottom
+ * so the stats keep their contrast (mirrors the on-screen lenticular).
+ */
+function drawTwinBackdrop(
+  ctx: CanvasRenderingContext2D,
+  portrait: CanvasImageSource,
+  width: number,
+  height: number,
+): void {
+  const srcW =
+    portrait instanceof HTMLImageElement
+      ? portrait.naturalWidth
+      : (portrait as HTMLCanvasElement).width
+  const srcH =
+    portrait instanceof HTMLImageElement
+      ? portrait.naturalHeight
+      : (portrait as HTMLCanvasElement).height
+  if (srcW === 0 || srcH === 0) return
+
+  const scale = Math.max(width / srcW, height / srcH)
+  const dw = srcW * scale
+  const dh = srcH * scale
+  const dx = (width - dw) / 2
+  // Faces live in the upper part of the portraits: crop mostly from below.
+  const dy = -(dh - height) * 0.18
+
+  const masked = document.createElement('canvas')
+  masked.width = width
+  masked.height = height
+  const m = masked.getContext('2d')
+  if (!m) return
+  m.drawImage(portrait, dx, dy, dw, dh)
+  m.globalCompositeOperation = 'destination-in'
+  const mask = m.createLinearGradient(0, 0, 0, height)
+  mask.addColorStop(0, 'rgba(0, 0, 0, 0.92)')
+  mask.addColorStop(0.5, 'rgba(0, 0, 0, 0.88)')
+  mask.addColorStop(0.72, 'rgba(0, 0, 0, 0.5)')
+  mask.addColorStop(1, 'rgba(0, 0, 0, 0.3)')
+  m.fillStyle = mask
+  m.fillRect(0, 0, width, height)
+
+  ctx.save()
+  ctx.globalCompositeOperation = 'screen'
+  ctx.drawImage(masked, 0, 0)
+  ctx.restore()
 }
 
 function drawBackground(
@@ -291,89 +351,13 @@ function drawStats(
   const voiceHint = range?.voiceHint ?? null
   if (voiceHint !== null) {
     // The voice type stays on the card; the legend match is intentionally a
-    // reveal (§ card declutter), so its pill only appears when `legend` is set.
+    // reveal (§ card declutter), so its pill only appears when `legend` is
+    // set. The twin's portrait ships as the full-bleed backdrop variant
+    // (drawTwinBackdrop), so the pill row stays a clean name-only row.
     const legend = input.legend ?? null
     const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
-    const portrait = input.legendImage ?? null
-    // The revealed story card gets the twin's portrait medallion beside the
-    // pills; the square card is too tight (and is the pre-reveal front anyway).
-    if (legend !== null && portrait !== null && isStory) {
-      drawTwinRow(ctx, portrait, pills, centerX, y, Math.round(36 * s), s)
-    } else {
-      drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
-    }
+    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
   }
-}
-
-/** Portrait medallion + pills as one centred row — the revealed voice twin. */
-function drawTwinRow(
-  ctx: CanvasRenderingContext2D,
-  portrait: CanvasImageSource,
-  labels: string[],
-  cx: number,
-  y: number,
-  fontSize: number,
-  s: number,
-): void {
-  const radius = 66 * s
-  const gap = 26 * s
-  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
-  const padX = 34 * s
-  const pillGap = 18 * s
-  const pillWidths = labels.map((t) => ctx.measureText(t).width + padX * 2)
-  const pillsTotal =
-    pillWidths.reduce((a, b) => a + b, 0) +
-    pillGap * Math.max(0, labels.length - 1)
-  const total = radius * 2 + gap + pillsTotal
-  const circleX = cx - total / 2 + radius
-  const circleY = y - 12 * s
-
-  // Cover-crop the (4:5) portrait into the circle.
-  const srcW =
-    portrait instanceof HTMLImageElement
-      ? portrait.naturalWidth
-      : (portrait as HTMLCanvasElement).width
-  const srcH =
-    portrait instanceof HTMLImageElement
-      ? portrait.naturalHeight
-      : (portrait as HTMLCanvasElement).height
-  const side = Math.min(srcW, srcH)
-  ctx.save()
-  ctx.beginPath()
-  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
-  ctx.clip()
-  ctx.drawImage(
-    portrait,
-    (srcW - side) / 2,
-    // Bias the crop toward the top of the portrait — that's where the face is.
-    Math.max(0, (srcH - side) / 4),
-    side,
-    side,
-    circleX - radius,
-    circleY - radius,
-    radius * 2,
-    radius * 2,
-  )
-  ctx.restore()
-
-  // Gold ring with a soft glow, matching the card's star language.
-  ctx.strokeStyle = 'rgba(255, 233, 168, 0.85)'
-  ctx.lineWidth = 3
-  ctx.shadowColor = 'rgba(255, 210, 120, 0.55)'
-  ctx.shadowBlur = 18
-  ctx.beginPath()
-  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.shadowBlur = 0
-
-  drawPillRow(
-    ctx,
-    labels,
-    circleX + radius + gap + pillsTotal / 2,
-    y,
-    fontSize,
-    s,
-  )
 }
 
 /** Draw one or more rounded pills as a horizontal row centred on (cx, y). */

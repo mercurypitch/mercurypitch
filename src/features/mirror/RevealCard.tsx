@@ -152,7 +152,8 @@ export const RevealCard: Component<{
               </Show>
               <div class="mirror-legend-caption">
                 <span class="mirror-legend-kicker">
-                  <IconSpark size={10} /> your voice twin
+                  <IconSpark size={10} /> your voice twin{' '}
+                  <IconSpark size={10} />
                 </span>
                 <strong class="mirror-legend-name">{props.legend}</strong>
                 <span class="mirror-legend-epithet">
