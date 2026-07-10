@@ -35,6 +35,13 @@ of pushing — a bad tag is a prod deploy.
    - If the tag already exists (locally or remotely), **stop and report**: the
      release is already cut. Bump the version + changelog first.
 
+3b. **Walk the guided tours** (release gate — per CLAUDE.md this full walk
+   runs at release time, not per PR):
+   - Run the `/tour-check` skill (`pnpm run build`, serve `dist` on :3005,
+     then `pnpm run test:tours` and `MOBILE=1 pnpm run test:tours`).
+   - Compare misses against the known pre-existing list; any NEW `MISS`
+     is a release blocker — **stop and report** instead of tagging.
+
 4. **Create the annotated tag** on `main`'s latest commit:
    - `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
      (Use the changelog entry's one-line theme in the message if there's a tidy
