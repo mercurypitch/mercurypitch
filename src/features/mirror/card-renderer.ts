@@ -89,8 +89,17 @@ export function renderCard(
   if (input.showTrace !== false) {
     drawVoiceTrace(ctx, input, width, traceTop, traceBottom)
   }
-  drawStats(ctx, input, width, height, traceBottom, isStory)
-  drawFooter(ctx, width, height)
+  // The medallion layout shifts the stats column right — the footer follows
+  // it so the whole bottom block reads as one centred unit.
+  const statsCenterX = drawStats(
+    ctx,
+    input,
+    width,
+    height,
+    traceBottom,
+    isStory,
+  )
+  drawFooter(ctx, width, height, statsCenterX)
 
   return canvas
 }
@@ -160,6 +169,7 @@ export function renderTwinFaceCard(input: {
     const scale = Math.max(width / srcW, height / srcH)
     const dw = srcW * scale
     const dh = srcH * scale
+    ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(portrait, (width - dw) / 2, -(dh - height) * 0.18, dw, dh)
   }
 
@@ -434,6 +444,28 @@ function drawDeltaBadge(
   if (delta !== '') drawFittedLine(ctx, delta, width, 96, 40, '#8be9b8')
 }
 
+/** Fill a centred text line, shrinking the font if it exceeds maxWidth. */
+function fillFitted(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  weight: number,
+  px: number,
+  color: string,
+  cx: number,
+  y: number,
+  maxWidth: number,
+): void {
+  ctx.font = `${weight} ${Math.round(px)}px system-ui, sans-serif`
+  const measured = ctx.measureText(text).width
+  if (measured > maxWidth) {
+    ctx.font = `${weight} ${Math.max(22, Math.floor((px * maxWidth) / measured))}px system-ui, sans-serif`
+  }
+  ctx.fillStyle = color
+  ctx.fillText(text, cx, y)
+}
+
+/** Draws the stats block; returns the x the block is centred on (shifted
+ *  right when the twin medallion occupies the bottom-left corner). */
 function drawStats(
   ctx: CanvasRenderingContext2D,
   input: CardInput,
@@ -441,94 +473,114 @@ function drawStats(
   height: number,
   traceBottom: number,
   isStory: boolean,
-): void {
+): number {
   const { range, accuracy, steadiness } = input.result
-  const centerX = width / 2
   // The square format has less vertical room between the trace and the
   // footer, so it uses a tighter scale to avoid colliding with the wordmark.
   const s = isStory ? 1 : 0.82
-  let y = traceBottom + height * (isStory ? 0.09 : 0.075)
+  const yStart = traceBottom + height * (isStory ? 0.09 : 0.075)
 
-  ctx.textAlign = 'center'
-  ctx.fillStyle = '#f4f0ff'
-
-  if (range) {
-    ctx.font = `700 ${Math.round(84 * s)}px system-ui, sans-serif`
-    ctx.fillText(`${range.lowNote} – ${range.highNote}`, centerX, y)
-    y += 74 * s
-    ctx.font = `600 ${Math.round(44 * s)}px system-ui, sans-serif`
-    ctx.fillStyle = '#b9b3d6'
-    ctx.fillText(`RANGE · ${range.semitones} SEMITONES`, centerX, y)
-    y += 92 * s
-  }
-
+  const legend = input.legend ?? null
+  const portrait = input.legendImage ?? null
+  const voiceHint = range?.voiceHint ?? null
   const subStats: string[] = []
   if (accuracy) subStats.push(`ACCURACY ${accuracy.score}`)
   if (steadiness) subStats.push(`STEADINESS ${steadiness.score}`)
+
+  // Pre-walk the rows so the medallion can be sized to span the whole block.
+  let yEnd = yStart
+  if (range) yEnd += (74 + 92) * s
+  if (subStats.length > 0) yEnd += 96 * s
+  const yPills = voiceHint !== null ? yEnd : null
+
+  // Revealed twin: a large medallion anchored at the bottom left, spanning
+  // the stat rows; the text re-centres on the remaining width. Big enough
+  // that the face actually reads (the old inline circle was ~75 px).
+  let centerX = width / 2
+  let maxWidth = width - 120
+  if (legend !== null && portrait !== null) {
+    const marginX = 72
+    const blockTop = yStart - 62 * s // cap height of the range line
+    const blockBottom = (yPills ?? yEnd) + 34 * s // pill row half-height
+    const radius = Math.min(
+      150 * s,
+      Math.max(96 * s, (blockBottom - blockTop) / 2),
+    )
+    drawMedallion(
+      ctx,
+      portrait,
+      marginX + radius,
+      (blockTop + blockBottom) / 2,
+      radius,
+    )
+    const columnLeft = marginX + radius * 2 + 44 * s
+    centerX = (columnLeft + (width - marginX)) / 2
+    maxWidth = width - marginX - columnLeft
+  }
+
+  ctx.textAlign = 'center'
+  let y = yStart
+  if (range) {
+    fillFitted(
+      ctx,
+      `${range.lowNote} – ${range.highNote}`,
+      700,
+      84 * s,
+      '#f4f0ff',
+      centerX,
+      y,
+      maxWidth,
+    )
+    y += 74 * s
+    fillFitted(
+      ctx,
+      `RANGE · ${range.semitones} SEMITONES`,
+      600,
+      44 * s,
+      '#b9b3d6',
+      centerX,
+      y,
+      maxWidth,
+    )
+    y += 92 * s
+  }
+
   if (subStats.length > 0) {
-    ctx.font = `600 ${Math.round(48 * s)}px system-ui, sans-serif`
-    ctx.fillStyle = '#ddd7f2'
-    ctx.fillText(subStats.join('   ·   '), centerX, y)
+    fillFitted(
+      ctx,
+      subStats.join('   ·   '),
+      600,
+      48 * s,
+      '#ddd7f2',
+      centerX,
+      y,
+      maxWidth,
+    )
     y += 96 * s
   }
 
-  const voiceHint = range?.voiceHint ?? null
   if (voiceHint !== null) {
     // The voice type stays on the card; the legend match is intentionally a
-    // reveal (§ card declutter), so its pill only appears when `legend` is
-    // set. The clean variant carries the twin as a circular medallion beside
-    // the pills ("data with the image aside"); the backdrop variant already
-    // IS the portrait, so it keeps the plain pill row.
-    const legend = input.legend ?? null
-    const portrait = input.legendImage ?? null
-    if (legend !== null && portrait !== null) {
-      // The medallion IS the twin — no "like <name>" pill needed beside it.
-      // The square (on-screen front) card gets a smaller circle so it clears
-      // the wordmark footer.
-      drawTwinRow(
-        ctx,
-        portrait,
-        [voiceHint],
-        centerX,
-        y,
-        Math.round(36 * s),
-        s,
-        isStory ? 66 : 46,
-      )
-    } else {
-      const pills =
-        legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
-      drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
-    }
+    // reveal (§ card declutter), so its name pill only appears when `legend`
+    // is set. The backdrop variant (twin face card) already IS the portrait,
+    // so it keeps the plain pill row.
+    const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
+    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s, maxWidth)
   }
+
+  return centerX
 }
 
-/** Portrait medallion + pills as one centred row — the revealed voice twin
- *  on the clean share ("data with the image aside"). */
-function drawTwinRow(
-  ctx: CanvasRenderingContext2D,
-  portrait: CanvasImageSource,
-  labels: string[],
-  cx: number,
-  y: number,
-  fontSize: number,
-  s: number,
-  baseRadius = 66,
-): void {
-  const radius = baseRadius * s
-  const gap = 26 * s
-  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
-  const padX = 34 * s
-  const pillGap = 18 * s
-  const pillWidths = labels.map((t) => ctx.measureText(t).width + padX * 2)
-  const pillsTotal =
-    pillWidths.reduce((a, b) => a + b, 0) +
-    pillGap * Math.max(0, labels.length - 1)
-  const total = radius * 2 + gap + pillsTotal
-  const circleX = cx - total / 2 + radius
-  const circleY = y - 12 * s
+/** Face-biased square crops of a portrait, progressively halved so the
+ *  medallion never downscales more than 2× in one drawImage step (a single
+ *  giant step — the 928px sources land at ~250px — goes muddy/aliased,
+ *  especially outside Chromium). Keyed by portrait, bucketed by size. */
+const medallionCache = new WeakMap<object, Map<number, HTMLCanvasElement>>()
 
-  // Cover-crop the (4:5) portrait into the circle.
+function medallionBitmap(
+  portrait: CanvasImageSource,
+  diameter: number,
+): CanvasImageSource {
   const srcW =
     portrait instanceof HTMLImageElement
       ? portrait.naturalWidth
@@ -538,19 +590,82 @@ function drawTwinRow(
       ? portrait.naturalHeight
       : (portrait as HTMLCanvasElement).height
   const side = Math.min(srcW, srcH)
+  if (side <= 0) return portrait
+
+  let targetW = side
+  while (targetW / 2 >= diameter) targetW = Math.round(targetW / 2)
+
+  let buckets = medallionCache.get(portrait as object)
+  if (buckets === undefined) {
+    buckets = new Map()
+    medallionCache.set(portrait as object, buckets)
+  }
+  const hit = buckets.get(targetW)
+  if (hit !== undefined) return hit
+
+  // Square crop biased toward the top of the (4:5) portrait — the face.
+  let scaled = document.createElement('canvas')
+  scaled.width = side
+  scaled.height = side
+  scaled
+    .getContext('2d')
+    ?.drawImage(
+      portrait,
+      (srcW - side) / 2,
+      Math.max(0, (srcH - side) / 4),
+      side,
+      side,
+      0,
+      0,
+      side,
+      side,
+    )
+  let w = side
+  while (w > targetW) {
+    const next = Math.max(targetW, Math.round(w / 2))
+    const half = document.createElement('canvas')
+    half.width = next
+    half.height = next
+    const hctx = half.getContext('2d')
+    if (hctx === null) break
+    hctx.imageSmoothingQuality = 'high'
+    hctx.drawImage(scaled, 0, 0, w, w, 0, 0, next, next)
+    scaled = half
+    w = next
+  }
+  buckets.set(targetW, scaled)
+  return scaled
+}
+
+/** Circular twin portrait with the card's gold ring, centred on (cx, cy). */
+function drawMedallion(
+  ctx: CanvasRenderingContext2D,
+  portrait: CanvasImageSource,
+  cx: number,
+  cy: number,
+  radius: number,
+): void {
+  const bitmap = medallionBitmap(portrait, radius * 2)
+  const side =
+    bitmap instanceof HTMLCanvasElement
+      ? bitmap.width
+      : Math.min(
+          (bitmap as HTMLImageElement).naturalWidth,
+          (bitmap as HTMLImageElement).naturalHeight,
+        )
   ctx.save()
   ctx.beginPath()
-  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
   ctx.clip()
+  ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(
-    portrait,
-    (srcW - side) / 2,
-    // Bias the crop toward the top of the portrait — that's where the face is.
-    Math.max(0, (srcH - side) / 4),
+    bitmap,
+    0,
+    0,
     side,
     side,
-    circleX - radius,
-    circleY - radius,
+    cx - radius,
+    cy - radius,
     radius * 2,
     radius * 2,
   )
@@ -558,25 +673,18 @@ function drawTwinRow(
 
   // Gold ring with a soft glow, matching the card's star language.
   ctx.strokeStyle = 'rgba(255, 233, 168, 0.85)'
-  ctx.lineWidth = 3
+  ctx.lineWidth = 4
   ctx.shadowColor = 'rgba(255, 210, 120, 0.55)'
   ctx.shadowBlur = 18
   ctx.beginPath()
-  ctx.arc(circleX, circleY, radius, 0, Math.PI * 2)
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
   ctx.stroke()
   ctx.shadowBlur = 0
-
-  drawPillRow(
-    ctx,
-    labels,
-    circleX + radius + gap + pillsTotal / 2,
-    y,
-    fontSize,
-    s,
-  )
 }
 
-/** Draw one or more rounded pills as a horizontal row centred on (cx, y). */
+/** Draw one or more rounded pills as a horizontal row centred on (cx, y),
+ *  shrinking the font when the row would overflow maxWidth (the narrowed
+ *  column beside the twin medallion — long legend names must fit). */
 function drawPillRow(
   ctx: CanvasRenderingContext2D,
   labels: string[],
@@ -584,15 +692,27 @@ function drawPillRow(
   y: number,
   fontSize: number,
   s: number,
+  maxWidth = Infinity,
 ): void {
-  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
   ctx.textAlign = 'center'
   const padX = 34 * s
   const gap = 18 * s
   const h = 68 * s
-  const widths = labels.map((t) => ctx.measureText(t).width + padX * 2)
-  const total =
-    widths.reduce((a, b) => a + b, 0) + gap * Math.max(0, labels.length - 1)
+  const measure = (px: number): number[] => {
+    ctx.font = `500 ${px}px system-ui, sans-serif`
+    return labels.map((t) => ctx.measureText(t).width + padX * 2)
+  }
+  const rowTotal = (w: number[]): number =>
+    w.reduce((a, b) => a + b, 0) + gap * Math.max(0, labels.length - 1)
+  let widths = measure(fontSize)
+  if (rowTotal(widths) > maxWidth) {
+    fontSize = Math.max(
+      20,
+      Math.floor((fontSize * maxWidth) / rowTotal(widths)),
+    )
+    widths = measure(fontSize)
+  }
+  const total = rowTotal(widths)
   let x = cx - total / 2
   for (let i = 0; i < labels.length; i++) {
     const w = widths[i]
@@ -619,6 +739,7 @@ function drawFooter(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
+  cx: number = width / 2,
 ): void {
   ctx.textAlign = 'center'
   ctx.font = '700 46px system-ui, sans-serif'
@@ -628,18 +749,18 @@ function drawFooter(
   const wordmarkWidth = ctx.measureText(wordmark).width
   const y = height - 108
   const gradient = ctx.createLinearGradient(
-    width / 2 - wordmarkWidth / 2,
+    cx - wordmarkWidth / 2,
     y - 40,
-    width / 2 + wordmarkWidth / 2,
+    cx + wordmarkWidth / 2,
     y,
   )
   gradient.addColorStop(0, '#58a6ff')
   gradient.addColorStop(1, '#bc8cff')
   ctx.fillStyle = gradient
-  ctx.fillText(wordmark, width / 2, y)
+  ctx.fillText(wordmark, cx, y)
   ctx.font = '500 34px system-ui, sans-serif'
   ctx.fillStyle = '#9b93c0'
-  ctx.fillText('mercurypitch.com/mirror', width / 2, height - 56)
+  ctx.fillText('mercurypitch.com/mirror', cx, height - 56)
 }
 
 export function cardToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {

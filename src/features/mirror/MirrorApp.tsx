@@ -16,10 +16,12 @@ import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import { attemptByTake, parseTakeHash, saveAttempt, takeHash, } from '@/lib/mirror/attempts'
 import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
+import type { DemoKind } from '@/lib/mirror/demo-timeline'
 import type { FreeSingResult } from '@/lib/mirror/free-sing'
 import { computeFreeSing } from '@/lib/mirror/free-sing'
 import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
+import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { singerForRange } from '@/lib/mirror/singer-match'
@@ -29,11 +31,13 @@ import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
+import { HowItWorks } from './HowItWorks'
 import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconStats, IconTrace, } from './icons'
 import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
+import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
 
 const GLIDE_SEC = 8
@@ -61,7 +65,7 @@ const isCosmicHash = (): boolean =>
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-type SubPhase = 'brief' | 'recording' | 'listening' | 'prepare'
+type SubPhase = 'intro' | 'brief' | 'recording' | 'listening' | 'prepare'
 
 interface TaskCopy {
   title: string
@@ -102,7 +106,14 @@ export const MirrorApp: Component = () => {
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
+  // The saved take number of the run on screen (null for unsaved/demo runs);
+  // personalises download filenames ("…-take-3-…").
+  const [takeN, setTakeN] = createSignal<number | null>(null)
   const [mode, setMode] = createSignal<'guided' | 'free'>('guided')
+  // "How it works" overview — UI-only, shown over the idle phase. Opens
+  // automatically for first-timers on "Start singing"; replayable from the
+  // Landing link.
+  const [howtoOpen, setHowtoOpen] = createSignal(false)
   const [freePhase, setFreePhase] = createSignal<
     null | 'mic' | 'task' | 'results'
   >(null)
@@ -130,6 +141,12 @@ export const MirrorApp: Component = () => {
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
   let cancelled = false
+  // Generation token: each start/reset/restore bumps it, so an orphaned
+  // flow (back/forward mid-run) sees a stale token and dies at its next
+  // checkpoint instead of clobbering the new run's intro gate.
+  let flowGen = 0
+  // Resolver for the pending "I'm ready" intro gate, if a task is waiting.
+  let readyResolve: (() => void) | null = null
   let freeTakeFrames: F0Frame[] = []
   // Guards double-taps on Start/Try-again/Test-again: a second concurrent
   // start would orphan AudioContexts and drive two flows over one session.
@@ -171,6 +188,17 @@ export const MirrorApp: Component = () => {
     return next
   }
 
+  /** localStorage, or null where even touching the global throws (Chrome
+   *  "block all cookies", some embedded webviews). Callers on the start
+   *  gesture path must never die on a storage SecurityError. */
+  function safeStorage(): Storage | null {
+    try {
+      return window.localStorage
+    } catch {
+      return null
+    }
+  }
+
   /** One fragment router for load AND hashchange: cosmic mode, saved takes
    *  (#take-N, a real feature) and — in dev builds — the demo fast lanes, so
    *  editing the hash or using back/forward reacts without a reload. */
@@ -192,8 +220,28 @@ export const MirrorApp: Component = () => {
   })
   onCleanup(() => {
     cancelled = true
+    flowGen++
+    releaseIntroGate()
     teardownAudio()
   })
+
+  /** Resolve a pending "I'm ready" intro gate (the awaiting flow re-checks
+   *  its generation token, so stale flows still die here). */
+  function releaseIntroGate(): void {
+    readyResolve?.()
+    readyResolve = null
+  }
+
+  /** Show a task's demo + instruction until the user taps "I'm ready".
+   *  A stale flow (gen mismatch) must not touch the shared gate — it would
+   *  clobber the live run's resolver and strand it on the intro screen. */
+  function taskIntro(gen: number): Promise<void> {
+    if (cancelled || gen !== flowGen) return Promise.resolve()
+    setSubPhase('intro')
+    return new Promise<void>((resolve) => {
+      readyResolve = resolve
+    })
+  }
 
   function teardownAudio(): void {
     f0?.dispose()
@@ -207,6 +255,10 @@ export const MirrorApp: Component = () => {
    *  baseline+delta product, so every terminal screen offers a way back. */
   function resetAll(): void {
     teardownAudio()
+    flowGen++
+    releaseIntroGate()
+    setSubPhase('brief')
+    setHowtoOpen(false)
     starting = false
     cardCanvas = null
     setLegendImage(null)
@@ -215,6 +267,7 @@ export const MirrorApp: Component = () => {
     setFreePhase(null)
     setFreeResult(null)
     setDeltaLine(null)
+    setTakeN(null)
     setShareStatus(null)
     setMicError(null)
     setMicSilent(false)
@@ -252,11 +305,15 @@ export const MirrorApp: Component = () => {
     )
   }
 
-  /** Countdown helper driving the `remaining` signal. */
+  /** Countdown helper driving the `remaining` signal. Aborts early when the
+   *  flow generation changes mid-count (reset / take restore), so an
+   *  orphaned flow can't keep writing `remaining` — or run for its full
+   *  duration — after the user has moved on. */
   async function countdown(seconds: number): Promise<void> {
+    const gen = flowGen
     const start = performance.now()
     setRemaining(seconds)
-    while (!cancelled) {
+    while (!cancelled && gen === flowGen) {
       const left = seconds - (performance.now() - start) / 1000
       if (left <= 0) break
       setRemaining(left)
@@ -278,11 +335,14 @@ export const MirrorApp: Component = () => {
 
   async function record(seconds: number): Promise<F0Frame[]> {
     if (!f0) return []
+    const gen = flowGen
     setTaskKey((k) => k + 1)
     setSubPhase('recording')
     f0.startTask()
     await countdown(seconds)
-    // f0 may have been torn down while we were awaiting (unmount mid-take).
+    // The take is void if the run was reset/restored mid-count, and f0 may
+    // have been torn down while we were awaiting (unmount mid-take).
+    if (cancelled || gen !== flowGen) return []
     return f0?.takeFrames() ?? []
   }
 
@@ -399,10 +459,15 @@ export const MirrorApp: Component = () => {
 
   /** Free Sing: one open 40 s take, then post-analysis — no targets. */
   async function runFreeFlow(): Promise<void> {
+    const gen = ++flowGen
     setFreePhase('task')
     await brief(3)
-    if (cancelled) return
-    freeTakeFrames = await record(FREE_SING_SEC)
+    if (cancelled || gen !== flowGen) return
+    const frames = await record(FREE_SING_SEC)
+    // A mid-take reset/restore orphans this flow — it must not tear down
+    // the successor run's audio or flip the UI to a dead results screen.
+    if (cancelled || gen !== flowGen) return
+    freeTakeFrames = frames
     teardownAudio()
     setFreeResult(computeFreeSing(freeTakeFrames))
     setFreePhase('results')
@@ -444,24 +509,46 @@ export const MirrorApp: Component = () => {
   }
 
   async function runFlow(): Promise<void> {
+    const gen = ++flowGen
+    const alive = (): boolean => !cancelled && gen === flowGen
+
     // Task A — glide up, then down (union of both builds the range).
+    // Each task opens with its demo animation behind an "I'm ready" gate,
+    // so the instruction is fresh at the moment it matters. Every await is
+    // followed by an alive() check before the next side effect — a stale
+    // flow must never dispatch into (or re-arm the gate of) its successor.
+    await taskIntro(gen)
+    if (!alive()) return
     await brief(3)
-    if (cancelled) return
-    dispatch({ type: 'glide-done', frames: await record(GLIDE_SEC) })
+    if (!alive()) return
+    const glideUp = await record(GLIDE_SEC)
+    if (!alive()) return
+    dispatch({ type: 'glide-done', frames: glideUp })
+    await taskIntro(gen)
+    if (!alive()) return
     await brief(2)
-    if (cancelled) return
-    dispatch({ type: 'glide-done', frames: await record(GLIDE_SEC) })
+    if (!alive()) return
+    const glideDown = await record(GLIDE_SEC)
+    if (!alive()) return
+    dispatch({ type: 'glide-done', frames: glideDown })
     trackFunnel('task_glide_done')
 
     // Task B — hold.
+    await taskIntro(gen)
+    if (!alive()) return
     await brief(3)
-    if (cancelled) return
-    dispatch({ type: 'hold-done', frames: await record(HOLD_SEC) })
+    if (!alive()) return
+    const holdTake = await record(HOLD_SEC)
+    if (!alive()) return
+    dispatch({ type: 'hold-done', frames: holdTake })
     trackFunnel('task_hold_done')
 
     // Task C — match 5, reference-then-record (never simultaneous).
+    // One gate before round 1; rounds 2-5 keep the automatic rhythm.
+    await taskIntro(gen)
+    if (!alive()) return
     await brief(2)
-    while (!cancelled && session().phase === 'match') {
+    while (alive() && session().phase === 'match') {
       const state = session()
       const target = state.targets[state.matchIndex]
       const retrying = state.retriesUsed > 0
@@ -471,14 +558,13 @@ export const MirrorApp: Component = () => {
       if (audioContext) {
         await playReferenceTone(audioContext, target, REFERENCE_SEC)
       }
-      if (cancelled) return
+      if (!alive()) return
       // Breathing room: hear the note, then a short count-in before singing.
       await prepare(MATCH_PREPARE_SEC)
-      if (cancelled) return
-      const next = dispatch({
-        type: 'match-done',
-        frames: await record(MATCH_TAKE_SEC),
-      })
+      if (!alive()) return
+      const take = await record(MATCH_TAKE_SEC)
+      if (!alive()) return
+      const next = dispatch({ type: 'match-done', frames: take })
       if (next.phase === 'results') {
         trackFunnel('task_match_done')
         finishRun(next)
@@ -560,6 +646,7 @@ export const MirrorApp: Component = () => {
       glides: state.glides,
       deltaLine: line,
     })
+    setTakeN(attempt?.n ?? null)
     if (attempt !== null) {
       history.replaceState(null, '', `#${takeHash(attempt.n)}`)
     }
@@ -571,9 +658,18 @@ export const MirrorApp: Component = () => {
     const attempt = attemptByTake(localStorage, n)
     if (attempt === null) return false
     // Back/forward can land here mid-run — release the mic and stop the
-    // detector before swapping the session to the stored results.
+    // detector before swapping the session to the stored results. The
+    // orphaned flow's stale generation token kills it at its next checkpoint.
     teardownAudio()
+    flowGen++
+    releaseIntroGate()
+    setHowtoOpen(false)
     starting = false
+    // A restore can land mid-Free-Sing — clear its panels or they'd render
+    // stacked on top of the restored guided results.
+    setFreePhase(null)
+    setFreeResult(null)
+    setSubPhase('brief')
     setMetTwin(false)
     setRevealed(false)
     setRevealMode('flip')
@@ -581,6 +677,7 @@ export const MirrorApp: Component = () => {
     setTwinTrace(false)
     setTwinData(false)
     setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
+    setTakeN(n)
     preloadLegendPortrait(attempt.result)
     paintCard(attempt.result, attempt.glides, attempt.deltaLine)
     setSession({
@@ -639,11 +736,13 @@ export const MirrorApp: Component = () => {
   }
 
   /** The clean data story card — legend as a circular medallion + name pill
-   *  once revealed; honours the "pitch trace" card option. */
+   *  once revealed; honours the "pitch trace" card option. Keyed on metTwin
+   *  (sticky), not the current flip state, so the share always matches the
+   *  on-screen front card — flipping back must not strip the medallion. */
   function buildStoryCard(): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
-    const legend = revealed() ? singerForRange(state.result.range) : null
+    const legend = metTwin() ? singerForRange(state.result.range) : null
     return renderCard(
       {
         result: state.result,
@@ -678,15 +777,38 @@ export const MirrorApp: Component = () => {
     })
   }
 
-  /** Whether the twin share/copy variant is possible right now. */
-  const twinReady = (): boolean => revealed() && legendImage() !== null
+  /** Whether the twin share variant is possible — once the twin has been
+   *  met it stays available even after flipping back to the data face. */
+  const twinReady = (): boolean => metTwin() && legendImage() !== null
+
+  /** Personal, distinct download names — never a model or asset name.
+   *  e.g. "voice-twin-elvis-presley-take-3-2026-07-10.png" vs
+   *  "voiceprint-take-3-2026-07-10.png", so saving both variants of the
+   *  same run never collides. */
+  function cardFilename(withTwin: boolean): string {
+    const parts = [withTwin ? 'voice-twin' : 'voiceprint']
+    if (withTwin) {
+      const legend = singerForRange(session().result?.range ?? null)
+      if (legend !== null) {
+        parts.push(
+          legend
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
+        )
+      }
+    }
+    const take = takeN()
+    if (take !== null) parts.push(`take-${take}`)
+    return datedFilename(parts.join('-'))
+  }
 
   async function onShare(withTwin = false): Promise<void> {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await shareCard(
       await cardToPngBlob(card),
-      datedFilename(withTwin ? 'voice-twin' : 'voiceprint'),
+      cardFilename(withTwin),
     )
     trackFunnel('card_shared')
     setShareStatus(
@@ -695,8 +817,10 @@ export const MirrorApp: Component = () => {
   }
 
   async function onCopy(): Promise<void> {
-    // Copy mirrors the richest available variant: twin once revealed.
-    const card = twinReady() ? buildTwinCard() : buildStoryCard()
+    // Copy mirrors the face on screen: the twin while it's face-up,
+    // otherwise the data card (with the medallion once the twin is met).
+    const card =
+      revealed() && legendImage() !== null ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')
@@ -717,10 +841,51 @@ export const MirrorApp: Component = () => {
     <div class="mirror-shell">
       <Show
         when={
-          session().phase === 'idle' && freePhase() === null && !cosmicOpen()
+          session().phase === 'idle' &&
+          freePhase() === null &&
+          !cosmicOpen() &&
+          !howtoOpen()
         }
       >
-        <Landing onStart={(selected) => void start(selected)} />
+        <Landing
+          onStart={(selected) => {
+            // First guided run detours through the animated overview; the
+            // "Let's go" tap there becomes the mic-acquiring gesture.
+            // Blocked storage reads as "never seen" — show the overview.
+            const store = safeStorage()
+            if (
+              selected === 'guided' &&
+              (store === null || !hasSeenHowItWorks(store))
+            ) {
+              setHowtoOpen(true)
+              return
+            }
+            void start(selected)
+          }}
+          onHowItWorks={() => setHowtoOpen(true)}
+        />
+      </Show>
+
+      <Show
+        when={
+          howtoOpen() &&
+          session().phase === 'idle' &&
+          freePhase() === null &&
+          !cosmicOpen()
+        }
+      >
+        <HowItWorks
+          onLetsGo={() => {
+            const store = safeStorage()
+            if (store !== null) markHowItWorksSeen(store)
+            trackFunnel('howto_done')
+            // start() flips the phase synchronously, mounting the mic panel
+            // before this overview's Show condition drops it.
+            void start('guided')
+            setHowtoOpen(false)
+          }}
+          onBack={() => setHowtoOpen(false)}
+        />
       </Show>
 
       <Show
@@ -850,6 +1015,26 @@ export const MirrorApp: Component = () => {
           </Show>
 
           <div class="mirror-stage">
+            <Show when={subPhase() === 'intro'}>
+              <TaskDemo
+                kind={session().phase as DemoKind}
+                size="stage"
+                label={`Animated demo: ${currentTask()?.instruction ?? ''}`}
+              />
+              <button
+                class="mirror-cta mirror-cta-ready"
+                ref={(el) => {
+                  // Refs fire before insertion — focus once it's in the DOM.
+                  requestAnimationFrame(() => el.focus({ preventScroll: true }))
+                }}
+                onClick={() => {
+                  trackFunnel('task_intro_done')
+                  releaseIntroGate()
+                }}
+              >
+                I'm ready
+              </button>
+            </Show>
             <Show when={subPhase() === 'brief'}>
               <div class="mirror-countdown">{Math.ceil(remaining())}</div>
             </Show>
@@ -947,6 +1132,7 @@ export const MirrorApp: Component = () => {
 
 const Landing: Component<{
   onStart: (mode: 'guided' | 'free') => void
+  onHowItWorks: () => void
 }> = (props) => (
   <section class="mirror-panel mirror-landing">
     <p class="mirror-wordmark">MercuryPitch</p>
@@ -966,6 +1152,9 @@ const Landing: Component<{
         Just sing · 40 s
       </button>
     </div>
+    <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
+      How it works
+    </button>
     <p class="mirror-trust">
       Your audio never leaves this device — we analyze it right here in your
       browser.

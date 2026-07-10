@@ -679,9 +679,17 @@ body {
   .mirror-reveal-inner,
   .mirror-reveal-card,
   .mirror-reveal-arrow,
-  .mirror-reveal-card::after {
+  .mirror-reveal-card::after,
+  .mirror-howto-card,
+  .mirror-howto-dot {
     transition-duration: 0.001ms;
     animation: none;
+  }
+  /* No spotlight cycle — every demo card stays fully visible (TaskDemo
+     renders a static path frame instead of animating). */
+  .mirror-howto-card:not(.is-active) {
+    opacity: 1;
+    filter: none;
   }
 }
 
@@ -923,4 +931,137 @@ body {
   font-size: 0.8rem;
   opacity: 0.62;
   margin-top: 20px;
+}
+
+/* ============================================================
+   "How it works" onboarding — spotlight-cycled demo cards.
+   ============================================================ */
+
+.mirror-howto-title {
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.35em 0 0.2em;
+}
+
+.mirror-howto-sub {
+  color: var(--mirror-dim);
+  margin: 0 0 18px;
+}
+
+.mirror-howto-steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  text-align: left;
+}
+
+@media (min-width: 900px) {
+  .mirror-howto-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mirror-howto-card {
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  background: rgba(10, 8, 26, 0.55);
+  border: 1px solid rgba(143, 163, 255, 0.18);
+  opacity: 0.45;
+  filter: saturate(0.75);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.mirror-howto-card.is-active {
+  opacity: 1;
+  filter: none;
+  border-color: rgba(143, 163, 255, 0.55);
+  box-shadow: 0 0 22px rgba(143, 163, 255, 0.18);
+}
+
+.mirror-howto-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mirror-howto-head h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.mirror-howto-num {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--mirror-gold);
+  background: rgba(255, 233, 168, 0.14);
+  border: 1px solid rgba(255, 233, 168, 0.35);
+}
+
+.mirror-howto-blurb {
+  margin: 10px 0 2px;
+  font-size: 0.88rem;
+  color: var(--mirror-dim);
+}
+
+.mirror-howto-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mirror-howto-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(143, 163, 255, 0.25);
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+
+.mirror-howto-dot.is-active {
+  background: var(--mirror-gold);
+  transform: scale(1.25);
+}
+
+/* Demo canvases (overview cards + per-task intro gates). */
+
+.mirror-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.mirror-demo canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: rgba(10, 8, 26, 0.45);
+}
+
+.mirror-demo-caption {
+  min-height: 1.3em;
+  font-size: 0.85rem;
+  color: var(--mirror-dim);
+}
+
+.mirror-cta-ready {
+  margin-top: 10px;
 }
