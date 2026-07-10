@@ -42,6 +42,10 @@ export const BIN_DWELL_MIN_SEC = 0.15
 /** Lock = this long contiguously within ±LOCK_TOLERANCE_CENTS (§4.2). */
 export const LOCK_DURATION_SEC = 0.15
 export const LOCK_TOLERANCE_CENTS = 60
+/** A sung note within this folded distance is a "hit" (§4.2) — the green
+ *  locked-on feedback in LiveViz and the onboarding demos shares it, so
+ *  what the UI celebrates and what the score rewards can't drift apart. */
+export const HIT_TOLERANCE_CENTS = 35
 /** A lock also needs this many frames — sparse voiced frames can inflate the
  *  hop estimate enough that one stray sample would otherwise span 150 ms. */
 export const LOCK_MIN_FRAMES = 3
@@ -330,7 +334,7 @@ export function matchScore(deviationCents: number): number {
 
 function matchBand(deviationCents: number): MatchBand {
   if (deviationCents <= 15) return 'bullseye'
-  if (deviationCents <= 35) return 'hit'
+  if (deviationCents <= HIT_TOLERANCE_CENTS) return 'hit'
   if (deviationCents <= 60) return 'close'
   return 'miss'
 }

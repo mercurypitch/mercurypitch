@@ -12,7 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { CONF_MIN, foldCents, hzToCents } from '@/lib/mirror/metrics'
+import { CONF_MIN, foldCents, HIT_TOLERANCE_CENTS, hzToCents, } from '@/lib/mirror/metrics'
 
 /** Live input-level bar — visible proof the mic is (or isn't) being heard. */
 export const MicLevelBar: Component<{ level: () => number }> = (props) => {
@@ -147,7 +147,8 @@ export const LiveViz: Component<LiveVizProps> = (props) => {
     const folded = foldCents(last.cents - props.targetMidi * 100)
     const clamped = Math.max(-150, Math.min(150, folded))
     const y = cy - (clamped / 150) * (HEIGHT / 2 - 24)
-    ctx.fillStyle = Math.abs(folded) <= 35 ? '#8be9b8' : '#8fa3ff'
+    ctx.fillStyle =
+      Math.abs(folded) <= HIT_TOLERANCE_CENTS ? '#8be9b8' : '#8fa3ff'
     ctx.shadowColor = ctx.fillStyle
     ctx.shadowBlur = 12
     ctx.beginPath()

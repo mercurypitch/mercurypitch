@@ -416,16 +416,7 @@ function drawFittedLine(
   color: string,
 ): void {
   ctx.textAlign = 'center'
-  let fontSize = baseFontSize
-  ctx.font = `600 ${fontSize}px system-ui, sans-serif`
-  const maxWidth = width - 120
-  const measured = ctx.measureText(text).width
-  if (measured > maxWidth) {
-    fontSize = Math.max(24, Math.floor((fontSize * maxWidth) / measured))
-    ctx.font = `600 ${fontSize}px system-ui, sans-serif`
-  }
-  ctx.fillStyle = color
-  ctx.fillText(text, width / 2, y)
+  fillFitted(ctx, text, 600, baseFontSize, color, width / 2, y, width - 120)
 }
 
 /** Headline (cosmic melody name) and/or returning-visit delta at the top. */

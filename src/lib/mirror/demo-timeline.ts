@@ -43,8 +43,6 @@ export interface DemoState {
   voiceIndex: number
   /** The most recent voice frame, or null before the first one. */
   headFrame: F0Frame | null
-  /** 0..1 progress through the loop. */
-  progress: number
 }
 
 // Demos teach the *shape* of each task, not a range, so they sit in a
@@ -198,6 +196,5 @@ export function demoStateAt(tl: DemoTimeline, tSec: number): DemoState {
     segment,
     voiceIndex: lo,
     headFrame: lo > 0 ? tl.voice[lo - 1] : null,
-    progress: t / d,
   }
 }
