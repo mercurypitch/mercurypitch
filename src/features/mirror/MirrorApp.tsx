@@ -570,6 +570,10 @@ export const MirrorApp: Component = () => {
   function restoreAttempt(n: number): boolean {
     const attempt = attemptByTake(localStorage, n)
     if (attempt === null) return false
+    // Back/forward can land here mid-run — release the mic and stop the
+    // detector before swapping the session to the stored results.
+    teardownAudio()
+    starting = false
     setMetTwin(false)
     setRevealed(false)
     setRevealMode('flip')
