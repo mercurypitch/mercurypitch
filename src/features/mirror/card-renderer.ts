@@ -130,6 +130,9 @@ export function renderTwinFaceCard(input: {
   legendImage: CanvasImageSource
   /** Draw the golden glide trace over the portrait (card option). */
   showTrace?: boolean
+  /** Swap the "your voice twin" caption for the run's data block —
+   *  range, accuracy · steadiness and the pills (card option). */
+  showData?: boolean
   result?: MirrorResult
   glides?: F0Frame[][]
 }): HTMLCanvasElement {
@@ -185,33 +188,69 @@ export function renderTwinFaceCard(input: {
     )
   }
 
-  // Caption — the on-screen sizes scaled from the 500px card to 1080px.
   ctx.textAlign = 'center'
-  const kickerY = height - 296
-  ctx.font = '600 24px system-ui, sans-serif'
-  ctx.fillStyle = '#8fa3ff'
-  const kicker = 'Y O U R   V O I C E   T W I N'
-  ctx.fillText(kicker, width / 2, kickerY)
-  const kickerHalf = ctx.measureText(kicker).width / 2 + 34
-  drawSpark(ctx, width / 2 - kickerHalf, kickerY - 8, 11, '#8fa3ff')
-  drawSpark(ctx, width / 2 + kickerHalf, kickerY - 8, 11, '#8fa3ff')
+  if (input.showData === true && input.result !== undefined) {
+    // Data block instead of the caption: the run's numbers over the twin.
+    const { range, accuracy, steadiness } = input.result
+    let y = height - 322
+    if (range !== null) {
+      ctx.font = '700 72px system-ui, sans-serif'
+      ctx.fillStyle = '#f4f0ff'
+      ctx.fillText(`${range.lowNote} – ${range.highNote}`, width / 2, y)
+      y += 58
+      ctx.font = '600 38px system-ui, sans-serif'
+      ctx.fillStyle = '#b9b3d6'
+      ctx.fillText(`RANGE · ${range.semitones} SEMITONES`, width / 2, y)
+      y += 62
+    }
+    const subStats: string[] = []
+    if (accuracy !== null) subStats.push(`ACCURACY ${accuracy.score}`)
+    if (steadiness !== null) subStats.push(`STEADINESS ${steadiness.score}`)
+    if (subStats.length > 0) {
+      ctx.font = '600 42px system-ui, sans-serif'
+      ctx.fillStyle = '#ddd7f2'
+      ctx.fillText(subStats.join('   ·   '), width / 2, y)
+      y += 62
+    }
+    const voiceHint = range?.voiceHint ?? null
+    if (voiceHint !== null) {
+      drawPillRow(
+        ctx,
+        [voiceHint, `like ${input.legend}`],
+        width / 2,
+        y,
+        32,
+        0.9,
+      )
+    }
+  } else {
+    // Caption — the on-screen sizes scaled from the 500px card to 1080px.
+    const kickerY = height - 296
+    ctx.font = '600 24px system-ui, sans-serif'
+    ctx.fillStyle = '#8fa3ff'
+    const kicker = 'Y O U R   V O I C E   T W I N'
+    ctx.fillText(kicker, width / 2, kickerY)
+    const kickerHalf = ctx.measureText(kicker).width / 2 + 34
+    drawSpark(ctx, width / 2 - kickerHalf, kickerY - 8, 11, '#8fa3ff')
+    drawSpark(ctx, width / 2 + kickerHalf, kickerY - 8, 11, '#8fa3ff')
 
-  ctx.font = '700 62px system-ui, sans-serif'
-  ctx.fillStyle = '#ffe9a8'
-  ctx.fillText(input.legend, width / 2, kickerY + 74)
+    ctx.font = '700 62px system-ui, sans-serif'
+    ctx.fillStyle = '#ffe9a8'
+    ctx.fillText(input.legend, width / 2, kickerY + 74)
 
-  ctx.font = 'italic 500 33px system-ui, sans-serif'
-  ctx.fillStyle = '#b9b3d6'
-  ctx.fillText(input.epithet, width / 2, kickerY + 124)
+    ctx.font = 'italic 500 33px system-ui, sans-serif'
+    ctx.fillStyle = '#b9b3d6'
+    ctx.fillText(input.epithet, width / 2, kickerY + 124)
 
-  if (input.voiceType !== null) {
-    ctx.font = '600 26px system-ui, sans-serif'
-    ctx.fillStyle = 'rgba(143, 163, 255, 0.8)'
-    ctx.fillText(
-      `${input.voiceType.toUpperCase()}   R A N G E`,
-      width / 2,
-      kickerY + 172,
-    )
+    if (input.voiceType !== null) {
+      ctx.font = '600 26px system-ui, sans-serif'
+      ctx.fillStyle = 'rgba(143, 163, 255, 0.8)'
+      ctx.fillText(
+        `${input.voiceType.toUpperCase()}   R A N G E`,
+        width / 2,
+        kickerY + 172,
+      )
+    }
   }
 
   // Small brand footer over the scrim — the one addition vs. the screen.

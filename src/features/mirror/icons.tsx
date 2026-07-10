@@ -90,6 +90,16 @@ export const IconTrace: Component<IconProps> = (p) => (
   </svg>
 )
 
+/** Three rising bars with a star — the data-on-twin card option. */
+export const IconStats: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M5 19.5V12.5" />
+    <path d="M12 19.5V5.8" />
+    <path d="M19 19.5V9.5" />
+    <circle cx="19" cy="4.6" r="0.95" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 /** Chevron pointing right — the reveal nudge arrows (mirrored via CSS). */
 export const IconChevron: Component<IconProps> = (p) => (
   <svg {...svgProps(p)}>

@@ -29,7 +29,7 @@ import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
-import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconTrace, } from './icons'
+import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconStats, IconTrace, } from './icons'
 import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
@@ -120,6 +120,9 @@ export const MirrorApp: Component = () => {
   // Card option: draw the trace over the twin card too (default off — the
   // downloaded twin stays identical to the on-screen reveal, face clean).
   const [twinTrace, setTwinTrace] = createSignal(false)
+  // Card option: swap the twin card's caption for the run's data block
+  // (default off — caption keeps it identical to the on-screen reveal).
+  const [twinData, setTwinData] = createSignal(false)
   // Sticky "has met their twin" — after the first reveal the front data card
   // keeps the circular twin medallion (the surprise is already spent).
   const [metTwin, setMetTwin] = createSignal(false)
@@ -221,6 +224,7 @@ export const MirrorApp: Component = () => {
     setRevealMode('flip')
     setIncludeTrace(true)
     setTwinTrace(false)
+    setTwinData(false)
     setMetTwin(false)
     // Drop a #take-N fragment so the landing isn't re-restored on reload.
     if (parseTakeHash(window.location.hash) !== null) {
@@ -571,6 +575,7 @@ export const MirrorApp: Component = () => {
     setRevealMode('flip')
     setIncludeTrace(true)
     setTwinTrace(false)
+    setTwinData(false)
     setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
     preloadLegendPortrait(attempt.result)
     paintCard(attempt.result, attempt.glides, attempt.deltaLine)
@@ -663,6 +668,7 @@ export const MirrorApp: Component = () => {
       voiceType: state.result.range?.voiceHint ?? null,
       legendImage: img,
       showTrace: twinTrace(),
+      showData: twinData(),
       result: state.result,
       glides: state.glides,
     })
@@ -909,6 +915,8 @@ export const MirrorApp: Component = () => {
           onToggleTrace={() => setIncludeTrace((v) => !v)}
           twinTrace={twinTrace()}
           onToggleTwinTrace={() => setTwinTrace((v) => !v)}
+          twinData={twinData()}
+          onToggleTwinData={() => setTwinData((v) => !v)}
           onToggleReveal={() => {
             const next = !revealed()
             setRevealed(next)
@@ -1095,6 +1103,9 @@ const Results: Component<{
   /** Card option: draw the trace over the twin card too (default off). */
   twinTrace: boolean
   onToggleTwinTrace: () => void
+  /** Card option: the run's data block on the twin card (default off). */
+  twinData: boolean
+  onToggleTwinData: () => void
   onToggleReveal: () => void
   onShare: () => void
   onShareTwin: () => void
@@ -1255,6 +1266,17 @@ const Results: Component<{
             >
               <IconTrace size={15} />
               Trace on twin {props.twinTrace ? 'on' : 'off'}
+            </button>
+            <button
+              type="button"
+              class="mirror-optchip"
+              classList={{ on: props.twinData }}
+              aria-pressed={props.twinData}
+              onClick={() => props.onToggleTwinData()}
+              title="Show your range, accuracy and steadiness on the twin card instead of the caption"
+            >
+              <IconStats size={15} />
+              Data on twin {props.twinData ? 'on' : 'off'}
             </button>
           </Show>
         </div>
