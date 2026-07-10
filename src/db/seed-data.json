@@ -1,128 +1,269 @@
 {
-  "$comment": "Definition seed data shared by the local Dexie seeder (src/db/seed.ts) and the remote D1 seeding script (scripts/seed-remote-db.mjs). Definitions only — no per-user mock data.",
+  "$comment": "Definition seed data shared by the local Dexie seeder (src/db/seed.ts) and the remote D1 seeding script (scripts/seed-remote-db.mjs). Definitions only — no per-user mock data. Challenge completion is real: one drill run scoring >= targetScore completes the challenge, so descriptions describe the drill that is actually scored. rewardBadgeId references a badge by NAME (ids are generated at seed time).",
   "challengeDefinitions": [
     {
-      "category": "high-notes",
-      "title": "High Note Hero",
-      "description": "Achieve 90%+ accuracy on C5 and higher notes",
-      "difficulty": "intermediate",
-      "icon": "mic",
-      "targetScore": 90,
+      "category": "basics",
+      "title": "Hold Your Note",
+      "description": "Pick a comfortable note and hold it steady — your first win is one breath away",
+      "difficulty": "beginner",
+      "icon": "leaf",
+      "targetScore": 40,
+      "rewardBadgeId": "First Victory",
       "isActive": true,
       "sortOrder": 1
     },
     {
-      "category": "high-notes",
-      "title": "Belting Master",
-      "description": "Maintain belting range (D4-C5) for 3 consecutive songs",
-      "difficulty": "advanced",
-      "icon": "fire",
-      "targetScore": 100,
+      "category": "basics",
+      "title": "Steady Voice",
+      "description": "Keep the held note centered — smooth and even from start to finish",
+      "difficulty": "beginner",
+      "icon": "music",
+      "targetScore": 55,
       "isActive": true,
       "sortOrder": 2
     },
     {
-      "category": "high-notes",
-      "title": "Above It All",
-      "description": "Reach F5 at least 5 times in practice sessions",
-      "difficulty": "advanced",
-      "icon": "rocket",
-      "targetScore": 50,
+      "category": "basics",
+      "title": "Rock Solid",
+      "description": "A long, confident hold with barely any drift",
+      "difficulty": "intermediate",
+      "icon": "diamond",
+      "targetScore": 70,
       "isActive": true,
       "sortOrder": 3
     },
     {
-      "category": "low-notes",
-      "title": "Deep Note King",
-      "description": "Achieve 90%+ accuracy on E3 and lower notes",
+      "category": "high-notes",
+      "title": "High Note Hero",
+      "description": "Glide up the siren to C5 territory and land the top notes cleanly",
       "difficulty": "intermediate",
-      "icon": "guitar",
-      "targetScore": 90,
+      "icon": "mic",
+      "targetScore": 75,
+      "rewardBadgeId": "High & Mighty",
       "isActive": true,
       "sortOrder": 4
     },
     {
-      "category": "low-notes",
-      "title": "Subwoofer Sound",
-      "description": "Maintain low register (E2-D4) consistently",
+      "category": "high-notes",
+      "title": "Belting Master",
+      "description": "Hold the upper siren targets steady — clean, tension-free power up high",
       "difficulty": "advanced",
-      "icon": "volume",
-      "targetScore": 100,
+      "icon": "fire",
+      "targetScore": 85,
       "isActive": true,
       "sortOrder": 5
     },
     {
-      "category": "speed",
-      "title": "Scale Speedster",
-      "description": "Complete a 3-octave scale in under 20 seconds",
-      "difficulty": "beginner",
-      "icon": "bolt",
-      "targetScore": 60,
+      "category": "high-notes",
+      "title": "Above It All",
+      "description": "Nail every note of the high siren run with near-perfect pitch",
+      "difficulty": "advanced",
+      "icon": "rocket",
+      "targetScore": 90,
       "isActive": true,
       "sortOrder": 6
     },
     {
-      "category": "speed",
-      "title": "Rapid Fire",
-      "description": "Hit 10 notes in under 3 seconds",
+      "category": "low-notes",
+      "title": "Deep Note King",
+      "description": "Lock your low C3–A3 notes onto the drone",
       "difficulty": "intermediate",
-      "icon": "stopwatch",
-      "targetScore": 80,
+      "icon": "guitar",
+      "targetScore": 75,
+      "rewardBadgeId": "Bass Foundation",
       "isActive": true,
       "sortOrder": 7
     },
     {
-      "category": "speed",
-      "title": "Climbing Eagle",
-      "description": "Ascend 2 octaves in under 5 seconds",
+      "category": "low-notes",
+      "title": "Subwoofer Sound",
+      "description": "Keep the low register perfectly centered on the drone — no drift",
       "difficulty": "advanced",
-      "icon": "eagle",
-      "targetScore": 50,
+      "icon": "volume",
+      "targetScore": 85,
       "isActive": true,
       "sortOrder": 8
     },
     {
-      "category": "perfect",
-      "title": "Perfect Pitch Pilot",
-      "description": "Hit 100% accuracy in a 10-note sequence",
-      "difficulty": "intermediate",
-      "icon": "target",
-      "targetScore": 100,
+      "category": "speed",
+      "title": "Scale Speedster",
+      "description": "Attack the staccato run cleanly — crisp starts, no scooping",
+      "difficulty": "beginner",
+      "icon": "bolt",
+      "targetScore": 55,
+      "rewardBadgeId": "Speed Demon",
       "isActive": true,
       "sortOrder": 9
     },
     {
-      "category": "perfect",
-      "title": "Crystal Clear",
-      "description": "Maintain 95%+ clarity across 3 sessions",
-      "difficulty": "advanced",
-      "icon": "diamond",
-      "targetScore": 95,
+      "category": "speed",
+      "title": "Rapid Fire",
+      "description": "Rapid staccato hits, every one on pitch",
+      "difficulty": "intermediate",
+      "icon": "stopwatch",
+      "targetScore": 80,
       "isActive": true,
       "sortOrder": 10
     },
     {
-      "category": "scales",
-      "title": "Major Scale Master",
-      "description": "Practice all 12 major scales this month",
-      "difficulty": "beginner",
-      "icon": "keyboard",
-      "targetScore": 12,
+      "category": "speed",
+      "title": "Climbing Eagle",
+      "description": "Blaze through the staccato run with near-perfect precision",
+      "difficulty": "advanced",
+      "icon": "eagle",
+      "targetScore": 90,
       "isActive": true,
       "sortOrder": 11
     },
     {
-      "category": "scales",
-      "title": "Minor Scale Sage",
-      "description": "Complete 8 minor scale practice sessions",
-      "difficulty": "beginner",
-      "icon": "moon",
-      "targetScore": 8,
+      "category": "perfect",
+      "title": "Perfect Pitch Pilot",
+      "description": "Sing the interval ladder within a hair of dead-center",
+      "difficulty": "intermediate",
+      "icon": "target",
+      "targetScore": 80,
+      "rewardBadgeId": "Perfect Start",
       "isActive": true,
       "sortOrder": 12
+    },
+    {
+      "category": "perfect",
+      "title": "Crystal Clear",
+      "description": "Hold ±15 cents or better across the whole interval ladder",
+      "difficulty": "advanced",
+      "icon": "diamond",
+      "targetScore": 92,
+      "isActive": true,
+      "sortOrder": 13
+    },
+    {
+      "category": "scales",
+      "title": "Major Scale Master",
+      "description": "Run the full C major scale evenly — every degree in tune",
+      "difficulty": "beginner",
+      "icon": "keyboard",
+      "targetScore": 70,
+      "rewardBadgeId": "Scale Scholar",
+      "isActive": true,
+      "sortOrder": 14
+    },
+    {
+      "category": "scales",
+      "title": "Minor Scale Sage",
+      "description": "Smooth, even scale degrees — keep the tone steady all the way up",
+      "difficulty": "intermediate",
+      "icon": "moon",
+      "targetScore": 80,
+      "isActive": true,
+      "sortOrder": 15
+    },
+    {
+      "category": "intervals",
+      "title": "Interval Pro",
+      "description": "Hear the gap, then sing it — thirds to fifths, clean",
+      "difficulty": "intermediate",
+      "icon": "trending",
+      "targetScore": 75,
+      "rewardBadgeId": "Interval Ace",
+      "isActive": true,
+      "sortOrder": 16
+    },
+    {
+      "category": "intervals",
+      "title": "Eagle Ear",
+      "description": "Every interval in the set, sung near-perfectly",
+      "difficulty": "advanced",
+      "icon": "eagle",
+      "targetScore": 88,
+      "isActive": true,
+      "sortOrder": 17
+    },
+    {
+      "category": "harmony",
+      "title": "Chord Whisperer",
+      "description": "Stack the chord one voice at a time — each note locked in",
+      "difficulty": "intermediate",
+      "icon": "piano",
+      "targetScore": 75,
+      "rewardBadgeId": "Harmony Builder",
+      "isActive": true,
+      "sortOrder": 18
+    },
+    {
+      "category": "harmony",
+      "title": "Drone Master",
+      "description": "Build the full four-note stack with every voice in tune",
+      "difficulty": "advanced",
+      "icon": "diamond",
+      "targetScore": 85,
+      "isActive": true,
+      "sortOrder": 19
+    },
+    {
+      "category": "agility",
+      "title": "Note Ninja",
+      "description": "Leap through the arpeggio with clean attacks — no sliding",
+      "difficulty": "intermediate",
+      "icon": "bolt",
+      "targetScore": 75,
+      "rewardBadgeId": "Agile Voice",
+      "isActive": true,
+      "sortOrder": 20
+    },
+    {
+      "category": "agility",
+      "title": "Arpeggio Ace",
+      "description": "Flawless arpeggio jumps, top to bottom",
+      "difficulty": "advanced",
+      "icon": "star",
+      "targetScore": 88,
+      "isActive": true,
+      "sortOrder": 21
+    },
+    {
+      "category": "range",
+      "title": "Range Rover",
+      "description": "Glide across two octaves with smooth register transitions",
+      "difficulty": "intermediate",
+      "icon": "chart",
+      "targetScore": 75,
+      "rewardBadgeId": "Full Spectrum",
+      "isActive": true,
+      "sortOrder": 22
+    },
+    {
+      "category": "dynamic",
+      "title": "Swell Rider",
+      "description": "Swell from soft to loud and back without losing the pitch",
+      "difficulty": "intermediate",
+      "icon": "volume",
+      "targetScore": 75,
+      "rewardBadgeId": "Dynamic Control",
+      "isActive": true,
+      "sortOrder": 23
+    },
+    {
+      "category": "call-response",
+      "title": "Echo Champion",
+      "description": "Listen to the phrase, then sing it back exactly",
+      "difficulty": "intermediate",
+      "icon": "refresh",
+      "targetScore": 80,
+      "rewardBadgeId": "Echo Artist",
+      "isActive": true,
+      "sortOrder": 24
     }
   ],
   "badgeDefinitions": [
+    {
+      "name": "First Victory",
+      "description": "Complete a basics challenge",
+      "icon": "rocket",
+      "tier": "bronze",
+      "category": "basics",
+      "unlockCondition": "Complete any basics challenge",
+      "sortOrder": 1
+    },
     {
       "name": "First Steps",
       "description": "Complete your first challenge",
@@ -130,7 +271,7 @@
       "tier": "bronze",
       "category": "challenges",
       "unlockCondition": "Complete 1 challenge",
-      "sortOrder": 1
+      "sortOrder": 2
     },
     {
       "name": "On Fire",
@@ -139,7 +280,7 @@
       "tier": "bronze",
       "category": "streak",
       "unlockCondition": "Maintain a 7-day practice streak",
-      "sortOrder": 2
+      "sortOrder": 3
     },
     {
       "name": "High & Mighty",
@@ -148,7 +289,7 @@
       "tier": "silver",
       "category": "high-notes",
       "unlockCondition": "Complete any high note challenge",
-      "sortOrder": 3
+      "sortOrder": 4
     },
     {
       "name": "Speed Demon",
@@ -157,7 +298,7 @@
       "tier": "silver",
       "category": "speed",
       "unlockCondition": "Complete any speed challenge",
-      "sortOrder": 4
+      "sortOrder": 5
     },
     {
       "name": "Perfect Start",
@@ -166,7 +307,7 @@
       "tier": "silver",
       "category": "perfect",
       "unlockCondition": "Complete any perfect pitch challenge",
-      "sortOrder": 5
+      "sortOrder": 6
     },
     {
       "name": "Scale Scholar",
@@ -175,7 +316,70 @@
       "tier": "bronze",
       "category": "scales",
       "unlockCondition": "Complete any scale challenge",
-      "sortOrder": 6
+      "sortOrder": 7
+    },
+    {
+      "name": "Bass Foundation",
+      "description": "Complete a low note challenge",
+      "icon": "guitar",
+      "tier": "bronze",
+      "category": "low-notes",
+      "unlockCondition": "Complete any low note challenge",
+      "sortOrder": 8
+    },
+    {
+      "name": "Interval Ace",
+      "description": "Complete an interval challenge",
+      "icon": "trending",
+      "tier": "silver",
+      "category": "intervals",
+      "unlockCondition": "Complete any interval challenge",
+      "sortOrder": 9
+    },
+    {
+      "name": "Harmony Builder",
+      "description": "Complete a harmony challenge",
+      "icon": "piano",
+      "tier": "silver",
+      "category": "harmony",
+      "unlockCondition": "Complete any harmony challenge",
+      "sortOrder": 10
+    },
+    {
+      "name": "Agile Voice",
+      "description": "Complete an agility challenge",
+      "icon": "star",
+      "tier": "silver",
+      "category": "agility",
+      "unlockCondition": "Complete any agility challenge",
+      "sortOrder": 11
+    },
+    {
+      "name": "Full Spectrum",
+      "description": "Complete a range challenge",
+      "icon": "chart",
+      "tier": "gold",
+      "category": "range",
+      "unlockCondition": "Complete any range challenge",
+      "sortOrder": 12
+    },
+    {
+      "name": "Dynamic Control",
+      "description": "Complete a dynamics challenge",
+      "icon": "volume",
+      "tier": "silver",
+      "category": "dynamic",
+      "unlockCondition": "Complete any dynamics challenge",
+      "sortOrder": 13
+    },
+    {
+      "name": "Echo Artist",
+      "description": "Complete a call & response challenge",
+      "icon": "refresh",
+      "tier": "silver",
+      "category": "call-response",
+      "unlockCondition": "Complete any call & response challenge",
+      "sortOrder": 14
     },
     {
       "name": "Streak Master",
@@ -184,7 +388,7 @@
       "tier": "gold",
       "category": "streak",
       "unlockCondition": "Reach a 14-day practice streak",
-      "sortOrder": 7
+      "sortOrder": 15
     },
     {
       "name": "All Star",
@@ -193,7 +397,7 @@
       "tier": "gold",
       "category": "meta",
       "unlockCondition": "Complete all bronze-tier badges",
-      "sortOrder": 8
+      "sortOrder": 16
     }
   ],
   "achievementDefinitions": [
@@ -203,7 +407,7 @@
       "icon": "paper",
       "points": 10,
       "condition": "Complete 10 practice sessions",
-      "required": 50,
+      "required": 10,
       "sortOrder": 1
     },
     {

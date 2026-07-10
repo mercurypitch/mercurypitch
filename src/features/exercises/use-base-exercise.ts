@@ -1,6 +1,8 @@
 import { batch, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import type { TracePoint } from './last-run-trace'
+import { downsampleTrace, publishRunTrace } from './last-run-trace'
 import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
 
 const MAX_PITCH_HISTORY = 2000
@@ -48,6 +50,10 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let animId = 0
   let startTime = 0
   let running = false
+  // Target-pitch timeline of the current run: one point per reference-tone
+  // change, on the same elapsed-seconds epoch as pitchHistory `.time`. Feeds
+  // the published run trace (pitch-race share / duet-with-past-self).
+  let targetTimeline: TracePoint[] = []
   // Controller cleanup callbacks. Registrations are PERSISTENT for the
   // component's lifetime: controllers register once at creation (closing
   // over their mutable timer handles / cancellation flags), and the base
@@ -108,6 +114,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       setCurrentPitch(null)
       setResult(null)
     })
+    targetTimeline = []
 
     if (!practiceEngine.isMicActive()) {
       const ok = await practiceEngine.startMic()
@@ -191,6 +198,18 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     running = false
     cancelAnimationFrame(animId)
     const finalElapsed = performance.now() - startTime
+    // Publish the run's contour BEFORE the result signal fires: the
+    // component's result effect calls recordExerciseResult, whose challenge
+    // return path reads the trace synchronously.
+    publishRunTrace({
+      type: exerciseResult.type,
+      completedAt: exerciseResult.completedAt,
+      durationMs: Math.round(finalElapsed),
+      samples: downsampleTrace(
+        getPitchHistory().map((p) => ({ t: p.time, f: p.freq })),
+      ),
+      targets: targetTimeline,
+    })
     batch(() => {
       setResult(exerciseResult)
       setState({
@@ -238,7 +257,16 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 
   function updateMetrics(metrics: Record<string, number>): void {
-    setState((s) => ({ ...s, metrics: { ...s.metrics, ...metrics } }))
+    setState((s) => {
+      const next = { ...s.metrics, ...metrics }
+      // Stamp phase transitions on the run clock so UI can animate the
+      // response window (remaining = matchWindowMs − (elapsedMs −
+      // phaseStartedMs)) without every controller threading timing through.
+      if ('phase' in metrics && metrics.phase !== s.metrics.phase) {
+        next.phaseStartedMs = performance.now() - startTime
+      }
+      return { ...s, metrics: next }
+    })
   }
 
   onCleanup(() => {
@@ -265,7 +293,17 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _updateScore: updateScore,
     _updateMetrics: updateMetrics,
     _completeWithResult: completeWithResult,
-    _setTargetPitch: setTargetPitch,
+    _setTargetPitch: (freq: number | null) => {
+      setTargetPitch(freq)
+      // Record reference-tone changes on the run's elapsed epoch (running
+      // only — controllers may pre-set a target before start()).
+      if (running && freq !== null && freq > 0) {
+        targetTimeline.push({
+          t: (performance.now() - startTime) / 1000,
+          f: freq,
+        })
+      }
+    },
     _getElapsed: () => performance.now() - startTime,
     _isRunning: () => running,
     _setRunning: (v: boolean) => {

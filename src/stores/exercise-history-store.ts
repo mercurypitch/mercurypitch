@@ -1,4 +1,5 @@
 import { updatePracticeStreak } from '@/db/services/streak-service'
+import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { createPersistedSignal } from '@/lib/storage'
@@ -35,6 +36,10 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
   })
+
+  // If this run was launched from a challenge, report the score back so the
+  // challenge records the attempt (and completes when the target is met).
+  void recordChallengeAttempt({ type: entry.type, score: entry.score })
 
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)

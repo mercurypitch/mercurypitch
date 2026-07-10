@@ -62,11 +62,18 @@ export interface SessionRecord extends DbEntity {
 // ── Challenges ──────────────────────────────────────────────────
 
 export type ChallengeCategory =
+  | 'basics'
   | 'high-notes'
   | 'low-notes'
   | 'speed'
   | 'perfect'
   | 'scales'
+  | 'intervals'
+  | 'harmony'
+  | 'agility'
+  | 'range'
+  | 'dynamic'
+  | 'call-response'
 
 export interface ChallengeDefinition extends DbEntity {
   category: ChallengeCategory

@@ -5,12 +5,26 @@
 // Seeds IndexedDB with initial data for hidden features.
 // Called once at app init. Idempotent — checks for seed flag.
 
-import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserAchievement, UserBadge, UserProfile, } from './entities'
+import type { Achievement, BadgeDefinition, ChallengeDefinition, LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserProfile, } from './entities'
 import seedData from './seed-data.json'
 import { getUserId as getPersistedUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
-const SEEDED_FLAG = 'db_seeded_v1'
+/** djb2 over a string, hex-encoded — tiny, deterministic, dependency-free. */
+function contentHash(input: string): string {
+  let hash = 5381
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) >>> 0
+  }
+  return hash.toString(16)
+}
+
+// The seed flag is derived from the seed-data content itself, so ANY edit to
+// seed-data.json re-runs the definition upsert exactly once per DB — no
+// manual version bumps to forget. Old flags (db_seeded_v1/v2/older hashes)
+// simply linger unread. Definitions upsert by title/name with stable ids,
+// so re-running never detaches per-user progress.
+const SEEDED_FLAG = `db_seeded_${contentHash(JSON.stringify(seedData))}`
 
 // ── Helper ──────────────────────────────────────────────────────
 
@@ -73,262 +87,59 @@ export function getUserId(): string {
 
 // ── Seed functions ──────────────────────────────────────────────
 
-async function seedChallengeDefinitions(
+/**
+ * Upsert definition rows keyed by a stable field (title/name): create the
+ * missing ones, update rows whose seeded fields changed (content updates
+ * like new targets or descriptions), leave everything else untouched.
+ * Existing rows keep their ids, so per-user progress stays attached.
+ */
+async function upsertDefinitions<T extends { id: string }>(
   db: DatabaseAdapter,
-): Promise<Map<string, string>> {
-  const repo = db.getRepository<ChallengeDefinition>('challengeDefinitions')
-  const existing = await repo.count()
-  if (existing > 0) return new Map()
-
-  const idMap = new Map<string, string>() // title → DB id
-  for (const def of challengeDefinitions) {
-    const created = await repo.create(def)
-    idMap.set(def.title, created.id)
-  }
-  return idMap
-}
-
-async function seedChallengeProgress(
-  db: DatabaseAdapter,
-  challengeIdMap: Map<string, string>,
+  table: string,
+  defs: ReadonlyArray<Record<string, unknown>>,
+  key: string,
 ): Promise<void> {
-  const repo = db.getRepository<ChallengeProgress>('challengeProgress')
-  const existing = await repo.count()
-  if (existing > 0) return
-
-  const userId = getDefaultUserId()
-  const progressData: Array<{
-    title: string
-    progress: number
-    currentScore: number
-    bestScore: number
-    status: ChallengeProgress['status']
-    completed: boolean
-    attempts: number
-  }> = [
-    {
-      title: 'High Note Hero',
-      progress: 75,
-      currentScore: 75,
-      bestScore: 82,
-      status: 'active',
-      completed: false,
-      attempts: 5,
-    },
-    {
-      title: 'Belting Master',
-      progress: 65,
-      currentScore: 65,
-      bestScore: 70,
-      status: 'active',
-      completed: false,
-      attempts: 3,
-    },
-    {
-      title: 'Above It All',
-      progress: 10,
-      currentScore: 10,
-      bestScore: 15,
-      status: 'active',
-      completed: false,
-      attempts: 1,
-    },
-    {
-      title: 'Deep Note King',
-      progress: 88,
-      currentScore: 88,
-      bestScore: 92,
-      status: 'active',
-      completed: false,
-      attempts: 4,
-    },
-    {
-      title: 'Subwoofer Sound',
-      progress: 20,
-      currentScore: 20,
-      bestScore: 20,
-      status: 'active',
-      completed: false,
-      attempts: 1,
-    },
-    {
-      title: 'Scale Speedster',
-      progress: 30,
-      currentScore: 30,
-      bestScore: 40,
-      status: 'active',
-      completed: false,
-      attempts: 3,
-    },
-    {
-      title: 'Rapid Fire',
-      progress: 45,
-      currentScore: 45,
-      bestScore: 55,
-      status: 'active',
-      completed: false,
-      attempts: 4,
-    },
-    {
-      title: 'Climbing Eagle',
-      progress: 5,
-      currentScore: 5,
-      bestScore: 8,
-      status: 'active',
-      completed: false,
-      attempts: 1,
-    },
-    {
-      title: 'Perfect Pitch Pilot',
-      progress: 85,
-      currentScore: 85,
-      bestScore: 90,
-      status: 'active',
-      completed: false,
-      attempts: 6,
-    },
-    {
-      title: 'Crystal Clear',
-      progress: 60,
-      currentScore: 60,
-      bestScore: 65,
-      status: 'active',
-      completed: false,
-      attempts: 2,
-    },
-    {
-      title: 'Major Scale Master',
-      progress: 42,
-      currentScore: 5,
-      bestScore: 5,
-      status: 'active',
-      completed: false,
-      attempts: 3,
-    },
-    {
-      title: 'Minor Scale Sage',
-      progress: 38,
-      currentScore: 3,
-      bestScore: 3,
-      status: 'active',
-      completed: false,
-      attempts: 2,
-    },
-  ]
-
-  for (const p of progressData) {
-    const challengeId = challengeIdMap.get(p.title)
-    if (challengeId === undefined) continue
-    await repo.create({
-      userId,
-      challengeId,
-      progress: p.progress,
-      currentScore: p.currentScore,
-      bestScore: p.bestScore,
-      status: p.status,
-      completed: p.completed,
-      attempts: p.attempts,
-    })
+  const repo = db.getRepository<T & { createdAt: string; updatedAt: string }>(
+    table,
+  )
+  const existing = (await repo.findAll()) as Array<Record<string, unknown>>
+  const byKey = new Map(existing.map((row) => [row[key], row]))
+  for (const def of defs) {
+    const found = byKey.get(def[key])
+    if (found === undefined) {
+      await repo.create(def as never)
+      continue
+    }
+    const changed = Object.keys(def).some(
+      (field) => def[field] !== found[field],
+    )
+    if (changed) {
+      await repo.update(found.id as string, def as never)
+    }
   }
 }
 
-async function seedBadgeDefinitions(
-  db: DatabaseAdapter,
-): Promise<Map<string, string>> {
-  const repo = db.getRepository<BadgeDefinition>('badgeDefinitions')
-  const existing = await repo.count()
-  if (existing > 0) return new Map()
-
-  const idMap = new Map<string, string>()
-  for (const def of badgeDefinitions) {
-    const created = await repo.create(def)
-    idMap.set(def.name, created.id)
-  }
-  return idMap
+async function seedChallengeDefinitions(db: DatabaseAdapter): Promise<void> {
+  await upsertDefinitions(
+    db,
+    'challengeDefinitions',
+    challengeDefinitions,
+    'title',
+  )
 }
 
-async function seedUserBadges(
-  db: DatabaseAdapter,
-  badgeIdMap: Map<string, string>,
-): Promise<void> {
-  const repo = db.getRepository<UserBadge>('userBadges')
-  const existing = await repo.count()
-  if (existing > 0) return
+// Per-user challenge progress, badges and achievements are NOT seeded:
+// they are earned through the real completion loop (see
+// src/features/challenges/challenge-attempt.ts and the badge grant engine).
+// The v1 seeder invented in-progress percentages and pre-earned badges,
+// which made the challenges tab lie to fresh local users.
 
-  const userId = getDefaultUserId()
-  const earnedBadges = [
-    { name: 'First Steps', daysAgo: 10 },
-    { name: 'On Fire', daysAgo: 7 },
-    { name: 'High & Mighty', daysAgo: 5 },
-    { name: 'Speed Demon', daysAgo: 3 },
-    { name: 'Perfect Start', daysAgo: 2 },
-    { name: 'Scale Scholar', daysAgo: 15 },
-  ]
-
-  for (const { name, daysAgo } of earnedBadges) {
-    const badgeId = badgeIdMap.get(name)
-    if (badgeId === undefined) continue
-    await repo.create({
-      userId,
-      badgeId,
-      earnedAt: new Date(
-        Date.now() - 1000 * 60 * 60 * 24 * daysAgo,
-      ).toISOString(),
-    })
-  }
+async function seedBadgeDefinitions(db: DatabaseAdapter): Promise<void> {
+  await upsertDefinitions(db, 'badgeDefinitions', badgeDefinitions, 'name')
 }
 
-async function seedAchievementDefinitions(
-  db: DatabaseAdapter,
-): Promise<Map<string, string>> {
-  const repo = db.getRepository<Achievement>('achievements')
-  const existing = await repo.count()
-  if (existing > 0) return new Map()
-
-  const idMap = new Map<string, string>()
-  for (const def of achievementDefinitions) {
-    const created = await repo.create(def)
-    idMap.set(def.name, created.id)
-  }
-  return idMap
-}
-
-async function seedUserAchievements(
-  db: DatabaseAdapter,
-  achievementIdMap: Map<string, string>,
-): Promise<void> {
-  const repo = db.getRepository<UserAchievement>('userAchievements')
-  const existing = await repo.count()
-  if (existing > 0) return
-
-  const userId = getDefaultUserId()
-  const progress: Array<{
-    name: string
-    progress: number
-    unlocked: boolean
-  }> = [
-    { name: '10 Notes', progress: 45, unlocked: true },
-    { name: '50 Sessions', progress: 45, unlocked: true },
-    { name: '3 Octaves', progress: 1, unlocked: false },
-    { name: 'High Note Master', progress: 15, unlocked: false },
-    { name: 'Perfect Run', progress: 0, unlocked: false },
-    { name: 'Speed Demon', progress: 2, unlocked: false },
-    { name: 'Scale Explorer', progress: 8, unlocked: false },
-  ]
-
-  for (const p of progress) {
-    const achievementId = achievementIdMap.get(p.name)
-    if (achievementId === undefined) continue
-    await repo.create({
-      userId,
-      achievementId,
-      progress: p.progress,
-      unlocked: p.unlocked,
-      unlockedAt: p.unlocked
-        ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
-        : undefined,
-    })
-  }
+async function seedAchievementDefinitions(db: DatabaseAdapter): Promise<void> {
+  await upsertDefinitions(db, 'achievements', achievementDefinitions, 'name')
 }
 
 async function seedLeaderboardEntries(db: DatabaseAdapter): Promise<void> {
@@ -492,15 +303,9 @@ async function seedUserProfile(db: DatabaseAdapter): Promise<void> {
 export async function seedAll(db: DatabaseAdapter): Promise<void> {
   if (await isSeeded(db)) return
 
-  // Seed in dependency order
-  const challengeIdMap = await seedChallengeDefinitions(db)
-  await seedChallengeProgress(db, challengeIdMap)
-
-  const badgeIdMap = await seedBadgeDefinitions(db)
-  await seedUserBadges(db, badgeIdMap)
-
-  const achievementIdMap = await seedAchievementDefinitions(db)
-  await seedUserAchievements(db, achievementIdMap)
+  await seedChallengeDefinitions(db)
+  await seedBadgeDefinitions(db)
+  await seedAchievementDefinitions(db)
 
   await seedLeaderboardEntries(db)
   await seedUserProfile(db)

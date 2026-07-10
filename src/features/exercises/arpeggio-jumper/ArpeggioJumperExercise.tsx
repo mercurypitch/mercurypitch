@@ -12,9 +12,11 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
+import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
+import type { ArpeggioMode } from './use-arpeggio-jumper-controller'
 import { useArpeggioJumperController } from './use-arpeggio-jumper-controller'
 
 interface ArpeggioJumperExerciseProps {
@@ -49,6 +51,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   )
   const [arpeggioType, setArpeggioType] = createSignal<ArpeggioType>('major')
   const [direction, setDirection] = createSignal<'up' | 'down'>('up')
+  const [mode, setMode] = createSignal<ArpeggioMode>('steps')
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
@@ -63,7 +66,12 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
-    controller.setArpeggio(noteToMidi(startNote()), arpeggioType(), direction())
+    controller.setArpeggio(
+      noteToMidi(startNote()),
+      arpeggioType(),
+      direction(),
+      mode(),
+    )
     if (!(await base.start())) return
     controller.startArpeggio()
   }
@@ -97,10 +105,10 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
 
   const isActive = () => base.state().status === 'active'
   const phase = () => base.state().metrics.phase ?? 0
+  const isEcho = () => (base.state().metrics.echo ?? 0) === 1
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const noteIndex = () => base.state().metrics.noteIndex ?? 0
   const arpeggioLength = () => base.state().metrics.arpeggioLength ?? 4
-  const notesCompleted = () => base.state().metrics.notesCompleted ?? 0
   const lastNoteScore = () => base.state().metrics.lastNoteScore ?? 0
 
   const pitch = () => base.currentPitch()
@@ -126,11 +134,13 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
         <div class="exercise-idle-placeholder">
           <IconLayers size={48} />
           <p>
-            Sing chord tones one at a time. Master the leaps between root,
-            third, fifth, and octave.
+            {mode() === 'echo'
+              ? 'Hear the whole arpeggio, then sing it back from memory — train your inner ear, not just your pitch.'
+              : 'Sing chord tones one at a time. Master the leaps between root, third, fifth, and octave.'}
           </p>
           <span class="idle-hint">
-            4 notes · {arpeggioType()} · {direction()}
+            4 notes · {arpeggioType()} · {direction()} ·{' '}
+            {mode() === 'echo' ? 'echo the phrase' : 'note by note'}
           </span>
         </div>
       }
@@ -167,6 +177,30 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               <option value="down">Descending</option>
             </select>
           </div>
+          <div
+            class="exercise-timer-toggle"
+            role="group"
+            aria-label="Interaction mode"
+          >
+            <button
+              type="button"
+              class="exercise-timer-segment"
+              classList={{ active: mode() === 'steps' }}
+              onClick={() => setMode('steps')}
+              title="One note plays, you sing it back, then the next"
+            >
+              Note by note
+            </button>
+            <button
+              type="button"
+              class="exercise-timer-segment"
+              classList={{ active: mode() === 'echo' }}
+              onClick={() => setMode('echo')}
+              title="The whole arpeggio plays first, then you repeat it from memory"
+            >
+              Echo the phrase
+            </button>
+          </div>
         </>
       }
       onStart={() => void handleStart()}
@@ -183,11 +217,15 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
               {phase() === 1 ? (
                 <>
-                  <IconMusic size={16} /> Listen to the note...
+                  <IconMusic size={16} />{' '}
+                  {isEcho()
+                    ? 'Listen to the whole arpeggio...'
+                    : 'Listen to the note...'}
                 </>
               ) : phase() === 2 ? (
                 <>
-                  <IconMic size={16} /> Sing it back!
+                  <IconMic size={16} />{' '}
+                  {isEcho() ? 'Now sing it all back!' : 'Sing it back!'}
                 </>
               ) : (
                 '...'
@@ -199,6 +237,8 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               </span>
             )}
           </div>
+
+          <ExerciseFeedback state={base.state} />
 
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: arpeggioLength() })}>
@@ -240,11 +280,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             )}
           </div>
 
-          {notesCompleted() > 0 && lastNoteScore() > 0 && (
-            <div class="mirror-melody-note-feedback">
-              Last note: <span>{lastNoteScore()}%</span>
-            </div>
-          )}
+          {/* Per-note tier word + combo now come from ExerciseFeedback; the
+              bare "Last note: N%" line it replaced was the audit's example
+              of numeric-but-mute feedback. */}
         </>
       }
       resultSummary={
