@@ -7,7 +7,7 @@ import { batch, createEffect, createResource, createSignal, For, lazy, on, onCle
 import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
-import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, } from '@/db/services/session-export-service'
+import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
@@ -201,7 +201,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     'uvr-session-gallery-open',
     true,
   )
-  const [importFile, setImportFile] = createSignal<File | null>(null)
+  const [importFiles, setImportFiles] = createSignal<File[]>([])
   const [showImportGroupSelect, setShowImportGroupSelect] = createSignal(false)
   const [importTargetGroupId, setImportTargetGroupId] = createSignal<
     string | null
@@ -223,37 +223,108 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
-  const handleImportZip = async (e: Event) => {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-    if (!file) return
-
-    // Store file and show group selection dialog
-    setImportFile(file)
+  /** Store the ZIP(s) and show the group selection dialog. Entry point for
+   *  the import button, the upload drop zone, and whole-view drops. */
+  const startZipImport = (files: File[]) => {
+    if (isImporting()) return
+    const zips = files.filter(isZipFile)
+    if (zips.length === 0) return
+    setImportFiles(zips)
     setImportTargetGroupId(null)
     setShowImportGroupSelect(true)
+  }
+
+  const handleImportZip = (e: Event) => {
+    const input = e.target as HTMLInputElement
+    const files = input.files ? [...input.files] : []
     input.value = ''
+    startZipImport(files)
   }
 
   const handleConfirmImport = async () => {
-    const file = importFile()
-    if (!file) return
+    const files = importFiles()
+    if (files.length === 0) return
 
     setShowImportGroupSelect(false)
     setIsImporting(true)
-    showNotification('Extracting sessions from ZIP...', 'info')
+    showNotification(
+      files.length === 1
+        ? 'Extracting sessions from ZIP...'
+        : `Extracting sessions from ${files.length} ZIP files...`,
+      'info',
+    )
     try {
-      const count = await importSessionsFromZip(
-        file,
-        importTargetGroupId() ?? undefined,
-      )
-      showNotification(`Successfully imported ${count} session(s).`, 'success')
-    } catch (_err) {
-      showNotification('Failed to import sessions.', 'error')
+      let imported = 0
+      let failed = 0
+      for (const file of files) {
+        try {
+          imported += await importSessionsFromZip(
+            file,
+            importTargetGroupId() ?? undefined,
+          )
+        } catch (_err) {
+          failed++
+        }
+      }
+      if (imported === 0) {
+        showNotification('Failed to import sessions.', 'error')
+      } else if (failed > 0) {
+        showNotification(
+          `Imported ${imported} session(s); ${failed} ZIP file(s) failed.`,
+          'warning',
+        )
+      } else {
+        showNotification(
+          `Successfully imported ${imported} session(s).`,
+          'success',
+        )
+      }
     } finally {
       setIsImporting(false)
-      setImportFile(null)
+      setImportFiles([])
     }
+  }
+
+  // Whole-view ZIP drop: exported sessions can be dropped on the session list
+  // too, not just the upload zone. Depth-counted like the upload zone since
+  // dragenter/dragleave fire for every child crossed.
+  let zipDragDepth = 0
+  const [zipDragActive, setZipDragActive] = createSignal(false)
+
+  const dragMayContainZip = (e: DragEvent): boolean => {
+    const items = e.dataTransfer?.items
+    if (!items) return false
+    // MIME is empty on some platforms mid-drag — treat unknown as a candidate.
+    return Array.from(items).some(
+      (it) => it.kind === 'file' && (it.type === '' || it.type.includes('zip')),
+    )
+  }
+
+  const handleZipDragEnter = (e: DragEvent) => {
+    if (isImporting() || !dragMayContainZip(e)) return
+    zipDragDepth++
+    setZipDragActive(true)
+  }
+
+  const handleZipDragOver = (e: DragEvent) => {
+    // Allow dropping any files so a stray audio drop on the list doesn't
+    // navigate the whole app away to the file.
+    if (e.dataTransfer?.types.includes('Files') === true) e.preventDefault()
+  }
+
+  const handleZipDragLeave = () => {
+    zipDragDepth = Math.max(0, zipDragDepth - 1)
+    if (zipDragDepth === 0) setZipDragActive(false)
+  }
+
+  const handleZipDrop = (e: DragEvent) => {
+    zipDragDepth = 0
+    setZipDragActive(false)
+    if (e.defaultPrevented) return // upload zone already handled this drop
+    e.preventDefault()
+    const files = e.dataTransfer?.files
+    if (!files || files.length === 0) return
+    startZipImport([...files])
   }
 
   const handleCreateImportGroup = async () => {
@@ -1387,7 +1458,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           )}
 
           <Show when={currentView() === 'upload'}>
-            <div class="view-section upload-section" data-testid="uvr-upload">
+            <div
+              class="view-section upload-section"
+              classList={{ 'zip-drop-target': zipDragActive() }}
+              data-testid="uvr-upload"
+              onDragEnter={handleZipDragEnter}
+              onDragOver={handleZipDragOver}
+              onDragLeave={handleZipDragLeave}
+              onDrop={handleZipDrop}
+            >
               <div class="section-header">
                 <h4>Upload Audio</h4>
               </div>
@@ -1396,6 +1475,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 onFileSelect={(file) => {
                   void handleFileSelect(file)
                 }}
+                onImportZips={startZipImport}
                 onFileReady={(file) => setSelectedFile(file)}
                 onProcessStart={(file) => {
                   void handleProcessStart(file)
@@ -1486,15 +1566,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </Show>
                   <label
                     class="section-action-btn icon-only"
-                    title="Import sessions from a ZIP file"
+                    title="Import sessions from ZIP files (multi-select supported)"
                     style={{ cursor: isImporting() ? 'default' : 'pointer' }}
                   >
                     <ImportFile />
                     <input
                       type="file"
                       accept=".zip"
+                      multiple
                       style={{ display: 'none' }}
-                      onChange={(e) => void handleImportZip(e)}
+                      onChange={handleImportZip}
                       disabled={isImporting()}
                     />
                   </label>
@@ -1875,15 +1956,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             class="delete-all-overlay"
             onClick={() => {
               setShowImportGroupSelect(false)
-              setImportFile(null)
+              setImportFiles([])
             }}
           >
             <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
               <h4>Import to Group</h4>
               <p>
+                {importFiles().length > 1
+                  ? `Importing ${importFiles().length} ZIP files. `
+                  : ''}
                 Choose a target group for the imported sessions, or leave
                 ungrouped.
               </p>
+              <ul class="import-zip-file-list">
+                <For each={importFiles()}>{(f) => <li>{f.name}</li>}</For>
+              </ul>
               <div
                 class="session-group-assign-menu"
                 style="position: static; box-shadow: none; margin-bottom: 0.75rem;"
@@ -1940,7 +2027,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="delete-all-cancel"
                   onClick={() => {
                     setShowImportGroupSelect(false)
-                    setImportFile(null)
+                    setImportFiles([])
                   }}
                 >
                   Cancel
@@ -1949,7 +2036,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="delete-all-confirm"
                   onClick={() => void handleConfirmImport()}
                 >
-                  Import{importTargetGroupId() != null ? ' to group' : ''}
+                  Import
+                  {importFiles().length > 1
+                    ? ` ${importFiles().length} ZIPs`
+                    : ''}
+                  {importTargetGroupId() != null ? ' to group' : ''}
                 </button>
               </div>
             </div>
