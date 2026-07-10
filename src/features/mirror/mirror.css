@@ -852,6 +852,14 @@ body {
   box-shadow: 0 10px 30px rgba(140, 130, 255, 0.28);
 }
 
+/* Card-option chips as one centred row. */
+.mirror-cardopts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
 /* Small pressed-state chip for card options (pitch trace on/off). */
 .mirror-optchip {
   appearance: none;
