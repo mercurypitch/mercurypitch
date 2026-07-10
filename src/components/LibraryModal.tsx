@@ -567,7 +567,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div class={modalStyles.modalOverlay} onClick={() => props.close()}>
+      <div
+        class={`${modalStyles.modalOverlay} modal-overlay`}
+        onClick={() => props.close()}
+      >
         <div
           class={`${modalStyles.libraryModal} library-modal`}
           ref={dialogRef}
@@ -579,7 +582,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
           <div class={modalStyles.libraryHeader}>
             <h2>Library</h2>
             <button
-              class={modalStyles.closeBtn}
+              class={`${modalStyles.closeBtn} close-btn`}
               onClick={() => props.close()}
               aria-label="Close"
             >
@@ -594,7 +597,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
           <div class={modalStyles.libraryTabs}>
             <button
-              class={`${modalStyles.libraryModalTab} ${activeTab() === 'melodies' ? modalStyles.active : ''}`}
+              class={`${modalStyles.libraryModalTab} library-modal-tab ${activeTab() === 'melodies' ? `${modalStyles.active} active` : ''}`}
               onClick={() => setActiveTab('melodies')}
               aria-label="Melodies"
               title="Melodies"
@@ -606,7 +609,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               </span>
             </button>
             <button
-              class={`${modalStyles.libraryModalTab} ${activeTab() === 'playlists' ? modalStyles.active : ''}`}
+              class={`${modalStyles.libraryModalTab} library-modal-tab ${activeTab() === 'playlists' ? `${modalStyles.active} active` : ''}`}
               onClick={() => setActiveTab('playlists')}
               aria-label="Playlists"
               title="Playlists"
@@ -624,7 +627,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               {/* Search */}
               <input
                 type="text"
-                class={modalStyles.searchInput}
+                class={`${modalStyles.searchInput} search-input`}
                 placeholder="Search melodies..."
                 value={searchQuery()}
                 onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -903,7 +906,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   return (
                     <>
                       <button
-                        class={`${modalStyles.actionBtn} ${modalStyles.playBtn}`}
+                        class={`${modalStyles.actionBtn} ${modalStyles.playBtn} action-btn play-btn`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handlePlay(melody)
@@ -916,7 +919,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class={`${modalStyles.actionBtn} load-btn`}
+                        class={`${modalStyles.actionBtn} action-btn load-btn`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleLoad(melody)
@@ -932,7 +935,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class={`${modalStyles.actionBtn} ${modalStyles.editBtn}`}
+                        class={`${modalStyles.actionBtn} ${modalStyles.editBtn} action-btn edit-btn`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleEdit(melody)
@@ -948,7 +951,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </svg>
                       </button>
                       <button
-                        class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn}`}
+                        class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn} action-btn delete-btn`}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDelete(item.id)
@@ -1058,7 +1061,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     <label>Search melodies...</label>
                     <input
                       type="text"
-                      class={modalStyles.searchInput}
+                      class={`${modalStyles.searchInput} search-input`}
                       placeholder="Type to search melodies..."
                       value={addMelodySearch()}
                       onInput={(e) => setAddMelodySearch(e.currentTarget.value)}
@@ -1127,7 +1130,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     <label>Playlist Name</label>
                     <input
                       type="text"
-                      class={modalStyles.searchInput}
+                      class={`${modalStyles.searchInput} search-input`}
                       value={renameInput()}
                       onInput={(e) => setRenameInput(e.currentTarget.value)}
                       placeholder="My Playlist"
@@ -1172,7 +1175,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     <label>New Name</label>
                     <input
                       type="text"
-                      class={modalStyles.searchInput}
+                      class={`${modalStyles.searchInput} search-input`}
                       value={renameInput()}
                       onInput={(e) => setRenameInput(e.currentTarget.value)}
                       placeholder="Playlist name"
@@ -1296,7 +1299,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     {([_id, playlist]) => {
                       return (
                         <div
-                          class={modalStyles.playlistItem}
+                          class={`${modalStyles.playlistItem} playlist-item`}
                           draggable={dragState()?.type === 'melody'}
                           onDragStart={(e) => handleDragStartPlaylist(e, _id)}
                           onDragEnd={handleDragEnd}
@@ -1324,7 +1327,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           </div>
                           <div class={modalStyles.itemActions}>
                             <button
-                              class={`${modalStyles.actionBtn} ${modalStyles.playBtn}`}
+                              class={`${modalStyles.actionBtn} ${modalStyles.playBtn} action-btn play-btn`}
                               onClick={() => {
                                 handlePlayPlaylist(_id)
                               }}
@@ -1336,7 +1339,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               </svg>
                             </button>
                             <button
-                              class={`${modalStyles.actionBtn} ${modalStyles.editBtn}`}
+                              class={`${modalStyles.actionBtn} ${modalStyles.editBtn} action-btn edit-btn`}
                               onClick={() => startAddMelodyMode(_id)}
                               title="Add Melody"
                               aria-label="Add Melody"
@@ -1349,7 +1352,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               </svg>
                             </button>
                             <button
-                              class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn}`}
+                              class={`${modalStyles.actionBtn} ${modalStyles.deleteBtn} action-btn delete-btn`}
                               onClick={() =>
                                 setPlaylistEditing({
                                   mode: 'delete',
