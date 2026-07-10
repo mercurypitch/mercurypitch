@@ -589,8 +589,11 @@ async function handleLeaderboard(
 
 const MIRROR_EVENTS = new Set([
   'mirror_view',
+  'howto_view',
+  'howto_done',
   'mic_granted',
   'mic_denied',
+  'task_intro_done',
   'task_glide_done',
   'task_hold_done',
   'task_match_done',
