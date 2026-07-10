@@ -9,6 +9,7 @@
 import type { ExerciseType } from '@/features/exercises/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { exerciseHistory } from '@/stores/exercise-history-store'
+import { showNotification } from '@/stores/notifications-store'
 import { clampDifficulty, getSuggestedDifficulty } from './adaptive-difficulty'
 
 const STORAGE_KEY = 'mercurypitch_exercise_difficulty'
@@ -73,6 +74,14 @@ export function updateDifficultyFromEma(type: ExerciseType): number | null {
       ...prev,
       [type]: count,
     }))
+    // The adaptive engine used to adjust silently — surfacing the change is
+    // the cheapest progression mechanic we have (UX audit finding 6).
+    showNotification(
+      difficulty > current
+        ? `Level up! This drill is now Lv ${difficulty}`
+        : `Level eased to Lv ${difficulty} — keep at it`,
+      difficulty > current ? 'success' : 'info',
+    )
     return difficulty
   }
   return null

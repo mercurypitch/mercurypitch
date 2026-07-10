@@ -1779,3 +1779,177 @@
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Live feedback strip (ExerciseFeedback): window bar, tier, combo ── */
+
+.exercise-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  margin: 4px 0;
+}
+
+.exercise-window-bar {
+  width: min(320px, 70%);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.exercise-window-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.exercise-feedback-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+}
+
+.exercise-tier-flash {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  animation: tier-pop 0.9s ease-out;
+}
+
+.exercise-tier-flash.perfect {
+  color: var(--green);
+}
+
+.exercise-tier-flash.great {
+  color: var(--accent);
+}
+
+.exercise-tier-flash.close {
+  color: var(--yellow);
+}
+
+.exercise-tier-flash.missed {
+  color: var(--text-muted);
+}
+
+.exercise-combo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  animation: tier-pop 0.4s ease-out;
+}
+
+@keyframes tier-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Result card (ExerciseShell complete state) ── */
+
+.exercise-result-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  animation: tier-pop 0.5s ease-out;
+}
+
+.exercise-result-grade {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  min-width: 48px;
+  text-align: center;
+}
+
+.exercise-result-card.grade-s .exercise-result-grade {
+  color: var(--green);
+}
+
+.exercise-result-card.grade-a .exercise-result-grade {
+  color: var(--accent);
+}
+
+.exercise-result-card.grade-b .exercise-result-grade {
+  color: var(--teal);
+}
+
+.exercise-result-card.grade-c .exercise-result-grade {
+  color: var(--yellow);
+}
+
+.exercise-result-card.grade-d .exercise-result-grade {
+  color: var(--text-muted);
+}
+
+.exercise-result-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.exercise-result-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.exercise-result-best {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: tier-pop 0.7s ease-out;
+}
+
+.exercise-result-delta {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.exercise-result-delta.up {
+  color: var(--green);
+}
+
+.exercise-result-summary {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* ── Adaptive level chip (header) ── */
+
+.exercise-level-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 3px 9px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}

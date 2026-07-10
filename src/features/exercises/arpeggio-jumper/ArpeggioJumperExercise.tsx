@@ -12,6 +12,7 @@ import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
+import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -108,7 +109,6 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const noteIndex = () => base.state().metrics.noteIndex ?? 0
   const arpeggioLength = () => base.state().metrics.arpeggioLength ?? 4
-  const notesCompleted = () => base.state().metrics.notesCompleted ?? 0
   const lastNoteScore = () => base.state().metrics.lastNoteScore ?? 0
 
   const pitch = () => base.currentPitch()
@@ -238,6 +238,8 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             )}
           </div>
 
+          <ExerciseFeedback state={base.state} />
+
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: arpeggioLength() })}>
               {(_, i) => (
@@ -278,11 +280,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             )}
           </div>
 
-          {notesCompleted() > 0 && lastNoteScore() > 0 && (
-            <div class="mirror-melody-note-feedback">
-              Last note: <span>{lastNoteScore()}%</span>
-            </div>
-          )}
+          {/* Per-note tier word + combo now come from ExerciseFeedback; the
+              bare "Last note: N%" line it replaced was the audit's example
+              of numeric-but-mute feedback. */}
         </>
       }
       resultSummary={
