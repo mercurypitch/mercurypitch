@@ -76,6 +76,7 @@ import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
+import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -1432,6 +1433,10 @@ const AppShell: Component<AppProps> = (props) => {
         'info',
       ),
   })
+
+  // Product funnel: app_open, deduped to one per browser session inside
+  // the analytics module.
+  onMount(() => trackEvent('app_open'))
 
   // Restore the imported song behind the current melody on reload. Melodies
   // persist (melody store), but singingSong is a fresh signal each load, so

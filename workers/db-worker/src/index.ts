@@ -609,13 +609,15 @@ async function handleLeaderboard(
   return respond({ total: ranked.length, entries: page })
 }
 
-// ── Voice Mirror funnel ──────────────────────────────────────────────
-// Anonymous, rate-limited event sink for mercurypitch.com/mirror. The
-// mirrorEvents table is deliberately NOT in the TABLES allowlist — this
-// endpoint is its only writer, and there is no public reader.
-// Keep the event list in sync with src/features/mirror/funnel.ts.
+// ── Funnel events (Voice Mirror + app) ───────────────────────────────
+// Anonymous, rate-limited event sink shared by the Voice Mirror funnel
+// and the app's product funnel. The mirrorEvents table is deliberately
+// NOT in the TABLES allowlist — this endpoint is its only writer, and
+// there is no public reader. Keep the event list in sync with
+// src/features/mirror/funnel.ts and src/lib/analytics.ts.
 
-const MIRROR_EVENTS = new Set([
+const FUNNEL_EVENTS = new Set([
+  // Voice Mirror funnel (src/features/mirror/funnel.ts)
   'mirror_view',
   'howto_view',
   'howto_done',
@@ -632,6 +634,18 @@ const MIRROR_EVENTS = new Set([
   'free_sing_done',
   'cosmic_done',
   'twin_revealed',
+  // App funnel (src/lib/analytics.ts)
+  'app_open',
+  'signup',
+  'session_complete',
+  'challenge_attempt',
+  'pricing_view',
+  'checkout_start',
+  // Reserved for the weekly-challenge/email releases, so those client
+  // rollouts need no worker redeploy.
+  'weekly_join',
+  'weekly_attempt',
+  'email_click',
 ])
 
 // Derived numbers only (range/accuracy/steadiness) — never audio.
@@ -690,7 +704,7 @@ async function handleMirrorEvent(
   if (typeof clientId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(clientId)) {
     return respond({ error: 'Invalid clientId' }, { status: 400 })
   }
-  if (typeof event !== 'string' || !MIRROR_EVENTS.has(event)) {
+  if (typeof event !== 'string' || !FUNNEL_EVENTS.has(event)) {
     return respond({ error: 'Invalid event' }, { status: 400 })
   }
 

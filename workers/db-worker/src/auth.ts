@@ -793,9 +793,13 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
 
-  const { row } = await resolveGoogleUser(claims, state.deviceId, env)
+  const { row, isNew } = await resolveGoogleUser(claims, state.deviceId, env)
   const token = await createSession(env, row)
-  return redirect(`${state.returnTo}#gauth=${encodeURIComponent(token)}`)
+  // gauth_new lets the client count first-time signups (funnel) — the token
+  // alone can't distinguish a signup from a returning login.
+  return redirect(
+    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}`,
+  )
 }
 
 async function handleMe(request: Request, env: Env, respond: Respond): Promise<Response> {

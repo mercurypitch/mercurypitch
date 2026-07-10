@@ -62,22 +62,19 @@ function beacon(
   const url = `${API_BASE_URL}/api/mirror/event`
   const payload = JSON.stringify({ clientId: clientId(), event, metrics })
   try {
-    // sendBeacon survives page unloads (card_shared / cta_app_click fire
-    // right before navigation); fall back to keepalive fetch.
-    if (
-      typeof navigator.sendBeacon === 'function' &&
-      navigator.sendBeacon(
-        url,
-        new Blob([payload], { type: 'application/json' }),
-      )
-    ) {
-      return
-    }
+    // NOT navigator.sendBeacon: it is always credentialed, and the worker
+    // answers CORS with a wildcard origin — the browser then drops the
+    // request after a passing preflight while sendBeacon still reports
+    // success (this silently lost every cross-origin funnel event).
+    // keepalive fetch with credentials omitted survives page unloads
+    // (card_shared / cta_app_click fire right before navigation) and is
+    // compatible with the wildcard.
     void fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
       keepalive: true,
+      credentials: 'omit',
     }).catch(() => undefined)
   } catch {
     // Telemetry must never break the product.
