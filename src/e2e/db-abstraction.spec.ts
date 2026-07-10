@@ -101,13 +101,20 @@ test.describe('Database Abstraction Layer', () => {
   test('Seed data flag is set after DB creation', async ({ page }) => {
     await ensureDb(page)
 
+    // The seed flag key is derived from a hash of seed-data.json
+    // (db_seeded_<hash>, see src/db/seed.ts) so content edits reseed
+    // automatically — assert by prefix instead of a hardcoded version.
     const isSeeded = await withIndexedDB<boolean>(
       page,
       `const tx = db.transaction('featureFlags', 'readonly');
        const store = tx.objectStore('featureFlags');
        return new Promise((resolve, reject) => {
-         const getReq = store.index('key').get('db_seeded_v1');
-         getReq.onsuccess = () => resolve(getReq.result?.value === true);
+         const getReq = store.getAll();
+         getReq.onsuccess = () => resolve(
+           (getReq.result ?? []).some(
+             (f) => String(f.key).startsWith('db_seeded_') && f.value === true,
+           ),
+         );
          getReq.onerror = () => reject(getReq.error);
        })`,
     )
