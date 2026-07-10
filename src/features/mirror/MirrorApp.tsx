@@ -106,6 +106,9 @@ export const MirrorApp: Component = () => {
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
+  // The saved take number of the run on screen (null for unsaved/demo runs);
+  // personalises download filenames ("…-take-3-…").
+  const [takeN, setTakeN] = createSignal<number | null>(null)
   const [mode, setMode] = createSignal<'guided' | 'free'>('guided')
   // "How it works" overview — UI-only, shown over the idle phase. Opens
   // automatically for first-timers on "Start singing"; replayable from the
@@ -250,6 +253,7 @@ export const MirrorApp: Component = () => {
     setFreePhase(null)
     setFreeResult(null)
     setDeltaLine(null)
+    setTakeN(null)
     setShareStatus(null)
     setMicError(null)
     setMicSilent(false)
@@ -610,6 +614,7 @@ export const MirrorApp: Component = () => {
       glides: state.glides,
       deltaLine: line,
     })
+    setTakeN(attempt?.n ?? null)
     if (attempt !== null) {
       history.replaceState(null, '', `#${takeHash(attempt.n)}`)
     }
@@ -635,6 +640,7 @@ export const MirrorApp: Component = () => {
     setTwinTrace(false)
     setTwinData(false)
     setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
+    setTakeN(n)
     preloadLegendPortrait(attempt.result)
     paintCard(attempt.result, attempt.glides, attempt.deltaLine)
     setSession({
@@ -693,11 +699,13 @@ export const MirrorApp: Component = () => {
   }
 
   /** The clean data story card — legend as a circular medallion + name pill
-   *  once revealed; honours the "pitch trace" card option. */
+   *  once revealed; honours the "pitch trace" card option. Keyed on metTwin
+   *  (sticky), not the current flip state, so the share always matches the
+   *  on-screen front card — flipping back must not strip the medallion. */
   function buildStoryCard(): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
-    const legend = revealed() ? singerForRange(state.result.range) : null
+    const legend = metTwin() ? singerForRange(state.result.range) : null
     return renderCard(
       {
         result: state.result,
@@ -732,15 +740,38 @@ export const MirrorApp: Component = () => {
     })
   }
 
-  /** Whether the twin share/copy variant is possible right now. */
-  const twinReady = (): boolean => revealed() && legendImage() !== null
+  /** Whether the twin share variant is possible — once the twin has been
+   *  met it stays available even after flipping back to the data face. */
+  const twinReady = (): boolean => metTwin() && legendImage() !== null
+
+  /** Personal, distinct download names — never a model or asset name.
+   *  e.g. "voice-twin-elvis-presley-take-3-2026-07-10.png" vs
+   *  "voiceprint-take-3-2026-07-10.png", so saving both variants of the
+   *  same run never collides. */
+  function cardFilename(withTwin: boolean): string {
+    const parts = [withTwin ? 'voice-twin' : 'voiceprint']
+    if (withTwin) {
+      const legend = singerForRange(session().result?.range ?? null)
+      if (legend !== null) {
+        parts.push(
+          legend
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
+        )
+      }
+    }
+    const take = takeN()
+    if (take !== null) parts.push(`take-${take}`)
+    return datedFilename(parts.join('-'))
+  }
 
   async function onShare(withTwin = false): Promise<void> {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await shareCard(
       await cardToPngBlob(card),
-      datedFilename(withTwin ? 'voice-twin' : 'voiceprint'),
+      cardFilename(withTwin),
     )
     trackFunnel('card_shared')
     setShareStatus(
@@ -749,8 +780,10 @@ export const MirrorApp: Component = () => {
   }
 
   async function onCopy(): Promise<void> {
-    // Copy mirrors the richest available variant: twin once revealed.
-    const card = twinReady() ? buildTwinCard() : buildStoryCard()
+    // Copy mirrors the face on screen: the twin while it's face-up,
+    // otherwise the data card (with the medallion once the twin is met).
+    const card =
+      revealed() && legendImage() !== null ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')

@@ -89,8 +89,17 @@ export function renderCard(
   if (input.showTrace !== false) {
     drawVoiceTrace(ctx, input, width, traceTop, traceBottom)
   }
-  drawStats(ctx, input, width, height, traceBottom, isStory)
-  drawFooter(ctx, width, height)
+  // The medallion layout shifts the stats column right — the footer follows
+  // it so the whole bottom block reads as one centred unit.
+  const statsCenterX = drawStats(
+    ctx,
+    input,
+    width,
+    height,
+    traceBottom,
+    isStory,
+  )
+  drawFooter(ctx, width, height, statsCenterX)
 
   return canvas
 }
@@ -455,6 +464,8 @@ function fillFitted(
   ctx.fillText(text, cx, y)
 }
 
+/** Draws the stats block; returns the x the block is centred on (shifted
+ *  right when the twin medallion occupies the bottom-left corner). */
 function drawStats(
   ctx: CanvasRenderingContext2D,
   input: CardInput,
@@ -462,7 +473,7 @@ function drawStats(
   height: number,
   traceBottom: number,
   isStory: boolean,
-): void {
+): number {
   const { range, accuracy, steadiness } = input.result
   // The square format has less vertical room between the trace and the
   // footer, so it uses a tighter scale to avoid colliding with the wordmark.
@@ -556,6 +567,8 @@ function drawStats(
     const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
     drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
   }
+
+  return centerX
 }
 
 /** Face-biased square crops of a portrait, progressively halved so the
@@ -712,6 +725,7 @@ function drawFooter(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
+  cx: number = width / 2,
 ): void {
   ctx.textAlign = 'center'
   ctx.font = '700 46px system-ui, sans-serif'
@@ -721,18 +735,18 @@ function drawFooter(
   const wordmarkWidth = ctx.measureText(wordmark).width
   const y = height - 108
   const gradient = ctx.createLinearGradient(
-    width / 2 - wordmarkWidth / 2,
+    cx - wordmarkWidth / 2,
     y - 40,
-    width / 2 + wordmarkWidth / 2,
+    cx + wordmarkWidth / 2,
     y,
   )
   gradient.addColorStop(0, '#58a6ff')
   gradient.addColorStop(1, '#bc8cff')
   ctx.fillStyle = gradient
-  ctx.fillText(wordmark, width / 2, y)
+  ctx.fillText(wordmark, cx, y)
   ctx.font = '500 34px system-ui, sans-serif'
   ctx.fillStyle = '#9b93c0'
-  ctx.fillText('mercurypitch.com/mirror', width / 2, height - 56)
+  ctx.fillText('mercurypitch.com/mirror', cx, height - 56)
 }
 
 export function cardToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
