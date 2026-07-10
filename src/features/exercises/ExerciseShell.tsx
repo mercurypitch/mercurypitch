@@ -15,8 +15,11 @@ import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Sh
 import { IconQuestion } from '@/components/exercise-icons'
 import { MicButton } from '@/components/MicButton'
 import { EngineContext } from '@/contexts/EngineContext'
+import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
+import { getExerciseStats } from '@/stores/exercise-history-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
+import { gradeForScore } from './feedback'
 import type { ExerciseStatus, ExerciseType } from './types'
 
 export interface AutoTimerConfig {
@@ -72,9 +75,37 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const status = createMemo(() => props.status())
   const isActive = () => status() === 'active'
   const isComplete = () => status() === 'complete'
-  // A finished run drops straight back to the selector + Start screen (with the
-  // latest score now in the corner chip) — there is no separate result screen.
+  // A finished run returns to the selector + Start screen, where a result
+  // card (grade, personal-best delta, the exercise's metric summary) makes
+  // the payoff moment explicit before the next attempt.
   const isIdleLike = () => status() === 'idle' || status() === 'complete'
+
+  // Personal-best detection: snapshot the stats when a run STARTS — by the
+  // time the run completes, the history already contains the new entry, so
+  // comparing against a live read would never detect a PB.
+  const [prevBest, setPrevBest] = createSignal<number | null>(null)
+  const [prevLast, setPrevLast] = createSignal<number | null>(null)
+  createEffect(
+    on(status, (s, previous) => {
+      if (s === 'active' && previous !== 'active') {
+        const stats = getExerciseStats(props.type)
+        setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
+        setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
+      }
+    }),
+  )
+  const isNewBest = () => {
+    const score = props.resultScore()
+    if (score === null) return false
+    const best = prevBest()
+    return best !== null && score > best
+  }
+  const deltaVsLast = () => {
+    const score = props.resultScore()
+    const last = prevLast()
+    if (score === null || last === null) return null
+    return score - last
+  }
 
   // ── Mic toggle (header) ──
   // The mic is normally started by the exercise on Start, but a header toggle
@@ -217,6 +248,12 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </div>
         <h2 class="exercise-title">{props.title}</h2>
         <div class="exercise-header-right">
+          <span
+            class="exercise-level-chip"
+            title="Adaptive difficulty level (1-10) — adjusts to your recent scores"
+          >
+            Lv {getDifficulty(props.type)}
+          </span>
           <Show when={engines}>
             <MicButton active={micOn()} onClick={toggleMic} />
           </Show>
@@ -240,6 +277,41 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               panel before the run; they slide out of view once it's active. A
               finished run returns here with the score now in the corner chip. */}
           <div class="exercise-idle-center">
+            <Show when={isComplete() && props.resultScore() !== null}>
+              <div
+                class={`exercise-result-card grade-${gradeForScore(props.resultScore()!).toLowerCase()}`}
+              >
+                <div class="exercise-result-grade">
+                  {gradeForScore(props.resultScore()!)}
+                </div>
+                <div class="exercise-result-main">
+                  <div class="exercise-result-score">
+                    {props.resultScore()}%
+                    <Show when={isNewBest()}>
+                      <span class="exercise-result-best">New best!</span>
+                    </Show>
+                    <Show
+                      when={
+                        !isNewBest() &&
+                        deltaVsLast() !== null &&
+                        deltaVsLast() !== 0
+                      }
+                    >
+                      <span
+                        class="exercise-result-delta"
+                        classList={{ up: (deltaVsLast() ?? 0) > 0 }}
+                      >
+                        {(deltaVsLast() ?? 0) > 0 ? '+' : ''}
+                        {deltaVsLast()} vs last
+                      </span>
+                    </Show>
+                  </div>
+                  <div class="exercise-result-summary">
+                    {props.resultSummary}
+                  </div>
+                </div>
+              </div>
+            </Show>
             <Show
               when={props.idlePlaceholder}
               fallback={
@@ -264,7 +336,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                   isComplete() ? props.onTryAgain() : props.onStart()
                 }
               >
-                {props.startLabel ?? 'Start'}
+                {isComplete() ? 'Try Again' : (props.startLabel ?? 'Start')}
               </button>
             </div>
           </div>

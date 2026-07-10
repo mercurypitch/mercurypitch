@@ -257,7 +257,16 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 
   function updateMetrics(metrics: Record<string, number>): void {
-    setState((s) => ({ ...s, metrics: { ...s.metrics, ...metrics } }))
+    setState((s) => {
+      const next = { ...s.metrics, ...metrics }
+      // Stamp phase transitions on the run clock so UI can animate the
+      // response window (remaining = matchWindowMs − (elapsedMs −
+      // phaseStartedMs)) without every controller threading timing through.
+      if ('phase' in metrics && metrics.phase !== s.metrics.phase) {
+        next.phaseStartedMs = performance.now() - startTime
+      }
+      return { ...s, metrics: next }
+    })
   }
 
   onCleanup(() => {
