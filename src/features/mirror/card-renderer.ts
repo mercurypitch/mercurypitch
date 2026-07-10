@@ -25,13 +25,10 @@ export interface CardInput {
   /** Famous-singer match. Left off the default (front) card so the reveal is a
    *  surprise; once revealed it appears as a "like <legend>" name pill. */
   legend?: string | null
-  /** Pre-decoded twin portrait for the twin-backdrop variant. An element (not
-   *  a URL) so card building stays synchronous — Safari only honours
-   *  clipboard writes that begin inside the tap. */
+  /** Pre-decoded twin portrait, drawn as the circular medallion beside the
+   *  pills. An element (not a URL) so card building stays synchronous —
+   *  Safari only honours clipboard writes that begin inside the tap. */
   legendImage?: CanvasImageSource | null
-  /** Blend the portrait full-bleed behind the data — the on-screen lenticular
-   *  look baked into the export ("Share with twin"). */
-  twinBackdrop?: boolean
   /** Card option: draw the glide trace + pulsar (default true). */
   showTrace?: boolean
 }
@@ -84,10 +81,6 @@ export function renderCard(
   if (!ctx) return canvas
 
   drawBackground(ctx, width, height)
-  const portrait = input.legendImage ?? null
-  if (input.twinBackdrop === true && portrait !== null) {
-    drawTwinBackdrop(ctx, portrait, width, height)
-  }
 
   const isStory = format === 'story'
   const traceTop = isStory ? height * 0.16 : height * 0.17
@@ -102,17 +95,56 @@ export function renderCard(
   return canvas
 }
 
-/**
- * The twin's portrait blended behind the data — cover-fit with a face-biased
- * crop, screen-composited over the nebula, and alpha-masked toward the bottom
- * so the stats keep their contrast (mirrors the on-screen lenticular).
- */
-function drawTwinBackdrop(
+/** A four-point star (the theme's spark), drawn as a vector. */
+function drawSpark(
   ctx: CanvasRenderingContext2D,
-  portrait: CanvasImageSource,
-  width: number,
-  height: number,
+  x: number,
+  y: number,
+  r: number,
+  color: string,
 ): void {
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(x, y - r)
+  ctx.quadraticCurveTo(x + r * 0.14, y - r * 0.14, x + r, y)
+  ctx.quadraticCurveTo(x + r * 0.14, y + r * 0.14, x, y + r)
+  ctx.quadraticCurveTo(x - r * 0.14, y + r * 0.14, x - r, y)
+  ctx.quadraticCurveTo(x - r * 0.14, y - r * 0.14, x, y - r)
+  ctx.fill()
+  ctx.restore()
+}
+
+/**
+ * The revealed back face as a downloadable card — a pixel-faithful replica
+ * of the on-screen reveal (mirror.css .mirror-card-back.has-image): the
+ * portrait full-bleed at full opacity with a face-biased crop, the bottom
+ * scrim, and the "your voice twin" caption. Square, like the card itself.
+ * The glide trace is optional and OFF by default so the twin's face stays
+ * clean; the small brand footer is the one addition (shares need a home).
+ */
+export function renderTwinFaceCard(input: {
+  legend: string
+  epithet: string
+  voiceType: string | null
+  legendImage: CanvasImageSource
+  /** Draw the golden glide trace over the portrait (card option). */
+  showTrace?: boolean
+  result?: MirrorResult
+  glides?: F0Frame[][]
+}): HTMLCanvasElement {
+  const width = 1080
+  const height = 1080
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
+
+  drawBackground(ctx, width, height)
+
+  // Portrait: cover-fit, crop biased upward (object-position: center 18%).
+  const portrait = input.legendImage
   const srcW =
     portrait instanceof HTMLImageElement
       ? portrait.naturalWidth
@@ -121,34 +153,87 @@ function drawTwinBackdrop(
     portrait instanceof HTMLImageElement
       ? portrait.naturalHeight
       : (portrait as HTMLCanvasElement).height
-  if (srcW === 0 || srcH === 0) return
+  if (srcW > 0 && srcH > 0) {
+    const scale = Math.max(width / srcW, height / srcH)
+    const dw = srcW * scale
+    const dh = srcH * scale
+    ctx.drawImage(portrait, (width - dw) / 2, -(dh - height) * 0.18, dw, dh)
+  }
 
-  const scale = Math.max(width / srcW, height / srcH)
-  const dw = srcW * scale
-  const dh = srcH * scale
-  const dx = (width - dw) / 2
-  // Faces live in the upper part of the portraits: crop mostly from below.
-  const dy = -(dh - height) * 0.18
+  // Bottom scrim — same stops as .mirror-back-scrim.
+  const scrim = ctx.createLinearGradient(0, 0, 0, height)
+  scrim.addColorStop(0, 'rgba(9, 7, 20, 0.14)')
+  scrim.addColorStop(0.26, 'rgba(9, 7, 20, 0)')
+  scrim.addColorStop(0.52, 'rgba(9, 7, 20, 0)')
+  scrim.addColorStop(0.78, 'rgba(9, 7, 20, 0.62)')
+  scrim.addColorStop(1, 'rgba(9, 7, 20, 0.92)')
+  ctx.fillStyle = scrim
+  ctx.fillRect(0, 0, width, height)
 
-  const masked = document.createElement('canvas')
-  masked.width = width
-  masked.height = height
-  const m = masked.getContext('2d')
-  if (!m) return
-  m.drawImage(portrait, dx, dy, dw, dh)
-  m.globalCompositeOperation = 'destination-in'
-  const mask = m.createLinearGradient(0, 0, 0, height)
-  mask.addColorStop(0, 'rgba(0, 0, 0, 0.92)')
-  mask.addColorStop(0.5, 'rgba(0, 0, 0, 0.88)')
-  mask.addColorStop(0.72, 'rgba(0, 0, 0, 0.5)')
-  mask.addColorStop(1, 'rgba(0, 0, 0, 0.3)')
-  m.fillStyle = mask
-  m.fillRect(0, 0, width, height)
+  // Optional glide trace over the portrait (default off — clean face).
+  if (
+    input.showTrace === true &&
+    input.result !== undefined &&
+    input.glides !== undefined
+  ) {
+    drawVoiceTrace(
+      ctx,
+      { result: input.result, glides: input.glides },
+      width,
+      height * 0.08,
+      height * 0.52,
+    )
+  }
 
-  ctx.save()
-  ctx.globalCompositeOperation = 'screen'
-  ctx.drawImage(masked, 0, 0)
-  ctx.restore()
+  // Caption — the on-screen sizes scaled from the 500px card to 1080px.
+  ctx.textAlign = 'center'
+  const kickerY = height - 296
+  ctx.font = '600 24px system-ui, sans-serif'
+  ctx.fillStyle = '#8fa3ff'
+  const kicker = 'Y O U R   V O I C E   T W I N'
+  ctx.fillText(kicker, width / 2, kickerY)
+  const kickerHalf = ctx.measureText(kicker).width / 2 + 34
+  drawSpark(ctx, width / 2 - kickerHalf, kickerY - 8, 11, '#8fa3ff')
+  drawSpark(ctx, width / 2 + kickerHalf, kickerY - 8, 11, '#8fa3ff')
+
+  ctx.font = '700 62px system-ui, sans-serif'
+  ctx.fillStyle = '#ffe9a8'
+  ctx.fillText(input.legend, width / 2, kickerY + 74)
+
+  ctx.font = 'italic 500 33px system-ui, sans-serif'
+  ctx.fillStyle = '#b9b3d6'
+  ctx.fillText(input.epithet, width / 2, kickerY + 124)
+
+  if (input.voiceType !== null) {
+    ctx.font = '600 26px system-ui, sans-serif'
+    ctx.fillStyle = 'rgba(143, 163, 255, 0.8)'
+    ctx.fillText(
+      `${input.voiceType.toUpperCase()}   R A N G E`,
+      width / 2,
+      kickerY + 172,
+    )
+  }
+
+  // Small brand footer over the scrim — the one addition vs. the screen.
+  ctx.font = '700 38px system-ui, sans-serif'
+  const wordmark = 'MercuryPitch'
+  const wmWidth = ctx.measureText(wordmark).width
+  const wmY = height - 62
+  const brand = ctx.createLinearGradient(
+    width / 2 - wmWidth / 2,
+    wmY - 32,
+    width / 2 + wmWidth / 2,
+    wmY,
+  )
+  brand.addColorStop(0, '#58a6ff')
+  brand.addColorStop(1, '#bc8cff')
+  ctx.fillStyle = brand
+  ctx.fillText(wordmark, width / 2, wmY)
+  ctx.font = '500 27px system-ui, sans-serif'
+  ctx.fillStyle = '#9b93c0'
+  ctx.fillText('mercurypitch.com/mirror', width / 2, height - 24)
+
+  return canvas
 }
 
 function drawBackground(
@@ -357,7 +442,7 @@ function drawStats(
     // IS the portrait, so it keeps the plain pill row.
     const legend = input.legend ?? null
     const portrait = input.legendImage ?? null
-    if (legend !== null && portrait !== null && input.twinBackdrop !== true) {
+    if (legend !== null && portrait !== null) {
       // The medallion IS the twin — no "like <name>" pill needed beside it.
       // The square (on-screen front) card gets a smaller circle so it clears
       // the wordmark footer.

@@ -24,7 +24,7 @@ import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, shareCard, supportsImageClipboard, } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
 import { createF0Stream } from './f0-stream'
@@ -117,6 +117,9 @@ export const MirrorApp: Component = () => {
   const [revealMode, setRevealMode] = createSignal<RevealMode>('flip')
   // Card option: include the pitch glide trace on shared/copied cards.
   const [includeTrace, setIncludeTrace] = createSignal(true)
+  // Card option: draw the trace over the twin card too (default off — the
+  // downloaded twin stays identical to the on-screen reveal, face clean).
+  const [twinTrace, setTwinTrace] = createSignal(false)
   // Sticky "has met their twin" — after the first reveal the front data card
   // keeps the circular twin medallion (the surprise is already spent).
   const [metTwin, setMetTwin] = createSignal(false)
@@ -217,6 +220,7 @@ export const MirrorApp: Component = () => {
     setRevealed(false)
     setRevealMode('flip')
     setIncludeTrace(true)
+    setTwinTrace(false)
     setMetTwin(false)
     // Drop a #take-N fragment so the landing isn't re-restored on reload.
     if (parseTakeHash(window.location.hash) !== null) {
@@ -566,6 +570,7 @@ export const MirrorApp: Component = () => {
     setRevealed(false)
     setRevealMode('flip')
     setIncludeTrace(true)
+    setTwinTrace(false)
     setDeltaLine(attempt.deltaLine !== '' ? attempt.deltaLine : null)
     preloadLegendPortrait(attempt.result)
     paintCard(attempt.result, attempt.glides, attempt.deltaLine)
@@ -624,11 +629,9 @@ export const MirrorApp: Component = () => {
     })
   }
 
-  /** The exported story card in two variants: the clean data card (legend as
-   *  a circular medallion + name pill once revealed) or the twin card — the
-   *  portrait blended behind the data, the lenticular look baked into
-   *  pixels. Both honour the "pitch trace" card option. */
-  function buildStoryCard(withTwin: boolean): HTMLCanvasElement | null {
+  /** The clean data story card — legend as a circular medallion + name pill
+   *  once revealed; honours the "pitch trace" card option. */
+  function buildStoryCard(): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
     const legend = revealed() ? singerForRange(state.result.range) : null
@@ -638,21 +641,38 @@ export const MirrorApp: Component = () => {
         glides: state.glides,
         deltaLine: deltaLine(),
         legend,
-        // The portrait rides along on both variants: full-bleed backdrop when
-        // withTwin, circular medallion beside the pills on the clean card.
         legendImage: legendImage(),
-        twinBackdrop: withTwin,
         showTrace: includeTrace(),
       },
       'story',
     )
   }
 
+  /** The twin card — a pixel-faithful replica of the on-screen back face
+   *  (full-opacity portrait, scrim, caption); the trace only when the
+   *  "trace on twin" option is on. */
+  function buildTwinCard(): HTMLCanvasElement | null {
+    const state = session()
+    const img = legendImage()
+    if (!state.result || img === null) return null
+    const legend = singerForRange(state.result.range)
+    if (legend === null) return null
+    return renderTwinFaceCard({
+      legend,
+      epithet: legendArt(legend).epithet,
+      voiceType: state.result.range?.voiceHint ?? null,
+      legendImage: img,
+      showTrace: twinTrace(),
+      result: state.result,
+      glides: state.glides,
+    })
+  }
+
   /** Whether the twin share/copy variant is possible right now. */
   const twinReady = (): boolean => revealed() && legendImage() !== null
 
   async function onShare(withTwin = false): Promise<void> {
-    const card = buildStoryCard(withTwin && twinReady())
+    const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await shareCard(
       await cardToPngBlob(card),
@@ -666,7 +686,7 @@ export const MirrorApp: Component = () => {
 
   async function onCopy(): Promise<void> {
     // Copy mirrors the richest available variant: twin once revealed.
-    const card = buildStoryCard(twinReady())
+    const card = twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')
@@ -887,6 +907,8 @@ export const MirrorApp: Component = () => {
           twinReady={twinReady()}
           includeTrace={includeTrace()}
           onToggleTrace={() => setIncludeTrace((v) => !v)}
+          twinTrace={twinTrace()}
+          onToggleTwinTrace={() => setTwinTrace((v) => !v)}
           onToggleReveal={() => {
             const next = !revealed()
             setRevealed(next)
@@ -1070,6 +1092,9 @@ const Results: Component<{
   /** Card option: include the pitch glide trace on shared cards. */
   includeTrace: boolean
   onToggleTrace: () => void
+  /** Card option: draw the trace over the twin card too (default off). */
+  twinTrace: boolean
+  onToggleTwinTrace: () => void
   onToggleReveal: () => void
   onShare: () => void
   onShareTwin: () => void
@@ -1207,17 +1232,32 @@ const Results: Component<{
             </button>
           </Show>
         </div>
-        <button
-          type="button"
-          class="mirror-optchip"
-          classList={{ on: props.includeTrace }}
-          aria-pressed={props.includeTrace}
-          onClick={() => props.onToggleTrace()}
-          title="Include the pitch glide trace on shared cards"
-        >
-          <IconTrace size={15} />
-          Pitch trace {props.includeTrace ? 'on' : 'off'}
-        </button>
+        <div class="mirror-cardopts">
+          <button
+            type="button"
+            class="mirror-optchip"
+            classList={{ on: props.includeTrace }}
+            aria-pressed={props.includeTrace}
+            onClick={() => props.onToggleTrace()}
+            title="Include the pitch glide trace on the voiceprint card"
+          >
+            <IconTrace size={15} />
+            Pitch trace {props.includeTrace ? 'on' : 'off'}
+          </button>
+          <Show when={props.twinReady}>
+            <button
+              type="button"
+              class="mirror-optchip"
+              classList={{ on: props.twinTrace }}
+              aria-pressed={props.twinTrace}
+              onClick={() => props.onToggleTwinTrace()}
+              title="Draw the pitch trace over the twin card too (off keeps the twin's face clean)"
+            >
+              <IconTrace size={15} />
+              Trace on twin {props.twinTrace ? 'on' : 'off'}
+            </button>
+          </Show>
+        </div>
         <div class="mirror-actions-sub">
           <Show when={supportsImageClipboard()}>
             <button
