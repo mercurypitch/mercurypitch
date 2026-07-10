@@ -11,6 +11,24 @@
   pointer-events: none;
 }
 
+/* Phones: a centred 400px bubble floats awkwardly over content (the tour
+   offer especially). Full-width bottom cards with side margins read as a
+   deliberate toast bar instead. */
+@media (max-width: 768px) {
+  .notificationContainer {
+    left: 10px;
+    right: 10px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    transform: none;
+  }
+
+  .notification {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
 /* ===== Individual Notification ===== */
 .notification {
   display: flex;
