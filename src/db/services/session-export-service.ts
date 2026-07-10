@@ -38,6 +38,20 @@ interface KaraokeManifest {
 }
 
 /**
+ * Loose ZIP detection for drag&drop and file pickers: extension first (drag
+ * sources often omit the MIME type), then the common ZIP MIME variants.
+ */
+export function isZipFile(file: File): boolean {
+  if (file.name.toLowerCase().endsWith('.zip')) return true
+  const type = file.type.toLowerCase()
+  return (
+    type === 'application/zip' ||
+    type === 'application/x-zip-compressed' ||
+    type === 'application/zip-compressed'
+  )
+}
+
+/**
  * Helper to fetch a Blob as Uint8Array
  */
 async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {

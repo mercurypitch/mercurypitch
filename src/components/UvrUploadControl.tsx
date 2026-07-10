@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { isZipFile } from '@/db/services/session-export-service'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, ImportFile, MusicNote } from './icons'
@@ -12,6 +13,9 @@ interface UploadControlProps {
   onFileSelect?: (file: File) => void
   onFileReady?: (file: File) => void
   onProcessStart?: (sessionId: string) => void
+  /** Called when the user drops/picks exported session ZIP(s) — routes them
+   *  to the session import flow instead of audio processing. */
+  onImportZips?: (files: File[]) => void
   maxSize?: number
   /** Tooltip on the size pill + appended to the too-large message, e.g. to
    *  explain the smaller cloud-GPU limit and point at Browser mode. */
@@ -104,21 +108,36 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     if (dragDepth === 0) setIsDragging(false)
   }
 
+  /** Session ZIP exports go to the import flow, not audio processing.
+   *  Returns true when the files were consumed as ZIPs. Imports are DB-only,
+   *  so they bypass the `disabled` (another-session-processing) guard. */
+  const routeZipsToImport = (files: File[]): boolean => {
+    if (props.onImportZips === undefined) return false
+    const zips = files.filter(isZipFile)
+    if (zips.length === 0) return false
+    props.onImportZips(zips)
+    return true
+  }
+
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
-    if (props.disabled === true) return
     dragDepth = 0
     setIsDragging(false)
 
     const files = e.dataTransfer?.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
+    if (!files || files.length === 0) return
+    if (routeZipsToImport([...files])) return
+    if (props.disabled === true) return
+    handleFileSelect(files[0])
   }
 
   const handleFileInput = (e: Event) => {
     const input = e.currentTarget as HTMLInputElement
     if (input.files && input.files.length > 0) {
+      if (routeZipsToImport([...input.files])) {
+        input.value = ''
+        return
+      }
       handleFileSelect(input.files[0])
     }
   }

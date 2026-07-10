@@ -1102,6 +1102,52 @@
   transform: scale(1.01);
 }
 
+/* Whole upload view (incl. the session list) accepts dropped session ZIPs */
+.upload-section.zip-drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  border-radius: 16px;
+  background: var(--accent-dim);
+}
+
+.upload-section.zip-drop-target::after {
+  content: 'Drop ZIP to import sessions';
+  position: fixed;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+/* ZIP file names listed in the import-to-group dialog */
+.import-zip-file-list {
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.6rem;
+  list-style: none;
+  max-height: 110px;
+  overflow-y: auto;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.import-zip-file-list li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.1rem 0;
+}
+
 .file-input {
   position: absolute;
   inset: 0;

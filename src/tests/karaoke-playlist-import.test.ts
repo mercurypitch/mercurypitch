@@ -27,7 +27,7 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
   }
 }
 
-import { buildKaraokePlaylistZip, importSessionsFromZip, } from '@/db/services/session-export-service'
+import { buildKaraokePlaylistZip, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
 import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, importUvrSession, } from '@/stores/app-store'
 import { addItem, createPlaylist, getPlaylistsReactive, setPlaylistPlayMode, setPlaylistShuffleOrder, } from '@/stores/karaoke-playlist-store'
@@ -116,5 +116,27 @@ describe('karaoke playlist export → import round-trip', () => {
     expect(sessionItem?.singerName).toBe('Bob')
     const soloSong = newSessions.find((s) => s.sessionId === sessionItem?.refId)
     expect(soloSong?.originalFile?.name).toBe('Solo Track')
+  })
+})
+
+describe('isZipFile', () => {
+  const make = (name: string, type: string) => new File([''], name, { type })
+
+  it('detects ZIPs by extension regardless of MIME', () => {
+    expect(isZipFile(make('MercuryPitch_Session_song.zip', ''))).toBe(true)
+    expect(isZipFile(make('EXPORT.ZIP', 'application/octet-stream'))).toBe(true)
+  })
+
+  it('detects ZIPs by MIME variants when the extension is missing', () => {
+    expect(isZipFile(make('archive', 'application/zip'))).toBe(true)
+    expect(isZipFile(make('archive', 'application/x-zip-compressed'))).toBe(
+      true,
+    )
+  })
+
+  it('rejects audio and other files', () => {
+    expect(isZipFile(make('song.mp3', 'audio/mpeg'))).toBe(false)
+    expect(isZipFile(make('song.wav', 'audio/wav'))).toBe(false)
+    expect(isZipFile(make('zip-tips.txt', 'text/plain'))).toBe(false)
   })
 })
