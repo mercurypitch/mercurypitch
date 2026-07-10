@@ -6,6 +6,7 @@ import { getDb } from '@/db'
 import type { SessionRecord } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { updatePracticeStreak } from '@/db/services/streak-service'
+import { trackEvent } from '@/lib/analytics'
 
 export async function saveSessionRecord(data: {
   melodyName: string
@@ -19,6 +20,7 @@ export async function saveSessionRecord(data: {
     const repo = db.getRepository<SessionRecord>('sessionRecords')
     const now = new Date().toISOString()
     const streak = await updatePracticeStreak()
+    trackEvent('session_complete')
     return await repo.create({
       userId: getUserId(),
       melodyName: data.melodyName,

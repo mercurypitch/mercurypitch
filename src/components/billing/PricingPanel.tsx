@@ -6,9 +6,10 @@
 // faster server-side processing (see docs/plans/premium.md).
 
 import type { Component } from 'solid-js'
-import { createResource, For, Show } from 'solid-js'
+import { createResource, For, onMount, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
+import { trackEvent } from '@/lib/analytics'
 import { TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
@@ -37,6 +38,9 @@ const cardVars = (index: number, offset = 0): Record<string, string> => ({
 })
 
 export const PricingPanel: Component = () => {
+  // Product funnel: purchase interest — the panel only renders when the
+  // user opens Settings → Credits (or the deep link).
+  onMount(() => trackEvent('pricing_view'))
   const [pricing] = createResource(() => fetchPricing())
   // Credit balance for the signed-in user (null when logged out / no cloud).
   // Keyed on balanceVersion (+1 so the initial 0 still fetches): bumping it

@@ -1,6 +1,7 @@
 import { updatePracticeStreak } from '@/db/services/streak-service'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import { trackEvent } from '@/lib/analytics'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -44,6 +45,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // no longer post leaderboard entries.
   void updatePracticeStreak()
 
+  trackEvent('session_complete')
   recordActivity()
 }
 

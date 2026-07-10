@@ -7,6 +7,7 @@
 // same userId server-side (deviceId is passed along), so local
 // attribution stays valid. See docs/plans/users-auth-plan.md.
 
+import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 import { getAuthToken, getUserId, setAuthToken } from './user-service'
 
@@ -107,6 +108,9 @@ async function postAuth(
   setAuthToken(auth.token)
   setRequiresLogin(false)
   tokenServerVerified = true // freshly issued by this server
+  // Anonymous device provisioning is not a signup — only count real
+  // account creation (register / first Google sign-in).
+  if (auth.isNew && route !== 'anonymous') trackEvent('signup')
   return auth
 }
 
@@ -269,6 +273,8 @@ export function consumeGoogleRedirect(): void {
     setRequiresLogin(false)
     tokenServerVerified = true // freshly issued by the worker
     googleRedirectResult = { ok: true }
+    // gauth_new marks a first-time Google account (set by the worker).
+    if (params.get('gauth_new') === '1') trackEvent('signup')
   } else if (error != null && error !== '') {
     googleRedirectResult = { ok: false, error }
   }

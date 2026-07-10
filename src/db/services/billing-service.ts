@@ -7,6 +7,7 @@
 // unit-testable even though tests run with VITE_API_BASE_URL unset.
 
 import { getAuthHeaders } from '@/db/services/user-service'
+import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 // Pure, dependency-free worker module — the single source of truth for the
 // per-model credit multipliers (also used by the db-worker's debit/pricing).
@@ -112,6 +113,7 @@ export async function startCheckout(
   if (!res.ok || data.url == null || data.url === '') {
     throw new Error(data.error ?? `Checkout failed: ${res.statusText}`)
   }
+  trackEvent('checkout_start')
   return data.url
 }
 
