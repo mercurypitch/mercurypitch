@@ -188,6 +188,17 @@ export const MirrorApp: Component = () => {
     return next
   }
 
+  /** localStorage, or null where even touching the global throws (Chrome
+   *  "block all cookies", some embedded webviews). Callers on the start
+   *  gesture path must never die on a storage SecurityError. */
+  function safeStorage(): Storage | null {
+    try {
+      return window.localStorage
+    } catch {
+      return null
+    }
+  }
+
   /** One fragment router for load AND hashchange: cosmic mode, saved takes
    *  (#take-N, a real feature) and — in dev builds — the demo fast lanes, so
    *  editing the hash or using back/forward reacts without a reload. */
@@ -221,8 +232,11 @@ export const MirrorApp: Component = () => {
     readyResolve = null
   }
 
-  /** Show a task's demo + instruction until the user taps "I'm ready". */
-  function taskIntro(): Promise<void> {
+  /** Show a task's demo + instruction until the user taps "I'm ready".
+   *  A stale flow (gen mismatch) must not touch the shared gate — it would
+   *  clobber the live run's resolver and strand it on the intro screen. */
+  function taskIntro(gen: number): Promise<void> {
+    if (cancelled || gen !== flowGen) return Promise.resolve()
     setSubPhase('intro')
     return new Promise<void>((resolve) => {
       readyResolve = resolve
@@ -291,11 +305,15 @@ export const MirrorApp: Component = () => {
     )
   }
 
-  /** Countdown helper driving the `remaining` signal. */
+  /** Countdown helper driving the `remaining` signal. Aborts early when the
+   *  flow generation changes mid-count (reset / take restore), so an
+   *  orphaned flow can't keep writing `remaining` — or run for its full
+   *  duration — after the user has moved on. */
   async function countdown(seconds: number): Promise<void> {
+    const gen = flowGen
     const start = performance.now()
     setRemaining(seconds)
-    while (!cancelled) {
+    while (!cancelled && gen === flowGen) {
       const left = seconds - (performance.now() - start) / 1000
       if (left <= 0) break
       setRemaining(left)
@@ -317,11 +335,14 @@ export const MirrorApp: Component = () => {
 
   async function record(seconds: number): Promise<F0Frame[]> {
     if (!f0) return []
+    const gen = flowGen
     setTaskKey((k) => k + 1)
     setSubPhase('recording')
     f0.startTask()
     await countdown(seconds)
-    // f0 may have been torn down while we were awaiting (unmount mid-take).
+    // The take is void if the run was reset/restored mid-count, and f0 may
+    // have been torn down while we were awaiting (unmount mid-take).
+    if (cancelled || gen !== flowGen) return []
     return f0?.takeFrames() ?? []
   }
 
@@ -442,7 +463,11 @@ export const MirrorApp: Component = () => {
     setFreePhase('task')
     await brief(3)
     if (cancelled || gen !== flowGen) return
-    freeTakeFrames = await record(FREE_SING_SEC)
+    const frames = await record(FREE_SING_SEC)
+    // A mid-take reset/restore orphans this flow — it must not tear down
+    // the successor run's audio or flip the UI to a dead results screen.
+    if (cancelled || gen !== flowGen) return
+    freeTakeFrames = frames
     teardownAudio()
     setFreeResult(computeFreeSing(freeTakeFrames))
     setFreePhase('results')
@@ -489,30 +514,38 @@ export const MirrorApp: Component = () => {
 
     // Task A — glide up, then down (union of both builds the range).
     // Each task opens with its demo animation behind an "I'm ready" gate,
-    // so the instruction is fresh at the moment it matters.
-    await taskIntro()
+    // so the instruction is fresh at the moment it matters. Every await is
+    // followed by an alive() check before the next side effect — a stale
+    // flow must never dispatch into (or re-arm the gate of) its successor.
+    await taskIntro(gen)
     if (!alive()) return
     await brief(3)
     if (!alive()) return
-    dispatch({ type: 'glide-done', frames: await record(GLIDE_SEC) })
-    await taskIntro()
+    const glideUp = await record(GLIDE_SEC)
+    if (!alive()) return
+    dispatch({ type: 'glide-done', frames: glideUp })
+    await taskIntro(gen)
     if (!alive()) return
     await brief(2)
     if (!alive()) return
-    dispatch({ type: 'glide-done', frames: await record(GLIDE_SEC) })
+    const glideDown = await record(GLIDE_SEC)
+    if (!alive()) return
+    dispatch({ type: 'glide-done', frames: glideDown })
     trackFunnel('task_glide_done')
 
     // Task B — hold.
-    await taskIntro()
+    await taskIntro(gen)
     if (!alive()) return
     await brief(3)
     if (!alive()) return
-    dispatch({ type: 'hold-done', frames: await record(HOLD_SEC) })
+    const holdTake = await record(HOLD_SEC)
+    if (!alive()) return
+    dispatch({ type: 'hold-done', frames: holdTake })
     trackFunnel('task_hold_done')
 
     // Task C — match 5, reference-then-record (never simultaneous).
     // One gate before round 1; rounds 2-5 keep the automatic rhythm.
-    await taskIntro()
+    await taskIntro(gen)
     if (!alive()) return
     await brief(2)
     while (alive() && session().phase === 'match') {
@@ -529,10 +562,9 @@ export const MirrorApp: Component = () => {
       // Breathing room: hear the note, then a short count-in before singing.
       await prepare(MATCH_PREPARE_SEC)
       if (!alive()) return
-      const next = dispatch({
-        type: 'match-done',
-        frames: await record(MATCH_TAKE_SEC),
-      })
+      const take = await record(MATCH_TAKE_SEC)
+      if (!alive()) return
+      const next = dispatch({ type: 'match-done', frames: take })
       if (next.phase === 'results') {
         trackFunnel('task_match_done')
         finishRun(next)
@@ -633,6 +665,11 @@ export const MirrorApp: Component = () => {
     releaseIntroGate()
     setHowtoOpen(false)
     starting = false
+    // A restore can land mid-Free-Sing — clear its panels or they'd render
+    // stacked on top of the restored guided results.
+    setFreePhase(null)
+    setFreeResult(null)
+    setSubPhase('brief')
     setMetTwin(false)
     setRevealed(false)
     setRevealMode('flip')
@@ -814,7 +851,12 @@ export const MirrorApp: Component = () => {
           onStart={(selected) => {
             // First guided run detours through the animated overview; the
             // "Let's go" tap there becomes the mic-acquiring gesture.
-            if (selected === 'guided' && !hasSeenHowItWorks(localStorage)) {
+            // Blocked storage reads as "never seen" — show the overview.
+            const store = safeStorage()
+            if (
+              selected === 'guided' &&
+              (store === null || !hasSeenHowItWorks(store))
+            ) {
               setHowtoOpen(true)
               return
             }
@@ -834,7 +876,8 @@ export const MirrorApp: Component = () => {
       >
         <HowItWorks
           onLetsGo={() => {
-            markHowItWorksSeen(localStorage)
+            const store = safeStorage()
+            if (store !== null) markHowItWorksSeen(store)
             trackFunnel('howto_done')
             // start() flips the phase synchronously, mounting the mic panel
             // before this overview's Show condition drops it.

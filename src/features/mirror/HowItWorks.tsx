@@ -15,8 +15,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onMount } from 'solid-js'
+import { createSignal, For, onCleanup, onMount } from 'solid-js'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
+import { buildDemoTimeline } from '@/lib/mirror/demo-timeline'
 import { trackFunnel } from './funnel'
 import { TaskDemo } from './TaskDemo'
 
@@ -62,27 +63,53 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
   const activeIndex = (): number => pinned() ?? spotlight()
   // A tap pins only until that card's loop wraps; a hover pins until leave.
   let pinnedByTap = false
+  let advancedAt = 0
 
-  onMount(() => trackFunnel('howto_view'))
+  function advance(from: number): void {
+    setSpotlight((from + 1) % STEPS.length)
+    advancedAt = performance.now()
+  }
+
+  onMount(() => {
+    trackFunnel('howto_view')
+    advancedAt = performance.now()
+    // Watchdog: the cycle normally advances on the active card's loop end,
+    // but that loop pauses when its canvas is offscreen (small viewports)
+    // or under reduced motion — the story must keep stepping regardless.
+    const watchdog = setInterval(() => {
+      if (pinned() !== null) {
+        advancedAt = performance.now()
+        return
+      }
+      const loopMs =
+        buildDemoTimeline(STEPS[spotlight()].kind).durationSec * 1000
+      if (performance.now() - advancedAt > loopMs + 2000) {
+        advance(spotlight())
+      }
+    }, 1000)
+    onCleanup(() => clearInterval(watchdog))
+  })
 
   function handleLoopEnd(index: number): void {
     if (pinned() === index) {
       if (!pinnedByTap) return // hover keeps the card looping
       setPinned(null)
       pinnedByTap = false
-      setSpotlight((index + 1) % STEPS.length)
+      advance(index)
       return
     }
     if (pinned() === null && spotlight() === index) {
-      setSpotlight((index + 1) % STEPS.length)
+      advance(index)
     }
   }
 
   // Pin on pointermove, not pointerenter: enter also fires when a card
   // renders under a stationary cursor (right after the "Start singing"
-  // click), which would silently pin card 1 and stall the story.
+  // click), which would silently pin card 1 and stall the story. Always
+  // downgrade a tap-pin to a hover-pin — leaving pinnedByTap stale would
+  // make pointer-leave refuse to unpin this card.
   function pinByPointer(index: number, pointerType: string): void {
-    if (pointerType !== 'mouse' || pinned() === index) return
+    if (pointerType !== 'mouse') return
     pinnedByTap = false
     setPinned(index)
   }

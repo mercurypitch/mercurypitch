@@ -565,7 +565,7 @@ function drawStats(
     // is set. The backdrop variant (twin face card) already IS the portrait,
     // so it keeps the plain pill row.
     const pills = legend !== null ? [voiceHint, `like ${legend}`] : [voiceHint]
-    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s)
+    drawPillRow(ctx, pills, centerX, y, Math.round(36 * s), s, maxWidth)
   }
 
   return centerX
@@ -682,7 +682,9 @@ function drawMedallion(
   ctx.shadowBlur = 0
 }
 
-/** Draw one or more rounded pills as a horizontal row centred on (cx, y). */
+/** Draw one or more rounded pills as a horizontal row centred on (cx, y),
+ *  shrinking the font when the row would overflow maxWidth (the narrowed
+ *  column beside the twin medallion — long legend names must fit). */
 function drawPillRow(
   ctx: CanvasRenderingContext2D,
   labels: string[],
@@ -690,15 +692,27 @@ function drawPillRow(
   y: number,
   fontSize: number,
   s: number,
+  maxWidth = Infinity,
 ): void {
-  ctx.font = `500 ${fontSize}px system-ui, sans-serif`
   ctx.textAlign = 'center'
   const padX = 34 * s
   const gap = 18 * s
   const h = 68 * s
-  const widths = labels.map((t) => ctx.measureText(t).width + padX * 2)
-  const total =
-    widths.reduce((a, b) => a + b, 0) + gap * Math.max(0, labels.length - 1)
+  const measure = (px: number): number[] => {
+    ctx.font = `500 ${px}px system-ui, sans-serif`
+    return labels.map((t) => ctx.measureText(t).width + padX * 2)
+  }
+  const rowTotal = (w: number[]): number =>
+    w.reduce((a, b) => a + b, 0) + gap * Math.max(0, labels.length - 1)
+  let widths = measure(fontSize)
+  if (rowTotal(widths) > maxWidth) {
+    fontSize = Math.max(
+      20,
+      Math.floor((fontSize * maxWidth) / rowTotal(widths)),
+    )
+    widths = measure(fontSize)
+  }
+  const total = rowTotal(widths)
   let x = cx - total / 2
   for (let i = 0; i < labels.length; i++) {
     const w = widths[i]

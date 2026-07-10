@@ -17,6 +17,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { getDevicePixelRatio } from '@/lib/dom-utils'
+import { seeded } from '@/lib/mirror/demo-frames'
 import type { DemoKind, DemoTimeline } from '@/lib/mirror/demo-timeline'
 import { buildDemoTimeline, demoStateAt } from '@/lib/mirror/demo-timeline'
 import { CONF_MIN, foldCents, hzToCents } from '@/lib/mirror/metrics'
@@ -49,11 +51,7 @@ interface Star {
 /** A few seeded background twinkles — enough space-dust to feel at home. */
 function starsFor(kind: DemoKind, w: number, h: number): Star[] {
   const tl = buildDemoTimeline(kind)
-  let s = (tl.voice.length * 2654435761) >>> 0
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0
-    return s / 2 ** 32
-  }
+  const rand = seeded(tl.voice.length * 2654435761)
   return Array.from({ length: 6 }, () => ({
     x: PAD_X / 2 + rand() * (w - PAD_X),
     y: PAD_Y / 2 + rand() * (h - PAD_Y),
@@ -342,8 +340,10 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
       if (kind === 'match' && !still) drawLockSparks(ctx, state.t, x, y)
     }
 
-    if (kind === 'match' && !still && seg.kind !== caption()) {
-      setCaption(seg.kind)
+    if (kind === 'match') {
+      // The static poster shows the completed, locked-on take — caption it
+      // with the sing step, not the "Listen…" the loop happens to start on.
+      setCaption(still ? 'sing' : seg.kind)
     }
   }
 
@@ -355,9 +355,13 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     if (epoch < 0) epoch = now
     const loopT = (now - epoch) / 1000
     const wrapped = loopT % tl.durationSec
-    if (wrapped < lastLoopT) props.onLoopEnd?.()
+    const didWrap = wrapped < lastLoopT
     lastLoopT = wrapped
     render(wrapped, false)
+    // Notify AFTER painting: onLoopEnd advances the overview spotlight,
+    // whose effect synchronously stops this loop and draws the static
+    // poster — painting after that would overwrite it with frame 0.
+    if (didWrap) props.onLoopEnd?.()
   }
 
   function stopLoop(): void {
@@ -389,7 +393,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
   }
 
   onMount(() => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = Math.min(getDevicePixelRatio(), 2)
     if (canvas) {
       const { w, h } = dims
       canvas.width = w * dpr
