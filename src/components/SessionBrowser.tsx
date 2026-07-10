@@ -72,7 +72,9 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
         if (e.target === e.currentTarget) props.onClose()
       }}
     >
-      <div class={`${modalStyles.modalContent} ${modalStyles.sessionBrowser}`}>
+      <div
+        class={`${modalStyles.modalContent} ${modalStyles.sessionBrowser} session-browser`}
+      >
         <div class={modalStyles.modalHeader}>
           <h2>Practice Sessions</h2>
           <button

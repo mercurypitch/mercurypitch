@@ -135,9 +135,15 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   return (
     <Show when={props.isOpen}>
-      <div class={modalStyles.modalOverlay} onClick={() => props.close()}>
+      {/* Plain compat classes alongside the module classes: stable hooks for
+          e2e (melody-library.spec targets .modal-overlay/.library-modal/
+          .close-btn) — same pattern as LibraryModal's root. */}
+      <div
+        class={`${modalStyles.modalOverlay} modal-overlay`}
+        onClick={() => props.close()}
+      >
         <div
-          class={modalStyles.libraryModal}
+          class={`${modalStyles.libraryModal} library-modal`}
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
@@ -147,7 +153,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
           <div class={modalStyles.libraryHeader}>
             <h2>Practice Sessions</h2>
             <button
-              class={modalStyles.closeBtn}
+              class={`${modalStyles.closeBtn} close-btn`}
               onClick={() => props.close()}
               aria-label="Close"
             >
