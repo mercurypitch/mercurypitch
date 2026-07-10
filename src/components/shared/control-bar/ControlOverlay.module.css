@@ -135,6 +135,28 @@
   flex: 1 1 auto;
 }
 
+/* Phones: the capped card makes the inner bar scroll horizontally (see the
+   .inlineOverlay note above) but gives no visual cue that more controls sit
+   off-screen. Fade the clipped edges so the bar reads as swipeable. */
+@media (max-width: 700px) {
+  .toolbarSlot {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 10px,
+      #000 calc(100% - 10px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 10px,
+      #000 calc(100% - 10px),
+      transparent 100%
+    );
+  }
+}
+
 /* Strip the inner toolbar's own bar chrome so it blends into the glass shell.
    Targets the stable test-id rather than the hashed module class. */
 .overlay :global([data-testid='practice-header-bar']) {

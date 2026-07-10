@@ -258,6 +258,27 @@ const AppShell: Component<AppProps> = (props) => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
 
+  // Mobile drawer ergonomics: Escape dismisses it, and navigating to another
+  // tab closes it (it otherwise stays open over the new page). Tab-change
+  // close is skipped while a tour runs — the engine opens the sidebar itself,
+  // sometimes across a tab switch (reveal steps with requiredTab).
+  createEffect(
+    on(
+      activeTab,
+      () => {
+        if (!walkthroughActive()) closeSidebar()
+      },
+      { defer: true },
+    ),
+  )
+  onMount(() => {
+    const onSidebarKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen()) closeSidebar()
+    }
+    window.addEventListener('keydown', onSidebarKeydown)
+    onCleanup(() => window.removeEventListener('keydown', onSidebarKeydown))
+  })
+
   // Sync audio engine instrument when switching tabs
   createEffect(() => {
     const tab = activeTab()

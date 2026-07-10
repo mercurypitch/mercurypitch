@@ -79,4 +79,13 @@
     align-items: flex-start;
     gap: 6px;
   }
+
+  /* ── Analysis: stack the demo-data hint ──────────────────────
+     The design-system card (vocal-analysis.css) lays text and the
+     "Load Demo Data" action out as one row, which squeezes the copy
+     into a sliver on phones. */
+  .demo-hint {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
