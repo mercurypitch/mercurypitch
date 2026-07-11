@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Meniscus v2 — mono for dark grounds (single ink: chrome-white). -->
+  <defs><clipPath id="o"><circle cx="256" cy="256" r="242"/></clipPath></defs>
+  <circle cx="256" cy="256" r="242" fill="none" stroke="#e6edf3" stroke-width="24"/>
+  <path d="M8,256 C96,164 164,164 256,256 S416,348 504,256 A248,248 0 0 1 8,256 Z" fill="#e6edf3" clip-path="url(#o)"/>
+</svg>
