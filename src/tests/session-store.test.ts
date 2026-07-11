@@ -358,14 +358,20 @@ describe('endPracticeSession', () => {
     expect(result).toBeNull()
   })
 
-  it('handles zero recorded scores gracefully', () => {
+  it('records nothing for a session with zero scored items', () => {
+    // Play-then-stop runs used to persist score-0 entries that dragged the
+    // profile's best/accuracy to 0% and polluted leaderboard aggregates —
+    // an empty session now ends cleanly without recording a result.
     const session = makeSession('empty-test', 3)
     appStore.startPracticeSession(session)
+    const historyBefore = appStore.getSessionHistory().length
     // no scores recorded
 
     const result = endPracticeSession()
-    expect(result).not.toBeNull()
-    expect(result!.score).toBe(0)
+    expect(result).toBeNull()
+    expect(appStore.getSessionHistory().length).toBe(historyBefore)
+    // session state still resets so the user is not stuck "in a session"
+    expect(appStore.sessionActive()).toBe(false)
   })
 })
 

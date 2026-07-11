@@ -97,12 +97,23 @@ export function endPracticeSession(): SessionResult | null {
   if (!session) return null
 
   const results = practiceResults()
-  const avgScore =
-    results.length > 0
-      ? Math.round(
-          results.reduce((sum, r) => sum + r.score, 0) / results.length,
-        )
-      : 0
+
+  // A session with ZERO scored items records nothing: play-then-stop runs
+  // used to persist score-0 entries locally AND as cloud sessionRecords,
+  // dragging the profile's best/accuracy/recent-average to 0% and polluting
+  // the leaderboard aggregates with sessions that never scored a note.
+  if (results.length === 0) {
+    setSessionActive(false)
+    setPracticeSession(null)
+    setSessionItemIndex(0)
+    setSessionItemRepeat(0)
+    setSessionMode(false)
+    return null
+  }
+
+  const avgScore = Math.round(
+    results.reduce((sum, r) => sum + r.score, 0) / results.length,
+  )
 
   const result: SessionResult = {
     sessionId: session.id,
