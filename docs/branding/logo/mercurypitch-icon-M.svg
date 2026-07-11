@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch app icon">
+  <defs>
+    <linearGradient id="mpBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#161d29" />
+      <stop offset="1" stop-color="#0b0e14" />
+    </linearGradient>
+    <linearGradient id="mpStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff" />
+      <stop offset="0.5" stop-color="#2dd4bf" />
+      <stop offset="1" stop-color="#bc8cff" />
+    </linearGradient>
+    <linearGradient id="mpChrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef3f9" />
+      <stop offset="100%" stop-color="#8a97a6" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square icon tile -->
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#mpBg)" />
+  <rect x="6.75" y="6.75" width="114.5" height="114.5" rx="27.25" fill="none" stroke="url(#mpStroke)" stroke-width="1.5" opacity="0.5" />
+
+  <!-- Liquid-metal 'M' built from a doubled pitch wave (two peaks = the M) -->
+  <path d="M22 92 C 30 44, 44 44, 52 68 C 58 86, 70 86, 76 68 C 84 44, 98 44, 106 92"
+        fill="none" stroke="url(#mpChrome)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M22 92 C 30 44, 44 44, 52 68 C 58 86, 70 86, 76 68 C 84 44, 98 44, 106 92"
+        fill="none" stroke="url(#mpStroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Mercury droplet dotting the valley (the 'pitch' point) -->
+  <circle cx="64" cy="79" r="6.5" fill="url(#mpChrome)" />
+  <circle cx="61.5" cy="76.5" r="2" fill="#ffffff" opacity="0.9" />
+</svg>

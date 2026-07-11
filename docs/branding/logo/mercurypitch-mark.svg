@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch mark">
+  <defs>
+    <!-- Quicksilver droplet body: HDR chrome sphere with brand-tinted rim light -->
+    <radialGradient id="mpBody" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#f4f8fd" />
+      <stop offset="28%" stop-color="#aeb9c6" />
+      <stop offset="62%" stop-color="#5b6b7b" />
+      <stop offset="100%" stop-color="#1b2430" />
+    </radialGradient>
+    <!-- Brand spectrum rim: blue -> teal -> violet -->
+    <linearGradient id="mpRim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff" />
+      <stop offset="0.5" stop-color="#2dd4bf" />
+      <stop offset="1" stop-color="#bc8cff" />
+    </linearGradient>
+    <!-- Specular highlight -->
+    <radialGradient id="mpSpec" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <clipPath id="mpClip"><circle cx="64" cy="64" r="52" /></clipPath>
+  </defs>
+
+  <!-- Outer spectrum ring (mercury meniscus / orbit) -->
+  <circle cx="64" cy="64" r="58" fill="none" stroke="url(#mpRim)" stroke-width="4" opacity="0.9" />
+
+  <!-- Droplet body -->
+  <circle cx="64" cy="64" r="52" fill="url(#mpBody)" />
+
+  <!-- Pitch wave carved through the sphere -->
+  <g clip-path="url(#mpClip)">
+    <path d="M8 74 C 26 40, 42 40, 64 64 S 102 88, 120 54"
+          fill="none" stroke="#0b0e14" stroke-width="7" stroke-linecap="round" opacity="0.92" />
+    <path d="M8 74 C 26 40, 42 40, 64 64 S 102 88, 120 54"
+          fill="none" stroke="url(#mpRim)" stroke-width="2.5" stroke-linecap="round" />
+  </g>
+
+  <!-- HDR specular highlight -->
+  <ellipse cx="48" cy="42" rx="18" ry="12" fill="url(#mpSpec)" transform="rotate(-24 48 42)" />
+</svg>
