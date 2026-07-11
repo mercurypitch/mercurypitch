@@ -52,6 +52,11 @@ interface Deps {
   handlePlay: () => void
   setPlayMode: Setter<PlaybackMode>
   closeSidebar: () => void
+  /** Invoked when session playback starts, before handlePlay(). Lets the
+   *  host drop context that must not ride along with a session — e.g. the
+   *  Singing tab's imported-MIDI karaoke backing, which is scheduled off the
+   *  shared runtime and would otherwise play underneath the session items. */
+  onSessionPlaybackStart?: () => void
   /** Repeat mode tracking */
   currentRepeat: Accessor<number>
   setCurrentRepeat: Setter<number>
@@ -373,6 +378,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     const session = userSession()
     if (!session || session.items.length === 0) return
 
+    deps.onSessionPlaybackStart?.()
     closeSidebar()
     setSessionMelodyIds([])
     setSessionCurrentMelodyIndex(-1)
