@@ -896,6 +896,17 @@ const AppShell: Component<AppProps> = (props) => {
     buildScaleMelody,
     setCurrentBeat: ((_v: number) => {}) as never,
     setCurrentNoteIndex: ((_v: number) => {}) as never,
+    // Session playback replaces the imported-song context. The karaoke
+    // backing rides the shared runtime (useSingingBacking), so a loaded MIDI
+    // song would otherwise keep sounding underneath every session item; the
+    // A-B loop likewise belongs to the replaced song. (Deliberately a lazy
+    // closure: singingSong/singingBacking/handleClearLoop are declared later
+    // in this component and are initialised by the time playback can start.)
+    onSessionPlaybackStart: () => {
+      setSingingSong(null)
+      singingBacking.setBacking([])
+      handleClearLoop()
+    },
   })
 
   const {

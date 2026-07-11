@@ -82,6 +82,73 @@
   padding: 8px;
 }
 
+/* Song-picker list items (MidiSongSelectModal with prefix="fn"). The gp-
+   twins live in guitar-practice.css; the fn- set lost its home when the old
+   global app.css block was modularised, leaving the Singing tab's Select a
+   Song list unstyled. Values match the original app.css rules. */
+:global(.fn-modal-section) {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+:global(.fn-modal-item) {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+:global(.fn-modal-item:hover) {
+  background: var(--bg-tertiary);
+}
+
+:global(.fn-modal-active) {
+  background: var(--accent-dim) !important;
+  color: var(--accent);
+}
+
+:global(.fn-item-name) {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+:global(.fn-item-meta) {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Imported-MIDI row: name/meta button + Tracks + delete, laid out inline. */
+:global(.fn-modal-item-row) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 0;
+}
+
+:global(.fn-modal-item-main) {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: inherit;
+}
+
+:global(.fn-song-delete) {
+  flex-shrink: 0;
+}
+
 /* Shared track row layout */
 .trackRow {
   display: flex;
