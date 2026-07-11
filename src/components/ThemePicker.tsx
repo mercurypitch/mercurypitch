@@ -12,7 +12,7 @@ export const ThemePicker: Component = () => {
   const themes = Object.values(THEME_INFO)
 
   return (
-    <div class={styles.grid}>
+    <div class={styles.grid} data-tour="settings.theme">
       <For each={themes}>
         {(tm) => (
           <button
