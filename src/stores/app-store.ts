@@ -1825,9 +1825,9 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Theme',
-    targetSelector: '#vis-theme',
+    targetSelector: '[data-tour="settings.theme"]',
     description:
-      'Switch between light and dark themes — the whole app, canvases included, follows instantly.',
+      'Pick from nine colour themes with live preview swatches — the whole app, canvases included, follows instantly.',
     placement: 'left',
     section: 'settings-display',
     requiredTab: TAB_SETTINGS,
@@ -2332,7 +2332,7 @@ const JAM_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Create a room',
     description:
       'Start a new jam room and share the code, then practice or perform together with synced playback.',
-    targetSelector: '.jam-actions',
+    targetSelector: '[data-tour="jam.actions"]',
     placement: 'bottom',
     requiredTab: TAB_JAM,
   },
@@ -2348,7 +2348,7 @@ const JAM_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Inside a room',
     description:
       'Once connected you get a shared exercise canvas with synced playback, live pitch from every singer, host-controlled BPM, plus chat, camera, and one-tap invites.',
-    targetSelector: '.jam-actions',
+    targetSelector: '[data-tour="jam.actions"]',
     placement: 'top',
     requiredTab: TAB_JAM,
   },

@@ -217,7 +217,7 @@ export const JamPanel: Component = () => {
             />
           </div>
 
-          <div class={jamStyles.actions}>
+          <div class={jamStyles.actions} data-tour="jam.actions">
             <button
               class={`${jamStyles.btn} ${jamStyles.btnPrimary}`}
               onClick={handleCreate}
