@@ -27,7 +27,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
-import { setSettingsSection, settingsSection } from '@/stores/ui-store'
+import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -199,6 +199,34 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Account</h3>
             <div class={styles.settingsDivider} />
             <AccountSection />
+          </div>
+
+          {/* Getting started — reopen the welcome overlay + open Voice Mirror.
+              (Shipped in #206, silently dropped by the CSS modularization —
+              restored with module classes instead of inline styles.) */}
+          <div
+            class={styles.settingsSection}
+            data-tour="settings.getting-started"
+          >
+            <h3 class={styles.settingsSectionTitle}>Getting started</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Revisit the welcome screen (voice-range setup, the tour and more),
+              or open the Voice Mirror — a free 60-second voiceprint of your
+              range.
+            </p>
+            <div class={styles.settingsActionRow}>
+              <button
+                type="button"
+                class={styles.settingsActionBtn}
+                onClick={() => setShowWelcome(true)}
+              >
+                Show welcome screen
+              </button>
+              <a href="/mirror" class={styles.settingsActionBtn}>
+                Open Voice Mirror
+              </a>
+            </div>
           </div>
 
           {/* App Mode Section */}

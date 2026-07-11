@@ -24,6 +24,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **Empty practice runs no longer drag your profile to 0%.** Sessions where nothing was scored (play then stop, no singing) used to record 0% scores that pulled your Best Score, Accuracy and Recent Average down on the Community profile. They are no longer recorded.
 - **Guided tours cover the new UI again.** The Theme step now spotlights the nine-theme picker, and the two Jam steps found their targets after the styling rework.
+- **"Getting started" is back in Settings.** The General-tab section with "Show welcome screen" and "Open Voice Mirror" had been silently dropped during the styling rework — it's restored (and now has its own tour step).
 
 ## [0.7.2] - 2026-07-10
 
