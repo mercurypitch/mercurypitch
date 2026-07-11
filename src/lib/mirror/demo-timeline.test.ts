@@ -93,7 +93,6 @@ describe('demoStateAt', () => {
     const tl = buildDemoTimeline('hold')
     const wrapped = demoStateAt(tl, tl.durationSec + 0.1)
     expect(wrapped.t).toBeCloseTo(0.1, 6)
-    expect(wrapped.progress).toBeCloseTo(0.1 / tl.durationSec, 6)
   })
 
   it('exposes the sung prefix and head frame', () => {

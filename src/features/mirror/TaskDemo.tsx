@@ -21,7 +21,7 @@ import { getDevicePixelRatio } from '@/lib/dom-utils'
 import { seeded } from '@/lib/mirror/demo-frames'
 import type { DemoKind, DemoTimeline } from '@/lib/mirror/demo-timeline'
 import { buildDemoTimeline, demoStateAt } from '@/lib/mirror/demo-timeline'
-import { CONF_MIN, foldCents, hzToCents } from '@/lib/mirror/metrics'
+import { CONF_MIN, foldCents, HIT_TOLERANCE_CENTS, hzToCents, } from '@/lib/mirror/metrics'
 
 interface TaskDemoProps {
   kind: DemoKind
@@ -38,8 +38,40 @@ interface TaskDemoProps {
 const SIZES = { card: { w: 320, h: 132 }, stage: { w: 640, h: 240 } }
 const PAD_X = 20
 const PAD_Y = 18
-/** Same lock tolerance the live match viz uses (LiveViz drawMatch). */
-const LOCK_CENTS = 35
+
+const CAPTIONS: Record<'listen' | 'ready' | 'sing' | 'rest', string> = {
+  listen: 'Listen…',
+  ready: 'Get ready…',
+  sing: 'Now sing it back',
+  rest: ' ',
+}
+
+/** Pre-rendered radial glow — building a gradient (two color-stop parses)
+ *  per frame is among the pricier canvas allocations on the rAF path. */
+function glowSprite(
+  rgb: string,
+  radius: number,
+  centerAlpha = 0.85,
+): HTMLCanvasElement {
+  const sprite = document.createElement('canvas')
+  sprite.width = sprite.height = Math.ceil(radius * 2)
+  const ctx = sprite.getContext('2d')
+  if (ctx) {
+    const g = ctx.createRadialGradient(
+      radius,
+      radius,
+      0,
+      radius,
+      radius,
+      radius,
+    )
+    g.addColorStop(0, `rgba(${rgb}, ${centerAlpha})`)
+    g.addColorStop(1, `rgba(${rgb}, 0)`)
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, sprite.width, sprite.height)
+  }
+  return sprite
+}
 
 interface Star {
   x: number
@@ -66,7 +98,7 @@ function lockTimeFor(tl: DemoTimeline): number {
   for (const f of tl.voice) {
     if (
       f.conf >= CONF_MIN &&
-      Math.abs(foldCents(hzToCents(f.f0) - target)) <= LOCK_CENTS
+      Math.abs(foldCents(hzToCents(f.f0) - target)) <= HIT_TOLERANCE_CENTS
     ) {
       return f.t
     }
@@ -117,37 +149,59 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     PAD_Y -
     ((cents - tl.centsMin) / (tl.centsMax - tl.centsMin)) * (dims.h - 2 * PAD_Y)
 
+  // The timeline is immutable and the canvas size fixed per instance, so
+  // every projection (log2 + scaling) happens exactly once here — the rAF
+  // loop only reads points, never recomputes or allocates color strings.
+  const voicePts = tl.voice.map((f) => {
+    const cents = hzToCents(f.f0)
+    return {
+      x: xFor(f.t),
+      y: yFor(cents),
+      voiced: f.conf >= CONF_MIN,
+      locked:
+        (kind === 'match' || kind === 'hold') &&
+        Math.abs(foldCents(cents - targetCents)) <= HIT_TOLERANCE_CENTS,
+    }
+  })
+  const guidePath = new Path2D()
+  tl.guide.forEach((f, i) => {
+    const x = xFor(f.t)
+    const y = yFor(hzToCents(f.f0))
+    if (i === 0) guidePath.moveTo(x, y)
+    else guidePath.lineTo(x, y)
+  })
+  const glowR = isCard ? 11 : 14
+  const noteR = isCard ? 4 : 5
+  const headGlow = glowSprite('143, 163, 255', glowR)
+  const headGlowLocked = glowSprite('139, 233, 184', glowR)
+  const noteGlow = glowSprite('255, 233, 168', noteR * 2.6, 0.9)
+
   function drawStars(
     ctx: CanvasRenderingContext2D,
     t: number,
     still: boolean,
   ): void {
+    ctx.fillStyle = '#f4f0ff'
     for (const star of stars) {
-      const alpha = still
+      ctx.globalAlpha = still
         ? 0.28
         : 0.18 + 0.22 * (0.5 + 0.5 * Math.sin(t * 1.7 + star.phase))
-      ctx.fillStyle = `rgba(244, 240, 255, ${alpha.toFixed(3)})`
       ctx.beginPath()
       ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2)
       ctx.fill()
     }
+    ctx.globalAlpha = 1
   }
 
   function drawGuide(ctx: CanvasRenderingContext2D, alpha: number): void {
-    ctx.strokeStyle = `rgba(255, 233, 168, ${(0.55 * alpha).toFixed(3)})`
+    ctx.strokeStyle = '#ffe9a8'
+    ctx.globalAlpha = 0.55 * alpha
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
     ctx.setLineDash([6, 7])
-    ctx.beginPath()
-    for (let i = 0; i < tl.guide.length; i++) {
-      const f = tl.guide[i]
-      const x = xFor(f.t)
-      const y = yFor(hzToCents(f.f0))
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-    ctx.stroke()
+    ctx.stroke(guidePath)
     ctx.setLineDash([])
+    ctx.globalAlpha = 1
   }
 
   /** Direction chevron near the start of a glide path. */
@@ -174,18 +228,30 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     count: number,
     fade: number,
   ): void {
+    if (count <= 0) return
     const dotR = isCard ? 1.9 : 2.4
-    for (let i = 0; i < count; i++) {
-      const f = tl.voice[i]
-      if (f.conf < CONF_MIN) continue
-      // Newest dots glow brightest; the tail settles to a faint memory.
-      const recency = count <= 1 ? 1 : i / (count - 1)
-      const alpha = (0.15 + 0.65 * recency) * fade
-      ctx.fillStyle = `rgba(143, 163, 255, ${alpha.toFixed(3)})`
+    ctx.fillStyle = '#8fa3ff'
+    // Newest dots glow brightest; the tail settles to a faint memory.
+    // Recency is quantized into a few alpha buckets so the whole trail
+    // fills in ~8 draw calls instead of one styled path per dot.
+    const BUCKETS = 8
+    for (let b = 0; b < BUCKETS; b++) {
+      const start = Math.floor((count * b) / BUCKETS)
+      const end =
+        b === BUCKETS - 1 ? count : Math.floor((count * (b + 1)) / BUCKETS)
+      if (end <= start) continue
+      const recency = count <= 1 ? 1 : (start + end - 1) / 2 / (count - 1)
+      ctx.globalAlpha = (0.15 + 0.65 * recency) * fade
       ctx.beginPath()
-      ctx.arc(xFor(f.t), yFor(hzToCents(f.f0)), dotR, 0, Math.PI * 2)
+      for (let i = start; i < end; i++) {
+        const p = voicePts[i]
+        if (!p.voiced) continue
+        ctx.moveTo(p.x + dotR, p.y)
+        ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2)
+      }
       ctx.fill()
     }
+    ctx.globalAlpha = 1
   }
 
   function drawHead(
@@ -195,21 +261,13 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     locked: boolean,
     fade: number,
   ): void {
-    const glow = locked ? '139, 233, 184' : '143, 163, 255'
-    const glowR = isCard ? 11 : 14
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowR)
-    gradient.addColorStop(0, `rgba(${glow}, ${(0.85 * fade).toFixed(3)})`)
-    gradient.addColorStop(1, `rgba(${glow}, 0)`)
-    ctx.fillStyle = gradient
-    ctx.beginPath()
-    ctx.arc(x, y, glowR, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = locked
-      ? `rgba(217, 255, 233, ${fade.toFixed(3)})`
-      : `rgba(205, 214, 255, ${fade.toFixed(3)})`
+    ctx.globalAlpha = fade
+    ctx.drawImage(locked ? headGlowLocked : headGlow, x - glowR, y - glowR)
+    ctx.fillStyle = locked ? '#d9ffe9' : '#cdd6ff'
     ctx.beginPath()
     ctx.arc(x, y, isCard ? 2.8 : 3.4, 0, Math.PI * 2)
     ctx.fill()
+    ctx.globalAlpha = 1
   }
 
   /** The tightening steadiness ring around the held note. */
@@ -222,11 +280,13 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
   ): void {
     const scale = isCard ? 0.62 : 1
     const spread = (50 - 36 * easeOutCubic(singProgress)) * scale
-    ctx.strokeStyle = `rgba(168, 182, 255, ${(0.85 * fade).toFixed(3)})`
+    ctx.strokeStyle = '#a8b6ff'
+    ctx.globalAlpha = 0.85 * fade
     ctx.lineWidth = 2.4
     ctx.beginPath()
     ctx.arc(x, y, 12 * scale + spread, 0, Math.PI * 2)
     ctx.stroke()
+    ctx.globalAlpha = 1
   }
 
   /** Listen beat: the reference note pulses expanding rings on the line. */
@@ -238,24 +298,19 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
   ): void {
     const x = xFor(segStart + (segEnd - segStart) / 2)
     const y = yFor(targetCents)
-    const noteR = isCard ? 4 : 5
     const maxR = isCard ? 22 : 30
+    ctx.strokeStyle = '#ffe9a8'
+    ctx.lineWidth = 1.6
     for (const offset of [0, 0.5]) {
       const p = ((t - segStart) / 1.0 + offset) % 1
-      const alpha = 0.5 * (1 - p)
-      ctx.strokeStyle = `rgba(255, 233, 168, ${alpha.toFixed(3)})`
-      ctx.lineWidth = 1.6
+      ctx.globalAlpha = 0.5 * (1 - p)
       ctx.beginPath()
       ctx.arc(x, y, noteR + p * maxR, 0, Math.PI * 2)
       ctx.stroke()
     }
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, noteR * 2.6)
-    gradient.addColorStop(0, 'rgba(255, 233, 168, 0.9)')
-    gradient.addColorStop(1, 'rgba(255, 233, 168, 0)')
-    ctx.fillStyle = gradient
-    ctx.beginPath()
-    ctx.arc(x, y, noteR * 2.6, 0, Math.PI * 2)
-    ctx.fill()
+    ctx.globalAlpha = 1
+    const haloR = noteR * 2.6
+    ctx.drawImage(noteGlow, x - haloR, y - haloR)
     ctx.fillStyle = '#ffe9a8'
     ctx.beginPath()
     ctx.arc(x, y, noteR, 0, Math.PI * 2)
@@ -273,20 +328,19 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     if (since < 0 || since > 0.55) return
     const p = since / 0.55
     const dist = 6 + 20 * easeOutCubic(p)
-    const alpha = 0.9 * (1 - p)
-    ctx.fillStyle = `rgba(139, 233, 184, ${alpha.toFixed(3)})`
+    const sparkR = 1.8 * (1 - p * 0.5)
+    ctx.fillStyle = '#8be9b8'
+    ctx.globalAlpha = 0.9 * (1 - p)
+    ctx.beginPath()
     for (let i = 0; i < 4; i++) {
       const angle = (Math.PI / 4) * (1 + 2 * i)
-      ctx.beginPath()
-      ctx.arc(
-        x + Math.cos(angle) * dist,
-        y + Math.sin(angle) * dist,
-        1.8 * (1 - p * 0.5),
-        0,
-        Math.PI * 2,
-      )
-      ctx.fill()
+      const sx = x + Math.cos(angle) * dist
+      const sy = y + Math.sin(angle) * dist
+      ctx.moveTo(sx + sparkR, sy)
+      ctx.arc(sx, sy, sparkR, 0, Math.PI * 2)
     }
+    ctx.fill()
+    ctx.globalAlpha = 1
   }
 
   function render(loopT: number, still: boolean): void {
@@ -318,26 +372,22 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
       drawListenPulse(ctx, state.t, listen.start, listen.end)
     }
 
-    const count = still ? tl.voice.length : state.voiceIndex
+    const count = still ? voicePts.length : state.voiceIndex
     const trailFade = still ? 0.55 : fade
     drawTrail(ctx, count, trailFade)
 
-    const head = still ? tl.voice[tl.voice.length - 1] : state.headFrame
-    if (head && head.conf >= CONF_MIN) {
-      const cents = hzToCents(head.f0)
-      const x = xFor(head.t)
-      const y = yFor(cents)
-      const locked =
-        (kind === 'match' || kind === 'hold') &&
-        Math.abs(foldCents(cents - targetCents)) <= LOCK_CENTS
+    const head = count > 0 ? voicePts[count - 1] : null
+    if (head && head.voiced) {
       if (kind === 'hold') {
         const p = still
           ? 1
           : Math.min(1, (state.t - sing.start) / (sing.end - sing.start))
-        drawHoldRing(ctx, x, y, p, fade)
+        drawHoldRing(ctx, head.x, head.y, p, fade)
       }
-      drawHead(ctx, x, y, locked, still ? 0.9 : fade)
-      if (kind === 'match' && !still) drawLockSparks(ctx, state.t, x, y)
+      drawHead(ctx, head.x, head.y, head.locked, still ? 0.9 : fade)
+      if (kind === 'match' && !still) {
+        drawLockSparks(ctx, state.t, head.x, head.y)
+      }
     }
 
     if (kind === 'match') {
@@ -441,13 +491,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
       />
       <Show when={kind === 'match'}>
         <div class="mirror-demo-caption" aria-hidden="true">
-          {caption() === 'listen'
-            ? 'Listen…'
-            : caption() === 'ready'
-              ? 'Get ready…'
-              : caption() === 'sing'
-                ? 'Now sing it back'
-                : ' '}
+          {CAPTIONS[caption()]}
         </div>
       </Show>
     </div>
