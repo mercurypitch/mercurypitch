@@ -144,6 +144,13 @@ export class AudioEngine {
   private reverbReturnGain: GainNode | null = null
   private currentReverbWetness = 0.3
 
+  // Soft limiter on the polyphonic synth bus. Dense songs stack 10-24 voices
+  // whose summed amplitude far exceeds 1.0 — without this the sum hard-clips
+  // at the destination and every overlap crackles. Scoped to the note bus
+  // (mainGain): the metronome and UVR stem playback are already level-managed
+  // and must not be pumped by other voices.
+  private noteBusLimiter: DynamicsCompressorNode | null = null
+
   // UVR Vocal Separation
   private uvrProcessor: UvrProcessor = new UvrProcessor()
   private uvrInitialized = false
@@ -197,12 +204,26 @@ export class AudioEngine {
       this.uvrOutput = this.audioCtx.createGain()
       this.uvrOutput.gain.value = 1.0
 
-      // Main flow: mainGain → uvrOutput (UVR processing)
-      this.mainGain.connect(this.uvrOutput)
+      // Limiter (fast attack, high ratio = brick-wall-ish) between the note
+      // bus and everything downstream, so polyphony can't clip the output.
+      if (typeof this.audioCtx.createDynamicsCompressor === 'function') {
+        this.noteBusLimiter = this.audioCtx.createDynamicsCompressor()
+        this.noteBusLimiter.threshold.value = -10
+        this.noteBusLimiter.knee.value = 6
+        this.noteBusLimiter.ratio.value = 20
+        this.noteBusLimiter.attack.value = 0.003
+        this.noteBusLimiter.release.value = 0.25
+      }
+      const noteBusOut = this.noteBusLimiter ?? this.mainGain
+
+      // Main flow: mainGain → limiter → uvrOutput (UVR processing)
+      if (this.noteBusLimiter) this.mainGain.connect(this.noteBusLimiter)
+      noteBusOut.connect(this.uvrOutput)
       // Playback analyser: connects to uvrOutput for visualization
       this.uvrOutput.connect(this.playbackAnalyser)
-      // Wet send for reverb: mainGain → reverbSendGain (separate from UVR)
-      this.mainGain.connect(this.reverbSendGain)
+      // Wet send for reverb: limited note bus → reverbSendGain (separate
+      // from UVR)
+      noteBusOut.connect(this.reverbSendGain)
 
       // Metronome/precount bypasses mainGain so click volume is
       // independent of the note volume slider.
@@ -1328,6 +1349,15 @@ export class AudioEngine {
           0.3,
           now + this.adsrAttack + this.adsrDecay + 0.1,
         )
+        // Close the envelope on the audio clock. The oscillators are
+        // hard-stopped 100ms past the nominal end while stopNote's release
+        // ramp fires from a setTimeout — on a busy main thread (the Singing
+        // tab runs the mic pitch loop + canvas per frame) that timeout lands
+        // late, the voice was still at sustain level when the oscillator
+        // died, and every note end clicked. setTargetAtTime releases from
+        // whatever the level is at that moment, so it is click-free even for
+        // very short (50ms) backing notes.
+        mainGain.gain.setTargetAtTime(0, Math.max(now, now + dur - 0.06), 0.02)
         hasCustomEnvelope = true
         break
       }
@@ -1809,6 +1839,7 @@ export class AudioEngine {
     }
     this.metronomeGain = null
     this.mainGain = null
+    this.noteBusLimiter = null
     this.reverbNode = null
     this.reverbSendGain = null
     this.reverbReturnGain = null

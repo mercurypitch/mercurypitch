@@ -42,6 +42,11 @@ const SEEK_JUMP_BEATS = 1.5
 // Only voice a note that JUST crossed the playhead — notes marked "past"
 // during a seek are consumed silently rather than fired in a burst.
 const FRESH_WINDOW_BEATS = 1
+// Per-voice gain for backing notes. The band regularly stacks 10+ voices
+// (every heard track), so full-level voices both drown the scored reference
+// tone and pile amplitude into the note-bus limiter; softer per-voice level
+// keeps the backing behind the melody and the sum inside headroom.
+const BACKING_VOICE_GAIN = 0.55
 
 export function useSingingBacking(deps: Deps): SingingBacking {
   const [backing, setBacking] = createSignal<BackingNote[]>([])
@@ -93,7 +98,20 @@ export function useSingingBacking(deps: Deps): SingingBacking {
           played.add(i)
           if (beat - n.startBeat < FRESH_WINDOW_BEATS && bps > 0) {
             void deps.audioEngine
-              .playNote(n.freq, Math.max(50, (n.duration / bps) * 1000))
+              .playNote(
+                n.freq,
+                Math.max(50, (n.duration / bps) * 1000),
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                BACKING_VOICE_GAIN,
+              )
               .then((id) => {
                 if (id !== undefined) voiceIds.add(id)
               })

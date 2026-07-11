@@ -65,6 +65,11 @@ describe('useSingingBacking', () => {
     { freq: 440, startBeat: 6, duration: 1 },
   ]
 
+  // playNote(freq, ms, …9 effect params…, gain): backing passes the reduced
+  // per-voice gain as the final argument so dense tracks sit under the
+  // scored melody and stay inside the note-bus limiter's headroom.
+  const BACKING_TAIL_ARGS = [...Array<undefined>(9).fill(undefined), 0.55]
+
   it('fires a backing note as the playhead crosses its startBeat', async () => {
     setup({ bpm: 60 }) // 1 beat = 1000ms
     api.setBacking(notes)
@@ -72,7 +77,7 @@ describe('useSingingBacking', () => {
     expect(playNote).not.toHaveBeenCalled()
     emitBeat(1) // crosses note @ beat 1
     expect(playNote).toHaveBeenCalledTimes(1)
-    expect(playNote).toHaveBeenCalledWith(220, 1000) // duration 1 beat @ 60bpm
+    expect(playNote).toHaveBeenCalledWith(220, 1000, ...BACKING_TAIL_ARGS) // duration 1 beat @ 60bpm
     await flush()
   })
 
@@ -105,7 +110,7 @@ describe('useSingingBacking', () => {
     expect(playNote).not.toHaveBeenCalled()
     emitBeat(6) // now crosses note @ beat 6 normally
     expect(playNote).toHaveBeenCalledTimes(1)
-    expect(playNote).toHaveBeenCalledWith(440, 1000)
+    expect(playNote).toHaveBeenCalledWith(440, 1000, ...BACKING_TAIL_ARGS)
     await flush()
   })
 
@@ -130,7 +135,7 @@ describe('useSingingBacking', () => {
     expect(stopNote).toHaveBeenCalledTimes(1) // silenced the first voice
     playNote.mockClear()
     emitBeat(0.6) // fresh baseline crosses the new note → it fires
-    expect(playNote).toHaveBeenCalledWith(550, 1000)
+    expect(playNote).toHaveBeenCalledWith(550, 1000, ...BACKING_TAIL_ARGS)
     await flush()
   })
 
@@ -138,7 +143,7 @@ describe('useSingingBacking', () => {
     setup({ bpm: 120 }) // 1 beat = 500ms
     api.setBacking([{ freq: 220, startBeat: 1, duration: 2 }])
     emitBeat(1)
-    expect(playNote).toHaveBeenCalledWith(220, 1000) // 2 beats @120bpm = 1000ms
+    expect(playNote).toHaveBeenCalledWith(220, 1000, ...BACKING_TAIL_ARGS) // 2 beats @120bpm = 1000ms
     await flush()
   })
 })

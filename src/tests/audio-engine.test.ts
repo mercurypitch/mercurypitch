@@ -15,19 +15,43 @@ global.AudioContext = vi.fn().mockImplementation(function (this: object) {
     resume: vi.fn().mockResolvedValue(undefined),
     suspend: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
-    createGain: vi.fn().mockImplementation(() => ({
-      gain: {
-        value: 0,
-        valueOf: () => 0,
-        setTargetAtTime: vi.fn(),
-        cancelScheduledValues: vi.fn(),
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-        exponentialRampToValueAtTime: vi.fn(),
-      },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    })),
+    createGain: vi.fn().mockImplementation(() => {
+      const node = {
+        gain: {
+          value: 0,
+          valueOf: () => 0,
+          setTargetAtTime: vi.fn(),
+          cancelScheduledValues: vi.fn(),
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+        },
+        // Recorded downstream nodes so tests can assert the audio graph.
+        connectedTo: [] as unknown[],
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }
+      node.connect = vi.fn((target: unknown) => {
+        node.connectedTo.push(target)
+      })
+      return node
+    }),
+    createDynamicsCompressor: vi.fn().mockImplementation(() => {
+      const node = {
+        threshold: { value: -24, setValueAtTime: vi.fn() },
+        knee: { value: 30, setValueAtTime: vi.fn() },
+        ratio: { value: 12, setValueAtTime: vi.fn() },
+        attack: { value: 0.003, setValueAtTime: vi.fn() },
+        release: { value: 0.25, setValueAtTime: vi.fn() },
+        connectedTo: [] as unknown[],
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }
+      node.connect = vi.fn((target: unknown) => {
+        node.connectedTo.push(target)
+      })
+      return node
+    }),
     createOscillator: vi.fn().mockImplementation(() => ({
       start: vi.fn(),
       stop: vi.fn(),
@@ -177,6 +201,35 @@ describe('AudioEngine', () => {
       await engine.init() // Should be no-op
       await engine.init()
       // No error means success
+    })
+
+    it('routes the note bus through a limiter to stop polyphony clipping', () => {
+      const internals = engine as unknown as {
+        mainGain: { connectedTo: unknown[] } | null
+        noteBusLimiter: {
+          threshold: { value: number }
+          ratio: { value: number }
+          connectedTo: unknown[]
+        } | null
+        uvrOutput: unknown
+        reverbSendGain: unknown
+      }
+      expect(internals.noteBusLimiter).not.toBeNull()
+      // Limiter profile: fast attack, high ratio (soft brick wall).
+      expect(internals.noteBusLimiter!.threshold.value).toBe(-10)
+      expect(internals.noteBusLimiter!.ratio.value).toBe(20)
+      // Graph: mainGain → limiter → (uvrOutput, reverbSend); mainGain must
+      // NOT bypass the limiter straight into uvrOutput anymore.
+      expect(internals.mainGain!.connectedTo).toContain(
+        internals.noteBusLimiter,
+      )
+      expect(internals.mainGain!.connectedTo).not.toContain(internals.uvrOutput)
+      expect(internals.noteBusLimiter!.connectedTo).toContain(
+        internals.uvrOutput,
+      )
+      expect(internals.noteBusLimiter!.connectedTo).toContain(
+        internals.reverbSendGain,
+      )
     })
   })
 

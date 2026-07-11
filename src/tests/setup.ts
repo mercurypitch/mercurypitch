@@ -32,6 +32,9 @@ class MockAudioContext {
   createMediaElementSource() {
     return new MockMediaElementAudioSourceNode()
   }
+  createDynamicsCompressor() {
+    return new MockDynamicsCompressorNode()
+  }
   destination = {}
 
   resume() {
@@ -48,8 +51,27 @@ class MockGainNode {
     setValueAtTime: () => {},
     linearRampToValueAtTime: () => {},
     exponentialRampToValueAtTime: () => {},
+    setTargetAtTime: () => {},
+    cancelScheduledValues: () => {},
   }
-  connect() {}
+  /** Recorded downstream nodes so tests can assert the audio graph. */
+  connectedTo: unknown[] = []
+  connect(target?: unknown) {
+    this.connectedTo.push(target)
+  }
+  disconnect() {}
+}
+
+class MockDynamicsCompressorNode {
+  threshold = { value: -24, setValueAtTime: () => {} }
+  knee = { value: 30, setValueAtTime: () => {} }
+  ratio = { value: 12, setValueAtTime: () => {} }
+  attack = { value: 0.003, setValueAtTime: () => {} }
+  release = { value: 0.25, setValueAtTime: () => {} }
+  connectedTo: unknown[] = []
+  connect(target?: unknown) {
+    this.connectedTo.push(target)
+  }
   disconnect() {}
 }
 
