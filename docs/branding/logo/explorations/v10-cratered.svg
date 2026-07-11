@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Cratered Planet">
+  <defs>
+    <radialGradient id="v10p" cx="36%" cy="30%" r="82%">
+      <stop offset="0" stop-color="#f4f8fd"/><stop offset=".3" stop-color="#c3ccd6"/>
+      <stop offset=".64" stop-color="#7c8794"/><stop offset="1" stop-color="#20272f"/>
+    </radialGradient>
+    <linearGradient id="v10o" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <clipPath id="v10c"><circle cx="60" cy="60" r="38"/></clipPath>
+  </defs>
+  <!-- waveform orbit ring (ellipse) behind + front -->
+  <ellipse cx="64" cy="66" rx="58" ry="26" fill="none" stroke="url(#v10o)" stroke-width="3" opacity=".35" transform="rotate(-16 64 66)"/>
+  <!-- planet -->
+  <circle cx="60" cy="60" r="38" fill="url(#v10p)"/>
+  <g clip-path="url(#v10c)" fill="#4a5560" opacity=".45">
+    <circle cx="52" cy="46" r="6"/><circle cx="74" cy="56" r="8"/><circle cx="48" cy="70" r="9"/>
+    <circle cx="70" cy="76" r="4.5"/><circle cx="62" cy="60" r="3"/><circle cx="80" cy="42" r="3.5"/>
+  </g>
+  <g clip-path="url(#v10c)"><ellipse cx="48" cy="44" rx="12" ry="7" fill="#fff" opacity=".55" transform="rotate(-22 48 44)"/></g>
+  <!-- front of orbit resolves into a pitch waveform -->
+  <path d="M12 74 C 30 62, 42 90, 60 78 S 92 62, 116 76" fill="none" stroke="url(#v10o)" stroke-width="5.5" stroke-linecap="round" transform="rotate(-16 64 74)"/>
+</svg>

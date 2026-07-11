@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Mercury Beads">
+  <defs>
+    <radialGradient id="v13b" cx="38%" cy="30%" r="78%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#cdd6df"/>
+      <stop offset=".7" stop-color="#7b8794"/><stop offset="1" stop-color="#1b2430"/>
+    </radialGradient>
+    <linearGradient id="v13t" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <filter id="v13goo"><feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+      <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="g"/>
+      <feBlend in="SourceGraphic" in2="g"/></filter>
+  </defs>
+  <!-- coalescing quicksilver beads tracing a pitch contour -->
+  <g fill="url(#v13b)" filter="url(#v13goo)">
+    <circle cx="20" cy="84" r="9"/>
+    <circle cx="40" cy="66" r="13"/>
+    <circle cx="62" cy="78" r="16"/>
+    <circle cx="86" cy="60" r="12"/>
+    <circle cx="108" cy="46" r="8"/>
+  </g>
+  <!-- spectrum highlight thread riding the beads -->
+  <path d="M20 80 C 34 62, 50 62, 62 74 S 92 58, 108 44" fill="none" stroke="url(#v13t)" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+  <g fill="#fff" opacity=".8"><circle cx="58" cy="72" r="3.5"/><circle cx="37" cy="61" r="2.6"/><circle cx="83" cy="55" r="2.4"/></g>
+</svg>

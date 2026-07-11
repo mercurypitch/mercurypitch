@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Liquid Glass">
+  <defs>
+    <linearGradient id="v8fill" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#bfeaff" stop-opacity=".85"/>
+      <stop offset="45%" stop-color="#58a6ff" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#bc8cff" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="v8rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8fd0ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#d0b3ff"/>
+    </linearGradient>
+    <filter id="v8soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>
+    <clipPath id="v8clip"><path d="M64 12 C 92 12, 112 34, 112 62 C 112 96, 90 118, 64 118 C 38 118, 16 96, 16 62 C 16 34, 36 12, 64 12 Z"/></clipPath>
+  </defs>
+  <!-- squircle "liquid glass" pebble -->
+  <path d="M64 12 C 92 12, 112 34, 112 62 C 112 96, 90 118, 64 118 C 38 118, 16 96, 16 62 C 16 34, 36 12, 64 12 Z"
+        fill="url(#v8fill)" stroke="url(#v8rim)" stroke-width="3"/>
+  <g clip-path="url(#v8clip)">
+    <!-- top glass sheen -->
+    <path d="M22 40 C 44 20, 84 20, 106 40 C 96 54, 32 54, 22 40 Z" fill="#ffffff" opacity=".35" filter="url(#v8soft)"/>
+    <!-- pitch wave through the glass -->
+    <path d="M18 74 C 34 58, 48 58, 64 70 S 96 84, 112 66" fill="none" stroke="#f2fdff" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+    <path d="M18 74 C 34 58, 48 58, 64 70 S 96 84, 112 66" fill="none" stroke="url(#v8rim)" stroke-width="2.4" stroke-linecap="round"/>
+    <ellipse cx="64" cy="116" rx="46" ry="22" fill="#1a1440" opacity=".35"/>
+  </g>
+  <circle cx="48" cy="36" r="5" fill="#fff" opacity=".85"/>
+</svg>

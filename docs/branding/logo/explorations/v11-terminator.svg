@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Terminator Wave">
+  <defs>
+    <radialGradient id="v11lit" cx="32%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#cdd6e0"/><stop offset="1" stop-color="#8a97a6"/>
+    </radialGradient>
+    <linearGradient id="v11wave" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <clipPath id="v11c"><circle cx="64" cy="64" r="52"/></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#161d29"/>
+  <g clip-path="url(#v11c)">
+    <!-- day side, cut by a sine terminator = the pitch line -->
+    <path d="M64 12 C 64 12, 40 40, 64 64 S 88 88, 64 116 L 12 116 L 12 12 Z" fill="url(#v11lit)"/>
+    <!-- glowing terminator wave -->
+    <path d="M64 12 C 64 12, 40 40, 64 64 S 88 88, 64 116" fill="none" stroke="url(#v11wave)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M64 12 C 64 12, 40 40, 64 64 S 88 88, 64 116" fill="none" stroke="#eafcff" stroke-width="1.6"/>
+    <!-- craters on lit side -->
+    <g fill="#98a3b0" opacity=".5"><circle cx="34" cy="48" r="6"/><circle cx="46" cy="80" r="7"/><circle cx="28" cy="72" r="4"/></g>
+    <ellipse cx="34" cy="38" rx="12" ry="7" fill="#fff" opacity=".6" transform="rotate(-20 34 38)"/>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="none" stroke="url(#v11wave)" stroke-width="2" opacity=".5"/>
+</svg>

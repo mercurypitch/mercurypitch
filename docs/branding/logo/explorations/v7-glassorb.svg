@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Glass Orb">
+  <defs>
+    <radialGradient id="v7fill" cx="42%" cy="34%" r="75%">
+      <stop offset="0" stop-color="#eaf6ff" stop-opacity=".95"/>
+      <stop offset="38%" stop-color="#7cc4ff" stop-opacity=".55"/>
+      <stop offset="72%" stop-color="#2dd4bf" stop-opacity=".45"/>
+      <stop offset="100%" stop-color="#0d2033" stop-opacity=".85"/>
+    </radialGradient>
+    <linearGradient id="v7rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <radialGradient id="v7gloss" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="v7clip"><circle cx="64" cy="64" r="52"/></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="53" fill="none" stroke="url(#v7rim)" stroke-width="3.5" opacity=".9"/>
+  <circle cx="64" cy="64" r="52" fill="url(#v7fill)"/>
+  <g clip-path="url(#v7clip)">
+    <!-- refracted pitch wave: brighter, shifted inside the lens -->
+    <path d="M10 78 C 28 58, 42 58, 64 72 S 100 86, 118 66" fill="none" stroke="#eafcff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+    <path d="M10 78 C 28 58, 42 58, 64 72 S 100 86, 118 66" fill="none" stroke="url(#v7rim)" stroke-width="2" stroke-linecap="round"/>
+    <!-- inner bottom shadow for glass depth -->
+    <ellipse cx="64" cy="108" rx="40" ry="20" fill="#04121f" opacity=".5"/>
+  </g>
+  <!-- glossy specular highlights -->
+  <ellipse cx="46" cy="40" rx="17" ry="10" fill="url(#v7gloss)" transform="rotate(-22 46 40)"/>
+  <circle cx="86" cy="46" r="4" fill="#fff" opacity=".7"/>
+</svg>
