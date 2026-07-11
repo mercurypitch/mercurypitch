@@ -1671,6 +1671,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-account"]'],
   },
   {
+    title: 'Getting started, again',
+    targetSelector: '[data-tour="settings.getting-started"]',
+    description:
+      'Reopen the welcome screen any time (voice-range setup, the tour and more), or jump to the Voice Mirror for a free 60-second voiceprint of your range.',
+    placement: 'bottom',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
+  {
     title: 'App mode',
     targetSelector: '[data-tour="settings.app-mode"]',
     description:

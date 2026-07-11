@@ -766,3 +766,30 @@ input:checked + .settingsSlider:before {
     );
   }
 }
+
+/* Getting started — welcome-screen reopen + Voice Mirror link */
+.settingsActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.settingsActionBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.settingsActionBtn:hover {
+  background: var(--bg-secondary);
+}
