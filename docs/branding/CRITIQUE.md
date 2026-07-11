@@ -76,3 +76,20 @@ times-one-idea, gradient dependence, product drift) are unaffected by the compac
 Sound Globe and Meniscus v2 is therefore the founder's call, not this review's. Both favicon export
 sets are now drop-in ready (`favicon/soundglobe/`, `favicon/meniscus2/`) and `public/` uses
 standardized filenames, so switching marks is a single folder copy.
+
+## Founder correction on meaning (2026-07-11)
+
+**"Mercury" is not the element.** Per the founder: the name means **Freddie Mercury first** — the
+voice, the performer, the patron saint of anyone learning to sing — and **the planet second**
+(space, stars, cosmos). The quicksilver/liquid-metal reading in BRAND.md §1 is retired as the lead
+story; keep "responds instantly / fluid" only as product adjectives, not as brand mythology.
+
+Implications:
+- **Imagery** goes celestial: planets, terminator light, starfields — not liquid-metal macro shots.
+  `imagery/quicksilver-hero.jpg` is superseded (kept for the record); cosmic key visuals live
+  alongside it.
+- **The orb mark survives the reframe** — read it as the planet at dawn: lit side, night side, and
+  the terminator drawn as *your* pitch line (this is exploration V11's idea living inside the
+  Meniscus geometry). No Freddie likeness anywhere, ever — rights and taste; the homage lives in
+  the name and the mission ("find your voice"), not in imagery.
+- **Copy**: "Find your pitch." gains a second harmonic — the pitch you sing, and the stage you take.
