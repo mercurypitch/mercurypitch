@@ -170,7 +170,7 @@ Regen flow (Sound Globe): `soundglobe.py` → `finalize_sg.py` → `build_showca
 2. ~~Wire the chosen mark into the app~~ **DONE (2026-07-11)** — `public/` now uses standardized
    names (favicon.ico/.svg, favicon-16/32/48.png, apple-touch-icon.png, icon-192/512.png,
    maskable-512.png, og-image.png), `index.html` links the full set + `site.webmanifest` (new).
-   Currently wired: **Sound Globe**. To swap marks: copy `docs/branding/favicon/<mark>/*` over
+   Currently wired: **Meniscus v2** (founder pick, 2026-07-11 — "the new thing is better"; Sound Globe set remains for the record). To swap marks: copy `docs/branding/favicon/<mark>/*` over
    `public/` (sets exist for `soundglobe` and `meniscus2` — see CRITIQUE.md) + replace
    `public/og-image.png`. Dead `public/favicon_v2.svg` and the one-size-fits-all `favicon.png`
    were removed.
