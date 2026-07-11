@@ -659,6 +659,10 @@
 /* Floating pill pinned to the bottom of the exercise card while a run is
    active: always visible regardless of how tall the exercise content is
    (in-flow placement got clipped by the card's centered overflow). */
+/* Bare positioning wrapper: the Stop button is its own pill, so the wrapper
+   carries no chrome (a second pill around it read as a duplicate outline).
+   The timer countdown gets the floating-pill treatment instead — it is plain
+   text and needs the backdrop to stay readable over the canvas. */
 .exercise-active-controls {
   position: absolute;
   bottom: 14px;
@@ -668,12 +672,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(12, 14, 22, 0.72);
-  backdrop-filter: blur(10px) saturate(125%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
 .exercise-timer-countdown {
@@ -682,7 +680,14 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   min-width: 42px;
-  text-align: right;
+  text-align: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(12, 14, 22, 0.72);
+  -webkit-backdrop-filter: blur(10px) saturate(125%);
+  backdrop-filter: blur(10px) saturate(125%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
 /* ── ExerciseShell: auto-score timer toggle ────────────────── */
