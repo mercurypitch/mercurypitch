@@ -63,3 +63,16 @@ Primary = **Meniscus v2** everywhere (favicon, nav, footer, OG watermark). Consi
 (hand-redrawn, not raw AI output) for the PWA/app icon where a letterform helps recall. Keep
 BRAND.md strategy, colors, and wordmark rules as written; replace §2's final mark. Sound Globe →
 `explorations/` as V15, honorably retired.
+
+## Addendum (2026-07-11, after reading HANDOFF.md)
+
+**Fairness correction:** the favicon-duel above tested the *full* Sound Globe mark; the branch also
+ships a 3-wave `soundglobe-mark-compact.svg` for ≤32 px. Re-tested: **at 32 px the compact reads
+acceptably** (three waves discernible) — **at 16 px it is still mush** (standard-DPI browser tabs
+request 16 px, so the point stands where it matters most). Critique items 2–5 (off-strategy, five-
+times-one-idea, gradient dependence, product drift) are unaffected by the compact variant.
+
+**Also noted:** V15 was iterated with the founder's own feedback (HANDOFF §4) — the choice between
+Sound Globe and Meniscus v2 is therefore the founder's call, not this review's. Both favicon export
+sets are now drop-in ready (`favicon/soundglobe/`, `favicon/meniscus2/`) and `public/` uses
+standardized filenames, so switching marks is a single folder copy.

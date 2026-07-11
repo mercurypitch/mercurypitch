@@ -167,12 +167,13 @@ Regen flow (Sound Globe): `soundglobe.py` → `finalize_sg.py` → `build_showca
 ## 10. Open items / next steps (TODO for continuing)
 1. **Confirm the Sound Globe** (or request tweaks: meridian count, equator amplitude, gradient balance,
    teal-forward vs full spectrum).
-2. **Wire the chosen mark into the app** (a real code change — will need `pnpm check`):
-   - Copy `favicon/soundglobe/*` into `public/` (favicon.ico, favicon.png, apple-touch, icons).
-   - Update `index.html` `<link rel="icon">` set + `<meta name="theme-color">` (stays `#0d1117`).
-   - Add a web app manifest (or update it) with `icon-192/512` + `maskable-512`.
-   - Replace `public/favicon_v2.svg` with `soundglobe-mark.svg` (or compact).
-   - Replace `public/og-image.png` with `soundglobe-og.png` (1200×630).
+2. ~~Wire the chosen mark into the app~~ **DONE (2026-07-11)** — `public/` now uses standardized
+   names (favicon.ico/.svg, favicon-16/32/48.png, apple-touch-icon.png, icon-192/512.png,
+   maskable-512.png, og-image.png), `index.html` links the full set + `site.webmanifest` (new).
+   Currently wired: **Sound Globe**. To swap marks: copy `docs/branding/favicon/<mark>/*` over
+   `public/` (sets exist for `soundglobe` and `meniscus2` — see CRITIQUE.md) + replace
+   `public/og-image.png`. Dead `public/favicon_v2.svg` and the one-size-fits-all `favicon.png`
+   were removed.
 3. Optional: add the **Mercury/Chrome tokens** to `src/styles/app.css` (§2 / BRAND.md §3).
 4. Optional: unify the `public/characters/*` mascots onto the spectrum + chrome rim (BRAND.md §5).
 5. Trademark: run the clearance search, then file EUIPO word mark (TRADEMARK.md).
