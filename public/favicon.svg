@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- MercuryPitch favicon — simplified meniscus for 16–32 px:
+       flat chrome dome, solid liquid, one thick Signal Blue wave. -->
+  <defs>
+    <clipPath id="o"><circle cx="256" cy="256" r="248"/></clipPath>
+  </defs>
+  <g clip-path="url(#o)">
+    <circle cx="256" cy="256" r="248" fill="#c3ccd6"/>
+    <path d="M8,256 C96,168 164,168 256,256 S416,344 504,256 A248,248 0 0 1 8,256 Z" fill="#16233a"/>
+    <path d="M8,256 C96,168 164,168 256,256 S416,344 504,256" fill="none" stroke="#58a6ff" stroke-width="44" stroke-linecap="round"/>
+    <ellipse cx="176" cy="124" rx="56" ry="30" fill="#ffffff" opacity="0.9" transform="rotate(-20 176 124)"/>
+  </g>
+</svg>

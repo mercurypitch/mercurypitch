@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Mercury glyph">
+  <defs>
+    <linearGradient id="v2g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <linearGradient id="v2bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a2330"/><stop offset="1" stop-color="#0b0e14"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="60" fill="url(#v2bg)"/>
+  <circle cx="64" cy="64" r="59" fill="none" stroke="url(#v2g)" stroke-width="1" opacity=".35"/>
+  <g fill="none" stroke="url(#v2g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- horns (crescent) -->
+    <path d="M46 24 A 20 16 0 0 0 82 24"/>
+    <!-- head ring of the Mercury symbol -->
+    <circle cx="64" cy="52" r="17"/>
+    <!-- stem -->
+    <path d="M64 69 L 64 104"/>
+    <!-- cross bar reimagined as a pitch waveform -->
+    <path d="M44 90 C 51 80, 57 100, 64 90 S 77 80, 84 90" stroke-width="5"/>
+  </g>
+  <!-- pitch wave inside the head ring -->
+  <path d="M52 52 C 57 45, 61 59, 64 52 S 71 45, 76 52" fill="none" stroke="#e6edf3" stroke-width="3" stroke-linecap="round" opacity=".92"/>
+</svg>

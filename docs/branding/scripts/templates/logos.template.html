@@ -1,0 +1,113 @@
+<title>MercuryPitch — Logo Explorations</title>
+<style>
+__FONTS__
+:root{
+  color-scheme:dark light;
+  --bg:#0d1117; --panel:#161b22; --card:#1c2128; --line:#30363d; --hair:rgba(230,237,243,.08);
+  --fg:#e6edf3; --muted:#a8b3bf; --faint:#6e7681;
+  --blue:#58a6ff; --teal:#2dd4bf; --violet:#bc8cff;
+  --spectrum:linear-gradient(120deg,#58a6ff,#2dd4bf 50%,#bc8cff);
+  --tile:radial-gradient(120% 120% at 50% 12%,#12181f,#090c11);
+  --shadow:0 20px 50px -26px rgba(0,0,0,.85);
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#eef1f5; --panel:#ffffff; --card:#ffffff; --line:#d6dbe1; --hair:rgba(31,35,40,.07);
+  --fg:#1f2328; --muted:#525960; --faint:#7d8590;
+  --blue:#0969da; --tile:radial-gradient(120% 120% at 50% 12%,#ffffff,#e9edf2);
+  --shadow:0 18px 44px -30px rgba(31,35,40,.4);
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  color-scheme:light;
+  --bg:#eef1f5; --panel:#ffffff; --card:#ffffff; --line:#d6dbe1; --hair:rgba(31,35,40,.07);
+  --fg:#1f2328; --muted:#525960; --faint:#7d8590; --blue:#0969da;
+  --tile:radial-gradient(120% 120% at 50% 12%,#ffffff,#e9edf2);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1,h2,h3,.disp{font-family:'Outfit',sans-serif;font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+.lead{color:var(--muted);font-size:18px}
+a{color:var(--blue);text-decoration:none}
+
+.toggle{position:fixed;top:16px;right:16px;z-index:50;display:flex;gap:2px;
+  background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:999px;padding:4px}
+.toggle button{all:unset;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:999px}
+.toggle button[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+.toggle button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+header{padding:80px 0 20px}
+header .kick{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--spectrum)}
+header h1{font-size:clamp(34px,5.4vw,56px);line-height:1}
+header .lead{margin-top:16px;max-width:60ch}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:24px 0 8px;font-size:13px;color:var(--muted)}
+.legend b{color:var(--fg);font-family:'Outfit',sans-serif}
+.rec-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  font-family:'Outfit',sans-serif;color:#04070c;background:var(--spectrum);padding:3px 9px;border-radius:999px}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding:24px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);position:relative}
+.card.rec{border-color:color-mix(in srgb,var(--blue) 55%,var(--line))}
+.card .top{display:grid;grid-template-columns:1.1fr .9fr;gap:0}
+.stage{background:var(--tile);aspect-ratio:1;display:grid;place-items:center;padding:34px;border-right:1px solid var(--hair)}
+.stage svg{width:100%;height:100%;max-height:190px}
+.side{padding:20px;display:flex;flex-direction:column;gap:14px;justify-content:center}
+.tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--blue)}
+.side h3{font-size:21px}
+.side p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+
+/* previews row */
+.previews{display:flex;align-items:center;gap:16px;padding:14px 20px;border-top:1px solid var(--hair);flex-wrap:wrap}
+.previews .lbl{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.fav{display:grid;place-items:center;background:var(--tile);border:1px solid var(--hair);border-radius:6px}
+.fav svg{width:70%;height:70%}
+.f16{width:16px;height:16px}.f24{width:24px;height:24px}.f32{width:32px;height:32px}.f48{width:48px;height:48px}
+.apptile{width:52px;height:52px;border-radius:12px;background:var(--tile);display:grid;place-items:center;border:1px solid var(--hair);box-shadow:var(--shadow)}
+.apptile svg{width:74%;height:74%}
+.spacer{flex:1}
+.badge{position:absolute;top:12px;left:12px;z-index:2}
+
+footer{padding:40px 0 72px;color:var(--faint);font-size:13px;border-top:1px solid var(--hair);margin-top:24px}
+.note{background:color-mix(in srgb,var(--blue) 8%,transparent);border-left:3px solid var(--blue);
+  border-radius:0 12px 12px 0;padding:14px 18px;color:var(--fg);font-size:14px;margin:8px 0 0}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.card .top{grid-template-columns:1fr}.stage{border-right:0;border-bottom:1px solid var(--hair)}}
+</style>
+
+<div class="toggle" role="group" aria-label="Theme">
+  <button id="tl" aria-pressed="false">Light</button>
+  <button id="td" aria-pressed="true">Dark</button>
+</div>
+
+<header><div class="wrap">
+  <div class="kick"><span class="dot"></span><span class="eyebrow">MercuryPitch · Logo explorations</span></div>
+  <h1>Six marks, four personalities</h1>
+  <p class="lead">A fresh take on the “mercury” symbol — each concept is a distinct idea, not a recolor, and each is drawn to survive at 16&nbsp;px. Recommended leads are ringed. Every mark is production SVG; favicon export sets exist for the three leads.</p>
+  <div class="legend">
+    <span><span class="rec-pill">◆ Lead</span> &nbsp;strongest, favicon set generated</span>
+    <span><b>Preview strip</b> = the same SVG at real favicon sizes + app tile</span>
+  </div>
+</div></header>
+
+<main><div class="wrap">
+  <div class="grid">__CARDS__</div>
+
+  <div class="note" style="margin-top:20px"><b>Files:</b> vectors in <span class="mono">docs/branding/logo/explorations/</span>; drop-in favicon sets (16/32/48, apple-touch, maskable, .ico, .svg) in <span class="mono">docs/branding/favicon/{v1,v2,v6}/</span>. Pick one and I’ll wire it into <span class="mono">public/</span> + <span class="mono">index.html</span> and generate the OG image.</div>
+</div></main>
+
+<footer><div class="wrap">MercuryPitch · Logo explorations — pair with the full system in <span class="mono">docs/branding/BRAND.md</span></div></footer>
+
+<script>
+(function(){
+  var root=document.documentElement,tl=document.getElementById('tl'),td=document.getElementById('td');
+  function set(m){root.setAttribute('data-theme',m);td.setAttribute('aria-pressed',m==='dark');tl.setAttribute('aria-pressed',m==='light');}
+  var mq=window.matchMedia('(prefers-color-scheme: light)');set(mq.matches?'light':'dark');
+  tl.onclick=function(){set('light')};td.onclick=function(){set('dark')};
+})();
+</script>

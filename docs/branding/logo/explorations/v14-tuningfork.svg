@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Tuning Fork Drop">
+  <defs>
+    <linearGradient id="v14m" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#c8d2dd"/><stop offset=".45" stop-color="#7c8794"/><stop offset="1" stop-color="#2c3540"/>
+    </linearGradient>
+    <linearGradient id="v14g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <radialGradient id="v14d" cx="40%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#eaf6ff"/><stop offset=".5" stop-color="#58a6ff"/><stop offset="1" stop-color="#1a8a94"/>
+    </radialGradient>
+  </defs>
+  <!-- vibration waves emanating from the tines -->
+  <g fill="none" stroke="url(#v14g)" stroke-linecap="round" opacity=".7">
+    <path d="M96 30 C 108 40, 108 56, 96 66" stroke-width="3"/>
+    <path d="M104 22 C 120 38, 120 58, 104 74" stroke-width="2.4" opacity=".5"/>
+  </g>
+  <!-- tuning fork in chrome -->
+  <g fill="none" stroke="url(#v14m)" stroke-width="9" stroke-linecap="round">
+    <path d="M42 22 L 42 60 A 22 22 0 0 0 86 60 L 86 22"/>
+    <path d="M64 82 L 64 100"/>
+  </g>
+  <!-- mercury droplet forming at the stem tip -->
+  <path d="M64 122 C 54 110, 54 102, 64 90 C 74 102, 74 110, 64 122 Z" fill="url(#v14d)"/>
+  <ellipse cx="60" cy="102" rx="3" ry="5" fill="#fff" opacity=".7"/>
+</svg>

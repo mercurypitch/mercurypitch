@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Monoline">
+  <defs>
+    <linearGradient id="v5g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".55" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+  </defs>
+  <!-- single continuous stroke: a rising pitch wave -->
+  <path d="M14 82 C 30 82, 34 46, 50 46 C 66 46, 66 82, 82 82 C 96 82, 100 40, 114 40"
+        fill="none" stroke="url(#v5g)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- mercury droplet as the terminal point / pitch marker -->
+  <circle cx="114" cy="40" r="9" fill="url(#v5g)"/>
+  <circle cx="111" cy="37" r="2.6" fill="#fff" opacity=".85"/>
+</svg>

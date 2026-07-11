@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Soundwell">
+  <defs>
+    <radialGradient id="v6d" cx="40%" cy="32%" r="78%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#c8d2dd"/>
+      <stop offset=".7" stop-color="#6a7889"/><stop offset="1" stop-color="#1b2430"/>
+    </radialGradient>
+    <radialGradient id="v6r" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </radialGradient>
+  </defs>
+  <!-- concentric ripples: sound propagating from the drop -->
+  <g fill="none" stroke="url(#v6r)" stroke-linecap="round">
+    <circle cx="64" cy="70" r="52" stroke-width="3.4" opacity=".38"/>
+    <circle cx="64" cy="70" r="40" stroke-width="4" opacity=".6"/>
+    <circle cx="64" cy="70" r="28" stroke-width="4.6" opacity=".8"/>
+    <circle cx="64" cy="70" r="16" stroke-width="5.2" opacity="1"/>
+  </g>
+  <!-- falling mercury droplet at the center -->
+  <path d="M64 78 C 52 62, 52 52, 64 34 C 76 52, 76 62, 64 78 Z" fill="url(#v6d)"/>
+  <ellipse cx="59" cy="52" rx="4" ry="7" fill="#fff" opacity=".7" transform="rotate(-16 59 52)"/>
+</svg>

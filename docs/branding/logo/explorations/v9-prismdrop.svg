@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Prism Drop">
+  <defs>
+    <radialGradient id="v9glass" cx="42%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".9"/>
+      <stop offset="45%" stop-color="#cfe8ff" stop-opacity=".4"/>
+      <stop offset="100%" stop-color="#0d1a2b" stop-opacity=".8"/>
+    </radialGradient>
+    <clipPath id="v9clip"><path d="M64 16 C 84 46, 96 62, 96 82 A 32 32 0 1 1 32 82 C 32 62, 44 46, 64 16 Z"/></clipPath>
+  </defs>
+  <!-- incoming light beam entering the drop -->
+  <path d="M22 44 L 58 60" stroke="#9fb6cc" stroke-width="3.4" stroke-linecap="round" opacity=".7"/>
+  <!-- glass droplet / prism -->
+  <path d="M64 16 C 84 46, 96 62, 96 82 A 32 32 0 1 1 32 82 C 32 62, 44 46, 64 16 Z" fill="url(#v9glass)" stroke="#7fa6c4" stroke-width="2.4" opacity=".98"/>
+  <g clip-path="url(#v9clip)">
+    <path d="M40 86 C 50 76, 60 96, 70 84" fill="none" stroke="#4a6076" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+    <ellipse cx="52" cy="46" rx="8" ry="14" fill="#fff" opacity=".55" transform="rotate(-24 52 46)"/>
+  </g>
+  <!-- dispersed spectrum fan (the brand colors literally emerge from the drop) -->
+  <g stroke-width="4.6" stroke-linecap="round" fill="none">
+    <path d="M90 82 L 126 72" stroke="#58a6ff"/>
+    <path d="M92 90 L 128 90" stroke="#2dd4bf"/>
+    <path d="M90 98 L 126 108" stroke="#bc8cff"/>
+  </g>
+</svg>
