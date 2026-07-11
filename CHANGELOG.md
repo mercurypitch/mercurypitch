@@ -3,6 +3,28 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.3] - 2026-07-11
+
+### Added
+
+- **Challenges are real now.** The Practice drill's score counts automatically as a challenge attempt — meet the target on a single run to complete the challenge, earn its badge, and appear on the leaderboard. No more manual "Update Progress".
+- **A Basics category for your first win.** Three gentle long-note holds (from a 40% target) open the Challenges tab, and completing your first one grants the new First Victory badge. Every category now has real, drill-backed challenges — 24 in total across 12 categories, with 16 badges.
+- **Echo mode for the Arpeggio Jumper.** Choose "Echo the phrase" and the whole arpeggio plays first — then you sing it back from memory, one steady note per beat. Trains your inner ear, not just pitch matching.
+- **Exercises feel like a game.** A draining bar shows exactly how long you have to sing, every note lands as Perfect / Great / Close / Missed with its own sound, consecutive good notes build a combo, and each run ends with an S–D grade, a "New best!" moment, and your delta vs the last run.
+- **Your level, visible.** Every exercise shows its adaptive difficulty level (Lv 1–10) in the header, and you get a toast when the app levels a drill up or down to match your recent scores.
+- **Sing-along tips per challenge.** Each challenge card and its detail view explain exactly which drill runs and what score completes it.
+- **Karaoke: import several sessions at once.** Drop multiple ZIP exports (or a whole batch) straight onto the upload view and they land as separate sessions.
+
+### Changed
+
+- **The mirror now walks you in.** An animated "How it works" overview plus short intros before each task explain the flow the first time (also smoother and lighter to render).
+- **Cleaner phone layout.** Tidier header, tab bar and karaoke chips; the side drawer closes more predictably and toasts/hints stack without overlapping the transport.
+
+### Fixed
+
+- **Empty practice runs no longer drag your profile to 0%.** Sessions where nothing was scored (play then stop, no singing) used to record 0% scores that pulled your Best Score, Accuracy and Recent Average down on the Community profile. They are no longer recorded.
+- **Guided tours cover the new UI again.** The Theme step now spotlights the nine-theme picker, and the two Jam steps found their targets after the styling rework.
+
 ## [0.7.2] - 2026-07-10
 
 ### Added
