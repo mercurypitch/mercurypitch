@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="MercuryPitch — Meniscus">
+  <defs>
+    <radialGradient id="v1body" cx="38%" cy="28%" r="82%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".14" stop-color="#dbe3ec"/>
+      <stop offset=".42" stop-color="#9fabb9"/><stop offset=".72" stop-color="#5b6b7b"/><stop offset="1" stop-color="#161d29"/>
+    </radialGradient>
+    <linearGradient id="v1liquid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b3a5c"/><stop offset="1" stop-color="#123043"/>
+    </linearGradient>
+    <linearGradient id="v1rim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <clipPath id="v1clip"><circle cx="64" cy="64" r="54"/></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="54" fill="url(#v1body)"/>
+  <g clip-path="url(#v1clip)">
+    <!-- liquid fill with sine waterline -->
+    <path d="M6 70 C 24 52, 40 52, 64 68 S 104 84, 122 66 L 122 122 L 6 122 Z" fill="url(#v1liquid)"/>
+    <path d="M6 70 C 24 52, 40 52, 64 68 S 104 84, 122 66" fill="none" stroke="url(#v1rim)" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M6 70 C 24 52, 40 52, 64 68 S 104 84, 122 66" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+  </g>
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#0b0e14" stroke-width="2" opacity=".25"/>
+  <ellipse cx="47" cy="42" rx="15" ry="9" fill="#fff" opacity=".8" transform="rotate(-22 47 42)"/>
+</svg>

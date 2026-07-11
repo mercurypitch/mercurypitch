@@ -44,10 +44,24 @@ with a **pitch sine-wave** carved through it and a spectrum meniscus ring (blue�
 icon is a **liquid-metal "M"** built from a doubled pitch wave — two wave peaks form the M, and a
 mercury droplet dots the valley.
 
-### Assets in this folder (`logo/`)
+### Concept explorations (choose the final mark here)
+Six distinct concepts across the four personalities live in `logo/explorations/` (SVG + 512px PNG),
+compared visually in **`logo-explorations.html`**. Leads: **V1 Meniscus**, **V2 Mercury Glyph ☿**,
+**V6 Soundwell** — each has a drop-in favicon set in `favicon/{v1,v2,v6}/`.
+
+| Concept | Personality | Idea |
+| --- | --- | --- |
+| V1 Meniscus | Liquid-premium | Chrome sphere half-filled with liquid; the waterline is the pitch wave |
+| V2 Mercury Glyph ☿ | Sleek pro-tech | Alchemical Mercury symbol rebuilt with a pitch wave |
+| V3 Droplet-Note | Warm & musical | Mercury droplet as a note-head on a wave staff |
+| V4 Orbit Pitch | Cosmic premium | Mercury planet with an orbit that becomes a waveform |
+| V5 Monoline | Minimal Swiss | One rising pitch-stroke ending in a mercury bead |
+| V6 Soundwell | Liquid-premium | Mercury droplet with concentric sound ripples |
+
+### First-pass assets in this folder (`logo/`)
 | File | Use |
 | --- | --- |
-| `mercurypitch-mark.svg` | Primary mark — droplet + wave. Favicon, avatar, standalone symbol. |
+| `mercurypitch-mark.svg` | Early primary mark — droplet + wave (superseded by the explorations above). |
 | `mercurypitch-icon-M.svg` | App/tile icon — rounded square, liquid-metal "M". PWA, home screen, store. |
 | `mercurypitch-lockup.svg` | Horizontal lockup — mark + wordmark. Header, docs, footer, email. |
 
@@ -277,6 +291,8 @@ registrable logo.** Here's why and what to do.
    actually stops competitors. (US: USPTO; EU: EUIPO; or use a service like a trademark attorney.)
    - Do a knockout search first (USPTO TESS / EUIPO eSearch) for "MercuryPitch" in music-software classes
      (Nice class 9 software, 41 education/entertainment).
+   - **Full step-by-step global filing guide (EU-based → worldwide via Madrid Protocol): see
+     [`TRADEMARK.md`](./TRADEMARK.md).**
 4. **Keep records** — save prompts, seeds, and your vector source files as authorship/provenance evidence.
 5. **Use MJ imagery for the _surround_** — hero art, backgrounds, OG images, social — where "can't
    copyright the raster" matters far less than for the logo, and speed matters more.
