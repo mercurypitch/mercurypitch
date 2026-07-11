@@ -14,6 +14,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Your level, visible.** Every exercise shows its adaptive difficulty level (Lv 1–10) in the header, and you get a toast when the app levels a drill up or down to match your recent scores.
 - **Sing-along tips per challenge.** Each challenge card and its detail view explain exactly which drill runs and what score completes it.
 - **Karaoke: import several sessions at once.** Drop multiple ZIP exports (or a whole batch) straight onto the upload view and they land as separate sessions.
+- **A new MercuryPitch mark.** The app has a fresh icon — a cosmic "meniscus" pitch-wave — in the browser tab, the installed-app icon and link previews.
 
 ### Changed
 
