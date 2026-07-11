@@ -201,22 +201,28 @@ export const MirrorApp: Component = () => {
 
   /** One fragment router for load AND hashchange: cosmic mode, saved takes
    *  (#take-N, a real feature) and — in dev builds — the demo fast lanes, so
-   *  editing the hash or using back/forward reacts without a reload. */
-  function applyHash(): void {
+   *  editing the hash or using back/forward reacts without a reload. When the
+   *  fragment names no state (cleared by back/forward or edited away), a
+   *  hash-addressed terminal screen falls back to the landing so the URL and
+   *  the UI agree; live takes are never torn down by a stray fragment. */
+  async function applyHash(): Promise<void> {
     setCosmicOpen(isCosmicHash())
+    if (isCosmicHash()) return
     const take = parseTakeHash(window.location.hash)
-    if (take !== null) {
-      restoreAttempt(take)
-      return
-    }
-    if (import.meta.env.DEV) void maybeStartDemo()
+    if (take !== null && restoreAttempt(take)) return
+    if (import.meta.env.DEV && (await maybeStartDemo())) return
+    if (session().phase === 'results' || freePhase() === 'results') resetAll()
+  }
+
+  const onHashChange = (): void => {
+    void applyHash()
   }
 
   onMount(() => {
     trackFunnel('mirror_view')
-    applyHash()
-    window.addEventListener('hashchange', applyHash)
-    onCleanup(() => window.removeEventListener('hashchange', applyHash))
+    onHashChange()
+    window.addEventListener('hashchange', onHashChange)
+    onCleanup(() => window.removeEventListener('hashchange', onHashChange))
   })
   onCleanup(() => {
     cancelled = true
@@ -648,7 +654,11 @@ export const MirrorApp: Component = () => {
     })
     setTakeN(attempt?.n ?? null)
     if (attempt !== null) {
-      history.replaceState(null, '', `#${takeHash(attempt.n)}`)
+      // Push, don't replace: landing → results becomes a real history step,
+      // so Back returns to the landing (applyHash resets the screen) and
+      // Forward re-restores this take. pushState fires no hashchange, so the
+      // fresh results are not immediately re-restored from storage.
+      history.pushState(null, '', `#${takeHash(attempt.n)}`)
     }
   }
 
@@ -694,17 +704,19 @@ export const MirrorApp: Component = () => {
    *  screen built from synthetic frames (no mic), so the layout, card and
    *  reveal can be rendered and screenshotted. /mirror#<legend> (e.g.
    *  #freddie, #cher) is the fast-lane shorthand: that legend's profile,
-   *  already revealed. Tree-shaken out of prod. */
-  async function maybeStartDemo(): Promise<void> {
+   *  already revealed. Tree-shaken out of prod. Returns whether it installed
+   *  a demo screen, so applyHash knows the fragment was consumed. */
+  async function maybeStartDemo(): Promise<boolean> {
     const params = new URLSearchParams(window.location.search)
     const queryKey = params.get('demo')
     const hashKey = window.location.hash.replace(/^#/, '')
-    if (queryKey === null && hashKey === '') return
+    if (queryKey === null && hashKey === '') return false
     const { DEMO_PROFILES, buildDemoResult } = await import('./demo-data')
-    // Hash shorthand only counts when it names a profile — other fragments
-    // (e.g. #sing-the-universe) belong to their own features.
-    const fromHash = queryKey === null && hashKey in DEMO_PROFILES
-    if (queryKey === null && !fromHash) return
+    // Hash shorthand only counts when it names an own profile key — other
+    // fragments (e.g. #sing-the-universe) belong to their own features, and
+    // inherited keys (#constructor) must not resolve to a "profile".
+    const fromHash = queryKey === null && Object.hasOwn(DEMO_PROFILES, hashKey)
+    if (queryKey === null && !fromHash) return false
     const profileKey = queryKey ?? hashKey
     const profile = DEMO_PROFILES[profileKey] ?? DEMO_PROFILES.baritone
     const { result, glides } = buildDemoResult(profile)
@@ -733,6 +745,7 @@ export const MirrorApp: Component = () => {
       range: result.range,
       result,
     })
+    return true
   }
 
   /** The clean data story card — legend as a circular medallion + name pill
