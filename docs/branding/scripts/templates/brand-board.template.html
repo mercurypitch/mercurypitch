@@ -1,0 +1,415 @@
+<title>MercuryPitch — Brand System</title>
+<style>
+__FONTS__
+
+:root{
+  color-scheme: dark light;
+  --obsidian:#0d1117; --panel:#161b22; --tertiary:#21262d; --card:#1c2128;
+  --border:#30363d; --hair:rgba(230,237,243,.08);
+  --tx:#e6edf3; --tx2:#a8b3bf; --tx3:#6e7681;
+  --blue:#58a6ff; --teal:#2dd4bf; --violet:#bc8cff;
+  --green:#3fb950; --yellow:#d29922; --red:#f85149;
+  --c100:#f4f8fd; --c300:#c3ccd6; --c500:#8a97a6; --c700:#5b6b7b; --c900:#1b2430;
+  --bg:var(--obsidian); --fg:var(--tx); --muted:var(--tx2); --faint:var(--tx3);
+  --surface:var(--panel); --surface2:var(--card); --line:var(--border);
+  --spectrum:linear-gradient(120deg,#58a6ff 0%,#2dd4bf 50%,#bc8cff 100%);
+  --mercury:radial-gradient(120% 120% at 38% 30%,#f4f8fd 0%,#aeb9c6 28%,#5b6b7b 62%,#1b2430 100%);
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 20px 50px -24px rgba(0,0,0,.8);
+  --maxw:1080px;
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --bg:#eef1f5; --fg:#1f2328; --muted:#525960; --faint:#7d8590;
+  --surface:#ffffff; --surface2:#f6f8fa; --line:#d6dbe1; --hair:rgba(31,35,40,.07);
+  --blue:#0969da; --teal:#0a6460; --violet:#8250df;
+  --shadow:0 1px 2px rgba(31,35,40,.06), 0 22px 48px -30px rgba(31,35,40,.35);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    color-scheme: light;
+    --bg:#eef1f5; --fg:#1f2328; --muted:#525960; --faint:#7d8590;
+    --surface:#ffffff; --surface2:#f6f8fa; --line:#d6dbe1; --hair:rgba(31,35,40,.07);
+    --blue:#0969da; --teal:#0a6460; --violet:#8250df;
+    --shadow:0 1px 2px rgba(31,35,40,.06), 0 22px 48px -30px rgba(31,35,40,.35);
+  }
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  font-feature-settings:'cv02','cv03','cv04','cv11';
+  overflow-x:hidden;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+h1,h2,h3,.disp{font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:-.02em; text-wrap:balance; margin:0}
+p{margin:0}
+a{color:var(--blue); text-decoration:none}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); font-weight:600}
+.lead{color:var(--muted); font-size:19px; line-height:1.5}
+
+/* theme toggle */
+.toggle{position:fixed; top:16px; right:16px; z-index:50; display:flex; gap:2px;
+  background:color-mix(in srgb,var(--surface) 80%,transparent); backdrop-filter:blur(8px);
+  border:1px solid var(--line); border-radius:999px; padding:4px}
+.toggle button{all:unset; cursor:pointer; font-size:12px; font-weight:600; color:var(--muted);
+  padding:6px 12px; border-radius:999px; line-height:1}
+.toggle button[aria-pressed="true"]{background:var(--surface2); color:var(--fg); box-shadow:var(--shadow)}
+.toggle button:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+
+/* ---------- HERO ---------- */
+.hero{position:relative; padding:120px 0 72px; overflow:hidden}
+.hero .glow{position:absolute; inset:-20% -10% auto -10%; height:520px; z-index:0; pointer-events:none;
+  background:radial-gradient(60% 70% at 50% 0%, rgba(88,166,255,.20), transparent 62%),
+             radial-gradient(50% 60% at 78% 18%, rgba(188,140,255,.16), transparent 60%),
+             radial-gradient(46% 60% at 20% 22%, rgba(45,212,191,.14), transparent 60%);
+  filter:saturate(1.1)}
+.hero .wrap{position:relative; z-index:1; display:grid; grid-template-columns:1.15fr .85fr; gap:48px; align-items:center}
+.hero-copy h1{font-size:clamp(44px,7vw,86px); line-height:.98}
+.hero-copy h1 .grad{background:var(--spectrum); -webkit-background-clip:text; background-clip:text; color:transparent}
+.hero-copy .lead{margin-top:22px; max-width:46ch}
+.hero-copy .kicker{margin-bottom:20px; display:flex; align-items:center; gap:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--spectrum);box-shadow:0 0 12px var(--blue)}
+.chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:28px}
+.chip{font-size:13px; color:var(--muted); border:1px solid var(--line); background:var(--surface);
+  padding:7px 13px; border-radius:999px}
+
+/* mercury sphere hero visual */
+.orb-stage{display:grid; place-items:center; min-height:340px}
+.orb{position:relative; width:min(340px,74vw); aspect-ratio:1}
+.orb .sphere{position:absolute; inset:0; border-radius:50%;
+  background:
+    radial-gradient(120% 120% at 36% 28%, #ffffff 0%, #dbe3ec 12%, #aeb9c6 30%, #5b6b7b 62%, #1b2430 100%);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.06) inset;
+  overflow:hidden}
+.orb .sheen{position:absolute; inset:-40%; border-radius:50%;
+  background:conic-gradient(from 0deg, transparent, rgba(88,166,255,.55), transparent 30%, rgba(45,212,191,.5) 50%, transparent 62%, rgba(188,140,255,.55) 82%, transparent);
+  mix-blend-mode:screen; opacity:.5; animation:spin 14s linear infinite}
+.orb .spec{position:absolute; width:38%; height:24%; left:16%; top:14%; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,255,255,.95), transparent); filter:blur(2px); transform:rotate(-24deg)}
+.orb .ring{position:absolute; inset:-6%; border-radius:50%; padding:2px;
+  background:var(--spectrum); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude; opacity:.9}
+.orb svg{position:absolute; inset:0; width:100%; height:100%}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.orb .sheen{animation:none}}
+
+/* ---------- SECTIONS ---------- */
+section{padding:64px 0; border-top:1px solid var(--hair)}
+.sec-head{display:flex; flex-direction:column; gap:10px; margin-bottom:36px; max-width:64ch}
+.sec-head h2{font-size:clamp(26px,3.4vw,38px)}
+.sec-head p{color:var(--muted)}
+
+.grid{display:grid; gap:16px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px; box-shadow:var(--shadow)}
+
+/* logo suite */
+.logos{grid-template-columns:repeat(3,1fr)}
+.logo-tile{display:flex; flex-direction:column; gap:16px}
+.logo-view{aspect-ratio:16/10; border-radius:12px; display:grid; place-items:center; background:
+  radial-gradient(120% 120% at 50% 10%, #12181f, #0a0d12); border:1px solid var(--hair); padding:26px}
+:root[data-theme="light"] .logo-view{background:radial-gradient(120% 120% at 50% 10%,#ffffff,#eef1f5)}
+.logo-view svg{width:100%; height:100%; max-height:150px}
+.logo-tile .cap{font-size:13px; color:var(--muted)}
+.logo-tile .cap b{color:var(--fg); font-weight:600; font-family:'Outfit',sans-serif}
+
+/* color */
+.swatches{grid-template-columns:repeat(6,1fr)}
+.sw{border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--surface)}
+.sw .chip{height:82px; border:0; border-radius:0; padding:0; display:block}
+.sw .meta{padding:10px 12px}
+.sw .name{font-size:12.5px; font-weight:600; font-family:'Outfit',sans-serif}
+.sw .hex{font-size:11.5px; color:var(--faint)}
+.grads{grid-template-columns:repeat(3,1fr)}
+.grad-tile{height:120px; border-radius:14px; border:1px solid var(--line); position:relative; overflow:hidden;
+  display:flex; align-items:flex-end; padding:14px; color:#fff; font-size:13px; font-weight:600; font-family:'Outfit',sans-serif;
+  text-shadow:0 1px 8px rgba(0,0,0,.6)}
+
+/* type */
+.type-grid{grid-template-columns:1fr 1fr; align-items:start}
+.specimen .big{font-family:'Outfit',sans-serif; font-weight:700; font-size:clamp(48px,8vw,92px); line-height:.95; letter-spacing:-.03em}
+.specimen .row{display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; margin-top:10px; color:var(--muted); font-size:13px}
+.scale div{display:flex; align-items:baseline; gap:16px; padding:10px 0; border-bottom:1px solid var(--hair)}
+.scale .lbl{width:64px; color:var(--faint); font-size:12px; font-family:ui-monospace,monospace; flex:none}
+.scale .ex{font-family:'Outfit',sans-serif; font-weight:600; letter-spacing:-.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* prompts */
+.prompts{gap:14px}
+.prompt{background:var(--surface2); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.prompt summary{cursor:pointer; list-style:none; padding:16px 18px; display:flex; align-items:center; gap:12px; font-family:'Outfit',sans-serif; font-weight:600}
+.prompt summary::-webkit-details-marker{display:none}
+.prompt summary .tag{margin-left:auto; font-size:11px; color:var(--faint); font-weight:600; font-family:'Inter',sans-serif}
+.prompt summary .caret{color:var(--faint); transition:transform .2s}
+.prompt[open] summary .caret{transform:rotate(90deg)}
+.prompt .body{padding:0 18px 18px}
+.code{position:relative; background:var(--obsidian); border:1px solid var(--hair); border-radius:10px; padding:14px 14px; overflow-x:auto}
+:root[data-theme="light"] .code{background:#0d1117}
+.code pre{margin:0; font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:12.5px; line-height:1.65; color:#c9d4e3; white-space:pre-wrap; word-break:break-word}
+.code .k{color:#7ee0d0}
+.copy{position:absolute; top:10px; right:10px; all:unset; cursor:pointer; font-size:11px; font-weight:600;
+  color:#c9d4e3; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); padding:5px 10px; border-radius:7px}
+.copy:hover{background:rgba(255,255,255,.12)}
+.copy:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+
+/* playbook */
+.steps{counter-reset:s; gap:12px}
+.step{display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start; padding:18px 20px}
+.step .num{counter-increment:s; font-family:'Outfit',sans-serif; font-weight:700; font-size:15px;
+  width:34px;height:34px;border-radius:10px; display:grid;place-items:center; color:#04070c;
+  background:var(--spectrum)}
+.step .num::before{content:counter(s)}
+.step h4{margin:0 0 4px; font-family:'Outfit',sans-serif; font-size:16px}
+.step p{color:var(--muted); font-size:14.5px}
+.callout{border-left:3px solid var(--blue); background:color-mix(in srgb,var(--blue) 8%,transparent);
+  border-radius:0 12px 12px 0; padding:16px 20px; color:var(--fg)}
+.callout b{font-family:'Outfit',sans-serif}
+
+footer{padding:48px 0 72px; color:var(--faint); font-size:13px; border-top:1px solid var(--hair)}
+footer .wrap{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+
+@media (max-width:860px){
+  .hero{padding:96px 0 48px}
+  .hero .wrap{grid-template-columns:1fr; gap:32px}
+  .orb-stage{order:-1; min-height:0}
+  .logos,.swatches,.grads,.type-grid{grid-template-columns:1fr}
+  .swatches{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+
+<div class="toggle" role="group" aria-label="Theme">
+  <button id="tl" aria-pressed="false">Light</button>
+  <button id="td" aria-pressed="true">Dark</button>
+</div>
+
+<header class="hero">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="hero-copy">
+      <div class="kicker"><span class="dot"></span><span class="eyebrow">Brand System · v0.1</span></div>
+      <h1>Mercury<span class="grad">Pitch</span></h1>
+      <p class="lead">Your voice, made visible — <b>fluid, immediate, precise.</b> A quicksilver identity for real-time vocal pitch training.</p>
+      <div class="chips">
+        <span class="chip">Liquid precision</span>
+        <span class="chip">HDR chrome</span>
+        <span class="chip">Spectrum accents</span>
+        <span class="chip">Obsidian ground</span>
+      </div>
+    </div>
+    <div class="orb-stage">
+      <div class="orb">
+        <div class="ring"></div>
+        <div class="sphere">
+          <div class="sheen"></div>
+          <div class="spec"></div>
+        </div>
+        <svg viewBox="0 0 128 128" aria-label="MercuryPitch mark">
+          <defs>
+            <linearGradient id="hRim" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+            </linearGradient>
+            <clipPath id="hClip"><circle cx="64" cy="64" r="52"/></clipPath>
+          </defs>
+          <g clip-path="url(#hClip)">
+            <path d="M8 74 C 26 40, 42 40, 64 64 S 102 88, 120 54" fill="none" stroke="#0b0e14" stroke-width="7.5" stroke-linecap="round" opacity=".92"/>
+            <path d="M8 74 C 26 40, 42 40, 64 64 S 102 88, 120 54" fill="none" stroke="url(#hRim)" stroke-width="2.6" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+  <!-- IDEA -->
+  <section id="idea">
+    <div class="sec-head">
+      <span class="eyebrow">The idea</span>
+      <h2>Liquid Precision</h2>
+      <p class="lead">Mercury is quicksilver — a liquid metal that is fluid, reflective, and <b>responds instantly</b>. That's exactly what the product does: it turns your voice into something you can see, in real time, with sub-cent accuracy. Mercury is also the fastest planet and the messenger god who, in myth, invented the lyre. Speed, communication, music, liquid metal — all in one word.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card"><h3 style="font-size:17px">Precise</h3><p style="color:var(--muted);font-size:14px;margin-top:6px">Instrument-grade, trustworthy feedback — never clinical.</p></div>
+      <div class="card"><h3 style="font-size:17px">Fluid</h3><p style="color:var(--muted);font-size:14px;margin-top:6px">Real-time, responsive, effortless — never sluggish.</p></div>
+      <div class="card"><h3 style="font-size:17px">Premium</h3><p style="color:var(--muted);font-size:14px;margin-top:6px">HDR, chrome, considered craft — never gaudy.</p></div>
+      <div class="card"><h3 style="font-size:17px">Encouraging</h3><p style="color:var(--muted);font-size:14px;margin-top:6px">Helps you improve, never shames — never childish.</p></div>
+    </div>
+    <div class="callout" style="margin-top:20px"><b>Tagline (primary):</b> “Find your pitch.” — musical pitch, and your own voice. Alternates: “Your voice, in perfect focus.” · “See every note.”</div>
+  </section>
+
+  <!-- LOGO -->
+  <section id="logo">
+    <div class="sec-head">
+      <span class="eyebrow">Identity</span>
+      <h2>The mark</h2>
+      <p>A quicksilver droplet with a pitch sine-wave carved through it and a spectrum meniscus. The app icon is a liquid-metal “M” built from two wave peaks. Hand-authored vector — copyright-clean and razor-sharp at any size.</p>
+    </div>
+    <div class="grid logos">
+      <div class="logo-tile">
+        <div class="logo-view">__MARK__</div>
+        <div class="cap"><b>Primary mark</b> · favicon, avatar, symbol</div>
+      </div>
+      <div class="logo-tile">
+        <div class="logo-view">__ICON__</div>
+        <div class="cap"><b>App icon</b> · PWA, home screen, store</div>
+      </div>
+      <div class="logo-tile">
+        <div class="logo-view">__LOCKUP__</div>
+        <div class="cap"><b>Lockup</b> · header, docs, email</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLOR -->
+  <section id="color">
+    <div class="sec-head">
+      <span class="eyebrow">Color</span>
+      <h2>A system, not a swatch</h2>
+      <p>Built on top of the live app tokens — zero migration. The new <b>Mercury / Chrome</b> family is what earns the name and delivers the HDR look.</p>
+    </div>
+
+    <p class="eyebrow" style="margin:0 0 14px">Core · Obsidian &amp; ink</p>
+    <div class="grid swatches" style="margin-bottom:28px">
+      <div class="sw"><span class="chip" style="background:#0d1117"></span><div class="meta"><div class="name">Obsidian</div><div class="hex mono">#0d1117</div></div></div>
+      <div class="sw"><span class="chip" style="background:#161b22"></span><div class="meta"><div class="name">Panel</div><div class="hex mono">#161b22</div></div></div>
+      <div class="sw"><span class="chip" style="background:#1c2128"></span><div class="meta"><div class="name">Card</div><div class="hex mono">#1c2128</div></div></div>
+      <div class="sw"><span class="chip" style="background:#30363d"></span><div class="meta"><div class="name">Border</div><div class="hex mono">#30363d</div></div></div>
+      <div class="sw"><span class="chip" style="background:#e6edf3"></span><div class="meta"><div class="name">Ink</div><div class="hex mono">#e6edf3</div></div></div>
+      <div class="sw"><span class="chip" style="background:#6e7681"></span><div class="meta"><div class="name">Muted</div><div class="hex mono">#6e7681</div></div></div>
+    </div>
+
+    <p class="eyebrow" style="margin:0 0 14px">Signal · accents</p>
+    <div class="grid swatches" style="margin-bottom:28px">
+      <div class="sw"><span class="chip" style="background:#58a6ff"></span><div class="meta"><div class="name">Signal Blue</div><div class="hex mono">#58a6ff</div></div></div>
+      <div class="sw"><span class="chip" style="background:#2dd4bf"></span><div class="meta"><div class="name">Aqua</div><div class="hex mono">#2dd4bf</div></div></div>
+      <div class="sw"><span class="chip" style="background:#bc8cff"></span><div class="meta"><div class="name">Violet</div><div class="hex mono">#bc8cff</div></div></div>
+      <div class="sw"><span class="chip" style="background:#3fb950"></span><div class="meta"><div class="name">In-tune</div><div class="hex mono">#3fb950</div></div></div>
+      <div class="sw"><span class="chip" style="background:#d29922"></span><div class="meta"><div class="name">Slightly off</div><div class="hex mono">#d29922</div></div></div>
+      <div class="sw"><span class="chip" style="background:#f85149"></span><div class="meta"><div class="name">Off pitch</div><div class="hex mono">#f85149</div></div></div>
+    </div>
+
+    <p class="eyebrow" style="margin:0 0 14px">Mercury / Chrome · <span style="color:var(--blue)">new</span></p>
+    <div class="grid swatches" style="margin-bottom:28px">
+      <div class="sw"><span class="chip" style="background:#f4f8fd"></span><div class="meta"><div class="name">Chrome 100</div><div class="hex mono">#f4f8fd</div></div></div>
+      <div class="sw"><span class="chip" style="background:#c3ccd6"></span><div class="meta"><div class="name">Chrome 300</div><div class="hex mono">#c3ccd6</div></div></div>
+      <div class="sw"><span class="chip" style="background:#8a97a6"></span><div class="meta"><div class="name">Chrome 500</div><div class="hex mono">#8a97a6</div></div></div>
+      <div class="sw"><span class="chip" style="background:#5b6b7b"></span><div class="meta"><div class="name">Chrome 700</div><div class="hex mono">#5b6b7b</div></div></div>
+      <div class="sw"><span class="chip" style="background:#1b2430"></span><div class="meta"><div class="name">Chrome 900</div><div class="hex mono">#1b2430</div></div></div>
+      <div class="sw"><span class="chip" style="background:var(--mercury)"></span><div class="meta"><div class="name">Quicksilver</div><div class="hex mono">radial</div></div></div>
+    </div>
+
+    <p class="eyebrow" style="margin:0 0 14px">Signature gradients</p>
+    <div class="grid grads">
+      <div class="grad-tile" style="background:linear-gradient(120deg,#58a6ff,#2dd4bf 50%,#bc8cff)">Spectrum</div>
+      <div class="grad-tile" style="background:var(--mercury); color:#0b0e14; text-shadow:none">Quicksilver</div>
+      <div class="grad-tile" style="background:radial-gradient(80% 120% at 50% -10%,rgba(88,166,255,.5),transparent 60%),#0d1117">Hero wash</div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section id="type">
+    <div class="sec-head">
+      <span class="eyebrow">Typography</span>
+      <h2>Outfit &amp; Inter</h2>
+      <p>Already loaded in the app — no new dependencies. Outfit for display (tight, geometric, precise); Inter for UI and body (the workhorse). Data gets tabular numerics.</p>
+    </div>
+    <div class="grid type-grid">
+      <div class="card specimen">
+        <span class="eyebrow">Display — Outfit</span>
+        <div class="big">Aa</div>
+        <div class="big" style="font-size:clamp(28px,4vw,40px); background:var(--spectrum); -webkit-background-clip:text; background-clip:text; color:transparent">Find your pitch.</div>
+        <div class="row"><span>SemiBold 600</span><span>·</span><span>Bold 700</span><span>·</span><span>tracking −2%</span></div>
+        <p style="margin-top:16px; color:var(--muted); font-size:14px">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz 0123456789</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Type scale — display</span>
+        <div class="scale" style="margin-top:8px">
+          <div><span class="lbl">64/72</span><span class="ex" style="font-size:34px">Display XL</span></div>
+          <div><span class="lbl">48/56</span><span class="ex" style="font-size:27px">Display L</span></div>
+          <div><span class="lbl">36/44</span><span class="ex" style="font-size:22px">Heading 1</span></div>
+          <div><span class="lbl">28/36</span><span class="ex" style="font-size:18px">Heading 2</span></div>
+          <div><span class="lbl">20/30</span><span class="ex" style="font-size:15px; font-family:'Inter'; font-weight:500">Lead — Inter, real-time feedback</span></div>
+          <div><span class="lbl">16/26</span><span class="ex" style="font-size:14px; font-family:'Inter'; font-weight:400; color:var(--muted)">Body — Inter regular for reading</span></div>
+          <div style="border:0"><span class="lbl mono">−8¢</span><span class="ex mono" style="font-size:15px; font-weight:500; color:var(--teal)">Data — 440.0 Hz · tabular</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMAGERY -->
+  <section id="imagery">
+    <div class="sec-head">
+      <span class="eyebrow">Imagery &amp; motif</span>
+      <h2>Mercury, rippling into a waveform</h2>
+      <p>The recurring key visual: a suspended droplet or ribbon of liquid metal whose surface ripples into a pitch contour — HDR studio light, obsidian ground, a thin spectrum rim. Your product screenshots are brand assets too; the mascots are the warm, human layer.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="card" style="padding:0; overflow:hidden"><div style="height:150px; background:radial-gradient(120% 120% at 40% 25%,#f4f8fd,#aeb9c6 30%,#5b6b7b 62%,#12181f)"></div><div style="padding:16px"><h3 style="font-size:15px">Chrome &amp; HDR</h3><p style="color:var(--muted);font-size:13px;margin-top:4px">Mirror reflections, deep speculars.</p></div></div>
+      <div class="card" style="padding:0; overflow:hidden"><div style="height:150px; background:repeating-linear-gradient(90deg,rgba(88,166,255,.16) 0 2px,transparent 2px 12px),radial-gradient(80% 120% at 50% 120%,rgba(45,212,191,.35),transparent 60%),#0d1117"></div><div style="padding:16px"><h3 style="font-size:15px">Waveform grids</h3><p style="color:var(--muted);font-size:13px;margin-top:4px">Oscilloscope lines, spectrum glow.</p></div></div>
+      <div class="card" style="padding:0; overflow:hidden"><div style="height:150px; background:radial-gradient(60% 80% at 30% 40%,rgba(188,140,255,.55),transparent 60%),radial-gradient(60% 80% at 70% 60%,rgba(45,212,191,.5),transparent 60%),#0d1117"></div><div style="padding:16px"><h3 style="font-size:15px">Soft mascots</h3><p style="color:var(--muted);font-size:13px;margin-top:4px">Cloud droplets on the spectrum.</p></div></div>
+    </div>
+  </section>
+
+  <!-- PROMPTS -->
+  <section id="prompts">
+    <div class="sec-head">
+      <span class="eyebrow">MidJourney v7 — prompt pack</span>
+      <h2>Generate the whole set</h2>
+      <p>Tuned for MidJourney v7. Generate the hero first, then feed its image URL as <span class="mono">--sref</span> to the rest for one coherent look. Use <span class="mono">--cref</span> for mascot continuity. Read the copyright playbook below before using these for the final logo.</p>
+    </div>
+    <div class="grid prompts">__PROMPTS__</div>
+  </section>
+
+  <!-- PLAYBOOK -->
+  <section id="playbook">
+    <div class="sec-head">
+      <span class="eyebrow">Copyright &amp; production</span>
+      <h2>Copyright-clean pipeline</h2>
+      <p>The one rule that matters: for a logo you want a <b>trademark</b>, not a copyright — and you want clean vector. MidJourney is superb for imagery and ideation, but the wrong final step for a registrable logo.</p>
+    </div>
+    <div class="callout" style="margin-bottom:20px">
+      <b>Why:</b> a purely AI-generated image generally <b>can't be registered for copyright</b> (no human authorship), so you may not be able to stop others copying a raw AI logo. A trademark protects your brand use regardless — and hand-drawn vector is both copyrightable and razor-sharp at favicon sizes.
+    </div>
+    <div class="grid steps">
+      <div class="card step"><span class="num"></span><div><h4>Ideate in MidJourney</h4><p>Explore droplet / liquid-M directions with the prompts above. Treat outputs as mood &amp; reference.</p></div></div>
+      <div class="card step"><span class="num"></span><div><h4>Rebuild as original vector</h4><p>Redraw the chosen mark in Illustrator / Figma / Inkscape — like the SVGs shipped in <span class="mono">docs/branding/logo</span>. Human-authored = copyrightable.</p></div></div>
+      <div class="card step"><span class="num"></span><div><h4>Trademark the name &amp; mark</h4><p>Knockout-search “MercuryPitch” (USPTO TESS / EUIPO) in software (cl. 9) &amp; education (cl. 41), then file the wordmark + logo.</p></div></div>
+      <div class="card step"><span class="num"></span><div><h4>Use MJ for the surround</h4><p>Hero art, backgrounds, OG &amp; social — where “can’t copyright the raster” barely matters and speed wins.</p></div></div>
+      <div class="card step"><span class="num"></span><div><h4>Keep records &amp; the right plan</h4><p>Save prompts, seeds &amp; vector sources. Companies &gt; $1M/yr revenue need MidJourney Pro/Mega to use outputs commercially — verify current terms.</p></div></div>
+    </div>
+    <div class="callout" style="margin-top:20px"><b>Fonts:</b> Inter, Outfit &amp; Plus Jakarta Sans are all SIL Open Font License — free for commercial use, including the wordmark and in-app embedding.</div>
+  </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>MercuryPitch · Brand System v0.1 — full spec in <span class="mono">docs/branding/BRAND.md</span></span>
+    <span>Liquid precision.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement, tl=document.getElementById('tl'), td=document.getElementById('td');
+  function set(mode){ root.setAttribute('data-theme',mode);
+    td.setAttribute('aria-pressed', mode==='dark'); tl.setAttribute('aria-pressed', mode==='light'); }
+  var mq=window.matchMedia('(prefers-color-scheme: light)');
+  set(mq.matches?'light':'dark');
+  tl.addEventListener('click',function(){set('light')});
+  td.addEventListener('click',function(){set('dark')});
+  document.querySelectorAll('.copy').forEach(function(b){
+    b.addEventListener('click',function(){
+      var code=b.parentElement.querySelector('pre').innerText;
+      navigator.clipboard.writeText(code).then(function(){
+        var t=b.textContent; b.textContent='Copied'; setTimeout(function(){b.textContent=t},1400);
+      });
+    });
+  });
+})();
+</script>
