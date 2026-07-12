@@ -71,6 +71,10 @@ Why a liquid droplet is the *right* mascot mechanically:
 Goal: a locked **character sheet** — 1 hero pose + turnaround (front/¾/side) + expression sheet
 (the states above) + mouth-open singing. This sheet is the only thing later phases consume.
 
+> **Pre-visualization:** [`mascot-explorations.html`](./mascot-explorations.html) sketches all three
+> directions as animated hand-authored SVG (the Phase-1 shipping technique) — use it to judge
+> silhouette, face language and 24/48 px legibility before spending generator credits.
+
 - **Nano Banana / Nano Banana Pro** (Gemini image, via Google AI Studio or the Gemini API): the
   best *iterative character editor* — generate direction A/B/C, then conversational edits ("same
   character, ¾ view, mouth open") keep the character consistent across the sheet. Pennies per image.
