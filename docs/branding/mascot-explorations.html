@@ -1,0 +1,252 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MercuryPitch — Mascot Explorations</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --card:#1c2128; --border:#30363d;
+    --text:#e6edf3; --text-2:#a8b3bf; --muted:#6e7681;
+    --blue:#58a6ff; --teal:#2dd4bf; --violet:#bc8cff;
+    --chrome-1:#f4f8fd; --chrome-3:#c3ccd6; --chrome-5:#8a97a6; --chrome-7:#5b6b7b; --chrome-9:#1b2430;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--text);font:15px/1.55 Outfit,Inter,'Plus Jakarta Sans',system-ui,sans-serif;padding:40px 24px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  h1{font-size:32px;font-weight:600;letter-spacing:-.02em}
+  h1 .grad{background:linear-gradient(120deg,var(--blue),var(--teal) 50%,var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--text-2);max-width:70ch;margin-top:10px}
+  .hint{display:inline-block;margin-top:14px;padding:6px 12px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;color:var(--teal)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:20px;margin-top:32px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;flex-direction:column}
+  .card:hover{border-color:#3d4450}
+  .stage{background:radial-gradient(90% 70% at 50% 12%,rgba(88,166,255,.10),transparent 60%),var(--bg);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:14px}
+  .stage svg{width:230px;max-width:100%;height:auto}
+  .card h2{font-size:18px;margin-top:16px;font-weight:600}
+  .tag{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .desc{color:var(--text-2);font-size:13.5px;margin-top:10px}
+  ul{margin:10px 0 0;padding-left:18px;font-size:13.5px;color:var(--text-2)}
+  li{margin:3px 0}
+  li b{color:var(--text);font-weight:600}
+  .sizes{display:flex;align-items:flex-end;gap:14px;margin-top:auto;padding-top:16px}
+  .sizes .lbl{font-size:11px;color:var(--muted)}
+  footer{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .panel h3{font-size:15px;font-weight:600;margin-bottom:8px}
+  .panel ol{padding-left:20px;font-size:13.5px;color:var(--text-2)}
+  .panel ol li{margin:5px 0}
+  .panel code{font:12px ui-monospace,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--teal)}
+  .panel p{font-size:13.5px;color:var(--text-2);margin-top:8px}
+
+  /* ---- motion (this is the technique that ships) ---- */
+  .bob{animation:bob 2.8s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 92%}
+  @keyframes bob{from{transform:translateY(-1.6px) scale(1.012,.988)}to{transform:translateY(1.8px) scale(.994,1.006)}}
+  .card:hover .bob{animation:jump .6s ease-out}
+  @keyframes jump{0%{transform:translateY(0)}32%{transform:translateY(-9px) scale(.955,1.05)}58%{transform:translateY(1.6px) scale(1.06,.94)}78%{transform:translateY(-2px)}100%{transform:translateY(0)}}
+  .sway{animation:sway 3.2s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 88%}
+  @keyframes sway{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
+  .blink{animation:blink 4.4s infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.08)}}
+  .note{animation:floatnote 3.6s ease-in infinite}
+  .n2{animation-delay:1.2s}.n3{animation-delay:2.3s}
+  @keyframes floatnote{0%{transform:translateY(0);opacity:0}12%{opacity:.9}70%{opacity:.7}100%{transform:translateY(-13px);opacity:0}}
+  .wave{animation:wavemove 2.4s linear infinite}
+  @keyframes wavemove{to{transform:translateX(-20px)}}
+  .ribbon{animation:ribbonflow 1.5s linear infinite}
+  @keyframes ribbonflow{to{stroke-dashoffset:-22}}
+  .idle-face,.happy-face{transition:opacity .15s}
+  .card:hover .happy-face{opacity:1}
+  .card:hover .idle-face{opacity:0}
+  .card:hover .burst{opacity:1}
+  .static *{animation:none!important}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+
+<!-- shared paint/clip definitions -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gSpectrum" x1="0" y1="0" x2="1" y2=".35">
+      <stop offset="0" stop-color="#58a6ff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <linearGradient id="gABody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bc8cff"/><stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <radialGradient id="gBChrome" cx="38%" cy="30%" r="90%">
+      <stop offset="0" stop-color="#f4f8fd"/><stop offset=".28" stop-color="#aeb9c6"/>
+      <stop offset=".62" stop-color="#5b6b7b"/><stop offset="1" stop-color="#1b2430"/>
+    </radialGradient>
+    <linearGradient id="gCBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a97a6"/><stop offset="1" stop-color="#1b2430"/>
+    </linearGradient>
+    <linearGradient id="gCIri" x1="0" y1="0" x2="1" y2=".6">
+      <stop offset="0" stop-color="#bc8cff" stop-opacity=".7"/>
+      <stop offset=".5" stop-color="#bc8cff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity=".7"/>
+    </linearGradient>
+    <clipPath id="clipB">
+      <path d="M60 22 C82 22 94 40 94 63 C94 83 78 94 60 94 C42 94 26 83 26 63 C26 40 38 22 60 22 Z"/>
+    </clipPath>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div class="eyebrow">MercuryPitch · Branding · v0</div>
+  <h1>Merc — <span class="grad">mascot explorations</span></h1>
+  <p class="sub">Three directions for the hero mascot, sketched as hand-authored SVG on the brand palette
+  (BRAND.md §5/§6.6). These are pre-visualizations to lock silhouette, face language and pose vocabulary
+  before Higgsfield/Nano&nbsp;Banana look-dev renders the surfacing. All motion here is the exact technique
+  that ships in-app: SVG + CSS keyframes, ~2&nbsp;KB per character, themeable, reduced-motion-safe.</p>
+  <span class="hint">Hover a card — Merc celebrates ✦</span>
+
+  <div class="grid">
+
+    <!-- ============ A · LUMEN DROPLET ============ -->
+    <div class="card">
+      <div class="stage">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Merc direction A — luminous gradient droplet">
+          <g class="note n1" transform="translate(30 44)"><circle r="2.3" fill="#bc8cff"/><path d="M2 .8 L2 -8 q3 -1 5 1" stroke="#bc8cff" stroke-width="1.4" fill="none"/></g>
+          <g class="note n2" transform="translate(92 52)"><circle r="2" fill="#2dd4bf"/><path d="M1.8 .7 L1.8 -7 q2.6 -.9 4.4 .9" stroke="#2dd4bf" stroke-width="1.3" fill="none"/></g>
+          <g class="note n3" transform="translate(86 30)"><circle r="1.8" fill="#58a6ff"/><path d="M1.6 .6 L1.6 -6 q2.4 -.8 4 .8" stroke="#58a6ff" stroke-width="1.2" fill="none"/></g>
+          <g class="bob">
+            <path d="M60 20 C63 27 88 38 88 62 C88 83 76 96 60 96 C44 96 32 83 32 62 C32 38 57 27 60 20 Z" fill="url(#gABody)"/>
+            <path d="M60 20 C63 27 88 38 88 62 C88 83 76 96 60 96 C44 96 32 83 32 62 C32 38 57 27 60 20 Z" fill="none" stroke="#f4f8fd" stroke-opacity=".3" stroke-width="2"/>
+            <path d="M44 33 Q53 25 64 27" stroke="#f4f8fd" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".75"/>
+            <ellipse cx="48" cy="44" rx="9" ry="5" fill="#f4f8fd" opacity=".3"/>
+            <g class="idle-face">
+              <path d="M45 59 Q50 54 55 59" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <path d="M65 59 Q70 54 75 59" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <path d="M53 71 Q60 77 67 71" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            </g>
+            <g class="happy-face" opacity="0">
+              <path d="M45 57 Q50 51 55 57" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+              <path d="M65 57 Q70 51 75 57" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+              <path d="M51 69 Q60 81 69 69 Z" fill="#0d1117"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <h2>A · Lumen droplet</h2>
+      <div class="tag">BRAND.md §6.6 faithful — spectrum gradient body, chrome rim</div>
+      <p class="desc">The soft luminous droplet the brand doc already specifies. Serene by default, beams when you nail a note.</p>
+      <ul>
+        <li><b>For:</b> warmest read; same family as the nine voice specialists; simplest rig.</li>
+        <li><b>Watch:</b> least "quicksilver" — leans on the rim light to tie into the chrome logo world.</li>
+      </ul>
+      <div class="sizes"><span class="lbl">size test →</span></div>
+    </div>
+
+    <!-- ============ B · QUICKSILVER CHROME ============ -->
+    <div class="card">
+      <div class="stage">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Merc direction B — mirror chrome quicksilver blob">
+          <g class="note n2" transform="translate(28 40)"><circle r="2" fill="#58a6ff"/><path d="M1.8 .7 L1.8 -7 q2.6 -.9 4.4 .9" stroke="#58a6ff" stroke-width="1.3" fill="none"/></g>
+          <g class="note n3" transform="translate(93 36)"><circle r="2" fill="#bc8cff"/><path d="M1.8 .7 L1.8 -7 q2.6 -.9 4.4 .9" stroke="#bc8cff" stroke-width="1.3" fill="none"/></g>
+          <g class="bob">
+            <path d="M60 22 C82 22 94 40 94 63 C94 83 78 94 60 94 C42 94 26 83 26 63 C26 40 38 22 60 22 Z"
+                  fill="url(#gBChrome)" stroke="url(#gSpectrum)" stroke-opacity=".55" stroke-width="1.6"/>
+            <ellipse cx="46" cy="36" rx="11" ry="6" fill="#f4f8fd" opacity=".85"/>
+            <ellipse cx="39" cy="44" rx="4" ry="2.4" fill="#f4f8fd" opacity=".5"/>
+            <g clip-path="url(#clipB)">
+              <path class="wave" d="M-60 76 q5 -7 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"
+                    stroke="url(#gSpectrum)" stroke-width="2.4" fill="none" opacity=".9"/>
+            </g>
+            <g class="blink">
+              <ellipse cx="50" cy="54" rx="5.5" ry="6.5" fill="#fff"/>
+              <ellipse cx="70" cy="54" rx="5.5" ry="6.5" fill="#fff"/>
+              <circle cx="51" cy="55.5" r="2.4" fill="#0d1117"/>
+              <circle cx="71" cy="55.5" r="2.4" fill="#0d1117"/>
+            </g>
+            <g class="idle-face">
+              <path d="M54 66.5 Q60 71.5 66 66.5" stroke="#0d1117" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            </g>
+            <g class="happy-face" opacity="0">
+              <path d="M52 65.5 Q60 76 68 65.5 Z" fill="#0d1117"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <h2>B · Quicksilver chrome</h2>
+      <div class="tag">Logo-world premium — mirror chrome, pitch wave across the belly</div>
+      <p class="desc">A living droplet of actual mercury. The animated sine wave on its body is the pitch it hears.</p>
+      <ul>
+        <li><b>For:</b> strongest brand tie (it <i>is</i> quicksilver); no competitor has a chrome mascot.</li>
+        <li><b>Watch:</b> chrome reads cooler/less huggable; gradients need care in the vector rig.</li>
+      </ul>
+      <div class="sizes"><span class="lbl">size test →</span></div>
+    </div>
+
+    <!-- ============ C · THE PERFORMER ============ -->
+    <div class="card">
+      <div class="stage">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Merc direction C — singing droplet with headphones and waveform ribbon">
+          <path class="ribbon" d="M67 68 C78 64 82 54 93 52 C103 50 105 42 112 38"
+                stroke="url(#gSpectrum)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-dasharray="6 5"/>
+          <g class="note n1" transform="translate(104 44)"><circle r="2.1" fill="#58a6ff"/><path d="M1.9 .7 L1.9 -7.4 q2.7 -.9 4.5 .9" stroke="#58a6ff" stroke-width="1.3" fill="none"/></g>
+          <g class="note n2" transform="translate(94 60)"><circle r="1.9" fill="#2dd4bf"/><path d="M1.7 .6 L1.7 -6.6 q2.5 -.8 4.1 .8" stroke="#2dd4bf" stroke-width="1.2" fill="none"/></g>
+          <g class="burst" opacity="0">
+            <g class="note n3" transform="translate(30 36)"><circle r="2.1" fill="#bc8cff"/><path d="M1.9 .7 L1.9 -7.4 q2.7 -.9 4.5 .9" stroke="#bc8cff" stroke-width="1.3" fill="none"/></g>
+          </g>
+          <g class="bob"><g class="sway">
+            <path d="M60 20 C63 27 88 38 88 62 C88 83 76 96 60 96 C44 96 32 83 32 62 C32 38 57 27 60 20 Z" fill="url(#gCBody)"/>
+            <path d="M60 20 C63 27 88 38 88 62 C88 83 76 96 60 96 C44 96 32 83 32 62 C32 38 57 27 60 20 Z" fill="url(#gCIri)"/>
+            <ellipse cx="48" cy="40" rx="8" ry="4.5" fill="#f4f8fd" opacity=".4"/>
+            <path d="M33 46 Q60 16 87 46" stroke="#c3ccd6" stroke-width="3.5" fill="none"/>
+            <circle cx="33" cy="49" r="6.5" fill="#bc8cff" stroke="#f4f8fd" stroke-width="1.6"/>
+            <circle cx="87" cy="49" r="6.5" fill="#bc8cff" stroke="#f4f8fd" stroke-width="1.6"/>
+            <path d="M46 57 Q51 52 56 57" stroke="#fff" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+            <path d="M64 57 Q69 52 74 57" stroke="#fff" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+            <ellipse class="idle-face" cx="60" cy="71" rx="6" ry="8" fill="#0d1117"/>
+            <ellipse class="happy-face" cx="60" cy="71" rx="7.5" ry="10" fill="#0d1117" opacity="0"/>
+          </g></g>
+        </svg>
+      </div>
+      <h2>C · The performer</h2>
+      <div class="tag">Product storytelling — singing, waveform ribbon, chrome headphones</div>
+      <p class="desc">Merc mid-performance: the sound leaving its mouth is the spectrum waveform. Instantly says "vocal app".</p>
+      <ul>
+        <li><b>For:</b> best pitch-deck hero; the ribbon doubles as a live pitch-trace in-app.</li>
+        <li><b>Watch:</b> busiest silhouette; headphones fight for pixels at favicon size.</li>
+      </ul>
+      <div class="sizes"><span class="lbl">size test →</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="panel">
+      <h3>1 · Lock it with Higgsfield look-dev</h3>
+      <ol>
+        <li>From an <b>approval-capable</b> Claude session (claude.ai chat / desktop / CLI — remote headless
+            sessions can't approve connector calls), run <code>generate_image</code> with
+            <code>nano_banana_pro</code> (and <code>soul_2</code> as a B-side), <code>count: 2</code> per
+            direction, <code>1:1</code>. Prompts: <code>MASCOT.md</code> Phase&nbsp;0.</li>
+        <li>Pick the winning direction, then iterate <i>conversationally</i> on the same character:
+            ¾ view, side, back; idle / listening / celebrate / encouraging / singing; mouth shapes.</li>
+        <li>Export the locked character sheet into <code>docs/branding/mascot/</code> with a prompt log.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>2 · Then make it alive</h3>
+      <p>Rebuild the locked design as original vector (copyright-clean per BRAND.md §7) and rig it as a
+      <code>&lt;Mascot state energy /&gt;</code> Solid component — the same SVG + CSS technique animating this
+      page, wired to the live pitch signals: bob with playback, lean with your pitch, celebrate on
+      Perfect, encourage when off. Landing hero uses the same component large; Higgsfield video loops are
+      only for the pitch deck and socials.</p>
+      <p>Reference: <code>docs/branding/MASCOT.md</code> · <code>docs/branding/BRAND.md</code></p>
+    </div>
+  </footer>
+</div>
+
+<script>
+  // clone each stage mascot into its size-test strip (48px avatar, 24px favicon), static
+  document.querySelectorAll('.card').forEach(card => {
+    const svg = card.querySelector('.stage svg');
+    const strip = card.querySelector('.sizes');
+    [48, 24].forEach(w => {
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('width', w);
+      clone.setAttribute('height', w);
+      clone.classList.add('static');
+      strip.appendChild(clone);
+    });
+  });
+</script>
