@@ -19,6 +19,23 @@ teal `#2dd4bf` spectrum body with a mirror-chrome rim, on obsidian `#0d1117`.
 - **Archived for other uses** (marketing key art, pitch-deck, socials, alternate motifs):
   Direction **B — Quicksilver chrome** and Direction **C — The performer**. Not the app mascot.
 
+## Locked sheet (2026-07-13)
+
+Merc's identity + five expression states, generated with Nano Banana Pro **referenced to
+`concepts/direction-a-lumen-2.png`** so the character stays identical across states.
+
+| File | Contents | Higgsfield job id |
+| --- | --- | --- |
+| `merc-expression-sheet.png` | idle · listening · celebrate · encouraging · singing (L→R) | `ced9aa46-eb2c-4125-b449-3e0211f1122a` |
+| `merc-turnaround.png` | front · three-quarter · side | `76e53324-b773-4820-989d-2d8431413153` |
+| `concepts/merc-expression-sheet-alt.png` | alternate expression take | `edfcf298-c54f-48cb-86af-629e1326f265` |
+| `concepts/merc-turnaround-alt.png` | alternate turnaround | `230b5067-4c2b-4fff-ba76-fc3651226cdf` |
+
+- **Params:** aspect `16:9`, resolution `2k`, `count: 2` per sheet; `medias` reference = A2 job
+  `0a5162ef-…` (role `image`) — 4 credits total.
+- **`merc-expression-sheet.png` is the reference the vector `<Mascot>` component is built from** —
+  its five poses map left-to-right to the component states.
+
 ## Provenance
 
 | File | Direction | Higgsfield job id |
@@ -75,8 +92,7 @@ text, no watermark
 
 ## Next
 
-1. Lock the **expression sheet** (idle / listening / celebrate / encouraging / singing)
-   from the Merc base, referenced to `direction-a-lumen-2.png` for identity consistency.
+1. ~~Lock the expression sheet~~ — **done** (`merc-expression-sheet.png`; see "Locked sheet" above).
 2. Rebuild as original vector; ship `<Mascot state energy />` (SVG + CSS) wired to the
    live accuracy bands. See [`../MASCOT.md`](../MASCOT.md) Phase 1.
 3. Marketing loops from the locked sheet (Higgsfield video); B/C concepts feed alternate
