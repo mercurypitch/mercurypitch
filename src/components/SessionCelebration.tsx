@@ -1,5 +1,7 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { MascotState } from '@/components/Mascot'
+import { Mascot } from '@/components/Mascot'
 import { Button } from '@/components/shared/Button'
 import styles from './SessionCelebration.module.css'
 
@@ -27,6 +29,13 @@ function scoreLabel(score: number): string {
   if (score >= 65) return 'Nice work!'
   if (score >= 50) return 'Keep practicing!'
   return 'Keep at it!'
+}
+
+// Merc mirrors the result — celebrate when it went well, cheer you on when it didn't.
+function celebrationMascotState(score: number): MascotState {
+  if (score >= 80) return 'celebrate'
+  if (score >= 50) return 'idle'
+  return 'encouraging'
 }
 
 function metricLabel(key: string): string {
@@ -63,6 +72,14 @@ export const SessionCelebration: Component<SessionCelebrationProps> = (
           </button>
 
           <div class={styles.content}>
+            <div style={{ display: 'flex', 'justify-content': 'center' }}>
+              <Mascot
+                state={celebrationMascotState(props.data!.score)}
+                size={92}
+                title="Merc"
+              />
+            </div>
+
             <div class={`${styles.score} ${scoreClass(props.data!.score)}`}>
               <span class={styles.scoreValue}>{props.data!.score}</span>
               <span class={styles.scoreUnit}>%</span>

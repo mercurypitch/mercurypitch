@@ -52,32 +52,34 @@ function Note(props: {
   class?: string
   small?: boolean
 }): JSX.Element {
+  // The outer <g> carries the position; the inner (animated) <g> owns the CSS
+  // transform. Separating them stops the float animation's `transform` from
+  // clobbering the positional translate (which snapped notes to the 0,0 corner).
   return (
-    <g
-      class={`${styles.note} ${props.class ?? ''}`}
-      transform={`translate(${props.x} ${props.y})`}
-    >
-      <circle
-        cx="0"
-        cy={props.small === true ? 5 : 6}
-        r={props.small === true ? 2.1 : 2.3}
-        fill={props.color}
-      />
-      <rect
-        x={props.small === true ? 1.6 : 1.7}
-        y={props.small === true ? -5 : -6}
-        width={props.small === true ? 1.4 : 1.5}
-        height={props.small === true ? 11 : 12}
-        fill={props.color}
-      />
-      <path
-        d={
-          props.small === true
-            ? 'M3 -5 q3.6 1 4.6 3.4 q-2.8 -1 -4.6 0 z'
-            : 'M3.2 -6 q4 1 5 3.6 q-3 -1 -5 0 z'
-        }
-        fill={props.color}
-      />
+    <g transform={`translate(${props.x} ${props.y})`}>
+      <g class={`${styles.note} ${props.class ?? ''}`}>
+        <circle
+          cx="0"
+          cy={props.small === true ? 5 : 6}
+          r={props.small === true ? 2.1 : 2.3}
+          fill={props.color}
+        />
+        <rect
+          x={props.small === true ? 1.6 : 1.7}
+          y={props.small === true ? -5 : -6}
+          width={props.small === true ? 1.4 : 1.5}
+          height={props.small === true ? 11 : 12}
+          fill={props.color}
+        />
+        <path
+          d={
+            props.small === true
+              ? 'M3 -5 q3.6 1 4.6 3.4 q-2.8 -1 -4.6 0 z'
+              : 'M3.2 -6 q4 1 5 3.6 q-3 -1 -5 0 z'
+          }
+          fill={props.color}
+        />
+      </g>
     </g>
   )
 }
@@ -163,6 +165,10 @@ export const Mascot: Component<MascotProps> = (props) => {
 
       {/* fixed accents that don't move with the body */}
       <Switch>
+        <Match when={state() === 'idle'}>
+          <Note x={32} y={34} color="#2dd4bf" />
+          <Note x={86} y={42} color="#bc8cff" class={styles.nb} />
+        </Match>
         <Match when={state() === 'listening'}>
           <g class={styles.ripple}>
             <path

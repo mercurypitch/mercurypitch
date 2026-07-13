@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { Mascot } from '@/components/Mascot'
 import { TierSelector } from '@/components/TierSelector'
 import { Tooltip } from '@/components/Tooltip'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
@@ -75,6 +76,13 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
 
         {/* Hero */}
         <div class={styles.welcomeHero} style="margin-bottom: 14px;">
+          <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+            <Mascot
+              state="idle"
+              size={80}
+              title="Merc, the MercuryPitch mascot"
+            />
+          </div>
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
             Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
