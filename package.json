@@ -3,6 +3,7 @@
   "version": "0.7.3",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.12.0",
   "scripts": {
     "dev": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite",
     "dev:host": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite --host",
@@ -103,20 +104,5 @@
     "last 2 Firefox versions",
     "last 2 Safari versions",
     "last 2 Edge versions"
-  ],
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "esbuild",
-      "midi-writer-js",
-      "onnxruntime-node",
-      "protobufjs",
-      "sharp",
-      "unrs-resolver",
-      "workerd"
-    ],
-    "ignoredBuiltDependencies": [
-      "onnxruntime-node"
-    ]
-  }
+  ]
 }
