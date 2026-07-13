@@ -27,6 +27,8 @@ export { UvrUploadControl } from './UvrUploadControl'
 export { UvrProcessControl } from './UvrProcessControl'
 export { UvrResultViewer } from './UvrResultViewer'
 export { FallingNotesCanvas } from './FallingNotesCanvas'
+export { Mascot } from './Mascot'
+export type { MascotState, MascotProps } from './Mascot'
 
 export {
   FileUpload,
