@@ -29,6 +29,8 @@ export { UvrResultViewer } from './UvrResultViewer'
 export { FallingNotesCanvas } from './FallingNotesCanvas'
 export { Mascot } from './Mascot'
 export type { MascotState, MascotProps } from './Mascot'
+export { MascotDock } from './MascotDock'
+export type { DockCorner, MascotDockProps } from './MascotDock'
 
 export {
   FileUpload,

@@ -1,0 +1,44 @@
+/* Draggable Merc dock — floats over the canvas HUDs + control bar, below modals. */
+
+.dock {
+  position: fixed;
+  z-index: 900;
+  width: max-content;
+  height: max-content;
+  cursor: grab;
+  /* Keep touch drags from scrolling the page. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.42));
+  outline: none;
+}
+
+.dock:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+
+.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
+}
+
+/* Corner anchors (only one class is applied at a time, so unused edges reset). */
+.tl {
+  top: 14px;
+  left: 14px;
+}
+.tr {
+  top: 14px;
+  right: 14px;
+}
+.bl {
+  bottom: 22px;
+  left: 14px;
+}
+.br {
+  bottom: 22px;
+  right: 16px;
+}
