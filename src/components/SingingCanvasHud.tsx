@@ -12,8 +12,11 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { MascotState } from '@/components/Mascot'
+import { Mascot } from '@/components/Mascot'
 import { isNarrow } from '@/lib/use-viewport'
 import { sessionResults, setSingingHudMobileOpen, showPitchDisplay, showStats, singingHudMobileOpen, } from '@/stores'
+import { getBandRating } from '@/stores/settings-store'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
 import styles from './SingingCanvasHud.module.css'
@@ -40,6 +43,21 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
   // On narrow screens the cards crowd the canvas, so they're hidden by default
   // and the user opts in via the toggle. Wider screens are unchanged.
   const cardsShown = () => !isNarrow() || singingHudMobileOpen()
+
+  // Merc reacts to your singing: idle at rest, sings on pitch, celebrates a
+  // perfect note, cheers you on when you're off, and grooves during playback.
+  const mascotState = (): MascotState => {
+    if (props.isPlaying()) return 'listening'
+    const p = props.pitch()
+    if (p === null || p.frequency <= 0) return 'idle'
+    if (props.targetNoteName() === null) return 'singing'
+    const band = getBandRating(Math.abs(p.cents))
+    if (band >= 100) return 'celebrate'
+    if (band >= 75) return 'singing'
+    return 'encouraging'
+  }
+  const mascotEnergy = () => props.liveScore() ?? 0
+
   return (
     <>
       <Show when={isNarrow()}>
@@ -79,6 +97,14 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
         >
           <Show when={showStats()}>
             <div class={styles.card} data-testid="hud-accuracy">
+              <div style={{ display: 'flex', 'justify-content': 'center' }}>
+                <Mascot
+                  state={mascotState}
+                  energy={mascotEnergy}
+                  size={56}
+                  title="Merc"
+                />
+              </div>
               <div class={styles.cardTitle}>Accuracy</div>
               <StatsBars noteResults={props.noteResults} />
               <div class={styles.scoreRow} data-testid="score-display">
