@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, onCleanup } from 'solid-js'
 import { renderSheetMusic } from '@/lib/sheet-music-renderer'
 import type { MelodyItem } from '@/types'
 import styles from './SheetMusicView.module.css'
@@ -29,12 +29,8 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     })
   }
 
-  onMount(() => {
-    draw()
-  })
-
+  // Redraw on any reactive change. createEffect runs once on mount automatically.
   createEffect(() => {
-    // Track reactive dependencies
     props.melody()
     props.key()
     props.scaleType()

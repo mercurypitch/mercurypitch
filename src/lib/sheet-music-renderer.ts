@@ -3,6 +3,8 @@
 // ============================================================
 
 import { Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow'
+import { KEY_SIGNATURES, midiToNote } from '@/lib/scale-data'
+import type { MelodyItem } from '@/types'
 
 // ---------------------------------------------------------------------------
 // Duration quantisation
@@ -13,13 +15,13 @@ interface DurOpt {
   dots: number
 }
 
-const DUR_BUCKETS = [
-  { code: 'w', beats: 4 },
-  { code: 'h', beats: 2 },
-  { code: 'q', beats: 1 },
-  { code: '8', beats: 0.5 },
-  { code: '16', beats: 0.25 },
-  { code: '32', beats: 0.125 },
+const DUR_BUCKETS: Array<DurOpt & { beats: number }> = [
+  { code: 'w', beats: 4, dots: 0 },
+  { code: 'h', beats: 2, dots: 0 },
+  { code: 'q', beats: 1, dots: 0 },
+  { code: '8', beats: 0.5, dots: 0 },
+  { code: '16', beats: 0.25, dots: 0 },
+  { code: '32', beats: 0.125, dots: 0 },
 ]
 
 function quantizeDuration(beats: number): DurOpt[] {
@@ -27,81 +29,44 @@ function quantizeDuration(beats: number): DurOpt[] {
   const results: DurOpt[] = []
   let remaining = beats
   while (remaining > 0.005) {
-    let best: (DurOpt & { err: number }) | null = null
+    let bestCode = 'q'
+    let bestDots = 0
+    let bestErr = Infinity
     for (const b of DUR_BUCKETS) {
       for (const d of [0, 1, 2]) {
         const v = b.beats * (1 + d * 0.5)
         if (v > remaining + 0.02) continue
         const err = Math.abs(remaining - v)
-        if (!best || err < best.err) best = { code: b.code, dots: d, err }
+        if (err < bestErr) {
+          bestCode = b.code
+          bestDots = d
+          bestErr = err
+        }
       }
-      // undotted always considered
-      const e0 = Math.abs(remaining - b.beats)
-      if (!best || e0 < best.err) best = { code: b.code, dots: 0, err: e0 }
     }
-    if (!best) break
-    const consumed =
-      best.code === 'w'
-        ? 4
-        : best.code === 'h'
-          ? 2
-          : best.code === 'q'
-            ? 1
-            : best.code === '8'
-              ? 0.5
-              : best.code === '16'
-                ? 0.25
-                : 0.125
-    results.push({ code: best.code, dots: best.dots })
-    remaining -= consumed * (1 + best.dots * 0.5)
+    const bucket =
+      DUR_BUCKETS.find((b) => b.code === bestCode) ?? DUR_BUCKETS[2]
+    results.push({ code: bestCode, dots: bestDots })
+    remaining -= bucket.beats * (1 + bestDots * 0.5)
   }
   return results.length > 0 ? results : [{ code: 'q', dots: 0 }]
 }
 
 // ---------------------------------------------------------------------------
-// MIDI → VexFlow key
+// MIDI → VexFlow key (reuses scale-data's midiToNote)
 // ---------------------------------------------------------------------------
 
-const NOTE_NAMES = [
-  'c',
-  'c#',
-  'd',
-  'd#',
-  'e',
-  'f',
-  'f#',
-  'g',
-  'g#',
-  'a',
-  'a#',
-  'b',
-]
-
+/** Lowercase VexFlow note name from the app's uppercase NoteName. */
 function midiToVFKey(midi: number): string {
-  return `${NOTE_NAMES[midi % 12]}/${Math.floor(midi / 12) - 1}`
+  const { name, octave } = midiToNote(midi)
+  return `${name.toLowerCase()}/${octave}`
 }
 
 // ---------------------------------------------------------------------------
-// Key signature
+// Key signature (reuses scale-data's KEY_SIGNATURES)
 // ---------------------------------------------------------------------------
 
-const MAJOR_KEYS: Record<string, number> = {
-  C: 0,
-  G: 1,
-  D: 2,
-  A: 3,
-  E: 4,
-  B: 5,
-  'F#': 6,
-  Gb: -6,
-  Db: -5,
-  Ab: -4,
-  Eb: -3,
-  Bb: -2,
-  F: -1,
-}
-
-const REL_MAJOR: Record<string, string> = {
+const RELATIVE_MAJOR: Record<string, string> = {
   A: 'C',
   E: 'G',
   B: 'D',
@@ -119,8 +84,10 @@ const REL_MAJOR: Record<string, string> = {
 function keySigSpec(key: string, scaleType: string): string {
   const nk = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase()
   const isMinor = scaleType.toLowerCase().includes('minor')
-  const lookup = isMinor ? (REL_MAJOR[nk] ?? nk) : nk
-  const n = MAJOR_KEYS[lookup] ?? 0
+  const lookup = isMinor ? (RELATIVE_MAJOR[nk] ?? nk) : nk
+  const sig = KEY_SIGNATURES[lookup]
+  if (sig === undefined) return 'C'
+  const n = sig.sharps - sig.flats
   if (n > 0) return Array(n).fill('#').join('')
   if (n < 0) return Array(-n).fill('b').join('')
   return 'C'
@@ -148,13 +115,7 @@ interface RNote {
   isRest: boolean
 }
 
-function melodyToRNotes(
-  melody: Array<{
-    startBeat: number
-    duration: number
-    note: { midi: number }
-  }>,
-): RNote[] {
+function melodyToRNotes(melody: MelodyItem[]): RNote[] {
   if (!melody.length) return []
   const sorted = [...melody].sort((a, b) => a.startBeat - b.startBeat)
   const result: RNote[] = []
@@ -190,7 +151,7 @@ function melodyToRNotes(
 
 export interface SheetMusicRenderInput {
   container: HTMLElement
-  melody: Array<{ startBeat: number; duration: number; note: { midi: number } }>
+  melody: MelodyItem[]
   key: string
   scaleType: string
   beatsPerBar?: number
@@ -202,15 +163,8 @@ const Y_STEP = 145
 const PER_SYSTEM = 4
 
 function durBeats(code: string, dots: number): number {
-  const b: Record<string, number> = {
-    w: 4,
-    h: 2,
-    q: 1,
-    '8': 0.5,
-    '16': 0.25,
-    '32': 0.125,
-  }
-  let v = b[code] ?? 1
+  const b = DUR_BUCKETS.find((d) => d.code === code)
+  let v = b?.beats ?? 1
   for (let i = 0; i < dots; i++) v *= 1.5
   return v
 }
