@@ -74,7 +74,7 @@ export const [sidebarCollapsed, setSidebarCollapsed] =
   createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
 
 // Editor view within the Editor tab
-export type EditorView = 'piano-roll' | 'session-editor'
+export type EditorView = 'piano-roll' | 'sheet-music' | 'session-editor'
 export const [editorView, setEditorView] =
   createSignal<EditorView>('piano-roll')
 

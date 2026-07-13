@@ -22,6 +22,7 @@ import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import statusBarStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
+import { SheetMusicView } from '@/components/SheetMusicView'
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
@@ -142,7 +143,7 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // Tab type
 // ============================================================
 
-export type EditorView = 'piano-roll' | 'session-editor'
+export type EditorView = 'piano-roll' | 'sheet-music' | 'session-editor'
 
 interface AppProps {
   onMounted?: () => void
@@ -2558,6 +2559,21 @@ const AppShell: Component<AppProps> = (props) => {
                           class={styles.editorTab}
                           classList={{
                             [styles.editorTabActive]:
+                              editorView() === 'sheet-music',
+                          }}
+                          aria-selected={editorView() === 'sheet-music'}
+                          data-testid="view-sheet-music"
+                          onClick={() => setEditorView('sheet-music')}
+                          title="Sheet Music"
+                        >
+                          <MusicBoard /> Sheet Music
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class={styles.editorTab}
+                          classList={{
+                            [styles.editorTabActive]:
                               editorView() === 'session-editor',
                           }}
                           aria-selected={editorView() === 'session-editor'}
@@ -2621,6 +2637,16 @@ const AppShell: Component<AppProps> = (props) => {
                       <Suspense fallback={<SkeletonTabContent />}>
                         <SessionEditor />
                       </Suspense>
+                    </div>
+                  </Show>
+
+                  <Show when={editorView() === 'sheet-music'}>
+                    <div class={styles.sheetMusicEditorContainer}>
+                      <SheetMusicView
+                        melody={() => melodyStore.items()}
+                        key={keyNameSignal}
+                        scaleType={scaleTypeSignal}
+                      />
                     </div>
                   </Show>
 

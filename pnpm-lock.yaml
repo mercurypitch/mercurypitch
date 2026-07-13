@@ -38,6 +38,9 @@ importers:
       typegpu:
         specifier: ^0.11.9
         version: 0.11.9
+      vexflow:
+        specifier: ^5.0.0
+        version: 5.0.0
       wgpu-matrix:
         specifier: ^3.4.2
         version: 3.4.2
@@ -3480,6 +3483,9 @@ packages:
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
+
+  vexflow@5.0.0:
+    resolution: {integrity: sha512-rjB7TV4ygKE5Fl3W5OlG+0dHv22CFufUJdMG6oNgvcn0zp34u+sOboZsadQXnF1O3tZ3myXThaUIaLkJlpNM2Q==}
 
   vite-plugin-qrcode@0.4.1:
     resolution: {integrity: sha512-t3gdCbn/a2HHLK3M8bUrQ+4c+I0YQGJ/STxAL9eI6TBnfdeM/CJr3HctvOb7UYhEtWxHs5xZWpz7kYnRd5w+rA==}
@@ -7028,6 +7034,8 @@ snapshots:
     dependencies:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
+
+  vexflow@5.0.0: {}
 
   vite-plugin-qrcode@0.4.1(vite@6.4.2(@types/node@22.19.19)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(yaml@2.9.0)):
     dependencies:

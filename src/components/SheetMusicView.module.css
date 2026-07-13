@@ -1,0 +1,28 @@
+.sheetMusicContainer {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 16px 8px;
+  background: var(--color-surface, #0d1117);
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.sheetMusicContainer svg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Style VexFlow's SVG elements for theme compatibility */
+.sheetMusicContainer :global(.vf-stave) {
+  stroke: var(--color-text, #e6edf3);
+}
+
+.sheetMusicContainer :global(.vf-stavenote) {
+  fill: var(--color-text, #e6edf3);
+}
+
+.sheetMusicContainer :global(text) {
+  fill: var(--color-text, #e6edf3);
+  font-family: var(--font-sans, inherit);
+}
