@@ -1,0 +1,6 @@
+- [User Role](user.md) — Context for collaborating with the user
+- [Deploy Only When Asked](feedback_deploy.md) — NEVER deploy unless explicitly asked
+- [Git Rebase](git-rebase.md) — NEVER use git reset --hard to rebase
+- [GitHub CLI](reference_gh-cli.md) — Use gh CLI, not WebFetch
+- [SolidJS Best Practices](solidjs-best-practices.md) — Modal props, control-flow
+- [SolidJS Component Pattern](solidjs-component-pattern.md) — Signals first, JSX last

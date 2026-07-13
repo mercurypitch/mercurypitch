@@ -45,9 +45,9 @@ jobs:
           echo "Ref: $REF"
           echo "Target Branch: $BASE_REF"
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 11.12.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
