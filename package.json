@@ -57,6 +57,7 @@
     "open-props": "^1.7.23",
     "solid-js": "^1.9.12",
     "typegpu": "^0.10.2",
+    "vexflow": "^5.0.0",
     "wgpu-matrix": "^3.4.2",
     "zod": "^4.4.3"
   },
