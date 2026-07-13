@@ -1,0 +1,139 @@
+/* Merc mascot — SVG + CSS animation. Reduced-motion safe. */
+
+.mascot {
+  display: block;
+  overflow: visible;
+}
+
+/* idle breathing bob; --merc-bob shortens as singing energy rises */
+.bob {
+  animation: merc-bob var(--merc-bob, 3s) ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: 50% 96%;
+}
+@keyframes merc-bob {
+  from {
+    transform: translateY(-1.6px) scale(1.012, 0.988);
+  }
+  to {
+    transform: translateY(1.7px) scale(0.99, 1.01);
+  }
+}
+
+/* celebrate hop overrides the bob (declared after .bob so it wins) */
+.hop {
+  animation: merc-hop 1.3s ease-in-out infinite;
+}
+@keyframes merc-hop {
+  0%,
+  100% {
+    transform: translateY(2px) scale(1.03, 0.97);
+  }
+  42% {
+    transform: translateY(-9px) scale(0.96, 1.05);
+  }
+}
+
+/* listening lean-in */
+.lean {
+  transform: rotate(-7deg);
+  transform-box: fill-box;
+  transform-origin: 52% 94%;
+}
+
+/* encouraging gentle nod */
+.tilt {
+  animation: merc-nod 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 94%;
+}
+@keyframes merc-nod {
+  0%,
+  100% {
+    transform: rotate(2deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+.eyes {
+  animation: merc-blink 5s infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes merc-blink {
+  0%,
+  93.5%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.12);
+  }
+}
+
+.note {
+  animation: merc-float 2.8s ease-in infinite;
+}
+.nb {
+  animation-delay: 0.9s;
+}
+.nc {
+  animation-delay: 1.8s;
+}
+@keyframes merc-float {
+  0% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-13px);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  animation: merc-ripple 2.2s ease-out infinite;
+}
+@keyframes merc-ripple {
+  0% {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+
+.ribbon {
+  stroke-dasharray: 5 5;
+  animation: merc-ribbon 1.4s linear infinite;
+}
+@keyframes merc-ribbon {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob,
+  .hop,
+  .tilt,
+  .eyes,
+  .note,
+  .ripple,
+  .ribbon {
+    animation: none !important;
+  }
+}
