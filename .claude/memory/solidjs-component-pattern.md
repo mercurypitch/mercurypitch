@@ -1,6 +1,6 @@
 ---
 name: solidjs-component-pattern
-description: SolidJS component organization: signals first, effects/memos, functions, JSX at bottom
+description: "SolidJS component organization: signals first, effects/memos, functions, JSX at bottom"
 type: reference
 ---
 **Rule**: All signals at the top, then effects/memos, then functions, then JSX at bottom.
