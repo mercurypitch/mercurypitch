@@ -73,6 +73,11 @@
   }
 }
 
+/* pointer-following gaze — eased so Merc glances rather than snaps */
+.gaze {
+  transition: transform 0.12s ease-out;
+}
+
 .note {
   animation: merc-float 2.8s ease-in infinite;
 }
@@ -135,5 +140,8 @@
   .ripple,
   .ribbon {
     animation: none !important;
+  }
+  .gaze {
+    transition: none !important;
   }
 }
