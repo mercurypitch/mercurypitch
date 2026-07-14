@@ -18,7 +18,7 @@ import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { openConsentSettings } from '@/lib/consent'
 import { APP_VERSION, COMMIT_SHA, GOOGLE_ADS_TAG_ID, IS_DEV, } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
-import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
+import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
@@ -846,6 +846,22 @@ export const SettingsPanel: Component = () => {
                 <span class={styles.settingsSlider} />
               </label>
               <small>Show live pitch tracker (Practice tab)</small>
+            </div>
+
+            <div class={styles.settingsRow}>
+              <label for="vis-mascot">Mascot</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="vis-mascot"
+                  checked={showMascot()}
+                  onChange={(e) => {
+                    setShowMascot(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>Show Merc, the mascot (Practice tab)</small>
             </div>
 
             <div class={styles.settingsRow}>

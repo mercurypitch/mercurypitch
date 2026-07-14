@@ -15,7 +15,7 @@ import { For, Show } from 'solid-js'
 import type { MascotState } from '@/components/Mascot'
 import { MascotDock } from '@/components/MascotDock'
 import { isNarrow } from '@/lib/use-viewport'
-import { sessionResults, setSingingHudMobileOpen, showPitchDisplay, showStats, singingHudMobileOpen, } from '@/stores'
+import { sessionResults, setSingingHudMobileOpen, showMascot, showPitchDisplay, showStats, singingHudMobileOpen, } from '@/stores'
 import { getBandRating } from '@/stores/settings-store'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
@@ -60,7 +60,9 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
 
   return (
     <>
-      <MascotDock state={mascotState} energy={mascotEnergy} />
+      <Show when={showMascot()}>
+        <MascotDock state={mascotState} energy={mascotEnergy} />
+      </Show>
 
       <Show when={isNarrow()}>
         <button
