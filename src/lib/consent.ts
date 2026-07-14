@@ -1,5 +1,5 @@
 // ============================================================
-// Cookie consent + Google Ads Consent Mode v2.
+// Cookie consent + Google Consent Mode v2 (Google Ads + GA4).
 //
 // Privacy-first and non-intrusive:
 //   - EEA / UK / Switzerland visitors see a slim opt-in banner and
@@ -13,12 +13,12 @@
 // SDK: this is a screenful of code and loads no extra script, which
 // fits an app whose promise is "your audio never leaves your device".
 //
-// The Google tag itself is only loaded when GOOGLE_ADS_TAG_ID is set
-// for the build (prod only) — dev, test and tour builds stay inert.
+// The Google tag is only loaded when an Ads or GA4 id is set for the
+// build (prod only) — dev, test and tour builds stay inert.
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import { GOOGLE_ADS_TAG_ID, IS_TEST } from '@/lib/defaults'
+import { GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST } from '@/lib/defaults'
 
 export type ConsentStatus = 'granted' | 'denied'
 
@@ -212,18 +212,28 @@ function currentTimezone(): string {
 
 // ── public API ────────────────────────────────────────────────
 
-/** True when this build ships the Google tag (prod only). */
+/** True when this build ships the Google Ads tag (prod only). */
 export function hasAdTag(): boolean {
   return GOOGLE_ADS_TAG_ID !== ''
 }
 
+/** True when this build ships the Google Analytics 4 tag (prod only). */
+export function hasGa4(): boolean {
+  return GA4_MEASUREMENT_ID !== ''
+}
+
+/** True when either Google tag is configured — the consent banner gates both. */
+export function hasAnyTag(): boolean {
+  return hasAdTag() || hasGa4()
+}
+
 /**
  * Boot Consent Mode and decide the initial state. Idempotent and safe to call
- * from every entry point. No-op unless the build ships an ad tag.
+ * from every entry point. No-op unless the build ships a Google tag.
  */
 export function initConsent(): void {
   if (typeof window === 'undefined') return
-  if (!hasAdTag()) return
+  if (!hasAnyTag()) return
   const w = gtagWindow()
   if (w.__mpConsentBooted === true) return
   w.__mpConsentBooted = true
@@ -264,11 +274,18 @@ export function initConsent(): void {
 
 function loadTag(): void {
   if (IS_TEST) return
-  pushGtag('config', GOOGLE_ADS_TAG_ID)
+  // One gtag.js load configures every product on the shared dataLayer, all
+  // gated by the same Consent Mode signals (ad_storage for Ads, analytics_storage
+  // for GA4).
+  const primary =
+    GOOGLE_ADS_TAG_ID !== '' ? GOOGLE_ADS_TAG_ID : GA4_MEASUREMENT_ID
+  if (primary === '') return
+  if (GOOGLE_ADS_TAG_ID !== '') pushGtag('config', GOOGLE_ADS_TAG_ID)
+  if (GA4_MEASUREMENT_ID !== '') pushGtag('config', GA4_MEASUREMENT_ID)
   const script = document.createElement('script')
   script.async = true
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
-    GOOGLE_ADS_TAG_ID,
+    primary,
   )}`
   document.head.appendChild(script)
 }

@@ -7,7 +7,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
-- **Privacy-first ad consent.** Groundwork for welcoming new singers through ads: when ad measurement is switched on, visitors in the EEA, UK and Switzerland get a slim cookie-consent banner and nothing is measured until they accept — everyone else is unaffected. You can review or change the choice any time from Settings → About → Cookie preferences. As always, your voice recordings never leave your device; this only concerns anonymous ad measurement.
+- **Privacy-first consent.** Groundwork for welcoming new singers and understanding what helps them: when ad or analytics measurement is switched on, visitors in the EEA, UK and Switzerland get a slim cookie-consent banner and nothing is measured until they accept — everyone else is unaffected. You can review or change the choice any time from Settings → About → Cookie preferences. As always, your voice recordings never leave your device; this only concerns anonymous measurement.
 
 ## [0.7.3] - 2026-07-11
 

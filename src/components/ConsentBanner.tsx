@@ -13,7 +13,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { render } from 'solid-js/web'
-import { acceptConsent, declineConsent, hasAdTag, initConsent, isConsentBannerOpen, } from '@/lib/consent'
+import { acceptConsent, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, } from '@/lib/consent'
 import { PRIVACY_URL } from '@/lib/legal-links'
 import styles from './ConsentBanner.module.css'
 
@@ -43,7 +43,7 @@ export const ConsentBanner: Component = () => (
       <div class={styles.copy}>
         <ShieldIcon />
         <p class={styles.text}>
-          We use cookies to measure the ads that bring new singers here.{' '}
+          We use cookies to measure our ads and understand how the site is used.{' '}
           <strong>Your voice recordings never leave your device.</strong>{' '}
           <a
             class={styles.link}
@@ -88,7 +88,7 @@ const HOST_ID = 'mp-consent-root'
 export function setupConsent(): void {
   if (typeof document === 'undefined') return
   initConsent()
-  if (!hasAdTag()) return
+  if (!hasAnyTag()) return
   if (document.getElementById(HOST_ID) !== null) return
   const host = document.createElement('div')
   host.id = HOST_ID

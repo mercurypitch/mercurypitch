@@ -53,6 +53,15 @@ export const API_BASE_URL: string | undefined = import.meta.env
 export const GOOGLE_ADS_TAG_ID: string =
   import.meta.env.VITE_GOOGLE_ADS_TAG_ID ?? ''
 
+/**
+ * Google Analytics 4 measurement id (`G-XXXXXXXXXX`) for behaviour analytics
+ * (dwell, retention, journeys). Empty unless set for a build, so dev / test /
+ * tour builds stay inert. Loaded through the same gtag + Consent Mode as the
+ * ad tag. Set `VITE_GA4_MEASUREMENT_ID` in the production build only.
+ */
+export const GA4_MEASUREMENT_ID: string =
+  import.meta.env.VITE_GA4_MEASUREMENT_ID ?? ''
+
 export function getUvrApiBase(): string {
   return IS_DEV
     ? `https://${DEV_DOMAIN}/api/uvr`

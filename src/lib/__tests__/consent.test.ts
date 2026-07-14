@@ -6,6 +6,7 @@ import { isRestrictedTimezone } from '../consent'
 // IS_TEST stays true so no real gtag.js <script> is injected.
 vi.mock('@/lib/defaults', () => ({
   GOOGLE_ADS_TAG_ID: 'AW-TEST',
+  GA4_MEASUREMENT_ID: 'G-TEST',
   IS_TEST: true,
 }))
 
@@ -161,6 +162,15 @@ describe('accept / decline', () => {
     expect(mod.isConsentBannerOpen()).toBe(false)
     mod.openConsentSettings()
     expect(mod.isConsentBannerOpen()).toBe(true)
+  })
+})
+
+describe('tag detection', () => {
+  it('reports ads, GA4 and any-tag from the configured ids', async () => {
+    const mod = await import('../consent')
+    expect(mod.hasAdTag()).toBe(true)
+    expect(mod.hasGa4()).toBe(true)
+    expect(mod.hasAnyTag()).toBe(true)
   })
 })
 
