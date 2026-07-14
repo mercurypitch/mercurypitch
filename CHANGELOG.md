@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.4] - 2026-07-14
+
+### Added
+
+- **Privacy-first ad consent.** Groundwork for welcoming new singers through ads: when ad measurement is switched on, visitors in the EEA, UK and Switzerland get a slim cookie-consent banner and nothing is measured until they accept — everyone else is unaffected. You can review or change the choice any time from Settings → About → Cookie preferences. As always, your voice recordings never leave your device; this only concerns anonymous ad measurement.
+
 ## [0.7.3] - 2026-07-11
 
 ### Added
@@ -120,7 +126,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
-- **Separated stems no longer go missing.** A song separated on the cloud GPU could later show as "processed" but refuse to open in the Stem Mixer after a reload — offering only a retry or a manual re-import. Stems are now saved to your device *before* a song is marked done, always reopened from that local copy, and never depend on the server's temporary links. The Karaoke list shows honest "Saving…" and "Interrupted" statuses, the app warns before an accidental reload while a separation is still saving, and any sessions whose stems were already lost are tidied up automatically.
+- **Separated stems no longer go missing.** A song separated on the cloud GPU could later show as "processed" but refuse to open in the Stem Mixer after a reload — offering only a retry or a manual re-import. Stems are now saved to your device _before_ a song is marked done, always reopened from that local copy, and never depend on the server's temporary links. The Karaoke list shows honest "Saving…" and "Interrupted" statuses, the app warns before an accidental reload while a separation is still saving, and any sessions whose stems were already lost are tidied up automatically.
 
 ### Added
 

@@ -11,6 +11,7 @@
 // silently when no API is configured (pure-local dev).
 // ============================================================
 
+import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
 
 export type FunnelEvent =
@@ -34,6 +35,15 @@ export type FunnelEvent =
 const STORAGE_KEY = 'mirror.funnel.v1'
 const CLIENT_ID_KEY = 'mirror.clientId.v1'
 const MAX_STORED_EVENTS = 200
+
+/** Mirror funnel milestones that are also Google Ads conversion actions
+ *  (see the campaigns repo `mercury/config/conversion-map.md`). Firing lives in
+ *  the one `trackFunnel` chokepoint below, so every call site is covered. */
+const AD_CONVERSION_BY_EVENT = new Map<FunnelEvent, string>([
+  ['results_view', AD_CONVERSIONS.mirror_complete],
+  ['cta_app_click', AD_CONVERSIONS.app_open],
+  ['card_shared', AD_CONVERSIONS.card_shared],
+])
 
 interface StoredEvent {
   event: FunnelEvent
@@ -99,4 +109,9 @@ export function trackFunnel(
     // Telemetry must never break the product.
   }
   beacon(event, metrics)
+
+  // Google Ads conversion for the milestone events. Consent Mode decides
+  // whether it sets cookies; a no-op unless the build ships an ad tag.
+  const sendTo = AD_CONVERSION_BY_EVENT.get(event)
+  if (sendTo !== undefined) trackAdConversion(sendTo)
 }

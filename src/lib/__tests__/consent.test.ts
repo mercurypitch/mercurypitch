@@ -49,6 +49,7 @@ async function boot(tz: string): Promise<typeof ConsentModule> {
 
 beforeEach(() => {
   localStorage.clear()
+  sessionStorage.clear()
   const w = testWindow()
   delete w.__mpConsentBooted
   // Reset the memoized canonical gtag too — it closes over the dataLayer array
@@ -160,5 +161,38 @@ describe('accept / decline', () => {
     expect(mod.isConsentBannerOpen()).toBe(false)
     mod.openConsentSettings()
     expect(mod.isConsentBannerOpen()).toBe(true)
+  })
+})
+
+describe('pending purchase (credits_purchase)', () => {
+  it('stash writes a record with uppercased currency + a txn id', async () => {
+    const mod = await import('../consent')
+    mod.stashPendingPurchase(5, 'eur')
+    const raw = sessionStorage.getItem('mp.pendingPurchase.v1')
+    expect(raw).not.toBeNull()
+    const rec = JSON.parse(raw ?? '{}') as {
+      value: number
+      currency: string
+      txn: string
+    }
+    expect(rec.value).toBe(5)
+    expect(rec.currency).toBe('EUR')
+    expect(typeof rec.txn).toBe('string')
+    expect(rec.txn.length).toBeGreaterThan(0)
+  })
+
+  it('flush clears the stash so a success-page refresh cannot double-count', async () => {
+    const mod = await import('../consent')
+    mod.stashPendingPurchase(5, 'EUR')
+    mod.flushPendingPurchase()
+    expect(sessionStorage.getItem('mp.pendingPurchase.v1')).toBeNull()
+    // A second flush (e.g. a refresh) has nothing to fire.
+    expect(() => mod.flushPendingPurchase()).not.toThrow()
+  })
+
+  it('flush without a stash is a no-op', async () => {
+    const mod = await import('../consent')
+    expect(() => mod.flushPendingPurchase()).not.toThrow()
+    expect(sessionStorage.getItem('mp.pendingPurchase.v1')).toBeNull()
   })
 })

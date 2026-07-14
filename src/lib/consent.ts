@@ -314,3 +314,53 @@ export function trackAdConversion(
   }
   pushGtag('event', 'conversion', payload)
 }
+
+// ── credits_purchase (survives the Stripe round-trip) ─────────
+
+const PENDING_PURCHASE_KEY = 'mp.pendingPurchase.v1'
+
+interface PendingPurchase {
+  value: number
+  currency: string
+  txn: string
+}
+
+/**
+ * Remember an in-flight purchase's value just before the Stripe redirect, so
+ * {@link flushPendingPurchase} can fire the conversion with the amount when the
+ * visitor returns. sessionStorage survives the same-tab redirect round-trip.
+ */
+export function stashPendingPurchase(value: number, currency: string): void {
+  try {
+    const record: PendingPurchase = {
+      value,
+      currency: currency.toUpperCase(),
+      txn: globalThis.crypto.randomUUID(),
+    }
+    sessionStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify(record))
+  } catch {
+    // No storage — the conversion just fires without a value on return.
+  }
+}
+
+/**
+ * Fire the `credits_purchase` conversion on the Stripe success return. Only
+ * fires when a stash is present and clears it, so a refresh of the success page
+ * does not double-count (credits_purchase counts every purchase).
+ */
+export function flushPendingPurchase(): void {
+  let stash: PendingPurchase
+  try {
+    const raw = sessionStorage.getItem(PENDING_PURCHASE_KEY)
+    if (raw === null || raw === '') return
+    stash = JSON.parse(raw) as PendingPurchase
+    sessionStorage.removeItem(PENDING_PURCHASE_KEY)
+  } catch {
+    return
+  }
+  trackAdConversion(AD_CONVERSIONS.credits_purchase, {
+    value: stash.value,
+    currency: stash.currency,
+    transactionId: stash.txn,
+  })
+}
