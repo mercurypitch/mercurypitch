@@ -26,6 +26,7 @@ import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { CardFormat } from './card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
 import type { F0Stream } from './f0-stream'
@@ -128,6 +129,10 @@ export const MirrorApp: Component = () => {
   const [revealMode, setRevealMode] = createSignal<RevealMode>('flip')
   // Card option: include the pitch glide trace on shared/copied cards.
   const [includeTrace, setIncludeTrace] = createSignal(true)
+  // Card option: exported voiceprint shape — 'square' (1:1, feeds/the on-screen
+  // look) or 'story' (9:16, Instagram/TikTok stories). Default square so the
+  // download matches the compact on-screen preview; toggle to story for stories.
+  const [cardFormat, setCardFormat] = createSignal<CardFormat>('square')
   // Card option: draw the trace over the twin card too (default off — the
   // downloaded twin stays identical to the on-screen reveal, face clean).
   const [twinTrace, setTwinTrace] = createSignal(false)
@@ -765,7 +770,7 @@ export const MirrorApp: Component = () => {
         legendImage: legendImage(),
         showTrace: includeTrace(),
       },
-      'story',
+      cardFormat(),
     )
   }
 
@@ -1115,6 +1120,10 @@ export const MirrorApp: Component = () => {
           twinReady={twinReady()}
           includeTrace={includeTrace()}
           onToggleTrace={() => setIncludeTrace((v) => !v)}
+          cardFormat={cardFormat()}
+          onToggleFormat={() =>
+            setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
+          }
           twinTrace={twinTrace()}
           onToggleTwinTrace={() => setTwinTrace((v) => !v)}
           twinData={twinData()}
@@ -1306,6 +1315,9 @@ const Results: Component<{
   /** Card option: include the pitch glide trace on shared cards. */
   includeTrace: boolean
   onToggleTrace: () => void
+  /** Card option: exported shape — square (1:1) vs story (9:16). */
+  cardFormat: CardFormat
+  onToggleFormat: () => void
   /** Card option: draw the trace over the twin card too (default off). */
   twinTrace: boolean
   onToggleTwinTrace: () => void
@@ -1460,6 +1472,16 @@ const Results: Component<{
           >
             <IconTrace size={15} />
             Pitch trace {props.includeTrace ? 'on' : 'off'}
+          </button>
+          <button
+            type="button"
+            class="mirror-optchip"
+            classList={{ on: props.cardFormat === 'story' }}
+            aria-pressed={props.cardFormat === 'story'}
+            onClick={() => props.onToggleFormat()}
+            title="Export a tall 9:16 story card (for Instagram/TikTok stories) instead of the square card"
+          >
+            Story format {props.cardFormat === 'story' ? 'on' : 'off'}
           </button>
           <Show when={props.twinReady}>
             <button
