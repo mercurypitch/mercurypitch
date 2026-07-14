@@ -490,6 +490,15 @@ export const [showStats, setShowStats] = createPersistedSignal<boolean>(
 export const [showPitchDisplay, setShowPitchDisplay] =
   createPersistedSignal<boolean>(SHOW_PITCH_DISPLAY_KEY, true)
 
+const SHOW_MASCOT_KEY = 'pitchperfect_show_mascot'
+// Merc, the singing-page mascot dock. Shown by default; users who prefer a
+// distraction-free canvas can hide it. Affects the Practice/singing HUD dock
+// only — not the welcome or session-celebration Mercs.
+export const [showMascot, setShowMascot] = createPersistedSignal<boolean>(
+  SHOW_MASCOT_KEY,
+  true,
+)
+
 /**
  * On phones the singing HUD cards (accuracy / sessions / pitch monitor) are
  * large enough to crowd the canvas, so they're hidden by default — only the
