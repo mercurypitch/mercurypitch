@@ -75,14 +75,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </button>
 
         {/* Hero */}
-        <div class={styles.welcomeHero} style="margin-bottom: 14px;">
-          <div style="display: flex; justify-content: center; margin-bottom: 8px;">
-            <Mascot
-              state="idle"
-              size={80}
-              title="Merc, the MercuryPitch mascot"
-            />
-          </div>
+        <div class={styles.welcomeHero}>
           <h1 class={styles.welcomeTitle} style="font-size: 1.3rem;">
             Welcome to <span class="app-title">MercuryPitch</span>
           </h1>
@@ -90,7 +83,8 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             Your voice, visualized and refined
           </p>
 
-          {/* Quick actions: mic permission + voice-range detection */}
+          {/* Quick actions: a subtle toolbar — mic, voice detection, and the
+              zero-commitment Voice Mirror, each self-explaining on hover. */}
           <div class={styles.welcomeQuickActions}>
             <Show
               when={!micEnabled()}
@@ -156,6 +150,34 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 Find my voice
               </button>
             </Tooltip>
+            <Tooltip
+              text="A free 60-second voiceprint — your range, mapped in stars. No sign-up."
+              placement="bottom"
+            >
+              <a
+                href="/mirror"
+                class={styles.welcomeMirrorPill}
+                aria-label="Voice Mirror — your free 60-second voiceprint"
+                onClick={() => {
+                  // Persist the dismissal before the full-page navigation.
+                  dismissWelcome()
+                }}
+              >
+                <svg
+                  class={styles.welcomeMirrorPillIcon}
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"
+                  />
+                </svg>
+                Voice Mirror
+              </a>
+            </Tooltip>
           </div>
           <Show when={micError() !== null}>
             <p class={styles.welcomeMicError}>{micError()}</p>
@@ -163,7 +185,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Quick Setup: Voice & Accuracy */}
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
           <div class={styles.welcomeTierSelect} style="margin-top: 0;">
             <div class={styles.welcomeSectionHead}>
               <p class={styles.welcomeSectionTitle}>
@@ -225,8 +247,12 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Actions — a small Merc watches your cursor and nudges you toward
+            the primary CTA. */}
         <div class={styles.welcomeActions} style="margin-bottom: 20px;">
+          <span class={styles.welcomeCtaMascot} aria-hidden="true">
+            <Mascot state="idle" size={56} title="" followPointer />
+          </span>
           <button class={styles.welcomeCta} onClick={handleClose}>
             <svg viewBox="0 0 24 24" width="18" height="18">
               <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -261,31 +287,6 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </a>
           .
         </p>
-
-        {/* Voice Mirror — the zero-commitment hook: 60 seconds, no account */}
-        <a
-          href="/mirror"
-          class={styles.welcomeMirrorCta}
-          aria-label="Voice Mirror — your free 60-second voiceprint"
-          onClick={() => {
-            // Persist the dismissal before the full-page navigation, so
-            // coming back from the mirror doesn't re-show this overlay.
-            dismissWelcome()
-          }}
-        >
-          <span class={styles.welcomeMirrorIcon} aria-hidden="true">
-            ✦
-          </span>
-          <span class={styles.welcomeMirrorText}>
-            <strong>Mirror your voice</strong>
-            <small>
-              Free 60-second voiceprint — your range, mapped in stars
-            </small>
-          </span>
-          <span class={styles.welcomeMirrorArrow} aria-hidden="true">
-            →
-          </span>
-        </a>
       </div>
 
       <Show when={showVoiceDetector()}>

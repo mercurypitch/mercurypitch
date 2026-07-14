@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createUniqueId, Match, Show, Switch } from 'solid-js'
+import { createMemo, createSignal, createUniqueId, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import styles from './Mascot.module.css'
 
 /**
@@ -40,6 +40,12 @@ export interface MascotProps {
   class?: string
   /** Accessible label; pass '' to hide Merc from the a11y tree. Default 'Merc'. */
   title?: string
+  /**
+   * When true, Merc's eyes follow the pointer — a lively hero touch. Enabled
+   * only on fine-pointer devices and disabled under reduced motion. Read once
+   * on mount. Value or accessor.
+   */
+  followPointer?: MaybeAccessor<boolean>
 }
 
 const BODY =
@@ -97,6 +103,50 @@ export const Mascot: Component<MascotProps> = (props) => {
   const bobDur = createMemo(() => `${(3 - energy() / 100).toFixed(2)}s`)
   const size = () => props.size ?? 96
 
+  // Optional pointer-following gaze. The offset rides an inner <g> so it never
+  // fights the blink's scaleY (same layer-splitting trick as the notes).
+  let rootRef: SVGSVGElement | undefined
+  const [gaze, setGaze] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 })
+  const gazeStyle = (): JSX.CSSProperties => ({
+    transform: `translate(${gaze().x}px, ${gaze().y}px)`,
+  })
+
+  onMount(() => {
+    if (!read(props.followPointer, false)) return
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!fine || still) return
+
+    // Gaze reach in viewBox units; saturates REACH px from Merc's eyes.
+    const MAX_X = 3.4
+    const MAX_Y = 2.5
+    const REACH = 240
+    let raf = 0
+    let last: { x: number; y: number } | null = null
+
+    const apply = () => {
+      raf = 0
+      const p = last
+      if (p === null || rootRef === undefined) return
+      const r = rootRef.getBoundingClientRect()
+      if (r.width === 0) return
+      const dx = p.x - (r.left + r.width / 2)
+      const dy = p.y - (r.top + r.height * 0.57)
+      const dist = Math.hypot(dx, dy) || 1
+      const pull = Math.min(dist, REACH) / REACH
+      setGaze({ x: (dx / dist) * MAX_X * pull, y: (dy / dist) * MAX_Y * pull })
+    }
+    const onMove = (e: PointerEvent) => {
+      last = { x: e.clientX, y: e.clientY }
+      if (raf === 0) raf = requestAnimationFrame(apply)
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    onCleanup(() => {
+      window.removeEventListener('pointermove', onMove)
+      if (raf !== 0) cancelAnimationFrame(raf)
+    })
+  })
+
   const poseClass = createMemo(() =>
     state() === 'listening'
       ? styles.lean
@@ -110,6 +160,7 @@ export const Mascot: Component<MascotProps> = (props) => {
 
   return (
     <svg
+      ref={rootRef}
       class={`${styles.mascot} ${props.class ?? ''}`}
       viewBox="0 0 120 140"
       width={size()}
@@ -299,10 +350,12 @@ export const Mascot: Component<MascotProps> = (props) => {
           <Switch>
             <Match when={state() === 'idle'}>
               <g class={styles.eyes}>
-                <ellipse cx="49" cy="79" rx="4.2" ry="5.6" fill="#2c2e48" />
-                <ellipse cx="71" cy="79" rx="4.2" ry="5.6" fill="#2c2e48" />
-                <circle cx="47.4" cy="76.6" r="1.5" fill="#ffffff" />
-                <circle cx="69.4" cy="76.6" r="1.5" fill="#ffffff" />
+                <g class={styles.gaze} style={gazeStyle()}>
+                  <ellipse cx="49" cy="79" rx="4.2" ry="5.6" fill="#2c2e48" />
+                  <ellipse cx="71" cy="79" rx="4.2" ry="5.6" fill="#2c2e48" />
+                  <circle cx="47.4" cy="76.6" r="1.5" fill="#ffffff" />
+                  <circle cx="69.4" cy="76.6" r="1.5" fill="#ffffff" />
+                </g>
               </g>
               <path
                 d="M53 90 Q60 95 67 90"
@@ -315,20 +368,24 @@ export const Mascot: Component<MascotProps> = (props) => {
 
             <Match when={state() === 'listening'}>
               <g class={styles.eyes}>
-                <ellipse cx="50" cy="79" rx="4.4" ry="5.8" fill="#2c2e48" />
-                <ellipse cx="72" cy="79" rx="4.4" ry="5.8" fill="#2c2e48" />
-                <circle cx="48.2" cy="76.4" r="1.6" fill="#ffffff" />
-                <circle cx="70.2" cy="76.4" r="1.6" fill="#ffffff" />
+                <g class={styles.gaze} style={gazeStyle()}>
+                  <ellipse cx="50" cy="79" rx="4.4" ry="5.8" fill="#2c2e48" />
+                  <ellipse cx="72" cy="79" rx="4.4" ry="5.8" fill="#2c2e48" />
+                  <circle cx="48.2" cy="76.4" r="1.6" fill="#ffffff" />
+                  <circle cx="70.2" cy="76.4" r="1.6" fill="#ffffff" />
+                </g>
               </g>
               <ellipse cx="61" cy="91" rx="3" ry="3.3" fill="#2c2e48" />
             </Match>
 
             <Match when={state() === 'celebrate'}>
               <g class={styles.eyes}>
-                <ellipse cx="49" cy="77" rx="4.8" ry="6.2" fill="#2c2e48" />
-                <ellipse cx="71" cy="77" rx="4.8" ry="6.2" fill="#2c2e48" />
-                <circle cx="47" cy="74.2" r="1.8" fill="#ffffff" />
-                <circle cx="69" cy="74.2" r="1.8" fill="#ffffff" />
+                <g class={styles.gaze} style={gazeStyle()}>
+                  <ellipse cx="49" cy="77" rx="4.8" ry="6.2" fill="#2c2e48" />
+                  <ellipse cx="71" cy="77" rx="4.8" ry="6.2" fill="#2c2e48" />
+                  <circle cx="47" cy="74.2" r="1.8" fill="#ffffff" />
+                  <circle cx="69" cy="74.2" r="1.8" fill="#ffffff" />
+                </g>
               </g>
               <path d="M52 87 Q60 98 68 87 Q60 91 52 87 Z" fill="#2c2e48" />
             </Match>
