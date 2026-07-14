@@ -204,4 +204,15 @@
     font-size: 0.95rem;
     box-shadow: 0 -12px 14px -4px var(--bg-card);
   }
+
+  /* Active run: the Stop button floats (position: absolute) at the
+     bottom-centre of the canvas so it stays visible over any viz. On
+     the shorter mobile canvas the exercises with a bottom metrics row
+     (Pitch Hold, Slide, Long Note, …) rendered those metrics right
+     under it, so the button sat on top of the numbers. Reserve a strip
+     of clearance at the bottom of the canvas so the centred content is
+     lifted clear of the floating control. */
+  .exercise-canvas-area.is-active {
+    padding-bottom: 60px;
+  }
 }
