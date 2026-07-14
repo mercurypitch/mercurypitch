@@ -3,29 +3,35 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.8] - 2026-07-14
+
+### Added
+
+- **Share your voiceprint as a square or a story.** A new toggle on the results card — square for feeds, or a tall 9:16 card made for Instagram and TikTok stories.
+
 ## [0.7.7] - 2026-07-14
 
 ### Fixed
 
-- **Voice Mirror landing pages.** Visiting the vocal range test or tone deaf test page now opens the quick 60-second Voice Mirror directly — for everyone, including search engines — instead of loading the full app first. Your voice recordings still never leave your device.
+- **The vocal range and tone-deaf test pages now open the Voice Mirror directly** — a faster, cleaner landing for those quick tests.
 
 ## [0.7.6] - 2026-07-14
 
 ### Fixed
 
-- **Ad remarketing measurement.** Allowed one more Google measurement endpoint in the security policy (the remarketing/view-through pixel) that was still blocked. Anonymous, consent-gated, and unrelated to your audio.
+- A final fix so the new consent and measurement settings work correctly.
 
 ## [0.7.5] - 2026-07-14
 
 ### Fixed
 
-- **Ad & analytics measurement loads correctly.** The site's Content-Security-Policy was blocking some of Google's measurement scripts (the ads remarketing/attribution tag and the tag-debugger), so consent-gated tracking wasn't fully working. The policy now allows Google's tag domains — no change to what's measured, and your voice recordings still never leave your device.
+- Fixes so the new consent and measurement settings load correctly.
 
 ## [0.7.4] - 2026-07-14
 
 ### Added
 
-- **Privacy-first consent.** Groundwork for welcoming new singers and understanding what helps them: when ad or analytics measurement is switched on, visitors in the EEA, UK and Switzerland get a slim cookie-consent banner and nothing is measured until they accept — everyone else is unaffected. You can review or change the choice any time from Settings → About → Cookie preferences. As always, your voice recordings never leave your device; this only concerns anonymous measurement.
+- **Cookie-consent banner.** Visitors in the EU, UK and Switzerland now see a slim consent banner, and nothing is measured until they accept. Change your choice any time from Settings → About → Cookie preferences.
 
 ## [0.7.3] - 2026-07-11
 
