@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.6] - 2026-07-14
+
+### Fixed
+
+- **Ad remarketing measurement.** Allowed one more Google measurement endpoint in the security policy (the remarketing/view-through pixel) that was still blocked. Anonymous, consent-gated, and unrelated to your audio.
+
 ## [0.7.5] - 2026-07-14
 
 ### Fixed
