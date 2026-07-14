@@ -418,15 +418,15 @@
     padding: 7px 13px;
   }
 
+  /* Tour is compact now, so keep Merc + both buttons on one row. */
   .welcomeActions {
-    flex-direction: column;
     gap: 8px;
   }
 
   .welcomeCta,
   .welcomeTourBtn {
     font-size: 0.82rem;
-    padding: 10px 16px;
+    padding: 10px 14px;
   }
 }
 
