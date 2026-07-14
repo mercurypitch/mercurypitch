@@ -103,7 +103,7 @@ import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance } from '@/stores/billing-store'
@@ -420,13 +420,35 @@ const AppShell: Component<AppProps> = (props) => {
   const toggleShortcutHelp = () => setShowShortcutHelp((v) => !v)
 
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
-  const openGuideSelection = () => setShowGuideSelection(true)
-  const closeGuideSelection = () => setShowGuideSelection(false)
+  // True when the guide picker was opened from the welcome overlay, so backing
+  // out of the picker returns to welcome instead of dropping into the app.
+  const [guideFromWelcome, setGuideFromWelcome] = createSignal(false)
+  const openGuideSelection = () => {
+    // Open the picker first so a tour surface is always up during the hand-off
+    // (tourSurfaceOpen), then hide welcome WITHOUT marking it seen — closing
+    // the picker can bring it back.
+    setGuideFromWelcome(showWelcome())
+    setShowGuideSelection(true)
+    setShowWelcome(false)
+  }
+  const closeGuideSelection = () => {
+    setShowGuideSelection(false)
+    // Backed out of the picker → slide back to the welcome screen.
+    if (guideFromWelcome()) {
+      setGuideFromWelcome(false)
+      setShowWelcome(true)
+    }
+  }
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
     // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
     startWalkthrough(sectionIds)
-    closeGuideSelection()
+    setShowGuideSelection(false)
+    // Committed to the tour → retire the welcome for good.
+    if (guideFromWelcome()) {
+      setGuideFromWelcome(false)
+      dismissWelcome()
+    }
   }
 
   // ── Swipe to Change Tabs ──────────────────────────────────

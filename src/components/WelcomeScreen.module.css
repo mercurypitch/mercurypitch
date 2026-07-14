@@ -157,6 +157,37 @@
   filter: drop-shadow(0 0 5px rgba(255, 210, 77, 0.5));
 }
 
+/* Each pill + its corner info dot share a relative wrapper. */
+.welcomePillWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Tap-target "i" for touch devices (which have no hover tooltips). Hidden on
+   pointer devices — they get the pill's hover tooltip instead. */
+.welcomePillInfo {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: help;
+}
+
+@media (hover: none) {
+  .welcomePillInfo {
+    display: inline-flex;
+  }
+}
+
 .welcomeQuickBtnPrimary {
   background: linear-gradient(
     135deg,
@@ -298,6 +329,7 @@
   border-radius: 10px;
   font-size: 0.92rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(88, 166, 255, 0.2);
@@ -334,6 +366,7 @@
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
 }

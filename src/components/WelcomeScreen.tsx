@@ -13,6 +13,41 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { dismissWelcome } from '@/stores'
 import styles from './WelcomeScreen.module.css'
 
+// Pill descriptions — shown as a hover tooltip on pointer devices and, on touch
+// (no hover), via a tap-target info dot in the pill's corner.
+const MIC_INFO =
+  'Needed for real-time pitch detection — we listen locally, nothing is uploaded.'
+const FIND_INFO = "Sing one steady note and we'll suggest your voice range."
+const MIRROR_INFO =
+  'A free 60-second voiceprint — your range, mapped in stars. No sign-up.'
+
+// A small corner "i" that reveals a pill's description on tap. Hidden on
+// pointer devices (they use the pill's hover tooltip); shown on touch.
+const PillInfoDot: Component<{ text: string; label: string }> = (props) => (
+  <Tooltip text={props.text} placement="bottom" clickToggle>
+    <span
+      class={styles.welcomePillInfo}
+      role="button"
+      tabindex="0"
+      aria-label={props.label}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="9"
+        height="9"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.6"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="4" r="0.5" fill="currentColor" />
+        <path d="M12 10v10" />
+      </svg>
+    </span>
+  </Tooltip>
+)
+
 interface WelcomeScreenProps {
   onTakeTour?: () => void
   onEnableMic?: () => Promise<void>
@@ -42,14 +77,12 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   const handleTakeTour = () => {
-    // Open the guide dialog BEFORE dismissing the welcome overlay: Solid
-    // effects run synchronously on writes, and the deferred onboarding survey
-    // watches showWelcome — this order keeps a tour surface open the whole
-    // hand-off so the survey can never slip in over the tour.
+    // Don't dismiss here: App hides the welcome overlay while the guide picker
+    // is open and brings it back if the user backs out (persisting the dismiss
+    // only once a tour actually starts).
     if (props.onTakeTour) {
       props.onTakeTour()
     }
-    dismissWelcome()
   }
 
   return (
@@ -100,84 +133,90 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 </div>
               }
             >
-              <Tooltip
-                text="Needed for real-time pitch detection — we listen locally, nothing is uploaded."
-                placement="bottom"
-              >
+              <span class={styles.welcomePillWrap}>
+                <Tooltip text={MIC_INFO} placement="bottom">
+                  <button
+                    class={styles.welcomeQuickBtnPrimary}
+                    onClick={() => void handleEnableMic()}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="15"
+                      height="15"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                      />
+                    </svg>
+                    Enable Mic
+                  </button>
+                </Tooltip>
+                <PillInfoDot text={MIC_INFO} label="What does Enable Mic do?" />
+              </span>
+            </Show>
+            <span class={styles.welcomePillWrap}>
+              <Tooltip text={FIND_INFO} placement="bottom">
                 <button
-                  class={styles.welcomeQuickBtnPrimary}
-                  onClick={() => void handleEnableMic()}
+                  class={styles.welcomeQuickBtn}
+                  onClick={() => setShowVoiceDetector(true)}
                 >
                   <svg
                     viewBox="0 0 24 24"
                     width="15"
                     height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 12h2l2-6 3 12 3-9 2 5 2-2h4" />
+                  </svg>
+                  Find my voice
+                </button>
+              </Tooltip>
+              <PillInfoDot
+                text={FIND_INFO}
+                label="What does Find my voice do?"
+              />
+            </span>
+            <span class={styles.welcomePillWrap}>
+              <Tooltip text={MIRROR_INFO} placement="bottom">
+                <a
+                  href="/mirror"
+                  class={styles.welcomeMirrorPill}
+                  aria-label="Voice Mirror — your free 60-second voiceprint"
+                  onClick={() => {
+                    // Persist the dismissal before the full-page navigation.
+                    dismissWelcome()
+                  }}
+                >
+                  <svg
+                    class={styles.welcomeMirrorPillIcon}
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
                     aria-hidden="true"
                   >
                     <path
                       fill="currentColor"
-                      d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                      d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"
                     />
                   </svg>
-                  Enable Mic
-                </button>
+                  Voice Mirror
+                </a>
               </Tooltip>
-            </Show>
-            <Tooltip
-              text="Sing one steady note and we'll suggest your voice range."
-              placement="bottom"
-            >
-              <button
-                class={styles.welcomeQuickBtn}
-                onClick={() => setShowVoiceDetector(true)}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M3 12h2l2-6 3 12 3-9 2 5 2-2h4" />
-                </svg>
-                Find my voice
-              </button>
-            </Tooltip>
-            <Tooltip
-              text="A free 60-second voiceprint — your range, mapped in stars. No sign-up."
-              placement="bottom"
-            >
-              <a
-                href="/mirror"
-                class={styles.welcomeMirrorPill}
-                aria-label="Voice Mirror — your free 60-second voiceprint"
-                onClick={() => {
-                  // Persist the dismissal before the full-page navigation.
-                  dismissWelcome()
-                }}
-              >
-                <svg
-                  class={styles.welcomeMirrorPillIcon}
-                  viewBox="0 0 24 24"
-                  width="13"
-                  height="13"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"
-                  />
-                </svg>
-                Voice Mirror
-              </a>
-            </Tooltip>
+              <PillInfoDot
+                text={MIRROR_INFO}
+                label="What is the Voice Mirror?"
+              />
+            </span>
           </div>
           <Show when={micError() !== null}>
             <p class={styles.welcomeMicError}>{micError()}</p>
@@ -259,8 +298,30 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             </svg>
             Start Singing
           </button>
-          <button class={styles.welcomeTourBtn} onClick={handleTakeTour}>
-            Take a Tour
+          <button
+            class={styles.welcomeTourBtn}
+            onClick={handleTakeTour}
+            title="Take a guided tour"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path
+                d="M15.5 8.5l-2.2 4.8-4.8 2.2 2.2-4.8z"
+                fill="currentColor"
+                stroke="none"
+              />
+            </svg>
+            Tour
           </button>
         </div>
 
