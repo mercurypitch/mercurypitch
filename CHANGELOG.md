@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.7] - 2026-07-14
+
+### Fixed
+
+- **Voice Mirror landing pages.** Visiting the vocal range test or tone deaf test page now opens the quick 60-second Voice Mirror directly — for everyone, including search engines — instead of loading the full app first. Your voice recordings still never leave your device.
+
 ## [0.7.6] - 2026-07-14
 
 ### Fixed
