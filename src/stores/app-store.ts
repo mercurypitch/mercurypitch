@@ -1567,6 +1567,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     reveal: '[data-collapsible="sidebar-playback-open"]',
   },
   {
+    title: 'Sheet Music',
+    targetSelector: '[data-testid="view-sheet-music"]',
+    description:
+      'See your melody as standard notation. A cursor follows playback, clicking a note seeks to it, and you can click the staff to add notes or right-click to remove them. Use Split to show the piano roll and sheet together.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
     title: 'Session Editor',
     targetSelector: '[data-testid="view-session-editor"]',
     description:

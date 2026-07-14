@@ -1,24 +1,41 @@
 import type { Accessor } from 'solid-js'
-import { createEffect, on, Show } from 'solid-js'
+import { createEffect, createMemo, on, Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { PianoControlBar } from '@/components/piano/PianoControlBar'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
+import { SheetMusicView } from '@/components/SheetMusicView'
+import { SheetViewToggle } from '@/components/SheetViewToggle'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { midiToNoteName } from '@/lib/note-utils'
-import { midiToFreq } from '@/lib/scale-data'
+import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
-import { showNotification } from '@/stores'
+import { keyName as keyNameSignal, pianoSheetView, scaleType as scaleTypeSignal, setPianoSheetView, showNotification, } from '@/stores'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { selectedSongName } from '@/stores/falling-notes-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
+
+/** Falling-notes song → MelodyItem[] for the sheet renderer (drops backing). */
+function fallingNotesToMelody(notes: FallingNote[]): MelodyItem[] {
+  return notes
+    .filter((n) => n.isBacking !== true)
+    .map((n) => {
+      const { name, octave } = midiToNote(n.midi)
+      return {
+        id: n.id,
+        note: { midi: n.midi, name, octave, freq: n.targetFreq },
+        duration: n.duration,
+        startBeat: n.startBeat,
+      }
+    })
+}
 
 function melodyToFallingNotes(items: MelodyItem[]): FallingNote[] {
   return items.map((item, i) => ({
@@ -116,6 +133,11 @@ export function PianoPage(props: PianoPageProps) {
       showNotification('Drop a .mid or .midi file to load it here.', 'info'),
   })
 
+  // Score line as a melody for the sheet-music view (backing tracks dropped).
+  const sheetMelody = createMemo(() =>
+    fallingNotesToMelody(fallingNotes.songNotes()),
+  )
+
   return (
     <div id="falling-notes-panel">
       {/* In flow above the canvas, so the canvas HUD (score corners) keeps
@@ -165,29 +187,46 @@ export function PianoPage(props: PianoPageProps) {
             'white-space': 'nowrap',
           }}
         />
-        <FallingNotesCanvas
-          songNotes={fallingNotes.songNotes}
-          gameState={fallingNotes.gameState}
-          playheadBeat={fallingNotes.playheadBeat}
-          hitResults={fallingNotes.hitResults}
-          combo={fallingNotes.combo}
-          score={fallingNotes.score}
-          totalNotes={fallingNotes.totalNotes}
-          notesMissed={fallingNotes.notesMissed}
-          currentPitch={fallingNotes.currentPitch}
-          isMicActive={fallingNotes.isMicActive}
-          inputMode={fallingNotes.inputMode}
-          visibleBeatWindow={fallingNotes.visibleBeatWindow}
-          midiHeldNotes={fallingNotes.midiHeldNotes}
-          onClickPianoOn={fallingNotes.clickPianoNoteOn}
-          onClickPianoOff={fallingNotes.clickPianoNoteOff}
-          clickPianoEnabled={fallingNotes.clickPianoEnabled}
-          loopA={props.loopA}
-          loopB={props.loopB}
-          loopEnabled={props.loopEnabled}
-          onMoveLoopA={props.onMoveLoopA}
-          onMoveLoopB={props.onMoveLoopB}
-        />
+        <SheetViewToggle active={pianoSheetView} onToggle={setPianoSheetView} />
+        <Show when={pianoSheetView()}>
+          <div
+            style={{ 'min-height': '360px', width: '100%', overflow: 'auto' }}
+          >
+            <SheetMusicView
+              melody={sheetMelody}
+              musicKey={keyNameSignal}
+              scaleType={scaleTypeSignal}
+              currentBeat={fallingNotes.playheadBeat}
+              isPlaying={() => fallingNotes.gameState() === 'playing'}
+              onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+            />
+          </div>
+        </Show>
+        <Show when={!pianoSheetView()}>
+          <FallingNotesCanvas
+            songNotes={fallingNotes.songNotes}
+            gameState={fallingNotes.gameState}
+            playheadBeat={fallingNotes.playheadBeat}
+            hitResults={fallingNotes.hitResults}
+            combo={fallingNotes.combo}
+            score={fallingNotes.score}
+            totalNotes={fallingNotes.totalNotes}
+            notesMissed={fallingNotes.notesMissed}
+            currentPitch={fallingNotes.currentPitch}
+            isMicActive={fallingNotes.isMicActive}
+            inputMode={fallingNotes.inputMode}
+            visibleBeatWindow={fallingNotes.visibleBeatWindow}
+            midiHeldNotes={fallingNotes.midiHeldNotes}
+            onClickPianoOn={fallingNotes.clickPianoNoteOn}
+            onClickPianoOff={fallingNotes.clickPianoNoteOff}
+            clickPianoEnabled={fallingNotes.clickPianoEnabled}
+            loopA={props.loopA}
+            loopB={props.loopB}
+            loopEnabled={props.loopEnabled}
+            onMoveLoopA={props.onMoveLoopA}
+            onMoveLoopB={props.onMoveLoopB}
+          />
+        </Show>
         <ControlOverlay
           idPrefix="piano"
           containerSelector="#falling-notes-canvas-container"

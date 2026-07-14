@@ -9,7 +9,7 @@ import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { MusicBoard, SlidersHorizontal } from '@/components/icons'
+import { Music, MusicBoard, SlidersHorizontal, Split } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -22,6 +22,7 @@ import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import statusBarStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import { SheetMusicView } from '@/components/SheetMusicView'
+import { SheetViewToggle } from '@/components/SheetViewToggle'
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
@@ -105,7 +106,7 @@ import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, setSingingSheetView, showSelection, sidebarCollapsed, sidebarOpen, singingSheetView, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance } from '@/stores/billing-store'
@@ -136,7 +137,11 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // Tab type
 // ============================================================
 
-export type EditorView = 'piano-roll' | 'sheet-music' | 'session-editor'
+export type EditorView =
+  | 'piano-roll'
+  | 'sheet-music'
+  | 'split'
+  | 'session-editor'
 
 interface AppProps {
   onMounted?: () => void
@@ -2237,33 +2242,51 @@ const AppShell: Component<AppProps> = (props) => {
                           'white-space': 'nowrap',
                         }}
                       />
-                      <PitchCanvas
-                        melody={activePlaybackItems}
-                        scale={() => melodyStore.currentScale()}
-                        totalBeats={totalBeats}
-                        currentBeat={currentBeat}
-                        pitchHistory={pitchHistory}
-                        currentNoteIndex={currentNoteIndex}
-                        activeNoteIndices={activeNoteIndices}
-                        isPlaying={isPlaying}
-                        isPaused={isPaused}
-                        isScrolling={() => true}
-                        targetPitch={targetPitch}
-                        targetPitches={targetPitches}
-                        livePitch={currentPitch}
-                        noteAccuracyMap={noteAccuracyMap}
-                        isRecording={recording.isRecording}
-                        getWaveform={() =>
-                          audioEngine?.getWaveformData() ?? null
-                        }
-                        noteResults={noteResults}
-                        countInBeats={() => countIn()}
-                        loopA={loopA}
-                        loopB={loopB}
-                        loopEnabled={loopEnabled}
-                        onMoveLoopA={handleMoveLoopA}
-                        onMoveLoopB={handleMoveLoopB}
+                      <SheetViewToggle
+                        active={singingSheetView}
+                        onToggle={setSingingSheetView}
                       />
+                      <Show when={singingSheetView()}>
+                        <div class={styles.sheetMusicEditorContainer}>
+                          <SheetMusicView
+                            melody={activePlaybackItems}
+                            musicKey={keyNameSignal}
+                            scaleType={scaleTypeSignal}
+                            currentBeat={currentBeat}
+                            isPlaying={isPlaying}
+                            onSeek={handleLoopSeek}
+                          />
+                        </div>
+                      </Show>
+                      <Show when={!singingSheetView()}>
+                        <PitchCanvas
+                          melody={activePlaybackItems}
+                          scale={() => melodyStore.currentScale()}
+                          totalBeats={totalBeats}
+                          currentBeat={currentBeat}
+                          pitchHistory={pitchHistory}
+                          currentNoteIndex={currentNoteIndex}
+                          activeNoteIndices={activeNoteIndices}
+                          isPlaying={isPlaying}
+                          isPaused={isPaused}
+                          isScrolling={() => true}
+                          targetPitch={targetPitch}
+                          targetPitches={targetPitches}
+                          livePitch={currentPitch}
+                          noteAccuracyMap={noteAccuracyMap}
+                          isRecording={recording.isRecording}
+                          getWaveform={() =>
+                            audioEngine?.getWaveformData() ?? null
+                          }
+                          noteResults={noteResults}
+                          countInBeats={() => countIn()}
+                          loopA={loopA}
+                          loopB={loopB}
+                          loopEnabled={loopEnabled}
+                          onMoveLoopA={handleMoveLoopA}
+                          onMoveLoopB={handleMoveLoopB}
+                        />
+                      </Show>
                       <SingingCanvasHud
                         noteResults={noteResults}
                         pitch={currentPitch}
@@ -2385,7 +2408,21 @@ const AppShell: Component<AppProps> = (props) => {
                           onClick={() => setEditorView('sheet-music')}
                           title="Sheet Music"
                         >
-                          <MusicBoard /> Sheet Music
+                          <Music /> Sheet Music
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class={styles.editorTab}
+                          classList={{
+                            [styles.editorTabActive]: editorView() === 'split',
+                          }}
+                          aria-selected={editorView() === 'split'}
+                          data-testid="view-split"
+                          onClick={() => setEditorView('split')}
+                          title="Split: piano roll + sheet music"
+                        >
+                          <Split /> Split
                         </button>
                         <button
                           type="button"
@@ -2463,8 +2500,17 @@ const AppShell: Component<AppProps> = (props) => {
                     <div class={styles.sheetMusicEditorContainer}>
                       <SheetMusicView
                         melody={() => melodyStore.items()}
-                        key={keyNameSignal}
+                        musicKey={keyNameSignal}
                         scaleType={scaleTypeSignal}
+                        currentBeat={currentBeat}
+                        isPlaying={editorIsPlaying}
+                        onSeek={(beat) => playbackRuntime.seekTo(beat)}
+                        scale={() => melodyStore.currentScale()}
+                        dataTour="compose.sheet-music"
+                        onMelodyChange={(melody) => {
+                          debouncedAutoSave()
+                          melodyStore.setMelody(melody)
+                        }}
                       />
                     </div>
                   </Show>
@@ -2473,7 +2519,11 @@ const AppShell: Component<AppProps> = (props) => {
                   on its internal ruler/grid canvases via
                   drawRulerWithPlayhead / drawGridWithPlayhead.  See
                   PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
-                  <Show when={editorView() === 'piano-roll'}>
+                  <Show
+                    when={
+                      editorView() === 'piano-roll' || editorView() === 'split'
+                    }
+                  >
                     <div style={{ position: 'relative' }}>
                       <Show when={recording.pendingTake() !== null}>
                         <ComposeTakeReview
@@ -2538,6 +2588,25 @@ const AppShell: Component<AppProps> = (props) => {
                         getWaveform={() =>
                           audioEngine?.getWaveformData() ?? null
                         }
+                      />
+                    </div>
+                  </Show>
+
+                  {/* Split view: a live sheet-music strip below the roll. */}
+                  <Show when={editorView() === 'split'}>
+                    <div class={styles.sheetSplitStrip}>
+                      <SheetMusicView
+                        melody={() => melodyStore.items()}
+                        musicKey={keyNameSignal}
+                        scaleType={scaleTypeSignal}
+                        currentBeat={currentBeat}
+                        isPlaying={editorIsPlaying}
+                        onSeek={(beat) => playbackRuntime.seekTo(beat)}
+                        scale={() => melodyStore.currentScale()}
+                        onMelodyChange={(melody) => {
+                          debouncedAutoSave()
+                          melodyStore.setMelody(melody)
+                        }}
                       />
                     </div>
                   </Show>

@@ -124,6 +124,16 @@
   overflow: auto;
 }
 
+/* Compact live sheet strip shown beneath the piano roll in split view. */
+.sheetSplitStrip {
+  width: 100%;
+  max-height: 280px;
+  overflow: auto;
+  margin-top: 8px;
+  border-top: 1px solid var(--border, #30363d);
+  padding-top: 8px;
+}
+
 /* Extracted from: Score Overlay */
 
 .overlay {

@@ -7,6 +7,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Sheet music you can read and write.** Compose, Singing and Piano can now show your melody as standard notation — proper barlines, key signature, measure numbers and beams, with a cursor that follows playback (click a note to jump there). In Compose you can click the staff to add a note or right-click to remove one, and the new Split view shows the piano roll and the live sheet together.
 - **Privacy-first consent.** Groundwork for welcoming new singers and understanding what helps them: when ad or analytics measurement is switched on, visitors in the EEA, UK and Switzerland get a slim cookie-consent banner and nothing is measured until they accept — everyone else is unaffected. You can review or change the choice any time from Settings → About → Cookie preferences. As always, your voice recordings never leave your device; this only concerns anonymous measurement.
 
 ## [0.7.3] - 2026-07-11
