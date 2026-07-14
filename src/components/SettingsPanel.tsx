@@ -15,8 +15,8 @@ import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
-import { openConsentSettings } from '@/lib/consent'
-import { APP_VERSION, COMMIT_SHA, GOOGLE_ADS_TAG_ID, IS_DEV, } from '@/lib/defaults'
+import { hasAnyTag, openConsentSettings } from '@/lib/consent'
+import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
@@ -1628,7 +1628,7 @@ export const SettingsPanel: Component = () => {
                   </svg>
                   Privacy Notice
                 </a>
-                <Show when={GOOGLE_ADS_TAG_ID !== ''}>
+                <Show when={hasAnyTag()}>
                   <button
                     type="button"
                     class={styles.aboutLink}
