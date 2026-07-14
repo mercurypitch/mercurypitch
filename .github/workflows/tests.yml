@@ -59,7 +59,10 @@ jobs:
       - name: Build app
         # Empty the Ads/GA4 ids: e2e loads this build in a headless browser on
         # localhost, and a tag-active build would fire real GA4 hits into prod.
-        run: cross-env VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= pnpm run build
+        # Run via the package.json script so `cross-env` resolves from
+        # node_modules/.bin — a bare `cross-env` isn't on PATH in this job and
+        # failed with "command not found" (exit 127).
+        run: pnpm run build:e2e
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
