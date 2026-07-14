@@ -270,7 +270,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </div>
       </Show>
 
-      <div class="exercise-canvas-area">
+      <div
+        class="exercise-canvas-area"
+        classList={{ 'is-idle': isIdleLike(), 'is-active': isActive() }}
+      >
         <Show when={isIdleLike()}>
           <ExerciseScoreHistory type={props.type} />
           {/* Description + settings + Start live together in the centre of the

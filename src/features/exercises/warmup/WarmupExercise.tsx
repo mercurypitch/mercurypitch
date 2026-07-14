@@ -150,6 +150,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
             </div>
           </div>
           <NotePillSelector
+            class="warmup-comfort-note"
             label="Comfort note"
             notes={getNoteOptions(vocalRangePreset())}
             selected={comfortNote()}

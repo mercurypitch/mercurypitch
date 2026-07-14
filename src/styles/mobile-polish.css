@@ -88,4 +88,120 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  /* ── Exercise runner: idle/complete setup screen ─────────────
+     The shared ExerciseShell centres the whole idle screen inside a
+     fixed, overflow-hidden canvas and floats the recent-scores card
+     in the top-right corner. On phones the content-heavy setups —
+     the Guided Warmup especially (description + routine pills + a
+     36-note comfort grid + Start) — overflowed that fixed box and
+     collided with the floating card, leaving text stacked on text.
+     Fix: let the idle/complete state flow and scroll inside the card,
+     pull the score card into the flow, and pin Start to the bottom.
+     Scoped to `.is-idle` so live runs keep their fixed viz canvas. */
+  .exercise-runner {
+    padding: 12px 14px;
+  }
+
+  /* Header: keep Back/level/mic/score on one row and drop the title
+     to its own line so "Guided Warmup" stops wrapping into them. */
+  .exercise-runner-header {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    margin-bottom: 12px;
+  }
+  .exercise-title {
+    order: 3;
+    flex-basis: 100%;
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+  .exercise-header-right {
+    gap: 8px;
+  }
+
+  .exercise-canvas-area.is-idle {
+    justify-content: flex-start;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Consistent breathing room beneath the pinned Start button. */
+    padding-bottom: 12px;
+  }
+  .exercise-idle-center {
+    justify-content: flex-start;
+    height: auto;
+    gap: 16px;
+    padding: 16px 12px 0;
+  }
+  .exercise-idle-controls {
+    gap: 16px;
+  }
+  .exercise-idle-placeholder p {
+    font-size: 0.85rem;
+  }
+
+  /* Recent scores: an in-flow strip at the top of the card instead of
+     an absolute corner chip that overlapped the setup content. */
+  .exercise-score-history {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 10px;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .exercise-score-latest {
+    font-size: 1.5rem;
+  }
+  .exercise-score-history-title,
+  .exercise-score-history-best,
+  .exercise-score-history-scores {
+    margin-top: 0;
+  }
+
+  .exercise-result-card {
+    width: 100%;
+  }
+
+  /* Roomier tap targets on the routine + note pills. */
+  .note-pill {
+    padding: 7px 13px;
+    font-size: 0.8rem;
+  }
+
+  /* Comfort note: a tidy fixed grid rather than a ragged wrap, so all
+     36 notes read as one block and Start stays close below. */
+  .warmup-comfort-note {
+    width: 100%;
+  }
+  .warmup-comfort-note .note-pill-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .warmup-comfort-note .note-pill {
+    padding: 9px 2px;
+    text-align: center;
+  }
+
+  /* Primary CTA: full-width, thumb-friendly, and pinned to the bottom
+     of the scrolling card so it's always reachable. */
+  .exercise-idle-start {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    min-width: 0;
+    padding: 13px;
+    font-size: 0.95rem;
+    box-shadow: 0 -12px 14px -4px var(--bg-card);
+  }
 }
