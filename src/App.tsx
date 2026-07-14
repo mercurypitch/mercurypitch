@@ -79,6 +79,7 @@ import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { flushPendingPurchase } from '@/lib/consent'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import type { MidiSongNote } from '@/lib/midi-song'
@@ -626,6 +627,9 @@ const AppShell: Component<AppProps> = (props) => {
         'Payment received — credits are being added to your account.',
         'success',
       )
+      // Fire the Google Ads credits_purchase conversion (with the stashed EUR
+      // value). Dedup-safe: only fires once per checkout.
+      flushPendingPurchase()
       refreshBalance()
       window.setTimeout(refreshBalance, 3000)
       window.setTimeout(refreshBalance, 10000)

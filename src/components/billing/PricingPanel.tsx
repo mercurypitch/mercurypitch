@@ -10,6 +10,7 @@ import { createResource, For, onMount, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
+import { stashPendingPurchase } from '@/lib/consent'
 import { TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
@@ -61,6 +62,11 @@ export const PricingPanel: Component = () => {
   async function buy(plan: PricingPlan): Promise<void> {
     try {
       const url = await startCheckout(plan.id)
+      // Remember the amount so the Google Ads credits_purchase conversion can
+      // be fired with its value when Stripe redirects back to /billing/success.
+      if (plan.amount != null) {
+        stashPendingPurchase(plan.amount / 100, plan.currency)
+      }
       window.location.assign(url)
     } catch (err) {
       showNotification(
