@@ -1,4 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
+import { copyFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -66,6 +67,30 @@ function mirrorRewritePlugin() {
   }
 }
 
+// Production: the Cloudflare asset layer serves files directly, and with
+// `not_found_handling: single-page-application` it returns index.html for any
+// path without a matching file *before the worker runs* — so the worker's
+// /vocal-range-test → mirror.html rewrite never fires for real browser
+// navigations (it only fires for fetch/XHR, which fooled earlier checks). Emit
+// the SEO aliases as real HTML files (byte copies of the built mirror.html) so
+// Cloudflare serves the Voice Mirror for them directly — ad clicks, browser
+// navigations and crawlers alike. base:'/' keeps the copied HTML's absolute
+// asset URLs resolving correctly from any path.
+function mirrorAliasFilesPlugin() {
+  return {
+    name: 'mirror-alias-files',
+    // writeBundle runs after every file is on disk, so dist/mirror.html exists
+    // to copy. (generateBundle is too early: Vite emits the HTML assets after
+    // this plugin's hook, so the mirror.html bundle entry isn't there yet.)
+    writeBundle(options: { dir?: string }) {
+      const outDir = options.dir ?? resolve(__dirname, 'dist')
+      for (const fileName of ['vocal-range-test.html', 'tone-deaf-test.html']) {
+        copyFileSync(resolve(outDir, 'mirror.html'), resolve(outDir, fileName))
+      }
+    },
+  }
+}
+
 function removeWasmAssetsPlugin() {
   return {
     name: 'remove-wasm-assets',
@@ -85,6 +110,7 @@ export default defineConfig({
     qrcode(),
     solidPlugin(),
     mirrorRewritePlugin(),
+    mirrorAliasFilesPlugin(),
     removeWasmAssetsPlugin(),
   ],
   // Absolute base so asset URLs resolve from the site root. Required for
