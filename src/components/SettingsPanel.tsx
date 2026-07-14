@@ -15,7 +15,8 @@ import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
-import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
+import { openConsentSettings } from '@/lib/consent'
+import { APP_VERSION, COMMIT_SHA, GOOGLE_ADS_TAG_ID, IS_DEV, } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
@@ -1611,6 +1612,23 @@ export const SettingsPanel: Component = () => {
                   </svg>
                   Privacy Notice
                 </a>
+                <Show when={GOOGLE_ADS_TAG_ID !== ''}>
+                  <button
+                    type="button"
+                    class={styles.aboutLink}
+                    style="background: transparent; cursor: pointer; font: inherit;"
+                    data-testid="about-cookie-prefs"
+                    onClick={() => openConsentSettings()}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        fill="currentColor"
+                        d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 4 4 0 0 1-4-4 2 2 0 0 1-2-2zm-3 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-1 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"
+                      />
+                    </svg>
+                    Cookie preferences
+                  </button>
+                </Show>
               </div>
             </div>
           </div>

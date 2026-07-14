@@ -10,10 +10,13 @@ import '@/styles/exercises.css'
 import '@/styles/mobile-polish.css'
 import { App } from './App'
 
+import { setupConsent } from '@/components/ConsentBanner'
 import { consumeGoogleRedirect } from '@/db/services/auth-service'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 
 initGlobalErrorHandlers()
+// Boot Consent Mode + the cookie banner before anything ad-related loads.
+setupConsent()
 // Store the JWT from a Google sign-in redirect (#gauth=…) before the
 // app boots and ensureAuth() runs.
 consumeGoogleRedirect()

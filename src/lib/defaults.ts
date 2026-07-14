@@ -44,6 +44,15 @@ export const DEV_DOMAIN =
 export const API_BASE_URL: string | undefined = import.meta.env
   .VITE_API_BASE_URL
 
+/**
+ * Google Ads global site tag id (`AW-XXXXXXXXXX`). Empty unless explicitly set
+ * for a build, so dev / test / tour builds never load the tag, show the consent
+ * banner, or hit Google. Set `VITE_GOOGLE_ADS_TAG_ID=AW-18321142458` in the
+ * production build only.
+ */
+export const GOOGLE_ADS_TAG_ID: string =
+  import.meta.env.VITE_GOOGLE_ADS_TAG_ID ?? ''
+
 export function getUvrApiBase(): string {
   return IS_DEV
     ? `https://${DEV_DOMAIN}/api/uvr`

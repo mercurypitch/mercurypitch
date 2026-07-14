@@ -1,0 +1,144 @@
+/* ConsentBanner — slim bottom-centered opt-in bar.
+   Self-contained: theme tokens (--bg-secondary etc.) are used when present
+   (main app, light + dark), with dark-glass fallbacks for the Mirror page,
+   which uses a different token namespace. */
+
+@keyframes consentSlideIn {
+  from {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  margin-inline: auto;
+  max-width: 640px;
+  z-index: 2147483000; /* above app modals (z 1000) and the Mirror stage */
+
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  padding: 0.8rem 1rem;
+  border-radius: 0.9rem;
+  background: var(--bg-secondary, rgba(18, 20, 28, 0.92));
+  color: var(--text-primary, #eef0f6);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: consentSlideIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: inherit;
+}
+
+.copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--accent, #8fa3ff);
+}
+
+.text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #c7cbe0);
+}
+
+.text strong {
+  color: var(--text-primary, #eef0f6);
+  font-weight: 600;
+}
+
+.link {
+  color: var(--accent, #8fa3ff);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.decline,
+.accept {
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.decline {
+  background: transparent;
+  color: var(--text-primary, #eef0f6);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.28));
+}
+
+.decline:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+}
+
+.accept {
+  background: var(--accent, #8fa3ff);
+  color: var(--text-inverse, #0b1026);
+  border: 1px solid transparent;
+}
+
+.accept:hover {
+  opacity: 0.9;
+}
+
+.decline:focus-visible,
+.accept:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--accent, #8fa3ff);
+  outline-offset: 2px;
+}
+
+/* Narrow screens: let the buttons sit full-width under the copy. */
+@media (max-width: 460px) {
+  .actions {
+    width: 100%;
+  }
+
+  .decline,
+  .accept {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+}

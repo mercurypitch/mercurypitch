@@ -9,7 +9,12 @@
 
 import { render } from 'solid-js/web'
 import './mirror.css'
+import { setupConsent } from '@/components/ConsentBanner'
 import { MirrorApp } from './MirrorApp'
+
+// The Mirror is the ad landing page: boot Consent Mode + the cookie banner
+// before the tag loads, so EEA/UK/CH clicks are gated from the first paint.
+setupConsent()
 
 const root = document.getElementById('root')
 if (root) {
