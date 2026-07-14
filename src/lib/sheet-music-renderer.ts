@@ -189,21 +189,26 @@ export function renderSheetMusic(input: SheetMusicRenderInput): void {
   const bpbar = beatsPerBar ?? 4
   const bps = PER_SYSTEM * bpbar
 
-  // Partition into systems
+  // Partition into systems, tracking beat count per system
   const systems: RNote[][] = []
+  const systemBeats: number[] = []
   let cur: RNote[] = []
   let acc = 0
   for (const rn of rnotes) {
     const nb = durBeats(rn.duration, rn.dots)
     if (acc + nb > bps + 0.01 && cur.length > 0) {
       systems.push(cur)
+      systemBeats.push(acc)
       cur = []
       acc = 0
     }
     cur.push(rn)
     acc += nb
   }
-  if (cur.length > 0) systems.push(cur)
+  if (cur.length > 0) {
+    systems.push(cur)
+    systemBeats.push(acc)
+  }
 
   // Renderer — single SVG context for all staves
   const renderer = new Renderer(
@@ -217,6 +222,7 @@ export function renderSheetMusic(input: SheetMusicRenderInput): void {
   let isFirst = true
   for (let i = 0; i < systems.length; i++) {
     const sysNotes = systems[i]
+    const sysBeats = systemBeats[i]
     const y = i * Y_STEP + 10
 
     const stave = new Stave(MARGIN, y, STAVE_W)
@@ -243,7 +249,7 @@ export function renderSheetMusic(input: SheetMusicRenderInput): void {
       )
     }
 
-    const voice = new Voice({ numBeats: bps, beatValue: 4 })
+    const voice = new Voice({ numBeats: sysBeats, beatValue: 4 })
     voice.addTickables(notes)
     new Formatter().joinVoices([voice]).format([voice], STAVE_W)
 
