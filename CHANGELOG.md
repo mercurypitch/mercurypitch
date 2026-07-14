@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.5] - 2026-07-14
+
+### Fixed
+
+- **Ad & analytics measurement loads correctly.** The site's Content-Security-Policy was blocking some of Google's measurement scripts (the ads remarketing/attribution tag and the tag-debugger), so consent-gated tracking wasn't fully working. The policy now allows Google's tag domains — no change to what's measured, and your voice recordings still never leave your device.
+
 ## [0.7.4] - 2026-07-14
 
 ### Added
