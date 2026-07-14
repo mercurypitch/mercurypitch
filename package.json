@@ -10,7 +10,7 @@
     "dev:jam": "cd workers/jam-worker && npx wrangler dev --port 8787 --live-reload",
     "dev:db": "cd workers/db-worker && npx wrangler dev --port 8788 --live-reload",
     "build": "vite build",
-    "build:tours": "cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= vite build",
+    "build:tours": "cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build",
     "build:dev": "vite build --mode development",
     "preview": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview",
     "prod": "cross-env VITE_OVERRIDE_ONNX_MODEL= vite build && vite preview",
