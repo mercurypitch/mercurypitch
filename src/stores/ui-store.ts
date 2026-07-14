@@ -73,10 +73,20 @@ export const [sidebarOpen, setSidebarOpen] = createSignal(false)
 export const [sidebarCollapsed, setSidebarCollapsed] =
   createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
 
-// Editor view within the Editor tab
-export type EditorView = 'piano-roll' | 'sheet-music' | 'session-editor'
+// Editor view within the Editor tab. 'split' shows the piano roll and a live
+// sheet-music strip together.
+export type EditorView =
+  | 'piano-roll'
+  | 'sheet-music'
+  | 'split'
+  | 'session-editor'
 export const [editorView, setEditorView] =
   createSignal<EditorView>('piano-roll')
+
+// Whether Singing / Piano show the sheet-music view in place of their canvas.
+export const [singingSheetView, setSingingSheetView] =
+  createSignal<boolean>(false)
+export const [pianoSheetView, setPianoSheetView] = createSignal<boolean>(false)
 
 // ── Library Modal ───────────────────────────────────────────
 

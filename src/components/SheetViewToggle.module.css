@@ -1,0 +1,54 @@
+.toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 7;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn:hover {
+  color: var(--text-primary, #e6edf3);
+  background: var(--bg-tertiary, #21262d);
+}
+
+.btnActive {
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+  color: var(--accent, #58a6ff);
+}
+
+.btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.label {
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .label {
+    display: none;
+  }
+}

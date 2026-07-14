@@ -1,28 +1,74 @@
-.sheetMusicContainer {
+.sheetScroll {
+  position: relative;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
-  padding: 16px 8px;
-  background: var(--color-surface, #0d1117);
+  overflow: auto;
+  padding: 12px 8px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
   min-height: 200px;
 }
 
-.sheetMusicContainer svg {
-  display: block;
+/* Inner canvas: sized exactly to the rendered SVG so the overlay maps 1:1. */
+.sheetInner {
+  position: relative;
   margin: 0 auto;
+  /* VexFlow ink inherits this so notation follows the active theme. */
+  color: var(--text-primary, #e6edf3);
 }
 
-/* Style VexFlow's SVG elements for theme compatibility */
-.sheetMusicContainer :global(.vf-stave) {
-  stroke: var(--color-text, #e6edf3);
+.vexHost {
+  position: absolute;
+  inset: 0;
 }
 
-.sheetMusicContainer :global(.vf-stavenote) {
-  fill: var(--color-text, #e6edf3);
+.vexHost svg {
+  display: block;
 }
 
-.sheetMusicContainer :global(text) {
-  fill: var(--color-text, #e6edf3);
+/* Belt-and-suspenders theme override for any glyphs that keep a hard fill. */
+.vexHost svg :global(text) {
+  fill: currentColor;
   font-family: var(--font-sans, inherit);
+}
+
+/* Playback cursor — a thin vertical line sweeping the staff. */
+.playCursor {
+  position: absolute;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent, #58a6ff);
+  pointer-events: none;
+  opacity: 0.55;
+  border-radius: 1px;
+  z-index: 3;
+}
+
+.playCursorActive {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--accent-glow, rgba(88, 166, 255, 0.5));
+}
+
+/* Translucent column over the note currently sounding (Guitar-Pro style). */
+.noteHighlight {
+  position: absolute;
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 2;
+  transition:
+    left 0.05s linear,
+    width 0.05s linear;
+}
+
+/* Transparent hit layer on top: handles seek + note entry. */
+.clickLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: pointer;
+}
+
+.clickLayerEdit {
+  cursor: crosshair;
 }
