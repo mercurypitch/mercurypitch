@@ -31,7 +31,9 @@ export default defineConfig({
     // Build with the cloud API disabled so e2e exercises the local IndexedDB
     // (DexieAdapter) path it asserts against. e2e runs offline, and .env.production
     // now sets VITE_API_BASE_URL (HybridAdapter), whose stores aren't seeded locally.
-    command: `cross-env VITE_API_BASE_URL= pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
+    // Also empty the Ads/GA4 ids so the headless-browser e2e build stays inert —
+    // otherwise every CI run fires real GA4 hits (hostName=localhost) into prod.
+    command: `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
     url: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
     reuseExistingServer: true,
     timeout: process.env.VITE_E2E_WEBSERVER_TIMEOUT ? Number(process.env.VITE_E2E_WEBSERVER_TIMEOUT) : 120000,
