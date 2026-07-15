@@ -3,6 +3,17 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.11] - 2026-07-15
+
+### Fixed
+
+- **Fairer, more honest exercise scoring.**
+  - **Drone Intonation** now judges how steadily you hold *each* note instead of penalising you for correctly moving between the intervals (a flawless run used to cap around a C).
+  - **Siren** no longer hands out full marks when no glide is detected — a siren *is* a glide, so sitting silent or jumping between notes no longer scores for it.
+  - **Pitch Hold** now counts silence against you: you have to actually *hold* the note, not just touch it and wait out the timer.
+  - **Dynamic Swell** now measures your real loudness (crescendo/decrescendo) instead of a pitch-clarity stand-in.
+  - **Harmonic richness** is scored on the full 0–100 range, so a flawless run in the exercises that weigh it can reach the top.
+
 ## [0.7.10] - 2026-07-15
 
 ### Fixed

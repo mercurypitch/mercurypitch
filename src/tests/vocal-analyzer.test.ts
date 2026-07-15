@@ -141,6 +141,39 @@ describe('intensityFromPitchResults', () => {
       expect(Number.isFinite(pt.db)).toBe(true)
     }
   })
+
+  it('uses real RMS loudness when present (real dynamics, not clarity)', () => {
+    // A crescendo in actual loudness: rms climbs quiet→loud. dynamicRange must
+    // reflect that spread even though clarity is constant.
+    const swell = intensityFromPitchResults([
+      { time: 0, clarity: 80, midi: 60, rms: 0.01 },
+      { time: 0.1, clarity: 80, midi: 60, rms: 0.05 },
+      { time: 0.2, clarity: 80, midi: 60, rms: 0.2 },
+      { time: 0.3, clarity: 80, midi: 60, rms: 0.5 },
+    ])
+    // 0.01→0.5 linear ≈ -40 → -6 dBFS: a wide, positive range.
+    expect(swell.dynamicRange).toBeGreaterThan(20)
+    // Real RMS is dBFS, so peak is at/below 0 (unlike the old clarity proxy).
+    expect(swell.peakDb).toBeLessThanOrEqual(0)
+
+    // Flat loudness (same clarity) → almost no dynamic range.
+    const flat = intensityFromPitchResults([
+      { time: 0, clarity: 80, midi: 60, rms: 0.2 },
+      { time: 0.1, clarity: 80, midi: 60, rms: 0.2 },
+      { time: 0.2, clarity: 80, midi: 60, rms: 0.2 },
+    ])
+    expect(flat.dynamicRange).toBeLessThan(1)
+    expect(swell.dynamicRange).toBeGreaterThan(flat.dynamicRange)
+  })
+
+  it('falls back to clarity when a sample carries no rms', () => {
+    const profile = intensityFromPitchResults([
+      { time: 0, clarity: 90, midi: 60 },
+      { time: 0.1, clarity: 40, midi: 60 },
+    ])
+    expect(profile.envelope).toHaveLength(2)
+    expect(profile.dynamicRange).toBeGreaterThan(0)
+  })
 })
 
 // ── computeHNR ─────────────────────────────────────────────────
@@ -577,6 +610,18 @@ describe('approximateRichness', () => {
     const result = approximateRichness(results)
     expect(result.richnessScore).toBeGreaterThan(30)
     expect(result.harmonicCount).toBeGreaterThan(5)
+  })
+
+  it('scales to the full 0-100 range (near-max for very high clarity)', () => {
+    // ~93% clarity → ~93. The old `*60 + 10` formula capped this at ~66,
+    // which held a flawless run below 100 in the exercises that weight it.
+    const result = approximateRichness([
+      { freq: 220, clarity: 96 },
+      { freq: 220, clarity: 92 },
+      { freq: 220, clarity: 94 },
+    ])
+    expect(result.richnessScore).toBeGreaterThan(80)
+    expect(result.richnessScore).toBeLessThanOrEqual(100)
   })
 })
 

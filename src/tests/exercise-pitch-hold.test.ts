@@ -59,7 +59,8 @@ describe('usePitchHoldController', () => {
   it('startLoop begins tracking frames', () => {
     const metricsCalls: Array<Record<string, number>> = []
     const base = createMockBase({
-      currentPitch: () => ({ freq: 440, clarity: 0.8, noteName: 'A4' }),
+      // Fresh in-tune sample at t=1.0s (matches _getElapsed → counts as voiced).
+      pitchHistory: () => [{ freq: 440, time: 1.0, cents: 0, clarity: 0.8 }],
       _getElapsed: () => 1000,
       _isRunning: () => true,
       _updateMetrics: (m) => metricsCalls.push(m),
@@ -81,7 +82,7 @@ describe('usePitchHoldController', () => {
   it('scores higher when pitch stays in zone', () => {
     const committed: unknown[] = []
     const base = createMockBase({
-      currentPitch: () => ({ freq: 440, clarity: 0.8, noteName: 'A4' }),
+      pitchHistory: () => [{ freq: 440, time: 5.0, cents: 0, clarity: 0.8 }],
       _getElapsed: () => 5000,
       _isRunning: () => true,
       _completeWithResult: (r) => committed.push(r),
@@ -103,7 +104,7 @@ describe('usePitchHoldController', () => {
     const committed: unknown[] = []
     // G#4 = ~415 Hz → ~100 cents below A4
     const base = createMockBase({
-      currentPitch: () => ({ freq: 415, clarity: 0.8, noteName: 'G#4' }),
+      pitchHistory: () => [{ freq: 415, time: 5.0, cents: 0, clarity: 0.8 }],
       _getElapsed: () => 5000,
       _isRunning: () => true,
       _commitResult: (r) => committed.push(r),
@@ -121,7 +122,7 @@ describe('usePitchHoldController', () => {
 
   it('stopAndCompute includes duration metrics', () => {
     const base = createMockBase({
-      currentPitch: () => ({ freq: 440, clarity: 0.8, noteName: 'A4' }),
+      pitchHistory: () => [{ freq: 440, time: 15.0, cents: 0, clarity: 0.8 }],
       _getElapsed: () => 15000,
       _isRunning: () => true,
     })
@@ -134,5 +135,26 @@ describe('usePitchHoldController', () => {
     expect(result.metrics.durationSec).toBe(15)
     expect(result.metrics.survivedSec).toBe(15)
     expect(result.type).toBe(EXERCISE_PITCH_HOLD)
+  })
+
+  it('penalizes going silent after briefly holding the note', () => {
+    // One in-tune sample at t=0.1s, then nothing — the singer hit the note and
+    // went quiet. base.currentPitch() would read stale (the old bug held
+    // zonePct at 100); the freshness check must dilute it once the sample goes
+    // older than VOICE_GAP_SEC as the clock advances.
+    const history = [{ freq: 440, time: 0.1, cents: 0, clarity: 0.8 }]
+    const base = createMockBase({
+      pitchHistory: () => history,
+      _getElapsed: () => performance.now(), // advances with the fake clock
+    })
+    const ctrl = usePitchHoldController(base)
+    ctrl.setTarget(69) // A4, on the sample's pitch
+
+    ctrl.startLoop()
+    vi.advanceTimersByTime(3000) // ~30 ticks; only the first couple are fresh
+    const result = ctrl.stopAndCompute()
+
+    // The overwhelming majority of frames were silence, so far below 100.
+    expect(result.metrics.zonePct).toBeLessThan(30)
   })
 })

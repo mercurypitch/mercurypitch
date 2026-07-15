@@ -26,6 +26,7 @@ function createMockPracticeEngine(
     startMic: vi.fn().mockResolvedValue(true),
     stopMic: vi.fn(),
     isMicActive: vi.fn().mockReturnValue(false),
+    getInputLevel: vi.fn().mockReturnValue(0),
     update: vi.fn().mockReturnValue(null),
     addCallbacks: vi.fn().mockReturnValue(() => {}),
     getWaveformData: vi.fn().mockReturnValue(new Float32Array(1024)),

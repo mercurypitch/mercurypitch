@@ -34,6 +34,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       cents: number
       clarity?: number
       noteName?: string
+      /** Linear RMS loudness 0-1 of this frame (real amplitude, not a proxy).
+       *  Optional so every other consumer is unaffected. */
+      rms?: number
     }>
   >([])
   const [getCurrentPitch, setCurrentPitch] = createSignal<{
@@ -171,6 +174,10 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
                 time: elapsed / 1000,
                 cents: pitch.cents,
                 clarity: pitch.clarity,
+                // Real per-frame loudness so dynamics exercises can score
+                // actual crescendo/decrescendo (reuses the mic RMS the engine
+                // already computes for its input-level meter).
+                rms: practiceEngine.getInputLevel(),
               },
             ]
             return next.length > MAX_PITCH_HISTORY

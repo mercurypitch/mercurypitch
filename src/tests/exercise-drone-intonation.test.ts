@@ -1,8 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
 import { useDroneIntonationController } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
+import { pitchStabilityCents } from '@/features/exercises/exercise-scoring-utils'
 import { EXERCISE_DRONE_INTONATION } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { midiToFrequency } from '@/lib/frequency-to-note'
+
+describe('pitchStabilityCents (per-note steadiness)', () => {
+  it('is ~0 for a rock-steady note', () => {
+    expect(pitchStabilityCents([440, 440, 440, 440])).toBeCloseTo(0, 5)
+  })
+
+  it('grows with wobble (cents std-dev around the mean)', () => {
+    // G#4, A4, A#4, A4 → ±~1 semitone wobble → ~70 cents std-dev.
+    expect(pitchStabilityCents([415.3, 440, 466.16, 440])).toBeGreaterThan(50)
+  })
+
+  it('returns 0 for fewer than two voiced samples', () => {
+    expect(pitchStabilityCents([])).toBe(0)
+    expect(pitchStabilityCents([440])).toBe(0)
+    expect(pitchStabilityCents([0, 0])).toBe(0)
+  })
+})
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},
