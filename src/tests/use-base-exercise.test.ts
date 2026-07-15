@@ -216,4 +216,50 @@ describe('useBaseExercise', () => {
       dispose()
     })
   })
+
+  it('start() aborts if reset() runs during mic acquisition (Back mid-acquire)', async () => {
+    const audioEngine = createMockAudioEngine()
+    let openMicGate!: () => void
+    const micGate = new Promise<void>((resolve) => {
+      openMicGate = resolve
+    })
+    let micActive = false
+    const practiceEngine = createMockPracticeEngine({
+      isMicActive: vi.fn(() => micActive),
+      // Resolves only once we open the gate — mimics a slow getUserMedia /
+      // permission prompt. The engine flips micActive on only once acquired.
+      startMic: vi.fn(async () => {
+        await micGate
+        micActive = true
+        return true
+      }),
+      stopMic: vi.fn(() => {
+        micActive = false
+      }),
+    } as unknown as Partial<PracticeEngine>)
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'long-note', targetNote: 'A3' },
+      })
+
+      const startPromise = base.start() // enters count-in, awaits the mic
+      expect(base.state().status).toBe('count-in')
+
+      base.reset() // singer hits Back while the mic is still being acquired
+      expect(base.state().status).toBe('idle')
+
+      openMicGate() // the mic finally resolves, after the abort
+      await expect(startPromise).resolves.toBe(false)
+
+      // Must not resurrect the run into 'active', and must release the mic it
+      // just acquired (otherwise a ghost rAF loop runs and the mic sticks on).
+      expect(base.state().status).toBe('idle')
+      expect(micActive).toBe(false)
+
+      dispose()
+    })
+  })
 })

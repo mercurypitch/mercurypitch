@@ -49,6 +49,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     if (base.state().status !== 'active') return
     lastCombo = 0
     controller.startGame()
+    // Clear any prior interval first — a natural game finish leaves it running,
+    // so Try Again would otherwise orphan a 30 Hz timer every replay.
+    if (vizInterval) clearInterval(vizInterval)
     vizInterval = setInterval(() => setTick((t) => t + 1), 33)
   }
 
@@ -71,6 +74,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'pitch-pursuit') {
+      // The game can end on its own (all 12 notes played) without going
+      // through handleStop, so stop the viz interval here too.
+      if (vizInterval) clearInterval(vizInterval)
       untrack(() => {
         recordExerciseResult({
           type: r.type,
