@@ -1,6 +1,6 @@
 {
   "name": "mercury-pitch",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.12.0",
@@ -21,6 +21,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:tours": "node scripts/walk-tours.mjs",
+    "audit:mobile": "node scripts/audit-exercises-mobile.mjs",
     "serve": "pnpm dlx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier src --check",

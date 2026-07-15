@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
+import { noteAxisSemitoneStep, timeAxisTicks, } from '@/components/pitch-time-axis'
 import type { ScaleDegree } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -288,12 +289,13 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     // When wide, the octave C anchors are enough. When zoomed in (≤ ~2.6
     // octaves) label individual notes so the singer can see exactly where they
-    // are — every semitone up close, every other one when a bit wider.
+    // are — every semitone up close, thinning out (every other, every third…)
+    // when the canvas is too short to fit them without the labels colliding.
     if (logRange > 2.6) {
       for (const note of Y_AXIS_NOTES) drawMark(note.freq, note.label, false)
       return
     }
-    const step = logRange <= 1.4 ? 1 : 2
+    const step = noteAxisSemitoneStep(h - MARGIN * 2, logRange)
     const midiOf = (l: number): number => 12 * (l - Math.log2(440)) + 69
     const lo = Math.ceil(midiOf(logMin))
     const hi = Math.floor(midiOf(logMin + logRange))
@@ -495,31 +497,27 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const samples = props.samples()
     if (samples.length === 0) return
 
-    const nowTime = samples[samples.length - 1]!.time
     const window = visibleWindow()
-    const windowStart = nowTime - window
-
-    // Match the sample-to-x mapping so ticks align with dots
+    // Match the sample-to-x mapping so ticks align with the dots.
     const targetRight = w * 0.45
     const effectiveWidth = targetRight - MARGIN
-
-    // Draw tick marks at 1s intervals
-    const startSec = Math.floor(windowStart)
-    const endSec = Math.ceil(nowTime)
+    if (effectiveWidth <= 0) return
+    const pxPerSec = effectiveWidth / window
 
     ctx.fillStyle = '#484f58'
     ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-
     const tickY = h - MARGIN + 8
-    for (let sec = startSec; sec <= endSec; sec++) {
-      const pct = (sec - windowStart) / window
-      if (pct < 0 || pct > 1) continue
-      const x = MARGIN + pct * effectiveWidth
-      if (x < MARGIN || x > targetRight) continue
 
-      // Tick line
+    // Relative, adaptively-spaced ticks: "now" pinned at the right, older to
+    // the left. Numbers stay small (bounded by the window, not an absolute
+    // clock that climbs into the hundreds) and only as many as fit are drawn,
+    // so the seconds never jam together on a narrow phone canvas.
+    for (const t of timeAxisTicks(effectiveWidth, window)) {
+      const x = targetRight - t.secondsAgo * pxPerSec
+      if (x < MARGIN - 0.5 || x > targetRight + 0.5) continue
+
       ctx.strokeStyle = 'rgba(48,54,61,0.5)'
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -527,8 +525,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.lineTo(x, tickY + 4)
       ctx.stroke()
 
-      // Label
-      ctx.fillText(`${sec.toString().padStart(2, '0')}s`, x, tickY + 4)
+      ctx.fillText(t.label, x, tickY + 4)
     }
   }
 

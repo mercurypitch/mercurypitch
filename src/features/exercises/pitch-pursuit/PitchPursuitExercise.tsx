@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
-import { IconCheck, IconCross, IconGame, IconMic, } from '@/components/exercise-icons'
+import { IconCheck, IconCross, IconGame } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -187,28 +187,29 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             isActive={isActive}
           />
           <div class="pursuit-hud">
-            <div style="display:flex;gap:16px">
-              <span style="color:#22c55e">
+            <div class="pursuit-hud-stats">
+              <span class="pursuit-hud-stat" style="color:#22c55e">
                 <IconCheck size={14} /> {met().hits ?? 0}
               </span>
-              <span style="color:#ef4444">
+              <span class="pursuit-hud-stat" style="color:#ef4444">
                 <IconCross size={14} /> {met().misses ?? 0}
               </span>
             </div>
-            <div class="pursuit-combo-text" classList={{ pulse: comboPulse() }}>
+            <div
+              class="pursuit-combo-text"
+              classList={{ pulse: comboPulse() }}
+              title="Combo — notes hit in a row. A miss resets it to 0; your longest streak adds a bonus to the final score."
+            >
               {met().combo ?? 0}x
             </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary)">
-              {(() => {
-                const n = currentNote()
-                return n ? (
-                  <>
-                    <IconMic size={14} /> {n.name}
-                  </>
-                ) : (
-                  '...'
-                )
-              })()}
+            {/* The note you're currently singing (accent colour = you), so it
+                reads as live pitch — the header already owns the mic control,
+                so no mic glyph is repeated here. */}
+            <div
+              class="pursuit-hud-note"
+              title="The note you're singing right now"
+            >
+              {currentNote()?.name ?? '—'}
             </div>
           </div>
 

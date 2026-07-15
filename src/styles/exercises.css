@@ -1470,11 +1470,38 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 6px 12px;
   background: var(--surface-hover);
   border-bottom: 1px solid var(--border);
   border-radius: 8px 8px 0 0;
   font-size: 0.82rem;
+}
+
+/* HUD groups: icon + number on one baseline (they used to sit misaligned
+   because the inline SVG rode the text baseline). tabular-nums keeps the
+   counts from jittering as they tick up. */
+.pursuit-hud-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.pursuit-hud-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pursuit-hud-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 3ch;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
 }
 
 .pursuit-track {
