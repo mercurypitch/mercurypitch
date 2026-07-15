@@ -3,6 +3,26 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.11] - 2026-07-15
+
+### Fixed
+
+- **Fairer, more honest exercise scoring.**
+  - **Drone Intonation** now judges how steadily you hold *each* note instead of penalising you for correctly moving between the intervals (a flawless run used to cap around a C).
+  - **Siren** no longer hands out full marks when no glide is detected — a siren *is* a glide, so sitting silent or jumping between notes no longer scores for it.
+  - **Pitch Hold** now counts silence against you: you have to actually *hold* the note, not just touch it and wait out the timer.
+  - **Dynamic Swell** now measures your real loudness (crescendo/decrescendo) instead of a pitch-clarity stand-in.
+  - **Harmonic richness** is scored on the full 0–100 range, so a flawless run in the exercises that weigh it can reach the top.
+
+## [0.7.10] - 2026-07-15
+
+### Fixed
+
+- **Leaving a drill while the mic is still turning on no longer leaves it running.** Hitting Back the instant you started an exercise (before the microphone finished starting) could leave the mic on and a scoring loop running in the background — it now cleanly cancels.
+- **Fairer Interval Trainer scoring.** A quirk inflated the score, so a middling run could read as a good one; the difficulty weighting now counts the way it was meant to.
+- **Holding the spacebar no longer logs several runs at once.**
+- **Pitch Pursuit no longer leaves a background timer running** after you play a game to the end and replay it.
+
 ## [0.7.9] - 2026-07-15
 
 ### Fixed

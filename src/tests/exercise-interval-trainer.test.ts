@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useIntervalTrainerController } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
+import { difficultyWeightedRoundScore, useIntervalTrainerController, } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
 import { EXERCISE_INTERVAL_TRAINER } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
@@ -45,6 +45,41 @@ function createMockBase(
 }
 
 const audioEngine = { playTone: async () => {} }
+
+describe('difficultyWeightedRoundScore', () => {
+  it('is a span-weighted mean in 0-100, not an inflated sum', () => {
+    // Two equal-span rounds at 40 → mean 40. The `* rounds.length` bug
+    // returned 80 here (and the final score inflated to grade B).
+    expect(
+      difficultyWeightedRoundScore([
+        { score: 40, span: 2 },
+        { score: 40, span: 2 },
+      ]),
+    ).toBe(40)
+  })
+
+  it('weights larger intervals more heavily', () => {
+    // (100*1 + 0*3) / 4 = 25
+    expect(
+      difficultyWeightedRoundScore([
+        { score: 100, span: 1 },
+        { score: 0, span: 3 },
+      ]),
+    ).toBe(25)
+  })
+
+  it('caps at 100 even for six perfect rounds (regression for the ×rounds bug)', () => {
+    const rounds = Array.from({ length: 6 }, (_unused, i) => ({
+      score: 100,
+      span: i + 1,
+    }))
+    expect(difficultyWeightedRoundScore(rounds)).toBe(100)
+  })
+
+  it('returns 0 for no rounds', () => {
+    expect(difficultyWeightedRoundScore([])).toBe(0)
+  })
+})
 
 describe('useIntervalTrainerController', () => {
   afterEach(() => {

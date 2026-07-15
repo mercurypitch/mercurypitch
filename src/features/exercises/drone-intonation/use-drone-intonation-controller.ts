@@ -3,7 +3,7 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
-import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
+import { freqToExactMidi, pitchStabilityCents, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -41,6 +41,9 @@ export function useDroneIntonationController(
   let rounds: Array<{ semitones: number; label: string }> = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Per-round pitch steadiness (cents std-dev within each sustained note),
+  // averaged for the final stability score — see computeResult().
+  let roundStabilities: number[] = []
   // Adaptive knobs, resolved per drone setup (default d5 == originals).
   let scoreK = SCORE_K
   let matchWindowMs = MATCH_WINDOW_MS
@@ -73,6 +76,7 @@ export function useDroneIntonationController(
     rounds = pickIntervals(roundCount)
     roundIndex = 0
     roundScores = []
+    roundStabilities = []
   }
 
   async function startRounds(): Promise<void> {
@@ -140,6 +144,14 @@ export function useDroneIntonationController(
 
     roundScores.push(roundScore)
 
+    // Capture how steadily THIS note was held (needs ≥2 voiced samples).
+    const roundFreqs = recentSamples
+      .filter((p) => p.freq > 0)
+      .map((p) => p.freq)
+    if (roundFreqs.length >= 2) {
+      roundStabilities.push(pitchStabilityCents(roundFreqs))
+    }
+
     const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length
     batch(() => {
       base._updateScore(Math.round(avg))
@@ -186,19 +198,22 @@ export function useDroneIntonationController(
     const bestRound = Math.max(...roundScores)
 
     const history = base.pitchHistory()
-    const validSamples = history.filter((p) => p.freq > 0)
-    const stabilityCents = (() => {
-      if (validSamples.length < 2) return 0
-      const midis = validSamples.map((p) => freqToExactMidi(p.freq))
-      const mean = midis.reduce((a, b) => a + b, 0) / midis.length
-      const variance =
-        midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length
-      return Math.round(Math.sqrt(variance) * 100)
-    })()
-    const stabilityScore = Math.max(
-      0,
-      Math.min(100, 100 - stabilityCents * 0.8),
-    )
+    // Stability is the average of the PER-ROUND steadiness captured in
+    // evaluateRound. Measuring it across the whole run would capture the
+    // deliberate moves between the different intervals rather than how steadily
+    // each note was held — and would punish singing the intervals correctly.
+    // No measured rounds → 0 (nothing was actually sustained).
+    const stabilityCents =
+      roundStabilities.length > 0
+        ? Math.round(
+            roundStabilities.reduce((a, b) => a + b, 0) /
+              roundStabilities.length,
+          )
+        : 0
+    const stabilityScore =
+      roundStabilities.length > 0
+        ? Math.max(0, Math.min(100, 100 - stabilityCents * 0.8))
+        : 0
 
     const claritySamples = history
       .filter((p) => p.freq > 0 && p.clarity !== undefined)

@@ -225,7 +225,12 @@ export function useSirenController(
         freq: p.freq,
       }))
     const slideResult = detectSlides(slideSamples)
-    const slideQuality = slideResult.overallScore
+    // A siren IS a glide: if no slide was detected, that's no credit — not the
+    // full marks detectSlides hands out by default (overallScore = 100 when it
+    // finds none). Scoped to the siren; the shared default is left untouched so
+    // other callers keep their behaviour.
+    const slideQuality =
+      slideResult.slides.length > 0 ? slideResult.overallScore : 0
     const cleanSlides = slideResult.cleanCount
     const scoopSlides = slideResult.scoopCount
 

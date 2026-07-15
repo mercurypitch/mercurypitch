@@ -173,6 +173,9 @@ export function useDynamicSwellController(
         time: p.time,
         clarity: p.clarity!,
         midi: freqToExactMidi(p.freq),
+        // Real loudness when present → scores actual dynamics; falls back to
+        // clarity inside intensityFromPitchResults when absent (e.g. tests).
+        rms: p.rms,
       }))
     const intensity = intensityFromPitchResults(intensitySamples)
     const dynamicRangeDb = Math.round(intensity.dynamicRange * 10) / 10

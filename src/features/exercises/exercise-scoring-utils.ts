@@ -88,6 +88,23 @@ export function scoreNoteInRange(
   return scoreSamples(slice, targetMidi)
 }
 
+/**
+ * Standard deviation of a set of frequencies expressed in cents around their
+ * OWN mean — i.e. how steadily a single sustained note was held (0 = rock
+ * steady). Fewer than two voiced samples returns 0 (no basis to judge wobble).
+ *
+ * Use this per sustained note and average the results; taking it across a run
+ * that deliberately moves between pitches (e.g. the drone-intonation intervals)
+ * measures the movement, not the steadiness, and punishes singing correctly.
+ */
+export function pitchStabilityCents(freqs: readonly number[]): number {
+  const midis = freqs.filter((f) => f > 0).map(freqToExactMidi)
+  if (midis.length < 2) return 0
+  const mean = midis.reduce((a, b) => a + b, 0) / midis.length
+  const variance = midis.reduce((s, v) => s + (v - mean) ** 2, 0) / midis.length
+  return Math.sqrt(variance) * 100
+}
+
 /** Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. */
 function scoreSamples(samples: PitchSample[], targetMidi: number): number {
   const deviations = samples

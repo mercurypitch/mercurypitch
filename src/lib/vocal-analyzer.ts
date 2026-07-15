@@ -211,7 +211,14 @@ export function compareIntensity(
  * Uses clarity values as a proxy for intensity when raw audio isn't available.
  */
 export function intensityFromPitchResults(
-  pitchResults: Array<{ time?: number; clarity: number; midi: number }>,
+  pitchResults: Array<{
+    time?: number
+    clarity: number
+    midi: number
+    /** Real linear RMS loudness 0-1 for the frame. When present it drives the
+     *  envelope; otherwise clarity is used as a rough proxy (legacy fallback). */
+    rms?: number
+  }>,
 ): {
   envelope: EnvelopePoint[]
   avgDb: number
@@ -228,12 +235,24 @@ export function intensityFromPitchResults(
 
   for (let i = 0; i < pitchResults.length; i++) {
     const p = pitchResults[i]
-    // Clarity (0-100+) maps roughly to intensity; normalize to dB-like scale
-    const normClarity = Math.min(100, p.clarity)
-    const db = normClarity > 0 ? 20 * Math.log10(normClarity / 50) : -60
     const time = p.time ?? i * 0.01
 
-    envelope.push({ time, rms: normClarity / 100, db })
+    let rms: number
+    let db: number
+    if (p.rms !== undefined) {
+      // Real per-sample loudness (linear RMS 0-1) → dBFS. This is the actual
+      // crescendo/decrescendo signal for the dynamics exercise.
+      rms = p.rms
+      db = 20 * Math.log10(Math.max(p.rms, 1e-6))
+    } else {
+      // Fallback: clarity (0-100+) as a rough intensity proxy, for callers that
+      // carry no amplitude (keeps prior behaviour and existing tests stable).
+      const normClarity = Math.min(100, p.clarity)
+      rms = normClarity / 100
+      db = normClarity > 0 ? 20 * Math.log10(normClarity / 50) : -60
+    }
+
+    envelope.push({ time, rms, db })
     sumDb += db
     if (db > peakDb) peakDb = db
   }
@@ -893,7 +912,10 @@ export function approximateRichness(
 
   // Higher clarity → more detectable harmonics
   const harmonicCount = Math.round(3 + clarityNorm * 10)
-  const richnessScore = Math.round(clarityNorm * 60 + 10)
+  // Full 0-100 scale. (This previously maxed out at 70 — `clarityNorm*60 + 10`
+  // — which quietly capped a flawless run at ~92 in the exercises that weight
+  // it, e.g. drone/mirror/scale/arpeggio/call-response.)
+  const richnessScore = Math.round(clarityNorm * 100)
 
   let quality: HarmonicRichnessResult['quality']
   if (harmonicCount >= 12) quality = 'very-rich'

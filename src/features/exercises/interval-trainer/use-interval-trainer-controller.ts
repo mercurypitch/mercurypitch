@@ -7,6 +7,20 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
+/** Span-weighted mean of the per-round scores (larger intervals weigh more),
+ *  on a 0-100 scale. It must NOT be scaled by the round count — an earlier
+ *  `* intervalSpans.length` turned this weighted mean into an inflated sum
+ *  that saturated the final score (a ~40% run graded as ~70). */
+export function difficultyWeightedRoundScore(
+  rounds: readonly { score: number; span: number }[],
+): number {
+  const totalSpans = rounds.reduce((s, v) => s + v.span, 0)
+  if (rounds.length === 0 || totalSpans === 0) return 0
+  return Math.round(
+    rounds.reduce((s, v) => s + v.score * (v.span / totalSpans), 0),
+  )
+}
+
 const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 800
 const GAP_BETWEEN_NOTES_MS = 300
@@ -225,17 +239,8 @@ export function useIntervalTrainerController(
         ? Math.round(large.reduce((a, b) => a + b.score, 0) / large.length)
         : 0
 
-    // Difficulty-weighted: larger intervals are harder, weight accordingly
-    const totalSpans = intervalSpans.reduce((s, v) => s + v.span, 0)
-    const difficultyWeightedScore =
-      intervalSpans.length > 0 && totalSpans > 0
-        ? Math.round(
-            intervalSpans.reduce(
-              (s, v) => s + v.score * (v.span / totalSpans),
-              0,
-            ) * intervalSpans.length,
-          )
-        : 0
+    // Difficulty-weighted: larger intervals are harder, weight accordingly.
+    const difficultyWeightedScore = difficultyWeightedRoundScore(intervalSpans)
 
     return {
       type: EXERCISE_INTERVAL_TRAINER,

@@ -14,6 +14,8 @@ const SCORE_UPDATE_HZ = 10
 const SCORE_ZONE_WEIGHT = 0.6
 const SCORE_DURATION_WEIGHT = 0.4
 const TARGET_DURATION_SEC = 60
+// No fresh voiced sample for this long ⇒ the singer has gone silent.
+const VOICE_GAP_SEC = 0.2
 
 export function usePitchHoldController(base: BaseExerciseController) {
   let targetMidi = 0
@@ -21,6 +23,9 @@ export function usePitchHoldController(base: BaseExerciseController) {
   let lastShrinkTime = 0
   let inZoneFrames = 0
   let totalFrames = 0
+  // Set once the singer first makes sound, so leading reaction-time silence
+  // isn't counted against them (silence after they start still is).
+  let hasPhonated = false
   let scoreUpdateTimer: ReturnType<typeof setInterval> | undefined
   base._registerDispose(() => {
     clearInterval(scoreUpdateTimer)
@@ -38,6 +43,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
     zoneRadius = INITIAL_ZONE_CENTS * difficultyFactor(difficulty)
     inZoneFrames = 0
     totalFrames = 0
+    hasPhonated = false
     lastShrinkTime = performance.now()
 
     scoreUpdateTimer = setInterval(() => {
@@ -51,13 +57,23 @@ export function usePitchHoldController(base: BaseExerciseController) {
         lastShrinkTime = now
       }
 
-      const pitch = base.currentPitch()
-      if (pitch && pitch.freq > 0) {
+      // Detect real silence by the freshness of the last history sample (only
+      // voiced frames are appended). base.currentPitch() is NOT cleared between
+      // voiced frames, so it reads stale during a gap — using it let a singer
+      // hit the note briefly, go silent, and hold zonePct at 100.
+      const history = base.pitchHistory()
+      const latest = history[history.length - 1]
+      const voiced =
+        latest !== undefined && elapsed / 1000 - latest.time <= VOICE_GAP_SEC
+      if (voiced) hasPhonated = true
+
+      // Once singing has started, every frame counts — silence in the middle or
+      // at the end now dilutes the in-zone percentage instead of being ignored.
+      if (hasPhonated) {
         totalFrames++
-        const midi = freqToExactMidi(pitch.freq)
-        const cents = (midi - targetMidi) * 100
-        if (Math.abs(cents) <= zoneRadius) {
-          inZoneFrames++
+        if (voiced) {
+          const cents = (freqToExactMidi(latest.freq) - targetMidi) * 100
+          if (Math.abs(cents) <= zoneRadius) inZoneFrames++
         }
       }
 

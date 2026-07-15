@@ -173,6 +173,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   onMount(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== ' ' && e.code !== 'Space') return
+      // Ignore auto-repeat: holding Space would otherwise cycle
+      // stop → try-again → stop… and log several spurious completed runs.
+      if (e.repeat) return
       const el = e.target as HTMLElement | null
       const tag = el?.tagName
       if (

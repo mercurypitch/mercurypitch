@@ -34,6 +34,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       cents: number
       clarity?: number
       noteName?: string
+      /** Linear RMS loudness 0-1 of this frame (real amplitude, not a proxy).
+       *  Optional so every other consumer is unaffected. */
+      rms?: number
     }>
   >([])
   const [getCurrentPitch, setCurrentPitch] = createSignal<{
@@ -116,7 +119,8 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     })
     targetTimeline = []
 
-    if (!practiceEngine.isMicActive()) {
+    const micWasActive = practiceEngine.isMicActive()
+    if (!micWasActive) {
       const ok = await practiceEngine.startMic()
       if (!ok) {
         setError(
@@ -129,6 +133,17 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         return false
       }
     }
+
+    // If a reset()/dispose ran while we awaited the mic (e.g. the singer hit
+    // Back or switched exercise during the permission prompt), abort: the loop
+    // below would otherwise run forever with nothing left to stop it, and we
+    // would leave the mic on that reset() just released.
+    if (state().status !== 'count-in') {
+      if (!micWasActive) practiceEngine.stopMic()
+      startDepth--
+      return false
+    }
+
     setError(null)
 
     startTime = performance.now()
@@ -159,6 +174,10 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
                 time: elapsed / 1000,
                 cents: pitch.cents,
                 clarity: pitch.clarity,
+                // Real per-frame loudness so dynamics exercises can score
+                // actual crescendo/decrescendo (reuses the mic RMS the engine
+                // already computes for its input-level meter).
+                rms: practiceEngine.getInputLevel(),
               },
             ]
             return next.length > MAX_PITCH_HISTORY
