@@ -359,6 +359,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             </Show>
             <button
               class="exercise-btn exercise-btn-stop"
+              aria-label={props.stopLabel ?? 'Stop & Score'}
               onClick={() => props.onStop()}
             >
               <svg
@@ -370,7 +371,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               >
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-              {props.stopLabel ?? 'Stop & Score'}
+              <span class="exercise-btn-stop-label">
+                {props.stopLabel ?? 'Stop & Score'}
+              </span>
             </button>
           </div>
         </Show>

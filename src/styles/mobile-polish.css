@@ -205,14 +205,48 @@
     box-shadow: 0 -12px 14px -4px var(--bg-card);
   }
 
-  /* Active run: the Stop button floats (position: absolute) at the
-     bottom-centre of the canvas so it stays visible over any viz. On
-     the shorter mobile canvas the exercises with a bottom metrics row
-     (Pitch Hold, Slide, Long Note, …) rendered those metrics right
-     under it, so the button sat on top of the numbers. Reserve a strip
-     of clearance at the bottom of the canvas so the centred content is
-     lifted clear of the floating control. */
+  /* Active run: on the shorter mobile canvas the full-width, centred
+     "Stop & Score" pill sat on top of an exercise's bottom metrics row
+     (Slide, Pitch Hold, Long Note, Vibrato), and the pitch tracker
+     stretched to a tall 200px band that crowded everything else.
+     Redesign for phones: shrink the tracker, turn Stop into a compact
+     corner action button, and reserve a strip of clearance so nothing
+     ever renders behind it. Scoped to `.is-active` — idle is untouched. */
   .exercise-canvas-area.is-active {
-    padding-bottom: 60px;
+    padding-bottom: 76px;
+  }
+
+  /* Trim the pitch tracker so the exercise's own viz + metrics get room
+     (it flex-shrank unevenly before, cramming its note labels). */
+  .exercise-pitch-tracker {
+    height: 148px;
+  }
+
+  /* Stop → a round icon-only action button in the bottom-right corner,
+     out of the way of the centred content (was a centred full-width
+     pill). The text label is dropped in favour of the square icon; the
+     button keeps an aria-label so it still reads as "Stop & Score". */
+  .exercise-active-controls {
+    left: auto;
+    right: 14px;
+    bottom: 14px;
+    transform: none;
+    gap: 8px;
+  }
+  .exercise-btn-stop {
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
+    box-shadow: 0 6px 20px rgba(248, 81, 73, 0.35);
+  }
+  .exercise-btn-stop svg {
+    width: 20px;
+    height: 20px;
+  }
+  .exercise-btn-stop-label {
+    display: none;
   }
 }

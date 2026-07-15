@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.9] - 2026-07-15
+
+### Fixed
+
+- **The Guided Warmup is usable on a phone again.** Its setup screen used to overlap into an unreadable stack on mobile — the description, routine, comfort-note grid and Start button now flow and scroll cleanly. Every exercise's setup screen inherits the same fix.
+
+### Changed
+
+- **A tidier view while you practise on your phone.** During a run the Stop button is now a compact button tucked in the corner so it never covers your live metrics, and the pitch tracker is a little shorter so each drill has more room to breathe.
+
 ## [0.7.8] - 2026-07-14
 
 ### Added
