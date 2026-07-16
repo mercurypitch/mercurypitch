@@ -11,7 +11,7 @@ import { createSignal } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { getDb } from '@/db'
 import { IS_DEV } from '@/lib/defaults'
-import { getAllUvrSessions, getGroupsReactive, getUvrSession, } from '@/stores/app-store'
+import { getAllUvrSessions, getGroupsReactive, getUvrSession, } from '@/stores/uvr-store'
 
 // ── Types ──────────────────────────────────────────────────────
 
