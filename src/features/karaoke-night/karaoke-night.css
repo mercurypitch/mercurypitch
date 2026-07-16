@@ -92,6 +92,220 @@ body {
   color: #ffffff;
 }
 
+/* ── Account chip + menu ─────────────────────────────────── */
+
+.kn-account {
+  position: relative;
+  display: inline-flex;
+}
+
+.kn-account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgba(183, 154, 224, 0.35);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.1);
+  color: #e8dcfa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  max-width: 15rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.kn-account-chip:hover {
+  background: rgba(183, 154, 224, 0.18);
+}
+
+.kn-account-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7ee0a0;
+  flex: none;
+}
+
+.kn-account-credits {
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 214, 160, 0.18);
+  color: #ffd9a0;
+  font-size: 0.72rem;
+}
+
+.kn-account-menu-wrap {
+  position: relative;
+}
+
+.kn-account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(183, 154, 224, 0.25);
+  border-radius: 10px;
+  background: rgba(24, 12, 40, 0.96);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+}
+
+.kn-account-menu a,
+.kn-account-menu button {
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #e8dcfa;
+  font-size: 0.85rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.kn-account-menu a:hover,
+.kn-account-menu button:hover {
+  background: rgba(183, 154, 224, 0.14);
+}
+
+/* ── Processing-mode toggle chip ─────────────────────────── */
+
+.kn-chip--toggle {
+  cursor: pointer;
+  border: 1px solid rgba(183, 154, 224, 0.4);
+  background: rgba(183, 154, 224, 0.12);
+  color: #cdbde6;
+}
+
+.kn-chip--toggle:hover:not(:disabled) {
+  background: rgba(183, 154, 224, 0.2);
+}
+
+.kn-chip--toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.kn-chip--server {
+  border-color: rgba(255, 214, 160, 0.5);
+  background: rgba(255, 214, 160, 0.16);
+  color: #ffd9a0;
+}
+
+/* ── Sign-in modal ───────────────────────────────────────── */
+
+.kn-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(9, 4, 16, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.kn-modal {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.6rem 1.5rem 1.4rem;
+  border: 1px solid rgba(183, 154, 224, 0.28);
+  border-radius: 16px;
+  background: rgba(24, 12, 40, 0.98);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.kn-modal-close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  border: none;
+  background: transparent;
+  color: #8f7bb0;
+  cursor: pointer;
+}
+
+.kn-modal-close:hover {
+  color: #e8dcfa;
+}
+
+.kn-modal h2 {
+  font-size: 1.3rem;
+}
+
+.kn-modal-sub {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #cdbde6;
+}
+
+.kn-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.kn-modal input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(183, 154, 224, 0.3);
+  border-radius: 9px;
+  background: rgba(13, 8, 22, 0.8);
+  color: #f4ecff;
+  font-size: 0.92rem;
+}
+
+.kn-modal input:focus {
+  outline: none;
+  border-color: rgba(255, 154, 213, 0.6);
+}
+
+.kn-modal .kn-btn {
+  margin-top: 0.2rem;
+  width: 100%;
+  text-align: center;
+}
+
+.kn-modal-error {
+  font-size: 0.82rem;
+  color: #ff9a9a;
+}
+
+.kn-modal-google {
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(183, 154, 224, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #e8dcfa;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.kn-modal-google:hover {
+  background: rgba(183, 154, 224, 0.12);
+}
+
+.kn-modal-switch {
+  border: none;
+  background: transparent;
+  color: #b79ae0;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.kn-modal-switch:hover {
+  color: #ffffff;
+}
+
 .kn-glass {
   display: inline-flex;
   align-items: center;

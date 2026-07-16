@@ -4,8 +4,10 @@
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
-import { completeUvrSession, getAllUvrSessionsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, startUvrSession, } from '@/stores/uvr-store'
+import type { UvrProcessingMode } from '@/stores/uvr-store'
+import { completeUvrSession, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
+import { credits, refreshCredits, signedIn } from './karaoke-account'
 
 export interface KaraokeSong {
   sessionId: string
@@ -25,6 +27,21 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     null,
   )
   const [uploadError, setUploadError] = createSignal('')
+  const [mode, setMode] = createSignal<UvrProcessingMode>(
+    getUvrProcessingMode(),
+  )
+
+  // Server mode is only usable with a signed-in account (billing) and credits.
+  const serverReady = () => signedIn() && (credits() ?? 0) > 0
+  const effectiveMode = (): UvrProcessingMode =>
+    mode() === 'server' && serverReady() ? 'server' : 'local'
+
+  const toggleMode = () => {
+    if (!signedIn()) return
+    const next: UvrProcessingMode = mode() === 'server' ? 'local' : 'server'
+    setMode(next)
+    setUvrProcessingMode(next) // shared pref — stays in sync with the studio
+  }
 
   let fileInputRef: HTMLInputElement | undefined
 
@@ -97,25 +114,28 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const handleFile = async (file: File | undefined) => {
     if (file === undefined) return
     setUploadError('')
+    const runMode = effectiveMode()
     const sessionId = startUvrSession(
       file.name,
       file.size,
       file.type,
       'separate',
-      'local',
+      runMode,
     )
     setUploadSessionId(sessionId)
     try {
-      // Pipeline (and with it the ONNX separation stack) loads only when a
-      // visitor actually uploads — never on page load.
+      // Pipeline (and with it the ONNX separation stack, for local mode) loads
+      // only when a visitor actually uploads — never on page load.
       const pipeline = await import('@/lib/uvr-processing-pipeline')
-      await pipeline.runUvrPipeline(file, sessionId, 'local', {
+      await pipeline.runUvrPipeline(file, sessionId, runMode, {
         onProgress: () => {
           // The pipeline writes progress onto the session record; the rail
           // reads it reactively from the store.
         },
         onComplete: async (result) => {
           await completeUvrSession(sessionId, result.outputs, result.stemMeta)
+          // Server separations debit credits server-side — refresh the balance.
+          if (runMode === 'server') void refreshCredits()
           // Auto-open the finished song only when the stage is idle. If the
           // visitor is mid-performance (demo or another song), it just lands
           // in "Your library" for them to pick when they're ready — never
@@ -125,6 +145,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         onError: (message) => {
           setErrorUvrSession(sessionId, message)
           setUploadError(message)
+          if (runMode === 'server') void refreshCredits()
         },
       })
     } catch (err) {
@@ -141,13 +162,48 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     <>
       <section class="kn-card">
         <p class="kn-card-kicker">
-          Your song <span class="kn-chip">On this device</span>
+          Your song
+          <Show
+            when={signedIn()}
+            fallback={<span class="kn-chip">On this device</span>}
+          >
+            <button
+              class="kn-chip kn-chip--toggle"
+              classList={{ 'kn-chip--server': effectiveMode() === 'server' }}
+              onClick={toggleMode}
+              disabled={mode() === 'server' && !serverReady()}
+              title="Switch between on-device and studio-server separation"
+            >
+              {effectiveMode() === 'server'
+                ? 'Studio servers'
+                : 'On this device'}
+            </button>
+          </Show>
         </p>
         <h3>Add a song you own</h3>
-        <p class="kn-card-sub">
-          All data stays on your device. Higher-quality separation is available
-          as a paid option in the app.
-        </p>
+        <Show
+          when={effectiveMode() === 'server'}
+          fallback={
+            <p class="kn-card-sub">
+              All data stays on your device. Higher-quality separation is
+              available as a paid option — sign in to use it.
+            </p>
+          }
+        >
+          <p class="kn-card-sub">
+            Studio-quality separation on our servers.
+            <Show when={credits() !== null}>
+              {' '}
+              <strong>{credits()} credits</strong> left · 1 credit per song.
+            </Show>
+          </p>
+        </Show>
+        <Show when={mode() === 'server' && signedIn() && !serverReady()}>
+          <p class="kn-progress-warn">
+            You're out of credits. <a href="/#/settings/credits">Get credits</a>{' '}
+            to use studio separation, or switch back to on-device.
+          </p>
+        </Show>
         <input
           ref={fileInputRef}
           type="file"
@@ -182,17 +238,31 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           </div>
           <p class="kn-progress-note">
             <Show
-              when={(uploadSession()?.progress ?? 0) > 0}
-              fallback="Warming up the separator — the first run downloads its model…"
+              when={effectiveMode() === 'server'}
+              fallback={
+                <Show
+                  when={(uploadSession()?.progress ?? 0) > 0}
+                  fallback="Warming up the separator — the first run downloads its model…"
+                >
+                  {Math.round(uploadSession()?.progress ?? 0)}% — separating on
+                  this device.
+                </Show>
+              }
             >
-              {Math.round(uploadSession()?.progress ?? 0)}% — separating on this
-              device.
+              <Show
+                when={uploadSession()?.phase === 'queued'}
+                fallback={`${Math.round(uploadSession()?.progress ?? 0)}% — separating on our servers.`}
+              >
+                Waiting for a studio server…
+              </Show>
             </Show>
           </p>
-          <p class="kn-progress-warn">
-            Separation is an intensive workload — for smooth karaoke, let it
-            finish before you sing.
-          </p>
+          <Show when={effectiveMode() !== 'server'}>
+            <p class="kn-progress-warn">
+              Separation is an intensive workload — for smooth karaoke, let it
+              finish before you sing.
+            </p>
+          </Show>
           <button class="kn-cancel" onClick={() => void cancelUpload()}>
             Cancel
           </button>
