@@ -1043,10 +1043,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Load cached data from IndexedDB in parallel:
     // 1. Whisper transcription (words + timestamps)
     // 2. Pitch analysis (denoised notes)
-    // 3. Initialize whisper service (so re-transcription is possible)
+    // 3. Initialize whisper service (so re-transcription is possible) — the
+    //    performance preset skips it: its transcription tooling isn't
+    //    reachable there, and the model download is too heavy to pay on a
+    //    landing-page demo.
     void whisper.loadCachedTranscription()
     void pitchAnalysis.loadCachedAnalysis()
-    whisper.initWhisper()
+    if (props.preset !== 'performance') whisper.initWhisper()
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()
