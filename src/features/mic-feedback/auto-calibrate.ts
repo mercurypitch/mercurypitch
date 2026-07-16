@@ -1,4 +1,4 @@
-import { showNotification } from '@/stores'
+import { showNotification } from '@/stores/notifications-store'
 import type { SensitivityPreset } from '@/stores/settings-store'
 import { applySensitivityPreset } from '@/stores/settings-store'
 

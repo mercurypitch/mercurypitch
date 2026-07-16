@@ -10,6 +10,7 @@ import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { generateVocalMidi } from '@/lib/midi-generator'
@@ -21,7 +22,7 @@ import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } fr
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startUvrSession, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -1866,6 +1867,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   initialSeekSec={mixerInitialSeekSec()}
                   autoPlay={mixerAutoPlay()}
                   karaokeReferenceVocal={isPlaylistActive()}
+                  onOfferTour={(trigger) => {
+                    if (trigger === 'mount') {
+                      offerTourOnce(
+                        'pitchperfect_mixer_tour_offered',
+                        'New to the mixer? Take a quick tour.',
+                        STEM_MIXER_TOUR_STEPS,
+                      )
+                    } else {
+                      startTour(STEM_MIXER_TOUR_STEPS)
+                    }
+                  }}
                   onBack={() => {
                     setMixerAutoPlay(false)
                     setMixerInitialSeekSec(undefined)

@@ -13,7 +13,6 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
-import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
@@ -26,7 +25,6 @@ import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
-import { startTour, STEM_MIXER_TOUR_STEPS } from '@/stores/app-store'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -63,6 +61,15 @@ interface StemMixerProps {
   autoPlay?: boolean
   /** Karaoke playlist mode: silence the vocal but keep it as scoring reference. */
   karaokeReferenceVocal?: boolean
+  /** Rendering preset. 'studio' (default) is the full in-app toolset; the
+   *  standalone karaoke page uses 'performance' — a clean stage without the
+   *  pitch-analysis/edit tooling. */
+  preset?: 'studio' | 'performance'
+  /** Guided-tour hook, injected by the studio app ('mount' = the one-time
+   *  offer toast, 'button' = the header Tour button). Leaving it undefined
+   *  removes the tour UI — and keeps the tour engine (app-store) out of
+   *  standalone entry bundles. */
+  onOfferTour?: (trigger: 'mount' | 'button') => void
   onBack?: () => void
 }
 
@@ -1047,11 +1054,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Offer the mixer tour once — but not mid-playlist, where the focus is
     // singing, not learning the UI.
     if (!playlist.isPlaylistActive()) {
-      offerTourOnce(
-        'pitchperfect_mixer_tour_offered',
-        'New to the mixer? Take a quick tour.',
-        STEM_MIXER_TOUR_STEPS,
-      )
+      props.onOfferTour?.('mount')
     }
 
     // Keyboard shortcuts
@@ -1284,20 +1287,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             style={{ display: 'flex', gap: '0.5rem' }}
             data-tour="mixer.header"
           >
-            <button
-              class="sm-btn sm-btn-secondary"
-              onClick={() => startTour(STEM_MIXER_TOUR_STEPS)}
-              title="Take a guided tour of the mixer"
-              style={{ gap: '0.4rem' }}
-            >
-              <svg viewBox="0 0 24 24" width="14" height="14">
-                <path
-                  fill="currentColor"
-                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
-                />
-              </svg>{' '}
-              Tour
-            </button>
+            <Show when={props.onOfferTour}>
+              <button
+                class="sm-btn sm-btn-secondary"
+                onClick={() => props.onOfferTour?.('button')}
+                title="Take a guided tour of the mixer"
+                style={{ gap: '0.4rem' }}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+                  />
+                </svg>{' '}
+                Tour
+              </button>
+            </Show>
             <button
               class="sm-btn sm-btn-secondary"
               data-tour="mixer.playlist"
@@ -1308,14 +1313,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <Music /> Playlist
             </button>
-            <button
-              class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-              onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
-              title="Pitch Analysis & Settings"
-              style={{ gap: '0.4rem' }}
-            >
-              <Settings /> Pitch
-            </button>
+            <Show when={props.preset !== 'performance'}>
+              <button
+                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
+                onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+                title="Pitch Analysis & Settings"
+                style={{ gap: '0.4rem' }}
+              >
+                <Settings /> Pitch
+              </button>
+            </Show>
             {/* Share links are only useful once songs are cloud-synced across
                 devices — gated behind the premium flag (off by default). */}
             <Show when={PREMIUM_FEATURES}>
@@ -1663,7 +1670,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       {/* In edit mode the panel collapses and a floating toolbar takes over,
           so the pitch lane stays visible and clickable. */}
-      <Show when={pitchAnalysis.editMode()}>
+      <Show when={props.preset !== 'performance' && pitchAnalysis.editMode()}>
         <StemMixerEditToolbar
           pitchView={pitchAnalysis.pitchView()}
           setPitchView={pitchAnalysis.setPitchView}
@@ -1681,7 +1688,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         />
       </Show>
 
-      <Show when={pitchAnalysis.panelOpen() && !pitchAnalysis.editMode()}>
+      <Show
+        when={
+          props.preset !== 'performance' &&
+          pitchAnalysis.panelOpen() &&
+          !pitchAnalysis.editMode()
+        }
+      >
         <StemMixerPitchAnalysisPanel
           algorithm={pitchAnalysis.algorithm()}
           setAlgorithm={pitchAnalysis.setAlgorithm}
