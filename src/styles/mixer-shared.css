@@ -19,6 +19,13 @@
   background: var(--text-muted, #8b949e);
 }
 
+/* Firefox has no ::-webkit-scrollbar — these two properties are its whole
+   scrollbar API, and without them it renders wide default-grey bars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #30363d) transparent;
+}
+
 input[type='range'] {
   cursor: pointer;
 }
