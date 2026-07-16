@@ -22,11 +22,12 @@ const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
 function loadStageAlpha(): number {
   try {
     const v = Number(localStorage.getItem(ALPHA_KEY))
-    if (v >= 0.3 && v <= 1) return v
+    if (v >= 0.05 && v <= 1) return v
   } catch {
     /* localStorage unavailable */
   }
-  return 0.78
+  // Middle of the atmospheric range — clearly glassy, still readable.
+  return 0.45
 }
 
 function loadRailCollapsed(): boolean {
@@ -102,7 +103,7 @@ export function KaraokeNightApp() {
               <input
                 type="range"
                 class="kn-glass-slider"
-                min="0.3"
+                min="0.05"
                 max="1"
                 step="0.02"
                 value={stageAlpha()}
