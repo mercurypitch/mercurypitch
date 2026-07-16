@@ -3,6 +3,21 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.12] - 2026-07-16
+
+### Added
+
+- **Karaoke Night — your songs on a theatre stage.** A new karaoke experience at [`/karaoke-night`](https://mercurypitch.com/karaoke-night): a spotlit stage with big centered lyrics, live pitch scoring, and a demo song ready to sing (Josh Woodward's "Goodbye to Spring").
+  - **Bring your own music**: add a song you own and the vocals lift out right on your device, free. Signed in, you can switch to studio-quality separation on our servers with your credits.
+  - **Your library and playlists come along**: songs you've separated appear in the side panel, and playlists play through on the big stage — countdown, scoring and all.
+  - **Make it yours**: a transparency slider lets the theatre shine through the controls, and the side panel collapses to a slim icon strip for a full-width stage.
+  - **Jump over from the studio**: a Karaoke Night button in the Karaoke tab, and a second play button on every playlist that sends it straight to the stage.
+
+### Fixed
+
+- **Playlists no longer skip a song.** The second song in a playlist could "finish" the instant it started and jump to the scoreboard; every song now plays start to finish.
+- **The Voice Mirror loads much faster** — it was carrying far more code than it needed, and the trim matters most on phones.
+
 ## [0.7.11] - 2026-07-15
 
 ### Fixed
