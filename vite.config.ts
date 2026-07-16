@@ -192,11 +192,14 @@ export default defineConfig({
             if (id.includes('solid-js')) return 'vendor-solid'
             return 'vendor'
           }
-          // Small pitch/mic modules shared by the app and the mirror entry.
-          // Without this, Rollup co-locates them with app chunks and the
-          // mirror transitively loads the whole app vendor bundle.
+          // Small pitch/mic/consent modules shared by the app and the
+          // standalone entries (mirror, karaoke). Without this, Rollup
+          // co-locates them with app chunks and the standalone entries
+          // transitively load the whole app vendor bundle — legal-links
+          // landing in the 'advanced' chunk once dragged ~2.7 MB of static
+          // JS into the mirror's first paint via ConsentBanner.
           if (
-            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer)/.test(
+            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
               id,
             )
           ) {
