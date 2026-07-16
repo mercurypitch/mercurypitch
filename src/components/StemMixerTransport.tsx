@@ -306,6 +306,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             </button>
             <button
               class={`sm-col-btn${props.workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
+              data-tour="mixer.layout-fixed"
               onClick={() => {
                 props.setWorkspaceLayout('fixed-2col')
                 props.onQueueRedraw()
