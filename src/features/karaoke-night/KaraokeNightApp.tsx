@@ -42,12 +42,16 @@ export function KaraokeNightApp() {
     const m = manifest()
     if (!demoIsPlayable(m)) return
     const md = m as DemoSongManifest
-    void seedDemoLyrics(md)
-    setActiveSong({
-      sessionId: DEMO_SESSION_ID,
-      title: `${md.title} — ${md.artist}`,
-      stems: md.stems,
-    })
+    void (async () => {
+      // The stage's lyrics controller reads the db on mount and starts an
+      // online search when it finds nothing — so the seed must land first.
+      await seedDemoLyrics(md)
+      setActiveSong({
+        sessionId: DEMO_SESSION_ID,
+        title: `${md.title} — ${md.artist}`,
+        stems: md.stems,
+      })
+    })()
   }
 
   const attribution = () => manifest()?.attribution
