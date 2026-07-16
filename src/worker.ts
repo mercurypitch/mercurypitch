@@ -59,6 +59,12 @@ const MIRROR_PATHS = new Set([
   '/tone-deaf-test',
 ])
 
+// Paths that serve the Karaoke Night entry (karaoke.html). Keep in sync with
+// vite.config.ts (dev rewrite) and mirrorAliasFilesPlugin (real alias files —
+// Cloudflare's SPA fallback answers browser navigations before this worker,
+// so the emitted karaoke-night.html is what actually serves ad clicks).
+const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -170,6 +176,13 @@ export default {
       const mirrorUrl = new URL(request.url)
       mirrorUrl.pathname = '/mirror.html'
       return env.ASSETS.fetch(new Request(mirrorUrl.toString(), request))
+    }
+
+    // Karaoke Night — same standalone-entry treatment as the mirror.
+    if (KARAOKE_PATHS.has(url.pathname) && method === 'GET') {
+      const karaokeUrl = new URL(request.url)
+      karaokeUrl.pathname = '/karaoke.html'
+      return env.ASSETS.fetch(new Request(karaokeUrl.toString(), request))
     }
 
     // All other requests (static assets, SPA routes) are served by the assets

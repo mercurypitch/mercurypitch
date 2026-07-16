@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Karaoke Night — Turn Any Song You Own Into Karaoke | MercuryPitch</title>
+    <meta name="description" content="Upload a song you own, AI removes the vocals, and you sing with synced lyrics and live pitch scoring — right in your browser. Try the free demo mix.">
+    <meta name="keywords" content="karaoke maker, remove vocals from song, ai vocal remover, karaoke with scoring, sing along with lyrics, karaoke night at home">
+    <meta name="author" content="MercuryPitch">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mercurypitch.com/karaoke-night">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Karaoke Night — Turn Any Song You Own Into Karaoke">
+    <meta property="og:description" content="AI removes the vocals, you sing with synced lyrics and live pitch scoring. In your browser — try the free demo mix.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mercurypitch.com/karaoke-night">
+    <meta property="og:image" content="https://mercurypitch.com/og-image.png">
+    <meta property="og:site_name" content="MercuryPitch">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Karaoke Night — Turn Any Song You Own Into Karaoke">
+    <meta name="twitter:description" content="AI vocal removal + synced lyrics + live pitch scoring, in your browser. Try the free demo mix.">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <meta name="theme-color" content="#12081f">
+
+    <!-- FAQ structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I make a karaoke version of a song?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upload a song you own and MercuryPitch separates the vocals from the instruments with AI. You get a karaoke-ready mix with adjustable vocal level, synced lyrics and live pitch scoring, all in your browser."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with any song?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It works with audio files from your own library. A free on-device mode runs entirely in your browser; a studio-quality server mode is available for the cleanest separation."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it score my singing?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Enable your microphone and MercuryPitch tracks your pitch against the original vocal melody in real time, drawing every note you sing and scoring your performance."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Karaoke Night needs JavaScript — the mixing, lyrics and scoring all run right here in your browser.</noscript>
+    <script type="module" src="/src/features/karaoke-night/main.tsx"></script>
+  </body>
+</html>
