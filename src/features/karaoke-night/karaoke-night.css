@@ -1,0 +1,91 @@
+/* Karaoke Night — standalone page styles (placeholder shell).
+   The theatre visual treatment lands with the full page phase. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: #f4ecff;
+  background: radial-gradient(
+      ellipse 120% 70% at 50% 0%,
+      #2a1245 0%,
+      #1a0b2e 45%,
+      #12081f 100%
+    )
+    fixed;
+}
+
+.kn-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+
+.kn-hero {
+  max-width: 40rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.kn-brand {
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #b79ae0;
+}
+
+.kn-hero h1 {
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  background: linear-gradient(120deg, #ffd9a0, #ff9ad5 55%, #b79aff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.kn-tagline {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #cdbde6;
+}
+
+.kn-cta {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.85rem 1.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #1a0b2e;
+  background: linear-gradient(120deg, #ffd9a0, #ff9ad5);
+  transition: transform 0.15s ease;
+}
+
+.kn-cta:hover {
+  transform: translateY(-1px);
+}
+
+.kn-note {
+  font-size: 0.85rem;
+  color: #8f7bb0;
+}

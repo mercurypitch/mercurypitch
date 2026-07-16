@@ -36,12 +36,14 @@ try {
   }
 }
 
-// The Cloudflare worker rewrites /mirror (+ SEO aliases) to mirror.html in
-// production; dev and preview servers have no worker, so mirror the rewrite
-// here or the WelcomeScreen link would land on the SPA shell instead.
+// The Cloudflare worker rewrites the standalone-entry paths (/mirror +
+// aliases, /karaoke-night + alias) to their HTML entries in production; dev
+// and preview servers have no worker, so mirror the rewrites here or the
+// links would land on the SPA shell instead.
 const MIRROR_PATHS = new Set(['/mirror', '/vocal-range-test', '/tone-deaf-test'])
+const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 
-function mirrorRewritePlugin() {
+function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
     middlewares: {
       use: (
@@ -54,14 +56,16 @@ function mirrorRewritePlugin() {
     }
   }) => {
     server.middlewares.use((req, _res, next) => {
-      if (req.url !== undefined && MIRROR_PATHS.has(req.url.split('?')[0])) {
-        req.url = '/mirror.html'
+      if (req.url !== undefined) {
+        const path = req.url.split('?')[0]
+        if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
+        else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
       }
       next()
     })
   }
   return {
-    name: 'mirror-path-rewrite',
+    name: 'standalone-entry-rewrite',
     configureServer: rewrite,
     configurePreviewServer: rewrite,
   }
@@ -87,6 +91,12 @@ function mirrorAliasFilesPlugin() {
       for (const fileName of ['vocal-range-test.html', 'tone-deaf-test.html']) {
         copyFileSync(resolve(outDir, 'mirror.html'), resolve(outDir, fileName))
       }
+      // /karaoke maps to karaoke.html via Cloudflare's html_handling; the
+      // canonical /karaoke-night needs its own real file.
+      copyFileSync(
+        resolve(outDir, 'karaoke.html'),
+        resolve(outDir, 'karaoke-night.html'),
+      )
     },
   }
 }
@@ -109,7 +119,7 @@ export default defineConfig({
     isDev ? ssl() : [],
     qrcode(),
     solidPlugin(),
-    mirrorRewritePlugin(),
+    standaloneEntryRewritePlugin(),
     mirrorAliasFilesPlugin(),
     removeWasmAssetsPlugin(),
   ],
@@ -170,6 +180,7 @@ export default defineConfig({
       input: {
         index: resolve(__dirname, 'index.html'),
         mirror: resolve(__dirname, 'mirror.html'),
+        karaoke: resolve(__dirname, 'karaoke.html'),
       },
       output: {
         manualChunks(id) {
