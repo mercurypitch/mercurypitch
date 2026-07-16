@@ -52,14 +52,27 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     return sessions().find((s) => s.sessionId === id) ?? null
   })
 
+  // Local runs never leave status 'idle' until they finalize (the studio's
+  // processing screen is view-state-driven, not status-driven) — so "busy"
+  // here means "our session exists and hasn't reached a terminal state".
   const uploadBusy = () => {
     const s = uploadSession()
     return (
       s !== null &&
-      (s.status === 'uploading' ||
-        s.status === 'processing' ||
-        s.status === 'finalizing')
+      s.status !== 'completed' &&
+      s.status !== 'error' &&
+      s.status !== 'cancelled' &&
+      s.status !== 'interrupted'
     )
+  }
+
+  const cancelUpload = async () => {
+    const id = uploadSessionId()
+    if (id === null) return
+    const pipeline = await import('@/lib/uvr-processing-pipeline')
+    pipeline.cancelUvrPipeline('local')
+    setErrorUvrSession(id, 'Cancelled')
+    setUploadSessionId(null)
   }
 
   const singSession = async (sessionId: string) => {
@@ -173,6 +186,9 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             Separation works this device hard — for smooth karaoke, let it
             finish before you sing.
           </p>
+          <button class="kn-cancel" onClick={() => void cancelUpload()}>
+            Cancel
+          </button>
         </Show>
         <Show when={uploadError() !== ''}>
           <p class="kn-error">{uploadError()}</p>
