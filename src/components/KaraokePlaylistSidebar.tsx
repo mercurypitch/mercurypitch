@@ -5,9 +5,10 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { KaraokePlaylistRecord } from '@/db'
+import { karaokeNightPlaylistUrl } from '@/lib/karaoke-night-link'
 import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { ConfirmDialog } from './ConfirmDialog'
-import { CheckSmall, Mic, Pencil, Play, Trash2, X } from './icons'
+import { CheckSmall, Mic, Pencil, Play, StageCurtains, Trash2, X, } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistSidebar.module.css'
 
@@ -109,11 +110,23 @@ export const KaraokePlaylistSidebar: Component<KaraokePlaylistSidebarProps> = (
                       <>
                         <button
                           class={`${styles.iconBtn} ${styles.playBtn}`}
-                          title="Start this playlist"
+                          title="Start this playlist here in the studio"
                           disabled={pl.items.length === 0}
                           onClick={() => startPlaylist(pl.id)}
                         >
                           <Play />
+                        </button>
+                        <button
+                          class={`${styles.iconBtn} ${styles.playBtn}`}
+                          title="Sing this playlist on Karaoke Night — the theatre stage"
+                          disabled={pl.items.length === 0}
+                          onClick={() =>
+                            window.location.assign(
+                              karaokeNightPlaylistUrl(pl.id),
+                            )
+                          }
+                        >
+                          <StageCurtains size={13} />
                         </button>
                         <button
                           class={styles.iconBtn}
