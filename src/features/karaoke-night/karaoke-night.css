@@ -121,6 +121,60 @@ body {
   gap: 1rem;
 }
 
+/* Collapsed rail: a slim icon strip so the stage gets the full width. */
+.kn-body--rail-min {
+  grid-template-columns: 56px 1fr;
+}
+
+.kn-rail-collapse {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #8f7bb0;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.kn-rail-collapse:hover {
+  color: #e8dcfa;
+  background: rgba(183, 154, 224, 0.12);
+}
+
+.kn-rail-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0;
+  background: rgba(24, 12, 40, 0.78);
+  border: 1px solid rgba(183, 154, 224, 0.22);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+}
+
+.kn-rail-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #b79ae0;
+  cursor: pointer;
+}
+
+.kn-rail-icon:hover {
+  color: #ffffff;
+  background: rgba(183, 154, 224, 0.16);
+}
+
 .kn-card {
   background: rgba(24, 12, 40, 0.78);
   border: 1px solid rgba(183, 154, 224, 0.22);
@@ -229,6 +283,42 @@ body {
   margin-top: 0.6rem;
   font-size: 0.85rem;
   color: #ff9a9a;
+}
+
+.kn-chip {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(183, 154, 224, 0.35);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: #cdbde6;
+  text-transform: none;
+}
+
+.kn-progress--indeterminate .kn-progress-bar {
+  width: 35% !important;
+  animation: kn-progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes kn-progress-slide {
+  0% {
+    margin-left: 0;
+  }
+  50% {
+    margin-left: 65%;
+  }
+  100% {
+    margin-left: 0;
+  }
+}
+
+.kn-progress-warn {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #ffd9a0;
 }
 
 .kn-library {

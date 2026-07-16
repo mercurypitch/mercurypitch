@@ -120,11 +120,13 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   return (
     <>
       <section class="kn-card">
-        <p class="kn-card-kicker">Your song</p>
+        <p class="kn-card-kicker">
+          Your song <span class="kn-chip">On this device</span>
+        </p>
         <h3>Add a song you own</h3>
         <p class="kn-card-sub">
-          Vocals are removed on this device — free, nothing uploaded.
-          Studio-quality separation lives in the app.
+          The vocals are lifted out right on this device — free, nothing
+          uploaded. Studio-quality separation runs on our servers in the app.
         </p>
         <input
           ref={fileInputRef}
@@ -144,15 +146,32 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           {uploadBusy() ? 'Separating…' : 'Choose a song'}
         </button>
         <Show when={uploadBusy()}>
-          <div class="kn-progress">
+          <div
+            class="kn-progress"
+            classList={{
+              'kn-progress--indeterminate':
+                (uploadSession()?.progress ?? 0) === 0,
+            }}
+          >
             <div
               class="kn-progress-bar"
-              style={{ width: `${uploadSession()?.progress ?? 0}%` }}
+              style={{
+                width: `${Math.max(4, uploadSession()?.progress ?? 0)}%`,
+              }}
             />
           </div>
           <p class="kn-progress-note">
-            {Math.round(uploadSession()?.progress ?? 0)}% — this runs in your
-            browser and can take a few minutes.
+            <Show
+              when={(uploadSession()?.progress ?? 0) > 0}
+              fallback="Warming up the separator — the first run downloads its model…"
+            >
+              {Math.round(uploadSession()?.progress ?? 0)}% — separating on this
+              device.
+            </Show>
+          </p>
+          <p class="kn-progress-warn">
+            Separation works this device hard — for smooth karaoke, let it
+            finish before you sing.
           </p>
         </Show>
         <Show when={uploadError() !== ''}>
