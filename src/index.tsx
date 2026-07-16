@@ -4,6 +4,7 @@
 
 import { render } from 'solid-js/web'
 import '@/styles/app.css'
+import '@/styles/mixer-shared.css'
 import '@/styles/vocal-analysis.css'
 import '@/styles/uvr.css'
 import '@/styles/exercises.css'

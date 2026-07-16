@@ -25,6 +25,15 @@ body {
 }
 
 .kn-app {
+  /* Stage glass: the mixer's surfaces resolve their --bg-* variables from
+     here (app.css never loads on this page), so one alpha variable makes the
+     whole stage translucent and the theatre backdrop shine through. The
+     topbar slider writes --kn-alpha inline. */
+  --kn-alpha: 0.78;
+  --bg-primary: rgba(13, 17, 23, var(--kn-alpha));
+  --bg-secondary: rgba(22, 27, 34, var(--kn-alpha));
+  --bg-tertiary: rgba(33, 38, 45, min(1, calc(var(--kn-alpha) + 0.08)));
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -76,6 +85,22 @@ body {
 
 .kn-topbar-links a:hover {
   color: #ffffff;
+}
+
+.kn-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #cdbde6;
+}
+
+.kn-glass svg {
+  flex: none;
+}
+
+.kn-glass-slider {
+  width: 88px;
+  accent-color: #ff9ad5;
 }
 
 /* ── Body: rail + stage ──────────────────────────────────── */
@@ -244,6 +269,14 @@ body {
   flex-direction: column;
 }
 
+/* With a song on stage, bound the whole column to the viewport — the mixer
+   is built for a constrained parent (.sm-workspace scrolls internally), so
+   long lyrics must never grow the page. */
+.kn-body--staged .kn-stage {
+  height: calc(100dvh - 8.75rem);
+  min-height: 0;
+}
+
 .kn-hero {
   margin: auto;
   max-width: 34rem;
@@ -305,12 +338,23 @@ body {
 
 .kn-stage-panel {
   flex: 1;
+  /* min-height 0 beats the flex default (min-height:auto), which would let
+     the mixer's content height win over the bounded .kn-stage above. */
+  min-height: 0;
   min-width: 0;
-  background: rgba(16, 8, 28, 0.9);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(16, 8, 28, calc(var(--kn-alpha) * 0.55));
   border: 1px solid rgba(183, 154, 224, 0.22);
   border-radius: 14px;
   padding: 0.75rem;
   backdrop-filter: blur(8px);
+}
+
+.kn-stage-panel > * {
+  flex: 1;
+  min-height: 0;
 }
 
 .kn-stage-loading {
@@ -375,6 +419,7 @@ body {
   .kn-body--staged .kn-stage {
     order: -1;
     width: 100%;
+    height: calc(100dvh - 8rem);
   }
 
   .kn-steps {

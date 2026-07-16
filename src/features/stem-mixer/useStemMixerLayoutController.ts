@@ -31,6 +31,12 @@ interface CanvasView {
 export interface StemMixerLayoutDeps {
   getWorkspaceRef: () => HTMLDivElement | undefined
   canvas: CanvasView
+  /** Store workspace prefs under a different key — the standalone karaoke
+   *  page keeps its own layout so it never fights the studio's. */
+  prefsKey?: string
+  /** Layout to open with when this prefs store has nothing saved yet
+   *  (default 'fixed-2col'). */
+  defaultLayout?: WorkspaceLayout
 }
 
 export interface StemMixerLayoutController {
@@ -91,9 +97,10 @@ export const useStemMixerLayoutController = (
   deps: StemMixerLayoutDeps,
 ): StemMixerLayoutController => {
   // ── Persistent prefs ──────────────────────────────────────────
+  const prefsKey = deps.prefsKey ?? WORKSPACE_STORE_KEY
   const savedPrefs = (() => {
     try {
-      const raw = localStorage.getItem(WORKSPACE_STORE_KEY)
+      const raw = localStorage.getItem(prefsKey)
       if (raw !== null) return JSON.parse(raw)
     } catch {
       /* localStorage not available */
@@ -103,7 +110,9 @@ export const useStemMixerLayoutController = (
 
   // ── Signals ───────────────────────────────────────────────────
   const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>(
-    (savedPrefs?.layout as WorkspaceLayout) ?? 'fixed-2col',
+    (savedPrefs?.layout as WorkspaceLayout) ??
+      deps.defaultLayout ??
+      'fixed-2col',
   )
   const [sidebarHidden, setSidebarHidden] = createSignal<boolean>(
     (savedPrefs?.sidebarHidden as boolean | undefined) ?? false,
@@ -125,7 +134,7 @@ export const useStemMixerLayoutController = (
     const heights = fixedPanelHeights()
     try {
       localStorage.setItem(
-        WORKSPACE_STORE_KEY,
+        prefsKey,
         JSON.stringify({ layout, sidebarHidden: hidden, heights }),
       )
     } catch {
