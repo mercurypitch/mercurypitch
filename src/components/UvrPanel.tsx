@@ -14,6 +14,7 @@ import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/ste
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
+import { KARAOKE_NIGHT_PATH } from '@/lib/karaoke-night-link'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
@@ -30,7 +31,7 @@ import { showActionNotification, showNotification, } from '@/stores/notification
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, Trash2, X, Zap, } from './icons'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, StageCurtains, Trash2, X, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -1334,6 +1335,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </Show>
               </div>
               <div class="uvr-view-tabs">
+                <a
+                  class="view-tab"
+                  href={KARAOKE_NIGHT_PATH}
+                  title="Open Karaoke Night — the theatre stage for singing your songs and playlists"
+                >
+                  <StageCurtains />
+                  <span>Karaoke Night</span>
+                </a>
                 <button
                   class="view-tab"
                   classList={{ active: showGuide() }}

@@ -7,12 +7,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { KaraokePlaylistRecord } from '@/db'
 import { exportKaraokePlaylists } from '@/db/services/session-export-service'
+import { karaokeNightPlaylistUrl } from '@/lib/karaoke-night-link'
 import { createPersistedSignal } from '@/lib/storage'
 import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { getGroupsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
-import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Playlist, Plus, SlidersHorizontal, Trash2, X, } from './icons'
+import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Playlist, Plus, SlidersHorizontal, StageCurtains, Trash2, X, } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistGallery.module.css'
 
@@ -163,11 +164,23 @@ export const KaraokePlaylistGallery: Component = () => {
                           <>
                             <button
                               class={`${styles.iconBtn} ${styles.playBtn}`}
-                              title="Start this playlist"
+                              title="Start this playlist here in the studio"
                               disabled={pl.items.length === 0}
                               onClick={() => startPlaylist(pl.id)}
                             >
                               <Play />
+                            </button>
+                            <button
+                              class={`${styles.iconBtn} ${styles.playBtn}`}
+                              title="Sing this playlist on Karaoke Night — the theatre stage"
+                              disabled={pl.items.length === 0}
+                              onClick={() =>
+                                window.location.assign(
+                                  karaokeNightPlaylistUrl(pl.id),
+                                )
+                              }
+                            >
+                              <StageCurtains size={13} />
                             </button>
                             <button
                               class={styles.iconBtn}

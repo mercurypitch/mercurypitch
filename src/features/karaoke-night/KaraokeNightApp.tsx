@@ -17,6 +17,13 @@ const KaraokeStageHost = lazy(async () => {
   return { default: m.KaraokeStageHost }
 })
 
+// Always-mounted runtime: the playlist runner + the studio's ?playlist=
+// deep-link consumer. Lazy like the rail, so first paint stays tiny.
+const KaraokeNightRuntime = lazy(async () => {
+  const m = await import('./KaraokeNightRuntime')
+  return { default: m.KaraokeNightRuntime }
+})
+
 // The account chip pulls the auth/billing services + toast host — kept lazy so
 // first paint (the ad LCP) stays tiny; it streams into the topbar.
 const KaraokeAccount = lazy(async () => {
@@ -266,7 +273,6 @@ export function KaraokeNightApp() {
                 >
                   <KaraokeStageHost
                     song={song}
-                    onSong={setActiveSong}
                     onExit={() => setActiveSong(null)}
                   />
                 </Suspense>
@@ -304,6 +310,9 @@ export function KaraokeNightApp() {
           (e.g. "song unavailable, skipping…"); without this they'd render
           nowhere on the standalone page. */}
       <Notifications />
+      <Suspense>
+        <KaraokeNightRuntime onSong={setActiveSong} />
+      </Suspense>
     </div>
   )
 }

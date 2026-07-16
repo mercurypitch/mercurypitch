@@ -1109,3 +1109,26 @@ export const Merge: Component<{ size?: number }> = (p) => (
     <polyline points="13 9 16 12 13 15" />
   </svg>
 )
+
+// StageCurtains — the Karaoke Night theatre stage (links from the studio's
+// karaoke tab to the standalone /karaoke-night page)
+export const StageCurtains: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 16}
+    height={p.size ?? 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M3 3h18" />
+    <path d="M4 3c0 7 2 10 2 18" />
+    <path d="M20 3c0 7-2 10-2 18" />
+    <path d="M4 3c4 3 4 9 2 18" />
+    <path d="M20 3c-4 3-4 9-2 18" />
+    <circle cx="12" cy="10" r="1.6" />
+    <path d="M12 11.6V15" />
+  </svg>
+)

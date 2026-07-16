@@ -1,11 +1,10 @@
 // The staged half of Karaoke Night: renders the StemMixer performance stage
-// for the active song and runs the shared playlist runner, so "Start
-// playlist" queues songs here exactly like in the studio. This module owns
-// the heavy imports (mixer + playlist machinery) — the page shell lazy-loads
-// it only when a song goes on stage.
+// for the active song. The playlist runner lives in KaraokeNightRuntime
+// (always mounted), so playlists work whether or not a song is staged yet.
+// This module owns the heavy imports (the mixer + its styles) — the page
+// shell lazy-loads it only when a song goes on stage.
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
-import { useKaraokePlaylistRunner } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
@@ -23,23 +22,10 @@ injectStyles('lyrics-uploader', LyricsUploaderStyles)
 
 interface KaraokeStageHostProps {
   song: KaraokeSong
-  /** Playlist runner hands the next armed song up to the page shell. */
-  onSong: (song: KaraokeSong) => void
   onExit: () => void
 }
 
 export function KaraokeStageHost(props: KaraokeStageHostProps) {
-  useKaraokePlaylistRunner((hydrated) => {
-    props.onSong({
-      sessionId: hydrated.sessionId,
-      title: hydrated.originalFile?.name ?? 'Your song',
-      stems: {
-        vocal: hydrated.outputs?.vocal,
-        instrumental: hydrated.outputs?.instrumental,
-      },
-    })
-  })
-
   return (
     <StemMixer
       sessionId={props.song.sessionId}
