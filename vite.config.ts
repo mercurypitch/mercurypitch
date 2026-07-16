@@ -202,12 +202,16 @@ export default defineConfig({
             /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
               id,
             ) ||
-            /src\/stores\/notifications-store/.test(id)
+            /src\/stores\/notifications-store/.test(id) ||
+            /src\/db\/services\/(auth-service|user-service|billing-service)/.test(
+              id,
+            )
           ) {
-            // notifications-store is a leaf (solid-js only) shared by the app
-            // and the standalone entries' toast host; without pinning it here
-            // Rollup co-locates it in the heavy 'library' chunk, which the
-            // karaoke entry then statically pulls (dragging app-store in).
+            // These are all app-store-free leaves shared by the app and the
+            // standalone entries (the toast host, the karaoke account chip +
+            // server-mode toggle). Without pinning them here Rollup co-locates
+            // them in the heavy 'library' chunk — which also holds app-store —
+            // and the karaoke entry statically pulls the whole thing.
             return 'pitch-core'
           }
           if (

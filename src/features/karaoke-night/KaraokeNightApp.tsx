@@ -17,6 +17,13 @@ const KaraokeStageHost = lazy(async () => {
   return { default: m.KaraokeStageHost }
 })
 
+// The account chip pulls the auth/billing services + toast host — kept lazy so
+// first paint (the ad LCP) stays tiny; it streams into the topbar.
+const KaraokeAccount = lazy(async () => {
+  const m = await import('./KaraokeAccount')
+  return { default: m.KaraokeAccount }
+})
+
 const ALPHA_KEY = 'pitchperfect_kn_stage_alpha'
 const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
 
@@ -113,7 +120,9 @@ export function KaraokeNightApp() {
             </label>
           </Show>
           <a href="/#/karaoke">Open the studio</a>
-          <a href="/#/settings/credits">Credits</a>
+          <Suspense>
+            <KaraokeAccount />
+          </Suspense>
         </nav>
       </header>
 
