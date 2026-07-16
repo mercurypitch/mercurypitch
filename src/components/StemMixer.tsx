@@ -2118,7 +2118,7 @@ export const StemMixerStyles: string = `
 .sm-error-retry {
   padding: 0.5rem 1.25rem;
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.4rem;
   font-size: 0.85rem;
@@ -2330,6 +2330,7 @@ export const StemMixerStyles: string = `
   min-width: 0;
   width: 100%;
   touch-action: none;
+  background: var(--bg-primary, #0d1117);
 }
 
 .sm-resize-handle {
@@ -2460,7 +2461,7 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--bg-primary, #0d1117);
+  border: 2px solid var(--on-accent, #0d1117);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   margin-left: -5px;
 }
@@ -2480,7 +2481,7 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--bg-primary, #0d1117);
+  border: 2px solid var(--on-accent, #0d1117);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -2857,11 +2858,11 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-col-active {
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-lyrics-col-active:hover {
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 /* Two-column lyrics layout with section-aware breaks */
@@ -2991,7 +2992,7 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   font-family: inherit;
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.2rem;
   cursor: pointer;
@@ -3227,7 +3228,7 @@ export const StemMixerStyles: string = `
 
 .sm-transcribe-btn:hover {
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-whisper-lang-select {
@@ -3263,13 +3264,13 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-markmode-btn--active {
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border-color: var(--accent, #58a6ff);
 }
 
 .sm-lyrics-markmode-btn--active:hover {
   background: var(--accent-hover, #79b8ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-lyrics-download-btn {
@@ -3539,7 +3540,7 @@ export const StemMixerStyles: string = `
   font-size: 0.55rem;
   font-weight: 600;
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.18rem;
   cursor: pointer;
@@ -3631,7 +3632,7 @@ export const StemMixerStyles: string = `
   height: 1.8rem;
   padding: 0;
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.2rem;
   cursor: pointer;
@@ -3662,7 +3663,7 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   font-family: inherit;
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -3705,7 +3706,7 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   font-family: inherit;
   background: var(--ok-green, #3fb950);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -3895,10 +3896,10 @@ export const StemMixerStyles: string = `
 }
 .sm-col-active {
   background: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 .sm-col-active:hover {
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 /* Transport */
@@ -4118,13 +4119,13 @@ export const StemMixerStyles: string = `
   height: 2.5rem;
   background: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   border-radius: 50%;
 }
 
 .sm-transport-play:hover:not(:disabled) {
   opacity: 0.85;
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-zoom-control {
@@ -4309,13 +4310,13 @@ export const StemMixerStyles: string = `
 .sm-mic-toggle-btn--active {
   background: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
   animation: sm-mic-pulse 1.5s ease-in-out infinite;
 }
 
 .sm-mic-toggle-btn--active:hover:not(:disabled) {
   opacity: 0.85;
-  color: var(--bg-primary, #0d1117);
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-mic-toggle-btn--error {
