@@ -419,9 +419,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
 
   // Engagement milestone: ~30s of cumulative listening (wall-clock while
-  // playing, so seeking around can't fake it). Interval only exists when a
-  // consumer asked for the milestone.
-  if (props.onThirtySecondsPlayed !== undefined) {
+  // playing, so seeking around can't fake it). Effect-scoped so the prop is
+  // read reactively; the interval only exists while a consumer provides the
+  // callback and disappears with it (or on unmount).
+  createEffect(() => {
+    if (props.onThirtySecondsPlayed === undefined) return
     let playedSeconds = 0
     const engagementTimer = setInterval(() => {
       if (!audio.playing()) return
@@ -432,7 +434,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
     }, 1000)
     onCleanup(() => clearInterval(engagementTimer))
-  }
+  })
 
   const handleSeek = (e: MouseEvent) => {
     if (!audio.duration()) return
