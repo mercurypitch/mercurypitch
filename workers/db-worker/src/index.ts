@@ -641,6 +641,16 @@ const FUNNEL_EVENTS = new Set([
   'challenge_attempt',
   'pricing_view',
   'checkout_start',
+  // Karaoke Night funnel (src/features/karaoke-night/funnel.ts)
+  'karaoke_view',
+  'karaoke_demo_start',
+  'karaoke_demo_complete',
+  'karaoke_upload_start',
+  'karaoke_upload_done',
+  'karaoke_upload_error',
+  'karaoke_song_staged',
+  'karaoke_playlist_deeplink',
+  'karaoke_cta_studio',
   // Reserved for the weekly-challenge/email releases, so those client
   // rollouts need no worker redeploy.
   'weekly_join',

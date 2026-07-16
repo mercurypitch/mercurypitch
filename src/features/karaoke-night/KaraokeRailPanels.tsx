@@ -7,6 +7,7 @@ import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
+import { trackKaraoke } from './funnel'
 import { credits, refreshCredits, signedIn } from './karaoke-account'
 
 export interface KaraokeSong {
@@ -104,6 +105,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     const outputs = hydrated.outputs
     if ((outputs?.vocal ?? '') === '' && (outputs?.instrumental ?? '') === '')
       return
+    trackKaraoke('karaoke_song_staged')
     props.onSing({
       sessionId,
       title: s.originalFile?.name ?? 'Your song',
@@ -114,6 +116,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const handleFile = async (file: File | undefined) => {
     if (file === undefined) return
     setUploadError('')
+    trackKaraoke('karaoke_upload_start')
     const runMode = effectiveMode()
     const sessionId = startUvrSession(
       file.name,
@@ -134,6 +137,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         },
         onComplete: async (result) => {
           await completeUvrSession(sessionId, result.outputs, result.stemMeta)
+          trackKaraoke('karaoke_upload_done')
           // Server separations debit credits server-side — refresh the balance.
           if (runMode === 'server') void refreshCredits()
           // Auto-open the finished song only when the stage is idle. If the
@@ -143,6 +147,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           if (!props.stageBusy()) void singSession(sessionId)
         },
         onError: (message) => {
+          trackKaraoke('karaoke_upload_error')
           setErrorUvrSession(sessionId, message)
           setUploadError(message)
           if (runMode === 'server') void refreshCredits()

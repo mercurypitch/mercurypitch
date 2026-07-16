@@ -6,6 +6,8 @@
 import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
+import { DEMO_SESSION_ID } from './demo-song'
+import { trackKaraokeOnce } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 /** Inject a component's CSS string once (the studio app injects these at
@@ -35,6 +37,11 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       requestedStems={{ vocal: true, instrumental: true }}
       preset="performance"
       karaokeReferenceVocal={isPlaylistActive()}
+      onThirtySecondsPlayed={
+        props.song.sessionId === DEMO_SESSION_ID
+          ? () => trackKaraokeOnce('karaoke_demo_complete')
+          : undefined
+      }
       onBack={() => {
         if (isPlaylistActive()) stopPlaylist()
         props.onExit()

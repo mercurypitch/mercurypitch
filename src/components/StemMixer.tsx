@@ -70,6 +70,9 @@ interface StemMixerProps {
    *  removes the tour UI — and keeps the tour engine (app-store) out of
    *  standalone entry bundles. */
   onOfferTour?: (trigger: 'mount' | 'button') => void
+  /** Fires once per mount after ~30s of cumulative playback — the Karaoke
+   *  Night page uses it as the demo-engagement funnel milestone. */
+  onThirtySecondsPlayed?: () => void
   onBack?: () => void
 }
 
@@ -414,6 +417,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   onCleanup(() => {
     if (typeof document !== 'undefined') document.title = baseDocTitle
   })
+
+  // Engagement milestone: ~30s of cumulative listening (wall-clock while
+  // playing, so seeking around can't fake it). Interval only exists when a
+  // consumer asked for the milestone.
+  if (props.onThirtySecondsPlayed !== undefined) {
+    let playedSeconds = 0
+    const engagementTimer = setInterval(() => {
+      if (!audio.playing()) return
+      playedSeconds += 1
+      if (playedSeconds >= 30) {
+        clearInterval(engagementTimer)
+        props.onThirtySecondsPlayed?.()
+      }
+    }, 1000)
+    onCleanup(() => clearInterval(engagementTimer))
+  }
 
   const handleSeek = (e: MouseEvent) => {
     if (!audio.duration()) return

@@ -11,6 +11,7 @@ import '@/styles/mixer-shared.css'
 import './karaoke-night.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { consumeGoogleRedirect, ensureAuth } from '@/db/services/auth-service'
+import { trackKaraoke } from './funnel'
 import { KaraokeNightApp } from './KaraokeNightApp'
 
 // Catch a Google sign-in redirect (#gauth=…) before anything reads the token,
@@ -25,6 +26,9 @@ setupConsent()
 // lookups and server processing work for signed-in visitors. No-op when no
 // backend is configured (e2e/tour builds).
 void ensureAuth()
+
+// Funnel: one view event per browser session.
+trackKaraoke('karaoke_view')
 
 const root = document.getElementById('root')
 if (root) {
