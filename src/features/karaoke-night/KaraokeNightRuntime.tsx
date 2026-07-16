@@ -7,6 +7,7 @@ import { useKaraokePlaylistRunner } from '@/features/stem-mixer/karaoke-playlist
 import { initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { initGroupStore, initSessionStore } from '@/stores/uvr-store'
+import { trackKaraoke } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 interface KaraokeNightRuntimeProps {
@@ -31,6 +32,7 @@ export function KaraokeNightRuntime(props: KaraokeNightRuntimeProps) {
       // Consume the param so a reload doesn't restart the playlist.
       window.history.replaceState(null, '', window.location.pathname)
       startPlaylist(playlistId)
+      if (isPlaylistActive()) trackKaraoke('karaoke_playlist_deeplink')
       // startPlaylist is a no-op for an unknown id or an empty queue — tell
       // the visitor instead of silently showing the hero.
       if (!isPlaylistActive()) {

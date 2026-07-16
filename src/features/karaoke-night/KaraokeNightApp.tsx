@@ -2,6 +2,7 @@ import { createSignal, lazy, onMount, Show, Suspense } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
 import type { DemoSongManifest } from './demo-song'
 import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
+import { trackKaraoke } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 // Everything store/db-backed stays out of the first-paint chunk: the rail
@@ -84,6 +85,7 @@ export function KaraokeNightApp() {
   const singDemo = () => {
     const m = manifest()
     if (!demoIsPlayable(m)) return
+    trackKaraoke('karaoke_demo_start')
     const md = m as DemoSongManifest
     void (async () => {
       // The stage's lyrics controller reads the db on mount and starts an
@@ -126,7 +128,12 @@ export function KaraokeNightApp() {
               />
             </label>
           </Show>
-          <a href="/#/karaoke">Open the studio</a>
+          <a
+            href="/#/karaoke"
+            onClick={() => trackKaraoke('karaoke_cta_studio')}
+          >
+            Open the studio
+          </a>
           <Suspense>
             <KaraokeAccount />
           </Suspense>
@@ -300,9 +307,16 @@ export function KaraokeNightApp() {
           )}
         </Show>
         <nav class="kn-footer-links">
-          <a href="/">MercuryPitch — the full studio</a>
+          <a href="/" onClick={() => trackKaraoke('karaoke_cta_studio')}>
+            MercuryPitch — the full studio
+          </a>
           <a href="/mirror">Voice Mirror</a>
-          <a href="/#/settings/credits">Account &amp; credits</a>
+          <a
+            href="/#/settings/credits"
+            onClick={() => trackKaraoke('karaoke_cta_studio')}
+          >
+            Account &amp; credits
+          </a>
         </nav>
       </footer>
 
