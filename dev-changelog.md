@@ -6,6 +6,21 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.12] - 2026-07-16
+
+### Added
+
+- **Karaoke Night standalone entry** (#259, #261, #262): `karaoke.html` as a second Vite entry served at `/karaoke-night` (+ `/karaoke` alias, both emitted as real HTML files per the SPA-fallback-beats-worker lesson from #250). Theatre backdrop (generated still + plum scrim), stage-glass transparency (one `--kn-alpha` variable drives `--bg-primary/secondary/tertiary`, `--sm-canvas-bg` and the opaque `--on-accent` ink token), StemMixer `preset='performance'` (big centered 2.4rem lyrics, page-local layout/alignment prefs, no edit/analysis/tour chrome, whisper init skipped), demo-song manifest `public/karaoke-demo-song.json` (CC BY 4.0 stems + word-synced LRC on the public R2 bucket; seed-once lyrics under a stable session id), guest local-ONNX upload with warming/percent/queued progress states + cancel, collapsible icon rail, account sign-in chip + modal (direct `auth-service`: password + Google — `returnTo` round-trips the page; `consumeGoogleRedirect()` at boot), signed-in server-mode toggle with live credit balance (shared `setUvrProcessingMode` pref), and studio links: a UvrPanel-header Karaoke Night view-tab (new `StageCurtains` icon) plus per-playlist stage buttons → `/karaoke-night?playlist=<id>`, consumed at boot by the always-mounted `KaraokeNightRuntime`.
+- **uvr-store extraction + StemMixer decoupling** (#259): the whole UVR domain (settings, model status, session/group caches, persistence) moved from `app-store` into `src/stores/uvr-store.ts` (app-store re-exports for back-compat); StemMixer's tour became an injected `onOfferTour` prop; the karaoke playlist runner + session hydration extracted to `features/stem-mixer/karaoke-playlist-runner.ts`, shared by UvrPanel and the night page.
+
+### Fixed
+
+- **Playlist song-skip race** (#260): the playback RAF end-detector treated `elapsedTime >= duration()` as a natural end while `duration()` was still `0` (stems not yet decoded), instantly "finishing" freshly armed playlist songs. End detection now short-circuits at zero duration and the playlist play effect waits for a real duration.
+- **Standalone entries statically dragged ~2.7 MB** (#259): `lib/legal-links` co-located into the `advanced` chunk made ConsentBanner pull `advanced → library → vendor` into BOTH the mirror (the live ad landing page) and karaoke first paints. Shared leaf modules (legal-links, storage, analytics, consent, notifications-store, auth/user/billing services) are pinned to the `pitch-core` chunk — mirror 145 KB, karaoke 90 KB static JS.
+- **Studio theme regressions caught in review** (#259): accent-control ink switched to `var(--on-accent)` (defaults to `var(--bg-primary)`, so every theme renders as before; the night page overrides it opaque), and canvases paint via `--sm-canvas-bg` (opaque dark in the studio across all themes, translucent on the night page).
+- **Mixer tour vs. workspace layouts** (#259): several `mixer.*` targets exist only in the fixed-2col workspace; the tour now navigates to it up front via a `mixer.layout-fixed` hook.
+- Firefox scrollbars (`scrollbar-width`/`scrollbar-color` — the app only styled `::-webkit-scrollbar`), karaoke focus-mode chrome moved from app.css into `mixer-shared.css` (loaded by both entries, specificity-hardened), Karaoke Night topbar baseline alignment (#262).
+
 ## [0.6.8] - 2026-07-08
 
 ### Changed
