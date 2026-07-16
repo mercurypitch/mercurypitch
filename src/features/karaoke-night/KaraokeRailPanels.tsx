@@ -15,6 +15,9 @@ export interface KaraokeSong {
 
 interface KaraokeRailPanelsProps {
   onSing: (song: KaraokeSong) => void
+  /** True while a song is already on stage — so a background separation that
+   *  finishes doesn't yank the visitor off their current performance. */
+  stageBusy: () => boolean
 }
 
 export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
@@ -113,7 +116,11 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         },
         onComplete: async (result) => {
           await completeUvrSession(sessionId, result.outputs, result.stemMeta)
-          void singSession(sessionId)
+          // Auto-open the finished song only when the stage is idle. If the
+          // visitor is mid-performance (demo or another song), it just lands
+          // in "Your library" for them to pick when they're ready — never
+          // interrupts a take.
+          if (!props.stageBusy()) void singSession(sessionId)
         },
         onError: (message) => {
           setErrorUvrSession(sessionId, message)

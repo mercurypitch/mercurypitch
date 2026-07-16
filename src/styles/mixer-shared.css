@@ -30,6 +30,16 @@ input[type='range'] {
   cursor: pointer;
 }
 
+/* Ink painted ON an accent-filled control (play button, active toggles, slider
+   knob rings). It has to read against --accent, so in the studio it tracks the
+   theme background exactly as the old `color: var(--bg-primary)` did — resolved
+   per-theme at use time. The karaoke page overrides it to an opaque dark value
+   so the stage-glass translucency (which it applies to --bg-primary) never
+   fades the control glyphs. */
+:root {
+  --on-accent: var(--bg-primary, #0d1117);
+}
+
 /* ── Karaoke Focus Mode ──────────────────────────────────────────── */
 
 /* Doubled class beats the injected `.stem-mixer { position: relative }`
