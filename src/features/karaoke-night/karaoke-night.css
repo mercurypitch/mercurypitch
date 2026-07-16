@@ -57,7 +57,9 @@ body {
 
 .kn-topbar {
   display: flex;
-  align-items: baseline;
+  /* Center, not baseline: the right side mixes a text link with padded
+     chips and a range slider, and baseline alignment staggers them. */
+  align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
 }
@@ -79,6 +81,7 @@ body {
 .kn-topbar-links {
   margin-left: auto;
   display: flex;
+  align-items: center;
   gap: 1.1rem;
 }
 
