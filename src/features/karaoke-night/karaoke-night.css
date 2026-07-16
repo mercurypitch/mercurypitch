@@ -33,6 +33,11 @@ body {
   --bg-primary: rgba(13, 17, 23, var(--kn-alpha));
   --bg-secondary: rgba(22, 27, 34, var(--kn-alpha));
   --bg-tertiary: rgba(33, 38, 45, min(1, calc(var(--kn-alpha) + 0.08)));
+  /* Canvas backdrops follow the glass too (user asked for translucent live
+     waveform / pitch lane) — but a touch more opaque so the ink stays legible. */
+  --sm-canvas-bg: rgba(13, 17, 23, min(1, calc(var(--kn-alpha) + 0.12)));
+  /* Control glyphs stay opaque-dark regardless of the glass. */
+  --on-accent: #0d1117;
 
   min-height: 100vh;
   display: flex;

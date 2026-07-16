@@ -4,7 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { notifications, removeNotification } from '@/stores'
+// Import straight from the leaf store, not the @/stores barrel — the barrel
+// pulls app-store, which would drag the whole app shell into the standalone
+// karaoke/mirror entries that also mount this toast host.
+import { notifications, removeNotification } from '@/stores/notifications-store'
 import styles from '@/styles/Notifications.module.css'
 
 export const Notifications: Component = () => {

@@ -51,24 +51,19 @@ export function demoIsPlayable(m: DemoSongManifest | null): boolean {
   )
 }
 
-/** Seed the demo lyrics into the local lyrics db — never clobbering a
- *  visitor's own work. One exception: an earlier plain-text seed of ours is
- *  upgraded once the manifest ships the synced LRC (a txt seed with no word
- *  timings carries nothing the visitor made). */
+/** Seed the demo lyrics into the local lyrics db, once. Never overwrites an
+ *  existing record — the demo ships with the synced LRC from the start, and
+ *  anything already stored under DEMO_SESSION_ID is the visitor's own (an edit
+ *  or a lyrics upload), which we must not clobber. */
 export async function seedDemoLyrics(m: DemoSongManifest): Promise<void> {
   const url = m.lyrics ?? ''
   if (url === '') return
   try {
     const { loadLyricsFromDb, saveLyricsToDb } =
       await import('@/db/services/lyrics-db-service')
-    // .lrc = synced; .txt = the plain-lyrics stopgap before an LRC exists.
+    if ((await loadLyricsFromDb(DEMO_SESSION_ID)) !== null) return
+    // .lrc = synced; .txt = a plain-lyrics fallback if a manifest ever ships one.
     const format = url.toLowerCase().endsWith('.lrc') ? 'lrc' : 'txt'
-    const existing = await loadLyricsFromDb(DEMO_SESSION_ID)
-    if (existing !== null) {
-      const upgradableSeed =
-        existing.format === 'txt' && existing.wordTimings === undefined
-      if (!(format === 'lrc' && upgradableSeed)) return
-    }
     const res = await fetch(url)
     if (!res.ok) return
     const text = await res.text()

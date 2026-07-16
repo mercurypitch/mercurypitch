@@ -2330,7 +2330,11 @@ export const StemMixerStyles: string = `
   min-width: 0;
   width: 100%;
   touch-action: none;
-  background: var(--bg-primary, #0d1117);
+  /* The canvas draws light-on-dark ink (#fff labels, dark gridlines), so the
+     studio keeps an opaque dark backdrop in EVERY theme — matching the old
+     hard-coded #0d1117 fillRect. Only the karaoke page overrides
+     --sm-canvas-bg (to a translucent value) to let its stage glass through. */
+  background: var(--sm-canvas-bg, #0d1117);
 }
 
 .sm-resize-handle {

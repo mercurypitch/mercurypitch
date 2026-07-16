@@ -1,4 +1,5 @@
 import { createSignal, lazy, onMount, Show, Suspense } from 'solid-js'
+import { Notifications } from '@/components/Notifications'
 import type { DemoSongManifest } from './demo-song'
 import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
 import type { KaraokeSong } from './KaraokeRailPanels'
@@ -205,7 +206,10 @@ export function KaraokeNightApp() {
             </section>
 
             <Suspense>
-              <KaraokeRailPanels onSing={setActiveSong} />
+              <KaraokeRailPanels
+                onSing={setActiveSong}
+                stageBusy={() => activeSong() !== null}
+              />
             </Suspense>
           </Show>
         </aside>
@@ -286,6 +290,11 @@ export function KaraokeNightApp() {
           <a href="/#/settings/credits">Account &amp; credits</a>
         </nav>
       </footer>
+
+      {/* Toast host — the playlist runner and other flows raise notifications
+          (e.g. "song unavailable, skipping…"); without this they'd render
+          nowhere on the standalone page. */}
+      <Notifications />
     </div>
   )
 }
