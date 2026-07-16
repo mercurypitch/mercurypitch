@@ -321,6 +321,21 @@ body {
   color: #ffd9a0;
 }
 
+.kn-cancel {
+  margin-top: 0.55rem;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgba(255, 154, 154, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: #ff9a9a;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.kn-cancel:hover {
+  background: rgba(255, 154, 154, 0.12);
+}
+
 .kn-library {
   list-style: none;
   margin-top: 0.3rem;
@@ -381,7 +396,10 @@ body {
 .kn-hero h1 {
   font-size: clamp(2.2rem, 6vw, 3.2rem);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.12;
+  /* background-clip: text only paints inside the box — give descenders room
+     or the gradient cuts off the bottom of letters like "g". */
+  padding-bottom: 0.12em;
   background: linear-gradient(120deg, #ffd9a0, #ff9ad5 55%, #b79aff);
   -webkit-background-clip: text;
   background-clip: text;
