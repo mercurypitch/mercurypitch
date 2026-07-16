@@ -1,5 +1,6 @@
-/* Karaoke Night — standalone page styles (placeholder shell).
-   The theatre visual treatment lands with the full page phase. */
+/* Karaoke Night — standalone page styles.
+   The backdrop is a generated theatre still (public/karaoke-night-stage.webp)
+   under a plum gradient scrim, so UI text stays AA-readable. */
 
 * {
   margin: 0;
@@ -20,41 +21,242 @@ body {
     Roboto,
     sans-serif;
   color: #f4ecff;
-  background: radial-gradient(
-      ellipse 120% 70% at 50% 0%,
-      #2a1245 0%,
-      #1a0b2e 45%,
-      #12081f 100%
-    )
-    fixed;
+  background-color: #12081f;
 }
 
-.kn-page {
+.kn-app {
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.25rem;
+  flex-direction: column;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 8, 31, 0.82) 0%,
+      rgba(18, 8, 31, 0.45) 40%,
+      rgba(18, 8, 31, 0.88) 100%
+    ),
+    url('/karaoke-night-stage.webp') center / cover no-repeat fixed,
+    #12081f;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+
+.kn-topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.kn-brand {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #b79ae0;
+  text-decoration: none;
+}
+
+.kn-topbar-title {
+  font-weight: 600;
+  color: #e8dcfa;
+}
+
+.kn-topbar-links {
+  margin-left: auto;
+  display: flex;
+  gap: 1.1rem;
+}
+
+.kn-topbar-links a {
+  color: #cdbde6;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.kn-topbar-links a:hover {
+  color: #ffffff;
+}
+
+/* ── Body: rail + stage ──────────────────────────────────── */
+
+.kn-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  padding: 0.5rem 1.5rem 1.25rem;
+  align-items: start;
+  min-height: 0;
+}
+
+.kn-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.kn-card {
+  background: rgba(24, 12, 40, 0.78);
+  border: 1px solid rgba(183, 154, 224, 0.22);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  backdrop-filter: blur(6px);
+}
+
+.kn-card--demo {
+  border-color: rgba(255, 214, 160, 0.35);
+}
+
+.kn-card-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #b79ae0;
+  margin-bottom: 0.4rem;
+}
+
+.kn-card h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.kn-card h3 {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.kn-card-sub {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #cdbde6;
+}
+
+.kn-soon {
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+  color: #8f7bb0;
+  font-style: italic;
+}
+
+.kn-btn {
+  margin-top: 0.85rem;
+  padding: 0.6rem 1.3rem;
+  border: 1px solid rgba(183, 154, 224, 0.4);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.12);
+  color: #f4ecff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.kn-btn:hover:not(:disabled) {
+  background: rgba(183, 154, 224, 0.22);
+  transform: translateY(-1px);
+}
+
+.kn-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.kn-btn--primary {
+  border: none;
+  background: linear-gradient(120deg, #ffd9a0, #ff9ad5);
+  color: #1a0b2e;
+}
+
+.kn-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(120deg, #ffe3b8, #ffb1e0);
+}
+
+.kn-file-input {
+  display: none;
+}
+
+.kn-progress {
+  margin-top: 0.8rem;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(183, 154, 224, 0.18);
+  overflow: hidden;
+}
+
+.kn-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ffd9a0, #ff9ad5);
+  transition: width 0.4s ease;
+}
+
+.kn-progress-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #cdbde6;
+}
+
+.kn-error {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: #ff9a9a;
+}
+
+.kn-library {
+  list-style: none;
+  margin-top: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.kn-library-song {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #e8dcfa;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kn-library-song:hover {
+  background: rgba(183, 154, 224, 0.14);
+}
+
+/* ── Stage ───────────────────────────────────────────────── */
+
+.kn-stage {
+  min-height: 62vh;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .kn-hero {
-  max-width: 40rem;
+  margin: auto;
+  max-width: 34rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.1rem;
-}
-
-.kn-brand {
-  font-size: 0.85rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #b79ae0;
+  padding: 3rem 1rem;
 }
 
 .kn-hero h1 {
-  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
   font-weight: 800;
   line-height: 1.05;
   background: linear-gradient(120deg, #ffd9a0, #ff9ad5 55%, #b79aff);
@@ -63,29 +265,128 @@ body {
   color: transparent;
 }
 
-.kn-tagline {
-  font-size: 1.05rem;
+.kn-hero > p {
+  font-size: 1.02rem;
   line-height: 1.55;
+  color: #e8dcfa;
+  text-shadow: 0 1px 8px rgba(18, 8, 31, 0.9);
+}
+
+.kn-steps {
+  display: flex;
+  gap: 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.kn-step {
+  flex: 1;
+  background: rgba(24, 12, 40, 0.72);
+  border: 1px solid rgba(183, 154, 224, 0.2);
+  border-radius: 12px;
+  padding: 0.8rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
   color: #cdbde6;
 }
 
-.kn-cta {
-  display: inline-block;
-  margin-top: 0.4rem;
-  padding: 0.85rem 1.9rem;
-  border-radius: 999px;
-  font-weight: 700;
-  text-decoration: none;
-  color: #1a0b2e;
+.kn-step-n {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 0.45rem;
   background: linear-gradient(120deg, #ffd9a0, #ff9ad5);
-  transition: transform 0.15s ease;
+  color: #1a0b2e;
+  font-weight: 700;
+  font-size: 0.8rem;
 }
 
-.kn-cta:hover {
-  transform: translateY(-1px);
+.kn-stage-panel {
+  flex: 1;
+  min-width: 0;
+  background: rgba(16, 8, 28, 0.9);
+  border: 1px solid rgba(183, 154, 224, 0.22);
+  border-radius: 14px;
+  padding: 0.75rem;
+  backdrop-filter: blur(8px);
 }
 
-.kn-note {
-  font-size: 0.85rem;
-  color: #8f7bb0;
+.kn-stage-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: #cdbde6;
+  font-size: 1rem;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+
+.kn-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem 1.4rem;
+  font-size: 0.82rem;
+}
+
+.kn-attribution a {
+  color: #b79ae0;
+  text-decoration: none;
+}
+
+.kn-attribution a:hover {
+  text-decoration: underline;
+}
+
+.kn-footer-links {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+}
+
+.kn-footer-links a {
+  color: #cdbde6;
+  text-decoration: none;
+}
+
+.kn-footer-links a:hover {
+  color: #ffffff;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .kn-body {
+    grid-template-columns: 1fr;
+    padding: 0.5rem 0.9rem 1rem;
+  }
+
+  /* Once a song is on stage, the stage leads and the rail tucks below it. */
+  .kn-body--staged {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kn-body--staged .kn-stage {
+    order: -1;
+    width: 100%;
+  }
+
+  .kn-steps {
+    flex-direction: column;
+  }
+
+  .kn-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .kn-footer-links {
+    margin-left: 0;
+  }
 }
