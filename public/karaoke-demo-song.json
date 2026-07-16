@@ -7,7 +7,10 @@
     "license": "CC BY 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
   },
-  "stems": { "vocal": "", "instrumental": "" },
-  "lrc": "",
-  "durationSec": 0
+  "stems": {
+    "vocal": "https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev/demo/goodbye-to-spring/vocal.m4a",
+    "instrumental": "https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev/demo/goodbye-to-spring/instrumental.m4a"
+  },
+  "lyrics": "https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev/demo/goodbye-to-spring/lyrics.txt",
+  "durationSec": 246
 }

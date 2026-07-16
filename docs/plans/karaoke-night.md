@@ -86,7 +86,7 @@ engine and the demo are literally the same code path.
     "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
   },
   "stems": { "vocal": "<r2-url>", "instrumental": "<r2-url>" },
-  "lrc": "<r2-url>",
+  "lyrics": "<r2-url> (.lrc synced, or .txt until one exists)",
   "pitchData": "<r2-url>",
   "durationSec": 0,
   "key": "", "bpm": 0

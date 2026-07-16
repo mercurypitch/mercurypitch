@@ -17,7 +17,8 @@ export interface DemoSongManifest {
     licenseUrl: string
   }
   stems: { vocal?: string; instrumental?: string }
-  lrc?: string
+  /** Lyrics URL — .lrc (synced) or .txt (plain, until an LRC exists). */
+  lyrics?: string
   durationSec?: number
 }
 
@@ -53,20 +54,24 @@ export function demoIsPlayable(m: DemoSongManifest | null): boolean {
 /** Seed the demo LRC into the local lyrics db once — never clobbers existing
  *  lyrics, so a visitor's word-timing edits survive revisits. */
 export async function seedDemoLyrics(m: DemoSongManifest): Promise<void> {
-  if ((m.lrc ?? '') === '') return
+  const url = m.lyrics ?? ''
+  if (url === '') return
   try {
     const { loadLyricsFromDb, saveLyricsToDb } =
       await import('@/db/services/lyrics-db-service')
     const existing = await loadLyricsFromDb(DEMO_SESSION_ID)
     if (existing !== null) return
-    const res = await fetch(m.lrc as string)
+    const res = await fetch(url)
     if (!res.ok) return
     const text = await res.text()
     if (text.trim() === '') return
+    // Plain lyrics ship as 'txt' until the word-synced LRC exists; the mixer's
+    // lyrics panel shows them and offers its tap-to-sync flow either way.
+    const format = url.toLowerCase().endsWith('.lrc') ? 'lrc' : 'txt'
     await saveLyricsToDb(DEMO_SESSION_ID, {
       text,
-      format: 'lrc',
-      filename: `${m.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.lrc`,
+      format,
+      filename: `${m.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${format}`,
     })
   } catch (err) {
     if (import.meta.env.DEV)
