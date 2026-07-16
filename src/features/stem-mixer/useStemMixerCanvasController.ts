@@ -340,10 +340,9 @@ export const useStemMixerCanvasController = (
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
+    // Background comes from .sm-canvas CSS (var(--bg-primary)) so the
+    // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
-
-    ctx.fillStyle = '#0d1117'
-    ctx.fillRect(0, 0, w, h)
 
     const activeTracks = deps.tracks().filter((t) => t.analyserNode)
     if (activeTracks.length === 0) return
@@ -386,10 +385,9 @@ export const useStemMixerCanvasController = (
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
+    // Background comes from .sm-canvas CSS (var(--bg-primary)) so the
+    // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
-
-    ctx.fillStyle = '#0d1117'
-    ctx.fillRect(0, 0, w, h)
 
     if (!deps.vocal().buffer) {
       ctx.fillStyle = '#484f58'
@@ -735,10 +733,9 @@ export const useStemMixerCanvasController = (
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
+    // Background comes from .sm-canvas CSS (var(--bg-primary)) so the
+    // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
-
-    ctx.fillStyle = '#0d1117'
-    ctx.fillRect(0, 0, w, h)
 
     const notes = deps.midiNotes()
     if (notes.length === 0) {

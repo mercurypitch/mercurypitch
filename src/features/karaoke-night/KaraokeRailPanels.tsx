@@ -138,8 +138,8 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         </p>
         <h3>Add a song you own</h3>
         <p class="kn-card-sub">
-          The vocals are lifted out right on this device — free, nothing
-          uploaded. Studio-quality separation runs on our servers in the app.
+          All data stays on your device. Higher-quality separation is available
+          as a paid option in the app.
         </p>
         <input
           ref={fileInputRef}
@@ -183,7 +183,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             </Show>
           </p>
           <p class="kn-progress-warn">
-            Separation works this device hard — for smooth karaoke, let it
+            Separation is an intensive workload — for smooth karaoke, let it
             finish before you sing.
           </p>
           <button class="kn-cancel" onClick={() => void cancelUpload()}>
