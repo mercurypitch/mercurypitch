@@ -373,14 +373,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     playlist.stopPlaylist()
   }
 
-  // Start playback once the countdown flips the phase to 'playing'.
+  // Start playback once the countdown flips the phase to 'playing'. Wait for a
+  // real duration too: if the countdown ends before this song's stems finish
+  // decoding, starting at duration 0 makes the end-detector fire on the first
+  // frame and the song is skipped instantly. The effect re-runs when duration
+  // arrives, so a slow-loading song just starts a beat later.
   createEffect(() => {
     if (
       isCurrentPlaylistSong() &&
       playlist.phase() === 'playing' &&
       !playStarted &&
       !audio.loading() &&
-      !audio.loadError()
+      !audio.loadError() &&
+      audio.duration() > 0
     ) {
       playStarted = true
       audio.handlePlay()

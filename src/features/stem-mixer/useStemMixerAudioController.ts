@@ -735,6 +735,16 @@ export const useStemMixerAudioController = (
       canvas.drawLiveWaveform()
       deps.updateCurrentLine()
 
+      // End detection is meaningless until the buffers report a real duration.
+      // Without this guard a tick that runs before decode finishes sees
+      // elapsedTime (~0) >= duration() (0) and reports a spurious "natural
+      // end" — in a karaoke playlist that instantly skips the song to the
+      // score/summary screen (the "second song ends before it starts" bug).
+      if (duration() <= 0) {
+        rafId = requestAnimationFrame(tick)
+        return
+      }
+
       const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
 
       // If playback re-entered the loop region, clear the escape flag
