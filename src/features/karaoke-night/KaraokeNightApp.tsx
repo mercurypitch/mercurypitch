@@ -17,6 +17,7 @@ const KaraokeStageHost = lazy(async () => {
 })
 
 const ALPHA_KEY = 'pitchperfect_kn_stage_alpha'
+const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
 
 function loadStageAlpha(): number {
   try {
@@ -28,15 +29,33 @@ function loadStageAlpha(): number {
   return 0.78
 }
 
+function loadRailCollapsed(): boolean {
+  try {
+    return localStorage.getItem(RAIL_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export function KaraokeNightApp() {
   const [manifest, setManifest] = createSignal<DemoSongManifest | null>(null)
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
   const [stageAlpha, setStageAlpha] = createSignal(loadStageAlpha())
+  const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
 
   const updateAlpha = (v: number) => {
     setStageAlpha(v)
     try {
       localStorage.setItem(ALPHA_KEY, String(v))
+    } catch {
+      /* localStorage unavailable */
+    }
+  }
+
+  const updateRail = (collapsed: boolean) => {
+    setRailCollapsed(collapsed)
+    try {
+      localStorage.setItem(RAIL_KEY, String(collapsed))
     } catch {
       /* localStorage unavailable */
     }
@@ -98,30 +117,96 @@ export function KaraokeNightApp() {
 
       <div
         class="kn-body"
-        classList={{ 'kn-body--staged': activeSong() !== null }}
+        classList={{
+          'kn-body--staged': activeSong() !== null,
+          'kn-body--rail-min': railCollapsed(),
+        }}
       >
-        <aside class="kn-rail">
-          <section class="kn-card kn-card--demo">
-            <p class="kn-card-kicker">Tonight's opener</p>
-            <h2>{manifest()?.title ?? 'Demo mix'}</h2>
-            <p class="kn-card-sub">{manifest()?.artist ?? ''}</p>
-            <Show
-              when={demoIsPlayable(manifest())}
-              fallback={<p class="kn-soon">Demo mix coming soon</p>}
+        <aside class="kn-rail" classList={{ 'kn-rail--min': railCollapsed() }}>
+          <Show
+            when={!railCollapsed()}
+            fallback={
+              <div class="kn-rail-icons">
+                <button
+                  class="kn-rail-icon"
+                  title="Expand the panel"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path fill="currentColor" d="M9 6l6 6-6 6V6z" />
+                  </svg>
+                </button>
+                <button
+                  class="kn-rail-icon"
+                  title="Demo song"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="kn-rail-icon"
+                  title="Add a song you own"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M12 3l5 5h-3v6h-4V8H7l5-5zM5 19h14v2H5v-2z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="kn-rail-icon"
+                  title="Your library"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            }
+          >
+            <button
+              class="kn-rail-collapse"
+              title="Collapse the panel"
+              onClick={() => updateRail(true)}
             >
-              <button
-                class="kn-btn kn-btn--primary"
-                onClick={singDemo}
-                disabled={activeSong()?.sessionId === DEMO_SESSION_ID}
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M15 6l-6 6 6 6V6z" />
+              </svg>
+              Hide panel
+            </button>
+            <section class="kn-card kn-card--demo">
+              <p class="kn-card-kicker">Tonight's opener</p>
+              <h2>{manifest()?.title ?? 'Demo mix'}</h2>
+              <p class="kn-card-sub">{manifest()?.artist ?? ''}</p>
+              <Show
+                when={demoIsPlayable(manifest())}
+                fallback={<p class="kn-soon">Demo mix coming soon</p>}
               >
-                Sing the demo
-              </button>
-            </Show>
-          </section>
+                <button
+                  class="kn-btn kn-btn--primary"
+                  onClick={singDemo}
+                  disabled={activeSong()?.sessionId === DEMO_SESSION_ID}
+                >
+                  Sing the demo
+                </button>
+              </Show>
+            </section>
 
-          <Suspense>
-            <KaraokeRailPanels onSing={setActiveSong} />
-          </Suspense>
+            <Suspense>
+              <KaraokeRailPanels onSing={setActiveSong} />
+            </Suspense>
+          </Show>
         </aside>
 
         <main class="kn-stage">
@@ -139,7 +224,7 @@ export function KaraokeNightApp() {
                 <div class="kn-steps">
                   <div class="kn-step">
                     <span class="kn-step-n">1</span>
-                    <p>AI separates the vocals from the instruments</p>
+                    <p>The vocals separate cleanly from the instruments</p>
                   </div>
                   <div class="kn-step">
                     <span class="kn-step-n">2</span>
