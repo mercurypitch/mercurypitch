@@ -330,6 +330,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let pendingAdvance = false
   let playStarted = false
 
+  // `preset` is fixed for the lifetime of a StemMixer instance (the studio
+  // mounts without it; the karaoke page remounts per song via a keyed <Show>),
+  // and the controller options derived from it below are init-time-only by
+  // design — they seed initial signal values and storage keys that the
+  // controllers read exactly once. So this is an intentional static read, not
+  // a missed reactive dependency. JSX/effect uses keep reading props.preset.
+  // eslint-disable-next-line solid/reactivity
+  const isPerformancePreset = props.preset === 'performance'
+
   // True when this StemMixer instance is the playlist's current song (guards
   // the brief window where a new song is loading and a stale instance lingers).
   const isCurrentPlaylistSong = () =>
@@ -530,7 +539,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     },
     // The standalone karaoke stage reads from across the room: big centered
     // lyrics by default, with page-local alignment prefs.
-    ...(props.preset === 'performance'
+    ...(isPerformancePreset
       ? {
           defaultFontSize: 2.4,
           defaultAlign: 'center' as const,
@@ -831,7 +840,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas,
     // The standalone karaoke page opens on the performance stage (big
     // centered lyrics) and keeps its layout prefs apart from the studio's.
-    ...(props.preset === 'performance'
+    ...(isPerformancePreset
       ? {
           prefsKey: 'pitchperfect_kn_workspace_prefs',
           defaultLayout: 'performance' as const,
@@ -1071,7 +1080,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     //    landing-page demo.
     void whisper.loadCachedTranscription()
     void pitchAnalysis.loadCachedAnalysis()
-    if (props.preset !== 'performance') whisper.initWhisper()
+    if (!isPerformancePreset) whisper.initWhisper()
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()
