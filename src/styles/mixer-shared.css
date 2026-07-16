@@ -1,0 +1,166 @@
+/* Stem-mixer chrome shared by the studio app and the standalone
+   Karaoke Night entry. The app loads this via src/index.tsx (moved out of
+   app.css); the karaoke entry loads it directly — app.css itself is
+   app-shell-only and never ships to standalone pages.
+   Var fallbacks make every rule work without app.css's :root block. */
+
+/* ── Scrollbars (match the app's global styling) ─────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border, #30363d);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #8b949e);
+}
+
+input[type='range'] {
+  cursor: pointer;
+}
+
+/* ── Karaoke Focus Mode ──────────────────────────────────────────── */
+
+/* Doubled class beats the injected `.stem-mixer { position: relative }`
+   (StemMixerStyles lands in <head> after this sheet, so equal specificity
+   would lose on source order). */
+.stem-mixer.stem-mixer--focus {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ── Focus mode: toggle buttons ──────────────────────────────── */
+
+.sm-focus-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  opacity: 0.8;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.sm-focus-toggle-btn:hover,
+.sm-focus-toggle-btn--active {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.sm-focus-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sm-focus-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.sm-transport--vertical .sm-focus-divider {
+  width: 20px;
+  height: 1px;
+  margin: 4px 0;
+}
+
+.sm-focus-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--fg-tertiary);
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.sm-focus-exit-btn:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* Transport floating pill styles in focus mode */
+.stem-mixer--focus .sm-transport {
+  zoom: 0.82;
+  background: rgba(22, 27, 34, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  z-index: 401;
+}
+
+/* Bottom Center Dock (Default) */
+.stem-mixer--focus-docked-bottom .sm-transport {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 24px;
+  padding: 8px 16px;
+  max-width: calc(100vw - 40px);
+}
+
+/* Left Center Dock */
+.stem-mixer--focus-docked-left .sm-transport {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 24px;
+  padding: 16px 8px;
+  max-height: calc(100vh - 40px);
+}
+
+/* Right Center Dock */
+.stem-mixer--focus-docked-right .sm-transport {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 24px;
+  padding: 16px 8px;
+  max-height: calc(100vh - 40px);
+}
+
+/* Top Header Dock */
+.stem-mixer--focus-docked-top .sm-transport {
+  position: relative; /* Not absolute, pushes content down */
+  width: 100%;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  padding: 12px 24px;
+}

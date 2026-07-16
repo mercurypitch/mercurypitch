@@ -2,7 +2,7 @@
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
-import { hydrateStemUrls } from '@/db/services/uvr-service'
+import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { completeUvrSession, getAllUvrSessionsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
@@ -65,16 +65,10 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const singSession = async (sessionId: string) => {
     const s = getUvrSession(sessionId)
     if (s === undefined) return
-    let outputs = s.outputs
-    // Local sessions persist stems as db blobs; re-mint object URLs when the
-    // in-memory ones died with a previous page load.
-    if (
-      (outputs?.vocal ?? '').startsWith('blob:') === false ||
-      outputs === undefined
-    ) {
-      const urls = await hydrateStemUrls(sessionId)
-      if (urls !== null && urls !== undefined) outputs = { ...outputs, ...urls }
-    }
+    // Local sessions persist stems as db blobs; the stored object URLs die
+    // with the page that minted them, so verify + re-mint before staging.
+    const hydrated = await ensureSessionHydrated(s)
+    const outputs = hydrated.outputs
     if ((outputs?.vocal ?? '') === '' && (outputs?.instrumental ?? '') === '')
       return
     props.onSing({

@@ -10,6 +10,7 @@ import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
@@ -24,7 +25,7 @@ import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActi
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
-import { advance, currentIndex, currentSong, isPlaylistActive, phase, } from '@/stores/karaoke-playlist-store'
+import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
@@ -507,7 +508,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   // Cache to avoid pulling 30MB+ blobs from IndexedDB multiple times per page load
-  const locallyHydratedSessions = new Set<string>()
 
   // Re-hydrate stem URLs from IndexedDB for any completed session. Both local
   // and server separations persist their stems as durable blobs; the in-memory
@@ -515,66 +515,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // outputs back at fresh object URLs built from the local blobs. (Previously
   // this was gated to local-mode, so reopened server sessions kept dead server
   // URLs and failed to load — the "processed but can't open / retry" bug.)
-  const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
-    if (session.status === 'completed') {
-      if (locallyHydratedSessions.has(session.sessionId)) {
-        return session
-      }
+  const ensureHydrated = ensureSessionHydrated
 
-      if (session.outputs?.vocal?.startsWith('blob:') === true) {
-        try {
-          const res = await fetch(session.outputs.vocal, { method: 'HEAD' })
-          if (res.ok) {
-            locallyHydratedSessions.add(session.sessionId)
-            return session
-          }
-        } catch {
-          // fetch failed, blob is dead
-        }
-      }
-
-      const urls = await hydrateStemUrls(session.sessionId)
-      if (urls) {
-        locallyHydratedSessions.add(session.sessionId)
-        return { ...session, outputs: { ...session.outputs, ...urls } }
-      }
-    }
-    return session
-  }
-
-  // ── Karaoke playlist runner ──────────────────────────────────
-  // When the playlist arms a song ('ready'), hydrate its stems into the mixer
-  // and show the mixer view. The StemMixer remounts per song via mixerLoadToken,
-  // which is bumped only once the correct stems are in place — so the mixer
-  // never reuses a previous (already-ended) instance or loads stale stems.
-  let loadingPlaylistSong: string | null = null
-
-  const loadPlaylistSong = async (sessionId: string) => {
-    const session = getUvrSession(sessionId)
-    if (!session) {
-      showNotification('Karaoke: song unavailable, skipping…', 'warning')
-      advance()
-      return
-    }
-    const hydrated = await ensureHydrated(session)
-    // A newer skip may have superseded this (async) load — bail if this song is
-    // no longer the current one, so we don't clobber the mixer out of order.
-    if (currentSong()?.sessionId !== sessionId) return
-    // Persist freshly-hydrated stem URLs back into the session cache. Otherwise
-    // revisiting this song (prev/next) re-reads the cached session, whose blob:
-    // URLs are dead after a reload, and the stems fail to load — so the song
-    // won't play. (handleSessionView does the same for single-session opens.)
-    if (hydrated !== session) {
-      const all = getAllUvrSessions()
-      const idx = all.findIndex((s) => s.sessionId === sessionId)
-      if (idx !== -1) {
-        all[idx] = {
-          ...all[idx],
-          outputs: { ...all[idx].outputs, ...hydrated.outputs },
-        }
-        saveAllUvrSessions(all)
-      }
-    }
+  // ── Karaoke playlist runner (shared with Karaoke Night) ──────────
+  // The runner hydrates each armed song and hands it over; the StemMixer
+  // remounts per song via mixerLoadToken, which is bumped only once the
+  // correct stems are in place — so the mixer never reuses a previous
+  // (already-ended) instance or loads stale stems.
+  useKaraokePlaylistRunner((hydrated) => {
     batch(() => {
       setCurrentUvrSession(hydrated)
       setPrevView('results')
@@ -591,16 +539,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       // Bump last so the remount happens with everything already in place.
       setMixerLoadToken((t) => t + 1)
     })
-  }
-
-  createEffect(() => {
-    const song = currentSong()
-    if (!isPlaylistActive() || !song || phase() !== 'ready') return
-    // Re-load whenever the (index, song) changes — revisiting a song replays it.
-    const key = `${currentIndex()}:${song.sessionId}`
-    if (loadingPlaylistSong === key) return
-    loadingPlaylistSong = key
-    void loadPlaylistSong(song.sessionId)
   })
 
   const handleFileSelect = async (file: File) => {

@@ -7,6 +7,7 @@
 // ============================================================
 
 import { render } from 'solid-js/web'
+import '@/styles/mixer-shared.css'
 import './karaoke-night.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { KaraokeNightApp } from './KaraokeNightApp'

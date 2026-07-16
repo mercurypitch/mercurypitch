@@ -3,36 +3,44 @@ import type { DemoSongManifest } from './demo-song'
 import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
-/** Inject a component's CSS string once (StemMixer ships its styles as a
- *  string that the studio app injects at boot — mirror that here, but only
- *  when the stage chunk actually loads). */
-function injectStyles(key: string, css: string): void {
-  if (document.head.querySelector(`style[data-kn="${key}"]`) !== null) return
-  const el = document.createElement('style')
-  el.setAttribute('data-kn', key)
-  el.textContent = css
-  document.head.appendChild(el)
-}
-
 // Everything store/db-backed stays out of the first-paint chunk: the rail
-// panels stream in right after mount, the stage (mixer + controllers) only
-// when a song opens. Styles ride along with the same dynamic import.
+// panels stream in right after mount, the stage host (mixer + playlist
+// runner + their styles) only when a song opens.
 const KaraokeRailPanels = lazy(async () => {
   const m = await import('./KaraokeRailPanels')
   return { default: m.KaraokeRailPanels }
 })
 
-const StemMixer = lazy(async () => {
-  const m = await import('@/components/StemMixer')
-  injectStyles('stem-mixer', m.StemMixerStyles)
-  const lu = await import('@/components/LyricsUploader')
-  injectStyles('lyrics-uploader', lu.LyricsUploaderStyles)
-  return { default: m.StemMixer }
+const KaraokeStageHost = lazy(async () => {
+  const m = await import('./KaraokeStageHost')
+  return { default: m.KaraokeStageHost }
 })
+
+const ALPHA_KEY = 'pitchperfect_kn_stage_alpha'
+
+function loadStageAlpha(): number {
+  try {
+    const v = Number(localStorage.getItem(ALPHA_KEY))
+    if (v >= 0.3 && v <= 1) return v
+  } catch {
+    /* localStorage unavailable */
+  }
+  return 0.78
+}
 
 export function KaraokeNightApp() {
   const [manifest, setManifest] = createSignal<DemoSongManifest | null>(null)
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
+  const [stageAlpha, setStageAlpha] = createSignal(loadStageAlpha())
+
+  const updateAlpha = (v: number) => {
+    setStageAlpha(v)
+    try {
+      localStorage.setItem(ALPHA_KEY, String(v))
+    } catch {
+      /* localStorage unavailable */
+    }
+  }
 
   onMount(() => {
     void loadDemoSong().then(setManifest)
@@ -57,13 +65,32 @@ export function KaraokeNightApp() {
   const attribution = () => manifest()?.attribution
 
   return (
-    <div class="kn-app">
+    <div class="kn-app" style={{ '--kn-alpha': String(stageAlpha()) }}>
       <header class="kn-topbar">
         <a class="kn-brand" href="/">
           MercuryPitch
         </a>
         <span class="kn-topbar-title">Karaoke Night</span>
         <nav class="kn-topbar-links">
+          <Show when={activeSong()}>
+            <label class="kn-glass" title="Stage transparency">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+                />
+              </svg>
+              <input
+                type="range"
+                class="kn-glass-slider"
+                min="0.3"
+                max="1"
+                step="0.02"
+                value={stageAlpha()}
+                onInput={(e) => updateAlpha(Number(e.currentTarget.value))}
+              />
+            </label>
+          </Show>
           <a href="/#/karaoke">Open the studio</a>
           <a href="/#/settings/credits">Credits</a>
         </nav>
@@ -138,14 +165,10 @@ export function KaraokeNightApp() {
                     <div class="kn-stage-loading">Raising the curtain…</div>
                   }
                 >
-                  <StemMixer
-                    sessionId={song.sessionId}
-                    stems={song.stems}
-                    songTitle={song.title}
-                    practiceMode="full"
-                    requestedStems={{ vocal: true, instrumental: true }}
-                    preset="performance"
-                    onBack={() => setActiveSong(null)}
+                  <KaraokeStageHost
+                    song={song}
+                    onSong={setActiveSong}
+                    onExit={() => setActiveSong(null)}
                   />
                 </Suspense>
               </div>

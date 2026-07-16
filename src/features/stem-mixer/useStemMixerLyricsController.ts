@@ -26,6 +26,13 @@ export interface StemMixerLyricsDeps {
   playing: () => boolean
   elapsed: () => number
   seekToWithWindow: (t: number) => void
+  /** Starting font size in rem (default 1.3) — the standalone karaoke stage
+   *  opens much bigger. A-/A+ still adjust from there. */
+  defaultFontSize?: number
+  /** Alignment default + storage key override, so the standalone page can
+   *  default to centered lyrics without touching the studio preference. */
+  defaultAlign?: LyricsAlign
+  alignPrefsKey?: string
 }
 
 // ── Controller return type ────────────────────────────────────────
@@ -257,11 +264,13 @@ export function useStemMixerLyricsController(
   const [songMatches, setSongMatches] = createSignal<LyricsSearchMatch[]>([])
   const [showSongPicker, setShowSongPicker] = createSignal(false)
   const [songPickerQuery, setSongPickerQuery] = createSignal('')
-  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3)
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(
+    deps.defaultFontSize ?? 1.3,
+  )
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [lyricsAlign, setLyricsAlign] = createPersistedSignal<LyricsAlign>(
-    'pitchperfect_lyrics_align',
-    'left',
+    deps.alignPrefsKey ?? 'pitchperfect_lyrics_align',
+    deps.defaultAlign ?? 'left',
   )
   const [editMode, setEditMode] = createSignal(false)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})

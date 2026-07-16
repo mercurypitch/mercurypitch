@@ -523,6 +523,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       audio.seekTo(t)
       audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
     },
+    // The standalone karaoke stage reads from across the room: big centered
+    // lyrics by default, with page-local alignment prefs.
+    ...(props.preset === 'performance'
+      ? {
+          defaultFontSize: 2.4,
+          defaultAlign: 'center' as const,
+          alignPrefsKey: 'pitchperfect_kn_lyrics_align',
+        }
+      : {}),
   })
 
   // Backfill holder refs that audio controller needs
@@ -815,6 +824,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const layout = useStemMixerLayoutController({
     getWorkspaceRef: () => workspaceRef,
     canvas,
+    // The standalone karaoke page opens on the performance stage (big
+    // centered lyrics) and keeps its layout prefs apart from the studio's.
+    ...(props.preset === 'performance'
+      ? {
+          prefsKey: 'pitchperfect_kn_workspace_prefs',
+          defaultLayout: 'performance' as const,
+        }
+      : {}),
   })
 
   // ── Derived helpers ───────────────────────────────────────────
