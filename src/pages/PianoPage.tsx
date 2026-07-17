@@ -189,8 +189,15 @@ export function PianoPage(props: PianoPageProps) {
         />
         <SheetViewToggle active={pianoSheetView} onToggle={setPianoSheetView} />
         <Show when={pianoSheetView()}>
+          {/* Fills the canvas area; the sheet scrolls internally. */}
           <div
-            style={{ 'min-height': '360px', width: '100%', overflow: 'auto' }}
+            style={{
+              height: '100%',
+              'min-height': '360px',
+              width: '100%',
+              display: 'flex',
+              'flex-direction': 'column',
+            }}
           >
             <SheetMusicView
               melody={sheetMelody}
