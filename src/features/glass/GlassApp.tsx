@@ -65,7 +65,6 @@ const QUIET_RMS = 0.004
 const CAL_BRIEF_SEC = 3
 const CAL_PREP_SEC = 2
 const REP_BRIEF_SEC = 2
-const GAP_SEC = 1.4
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -1056,7 +1055,12 @@ export const GlassApp: Component = () => {
       if (!alive()) return
       dispatch({ type: 'playback-done' })
       trackGlass('glass_playback_done')
-      await countdown(GAP_SEC)
+      // Clean pane for the rest screen (drop the frozen playback trail).
+      renderer?.beginTake()
+      // No auto-advance: the singer reviews takes / plays with the room and
+      // commits to the next rep with a tap. This is also the natural stop
+      // for a silent input — no more infinite reps against a dead mic.
+      await readyGate(gen)
       if (!alive()) return
       dispatch({ type: 'gap-done' })
     }
@@ -1102,11 +1106,12 @@ export const GlassApp: Component = () => {
       renderer: rendererMetric(),
     })
 
-    // The results screen has no stage; stop the renderer's rAF loop instead
-    // of driving a detached canvas at 60fps until the singer moves on.
-    renderer?.dispose()
-    renderer = null
-    stageHost = null
+    // The results live ON the glass now — the shattered (or cracked-but-
+    // standing) pane stays mounted under the results overlay, so the
+    // renderer is intentionally kept alive here. resetAll()/onCleanup still
+    // dispose it (a new session is a new glass). Clear any frozen ribbon
+    // trail (a no-op for the shard burst — that runs its own state).
+    renderer?.beginTake()
   }
 
   /** The singer bails mid-loop: orphan the flow, honest results. */
@@ -1362,21 +1367,34 @@ export const GlassApp: Component = () => {
               }
             >
               <div class="glass-stagegrid">
-                <FxRackPanel
-                  settings={fxSettings()}
-                  onChange={(next) => applyFxSettings(next)}
-                  onCommit={(next) => commitFxSettings(next)}
-                  showMonitor={true}
-                  monitorOn={monitorOn()}
-                  monitorConfirming={monitorConfirming()}
-                  monitorNotice={monitorNotice()}
-                  onMonitorToggle={() => {
-                    if (monitorOn()) disableMonitor()
-                    else setMonitorConfirming(true)
-                  }}
-                  onMonitorConfirm={() => enableMonitor()}
-                  onMonitorCancel={() => setMonitorConfirming(false)}
-                />
+                {/* The left rail: FX card with the takes DIRECTLY beneath
+                    it (one grid child — a separate child would land below
+                    the tall stage's row instead). */}
+                <div class="glass-rail">
+                  <FxRackPanel
+                    settings={fxSettings()}
+                    onChange={(next) => applyFxSettings(next)}
+                    onCommit={(next) => commitFxSettings(next)}
+                    showMonitor={true}
+                    monitorOn={monitorOn()}
+                    monitorConfirming={monitorConfirming()}
+                    monitorNotice={monitorNotice()}
+                    onMonitorToggle={() => {
+                      if (monitorOn()) disableMonitor()
+                      else setMonitorConfirming(true)
+                    }}
+                    onMonitorConfirm={() => enableMonitor()}
+                    onMonitorCancel={() => setMonitorConfirming(false)}
+                  />
+                  <TakeStrip
+                    takes={takes()}
+                    playingId={playingTakeId()}
+                    progress={takeProgress()}
+                    disabled={subPhase() === 'active'}
+                    onToggle={toggleTake}
+                    onRemove={removeTake}
+                  />
+                </div>
                 <div>
                   <div class="glass-stage" ref={(el) => mountStage(el)} />
                   <Chips live={live()} rep={session().rep} />
@@ -1385,16 +1403,6 @@ export const GlassApp: Component = () => {
                     total={GLASS_CONFIG.reps.singSeconds}
                   />
                 </div>
-                {/* Third grid child → desktop: column 1, beneath the FX
-                    rail. Phones: a horizontal strip below everything. */}
-                <TakeStrip
-                  takes={takes()}
-                  playingId={playingTakeId()}
-                  progress={takeProgress()}
-                  disabled={subPhase() === 'active'}
-                  onToggle={toggleTake}
-                  onRemove={removeTake}
-                />
               </div>
             </Show>
             <button class="glass-textbtn" onClick={() => endSession()}>
@@ -1412,18 +1420,28 @@ export const GlassApp: Component = () => {
               stays dry and is deleted after this replay.
             </p>
             <div class="glass-stagegrid">
-              <FxRackPanel
-                settings={fxSettings()}
-                onChange={(next) => applyFxSettings(next)}
-                onCommit={(next) => commitFxSettings(next)}
-                showMonitor={false}
-                monitorOn={false}
-                monitorConfirming={false}
-                monitorNotice={null}
-                onMonitorToggle={() => undefined}
-                onMonitorConfirm={() => undefined}
-                onMonitorCancel={() => undefined}
-              />
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+              </div>
               <div>
                 <div class="glass-stage" ref={(el) => mountStage(el)} />
                 <TimeBar
@@ -1431,14 +1449,6 @@ export const GlassApp: Component = () => {
                   total={GLASS_CONFIG.reps.playbackMaxSeconds}
                 />
               </div>
-              <TakeStrip
-                takes={takes()}
-                playingId={playingTakeId()}
-                progress={takeProgress()}
-                disabled={false}
-                onToggle={toggleTake}
-                onRemove={removeTake}
-              />
             </div>
             <button class="glass-textbtn" onClick={() => endSession()}>
               End session
@@ -1447,17 +1457,48 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'gap'}>
-          <section class="glass-panel glass-panel-clear">
+          {/* The between-reps rest: NO auto-advance. Review takes, shape the
+              room, study the cracked pane — the next rep starts on a tap. */}
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Again — you know where it lives now</h2>
-            <div class="glass-countdown">{Math.ceil(remaining())}</div>
-            <TakeStrip
-              takes={takes()}
-              playingId={playingTakeId()}
-              progress={takeProgress()}
-              disabled={false}
-              onToggle={toggleTake}
-              onRemove={removeTake}
-            />
+            <p class="glass-dim glass-subline">
+              Replay your takes, tweak the room, then go when you're ready.
+            </p>
+            <div class="glass-stagegrid">
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+              </div>
+              <div>
+                <div class="glass-stage" ref={(el) => mountStage(el)} />
+                <div class="glass-actions">
+                  <button class="glass-cta" onClick={() => releaseReadyGate()}>
+                    Sing again
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="glass-textbtn" onClick={() => endSession()}>
+              End session
+            </button>
           </section>
         </Show>
 
@@ -1473,36 +1514,57 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'results'}>
-          <ResultsPanel
-            session={session()}
-            fatigue={physics.fatigue}
-            sinceLine={sinceLine()}
-            shareStatus={shareStatus()}
-            storyFormat={cardFormat() === 'story'}
-            onToggleFormat={() =>
-              setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
-            }
-            onShare={() => void onShareCard()}
-            onCopy={() => void onCopyCard()}
-            onAgain={() => resetAll()}
-          />
-          <Show when={takes().length > 0}>
-            <section class="glass-panel glass-panel-clear glass-takes-panel">
-              <h3 class="glass-takes-title">Your takes</h3>
-              <TakeStrip
-                takes={takes()}
-                playingId={playingTakeId()}
-                progress={takeProgress()}
-                disabled={false}
-                onToggle={toggleTake}
-                onRemove={removeTake}
-              />
-              <p class="glass-dim glass-takes-note">
-                Takes live only in this tab — leaving the page deletes the
-                audio. Your numbers and the next-time delta stay on device.
-              </p>
-            </section>
-          </Show>
+          {/* Results live ON the glass: the shattered (or cracked) pane
+              stays on stage with the numbers overlaid, the room + takes in
+              the rail — same screen, mirror-style, not a separate page. */}
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <div class="glass-stagegrid">
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+                <Show when={takes().length > 0}>
+                  <p class="glass-dim glass-takes-note">
+                    Takes live only in this tab — leaving the page deletes
+                    the audio. Your numbers stay on device.
+                  </p>
+                </Show>
+              </div>
+              <div class="glass-stage-wrap">
+                <div class="glass-stage" ref={(el) => mountStage(el)} />
+                <ResultsPanel
+                  session={session()}
+                  fatigue={physics.fatigue}
+                  sinceLine={sinceLine()}
+                  shareStatus={shareStatus()}
+                  storyFormat={cardFormat() === 'story'}
+                  onToggleFormat={() =>
+                    setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
+                  }
+                  onShare={() => void onShareCard()}
+                  onCopy={() => void onCopyCard()}
+                  onAgain={() => resetAll()}
+                />
+              </div>
+            </div>
+          </section>
         </Show>
       </main>
 
@@ -1782,9 +1844,11 @@ const ResultsPanel: Component<{
       : midiToNoteNameOctave(props.session.targetMidi)
 
   return (
-    <section class="glass-panel">
+    // Overlay ON the pane (a sibling of the stage host — the renderer's
+    // mount() replaceChildren()s the host, so this can't live inside it).
+    <div class="glass-results-overlay glass-panel-clear">
       <p class="glass-dim glass-announce-eyebrow">
-        {shattered() ? '✦ the glass gave way' : 'the glass held — this time'}
+        {shattered() ? 'the glass gave way' : 'the glass held — this time'}
       </p>
       <h2>
         {shattered()
@@ -1806,7 +1870,7 @@ const ResultsPanel: Component<{
           <div class="glass-metric">
             <span class="glass-metric-k">Precision</span>
             <span class="glass-metric-v">
-              ±{Math.round(last()?.meanAbsCents ?? 0)}¢
+              ±{Math.min(999, Math.round(last()?.meanAbsCents ?? 0))}¢
             </span>
           </div>
         </Show>
@@ -1881,7 +1945,7 @@ const ResultsPanel: Component<{
           Train in MercuryPitch
         </a>
       </div>
-    </section>
+    </div>
   )
 }
 

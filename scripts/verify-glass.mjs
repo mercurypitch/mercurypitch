@@ -224,6 +224,13 @@ if (SHATTER) {
   log.push(`takes strip: ${cards} card(s), tap-to-play ${playing === 1 ? 'ok' : 'FAILED'}`)
   await shot('playback-takes')
 
+  // The playback beat ends into the MANUAL gate (no auto-advance): the
+  // "Sing again" tap is what starts the next rep.
+  const singAgain = page.getByRole('button', { name: 'Sing again' })
+  await singAgain.waitFor({ timeout: 15000 })
+  log.push('gap gate: Sing again rendered (no auto-advance)')
+  await shot('gap-gate')
+
   await page.getByRole('button', { name: 'End session' }).click()
   await page.waitForSelector('.glass-metrics', { timeout: 10000 })
   log.push(

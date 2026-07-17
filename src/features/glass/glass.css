@@ -792,13 +792,54 @@ body {
   }
 }
 @media (max-width: 879px) {
-  /* Phones: the pane leads, the FX rail tucks below it. */
-  .glass-stagegrid > .glass-fx {
+  /* Phones: the pane leads, the rail (FX + takes) tucks below it. */
+  .glass-stagegrid > .glass-rail {
     order: 2;
   }
   .glass-stage {
     width: min(100%, calc((100dvh - 380px) * 0.77));
   }
+}
+
+/* The left rail: FX card with the takes directly beneath (one grid child —
+   as a separate grid child the takes landed below the TALL stage row). */
+.glass-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The stage + its results overlay share one positioning box. */
+.glass-stage-wrap {
+  position: relative;
+}
+
+/* Results ON the glass: a translucent card over the pane — the shattered
+   (or cracked) glass shows through behind the numbers. */
+.glass-results-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  padding: 18px 16px;
+  overflow-y: auto;
+  text-align: center;
+  background: rgba(9, 7, 20, 0.32);
+  border-radius: 16px;
+  backdrop-filter: blur(1.5px);
+}
+.glass-results-overlay h2 {
+  margin: 2px 0 8px;
+  font-size: clamp(17px, 2.6vw, 22px);
+}
+.glass-results-overlay .glass-metrics {
+  margin: 4px 0 6px;
+}
+.glass-results-overlay .glass-actions {
+  margin-top: 8px;
 }
 
 /* ── Takes strip: reviewable recorded reps ─────────────────── */
@@ -939,45 +980,35 @@ body {
   opacity: 1;
 }
 @media (min-width: 880px) {
-  /* The stagegrid column: fill the FX rail's width, stack vertically. */
-  .glass-stagegrid > .glass-takes {
+  /* In the rail: fill its width, stack vertically beneath the FX card. */
+  .glass-rail .glass-takes {
     flex-direction: column;
     flex-wrap: nowrap;
     width: 100%;
     max-width: none;
     margin: 0;
   }
-  .glass-stagegrid > .glass-takes .glass-take-card {
+  .glass-rail .glass-takes .glass-take-card {
     width: 100%;
   }
 }
 @media (max-width: 879px) {
-  /* Phones: swipeable strip under stage + sliders — the pane stays big. */
-  .glass-stagegrid > .glass-takes {
-    order: 3;
+  /* Phones: swipeable strip under the FX card — the pane stays big. */
+  .glass-rail .glass-takes {
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
     max-width: none;
+    margin: 0;
     padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
   }
-  .glass-stagegrid > .glass-takes .glass-take-card {
+  .glass-rail .glass-takes .glass-take-card {
     flex: 0 0 200px;
   }
 }
-.glass-takes-panel .glass-takes {
-  margin-top: 4px;
-}
-.glass-takes-title {
-  margin: 0 0 10px;
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--glass-chrome-dim);
-}
 .glass-takes-note {
-  margin-top: 10px;
+  margin-top: 2px;
   font-size: 12px;
 }
 
