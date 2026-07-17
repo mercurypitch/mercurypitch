@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Word-boundary black flash (transition-vs-class-swap on the gradient sweep), restart now glides the lyrics sheet to top (idx<0 handling + explicit scroll), demo stems CORS on LAN/https origins (mercury-pitch-models bucket → wildcard GET/HEAD), `snapToOnsets` strict monotonicity when capped at line end.
+- **KN rail**: `uploadSessionId`/`uploadError` hoisted to module scope — collapsing the rail unmounts the component and dropped a running separation's progress UI (the pipeline itself lives in the store). Library rows: on-stage accent + animated equalizer, count pill in the kicker, click stages with `autoPlay` (explicit picks only — the background auto-open stays silent); sheet picks autoplay too. Credits chip: label/style follow the STORED mode and it is never disabled — out-of-credits used to show the effective fallback label while disabling the very toggle the warning told users to click.
 
 ## [0.7.12] - 2026-07-16
 
