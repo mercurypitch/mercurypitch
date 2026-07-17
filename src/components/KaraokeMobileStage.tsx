@@ -124,15 +124,38 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     })
   }
 
+  const scrollLyricsToTop = (): void => {
+    scrollerRef?.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    })
+  }
+
   createEffect(
     on(
       () => props.currentLineIdx(),
       (idx, prev) => {
         if (userScrolled()) return
+        // Before the first line (restart, scrub back into the intro) there is
+        // no element to centre — glide the whole sheet back to the top.
+        if (idx < 0) {
+          scrollLyricsToTop()
+          return
+        }
         centerLine(idx, prev !== undefined)
       },
     ),
   )
+
+  // Restart = explicit "take me back": clear any manual-scroll override and
+  // glide up immediately — the currentLineIdx effect alone can't cover a
+  // restart while paused (no RAF tick to change the index).
+  const handleRestart = (): void => {
+    props.onRestart()
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
+    setUserScrolled(false)
+    scrollLyricsToTop()
+  }
 
   // Word-level progress for the current line only.
   const activeWord = createMemo(() => {
@@ -514,7 +537,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <div class={styles.transport}>
             <button
               class={styles.sideBtn}
-              onClick={() => props.onRestart()}
+              onClick={handleRestart}
               title="Restart"
               aria-label="Restart the song"
             >
