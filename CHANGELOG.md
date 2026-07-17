@@ -3,6 +3,25 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.14] - 2026-07-18
+
+### Added
+
+- **Review your takes in Glass.** Every rep you record appears beside the glass as a glowing waveform card — tap to replay yourself through your room effects as often as you like. The winning take wears a gold "Shattered" badge, and any take can be removed (audio lives only in this tab and is gone when you leave).
+- **Pick your microphone.** When the browser listens to the wrong input (a webcam, a virtual device), Glass and the Voice Mirror now tell you which device they hear and let you switch it right on the mic screen — no more silent sessions with no explanation.
+
+### Changed
+
+- **You set the pace in Glass.** After each rep the glass waits: replay your takes, tweak the room, and sing again when you're ready — no more auto-advance.
+- **Results on the glass.** The shattered (or still-standing, cracked) pane stays on stage with your numbers right on it — no separate results page, and on phones everything scrolls as one page.
+- **Crisper on big screens.** The cosmic backdrop now picks a landscape master on desktop (it was stretching the phone artwork) and both masters were upscaled to 2K.
+
+### Fixed
+
+- Holding a note during calibration no longer makes the pitch dot sink back toward the middle.
+- The pitch line cuts cleanly when you go quiet or leave the visible range, instead of drawing vertical swings at the pane edge.
+- The coaching text no longer reflows and flickers the page on phones while you sing.
+
 ## [0.7.13] - 2026-07-17
 
 ### Added

@@ -642,7 +642,10 @@ export const GlassApp: Component = () => {
     } finally {
       setMicChecking(false)
     }
-    if (!(await probeMic())) setMicSilent(true)
+    // Same contract as start(): a passing probe continues the flow — without
+    // this the panel fell into its "waiting for permission" fallback.
+    if (await probeMic()) beginFlow()
+    else setMicSilent(true)
   }
 
   function beginFlow(): void {
