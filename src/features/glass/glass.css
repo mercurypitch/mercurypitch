@@ -413,6 +413,65 @@ body {
   margin-bottom: 8px;
 }
 
+.glass-glide-brief {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+.glass-glide-demo {
+  position: relative;
+  width: min(280px, 72vw);
+}
+.glass-glide-demo svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.glass-glide-track {
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(88, 166, 255, 0.5));
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: glass-glide-draw 2.2s ease-in-out infinite;
+}
+.glass-glide-dot {
+  filter: drop-shadow(0 0 8px rgba(127, 240, 221, 0.9));
+}
+.glass-glide-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--glass-chrome);
+}
+@keyframes glass-glide-draw {
+  0% {
+    stroke-dashoffset: 260;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-glide-track {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .glass-glide-dot {
+    display: none;
+  }
+}
+
+.glass-countdown-sm {
+  font-size: 30px;
+  padding: 0;
+  color: var(--glass-chrome);
+}
+
 .glass-countdown {
   font-family: 'Outfit', system-ui, sans-serif;
   font-size: 56px;

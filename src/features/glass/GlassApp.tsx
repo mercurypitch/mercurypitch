@@ -970,7 +970,12 @@ export const GlassApp: Component = () => {
             <Show
               when={subPhase() === 'active'}
               fallback={
-                <div class="glass-countdown">{Math.ceil(remaining())}</div>
+                <div class="glass-glide-brief">
+                  <GlideDemo />
+                  <div class="glass-countdown glass-countdown-sm">
+                    {Math.ceil(remaining())}
+                  </div>
+                </div>
               }
             >
               <div class="glass-stage" ref={(el) => mountStage(el)} />
@@ -1463,6 +1468,41 @@ const ResultsPanel: Component<{
 }
 
 // ── landing + preview (P0 surfaces) ───────────────────────────
+
+/** An animated glide demo shown during the calibration brief — a dot rides a
+ *  rising siren curve (synced to the audible sweep), so users SEE the "slide
+ *  low to high" they hear. Reduced-motion drops the travelling dot. */
+const GlideDemo: Component = () => (
+  <div class="glass-glide-demo" aria-hidden="true">
+    <svg viewBox="0 0 220 120" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="glideStroke" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#58a6ff" />
+          <stop offset="1" stop-color="#2dd4bf" />
+        </linearGradient>
+      </defs>
+      <path
+        id="glassGlidePath"
+        class="glass-glide-track"
+        d="M14,104 C60,100 78,44 118,32 S196,18 206,14"
+        fill="none"
+        stroke="url(#glideStroke)"
+      />
+      <circle class="glass-glide-dot" r="5" fill="#7ff0dd">
+        <animateMotion
+          dur="2.2s"
+          repeatCount="indefinite"
+          calcMode="spline"
+          keyPoints="0;1"
+          keyTimes="0;1"
+          keySplines="0.4 0 0.2 1"
+          path="M14,104 C60,100 78,44 118,32 S196,18 206,14"
+        />
+      </circle>
+    </svg>
+    <span class="glass-glide-label">low → high</span>
+  </div>
+)
 
 const Landing: Component<{
   onStart: () => void
