@@ -26,11 +26,11 @@ import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { F0Stream } from '@/lib/pitch-f0-stream'
+import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { CardFormat } from './card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
-import type { F0Stream } from './f0-stream'
-import { createF0Stream } from './f0-stream'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
 import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconStats, IconTrace, } from './icons'
@@ -1180,6 +1180,13 @@ const Landing: Component<{
     <p class="mirror-trust">
       Your audio never leaves this device — we analyze it right here in your
       browser.
+    </p>
+    <p class="mirror-crosslink">
+      Or{' '}
+      <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
+        break glass with your voice
+      </a>
+      .
     </p>
   </section>
 )

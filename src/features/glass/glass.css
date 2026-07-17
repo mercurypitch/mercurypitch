@@ -1,0 +1,902 @@
+/* ============================================================
+   Glass — standalone page styles (P0 landing).
+
+   Committed dark cosmic theme: this page IS the product's world
+   (indigo void, quicksilver chrome, gold resonance), so it does
+   not follow the app's light/dark toggle. Palette matches the
+   mirror cosmos and BRAND.md tokens.
+   ============================================================ */
+
+:root {
+  --glass-void-0: #090714;
+  --glass-void-1: #0b1026;
+  --glass-starlight: #f4f8fd;
+  --glass-chrome: #8a97a6;
+  --glass-chrome-dim: #5b6b7b;
+  --glass-signal: #58a6ff;
+  --glass-aqua: #2dd4bf;
+  --glass-violet: #bc8cff;
+  --glass-gold: #ffe9a8;
+  --glass-gold-deep: #d4af6a;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--glass-void-0);
+}
+
+.glass-shell {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* flex-start + margin-block auto on main: true centering that degrades to
+     a scrollable page when content is taller than the viewport (centering
+     with justify-content would clip the top of overflowing content). */
+  justify-content: flex-start;
+  gap: 18px;
+  padding: 28px 18px 16px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--glass-starlight);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* The cosmos: a Higgsfield-generated still (liquid-mercury ribbons through
+   a resonance ring — public/glass/backdrop-*.webp) under a darkening wash,
+   with the procedural nebula gradients as the always-there fallback (a
+   missing image layer simply doesn't paint). */
+.glass-cosmos {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
+    url('/glass/backdrop-portrait.webp') center / cover no-repeat,
+    radial-gradient(
+      38% 30% at 22% 26%,
+      rgba(188, 140, 255, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      32% 26% at 80% 18%,
+      rgba(88, 166, 255, 0.09),
+      transparent 70%
+    ),
+    radial-gradient(
+      36% 30% at 70% 84%,
+      rgba(45, 212, 191, 0.07),
+      transparent 70%
+    ),
+    linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+}
+.glass-cosmos::before,
+.glass-cosmos::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      1.1px 1.1px at 12% 22%,
+      rgba(223, 232, 255, 0.7),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 34% 68%,
+      rgba(223, 232, 255, 0.5),
+      transparent 100%
+    ),
+    radial-gradient(
+      1.3px 1.3px at 58% 12%,
+      rgba(223, 232, 255, 0.6),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 73% 44%,
+      rgba(223, 232, 255, 0.45),
+      transparent 100%
+    ),
+    radial-gradient(
+      1.2px 1.2px at 88% 76%,
+      rgba(223, 232, 255, 0.55),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 45% 88%,
+      rgba(223, 232, 255, 0.4),
+      transparent 100%
+    );
+  background-size: 520px 520px;
+}
+.glass-cosmos::after {
+  background-size: 340px 340px;
+  opacity: 0.6;
+  transform: translate(120px, 60px);
+}
+
+.glass-main {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  /* The centering half of the shell's flex-start + auto-margins pattern. */
+  margin-block: auto;
+}
+
+/* Flow phases float directly on the cosmos (the artifact look): the card
+   chrome disappears so the pane is genuinely transparent glass. */
+.glass-panel.glass-panel-clear {
+  background: none;
+  border: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.glass-panel.glass-panel-clear h2 {
+  text-shadow: 0 1px 18px rgba(9, 7, 20, 0.9);
+}
+
+/* Floating HUD chips (artifact style) under the stage. */
+.glass-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+.glass-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 82px;
+  padding: 7px 12px 6px;
+  border: 1px solid rgba(138, 151, 166, 0.22);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.55);
+  backdrop-filter: blur(6px);
+}
+.glass-chip .k {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-chip .v {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--glass-starlight);
+}
+.glass-chip .v.good {
+  color: var(--glass-aqua);
+}
+.glass-chip .v.warm {
+  color: var(--glass-gold);
+}
+
+.glass-panel {
+  width: min(560px, 100%);
+  text-align: center;
+  padding: 34px 26px;
+  border: 1px solid rgba(138, 151, 166, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(
+    170deg,
+    rgba(11, 16, 38, 0.66),
+    rgba(9, 7, 20, 0.72)
+  );
+  backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.glass-wordmark {
+  margin: 0 0 14px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.glass-wm-mercury {
+  color: #e6edf3;
+}
+.glass-wm-pitch {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.glass-wm-tail {
+  color: var(--glass-chrome);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+.glass-landing h1 {
+  margin: 0 0 12px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.glass-lead {
+  margin: 0 auto 20px;
+  max-width: 42ch;
+  color: rgba(244, 248, 253, 0.86);
+  /* Centered raggedness reads as misalignment — balance the line lengths. */
+  text-wrap: balance;
+}
+.glass-lead em {
+  font-style: normal;
+  color: var(--glass-gold);
+}
+
+.glass-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.glass-cta {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #201a08;
+  background: linear-gradient(
+    160deg,
+    var(--glass-gold),
+    var(--glass-gold-deep)
+  );
+  border: none;
+  border-radius: 999px;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+.glass-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(255, 233, 168, 0.25);
+}
+.glass-cta:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+}
+.glass-cta-secondary {
+  color: var(--glass-starlight);
+  background: rgba(11, 16, 38, 0.7);
+  border: 1px solid rgba(138, 151, 166, 0.35);
+}
+.glass-cta-secondary:hover {
+  box-shadow: none;
+  border-color: var(--glass-chrome);
+}
+
+.glass-trust {
+  margin: 0 auto;
+  max-width: 52ch;
+  font-size: 12.5px;
+  color: var(--glass-chrome);
+  text-wrap: balance;
+}
+
+/* Three-step preview */
+.glass-steps h2 {
+  margin: 0 0 18px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+.glass-step-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+.glass-step-list li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.glass-step-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 233, 168, 0.3);
+  color: var(--glass-gold);
+  background: rgba(255, 233, 168, 0.06);
+}
+.glass-step-list h3 {
+  margin: 0 0 3px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.glass-step-list p {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(244, 248, 253, 0.78);
+}
+
+.glass-soon {
+  margin: 14px 0 16px;
+  font-size: 12.5px;
+  color: var(--glass-violet);
+}
+
+/* Footer — the required TypeGPU credit + sibling cross-links */
+.glass-foot {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--glass-chrome-dim);
+}
+.glass-foot-link {
+  color: var(--glass-chrome);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 140ms,
+    border-color 140ms;
+}
+.glass-foot-link:hover {
+  color: var(--glass-starlight);
+  border-color: var(--glass-chrome-dim);
+}
+.glass-foot-typegpu {
+  font-weight: 600;
+  color: var(--glass-aqua);
+}
+.glass-foot-typegpu:hover {
+  color: var(--glass-aqua);
+  border-color: var(--glass-aqua);
+}
+.glass-foot-sep {
+  opacity: 0.6;
+}
+
+/* ── P1: flow panels + debug readouts ─────────────────────── */
+
+.glass-panel h2 {
+  margin: 0 0 10px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+.glass-panel > p {
+  /* auto side-margins so max-width paragraphs (lead, trust) stay centered —
+     this rule out-specifies their own `margin: 0 auto`, so it must carry the
+     centering itself or they pin left. */
+  margin: 0 auto 14px;
+}
+
+.glass-dim {
+  color: var(--glass-chrome);
+  font-size: 13px;
+}
+.glass-error {
+  color: #f8a1a1;
+  font-size: 13.5px;
+}
+
+.glass-progress {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+  margin-bottom: 8px;
+}
+
+.glass-glide-brief {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+.glass-glide-demo {
+  position: relative;
+  width: min(280px, 72vw);
+}
+.glass-glide-demo svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.glass-glide-track {
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(88, 166, 255, 0.5));
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: glass-glide-draw 2.2s ease-in-out infinite;
+}
+.glass-glide-dot {
+  filter: drop-shadow(0 0 8px rgba(127, 240, 221, 0.9));
+}
+.glass-glide-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--glass-chrome);
+}
+@keyframes glass-glide-draw {
+  0% {
+    stroke-dashoffset: 260;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-glide-track {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .glass-glide-dot {
+    display: none;
+  }
+}
+
+.glass-countdown-sm {
+  font-size: 30px;
+  padding: 0;
+  color: var(--glass-chrome);
+}
+
+.glass-countdown {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--glass-gold);
+  padding: 18px 0 8px;
+}
+
+.glass-note-hero {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--glass-gold);
+  text-shadow: 0 0 34px rgba(255, 233, 168, 0.35);
+  margin: 4px 0 10px;
+}
+.glass-announce-eyebrow {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin-bottom: 0;
+}
+
+.glass-live-note {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 42px;
+  color: var(--glass-signal);
+  padding: 10px 0 6px;
+}
+
+.glass-offset {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 34px;
+  color: var(--glass-signal);
+  padding: 8px 0 10px;
+  transition: color 120ms;
+}
+.glass-offset-locked {
+  color: var(--glass-aqua);
+  text-shadow: 0 0 24px rgba(45, 212, 191, 0.4);
+}
+
+.glass-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 12px;
+}
+.glass-barrow {
+  display: grid;
+  grid-template-columns: 78px 1fr 52px;
+  align-items: center;
+  gap: 10px;
+}
+.glass-barrow-label {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+  text-align: left;
+}
+.glass-barrow-detail {
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--glass-chrome);
+  text-align: right;
+}
+.glass-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(138, 151, 166, 0.15);
+  overflow: hidden;
+}
+.glass-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 90ms linear;
+}
+.glass-bar-gold {
+  background: linear-gradient(90deg, var(--glass-gold-deep), var(--glass-gold));
+  box-shadow: 0 0 12px rgba(255, 233, 168, 0.35);
+}
+.glass-bar-aqua {
+  background: linear-gradient(90deg, #1d9a8b, var(--glass-aqua));
+}
+.glass-bar-chrome {
+  background: linear-gradient(
+    90deg,
+    var(--glass-chrome-dim),
+    var(--glass-chrome)
+  );
+}
+
+.glass-levelbar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(138, 151, 166, 0.15);
+  overflow: hidden;
+  margin: 10px 0;
+}
+.glass-levelbar-fill {
+  height: 100%;
+  background: var(--glass-signal);
+  border-radius: 999px;
+  transition: width 80ms linear;
+}
+
+.glass-timebar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(138, 151, 166, 0.12);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.glass-timebar-fill {
+  height: 100%;
+  background: var(--glass-violet);
+  border-radius: 999px;
+  transition: width 120ms linear;
+}
+
+.glass-textbtn {
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: var(--glass-chrome);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.glass-textbtn:hover {
+  color: var(--glass-starlight);
+}
+.glass-textbtn:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+}
+
+.glass-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 14px 0;
+}
+.glass-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 86px;
+  padding: 9px 12px 8px;
+  border: 1px solid rgba(138, 151, 166, 0.2);
+  border-radius: 10px;
+}
+.glass-metric-k {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-metric-v {
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  color: var(--glass-starlight);
+}
+
+.glass-delta {
+  color: var(--glass-aqua);
+  font-size: 13.5px;
+  margin: 0 0 12px;
+}
+
+.glass-shatter-flash {
+  animation: glass-flash 700ms ease-out;
+}
+@keyframes glass-flash {
+  0% {
+    box-shadow: 0 0 0 rgba(244, 248, 253, 0);
+  }
+  18% {
+    box-shadow: 0 0 90px rgba(244, 248, 253, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(244, 248, 253, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-shatter-flash {
+    animation: none;
+  }
+}
+
+/* ── P2: the mirror stage + FX rack ───────────────────────── */
+
+.glass-panel-wide {
+  width: min(820px, 100%);
+}
+
+.glass-stage {
+  position: relative;
+  /* Zoomed-in: the pane is the experience — as large as the viewport
+     allows while leaving room for heading, chips and the time bar. */
+  width: min(540px, 100%, calc((100dvh - 320px) * 0.77));
+  aspect-ratio: 3 / 3.9;
+  margin: 6px auto 10px;
+}
+.glass-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* TypeGPU backend: WebGPU canvas + transparent Canvas2D overlay stacked. */
+.glass-scene-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.glass-scene-stack .glass-scene-canvas {
+  position: absolute;
+  inset: 0;
+}
+.glass-scene-overlay {
+  pointer-events: none;
+}
+
+.glass-stagegrid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 880px) {
+  .glass-stagegrid {
+    grid-template-columns: 172px 1fr;
+    text-align: left;
+  }
+  .glass-stagegrid > div:last-child {
+    text-align: center;
+  }
+}
+@media (max-width: 879px) {
+  /* Phones: the pane leads, the FX rail tucks below it. */
+  .glass-stagegrid > .glass-fx {
+    order: 2;
+  }
+  .glass-stage {
+    width: min(100%, calc((100dvh - 380px) * 0.77));
+  }
+}
+
+/* The FX rack rail — liquid-mercury sliders + cosmic preset pills. */
+.glass-fx {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(138, 151, 166, 0.2);
+  border-radius: 14px;
+  background: rgba(11, 16, 38, 0.4);
+  text-align: left;
+}
+.glass-fx-title {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-fx-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+}
+.glass-fx-label {
+  font-size: 11.5px;
+  color: var(--glass-chrome);
+}
+.glass-fx-value {
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--glass-chrome);
+  text-align: right;
+}
+
+.glass-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --fill: 0%;
+}
+.glass-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--glass-signal), var(--glass-aqua)) 0 0 /
+      var(--fill) 100% no-repeat,
+    rgba(138, 151, 166, 0.22);
+}
+.glass-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(138, 151, 166, 0.22);
+}
+.glass-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--glass-signal), var(--glass-aqua));
+}
+.glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(
+    circle at 34% 30%,
+    #f4f8fd 0%,
+    #aeb9c6 38%,
+    #5b6b7b 78%,
+    #1b2430 100%
+  );
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+.glass-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    #f4f8fd 0%,
+    #aeb9c6 38%,
+    #5b6b7b 78%,
+    #1b2430 100%
+  );
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+.glass-slider:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.glass-fx-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.glass-fx-pill {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--glass-chrome);
+  background: transparent;
+  border: 1px solid rgba(138, 151, 166, 0.3);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition:
+    color 130ms,
+    border-color 130ms,
+    background 130ms;
+}
+.glass-fx-pill:hover {
+  color: var(--glass-starlight);
+  border-color: var(--glass-chrome);
+}
+.glass-fx-pill.on {
+  color: var(--glass-void-0);
+  background: linear-gradient(
+    160deg,
+    var(--glass-gold),
+    var(--glass-gold-deep)
+  );
+  border-color: transparent;
+}
+.glass-fx-pill:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+}
+
+.glass-fx-monitor {
+  border-top: 1px solid rgba(138, 151, 166, 0.16);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.glass-fx-monitor-toggle.on {
+  color: var(--glass-void-0);
+  background: linear-gradient(160deg, var(--glass-aqua), #1d9a8b);
+  border-color: transparent;
+}
+.glass-fx-confirm {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--glass-gold);
+}
+.glass-fx-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.glass-fx-notice {
+  margin: 0;
+  font-size: 11px;
+  color: #f8a1a1;
+}
+
+@media (max-width: 480px) {
+  .glass-panel {
+    padding: 26px 18px;
+  }
+}

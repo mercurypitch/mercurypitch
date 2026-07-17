@@ -65,6 +65,19 @@ const MIRROR_PATHS = new Set([
 // so the emitted karaoke-night.html is what actually serves ad clicks).
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 
+// Paths that serve the Glass entry (glass.html). UNLIKE mirror/karaoke these
+// are NOT emitted as alias files: wrangler's `assets.run_worker_first` lists
+// the aliases, so browser navigations reach this worker first and the rewrite
+// below actually serves them. /glass itself is absent from run_worker_first —
+// Cloudflare's html_handling maps it to glass.html at the asset layer. Keep in
+// sync with vite.config.ts (GLASS_PATHS) and wrangler.jsonc.
+const GLASS_PATHS = new Set([
+  '/glass',
+  '/break-glass-with-your-voice',
+  '/high-note-test',
+  '/shatter',
+])
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -183,6 +196,16 @@ export default {
       const karaokeUrl = new URL(request.url)
       karaokeUrl.pathname = '/karaoke.html'
       return env.ASSETS.fetch(new Request(karaokeUrl.toString(), request))
+    }
+
+    // Glass — alias paths serve glass.html content with the URL preserved
+    // (canonical <link> in glass.html points at /glass, so search engines
+    // consolidate). These fire for real navigations because the aliases are
+    // in assets.run_worker_first (wrangler.jsonc) — no byte-copied HTML.
+    if (GLASS_PATHS.has(url.pathname) && method === 'GET') {
+      const glassUrl = new URL(request.url)
+      glassUrl.pathname = '/glass.html'
+      return env.ASSETS.fetch(new Request(glassUrl.toString(), request))
     }
 
     // All other requests (static assets, SPA routes) are served by the assets

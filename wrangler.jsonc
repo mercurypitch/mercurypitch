@@ -30,7 +30,16 @@
     // Serve index.html for non-asset paths (e.g. /exercises/<slug> marketing
     // deep-links) so the SPA shell loads instead of a 404. /api/* is matched
     // in src/worker.ts before the asset fallthrough, so APIs are unaffected.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Glass SEO aliases: invoke the Worker BEFORE the asset layer for these
+    // exact paths so src/worker.ts can serve glass.html content at the alias
+    // URL (no byte-copied HTML files, unlike the mirror/karaoke aliases).
+    // /glass itself is not listed — html_handling maps it to glass.html.
+    "run_worker_first": [
+      "/break-glass-with-your-voice",
+      "/high-note-test",
+      "/shatter"
+    ]
   },
   "compatibility_flags": [
     "nodejs_compat"

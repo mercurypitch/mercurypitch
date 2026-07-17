@@ -2,6 +2,7 @@ import ssl from '@vitejs/plugin-basic-ssl'
 import { copyFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vite'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
@@ -37,11 +38,19 @@ try {
 }
 
 // The Cloudflare worker rewrites the standalone-entry paths (/mirror +
-// aliases, /karaoke-night + alias) to their HTML entries in production; dev
-// and preview servers have no worker, so mirror the rewrites here or the
-// links would land on the SPA shell instead.
+// aliases, /karaoke-night + alias, /glass + aliases) to their HTML entries in
+// production; dev and preview servers have no worker, so mirror the rewrites
+// here or the links would land on the SPA shell instead.
 const MIRROR_PATHS = new Set(['/mirror', '/vocal-range-test', '/tone-deaf-test'])
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
+// Glass aliases are worker-routed in production (wrangler `run_worker_first`
+// + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
+const GLASS_PATHS = new Set([
+  '/glass',
+  '/break-glass-with-your-voice',
+  '/high-note-test',
+  '/shatter',
+])
 
 function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
@@ -60,6 +69,7 @@ function standaloneEntryRewritePlugin() {
         const path = req.url.split('?')[0]
         if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
+        else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
       next()
     })
@@ -80,6 +90,12 @@ function standaloneEntryRewritePlugin() {
 // Cloudflare serves the Voice Mirror for them directly — ad clicks, browser
 // navigations and crawlers alike. base:'/' keeps the copied HTML's absolute
 // asset URLs resolving correctly from any path.
+//
+// Glass takes the newer route instead: its aliases are listed in wrangler's
+// `assets.run_worker_first`, which invokes src/worker.ts BEFORE the asset
+// layer for those exact paths — the worker serves glass.html content at the
+// alias URL. One HTML file, no byte copies. (/glass itself needs neither:
+// Cloudflare's html_handling maps it to glass.html, like /karaoke.)
 function mirrorAliasFilesPlugin() {
   return {
     name: 'mirror-alias-files',
@@ -119,6 +135,9 @@ export default defineConfig({
     isDev ? ssl() : [],
     qrcode(),
     solidPlugin(),
+    // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
+    // vertexFn/fragmentFn closures) — same setup as chaos-master.
+    typegpuPlugin({}),
     standaloneEntryRewritePlugin(),
     mirrorAliasFilesPlugin(),
     removeWasmAssetsPlugin(),
@@ -181,11 +200,18 @@ export default defineConfig({
         index: resolve(__dirname, 'index.html'),
         mirror: resolve(__dirname, 'mirror.html'),
         karaoke: resolve(__dirname, 'karaoke.html'),
+        glass: resolve(__dirname, 'glass.html'),
       },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('onnxruntime')) return undefined
+            // GPU stack rides its own chunk: only the lazily-imported glass
+            // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
+            // vendor chunk must never drag typegpu into first paints, and
+            // vendor must never be dragged in BY the gpu backend.
+            if (id.includes('typegpu') || id.includes('wgpu-matrix'))
+              return 'vendor-gpu'
             // solid-js gets its own chunk so the standalone mirror entry
             // (which uses nothing else from node_modules) doesn't drag the
             // whole app vendor bundle onto mobile 4G.
@@ -199,7 +225,7 @@ export default defineConfig({
           // landing in the 'advanced' chunk once dragged ~2.7 MB of static
           // JS into the mirror's first paint via ConsentBanner.
           if (
-            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+            /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
               id,
             ) ||
             /src\/stores\/notifications-store/.test(id) ||
