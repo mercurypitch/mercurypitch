@@ -286,12 +286,18 @@ export const GlassApp: Component = () => {
     // outlives the context, so results-screen review needs no mic revival.
     if (audioContext === null) return
     try {
-      const buffer = await audioContext.decodeAudioData(await blob.arrayBuffer())
+      const buffer = await audioContext.decodeAudioData(
+        await blob.arrayBuffer(),
+      )
       takeBuffers.set(id, buffer)
       setTakes((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, durationSec: buffer.duration, peaks: computePeaks(buffer) }
+            ? {
+                ...t,
+                durationSec: buffer.duration,
+                peaks: computePeaks(buffer),
+              }
             : t,
         ),
       )
@@ -343,7 +349,9 @@ export const GlassApp: Component = () => {
     setTakeProgress(0)
     const tick = (): void => {
       if (takeSource !== source) return
-      setTakeProgress(Math.min(1, (ctx.currentTime - startedAt) / buffer.duration))
+      setTakeProgress(
+        Math.min(1, (ctx.currentTime - startedAt) / buffer.duration),
+      )
       takeRaf = requestAnimationFrame(tick)
     }
     takeRaf = requestAnimationFrame(tick)
@@ -820,10 +828,7 @@ export const GlassApp: Component = () => {
         const winningBlob =
           recorder === null
             ? null
-            : await Promise.race([
-                recorder.stop(),
-                sleep(400).then(() => null),
-              ])
+            : await Promise.race([recorder.stop(), sleep(400).then(() => null)])
         return {
           frames: f0.takeFrames(),
           shattered: true,
@@ -1270,8 +1275,7 @@ export const GlassApp: Component = () => {
           <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Find your ceiling</h2>
             <p>
-              Slide low to high, like the siren — the glass tunes itself to
-              you.
+              Slide low to high, like the siren — the glass tunes itself to you.
             </p>
             <Show when={calRetry()}>
               <p class="glass-dim">
@@ -1649,9 +1653,9 @@ const TrustInfo: Component = () => {
       </button>
       <Show when={open()}>
         <div class="glass-info-pop" role="note">
-          Private by design: your audio never leaves this device — analysis
-          runs in your browser. Takes live only in this tab and are gone when
-          you leave. Your numbers stay on device.
+          Private by design: your audio never leaves this device — analysis runs
+          in your browser. Takes live only in this tab and are gone when you
+          leave. Your numbers stay on device.
         </div>
       </Show>
     </div>
@@ -1798,15 +1802,13 @@ const MicPanel: Component<{
         </Show>
       </Show>
       <Show when={props.error === null && props.silent && !props.checking}>
-        <p class="glass-error">
-          We're not hearing much from your microphone.
-        </p>
+        <p class="glass-error">We're not hearing much from your microphone.</p>
         <Show
           when={props.devices.length > 1}
           fallback={
             <p class="glass-dim">
-              Close other apps that might be using the mic, check the
-              browser's microphone permission, then test again.
+              Close other apps that might be using the mic, check the browser's
+              microphone permission, then test again.
             </p>
           }
         >

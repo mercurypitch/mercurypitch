@@ -1024,8 +1024,8 @@ export const MirrorApp: Component = () => {
                 ) : (
                   'a default input'
                 )}{' '}
-                — if that's not the mic in front of you, switch it here and
-                test again.
+                — if that's not the mic in front of you, switch it here and test
+                again.
               </p>
               <div class="mirror-micpick">
                 <label class="mirror-micpick-label" for="mirror-mic-select">

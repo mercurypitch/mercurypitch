@@ -927,16 +927,16 @@ body {
   background: var(
     --glass-take-art,
     radial-gradient(
-        120% 90% at 18% 0%,
-        rgba(120, 90, 255, 0.16),
-        transparent 55%
-      ),
-      radial-gradient(
-        130% 100% at 85% 100%,
-        rgba(45, 212, 191, 0.12),
-        transparent 60%
-      ),
-      rgba(11, 16, 38, 0.55)
+      120% 90% at 18% 0%,
+      rgba(120, 90, 255, 0.16),
+      transparent 55%
+    ),
+    radial-gradient(
+      130% 100% at 85% 100%,
+      rgba(45, 212, 191, 0.12),
+      transparent 60%
+    ),
+    rgba(11, 16, 38, 0.55)
   );
   background-size: cover;
   overflow: hidden;

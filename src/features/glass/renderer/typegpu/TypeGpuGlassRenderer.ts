@@ -313,7 +313,11 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
     const dpr = Math.min(DPR_CAP, window.devicePixelRatio || 1)
     // Setting canvas.width clears the surface (a visible flash) — skip
     // observer callbacks that didn't actually change the backing size.
-    if (rect.width === this.width && rect.height === this.height && dpr === this.dpr)
+    if (
+      rect.width === this.width &&
+      rect.height === this.height &&
+      dpr === this.dpr
+    )
       return
     this.dpr = dpr
     this.width = rect.width
