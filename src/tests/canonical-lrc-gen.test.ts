@@ -495,9 +495,9 @@ describe('REQ-UV-033: computeActiveWord with long gaps', () => {
       [150.6, 152.0, 152.37, 152.99],
       160, // 9.4 seconds after line start, but words only span ~2.4s
     )
-    // All 4 words should be fully done (last word ended ~153.79)
+    // All 4 words should be fully done, dwelling lit — nothing in progress
     expect(result.activeUpTo).toBe(3)
-    expect(result.charProgress).toBe(5) // "tears" = 5 chars
+    expect(result.charProgress).toBe(0)
   })
 
   it('does NOT partially highlight all 4 words at elapsed=160 in even-division mode', () => {
