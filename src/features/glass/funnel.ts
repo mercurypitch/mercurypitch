@@ -33,10 +33,12 @@ const CLIENT_ID_KEY = 'mirror.clientId.v1' // one anonymous id per device, share
 const VIEW_SENT_KEY = 'glass.funnel.viewSent.v1'
 
 /** Milestones that are also Google Ads conversion actions.
- *  glass_results_view → glass_complete lands with the campaign build
- *  (plan §11.2 P6) once the conversion action exists in the Ads account —
- *  card_shared / app_open reuse the live cross-funnel actions today. */
+ *  glass_results_view → glass_complete is the campaign goal (Campaign G);
+ *  the conversion action exists in the Ads account (id 7688635413) but stays
+ *  secondary/observed until G launches, so this fires safely while G is paused.
+ *  card_shared / app_open reuse the live cross-funnel actions. */
 const AD_CONVERSION_BY_EVENT = new Map<GlassFunnelEvent, string>([
+  ['glass_results_view', AD_CONVERSIONS.glass_complete],
   ['glass_card_shared', AD_CONVERSIONS.card_shared],
   ['glass_cta_app_click', AD_CONVERSIONS.app_open],
 ])

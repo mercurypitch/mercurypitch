@@ -7,6 +7,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Break glass with your voice.** A new free challenge at [`/glass`](https://mercurypitch.com/glass): sing up to the note your glass rings at, hold it steady, and shatter it. The glass is tuned to the very top of your range, with real fracture physics, live pitch tracking on every word, a record-and-replay loop with cosmic-preset effects (Dry, Starlight, Nebula, Supernova), and a shareable shatter card. Rendered on your GPU (Powered by TypeGPU) with a seamless fallback everywhere else. As always, your audio is analysed on your device and never leaves it.
 - **Karaoke Night on your phone.** A full-screen zen stage: auto-scrolling synced lyrics with an Apple-style word sweep, a bottom bar with scrubber and transport, a floating vocal pill (tap to mute the guide vocals, drag to set their level), and an in-stage song sheet for switching songs or starting playlists. The demo now starts playing on its own once it loads.
 - **Auto word-sync.** One click in the studio's lyrics header times every word automatically from the separated vocal stem — no tapping needed when line-timed lyrics exist. Manual mapping also got smarter: taps compensate for reaction time, and the highlight now fills each word at a natural pace and rests fully lit through held notes.
 - **Playlists in Karaoke Night.** Your saved playlists appear in the side panel — one tap starts the night.
