@@ -778,4 +778,7 @@ see an animation."
   (headless screenshots omit WebGPU surfaces); the no-adapter path fell
   back to Canvas2D and completed the full flow. E2E now uses
   `scripts/verify-glass.mjs` — a getUserMedia-level injected synthetic
-  singer (OS fake-audio devices proved flaky on desktops).
+  singer (OS fake-audio devices proved flaky on desktops). The living
+  implementation log / operating manual lives in maff's dotfiles:
+  `~/.dotfiles/personal/mercurypitch/glass-implementation-log.md`
+  (moved out of the repo by request — update it every phase).
