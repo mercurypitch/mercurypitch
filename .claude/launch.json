@@ -12,6 +12,18 @@
         "vite"
       ],
       "port": 3000
+    },
+    {
+      "name": "app-host",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "cross-env",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite",
+        "--host"
+      ],
+      "port": 3000
     }
   ]
 }
