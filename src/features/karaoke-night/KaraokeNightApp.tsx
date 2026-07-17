@@ -177,6 +177,27 @@ export function KaraokeNightApp() {
             when={!railCollapsed()}
             fallback={
               <div class="kn-rail-icons">
+                {/* Phones collapse to a single hamburger (see the media query);
+                    the icon strip below is the desktop affordance. */}
+                <button
+                  class="kn-rail-burger"
+                  title="Open the panel"
+                  aria-label="Open the panel"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
                 <button
                   class="kn-rail-icon"
                   title="Expand the panel"
@@ -306,6 +327,7 @@ export function KaraokeNightApp() {
                   <KaraokeStageHost
                     song={song}
                     onExit={() => setActiveSong(null)}
+                    onSong={setActiveSong}
                   />
                 </Suspense>
               </div>

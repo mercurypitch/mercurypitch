@@ -13,9 +13,12 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
-import { isPlaylistActive, nextSong } from '@/stores/karaoke-playlist-store'
+import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
+import { getPlaylistsReactive, isPlaylistActive, nextSong, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
 
 interface ParsedLine {
@@ -63,6 +66,9 @@ export interface KaraokeMobileStageProps {
   playlistOverlayActive: () => boolean
   onPlaylistStart: () => void
   onPlaylistSkip: () => void
+
+  /** Stage another library song from the in-stage song sheet. */
+  onPickSession?: (sessionId: string) => void
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -77,6 +83,14 @@ function formatTime(sec: number): string {
 export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   props,
 ) => {
+  // The page behind must not scroll while the stage is up — on phones the
+  // rail would otherwise peek from under the overlay.
+  const prevBodyOverflow = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  onCleanup(() => {
+    document.body.style.overflow = prevBodyOverflow
+  })
+
   // ── Lyrics ────────────────────────────────────────────────────
   const lines = createMemo(() =>
     [...props.parsedLyrics().entries()].sort((a, b) => a[0] - b[0]),
@@ -142,6 +156,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const vocalsOff = (): boolean =>
     props.vocal().muted || props.vocal().volume === 0
 
+  // Collapsed to a small capsule while idle; the level track slides out on
+  // touch and tucks away again shortly after the finger lifts.
+  const [pillExpanded, setPillExpanded] = createSignal(false)
+  let pillCollapseTimer: ReturnType<typeof setTimeout> | undefined
+  const schedulePillCollapse = (): void => {
+    if (pillCollapseTimer) clearTimeout(pillCollapseTimer)
+    pillCollapseTimer = setTimeout(() => setPillExpanded(false), 1400)
+  }
+  onCleanup(() => {
+    if (pillCollapseTimer) clearTimeout(pillCollapseTimer)
+  })
+
+  // Drag range in px — the expanded track height, fixed so the maths stay
+  // stable while the expand animation runs.
+  const PILL_DRAG_RANGE = 70
+
   let pillRef: HTMLButtonElement | undefined
   let pillPointerId: number | null = null
   let pillStartY = 0
@@ -164,6 +194,8 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     pillStartY = e.clientY
     pillStartVolume = vocalsOff() ? 0 : props.vocal().volume
     pillDragged = false
+    setPillExpanded(true)
+    if (pillCollapseTimer) clearTimeout(pillCollapseTimer)
     try {
       pillRef?.setPointerCapture(e.pointerId)
     } catch {
@@ -172,12 +204,14 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   }
 
   const onPillPointerMove = (e: PointerEvent): void => {
-    if (pillPointerId !== e.pointerId || !pillRef) return
+    if (pillPointerId !== e.pointerId) return
     const dy = pillStartY - e.clientY
     if (!pillDragged && Math.abs(dy) < 7) return
     pillDragged = true
-    const range = pillRef.getBoundingClientRect().height
-    const next = Math.max(0, Math.min(1, pillStartVolume + dy / range))
+    const next = Math.max(
+      0,
+      Math.min(1, pillStartVolume + dy / PILL_DRAG_RANGE),
+    )
     props.onVocalVolume(next)
   }
 
@@ -190,6 +224,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       /* capture never took */
     }
     if (!pillDragged) pillTapToggle()
+    schedulePillCollapse()
   }
 
   const pillLevel = (): number => (vocalsOff() ? 0 : props.vocal().volume)
@@ -245,201 +280,267 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const displayTitle = (): string =>
     (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim() || 'Your song'
 
+  // ── In-stage song sheet ───────────────────────────────────────
+  const [sheetOpen, setSheetOpen] = createSignal(false)
+
+  const librarySongs = createMemo(() =>
+    getAllUvrSessionsReactive()
+      .filter(
+        (s) =>
+          s.status === 'completed' &&
+          s.sessionId !== DEMO_SESSION_ID &&
+          (s.outputs !== undefined || s.stemMeta !== undefined),
+      )
+      .sort((a, b) => b.createdAt - a.createdAt),
+  )
+
+  const pickSession = (sessionId: string): void => {
+    setSheetOpen(false)
+    props.onPickSession?.(sessionId)
+  }
+
+  const pickPlaylist = (id: string): void => {
+    setSheetOpen(false)
+    startPlaylist(id)
+  }
+
   return (
-    <div class={styles.stage} data-testid="karaoke-mobile-stage">
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div class={styles.header}>
-        <Show when={props.onBack}>
-          <button
-            class={styles.backBtn}
-            onClick={() => props.onBack?.()}
-            title="Back to Karaoke Night"
-            aria-label="Back"
+    <Portal>
+      <div class={styles.stage} data-testid="karaoke-mobile-stage">
+        {/* ── Header ─────────────────────────────────────────── */}
+        <div class={styles.header}>
+          <Show when={props.onBack}>
+            <button
+              class={styles.backBtn}
+              onClick={() => props.onBack?.()}
+              title="Back to Karaoke Night"
+              aria-label="Back"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+          </Show>
+          <div class={styles.titleWrap}>
+            <p class={styles.title}>{displayTitle()}</p>
+            <Show when={isPlaylistActive() && nextSong()}>
+              <p class={styles.subtitle}>
+                Up next: {nextSong()!.songTitle}
+                <Show when={nextSong()!.singerName}>
+                  {' '}
+                  ({nextSong()!.singerName})
+                </Show>
+              </p>
+            </Show>
+          </div>
+          <Show when={props.onPickSession}>
+            <button
+              class={styles.listBtn}
+              onClick={() => setSheetOpen(true)}
+              title="Songs and playlists"
+              aria-label="Open the song list"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="17"
+                height="17"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M4 6h11M4 12h11M4 18h7" />
+                <path
+                  d="M19 6v8.55A2.5 2.5 0 1 0 20.5 17V9h2.5"
+                  stroke-width="1.8"
+                />
+              </svg>
+            </button>
+          </Show>
+        </div>
+
+        {/* ── Lyrics ─────────────────────────────────────────── */}
+        <div
+          ref={scrollerRef}
+          class={styles.lyrics}
+          onTouchMove={noteUserScroll}
+          onWheel={noteUserScroll}
+        >
+          <Show
+            when={lines().length > 0}
+            fallback={
+              <div class={styles.noLyrics}>
+                <Show
+                  when={!props.lyricsLoading()}
+                  fallback={<p>Finding the lyrics…</p>}
+                >
+                  <p>No synced lyrics for this song yet.</p>
+                  <p class={styles.noLyricsSub}>
+                    The music still plays — sing it your way.
+                  </p>
+                </Show>
+              </div>
+            }
           >
+            <For each={lines()}>
+              {([idx, entry]) => (
+                <p
+                  ref={(el) => lineEls.set(idx, el)}
+                  classList={{
+                    [styles.line]: true,
+                    [styles.current]: idx === props.currentLineIdx(),
+                    [styles.past]: idx < props.currentLineIdx(),
+                  }}
+                  onClick={() => seekToLine(idx)}
+                >
+                  <Show
+                    when={idx === props.currentLineIdx()}
+                    fallback={entry.words.join(' ')}
+                  >
+                    <For each={entry.words}>
+                      {(word, i) => (
+                        <span
+                          classList={{
+                            [styles.word]: true,
+                            [styles.wordSung]: i() <= activeWord().activeUpTo,
+                          }}
+                        >
+                          {word}
+                          {i() < entry.words.length - 1 ? ' ' : ''}
+                        </span>
+                      )}
+                    </For>
+                  </Show>
+                </p>
+              )}
+            </For>
+          </Show>
+        </div>
+
+        {/* ── Sing pill (vocals on/off + level) ──────────────── */}
+        <button
+          ref={pillRef}
+          class={styles.pill}
+          classList={{
+            [styles.pillOff]: vocalsOff(),
+            [styles.pillExpanded]: pillExpanded(),
+          }}
+          onPointerDown={onPillPointerDown}
+          onPointerMove={onPillPointerMove}
+          onPointerUp={onPillPointerUp}
+          onPointerCancel={onPillPointerUp}
+          title={
+            vocalsOff() ? 'Bring the vocals back' : 'Sing it — mute the vocals'
+          }
+          aria-label="Toggle guide vocals (drag to set their level)"
+          aria-pressed={vocalsOff()}
+        >
+          <div class={styles.pillTrack}>
+            <div
+              class={styles.pillFill}
+              style={{ height: `${Math.round(pillLevel() * 100)}%` }}
+            />
+          </div>
+          <div class={styles.pillBase}>
             <svg
               viewBox="0 0 24 24"
-              width="18"
-              height="18"
+              width="17"
+              height="17"
+              aria-hidden="true"
               fill="none"
               stroke="currentColor"
-              stroke-width="2.4"
+              stroke-width="1.9"
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M15 5l-7 7 7 7" />
+              <rect x="9" y="2.5" width="6" height="11" rx="3" />
+              <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+              <path d="M12 17.5V21" />
+              <path
+                d="M19.5 3.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z"
+                fill="currentColor"
+                stroke="none"
+              />
+              <path
+                d="M3.4 15.6l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4z"
+                fill="currentColor"
+                stroke="none"
+              />
             </svg>
-          </button>
-        </Show>
-        <div class={styles.titleWrap}>
-          <p class={styles.title}>{displayTitle()}</p>
-          <Show when={isPlaylistActive() && nextSong()}>
-            <p class={styles.subtitle}>
-              Up next: {nextSong()!.songTitle}
-              <Show when={nextSong()!.singerName}>
-                {' '}
-                ({nextSong()!.singerName})
-              </Show>
-            </p>
-          </Show>
-        </div>
-      </div>
-
-      {/* ── Lyrics ─────────────────────────────────────────── */}
-      <div
-        ref={scrollerRef}
-        class={styles.lyrics}
-        onTouchMove={noteUserScroll}
-        onWheel={noteUserScroll}
-      >
-        <Show
-          when={lines().length > 0}
-          fallback={
-            <div class={styles.noLyrics}>
-              <Show
-                when={!props.lyricsLoading()}
-                fallback={<p>Finding the lyrics…</p>}
-              >
-                <p>No synced lyrics for this song yet.</p>
-                <p class={styles.noLyricsSub}>
-                  The music still plays — sing it your way.
-                </p>
-              </Show>
-            </div>
-          }
-        >
-          <For each={lines()}>
-            {([idx, entry]) => (
-              <p
-                ref={(el) => lineEls.set(idx, el)}
-                classList={{
-                  [styles.line]: true,
-                  [styles.current]: idx === props.currentLineIdx(),
-                  [styles.past]: idx < props.currentLineIdx(),
-                }}
-                onClick={() => seekToLine(idx)}
-              >
-                <Show
-                  when={idx === props.currentLineIdx()}
-                  fallback={entry.words.join(' ')}
-                >
-                  <For each={entry.words}>
-                    {(word, i) => (
-                      <span
-                        classList={{
-                          [styles.word]: true,
-                          [styles.wordSung]: i() <= activeWord().activeUpTo,
-                        }}
-                      >
-                        {word}
-                        {i() < entry.words.length - 1 ? ' ' : ''}
-                      </span>
-                    )}
-                  </For>
-                </Show>
-              </p>
-            )}
-          </For>
-        </Show>
-      </div>
-
-      {/* ── Sing pill (vocals on/off + level) ──────────────── */}
-      <button
-        ref={pillRef}
-        class={styles.pill}
-        classList={{ [styles.pillOff]: vocalsOff() }}
-        onPointerDown={onPillPointerDown}
-        onPointerMove={onPillPointerMove}
-        onPointerUp={onPillPointerUp}
-        onPointerCancel={onPillPointerUp}
-        title={
-          vocalsOff() ? 'Bring the vocals back' : 'Sing it — mute the vocals'
-        }
-        aria-label="Toggle guide vocals (drag to set their level)"
-        aria-pressed={vocalsOff()}
-      >
-        <div class={styles.pillTrack}>
-          <div
-            class={styles.pillFill}
-            style={{ height: `${Math.round(pillLevel() * 100)}%` }}
-          />
-        </div>
-        <div class={styles.pillBase}>
-          <svg
-            viewBox="0 0 24 24"
-            width="17"
-            height="17"
-            aria-hidden="true"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.9"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="9" y="2.5" width="6" height="11" rx="3" />
-            <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
-            <path d="M12 17.5V21" />
-            <path
-              d="M19.5 3.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z"
-              fill="currentColor"
-              stroke="none"
-            />
-            <path
-              d="M3.4 15.6l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4z"
-              fill="currentColor"
-              stroke="none"
-            />
-          </svg>
-        </div>
-      </button>
-
-      {/* ── Bottom bar ─────────────────────────────────────── */}
-      <div class={styles.bottomBar}>
-        <div
-          ref={progressRef}
-          class={styles.progress}
-          onPointerDown={onProgressDown}
-          onPointerMove={onProgressMove}
-          onPointerUp={onProgressUp}
-          onPointerCancel={onProgressUp}
-        >
-          <div class={styles.progressTrack}>
-            <div
-              class={styles.progressFill}
-              style={{ width: `${progressPct()}%` }}
-            />
           </div>
-        </div>
-        <div class={styles.times}>
-          <span>{formatTime(scrub() ?? props.elapsed())}</span>
-          <span>-{formatTime(remaining())}</span>
-        </div>
-        <div class={styles.transport}>
-          <button
-            class={styles.sideBtn}
-            onClick={() => props.onRestart()}
-            title="Restart"
-            aria-label="Restart the song"
+        </button>
+
+        {/* ── Bottom bar ─────────────────────────────────────── */}
+        <div class={styles.bottomBar}>
+          <div
+            ref={progressRef}
+            class={styles.progress}
+            onPointerDown={onProgressDown}
+            onPointerMove={onProgressMove}
+            onPointerUp={onProgressUp}
+            onPointerCancel={onProgressUp}
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="currentColor"
-              aria-hidden="true"
+            <div class={styles.progressTrack}>
+              <div
+                class={styles.progressFill}
+                style={{ width: `${progressPct()}%` }}
+              />
+            </div>
+          </div>
+          <div class={styles.times}>
+            <span>{formatTime(scrub() ?? props.elapsed())}</span>
+            <span>-{formatTime(remaining())}</span>
+          </div>
+          <div class={styles.transport}>
+            <button
+              class={styles.sideBtn}
+              onClick={() => props.onRestart()}
+              title="Restart"
+              aria-label="Restart the song"
             >
-              <path d="M6 6h2v12H6zM18 6l-8.5 6L18 18z" />
-            </svg>
-          </button>
-          <button
-            class={styles.playBtn}
-            onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
-            disabled={props.loading()}
-            title={props.playing() ? 'Pause' : 'Play'}
-            aria-label={props.playing() ? 'Pause' : 'Play'}
-          >
-            <Show
-              when={props.playing()}
-              fallback={
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M6 6h2v12H6zM18 6l-8.5 6L18 18z" />
+              </svg>
+            </button>
+            <button
+              class={styles.playBtn}
+              onClick={() =>
+                props.playing() ? props.onPause() : props.onPlay()
+              }
+              disabled={props.loading()}
+              title={props.playing() ? 'Pause' : 'Play'}
+              aria-label={props.playing() ? 'Pause' : 'Play'}
+            >
+              <Show
+                when={props.playing()}
+                fallback={
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="28"
+                    height="28"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                }
+              >
                 <svg
                   viewBox="0 0 24 24"
                   width="28"
@@ -447,63 +548,121 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                   fill="currentColor"
                   aria-hidden="true"
                 >
-                  <path d="M8 5v14l11-7z" />
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
                 </svg>
-              }
+              </Show>
+            </button>
+            <button
+              class={styles.sideBtn}
+              style={{ visibility: isPlaylistActive() ? 'visible' : 'hidden' }}
+              onClick={() => props.onPlaylistSkip()}
+              title="Next song"
+              aria-label="Next song"
             >
               <svg
                 viewBox="0 0 24 24"
-                width="28"
-                height="28"
+                width="22"
+                height="22"
                 fill="currentColor"
                 aria-hidden="true"
               >
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                <path d="M6 6l8.5 6L6 18zM16 6h2v12h-2z" />
               </svg>
-            </Show>
-          </button>
-          <button
-            class={styles.sideBtn}
-            style={{ visibility: isPlaylistActive() ? 'visible' : 'hidden' }}
-            onClick={() => props.onPlaylistSkip()}
-            title="Next song"
-            aria-label="Next song"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="currentColor"
-              aria-hidden="true"
+            </button>
+          </div>
+        </div>
+
+        {/* ── Load / error states ────────────────────────────── */}
+        <Show when={props.loading()}>
+          <div class={styles.stateOverlay}>
+            <p>Raising the curtain…</p>
+          </div>
+        </Show>
+        <Show when={props.loadError() !== ''}>
+          <div class={styles.stateOverlay}>
+            <p>{props.loadError()}</p>
+          </div>
+        </Show>
+
+        {/* ── Song sheet ─────────────────────────────────────── */}
+        <Show when={sheetOpen()}>
+          <div class={styles.sheetBackdrop} onClick={() => setSheetOpen(false)}>
+            <div
+              class={styles.sheet}
+              role="dialog"
+              aria-label="Songs and playlists"
+              onClick={(e) => e.stopPropagation()}
             >
-              <path d="M6 6l8.5 6L6 18zM16 6h2v12h-2z" />
-            </svg>
-          </button>
-        </div>
+              <div class={styles.sheetHandle} aria-hidden="true" />
+              <Show when={librarySongs().length > 0}>
+                <p class={styles.sheetKicker}>Your library</p>
+                <ul class={styles.sheetList}>
+                  <For each={librarySongs()}>
+                    {(s) => (
+                      <li>
+                        <button
+                          class={styles.sheetRow}
+                          onClick={() => pickSession(s.sessionId)}
+                        >
+                          {s.originalFile?.name ?? s.sessionId}
+                        </button>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+              <Show when={getPlaylistsReactive().length > 0}>
+                <p class={styles.sheetKicker}>Your playlists</p>
+                <ul class={styles.sheetList}>
+                  <For each={getPlaylistsReactive()}>
+                    {(p) => (
+                      <li>
+                        <button
+                          class={styles.sheetRow}
+                          onClick={() => pickPlaylist(p.id)}
+                        >
+                          <svg
+                            class={styles.sheetPlay}
+                            viewBox="0 0 24 24"
+                            width="12"
+                            height="12"
+                            aria-hidden="true"
+                          >
+                            <path fill="currentColor" d="M8 5v14l11-7z" />
+                          </svg>
+                          {p.name}
+                        </button>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+              <Show
+                when={
+                  librarySongs().length === 0 &&
+                  getPlaylistsReactive().length === 0
+                }
+              >
+                <p class={styles.sheetEmpty}>
+                  Nothing else on this device yet — go back to add a song you
+                  own.
+                </p>
+              </Show>
+            </div>
+          </div>
+        </Show>
+
+        {/* ── Playlist chrome (store-driven, self-gating) ────── */}
+        <Show when={props.playlistOverlayActive()}>
+          <KaraokePlaylistOverlay
+            onStart={() => props.onPlaylistStart()}
+            onSkip={() => props.onPlaylistSkip()}
+            durationSec={props.duration}
+            loading={props.loading}
+          />
+        </Show>
+        <KaraokePlaylistSummary />
       </div>
-
-      {/* ── Load / error states ────────────────────────────── */}
-      <Show when={props.loading()}>
-        <div class={styles.stateOverlay}>
-          <p>Raising the curtain…</p>
-        </div>
-      </Show>
-      <Show when={props.loadError() !== ''}>
-        <div class={styles.stateOverlay}>
-          <p>{props.loadError()}</p>
-        </div>
-      </Show>
-
-      {/* ── Playlist chrome (store-driven, self-gating) ────── */}
-      <Show when={props.playlistOverlayActive()}>
-        <KaraokePlaylistOverlay
-          onStart={() => props.onPlaylistStart()}
-          onSkip={() => props.onPlaylistSkip()}
-          durationSec={props.duration}
-          loading={props.loading}
-        />
-      </Show>
-      <KaraokePlaylistSummary />
-    </div>
+    </Portal>
   )
 }
