@@ -452,6 +452,40 @@ body {
   margin-bottom: 8px;
 }
 
+/* Mic input picker (mic panel): switch off the browser's default device. */
+.glass-micpick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin: 10px auto 12px;
+  max-width: 340px;
+}
+.glass-micpick-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.7);
+  color: var(--glass-starlight);
+  font: inherit;
+  font-size: 13px;
+}
+.glass-select:focus-visible {
+  outline: 2px solid rgba(88, 166, 255, 0.6);
+  outline-offset: 1px;
+}
+.glass-mic-hearing {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
 .glass-glide-brief {
   display: flex;
   flex-direction: column;

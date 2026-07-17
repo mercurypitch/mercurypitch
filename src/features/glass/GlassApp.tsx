@@ -16,7 +16,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
 import type { DemoSound } from '@/lib/demo-audio'
@@ -32,7 +32,7 @@ import type { GlassEvent, GlassSessionState } from '@/lib/glass/session'
 import { initialSessionState, reduceSession } from '@/lib/glass/session'
 import { computeTarget } from '@/lib/glass/target'
 import type { MicError } from '@/lib/mic-manager'
-import { micManager } from '@/lib/mic-manager'
+import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
@@ -130,6 +130,13 @@ export const GlassApp: Component = () => {
   const [micError, setMicError] = createSignal<string | null>(null)
   const [micChecking, setMicChecking] = createSignal(false)
   const [micSilent, setMicSilent] = createSignal(false)
+  // Input picker on the mic panel: the browser's default device is often NOT
+  // the mic in front of the singer (headsets, interfaces, webcams) — with
+  // AGC off a wrong device reads ~0 and looks "broken". Labels exist only
+  // after permission, so this populates post-grant.
+  const [micDevices, setMicDevices] = createSignal<MediaDeviceInfo[]>([])
+  const [activeMicId, setActiveMicId] = createSignal('')
+  const [activeMicLabel, setActiveMicLabel] = createSignal('')
   const [calRetry, setCalRetry] = createSignal(false)
   const [fxSettings, setFxSettings] = createSignal<FxSettings>(loadFxSettings())
   const [monitorOn, setMonitorOn] = createSignal(false)
@@ -577,6 +584,51 @@ export const GlassApp: Component = () => {
     }
   }
 
+  /** Refresh the input list + the label of the device actually capturing. */
+  async function refreshMicDevices(): Promise<void> {
+    try {
+      const track = micManager.getStream()?.getAudioTracks()[0]
+      setActiveMicLabel(track?.label ?? '')
+      setActiveMicId(track?.getSettings().deviceId ?? '')
+      setMicDevices(await listAudioInputs())
+    } catch {
+      // Enumeration unavailable — the picker simply doesn't render.
+    }
+  }
+
+  /**
+   * Capture from a different input. The wrong-default-mic fix: preview/new
+   * origins reset the browser's device choice, and with AGC off a distant
+   * or virtual device probes ~0 ("the app cannot hear me").
+   */
+  async function switchMicDevice(deviceId: string): Promise<void> {
+    if (starting || micChecking()) return
+    setMicSilent(false)
+    setMicChecking(true)
+    try {
+      await micManager.setPreferredDevice(deviceId === '' ? null : deviceId)
+      // setPreferredDevice drops the open handle; re-acquire opens the new
+      // device, then the graph + recorder re-wire onto the fresh stream.
+      const stream = await micManager.acquire(MIC_CONSUMER_ID)
+      recorder?.dispose()
+      recorder = createTakeRecorder(stream)
+      await rebuildAudio()
+      await refreshMicDevices()
+      setMicError(null)
+    } catch (err) {
+      const message = (err as MicError | null)?.message
+      setMicError(
+        message !== undefined && message !== ''
+          ? message
+          : 'Could not open that microphone.',
+      )
+      return
+    } finally {
+      setMicChecking(false)
+    }
+    if (!(await probeMic())) setMicSilent(true)
+  }
+
   function beginFlow(): void {
     if (starting || micChecking()) return
     setMicSilent(false)
@@ -615,6 +667,7 @@ export const GlassApp: Component = () => {
       fxAudio.setSettings(fxSettings())
       trackGlass('glass_mic_granted')
       setMicError(null)
+      void refreshMicDevices()
       starting = false
       if (await probeMic()) {
         beginFlow()
@@ -1177,6 +1230,10 @@ export const GlassApp: Component = () => {
             checking={micChecking()}
             silent={micSilent()}
             level={() => f0?.latestLevel() ?? 0}
+            devices={micDevices()}
+            activeId={activeMicId()}
+            activeLabel={activeMicLabel()}
+            onSelectDevice={(id) => void switchMicDevice(id)}
             onRetry={() => void start()}
             onTestAgain={() => void retryMicCheck()}
             onContinueAnyway={() => beginFlow()}
@@ -1559,66 +1616,121 @@ const MicPanel: Component<{
   checking: boolean
   silent: boolean
   level: () => number
+  devices: MediaDeviceInfo[]
+  activeId: string
+  activeLabel: string
+  onSelectDevice: (deviceId: string) => void
   onRetry: () => void
   onTestAgain: () => void
   onContinueAnyway: () => void
   onStartOver: () => void
-}> = (props) => (
-  <section class="glass-panel">
-    <h2>One thing first</h2>
-    <p class="glass-trust">
-      Your audio never leaves this device — we analyze it right here in your
-      browser. Takes are recorded on-device, played back to you, then deleted.
-    </p>
-    <Show when={props.error}>
-      <p class="glass-error">{props.error}</p>
-      <div class="glass-actions">
-        <button class="glass-cta" onClick={() => props.onRetry()}>
-          Try again
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onStartOver()}
+}> = (props) => {
+  // The picker: which input is live + a one-tap switch. The default device
+  // is often a webcam/virtual input that probes ~0 with AGC off.
+  const picker = (): ReturnType<Component> => (
+    <Show when={props.devices.length > 1}>
+      <div class="glass-micpick">
+        <label class="glass-micpick-label" for="glass-mic-select">
+          Microphone
+        </label>
+        <select
+          id="glass-mic-select"
+          class="glass-select"
+          value={props.activeId}
+          onChange={(e) => props.onSelectDevice(e.currentTarget.value)}
         >
-          Back to start
-        </button>
+          <For each={props.devices}>
+            {(device) => (
+              <option value={device.deviceId}>
+                {device.label !== '' ? device.label : 'Microphone'}
+              </option>
+            )}
+          </For>
+        </select>
       </div>
     </Show>
-    <Show when={props.error === null && props.checking}>
-      <p class="glass-dim">Checking your microphone — say "ahh"…</p>
-      <LevelBar level={props.level} />
-    </Show>
-    <Show when={props.error === null && props.silent && !props.checking}>
-      <p class="glass-error">
-        We're not hearing anything from your microphone.
+  )
+  return (
+    <section class="glass-panel">
+      <h2>One thing first</h2>
+      <p class="glass-trust">
+        Your audio never leaves this device — we analyze it right here in your
+        browser. Takes are recorded on-device, played back to you, then
+        deleted.
       </p>
-      <p class="glass-dim">
-        Close other apps that might be using the mic, check the browser's
-        microphone permission, then test again.
-      </p>
-      <div class="glass-actions">
-        <button class="glass-cta" onClick={() => props.onTestAgain()}>
-          Test again
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onContinueAnyway()}
+      <Show when={props.error}>
+        <p class="glass-error">{props.error}</p>
+        <div class="glass-actions">
+          <button class="glass-cta" onClick={() => props.onRetry()}>
+            Try again
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onStartOver()}
+          >
+            Back to start
+          </button>
+        </div>
+      </Show>
+      <Show when={props.error === null && props.checking}>
+        <p class="glass-dim">Checking your microphone — say "ahh"…</p>
+        <LevelBar level={props.level} />
+        <Show when={props.activeLabel !== ''}>
+          <p class="glass-dim glass-mic-hearing">
+            Listening to: {props.activeLabel}
+          </p>
+        </Show>
+      </Show>
+      <Show when={props.error === null && props.silent && !props.checking}>
+        <p class="glass-error">
+          We're not hearing anything from your microphone.
+        </p>
+        <Show
+          when={props.devices.length > 1}
+          fallback={
+            <p class="glass-dim">
+              Close other apps that might be using the mic, check the
+              browser's microphone permission, then test again.
+            </p>
+          }
         >
-          Continue anyway
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onStartOver()}
-        >
-          Back to start
-        </button>
-      </div>
-    </Show>
-    <Show when={props.error === null && !props.checking && !props.silent}>
-      <p class="glass-dim">Waiting for microphone permission…</p>
-    </Show>
-  </section>
-)
+          <p class="glass-dim">
+            The browser picked{' '}
+            {props.activeLabel !== '' ? (
+              <strong>{props.activeLabel}</strong>
+            ) : (
+              'a default input'
+            )}{' '}
+            — if that's not the mic in front of you, switch it here and test
+            again.
+          </p>
+        </Show>
+        {picker()}
+        <LevelBar level={props.level} />
+        <div class="glass-actions">
+          <button class="glass-cta" onClick={() => props.onTestAgain()}>
+            Test again
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onContinueAnyway()}
+          >
+            Continue anyway
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onStartOver()}
+          >
+            Back to start
+          </button>
+        </div>
+      </Show>
+      <Show when={props.error === null && !props.checking && !props.silent}>
+        <p class="glass-dim">Waiting for microphone permission…</p>
+      </Show>
+    </section>
+  )
+}
 
 const ResultsPanel: Component<{
   session: GlassSessionState
