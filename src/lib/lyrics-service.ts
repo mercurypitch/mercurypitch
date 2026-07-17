@@ -547,8 +547,10 @@ export function computeActiveWord(
     // word, capped by a syllable-based estimate. A held note or an in-line
     // rest no longer smears the sweep across the silence: the word fills
     // at a natural pace, then dwells fully lit until the next word starts.
+    // Floored at 150ms so machine-tight word gaps (auto-sync spacing on
+    // fast runs) still render a visible sweep instead of a flash.
     const wordDuration = Math.max(
-      0.01,
+      0.15,
       Math.min(gap, estimateWordDuration(words[wordIdx])),
     )
     const elapsedInWord = elapsedTime - wordStart

@@ -162,8 +162,13 @@
   transform: scale(1.02);
 }
 
+/* No color transition here: the sung/active classes swap between plain
+   color and a background-clipped gradient, and animating `color` across
+   that swap leaves the glyphs transparent (a black flash) for the length
+   of the transition on EVERY word boundary. The gradient sweep itself is
+   the animation — class flips must be instant. */
 .word {
-  transition: color 0.12s ease;
+  transition: none;
 }
 
 .wordSung {
@@ -182,6 +187,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  -webkit-text-fill-color: transparent;
   text-shadow: none;
 }
 
