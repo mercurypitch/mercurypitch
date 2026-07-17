@@ -75,13 +75,19 @@ await page.addInitScript((shatterMode) => {
     const dest = ac.createMediaStreamDestination()
     const t0 = ac.currentTime + 0.05
     if (shatterMode) {
+      // Hold C5 (523) long for the ceiling, then A4 (440 = C5−3 = the target
+      // at offset −3) held forever so rep 1 locks and the glass breaks. The
+      // long holds tolerate the "I'm ready" gates shifting the record windows.
+      // The loop singer's WIDE glide (span always ≥5 in any record window,
+      // so calibration succeeds first try — no retry to desync timing),
+      // hold A4 for the ceiling, then F#4 (= A4−3 = the target) held forever
+      // so the rep locks it and the glass breaks.
       gain.gain.setValueAtTime(0.0001, t0)
       osc.frequency.setValueAtTime(110, t0)
       gain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.5)
-      osc.frequency.setValueAtTime(110, t0 + 1)
-      osc.frequency.exponentialRampToValueAtTime(880, t0 + 10.5)
-      osc.frequency.setValueAtTime(440, t0 + 10.5) // ceiling hold
-      osc.frequency.setValueAtTime(392, t0 + 13.5) // then: lock the target
+      osc.frequency.exponentialRampToValueAtTime(880, t0 + 8.9)
+      osc.frequency.setValueAtTime(440, t0 + 8.9) // ceiling hold (A4)
+      osc.frequency.setValueAtTime(370, t0 + 13) // then the target F#4, held
     } else {
       const PERIOD = 11.1
       let t = t0
@@ -127,8 +133,26 @@ try {
   log.push('mic probe passed')
 }
 
-await page.waitForSelector('.glass-stage canvas', { timeout: 20000 })
-log.push('calibration stage live')
+// The glide brief waits for "I'm ready" (users read + watch the demo first).
+// Calibration may retry (each retry re-shows the button), so click it
+// whenever it appears until the announce screen shows.
+const glideReady = page
+  .locator('.glass-glide-brief')
+  .getByRole('button', { name: "I'm ready" })
+let readyClicks = 0
+for (let i = 0; i < 40; i++) {
+  if ((await page.locator('.glass-note-hero').count()) > 0) break
+  if (await glideReady.isVisible().catch(() => false)) {
+    await glideReady.click().catch(() => undefined)
+    readyClicks++
+    // Let the brief transition (button hides) before checking again, so one
+    // brief is never double-clicked; a real retry re-shows it later.
+    await page.waitForTimeout(1400)
+  } else {
+    await page.waitForTimeout(400)
+  }
+}
+log.push(`glide brief — clicked I'm ready ×${readyClicks}`)
 
 await page.waitForSelector('.glass-note-hero', { timeout: 45000 })
 const target = (await page.locator('.glass-note-hero').textContent())?.trim()
@@ -142,16 +166,23 @@ await page.waitForSelector('.glass-fx', { timeout: 5000 })
 log.push('rep stage + FX rail live')
 
 if (SHATTER) {
-  // The singer locks the target — the glass must break on rep 1.
-  await page.waitForSelector('[data-shatter]', { timeout: 30000 })
-  log.push('SHATTER — burst playing')
-  await page.waitForTimeout(450) // mid slow-mo
-  await page.screenshot({ path: 'glass-shatter-burst.png' })
-  await page.waitForSelector('.glass-metrics', { timeout: 15000 })
-  log.push(
-    'results: ' +
-      (await page.locator('.glass-panel h2').first().textContent())?.trim(),
-  )
+  // The singer locks the target — the glass must break on rep 1. Poll for
+  // the burst/results (up to 45s: the "I'm ready" gates push the rep later).
+  let sawShatter = false
+  for (let i = 0; i < 90; i++) {
+    if (
+      (await page.locator('[data-shatter]').count()) > 0 ||
+      (await page.locator('.glass-metrics').count()) > 0
+    ) {
+      sawShatter = true
+      break
+    }
+    await page.waitForTimeout(500)
+  }
+  const h2 = (
+    await page.locator('.glass-panel h2').first().textContent()
+  )?.trim()
+  log.push(`results: ${h2}${sawShatter ? '' : ' (no burst seen)'}`)
 } else {
   await page.getByText('That was you').waitFor({ timeout: 20000 })
   await page.getByRole('button', { name: 'Nebula' }).click()

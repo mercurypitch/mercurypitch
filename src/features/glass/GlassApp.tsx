@@ -55,6 +55,7 @@ const MIC_CONSUMER_ID = 'glass'
 // mean the capture graph is broken (iOS WebKit) or the mic is OS-muted.
 const SILENCE_RMS = 1e-6
 const CAL_BRIEF_SEC = 3
+const CAL_PREP_SEC = 2
 const REP_BRIEF_SEC = 2
 const GAP_SEC = 1.4
 
@@ -135,6 +136,9 @@ export const GlassApp: Component = () => {
   const [sinceLine, setSinceLine] = createSignal<string | null>(null)
   const [cardFormat, setCardFormat] = createSignal<CardFormat>('square')
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
+  // The glide brief waits on an I'm-ready click so users can read + watch
+  // the demo; false once they commit (then a short prep count-in runs).
+  const [awaitingReady, setAwaitingReady] = createSignal(false)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -172,13 +176,13 @@ export const GlassApp: Component = () => {
   onCleanup(() => {
     cancelled = true
     flowGen++
-    releaseAnnounceGate()
+    releaseReadyGate()
     teardownAudio()
     renderer?.dispose()
     renderer = null
   })
 
-  function releaseAnnounceGate(): void {
+  function releaseReadyGate(): void {
     readyResolve?.()
     readyResolve = null
   }
@@ -252,7 +256,7 @@ export const GlassApp: Component = () => {
   function resetAll(): void {
     teardownAudio()
     flowGen++
-    releaseAnnounceGate()
+    releaseReadyGate()
     starting = false
     physics = initialPhysics()
     stopDemo()
@@ -272,6 +276,7 @@ export const GlassApp: Component = () => {
     setMonitorNotice(null)
     setSinceLine(null)
     setShareStatus(null)
+    setAwaitingReady(false)
     burstSeed = 1
     cardGeneratedSent = false
   }
@@ -653,7 +658,7 @@ export const GlassApp: Component = () => {
     setRemaining(0)
   }
 
-  function announceGate(gen: number): Promise<void> {
+  function readyGate(gen: number): Promise<void> {
     if (cancelled || gen !== flowGen) return Promise.resolve()
     return new Promise<void>((resolve) => {
       readyResolve = resolve
@@ -670,8 +675,17 @@ export const GlassApp: Component = () => {
     // example (decision 18) — hear what to do, don't just read it.
     while (alive() && session().phase === 'calibrate') {
       setSubPhase('brief')
+      setAwaitingReady(true)
       if (audioContext !== null) playDemo(playSirenSweep(audioContext))
-      await countdown(CAL_BRIEF_SEC)
+      // Wait for the singer to read the instruction + watch the glide demo,
+      // then commit with "I'm ready".
+      await readyGate(gen)
+      if (!alive()) return
+      setAwaitingReady(false)
+      // A short breath before the glide records — replay the siren so it's
+      // fresh right as they start.
+      if (audioContext !== null) playDemo(playSirenSweep(audioContext))
+      await countdown(CAL_PREP_SEC)
       if (!alive()) return
       const frames = await recordCalibration(
         GLASS_CONFIG.calibration.glideSeconds,
@@ -706,7 +720,7 @@ export const GlassApp: Component = () => {
     if (audioContext !== null && announced.targetMidi !== null) {
       playDemo(playTargetHum(audioContext, midiToHz(announced.targetMidi)))
     }
-    await announceGate(gen)
+    await readyGate(gen)
     if (!alive()) return
     dispatch({ type: 'announce-done' })
 
@@ -833,7 +847,7 @@ export const GlassApp: Component = () => {
   /** The singer bails mid-loop: orphan the flow, honest results. */
   function endSession(): void {
     flowGen++
-    releaseAnnounceGate()
+    releaseReadyGate()
     teardownAudio()
     dispatch({ type: 'end-session' })
     finishRun()
@@ -972,9 +986,29 @@ export const GlassApp: Component = () => {
               fallback={
                 <div class="glass-glide-brief">
                   <GlideDemo />
-                  <div class="glass-countdown glass-countdown-sm">
-                    {Math.ceil(remaining())}
-                  </div>
+                  <Show
+                    when={awaitingReady()}
+                    fallback={
+                      <div class="glass-countdown glass-countdown-sm">
+                        {Math.ceil(remaining())}
+                      </div>
+                    }
+                  >
+                    <button
+                      class="glass-cta"
+                      ref={(el) => {
+                        requestAnimationFrame(() =>
+                          el.focus({ preventScroll: true }),
+                        )
+                      }}
+                      onClick={() => {
+                        setAwaitingReady(false)
+                        releaseReadyGate()
+                      }}
+                    >
+                      I'm ready
+                    </button>
+                  </Show>
                 </div>
               }
             >
@@ -1018,7 +1052,7 @@ export const GlassApp: Component = () => {
               wins.
             </p>
             <div class="glass-actions">
-              <button class="glass-cta" onClick={() => releaseAnnounceGate()}>
+              <button class="glass-cta" onClick={() => releaseReadyGate()}>
                 I'm ready
               </button>
             </div>
