@@ -1509,6 +1509,9 @@ const Chips: Component<{ live: LiveReadout; rep: number }> = (props) => {
     const value = off()
     if (value === null) return '· · ·'
     if (Math.abs(value) <= GLASS_CONFIG.target.tolCents) return 'locked'
+    // Beyond the pane's visible range a cents number is noise ("−1906¢"
+    // mid-glide) — say where the voice is instead.
+    if (Math.abs(value) > 999) return value < 0 ? 'low' : 'high'
     const rounded = Math.abs(Math.round(value))
     return `${value > 0 ? '+' : '−'}${rounded}¢`
   }

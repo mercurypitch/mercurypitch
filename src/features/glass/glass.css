@@ -51,14 +51,20 @@ body {
 /* The cosmos: a Higgsfield-generated still (liquid-mercury ribbons through
    a resonance ring — public/glass/backdrop-*.webp) under a darkening wash,
    with the procedural nebula gradients as the always-there fallback (a
-   missing image layer simply doesn't paint). */
+   missing image layer simply doesn't paint).
+
+   TWO masters, picked by viewport aspect: the portrait was serving EVERY
+   viewport, so desktop cover-cropped a 768px-wide slice blown up ~3x —
+   soft, and the ring composition destroyed. Landscape screens now get the
+   landscape master (its native composition). */
 .glass-cosmos {
+  --glass-backdrop: url('/glass/backdrop-portrait.webp');
   position: fixed;
   inset: 0;
   pointer-events: none;
   background:
     linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
-    url('/glass/backdrop-portrait.webp') center / cover no-repeat,
+    var(--glass-backdrop) center / cover no-repeat,
     radial-gradient(
       38% 30% at 22% 26%,
       rgba(188, 140, 255, 0.1),
@@ -75,6 +81,11 @@ body {
       transparent 70%
     ),
     linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+}
+@media (min-aspect-ratio: 1/1) {
+  .glass-cosmos {
+    --glass-backdrop: url('/glass/backdrop-landscape.webp');
+  }
 }
 .glass-cosmos::before,
 .glass-cosmos::after {
