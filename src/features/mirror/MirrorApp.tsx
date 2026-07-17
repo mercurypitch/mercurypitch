@@ -13,7 +13,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
-import { micManager } from '@/lib/mic-manager'
+import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { attemptByTake, parseTakeHash, saveAttempt, takeHash, } from '@/lib/mirror/attempts'
 import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
@@ -54,6 +54,11 @@ const MIC_CONSUMER_ID = 'voice-mirror'
 // zeros mean the capture graph itself is broken (the iOS WebKit case) or the
 // mic is muted at the OS level.
 const SILENCE_RMS = 1e-6
+// The flow gate (same fix as Glass): a WRONG device is usually not dead-zero
+// — faint noise sails past the dead-graph check and the flow used to start
+// against an inaudible mic. Below this peak during the say-"ahh" probe, stay
+// on the mic panel and offer the device picker.
+const QUIET_RMS = 0.004
 
 // Deep-link fragment for the cosmic "Sing the Universe" mode. The landing page
 // links straight to /mirror#sing-the-universe, and share cards / the browser
@@ -104,6 +109,13 @@ export const MirrorApp: Component = () => {
   const [micError, setMicError] = createSignal<string | null>(null)
   const [micChecking, setMicChecking] = createSignal(false)
   const [micSilent, setMicSilent] = createSignal(false)
+  // Input picker on the mic panel (same fix as Glass): the browser's default
+  // device is often NOT the mic in front of the singer, and with AGC off a
+  // wrong device probes ~0 and reads as "mic doesn't work". Labels are only
+  // available post-grant.
+  const [micDevices, setMicDevices] = createSignal<MediaDeviceInfo[]>([])
+  const [activeMicId, setActiveMicId] = createSignal('')
+  const [activeMicLabel, setActiveMicLabel] = createSignal('')
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<string | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
@@ -389,16 +401,64 @@ export const MirrorApp: Component = () => {
     if (stream) f0 = createF0Stream(audioContext, stream)
   }
 
-  /** Silence check with one automatic graph rebuild (the iOS WebKit fix). */
+  /** Quiet check with one automatic graph rebuild for dead-zero inputs. */
   async function probeMic(): Promise<boolean> {
     setMicChecking(true)
     try {
-      if ((await probeLevel(900)) > SILENCE_RMS) return true
-      await rebuildAudio()
-      return (await probeLevel(900)) > SILENCE_RMS
+      const level = await probeLevel(900)
+      if (level > QUIET_RMS) return true
+      // Dead zero = broken graph (iOS WebKit) — rebuild before re-probing.
+      // Merely quiet = likely the wrong device; the retry gives the singer
+      // one more beat to speak up before the panel offers the picker.
+      if (level <= SILENCE_RMS) await rebuildAudio()
+      return (await probeLevel(900)) > QUIET_RMS
     } finally {
       setMicChecking(false)
     }
+  }
+
+  /** Refresh the input list + the label of the device actually capturing. */
+  async function refreshMicDevices(): Promise<void> {
+    try {
+      const track = micManager.getStream()?.getAudioTracks()[0]
+      setActiveMicLabel(track?.label ?? '')
+      setActiveMicId(track?.getSettings().deviceId ?? '')
+      setMicDevices(await listAudioInputs())
+    } catch {
+      // Enumeration unavailable — the picker simply doesn't render.
+    }
+  }
+
+  /**
+   * Capture from a different input (the wrong-default-mic fix). The manager
+   * drops its handle on a device change, so re-acquire opens the new device,
+   * then the graph re-wires onto the fresh stream and the probe re-runs.
+   */
+  async function switchMicDevice(deviceId: string): Promise<void> {
+    if (starting || micChecking()) return
+    setMicSilent(false)
+    setMicChecking(true)
+    try {
+      await micManager.setPreferredDevice(deviceId === '' ? null : deviceId)
+      await micManager.acquire(MIC_CONSUMER_ID)
+      await rebuildAudio()
+      await refreshMicDevices()
+      setMicError(null)
+    } catch (err) {
+      const message = (err as MicError | null)?.message
+      setMicError(
+        message !== undefined && message !== ''
+          ? message
+          : 'Could not open that microphone.',
+      )
+      return
+    } finally {
+      setMicChecking(false)
+    }
+    // Same contract as start(): a passing probe continues the flow — without
+    // this the panel fell into its "waiting for permission" fallback.
+    if (await probeMic()) beginFlow()
+    else setMicSilent(true)
   }
 
   function beginFlow(): void {
@@ -444,6 +504,7 @@ export const MirrorApp: Component = () => {
       f0 = createF0Stream(audioContext, stream)
       trackFunnel('mic_granted')
       setMicError(null)
+      void refreshMicDevices()
       starting = false
       if (await probeMic()) {
         beginFlow()
@@ -936,15 +997,57 @@ export const MirrorApp: Component = () => {
           <Show when={micError() === null && micChecking()}>
             <p class="mirror-dim">Checking your microphone — say "ahh"…</p>
             <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
+            <Show when={activeMicLabel() !== ''}>
+              <p class="mirror-dim mirror-mic-hearing">
+                Listening to: {activeMicLabel()}
+              </p>
+            </Show>
           </Show>
           <Show when={micError() === null && micSilent() && !micChecking()}>
             <p class="mirror-error">
-              We're not hearing anything from your microphone.
+              We're not hearing much from your microphone.
             </p>
-            <p class="mirror-dim">
-              Close other apps that might be using the mic, check the microphone
-              permission in your phone's browser settings, then test again.
-            </p>
+            <Show
+              when={micDevices().length > 1}
+              fallback={
+                <p class="mirror-dim">
+                  Close other apps that might be using the mic, check the
+                  microphone permission in your phone's browser settings, then
+                  test again.
+                </p>
+              }
+            >
+              <p class="mirror-dim">
+                The browser picked{' '}
+                {activeMicLabel() !== '' ? (
+                  <strong>{activeMicLabel()}</strong>
+                ) : (
+                  'a default input'
+                )}{' '}
+                — if that's not the mic in front of you, switch it here and test
+                again.
+              </p>
+              <div class="mirror-micpick">
+                <label class="mirror-micpick-label" for="mirror-mic-select">
+                  Microphone
+                </label>
+                <select
+                  id="mirror-mic-select"
+                  class="mirror-select"
+                  value={activeMicId()}
+                  onChange={(e) => void switchMicDevice(e.currentTarget.value)}
+                >
+                  <For each={micDevices()}>
+                    {(device) => (
+                      <option value={device.deviceId}>
+                        {device.label !== '' ? device.label : 'Microphone'}
+                      </option>
+                    )}
+                  </For>
+                </select>
+              </div>
+            </Show>
+            <MicLevelBar level={() => f0?.latestLevel() ?? 0} />
             <div class="mirror-actions">
               <button class="mirror-cta" onClick={() => void retryMicCheck()}>
                 Test again

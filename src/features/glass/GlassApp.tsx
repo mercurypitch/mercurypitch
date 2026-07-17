@@ -16,7 +16,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
 import type { DemoSound } from '@/lib/demo-audio'
@@ -32,7 +32,7 @@ import type { GlassEvent, GlassSessionState } from '@/lib/glass/session'
 import { initialSessionState, reduceSession } from '@/lib/glass/session'
 import { computeTarget } from '@/lib/glass/target'
 import type { MicError } from '@/lib/mic-manager'
-import { micManager } from '@/lib/mic-manager'
+import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
@@ -49,15 +49,22 @@ import type { GlassRenderer } from './renderer/GlassRenderer'
 import { playGlassShatter } from './sfx'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
+import type { GlassTake } from './take-strip'
+import { computePeaks, TakeStrip } from './take-strip'
 
 const MIC_CONSUMER_ID = 'glass'
 // A live mic never reads exactly zero (room noise floors ~1e-3); dead zeros
 // mean the capture graph is broken (iOS WebKit) or the mic is OS-muted.
 const SILENCE_RMS = 1e-6
+// The flow gate. A WRONG device (webcam across the room, a virtual input)
+// is usually not dead-zero — it carries faint noise that sails past the
+// dead-graph check, so the flow used to start against an inaudible mic
+// ("the app cannot hear me" with no explanation). Below this peak level
+// during the say-"ahh" probe, stay on the mic panel and offer the picker.
+const QUIET_RMS = 0.004
 const CAL_BRIEF_SEC = 3
 const CAL_PREP_SEC = 2
 const REP_BRIEF_SEC = 2
-const GAP_SEC = 1.4
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -128,6 +135,13 @@ export const GlassApp: Component = () => {
   const [micError, setMicError] = createSignal<string | null>(null)
   const [micChecking, setMicChecking] = createSignal(false)
   const [micSilent, setMicSilent] = createSignal(false)
+  // Input picker on the mic panel: the browser's default device is often NOT
+  // the mic in front of the singer (headsets, interfaces, webcams) — with
+  // AGC off a wrong device reads ~0 and looks "broken". Labels exist only
+  // after permission, so this populates post-grant.
+  const [micDevices, setMicDevices] = createSignal<MediaDeviceInfo[]>([])
+  const [activeMicId, setActiveMicId] = createSignal('')
+  const [activeMicLabel, setActiveMicLabel] = createSignal('')
   const [calRetry, setCalRetry] = createSignal(false)
   const [fxSettings, setFxSettings] = createSignal<FxSettings>(loadFxSettings())
   const [monitorOn, setMonitorOn] = createSignal(false)
@@ -139,6 +153,10 @@ export const GlassApp: Component = () => {
   // The glide brief waits on an I'm-ready click so users can read + watch
   // the demo; false once they commit (then a short prep count-in runs).
   const [awaitingReady, setAwaitingReady] = createSignal(false)
+  // Reviewable takes (session-only, in-memory — the privacy contract).
+  const [takes, setTakes] = createSignal<GlassTake[]>([])
+  const [playingTakeId, setPlayingTakeId] = createSignal<number | null>(null)
+  const [takeProgress, setTakeProgress] = createSignal(0)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -166,6 +184,15 @@ export const GlassApp: Component = () => {
   // The burst's seed — the share card reproduces THIS run's exact break.
   let burstSeed = 1
   let cardGeneratedSent = false
+  // Take review player — its OWN output context + FX rack so takes stay
+  // playable on the results screen after teardownAudio() closed the mic
+  // context. Decoded PCM (AudioBuffer) is context-independent.
+  let takeIdSeq = 1
+  const takeBuffers = new Map<number, AudioBuffer>()
+  let takeCtx: AudioContext | null = null
+  let takeFx: FxAudio | null = null
+  let takeSource: AudioBufferSourceNode | null = null
+  let takeRaf = 0
 
   const dispatch = (event: GlassEvent): GlassSessionState => {
     const next = reduceSession(session(), event)
@@ -178,8 +205,24 @@ export const GlassApp: Component = () => {
     flowGen++
     releaseReadyGate()
     teardownAudio()
+    disposeTakes()
     renderer?.dispose()
     renderer = null
+  })
+
+  // Any phase/sub-phase transition silences take review — a take must never
+  // bleed into a countdown, a live rep or the auto-replay.
+  let lastPhase: GlassSessionState['phase'] = 'idle'
+  createEffect(() => {
+    const current = session().phase
+    void subPhase()
+    stopTakePlayback()
+    // New screen starts at the top — results/gap otherwise inherit the
+    // scroll of the tall sing screen and open with the pane above the fold.
+    if (current !== lastPhase) {
+      lastPhase = current
+      window.scrollTo({ top: 0 })
+    }
   })
 
   function releaseReadyGate(): void {
@@ -226,6 +269,157 @@ export const GlassApp: Component = () => {
     }
   }
 
+  // ── take review player ──────────────────────────────────────
+
+  /** Register a finished rep's recording and decode its waveform. */
+  async function addTake(
+    rep: number,
+    blob: Blob,
+    shattered: boolean,
+  ): Promise<void> {
+    const id = takeIdSeq++
+    setTakes((prev) => [
+      ...prev,
+      { id, rep, blob, durationSec: 0, peaks: null, shattered },
+    ])
+    // Decode NOW, while the session context is alive — the PCM buffer
+    // outlives the context, so results-screen review needs no mic revival.
+    if (audioContext === null) return
+    try {
+      const buffer = await audioContext.decodeAudioData(
+        await blob.arrayBuffer(),
+      )
+      takeBuffers.set(id, buffer)
+      setTakes((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                durationSec: buffer.duration,
+                peaks: computePeaks(buffer),
+              }
+            : t,
+        ),
+      )
+    } catch {
+      // Decode failed — the card stays (placeholder wave); playback will
+      // retry the decode on tap via the player's own context.
+    }
+  }
+
+  /** The player's output graph, created lazily on the first tap. */
+  function ensureTakeAudio(): { ctx: AudioContext; fx: FxAudio } {
+    if (takeCtx === null || takeCtx.state === 'closed') {
+      takeCtx = new AudioContext()
+      takeFx = createFxRack(takeCtx)
+    }
+    takeFx?.setSettings(fxSettings())
+    void takeCtx.resume().catch(() => undefined)
+    return { ctx: takeCtx, fx: takeFx as FxAudio }
+  }
+
+  function stopTakePlayback(): void {
+    cancelAnimationFrame(takeRaf)
+    const source = takeSource
+    takeSource = null
+    if (source !== null) {
+      try {
+        source.stop()
+      } catch {
+        // Already stopped/never started — fine.
+      }
+      source.disconnect()
+    }
+    setPlayingTakeId(null)
+    setTakeProgress(0)
+  }
+
+  function startTakeSource(id: number, buffer: AudioBuffer): void {
+    const { ctx, fx } = ensureTakeAudio()
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(fx.input)
+    const startedAt = ctx.currentTime
+    source.onended = () => {
+      if (takeSource === source) stopTakePlayback()
+    }
+    source.start()
+    takeSource = source
+    setPlayingTakeId(id)
+    setTakeProgress(0)
+    const tick = (): void => {
+      if (takeSource !== source) return
+      setTakeProgress(
+        Math.min(1, (ctx.currentTime - startedAt) / buffer.duration),
+      )
+      takeRaf = requestAnimationFrame(tick)
+    }
+    takeRaf = requestAnimationFrame(tick)
+  }
+
+  /** Tap a take card: play it through the FX rack, or pause if playing. */
+  function toggleTake(id: number): void {
+    if (playingTakeId() === id) {
+      stopTakePlayback()
+      return
+    }
+    // ONE sound at a time (the overlap rule): a take starting silences the
+    // demo, the live monitor and the rep auto-replay's audio.
+    stopTakePlayback()
+    stopDemo()
+    pauseMonitor()
+    stopPlaybackAudio()
+    const take = takes().find((t) => t.id === id)
+    if (take === undefined) return
+    const cached = takeBuffers.get(id)
+    if (cached !== undefined) {
+      startTakeSource(id, cached)
+      return
+    }
+    // In-session decode failed (or never ran) — retry on this tap.
+    const { ctx } = ensureTakeAudio()
+    void take.blob
+      .arrayBuffer()
+      .then((bytes) => ctx.decodeAudioData(bytes))
+      // playingTakeId() below is a resolution-time guard (don't autoplay if
+      // something else started meanwhile), not a subscription.
+      // eslint-disable-next-line solid/reactivity
+      .then((buffer) => {
+        takeBuffers.set(id, buffer)
+        setTakes((prev) =>
+          prev.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  durationSec: buffer.duration,
+                  peaks: computePeaks(buffer),
+                }
+              : t,
+          ),
+        )
+        if (playingTakeId() === null) startTakeSource(id, buffer)
+      })
+      .catch(() => undefined)
+  }
+
+  /** Drop a take's audio; metrics and the on-device delta are untouched. */
+  function removeTake(id: number): void {
+    if (playingTakeId() === id) stopTakePlayback()
+    takeBuffers.delete(id)
+    setTakes((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  function disposeTakes(): void {
+    stopTakePlayback()
+    takeBuffers.clear()
+    setTakes([])
+    takeIdSeq = 1
+    takeFx?.dispose()
+    takeFx = null
+    void takeCtx?.close().catch(() => undefined)
+    takeCtx = null
+  }
+
   function enableMonitor(): void {
     const stream = micManager.getStream()
     if (audioContext === null || fxAudio === null || stream === null) return
@@ -267,6 +461,7 @@ export const GlassApp: Component = () => {
 
   function resetAll(): void {
     teardownAudio()
+    disposeTakes() // a new session is a new glass — old takes go with it
     flowGen++
     releaseReadyGate()
     starting = false
@@ -338,6 +533,9 @@ export const GlassApp: Component = () => {
   function applyFxSettings(settings: FxSettings): void {
     setFxSettings(settings)
     fxAudio?.setSettings(settings)
+    // The take player mirrors the rack live — sliders stay tweakable while
+    // a take replays (one audio path per the design interview).
+    takeFx?.setSettings(settings)
   }
 
   function commitFxSettings(settings: FxSettings): void {
@@ -394,16 +592,68 @@ export const GlassApp: Component = () => {
     fxAudio.setSettings(fxSettings())
   }
 
-  /** Silence check with one automatic graph rebuild. */
+  /** Quiet check with one automatic graph rebuild for dead-zero inputs. */
   async function probeMic(): Promise<boolean> {
     setMicChecking(true)
     try {
-      if ((await probeLevel(900)) > SILENCE_RMS) return true
-      await rebuildAudio()
-      return (await probeLevel(900)) > SILENCE_RMS
+      const level = await probeLevel(900)
+      if (level > QUIET_RMS) return true
+      // Dead zero = broken graph (iOS WebKit) — rebuild before re-probing.
+      // Merely quiet = likely the wrong device; the retry gives the singer
+      // one more beat to speak up before the panel offers the picker.
+      if (level <= SILENCE_RMS) await rebuildAudio()
+      return (await probeLevel(900)) > QUIET_RMS
     } finally {
       setMicChecking(false)
     }
+  }
+
+  /** Refresh the input list + the label of the device actually capturing. */
+  async function refreshMicDevices(): Promise<void> {
+    try {
+      const track = micManager.getStream()?.getAudioTracks()[0]
+      setActiveMicLabel(track?.label ?? '')
+      setActiveMicId(track?.getSettings().deviceId ?? '')
+      setMicDevices(await listAudioInputs())
+    } catch {
+      // Enumeration unavailable — the picker simply doesn't render.
+    }
+  }
+
+  /**
+   * Capture from a different input. The wrong-default-mic fix: preview/new
+   * origins reset the browser's device choice, and with AGC off a distant
+   * or virtual device probes ~0 ("the app cannot hear me").
+   */
+  async function switchMicDevice(deviceId: string): Promise<void> {
+    if (starting || micChecking()) return
+    setMicSilent(false)
+    setMicChecking(true)
+    try {
+      await micManager.setPreferredDevice(deviceId === '' ? null : deviceId)
+      // setPreferredDevice drops the open handle; re-acquire opens the new
+      // device, then the graph + recorder re-wire onto the fresh stream.
+      const stream = await micManager.acquire(MIC_CONSUMER_ID)
+      recorder?.dispose()
+      recorder = createTakeRecorder(stream)
+      await rebuildAudio()
+      await refreshMicDevices()
+      setMicError(null)
+    } catch (err) {
+      const message = (err as MicError | null)?.message
+      setMicError(
+        message !== undefined && message !== ''
+          ? message
+          : 'Could not open that microphone.',
+      )
+      return
+    } finally {
+      setMicChecking(false)
+    }
+    // Same contract as start(): a passing probe continues the flow — without
+    // this the panel fell into its "waiting for permission" fallback.
+    if (await probeMic()) beginFlow()
+    else setMicSilent(true)
   }
 
   function beginFlow(): void {
@@ -444,6 +694,7 @@ export const GlassApp: Component = () => {
       fxAudio.setSettings(fxSettings())
       trackGlass('glass_mic_granted')
       setMicError(null)
+      void refreshMicDevices()
       starting = false
       if (await probeMic()) {
         beginFlow()
@@ -571,12 +822,18 @@ export const GlassApp: Component = () => {
         }
       }
       if (shatterReady(physics)) {
-        recorder?.discard() // the burst IS the payoff — no playback after it
+        // No playback BEAT after the burst (the burst is the payoff), but
+        // the winning take is kept for the review strip — with the wait
+        // capped so a slow MediaRecorder can never delay the shatter.
+        const winningBlob =
+          recorder === null
+            ? null
+            : await Promise.race([recorder.stop(), sleep(400).then(() => null)])
         return {
           frames: f0.takeFrames(),
           shattered: true,
           peakResonance: peak,
-          takeBlob: null,
+          takeBlob: winningBlob,
         }
       }
       if (left <= 0) break
@@ -785,6 +1042,7 @@ export const GlassApp: Component = () => {
         // (ribbon at the lock) is what fractures.
         renderer?.shatter({ epicness, seed })
         if (audioContext !== null) playGlassShatter(audioContext, epicness)
+        if (take.takeBlob !== null) void addTake(rep, take.takeBlob, true)
         dispatch({ type: 'shattered', metrics })
         trackGlass('glass_shatter', {
           rep,
@@ -807,11 +1065,17 @@ export const GlassApp: Component = () => {
         bestLockMs: Math.round(metrics.bestLockSec * 1000),
         inBandPct: round2(metrics.inBandPct),
       })
+      if (take.takeBlob !== null) void addTake(rep, take.takeBlob, false)
       await playbackPhase(take.frames, take.takeBlob)
       if (!alive()) return
       dispatch({ type: 'playback-done' })
       trackGlass('glass_playback_done')
-      await countdown(GAP_SEC)
+      // Clean pane for the rest screen (drop the frozen playback trail).
+      renderer?.beginTake()
+      // No auto-advance: the singer reviews takes / plays with the room and
+      // commits to the next rep with a tap. This is also the natural stop
+      // for a silent input — no more infinite reps against a dead mic.
+      await readyGate(gen)
       if (!alive()) return
       dispatch({ type: 'gap-done' })
     }
@@ -857,11 +1121,12 @@ export const GlassApp: Component = () => {
       renderer: rendererMetric(),
     })
 
-    // The results screen has no stage; stop the renderer's rAF loop instead
-    // of driving a detached canvas at 60fps until the singer moves on.
-    renderer?.dispose()
-    renderer = null
-    stageHost = null
+    // The results live ON the glass now — the shattered (or cracked-but-
+    // standing) pane stays mounted under the results overlay, so the
+    // renderer is intentionally kept alive here. resetAll()/onCleanup still
+    // dispose it (a new session is a new glass). Clear any frozen ribbon
+    // trail (a no-op for the shard burst — that runs its own state).
+    renderer?.beginTake()
   }
 
   /** The singer bails mid-loop: orphan the flow, honest results. */
@@ -889,6 +1154,20 @@ export const GlassApp: Component = () => {
     }
     return `You're ${Math.abs(Math.round(off))}¢ ${off < 0 ? 'flat' : 'sharp'} — ease ${off < 0 ? 'up' : 'off'}.`
   }
+
+  // The coach feeds off a ~30 Hz loop; throttle the visible text so the
+  // heading never strobes between phrasings at pitch boundaries. Layout
+  // safety is CSS's job (.glass-coach is a fixed-height single line).
+  const [coachLine, setCoachLine] = createSignal('Sing to the glass')
+  let coachChangedAt = 0
+  createEffect(() => {
+    const line = liveCoach()
+    const now = performance.now()
+    if (line !== coachLine() && now - coachChangedAt >= 400) {
+      coachChangedAt = now
+      setCoachLine(line)
+    }
+  })
 
   const targetLabel = (): string => {
     const midi = session().targetMidi
@@ -981,6 +1260,10 @@ export const GlassApp: Component = () => {
             checking={micChecking()}
             silent={micSilent()}
             level={() => f0?.latestLevel() ?? 0}
+            devices={micDevices()}
+            activeId={activeMicId()}
+            activeLabel={activeMicLabel()}
+            onSelectDevice={(id) => void switchMicDevice(id)}
             onRetry={() => void start()}
             onTestAgain={() => void retryMicCheck()}
             onContinueAnyway={() => beginFlow()}
@@ -992,8 +1275,7 @@ export const GlassApp: Component = () => {
           <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Find your ceiling</h2>
             <p>
-              Slide from your lowest comfy note to your highest — like the siren
-              you just heard. The glass listens and tunes itself to you.
+              Slide low to high, like the siren — the glass tunes itself to you.
             </p>
             <Show when={calRetry()}>
               <p class="glass-dim">
@@ -1067,9 +1349,8 @@ export const GlassApp: Component = () => {
             </p>
             <div class="glass-note-hero">{targetLabel()}</div>
             <p>
-              Your {targetLabel()}. Land it, hold it, and pour into it until the
-              glass gives way. Every close call weakens it — persistence always
-              wins.
+              Land it, hold it, pour into it — every close call weakens the
+              glass.
             </p>
             <div class="glass-actions">
               <button class="glass-cta" onClick={() => releaseReadyGate()}>
@@ -1081,16 +1362,17 @@ export const GlassApp: Component = () => {
 
         <Show when={phase() === 'sing'}>
           <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
             <div class="glass-progress">Rep {session().rep}</div>
-            <h2>
-              {subPhase() === 'active' ? liveCoach() : 'Sing to the glass'}
+            <h2 class="glass-coach">
+              {subPhase() === 'active' ? coachLine() : 'Sing to the glass'}
             </h2>
-            <p class="glass-dim">
-              Reach {targetLabel()} and hold it steady.
-              <Show when={session().rep > GLASS_CONFIG.reps.restNudgeAfterReps}>
-                {' '}
-                (Give your voice a rest soon — steadier beats louder.)
-              </Show>
+            {/* One line that SWAPS (never appends) — growing text would
+                reflow the stage below it on phones. */}
+            <p class="glass-dim glass-subline">
+              {session().rep > GLASS_CONFIG.reps.restNudgeAfterReps
+                ? 'Rest your voice a moment — steadier beats louder.'
+                : `Reach ${targetLabel()} and hold it steady.`}
             </p>
             <Show
               when={subPhase() === 'active'}
@@ -1099,21 +1381,34 @@ export const GlassApp: Component = () => {
               }
             >
               <div class="glass-stagegrid">
-                <FxRackPanel
-                  settings={fxSettings()}
-                  onChange={(next) => applyFxSettings(next)}
-                  onCommit={(next) => commitFxSettings(next)}
-                  showMonitor={true}
-                  monitorOn={monitorOn()}
-                  monitorConfirming={monitorConfirming()}
-                  monitorNotice={monitorNotice()}
-                  onMonitorToggle={() => {
-                    if (monitorOn()) disableMonitor()
-                    else setMonitorConfirming(true)
-                  }}
-                  onMonitorConfirm={() => enableMonitor()}
-                  onMonitorCancel={() => setMonitorConfirming(false)}
-                />
+                {/* The left rail: FX card with the takes DIRECTLY beneath
+                    it (one grid child — a separate child would land below
+                    the tall stage's row instead). */}
+                <div class="glass-rail">
+                  <FxRackPanel
+                    settings={fxSettings()}
+                    onChange={(next) => applyFxSettings(next)}
+                    onCommit={(next) => commitFxSettings(next)}
+                    showMonitor={true}
+                    monitorOn={monitorOn()}
+                    monitorConfirming={monitorConfirming()}
+                    monitorNotice={monitorNotice()}
+                    onMonitorToggle={() => {
+                      if (monitorOn()) disableMonitor()
+                      else setMonitorConfirming(true)
+                    }}
+                    onMonitorConfirm={() => enableMonitor()}
+                    onMonitorCancel={() => setMonitorConfirming(false)}
+                  />
+                  <TakeStrip
+                    takes={takes()}
+                    playingId={playingTakeId()}
+                    progress={takeProgress()}
+                    disabled={subPhase() === 'active'}
+                    onToggle={toggleTake}
+                    onRemove={removeTake}
+                  />
+                </div>
                 <div>
                   <div class="glass-stage" ref={(el) => mountStage(el)} />
                   <Chips live={live()} rep={session().rep} />
@@ -1132,25 +1427,35 @@ export const GlassApp: Component = () => {
 
         <Show when={phase() === 'playback'}>
           <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
             <h2>That was you</h2>
-            <p class="glass-dim">
-              Your own take replays in the glass — getting used to your voice IS
-              the exercise. Shape the room with the sliders; your recording
-              stays dry and is deleted after this replay.
+            <p class="glass-dim glass-subline">
+              Getting used to your voice IS the exercise — shape the room with
+              the sliders.
             </p>
             <div class="glass-stagegrid">
-              <FxRackPanel
-                settings={fxSettings()}
-                onChange={(next) => applyFxSettings(next)}
-                onCommit={(next) => commitFxSettings(next)}
-                showMonitor={false}
-                monitorOn={false}
-                monitorConfirming={false}
-                monitorNotice={null}
-                onMonitorToggle={() => undefined}
-                onMonitorConfirm={() => undefined}
-                onMonitorCancel={() => undefined}
-              />
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+              </div>
               <div>
                 <div class="glass-stage" ref={(el) => mountStage(el)} />
                 <TimeBar
@@ -1166,9 +1471,49 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'gap'}>
-          <section class="glass-panel glass-panel-clear">
-            <h2>Again — you know where it lives now</h2>
-            <div class="glass-countdown">{Math.ceil(remaining())}</div>
+          {/* The between-reps rest: NO auto-advance. Review takes, shape the
+              room, study the cracked pane — the next rep starts on a tap. */}
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
+            <h2>You know where it lives now</h2>
+            <p class="glass-dim glass-subline">
+              Replay your takes, tweak the room, go when ready.
+            </p>
+            <div class="glass-stagegrid">
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+              </div>
+              <div>
+                <div class="glass-stage" ref={(el) => mountStage(el)} />
+                <div class="glass-actions">
+                  <button class="glass-cta" onClick={() => releaseReadyGate()}>
+                    Sing again
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="glass-textbtn" onClick={() => endSession()}>
+              End session
+            </button>
           </section>
         </Show>
 
@@ -1184,19 +1529,52 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'results'}>
-          <ResultsPanel
-            session={session()}
-            fatigue={physics.fatigue}
-            sinceLine={sinceLine()}
-            shareStatus={shareStatus()}
-            storyFormat={cardFormat() === 'story'}
-            onToggleFormat={() =>
-              setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
-            }
-            onShare={() => void onShareCard()}
-            onCopy={() => void onCopyCard()}
-            onAgain={() => resetAll()}
-          />
+          {/* Results live ON the glass: the shattered (or cracked) pane
+              stays on stage with the numbers overlaid, the room + takes in
+              the rail — same screen, mirror-style, not a separate page. */}
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
+            <div class="glass-stagegrid">
+              <div class="glass-rail">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={false}
+                  monitorOn={false}
+                  monitorConfirming={false}
+                  monitorNotice={null}
+                  onMonitorToggle={() => undefined}
+                  onMonitorConfirm={() => undefined}
+                  onMonitorCancel={() => undefined}
+                />
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={false}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
+              </div>
+              <div class="glass-stage-wrap">
+                <div class="glass-stage" ref={(el) => mountStage(el)} />
+                <ResultsPanel
+                  session={session()}
+                  fatigue={physics.fatigue}
+                  sinceLine={sinceLine()}
+                  shareStatus={shareStatus()}
+                  storyFormat={cardFormat() === 'story'}
+                  onToggleFormat={() =>
+                    setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
+                  }
+                  onShare={() => void onShareCard()}
+                  onCopy={() => void onCopyCard()}
+                  onAgain={() => resetAll()}
+                />
+              </div>
+            </div>
+          </section>
         </Show>
       </main>
 
@@ -1245,6 +1623,45 @@ const LevelBar: Component<{ level: () => number }> = (props) => {
   )
 }
 
+/** The privacy story, tucked into a corner: an "i" button with a popover.
+ *  The full text lives on the landing; every other screen carries only
+ *  this — so trust stays one tap away without occluding the experience. */
+const TrustInfo: Component = () => {
+  const [open, setOpen] = createSignal(false)
+  return (
+    <div class="glass-info">
+      <button
+        class="glass-info-btn"
+        aria-expanded={open()}
+        aria-label="Privacy: how your audio is handled"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 10.8v5.4" />
+          <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
+        </svg>
+      </button>
+      <Show when={open()}>
+        <div class="glass-info-pop" role="note">
+          Private by design: your audio never leaves this device — analysis runs
+          in your browser. Takes live only in this tab and are gone when you
+          leave. Your numbers stay on device.
+        </div>
+      </Show>
+    </div>
+  )
+}
+
 /** The note currently detected (calibration feedback). */
 const LiveNote: Component<{ latest: () => PitchFrame | null }> = (props) => {
   const [label, setLabel] = createSignal('—')
@@ -1270,6 +1687,9 @@ const Chips: Component<{ live: LiveReadout; rep: number }> = (props) => {
     const value = off()
     if (value === null) return '· · ·'
     if (Math.abs(value) <= GLASS_CONFIG.target.tolCents) return 'locked'
+    // Beyond the pane's visible range a cents number is noise ("−1906¢"
+    // mid-glide) — say where the voice is instead.
+    if (Math.abs(value) > 999) return value < 0 ? 'low' : 'high'
     const rounded = Math.abs(Math.round(value))
     return `${value > 0 ? '+' : '−'}${rounded}¢`
   }
@@ -1317,66 +1737,118 @@ const MicPanel: Component<{
   checking: boolean
   silent: boolean
   level: () => number
+  devices: MediaDeviceInfo[]
+  activeId: string
+  activeLabel: string
+  onSelectDevice: (deviceId: string) => void
   onRetry: () => void
   onTestAgain: () => void
   onContinueAnyway: () => void
   onStartOver: () => void
-}> = (props) => (
-  <section class="glass-panel">
-    <h2>One thing first</h2>
-    <p class="glass-trust">
-      Your audio never leaves this device — we analyze it right here in your
-      browser. Takes are recorded on-device, played back to you, then deleted.
-    </p>
-    <Show when={props.error}>
-      <p class="glass-error">{props.error}</p>
-      <div class="glass-actions">
-        <button class="glass-cta" onClick={() => props.onRetry()}>
-          Try again
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onStartOver()}
+}> = (props) => {
+  // The picker: which input is live + a one-tap switch. The default device
+  // is often a webcam/virtual input that probes ~0 with AGC off.
+  const picker = (): ReturnType<Component> => (
+    <Show when={props.devices.length > 1}>
+      <div class="glass-micpick">
+        <label class="glass-micpick-label" for="glass-mic-select">
+          Microphone
+        </label>
+        <select
+          id="glass-mic-select"
+          class="glass-select"
+          value={props.activeId}
+          onChange={(e) => props.onSelectDevice(e.currentTarget.value)}
         >
-          Back to start
-        </button>
+          <For each={props.devices}>
+            {(device) => (
+              <option value={device.deviceId}>
+                {device.label !== '' ? device.label : 'Microphone'}
+              </option>
+            )}
+          </For>
+        </select>
       </div>
     </Show>
-    <Show when={props.error === null && props.checking}>
-      <p class="glass-dim">Checking your microphone — say "ahh"…</p>
-      <LevelBar level={props.level} />
-    </Show>
-    <Show when={props.error === null && props.silent && !props.checking}>
-      <p class="glass-error">
-        We're not hearing anything from your microphone.
+  )
+  return (
+    <section class="glass-panel">
+      <TrustInfo />
+      <h2>One thing first</h2>
+      <p class="glass-trust">
+        We analyze your voice right here in your browser.
       </p>
-      <p class="glass-dim">
-        Close other apps that might be using the mic, check the browser's
-        microphone permission, then test again.
-      </p>
-      <div class="glass-actions">
-        <button class="glass-cta" onClick={() => props.onTestAgain()}>
-          Test again
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onContinueAnyway()}
+      <Show when={props.error}>
+        <p class="glass-error">{props.error}</p>
+        <div class="glass-actions">
+          <button class="glass-cta" onClick={() => props.onRetry()}>
+            Try again
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onStartOver()}
+          >
+            Back to start
+          </button>
+        </div>
+      </Show>
+      <Show when={props.error === null && props.checking}>
+        <p class="glass-dim">Checking your microphone — say "ahh"…</p>
+        <LevelBar level={props.level} />
+        <Show when={props.activeLabel !== ''}>
+          <p class="glass-dim glass-mic-hearing">
+            Listening to: {props.activeLabel}
+          </p>
+        </Show>
+      </Show>
+      <Show when={props.error === null && props.silent && !props.checking}>
+        <p class="glass-error">We're not hearing much from your microphone.</p>
+        <Show
+          when={props.devices.length > 1}
+          fallback={
+            <p class="glass-dim">
+              Close other apps that might be using the mic, check the browser's
+              microphone permission, then test again.
+            </p>
+          }
         >
-          Continue anyway
-        </button>
-        <button
-          class="glass-cta glass-cta-secondary"
-          onClick={() => props.onStartOver()}
-        >
-          Back to start
-        </button>
-      </div>
-    </Show>
-    <Show when={props.error === null && !props.checking && !props.silent}>
-      <p class="glass-dim">Waiting for microphone permission…</p>
-    </Show>
-  </section>
-)
+          <p class="glass-dim">
+            The browser picked{' '}
+            {props.activeLabel !== '' ? (
+              <strong>{props.activeLabel}</strong>
+            ) : (
+              'a default input'
+            )}{' '}
+            — if that's not the mic in front of you, switch it here and test
+            again.
+          </p>
+        </Show>
+        {picker()}
+        <LevelBar level={props.level} />
+        <div class="glass-actions">
+          <button class="glass-cta" onClick={() => props.onTestAgain()}>
+            Test again
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onContinueAnyway()}
+          >
+            Continue anyway
+          </button>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onStartOver()}
+          >
+            Back to start
+          </button>
+        </div>
+      </Show>
+      <Show when={props.error === null && !props.checking && !props.silent}>
+        <p class="glass-dim">Waiting for microphone permission…</p>
+      </Show>
+    </section>
+  )
+}
 
 const ResultsPanel: Component<{
   session: GlassSessionState
@@ -1418,9 +1890,11 @@ const ResultsPanel: Component<{
       : midiToNoteNameOctave(props.session.targetMidi)
 
   return (
-    <section class="glass-panel">
+    // Overlay ON the pane (a sibling of the stage host — the renderer's
+    // mount() replaceChildren()s the host, so this can't live inside it).
+    <div class="glass-results-overlay glass-panel-clear">
       <p class="glass-dim glass-announce-eyebrow">
-        {shattered() ? '✦ the glass gave way' : 'the glass held — this time'}
+        {shattered() ? 'the glass gave way' : 'the glass held — this time'}
       </p>
       <h2>
         {shattered()
@@ -1442,7 +1916,7 @@ const ResultsPanel: Component<{
           <div class="glass-metric">
             <span class="glass-metric-k">Precision</span>
             <span class="glass-metric-v">
-              ±{Math.round(last()?.meanAbsCents ?? 0)}¢
+              ±{Math.min(999, Math.round(last()?.meanAbsCents ?? 0))}¢
             </span>
           </div>
         </Show>
@@ -1469,8 +1943,7 @@ const ResultsPanel: Component<{
       </Show>
       <Show when={!shattered()}>
         <p class="glass-dim">
-          The damage you did is real — a fresh session starts a fresh glass, but
-          your voice remembers.
+          The damage is real — but a new session starts a fresh glass.
         </p>
       </Show>
       <div class="glass-actions">
@@ -1517,7 +1990,7 @@ const ResultsPanel: Component<{
           Train in MercuryPitch
         </a>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -1583,8 +2056,8 @@ const Landing: Component<{
       How it works
     </button>
     <p class="glass-trust">
-      Your audio never leaves this device. Takes are recorded on-device, played
-      back to you, then deleted.
+      Your audio never leaves this device — takes are recorded on-device and
+      gone when you leave.
     </p>
   </section>
 )

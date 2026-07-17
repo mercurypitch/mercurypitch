@@ -29,6 +29,13 @@ const HEADED = process.env.HEADED === '1'
 // glass actually breaks — verifies the burst + results path. Default mode
 // never enters the band, verifying the rep/playback/FX loop instead.
 const SHATTER = process.env.SHATTER === '1'
+// SHOT_DIR=path: save screenshots at key beats. WebGPU surfaces don't show
+// in headless captures, so shot runs drop the WebGPU flags — the canvas2d
+// fallback draws the same look and IS captured (visual QA of layout/pane).
+const SHOT_DIR = process.env.SHOT_DIR ?? ''
+// SHOT_W/SHOT_H: viewport override for shot runs (desktop QA sizes).
+const VIEW_W = Number(process.env.SHOT_W ?? 1180)
+const VIEW_H = Number(process.env.SHOT_H ?? 860)
 
 function fullChromium() {
   const cache = join(homedir(), '.cache', 'ms-playwright')
@@ -49,14 +56,24 @@ function fullChromium() {
 const browser = await chromium.launch({
   executablePath: fullChromium(),
   headless: !HEADED,
-  args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan'],
+  args:
+    SHOT_DIR !== ''
+      ? [] // no WebGPU → canvas2d fallback, which headless shots capture
+      : ['--enable-unsafe-webgpu', '--enable-features=Vulkan'],
 })
 const ctx = await browser.newContext({
-  viewport: { width: 1180, height: 860 },
+  viewport: { width: VIEW_W, height: VIEW_H },
   ignoreHTTPSErrors: true,
   permissions: ['microphone'],
 })
 const page = await ctx.newPage()
+
+async function shot(name) {
+  if (SHOT_DIR === '') return
+  await page
+    .screenshot({ path: join(SHOT_DIR, `${name}.png`) })
+    .catch(() => undefined)
+}
 
 // The injected singer. Default: loops [0.4s rest → 8.5s exponential glide
 // A2→A5 → 2.2s hold on A4] — the A4 hold sets the ceiling, the target
@@ -164,6 +181,11 @@ await page.waitForSelector('.glass-stagegrid .glass-stage canvas', {
 })
 await page.waitForSelector('.glass-fx', { timeout: 5000 })
 log.push('rep stage + FX rail live')
+if (SHOT_DIR !== '') {
+  // Mid-sing: ribbon dancing in the pane (the glide is ~4s in by now).
+  await page.waitForTimeout(4500)
+  await shot('stage-sing')
+}
 
 if (SHATTER) {
   // The singer locks the target — the glass must break on rep 1. Poll for
@@ -183,10 +205,31 @@ if (SHATTER) {
     await page.locator('.glass-panel h2').first().textContent()
   )?.trim()
   log.push(`results: ${h2}${sawShatter ? '' : ' (no burst seen)'}`)
+  // The winning take lands in the results strip, badged Shattered.
+  await page.waitForTimeout(1000)
+  const shatterCards = await page.locator('.glass-take-card.shattered').count()
+  log.push(`takes strip: ${shatterCards} shattered card(s)`)
 } else {
   await page.getByText('That was you').waitFor({ timeout: 20000 })
   await page.getByRole('button', { name: 'Nebula' }).click()
   log.push('playback + preset change')
+
+  // The rep's take is reviewable in the strip during playback: card exists,
+  // and tapping it swaps the audio to the take player (one sound at a time).
+  await page.waitForSelector('.glass-take-card', { timeout: 5000 })
+  const cards = await page.locator('.glass-take-card').count()
+  await page.locator('.glass-take-main').first().click()
+  await page.waitForTimeout(600)
+  const playing = await page.locator('.glass-take-card.playing').count()
+  log.push(`takes strip: ${cards} card(s), tap-to-play ${playing === 1 ? 'ok' : 'FAILED'}`)
+  await shot('playback-takes')
+
+  // The playback beat ends into the MANUAL gate (no auto-advance): the
+  // "Sing again" tap is what starts the next rep.
+  const singAgain = page.getByRole('button', { name: 'Sing again' })
+  await singAgain.waitFor({ timeout: 15000 })
+  log.push('gap gate: Sing again rendered (no auto-advance)')
+  await shot('gap-gate')
 
   await page.getByRole('button', { name: 'End session' }).click()
   await page.waitForSelector('.glass-metrics', { timeout: 10000 })
@@ -194,6 +237,35 @@ if (SHATTER) {
     'results: ' +
       (await page.locator('.glass-panel h2').first().textContent())?.trim(),
   )
+  if (SHOT_DIR !== '') {
+    // Layout probe: the pane must have real size under the results overlay.
+    const rect = await page.evaluate(() => {
+      const el = document.querySelector('.glass-stage-wrap .glass-stage')
+      const canvas = el?.querySelector('canvas')
+      const r = el?.getBoundingClientRect()
+      if (!r) return 'stage NOT FOUND'
+      if (!canvas) return 'canvas MISSING'
+      const cr = canvas.getBoundingClientRect()
+      // Painted? sample the canvas backing for any non-transparent pixel.
+      let painted = 'unreadable'
+      try {
+        const probe = document.createElement('canvas')
+        probe.width = 40
+        probe.height = 40
+        const ctx = probe.getContext('2d')
+        ctx.drawImage(canvas, 0, 0, 40, 40)
+        const data = ctx.getImageData(0, 0, 40, 40).data
+        let hits = 0
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 8) hits++
+        painted = `${hits}/1600 px`
+      } catch {
+        /* tainted/webgpu */
+      }
+      return `stage ${Math.round(r.width)}x${Math.round(r.height)} @y=${Math.round(r.top)} canvas ${Math.round(cr.width)}x${Math.round(cr.height)} backing ${canvas.width}x${canvas.height} painted ${painted}`
+    })
+    log.push(`results layout: ${rect}`)
+  }
+  await shot('results')
 }
 
 const backend =

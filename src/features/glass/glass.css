@@ -51,14 +51,20 @@ body {
 /* The cosmos: a Higgsfield-generated still (liquid-mercury ribbons through
    a resonance ring — public/glass/backdrop-*.webp) under a darkening wash,
    with the procedural nebula gradients as the always-there fallback (a
-   missing image layer simply doesn't paint). */
+   missing image layer simply doesn't paint).
+
+   TWO masters, picked by viewport aspect: the portrait was serving EVERY
+   viewport, so desktop cover-cropped a 768px-wide slice blown up ~3x —
+   soft, and the ring composition destroyed. Landscape screens now get the
+   landscape master (its native composition). */
 .glass-cosmos {
+  --glass-backdrop: url('/glass/backdrop-portrait.webp');
   position: fixed;
   inset: 0;
   pointer-events: none;
   background:
     linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
-    url('/glass/backdrop-portrait.webp') center / cover no-repeat,
+    var(--glass-backdrop) center / cover no-repeat,
     radial-gradient(
       38% 30% at 22% 26%,
       rgba(188, 140, 255, 0.1),
@@ -75,6 +81,11 @@ body {
       transparent 70%
     ),
     linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+}
+@media (min-aspect-ratio: 1/1) {
+  .glass-cosmos {
+    --glass-backdrop: url('/glass/backdrop-landscape.webp');
+  }
 }
 .glass-cosmos::before,
 .glass-cosmos::after {
@@ -174,6 +185,9 @@ body {
   font-variant-numeric: tabular-nums;
   font-size: 15px;
   color: var(--glass-starlight);
+  /* Widest value ("locked") — chips must not resize as values change. */
+  min-width: 6ch;
+  text-align: center;
 }
 .glass-chip .v.good {
   color: var(--glass-aqua);
@@ -183,6 +197,7 @@ body {
 }
 
 .glass-panel {
+  position: relative; /* anchors the corner trust "i" button */
   width: min(560px, 100%);
   text-align: center;
   padding: 34px 26px;
@@ -400,6 +415,31 @@ body {
   color: var(--glass-chrome);
   font-size: 13px;
 }
+
+/* Live coach heading + subline (sing phase): fixed-height single lines so
+   the ever-changing copy can NEVER wrap or reflow the stage beneath them —
+   wrapping here made the whole page flicker on phones while singing. */
+.glass-coach {
+  height: 1.35em;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.glass-subline {
+  height: 1.5em;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 879px) {
+  /* Phones: scale the coach down so the longest line fits one row. */
+  .glass-panel h2.glass-coach {
+    font-size: clamp(14px, 4.2vw, 20px);
+  }
+}
 .glass-error {
   color: #f8a1a1;
   font-size: 13.5px;
@@ -411,6 +451,82 @@ body {
   text-transform: uppercase;
   color: var(--glass-chrome-dim);
   margin-bottom: 8px;
+}
+
+/* Corner trust "i": the privacy story one tap away, occluding nothing. */
+.glass-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  text-align: right;
+}
+.glass-info-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  background: rgba(11, 16, 38, 0.55);
+  color: var(--glass-chrome-dim);
+  cursor: pointer;
+}
+.glass-info-btn[aria-expanded='true'],
+.glass-info-btn:hover {
+  color: var(--glass-starlight);
+  border-color: rgba(138, 151, 166, 0.55);
+}
+.glass-info-pop {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  width: min(260px, 78vw);
+  padding: 10px 12px;
+  border: 1px solid rgba(138, 151, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--glass-chrome);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(9, 7, 20, 0.5);
+}
+
+/* Mic input picker (mic panel): switch off the browser's default device. */
+.glass-micpick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin: 10px auto 12px;
+  max-width: 340px;
+}
+.glass-micpick-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.7);
+  color: var(--glass-starlight);
+  font: inherit;
+  font-size: 13px;
+}
+.glass-select:focus-visible {
+  outline: 2px solid rgba(88, 166, 255, 0.6);
+  outline-offset: 1px;
+}
+.glass-mic-hearing {
+  margin-top: 8px;
+  font-size: 12px;
 }
 
 .glass-glide-brief {
@@ -719,13 +835,244 @@ body {
   }
 }
 @media (max-width: 879px) {
-  /* Phones: the pane leads, the FX rail tucks below it. */
-  .glass-stagegrid > .glass-fx {
+  /* Phones: the pane leads, the rail (FX + takes) tucks below it. */
+  .glass-stagegrid > .glass-rail {
     order: 2;
   }
   .glass-stage {
     width: min(100%, calc((100dvh - 380px) * 0.77));
   }
+}
+
+/* The left rail: FX card with the takes directly beneath (one grid child —
+   as a separate grid child the takes landed below the TALL stage row). */
+.glass-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The stage + its results overlay share one positioning box. */
+.glass-stage-wrap {
+  position: relative;
+}
+
+/* Results ON the glass: a translucent card over the pane — the shattered
+   (or cracked) glass shows through behind the numbers. */
+.glass-results-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  padding: 18px 16px;
+  overflow-y: auto;
+  text-align: center;
+  background: rgba(9, 7, 20, 0.32);
+  border-radius: 16px;
+  backdrop-filter: blur(1.5px);
+}
+.glass-results-overlay h2 {
+  margin: 2px 0 8px;
+  font-size: clamp(17px, 2.6vw, 22px);
+}
+.glass-results-overlay .glass-metrics {
+  margin: 4px 0 6px;
+}
+.glass-results-overlay .glass-actions {
+  margin-top: 8px;
+}
+@media (max-width: 879px) {
+  /* Phones: an absolute overlay over the small pane trapped a NESTED
+     scroll (hard to tap, fights the page scroll). Flow the results card in
+     the document instead: shattered pane on top, card beneath it, room +
+     takes further down — one natural page scroll. */
+  .glass-results-overlay {
+    position: static;
+    inset: auto;
+    overflow: visible;
+    margin: 10px auto 0;
+    background: rgba(11, 16, 38, 0.55);
+    border: 1px solid rgba(138, 151, 166, 0.2);
+    backdrop-filter: blur(6px);
+  }
+  /* The pane is a backdrop here, not the tap target — keep it shorter so
+     the numbers are one small swipe away, not a full screen down. */
+  .glass-stage-wrap .glass-stage {
+    width: min(100%, calc((100dvh - 520px) * 0.77), 300px);
+  }
+}
+
+/* ── Takes strip: reviewable recorded reps ─────────────────── */
+/* Desktop: a column beneath the FX rail (third stagegrid child lands in
+   column 1 row 2 by auto-placement). Phones: a swipeable horizontal strip
+   below the stage + sliders. Cards layer a faint cosmic backdrop (swap in
+   generated art via --glass-take-art) under the procedural waveform. */
+
+.glass-takes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px auto 4px;
+  max-width: 640px;
+}
+.glass-take-card {
+  position: relative;
+  width: 210px;
+  border: 1px solid rgba(138, 151, 166, 0.22);
+  border-radius: 12px;
+  background: var(
+    --glass-take-art,
+    radial-gradient(
+      120% 90% at 18% 0%,
+      rgba(120, 90, 255, 0.16),
+      transparent 55%
+    ),
+    radial-gradient(
+      130% 100% at 85% 100%,
+      rgba(45, 212, 191, 0.12),
+      transparent 60%
+    ),
+    rgba(11, 16, 38, 0.55)
+  );
+  background-size: cover;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.glass-take-card.playing {
+  border-color: rgba(255, 233, 168, 0.5);
+  box-shadow: 0 0 18px rgba(255, 233, 168, 0.12);
+}
+.glass-take-card.shattered {
+  border-color: rgba(255, 233, 168, 0.35);
+}
+.glass-take-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 26px 9px 10px;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.glass-take-main:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.glass-take-btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  background: rgba(11, 16, 38, 0.6);
+  color: var(--glass-starlight);
+}
+.glass-take-card.playing .glass-take-btn {
+  color: var(--glass-gold);
+  border-color: rgba(255, 233, 168, 0.5);
+}
+.glass-take-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.glass-take-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.glass-take-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--glass-chrome);
+}
+.glass-take-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--glass-gold);
+}
+.glass-take-time {
+  margin-left: auto;
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--glass-chrome-dim);
+}
+.glass-take-wave {
+  display: block;
+  width: 100%;
+  height: 34px;
+}
+.glass-take-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(11, 16, 38, 0.5);
+  color: var(--glass-chrome-dim);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.glass-take-remove:hover {
+  color: #f8a1a1;
+  opacity: 1;
+}
+@media (min-width: 880px) {
+  /* In the rail: fill its width, stack vertically beneath the FX card. */
+  .glass-rail .glass-takes {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .glass-rail .glass-takes .glass-take-card {
+    width: 100%;
+  }
+}
+@media (max-width: 879px) {
+  /* Phones: swipeable strip under the FX card — the pane stays big. */
+  .glass-rail .glass-takes {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    max-width: none;
+    margin: 0;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .glass-rail .glass-takes .glass-take-card {
+    flex: 0 0 200px;
+  }
+}
+.glass-takes-note {
+  margin-top: 2px;
+  font-size: 12px;
 }
 
 /* The FX rack rail — liquid-mercury sliders + cosmic preset pills. */
