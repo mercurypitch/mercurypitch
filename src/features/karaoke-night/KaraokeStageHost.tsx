@@ -46,6 +46,8 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       sessionId,
       title: s.originalFile?.name ?? 'Your song',
       stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
+      // Sheet picks are explicit taps — start singing right away.
+      autoPlay: true,
     })
   }
 
