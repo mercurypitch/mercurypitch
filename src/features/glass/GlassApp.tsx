@@ -1,19 +1,23 @@
 // ============================================================
-// Glass — the shattering voice mirror (P1: full audio core).
+// Glass — the shattering voice mirror (P2: self-voice loop).
 //
 // Landing → mic (trust copy + silence probe) → calibration glide
-// (with one retry) → target announce → the rep loop: sing with
-// live resonance/fatigue physics → contour playback → retry —
-// until the glass shatters (or the singer ends the session).
+// (with one retry, audible siren example) → target announce (the
+// glass hums its note) → the rep loop: sing into the live mirror
+// (Canvas2D renderer behind the GlassRenderer seam; TypeGPU lands
+// in P3) with resonance/fatigue physics → hear your OWN recorded
+// take through the FX rack (echo/reverb/hall, cosmic presets) →
+// retry — until the glass shatters (burst animation lands in P4)
+// or the singer ends the session.
 //
-// P1 renders debug bars, not the mirror visuals (P3/P4); audible
-// take playback and the FX rack land in P2. Audio never leaves
-// the device. Hardened mic handling (probe + rebuild + generation
-// tokens) is ported from the Voice Mirror.
+// Audio never leaves the device: takes are recorded on-device,
+// played back once, then dropped. Hardened mic handling (probe +
+// rebuild + generation tokens) is ported from the Voice Mirror.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
+import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
 import { GLASS_CONFIG } from '@/lib/glass/config'
 import type { RepMetrics } from '@/lib/glass/metrics'
 import { computeRepMetrics } from '@/lib/glass/metrics'
@@ -29,7 +33,14 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { trackGlass } from './funnel'
+import type { FxRack as FxAudio, FxSettings } from './fx-rack'
+import { createFxRack, DEFAULT_FX } from './fx-rack'
+import { FxRackPanel } from './FxRackPanel'
 import { IconGlide, IconReplay, IconShatter } from './icons'
+import type { GlassRenderer } from './renderer/GlassRenderer'
+import { createGlassRenderer } from './renderer/GlassRenderer'
+import type { TakeRecorder } from './take-recorder'
+import { createTakeRecorder } from './take-recorder'
 
 const MIC_CONSUMER_ID = 'glass'
 // A live mic never reads exactly zero (room noise floors ~1e-3); dead zeros
@@ -45,6 +56,40 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
 const round2 = (value: number): number => Math.round(value * 100) / 100
+
+const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
+
+const FX_STORAGE_KEY = 'glass.fx.v1'
+
+function loadFxSettings(): FxSettings {
+  try {
+    const raw = localStorage.getItem(FX_STORAGE_KEY)
+    if (raw === null || raw === '') return { ...DEFAULT_FX }
+    const parsed = JSON.parse(raw) as Partial<FxSettings>
+    const clampFx = (value: unknown): number =>
+      typeof value === 'number' ? Math.max(0, Math.min(100, value)) : 0
+    return {
+      echo: clampFx(parsed.echo),
+      reverb: clampFx(parsed.reverb),
+      hall: clampFx(parsed.hall),
+    }
+  } catch {
+    return { ...DEFAULT_FX }
+  }
+}
+
+function saveFxSettings(settings: FxSettings): void {
+  try {
+    localStorage.setItem(FX_STORAGE_KEY, JSON.stringify(settings))
+  } catch {
+    // No storage — the room just resets next visit.
+  }
+}
+
+// The live monitor's feedback guard: sustained near-clipping input while
+// monitoring means the output is feeding the mic (speakers, not headphones).
+const RUNAWAY_RMS = 0.32
+const RUNAWAY_HOLD_SEC = 0.7
 
 interface LiveReadout {
   offCents: number | null
@@ -72,9 +117,20 @@ export const GlassApp: Component = () => {
   const [micChecking, setMicChecking] = createSignal(false)
   const [micSilent, setMicSilent] = createSignal(false)
   const [calRetry, setCalRetry] = createSignal(false)
+  const [fxSettings, setFxSettings] = createSignal<FxSettings>(loadFxSettings())
+  const [monitorOn, setMonitorOn] = createSignal(false)
+  const [monitorConfirming, setMonitorConfirming] = createSignal(false)
+  const [monitorNotice, setMonitorNotice] = createSignal<string | null>(null)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
+  let recorder: TakeRecorder | null = null
+  let fxAudio: FxAudio | null = null
+  let renderer: GlassRenderer | null = null
+  let playbackSource: AudioBufferSourceNode | null = null
+  let playbackElement: HTMLAudioElement | null = null
+  let playbackUrl: string | null = null
+  let monitorSource: MediaStreamAudioSourceNode | null = null
   let cancelled = false
   // Generation token: each start/reset bumps it, so an orphaned flow dies at
   // its next checkpoint instead of clobbering the new run (mirror pattern).
@@ -95,6 +151,8 @@ export const GlassApp: Component = () => {
     flowGen++
     releaseAnnounceGate()
     teardownAudio()
+    renderer?.dispose()
+    renderer = null
   })
 
   function releaseAnnounceGate(): void {
@@ -102,7 +160,54 @@ export const GlassApp: Component = () => {
     readyResolve = null
   }
 
+  function stopPlaybackAudio(): void {
+    try {
+      playbackSource?.stop()
+    } catch {
+      // Already stopped/never started — fine.
+    }
+    playbackSource?.disconnect()
+    playbackSource = null
+    playbackElement?.pause()
+    playbackElement = null
+    if (playbackUrl !== null) {
+      URL.revokeObjectURL(playbackUrl)
+      playbackUrl = null
+    }
+  }
+
+  function disableMonitor(notice: string | null = null): void {
+    monitorSource?.disconnect()
+    monitorSource = null
+    if (monitorOn()) {
+      setMonitorOn(false)
+      trackGlass('glass_monitor_off')
+    }
+    setMonitorConfirming(false)
+    setMonitorNotice(notice)
+  }
+
+  function enableMonitor(): void {
+    const stream = micManager.getStream()
+    if (audioContext === null || fxAudio === null || stream === null) return
+    monitorSource?.disconnect()
+    // Wet-only: in headphones you already hear yourself — the monitor adds
+    // the room, never a dry copy (and never touches the analysis path).
+    monitorSource = audioContext.createMediaStreamSource(stream)
+    monitorSource.connect(fxAudio.wetInput)
+    setMonitorOn(true)
+    setMonitorConfirming(false)
+    setMonitorNotice(null)
+    trackGlass('glass_monitor_on')
+  }
+
   function teardownAudio(): void {
+    stopPlaybackAudio()
+    disableMonitor()
+    recorder?.dispose()
+    recorder = null
+    fxAudio?.dispose()
+    fxAudio = null
     f0?.dispose()
     f0 = null
     micManager.release(MIC_CONSUMER_ID)
@@ -116,6 +221,9 @@ export const GlassApp: Component = () => {
     releaseAnnounceGate()
     starting = false
     physics = initialPhysics()
+    // A new session is a NEW glass — fresh pane, no inherited cracks.
+    renderer?.dispose()
+    renderer = null
     setSession(initialSessionState())
     setPreviewOpen(false)
     setSubPhase('brief')
@@ -125,6 +233,28 @@ export const GlassApp: Component = () => {
     setMicChecking(false)
     setMicSilent(false)
     setCalRetry(false)
+    setMonitorNotice(null)
+  }
+
+  /** Mount point shared by the calibrate/sing/playback stages — the renderer
+   *  survives phase changes (cracks persist per glass) and moves its canvas. */
+  function mountStage(host: HTMLElement): void {
+    renderer ??= createGlassRenderer()
+    renderer.mount(host)
+  }
+
+  function applyFxSettings(settings: FxSettings): void {
+    setFxSettings(settings)
+    fxAudio?.setSettings(settings)
+  }
+
+  function commitFxSettings(settings: FxSettings): void {
+    saveFxSettings(settings)
+    trackGlass('glass_fx_change', {
+      echo: settings.echo,
+      reverb: settings.reverb,
+      hall: settings.hall,
+    })
   }
 
   /** Countdown driving `remaining`; aborts when the flow generation moves. */
@@ -156,6 +286,10 @@ export const GlassApp: Component = () => {
    */
   async function rebuildAudio(): Promise<void> {
     const stream = micManager.getStream()
+    stopPlaybackAudio()
+    disableMonitor()
+    fxAudio?.dispose()
+    fxAudio = null
     f0?.dispose()
     f0 = null
     await audioContext?.close().catch(() => undefined)
@@ -164,6 +298,8 @@ export const GlassApp: Component = () => {
       await audioContext.resume().catch(() => undefined)
     }
     if (stream) f0 = createF0Stream(audioContext, stream)
+    fxAudio = createFxRack(audioContext)
+    fxAudio.setSettings(fxSettings())
   }
 
   /** Silence check with one automatic graph rebuild. */
@@ -206,6 +342,11 @@ export const GlassApp: Component = () => {
       if (audioContext.state === 'suspended') await audioContext.resume()
       const stream = await micManager.acquire(MIC_CONSUMER_ID)
       f0 = createF0Stream(audioContext, stream)
+      // On-device take recording (progressive enhancement, plan §8) and the
+      // FX rack the playback + monitor route through.
+      recorder = createTakeRecorder(stream)
+      fxAudio = createFxRack(audioContext)
+      fxAudio.setSettings(fxSettings())
       trackGlass('glass_mic_granted')
       setMicError(null)
       starting = false
@@ -230,13 +371,34 @@ export const GlassApp: Component = () => {
     }
   }
 
-  /** Plain timed take (calibration): frames only, no physics. */
-  async function recordPlain(seconds: number): Promise<PitchFrame[]> {
+  /** Calibration take: frames only, no physics — the mirror wakes up and
+   *  dances to whatever is sung (no target yet). */
+  async function recordCalibration(seconds: number): Promise<PitchFrame[]> {
     if (!f0) return []
     const gen = flowGen
     setSubPhase('active')
     f0.startTask()
-    await countdown(seconds)
+    renderer?.beginTake()
+    const start = performance.now()
+    while (!cancelled && gen === flowGen) {
+      const elapsed = (performance.now() - start) / 1000
+      const left = seconds - elapsed
+      setRemaining(Math.max(0, left))
+      const frame = f0.latest()
+      const voiced = frame !== null && frame.f0 > 0 && frame.conf >= CONF_MIN
+      renderer?.update({
+        mode: 'calibrate',
+        offCents: voiced ? hzToCents(frame.f0) : null,
+        level: f0.latestLevel(),
+        resonance: 0,
+        fatigue: physics.fatigue,
+        crackStep: physics.crackStep,
+        targetLabel: '',
+      })
+      if (left <= 0) break
+      await sleep(30)
+    }
+    setRemaining(0)
     if (cancelled || gen !== flowGen) return []
     return f0?.takeFrames() ?? []
   }
@@ -245,6 +407,8 @@ export const GlassApp: Component = () => {
     frames: PitchFrame[]
     shattered: boolean
     peakResonance: number
+    /** The rep's recorded voice (null: unsupported/failed/shattered). */
+    takeBlob: Blob | null
   }
 
   /**
@@ -255,13 +419,16 @@ export const GlassApp: Component = () => {
   async function recordRep(seconds: number): Promise<RepResult> {
     const target = session().targetMidi
     if (!f0 || target === null)
-      return { frames: [], shattered: false, peakResonance: 0 }
+      return { frames: [], shattered: false, peakResonance: 0, takeBlob: null }
     const gen = flowGen
     setSubPhase('active')
     f0.startTask()
+    recorder?.start()
+    renderer?.beginTake()
     const start = performance.now()
     let lastTick = start
     let peak = 0
+    let runawaySec = 0
     while (!cancelled && gen === flowGen) {
       const now = performance.now()
       const elapsed = (now - start) / 1000
@@ -276,11 +443,8 @@ export const GlassApp: Component = () => {
         frame.conf >= CONF_MIN &&
         elapsed > 0.1
       const offCents = voiced ? hzToCents(frame.f0) - target * 100 : null
-      physics = tickPhysics(physics, {
-        offCents,
-        level: f0.latestLevel(),
-        dt,
-      })
+      const level = f0.latestLevel()
+      physics = tickPhysics(physics, { offCents, level, dt })
       peak = Math.max(peak, physics.resonance)
       setLive({
         offCents,
@@ -288,31 +452,99 @@ export const GlassApp: Component = () => {
         fatigue: physics.fatigue,
         lockRun: physics.lockRun,
       })
+      renderer?.update({
+        mode: 'live',
+        offCents,
+        level,
+        resonance: physics.resonance,
+        fatigue: physics.fatigue,
+        crackStep: physics.crackStep,
+        targetLabel: targetLabel(),
+      })
+      // Feedback guard: sustained near-clipping input while monitoring means
+      // speakers are looping into the mic — kill the monitor and say why.
+      if (monitorOn()) {
+        runawaySec = level > RUNAWAY_RMS ? runawaySec + dt : 0
+        if (runawaySec > RUNAWAY_HOLD_SEC) {
+          disableMonitor(
+            'That was starting to feed back, so live monitoring turned itself off. Headphones fix it.',
+          )
+        }
+      }
       if (shatterReady(physics)) {
-        return { frames: f0.takeFrames(), shattered: true, peakResonance: peak }
+        recorder?.discard() // the burst IS the payoff — no playback after it
+        return {
+          frames: f0.takeFrames(),
+          shattered: true,
+          peakResonance: peak,
+          takeBlob: null,
+        }
       }
       if (left <= 0) break
       await sleep(30)
     }
     if (cancelled || gen !== flowGen) {
-      return { frames: [], shattered: false, peakResonance: peak }
+      recorder?.discard()
+      return {
+        frames: [],
+        shattered: false,
+        peakResonance: peak,
+        takeBlob: null,
+      }
     }
-    return {
-      frames: f0?.takeFrames() ?? [],
-      shattered: false,
-      peakResonance: peak,
-    }
+    const frames = f0?.takeFrames() ?? []
+    const takeBlob = (await recorder?.stop()) ?? null
+    return { frames, shattered: false, peakResonance: peak, takeBlob }
   }
 
-  /** Contour replay of the take — the readout re-dances to the recorded
-   *  frames. (P2 adds the actual recorded-voice audio + FX rack here.) */
-  async function playbackPhase(frames: PitchFrame[]): Promise<void> {
+  /**
+   * The listen-back beat: the singer's REAL recorded voice plays through the
+   * FX rack (echo/reverb/hall — the recorded blob itself stays dry) while
+   * the mirror re-dances to the recorded frames in gold. Falls back to the
+   * silent contour replay when recording is unsupported or decode fails.
+   */
+  async function playbackPhase(
+    frames: PitchFrame[],
+    takeBlob: Blob | null,
+  ): Promise<void> {
     const target = session().targetMidi ?? 0
     const gen = flowGen
     const duration = Math.min(
       frames.length > 0 ? frames[frames.length - 1].t : 0,
       GLASS_CONFIG.reps.playbackMaxSeconds,
     )
+
+    // Start the voice — decode path first (sample-accurate, FX-routed),
+    // <audio> element through the rack as the Safari-webm fallback.
+    stopPlaybackAudio()
+    if (takeBlob !== null && audioContext !== null && fxAudio !== null) {
+      try {
+        const buffer = await audioContext.decodeAudioData(
+          await takeBlob.arrayBuffer(),
+        )
+        if (cancelled || gen !== flowGen) return
+        const source = audioContext.createBufferSource()
+        source.buffer = buffer
+        source.connect(fxAudio.input)
+        source.start(0, 0, duration)
+        playbackSource = source
+        console.info('[glass] take playback', `${duration.toFixed(1)}s`)
+      } catch {
+        try {
+          playbackUrl = URL.createObjectURL(takeBlob)
+          playbackElement = new Audio(playbackUrl)
+          const elementSource =
+            audioContext.createMediaElementSource(playbackElement)
+          elementSource.connect(fxAudio.input)
+          void playbackElement.play().catch(() => undefined)
+          console.info('[glass] take playback (element fallback)')
+        } catch {
+          stopPlaybackAudio() // silent contour replay only
+        }
+      }
+    }
+
+    renderer?.beginTake()
     const start = performance.now()
     let index = 0
     while (!cancelled && gen === flowGen) {
@@ -323,12 +555,20 @@ export const GlassApp: Component = () => {
       const frame = frames[index]
       const voiced =
         frame !== undefined && frame.f0 > 0 && frame.conf >= CONF_MIN
-      setLive((prev) => ({
-        ...prev,
-        offCents: voiced ? hzToCents(frame.f0) - target * 100 : null,
-      }))
+      const offCents = voiced ? hzToCents(frame.f0) - target * 100 : null
+      setLive((prev) => ({ ...prev, offCents }))
+      renderer?.update({
+        mode: 'playback',
+        offCents,
+        level: frame?.rms ?? 0,
+        resonance: 0,
+        fatigue: physics.fatigue,
+        crackStep: physics.crackStep,
+        targetLabel: targetLabel(),
+      })
       await sleep(30)
     }
+    stopPlaybackAudio() // the blob is dropped with its take — never persisted
     setRemaining(0)
   }
 
@@ -345,12 +585,16 @@ export const GlassApp: Component = () => {
     physics = initialPhysics()
     setLive(IDLE_READOUT)
 
-    // Calibration, with one reducer-driven retry.
+    // Calibration, with one reducer-driven retry. The brief PLAYS the siren
+    // example (decision 18) — hear what to do, don't just read it.
     while (alive() && session().phase === 'calibrate') {
       setSubPhase('brief')
+      if (audioContext !== null) void playSirenSweep(audioContext)
       await countdown(CAL_BRIEF_SEC)
       if (!alive()) return
-      const frames = await recordPlain(GLASS_CONFIG.calibration.glideSeconds)
+      const frames = await recordCalibration(
+        GLASS_CONFIG.calibration.glideSeconds,
+      )
       if (!alive()) return
       const cal = computeTarget(frames)
       const next = dispatch({
@@ -375,7 +619,11 @@ export const GlassApp: Component = () => {
       usedFallback: announced.usedFallback ? 1 : 0,
     })
 
-    // "This glass rings at G4 — your G4." Waits for the I'm-ready tap.
+    // "This glass rings at G4 — your G4." The pane HUMS its note while the
+    // announce shows it; waits for the I'm-ready tap.
+    if (audioContext !== null && announced.targetMidi !== null) {
+      void playTargetHum(audioContext, midiToHz(announced.targetMidi))
+    }
     await announceGate(gen)
     if (!alive()) return
     dispatch({ type: 'announce-done' })
@@ -385,6 +633,14 @@ export const GlassApp: Component = () => {
       const rep = session().rep
       physics = startRep(physics)
       setSubPhase('brief')
+      // Before the first rep: an audible sketch of the win — wander, settle
+      // on the target, bloom (decision 18).
+      if (rep === 1 && audioContext !== null && session().targetMidi !== null) {
+        void playApproachAndLock(
+          audioContext,
+          midiToHz(session().targetMidi ?? 69),
+        )
+      }
       await countdown(rep === 1 ? CAL_BRIEF_SEC : REP_BRIEF_SEC)
       if (!alive()) return
       const take = await recordRep(GLASS_CONFIG.reps.singSeconds)
@@ -415,7 +671,7 @@ export const GlassApp: Component = () => {
         bestLockMs: Math.round(metrics.bestLockSec * 1000),
         inBandPct: round2(metrics.inBandPct),
       })
-      await playbackPhase(take.frames)
+      await playbackPhase(take.frames, take.takeBlob)
       if (!alive()) return
       dispatch({ type: 'playback-done' })
       trackGlass('glass_playback_done')
@@ -494,11 +750,11 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'calibrate'}>
-          <section class="glass-panel">
+          <section class="glass-panel glass-panel-wide">
             <h2>Find your ceiling</h2>
             <p>
-              Slide from your lowest comfy note to your highest — like a siren.
-              The glass listens and tunes itself to you.
+              Slide from your lowest comfy note to your highest — like the siren
+              you just heard. The glass listens and tunes itself to you.
             </p>
             <Show when={calRetry()}>
               <p class="glass-dim">
@@ -512,6 +768,7 @@ export const GlassApp: Component = () => {
                 <div class="glass-countdown">{Math.ceil(remaining())}</div>
               }
             >
+              <div class="glass-stage" ref={(el) => mountStage(el)} />
               <LiveNote latest={() => f0?.latest() ?? null} />
               <LevelBar level={() => f0?.latestLevel() ?? 0} />
               <TimeBar
@@ -559,7 +816,7 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'sing'}>
-          <section class="glass-panel">
+          <section class="glass-panel glass-panel-wide">
             <div class="glass-progress">Rep {session().rep}</div>
             <h2>Sing to the glass</h2>
             <p>
@@ -577,12 +834,32 @@ export const GlassApp: Component = () => {
                 <div class="glass-countdown">{Math.ceil(remaining())}</div>
               }
             >
-              <OffsetReadout offCents={live().offCents} />
-              <Bars live={live()} />
-              <TimeBar
-                remaining={remaining()}
-                total={GLASS_CONFIG.reps.singSeconds}
-              />
+              <div class="glass-stagegrid">
+                <FxRackPanel
+                  settings={fxSettings()}
+                  onChange={(next) => applyFxSettings(next)}
+                  onCommit={(next) => commitFxSettings(next)}
+                  showMonitor={true}
+                  monitorOn={monitorOn()}
+                  monitorConfirming={monitorConfirming()}
+                  monitorNotice={monitorNotice()}
+                  onMonitorToggle={() => {
+                    if (monitorOn()) disableMonitor()
+                    else setMonitorConfirming(true)
+                  }}
+                  onMonitorConfirm={() => enableMonitor()}
+                  onMonitorCancel={() => setMonitorConfirming(false)}
+                />
+                <div>
+                  <div class="glass-stage" ref={(el) => mountStage(el)} />
+                  <OffsetReadout offCents={live().offCents} />
+                  <Bars live={live()} />
+                  <TimeBar
+                    remaining={remaining()}
+                    total={GLASS_CONFIG.reps.singSeconds}
+                  />
+                </div>
+              </div>
             </Show>
             <button class="glass-textbtn" onClick={() => endSession()}>
               End session
@@ -591,18 +868,34 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'playback'}>
-          <section class="glass-panel">
+          <section class="glass-panel glass-panel-wide">
             <h2>That was you</h2>
             <p class="glass-dim">
-              Your take replays in the glass — getting used to your own voice IS
-              the exercise. (Audible playback and the FX rack land with the next
-              phase.)
+              Your own take replays in the glass — getting used to your voice IS
+              the exercise. Shape the room with the sliders; your recording
+              stays dry and is deleted after this replay.
             </p>
-            <OffsetReadout offCents={live().offCents} />
-            <TimeBar
-              remaining={remaining()}
-              total={GLASS_CONFIG.reps.playbackMaxSeconds}
-            />
+            <div class="glass-stagegrid">
+              <FxRackPanel
+                settings={fxSettings()}
+                onChange={(next) => applyFxSettings(next)}
+                onCommit={(next) => commitFxSettings(next)}
+                showMonitor={false}
+                monitorOn={false}
+                monitorConfirming={false}
+                monitorNotice={null}
+                onMonitorToggle={() => undefined}
+                onMonitorConfirm={() => undefined}
+                onMonitorCancel={() => undefined}
+              />
+              <div>
+                <div class="glass-stage" ref={(el) => mountStage(el)} />
+                <TimeBar
+                  remaining={remaining()}
+                  total={GLASS_CONFIG.reps.playbackMaxSeconds}
+                />
+              </div>
+            </div>
             <button class="glass-textbtn" onClick={() => endSession()}>
               End session
             </button>

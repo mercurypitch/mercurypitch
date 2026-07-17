@@ -729,3 +729,33 @@ see an animation."
   fake mic (full-binary Chromium + `--use-file-for-fake-audio-capture`;
   the Playwright headless SHELL has no getUserMedia — remember this for
   e2e). Playback is contour-only until P2 adds the recorded voice + FX.
+- **P2 — DONE (branch `feat/glass-campaign`).** The self-voice loop, live
+  mirror and FX rack:
+  - `take-recorder.ts` — MediaRecorder over the shared mic stream
+    (mimeType chain webm/opus → mp4 → webm), in-memory only, discard on
+    shatter/reset; playback decodes to an AudioBufferSourceNode routed
+    through the FX rack, `<audio>`-element fallback for undecodable webm;
+    the blob is dropped when the replay ends.
+  - `fx-rack.ts` + `FxRackPanel.tsx` — dry + three parallel sends (echo
+    feedback-delay w/ damped loop, generated-IR reverb 1.2 s, darker hall
+    3.4 s), cosmic presets `Dry · Starlight · Nebula · Supernova`,
+    mercury-thumb sliders docked left of the stage (stacked on mobile),
+    settings persisted (`glass.fx.v1`); live monitor is wet-only,
+    OFF by default, gated by an explicit headphones confirm, and a
+    runaway-RMS detector kills it with an explanation. Funnel:
+    `glass_fx_change`, `glass_monitor_on/off`.
+  - `src/lib/demo-audio.ts` (decision 18) — playSirenSweep (calibration
+    brief), playTargetHum (announce), playApproachAndLock (before rep 1),
+    playHoldTone (for the mirror back-port later).
+  - `renderer/GlassRenderer.ts` seam + `canvas2d/CanvasGlassRenderer.ts` —
+    the prototype pane ported: chrome bevel, live ribbon (blue→aqua,
+    violet fringe with resonance), gold target etch + band, resonance
+    ripples + perimeter meter, permanent cracks at physics thresholds,
+    specular sweep; gold ribbon in playback; `prefers-reduced-motion`
+    honored; one renderer instance migrates across calibrate/sing/
+    playback stages (cracks persist per glass). TypeGPU slots in behind
+    the same seam in P3.
+  - Verified headless (fake-mic WAV, port 3100): stage canvas live in
+    calibration and reps, FX rail present, preset tap mid-replay, and
+    the recorded take audibly played (`[glass] take playback 4.2s`),
+    zero runtime errors.

@@ -528,6 +528,206 @@ body {
   }
 }
 
+/* ── P2: the mirror stage + FX rack ───────────────────────── */
+
+.glass-panel-wide {
+  width: min(820px, 100%);
+}
+
+.glass-stage {
+  position: relative;
+  width: min(420px, 100%);
+  aspect-ratio: 3 / 3.9;
+  margin: 6px auto 10px;
+}
+.glass-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.glass-stagegrid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 880px) {
+  .glass-stagegrid {
+    grid-template-columns: 172px 1fr;
+    text-align: left;
+  }
+  .glass-stagegrid > div:last-child {
+    text-align: center;
+  }
+}
+
+/* The FX rack rail — liquid-mercury sliders + cosmic preset pills. */
+.glass-fx {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(138, 151, 166, 0.2);
+  border-radius: 14px;
+  background: rgba(11, 16, 38, 0.4);
+  text-align: left;
+}
+.glass-fx-title {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-fx-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 26px;
+  align-items: center;
+  gap: 8px;
+}
+.glass-fx-label {
+  font-size: 11.5px;
+  color: var(--glass-chrome);
+}
+.glass-fx-value {
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--glass-chrome);
+  text-align: right;
+}
+
+.glass-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --fill: 0%;
+}
+.glass-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--glass-signal), var(--glass-aqua)) 0 0 /
+      var(--fill) 100% no-repeat,
+    rgba(138, 151, 166, 0.22);
+}
+.glass-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(138, 151, 166, 0.22);
+}
+.glass-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--glass-signal), var(--glass-aqua));
+}
+.glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(
+    circle at 34% 30%,
+    #f4f8fd 0%,
+    #aeb9c6 38%,
+    #5b6b7b 78%,
+    #1b2430 100%
+  );
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+.glass-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    #f4f8fd 0%,
+    #aeb9c6 38%,
+    #5b6b7b 78%,
+    #1b2430 100%
+  );
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+.glass-slider:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.glass-fx-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.glass-fx-pill {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--glass-chrome);
+  background: transparent;
+  border: 1px solid rgba(138, 151, 166, 0.3);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition:
+    color 130ms,
+    border-color 130ms,
+    background 130ms;
+}
+.glass-fx-pill:hover {
+  color: var(--glass-starlight);
+  border-color: var(--glass-chrome);
+}
+.glass-fx-pill.on {
+  color: var(--glass-void-0);
+  background: linear-gradient(
+    160deg,
+    var(--glass-gold),
+    var(--glass-gold-deep)
+  );
+  border-color: transparent;
+}
+.glass-fx-pill:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+}
+
+.glass-fx-monitor {
+  border-top: 1px solid rgba(138, 151, 166, 0.16);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.glass-fx-monitor-toggle.on {
+  color: var(--glass-void-0);
+  background: linear-gradient(160deg, var(--glass-aqua), #1d9a8b);
+  border-color: transparent;
+}
+.glass-fx-confirm {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--glass-gold);
+}
+.glass-fx-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.glass-fx-notice {
+  margin: 0;
+  font-size: 11px;
+  color: #f8a1a1;
+}
+
 @media (max-width: 480px) {
   .glass-panel {
     padding: 26px 18px;
