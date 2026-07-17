@@ -16,8 +16,9 @@ export interface KaraokeSong {
   title: string
   stems: { vocal?: string; instrumental?: string }
   /** Start playback as soon as the stems finish loading — set only for
-   *  explicit user stagings (the demo button); playlists run their own
-   *  countdown flow and background auto-stagings must stay silent. */
+   *  explicit user stagings (the demo button, a library/sheet pick);
+   *  playlists run their own countdown flow and background auto-stagings
+   *  must stay silent. */
   autoPlay?: boolean
 }
 
@@ -26,13 +27,18 @@ interface KaraokeRailPanelsProps {
   /** True while a song is already on stage — so a background separation that
    *  finishes doesn't yank the visitor off their current performance. */
   stageBusy: () => boolean
+  /** Session currently on stage — accents its row in the library list. */
+  activeSessionId: () => string | null
 }
 
+// Module scope on purpose: collapsing the rail unmounts this component, and
+// component-local signals would drop a running separation's progress UI (the
+// pipeline itself lives in the store and keeps going). Hoisted, the rail
+// re-attaches to the in-flight upload when it comes back.
+const [uploadSessionId, setUploadSessionId] = createSignal<string | null>(null)
+const [uploadError, setUploadError] = createSignal('')
+
 export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
-  const [uploadSessionId, setUploadSessionId] = createSignal<string | null>(
-    null,
-  )
-  const [uploadError, setUploadError] = createSignal('')
   const [mode, setMode] = createSignal<UvrProcessingMode>(
     getUvrProcessingMode(),
   )
@@ -101,7 +107,9 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     setUploadSessionId(null)
   }
 
-  const singSession = async (sessionId: string) => {
+  // autoPlay only for explicit picks (library click) — the auto-open after a
+  // background separation must never start blasting audio unannounced.
+  const singSession = async (sessionId: string, autoPlay = false) => {
     const s = getUvrSession(sessionId)
     if (s === undefined) return
     // Local sessions persist stems as db blobs; the stored object URLs die
@@ -115,6 +123,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       sessionId,
       title: s.originalFile?.name ?? 'Your song',
       stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
+      autoPlay,
     })
   }
 
@@ -188,16 +197,17 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             when={signedIn()}
             fallback={<span class="kn-chip">On this device</span>}
           >
+            {/* Label + styling follow the STORED choice, and the chip stays
+                clickable in every state — out of credits used to both show
+                the effective fallback ("On this device") AND disable the
+                chip, trapping the user the warning told to "switch back". */}
             <button
               class="kn-chip kn-chip--toggle"
-              classList={{ 'kn-chip--server': effectiveMode() === 'server' }}
+              classList={{ 'kn-chip--server': mode() === 'server' }}
               onClick={toggleMode}
-              disabled={mode() === 'server' && !serverReady()}
               title="Switch between on-device and studio-quality separation"
             >
-              {effectiveMode() === 'server'
-                ? 'Studio quality'
-                : 'On this device'}
+              {mode() === 'server' ? 'Studio quality' : 'On this device'}
             </button>
           </Show>
         </p>
@@ -207,7 +217,8 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           fallback={
             <p class="kn-card-sub">
               All data stays on your device. Higher-quality separation is
-              available as a paid option — sign in to use it.
+              available as a paid option
+              {signedIn() ? '' : ' — sign in to use it'}.
             </p>
           }
         >
@@ -295,16 +306,37 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
 
       <Show when={librarySongs().length > 0}>
         <section class="kn-card">
-          <p class="kn-card-kicker">Your library</p>
+          <p class="kn-card-kicker">
+            Your library
+            <span class="kn-count-pill">{librarySongs().length}</span>
+          </p>
           <ul class="kn-library">
             <For each={librarySongs()}>
               {(s) => (
                 <li>
                   <button
                     class="kn-library-song"
-                    onClick={() => void singSession(s.sessionId)}
+                    classList={{
+                      'kn-library-song--active':
+                        props.activeSessionId() === s.sessionId,
+                    }}
+                    onClick={() => void singSession(s.sessionId, true)}
+                    title={
+                      props.activeSessionId() === s.sessionId
+                        ? 'On stage now'
+                        : 'Sing this song'
+                    }
                   >
-                    {s.originalFile?.name ?? s.sessionId}
+                    <Show when={props.activeSessionId() === s.sessionId}>
+                      <span class="kn-eq" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    </Show>
+                    <span class="kn-library-title">
+                      {s.originalFile?.name ?? s.sessionId}
+                    </span>
                   </button>
                 </li>
               )}

@@ -12,9 +12,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Playlists in Karaoke Night.** Your saved playlists appear in the side panel — one tap starts the night.
 - **Confirm your email.** New accounts get a confirmation link (you can keep using everything meanwhile), plus clearer password rules with live feedback while you type.
 
+- **Library niceties.** The song on stage is accented with a little equalizer, the library header shows a song count, and picking a library song starts singing right away.
+
 ### Fixed
 
 - Audio on iPhone: songs now play even with the ring/silent switch on.
+- Hiding the Karaoke Night side panel during a separation no longer loses the progress display, and the on-device/studio-quality toggle stays clickable when you're out of credits (it used to trap you in server mode).
 - The word highlight no longer flickers dark at word boundaries, restarting a song glides the lyrics back to the top, and the focus-mode control bar matches the Guitar 3D frosted-glass look.
 
 ## [0.7.12] - 2026-07-16

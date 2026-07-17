@@ -279,6 +279,7 @@ export function KaraokeNightApp() {
               <KaraokeRailPanels
                 onSing={setActiveSong}
                 stageBusy={() => activeSong() !== null}
+                activeSessionId={() => activeSong()?.sessionId ?? null}
               />
             </Suspense>
           </Show>
