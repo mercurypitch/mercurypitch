@@ -21,6 +21,9 @@ mechanics, the architecture, the campaign wiring, and the open items.
 - **Interactive look-dev prototype (open in a browser):**
   [`docs/plans/prototypes/glass-shatter-prototype.html`](./prototypes/glass-shatter-prototype.html)
   — see §15 for what it validates and the tuned constants it contributed.
+  Also published as a private Claude artifact (same file, reusable later):
+  <https://claude.ai/code/artifact/f899e8b5-b271-42c6-8323-a2d856fd0e6a>
+  — maff keeps a local copy too; the repo file is the source of truth.
 
 ---
 
@@ -31,6 +34,8 @@ mechanics, the architecture, the campaign wiring, and the open items.
 | What | Standalone campaign page `/glass`, sibling of `/mirror` and `/karaoke-night` |
 | Fantasy | "Break glass with your voice" — the opera-singer trope, personalized |
 | Loop | Calibrate ceiling → 3 reps of *sing → hear your real voice back → retry* → glass shatters |
+| FX rack | Echo · Reverb · Hall sliders left of the card, cosmic presets `Dry · Starlight · Nebula · Supernova`; colors replay + optional headphone-gated live monitor; analysis/recording stay dry |
+| In-app twin | The same loop also ships as the `glass-shatter` exercise in `/#/exercises`, sharing libs and feeding history/streaks |
 | Renderer | **TypeGPU (WebGPU) — mandatory**, "Powered by TypeGPU" footer credit; Canvas2D "lite" fallback behind the same seam |
 | Physics | Cumulative glass fatigue (near-misses leave permanent cracks) + resonance → Voronoi-style fracture, 3D shard tumble |
 | Scores | Honest metrics + improvement delta; **no composite voice score** (house rule) |
@@ -41,8 +46,10 @@ mechanics, the architecture, the campaign wiring, and the open items.
 
 ## 1. Decision log (interview, chronological)
 
-All twelve decisions were made explicitly by maff in the planning interview;
-the four AskUserQuestion rounds are compressed here.
+Decisions 1–12 were made explicitly by maff in the cloud planning interview
+(four AskUserQuestion rounds, compressed here); 13–17 were added in the
+2026-07-17 PC session after maff reviewed the prototype ("the guided demo is
+quite good") — full specs in §17.
 
 1. **Placement — standalone campaign page.** Own tiny Vite entry
    (`glass.html`), own funnel + Google Ads conversion, ad traffic lands
@@ -80,6 +87,32 @@ the four AskUserQuestion rounds are compressed here.
     shatter threshold (resonance stress is physically cumulative). Persistence
     always pays off; the card reports "shattered on rep N" truthfully.
 12. **Deliverables this session — this doc + interactive prototype** (§15).
+13. **Voice FX rack — echo · reverb · hall.** Three beautifully crafted
+    sliders docked left of the glass card color the take playback (always
+    available) and, optionally, live monitoring while singing
+    (headphone-gated). Combinable; preset pills below. Analysis and the
+    recorded take always stay DRY. Full spec §17.1.
+14. **In-app exercise twin.** The record → replay-with-animation → hear →
+    repeat loop ALSO ships as a smaller exercise inside `/#/exercises`
+    (`glass-shatter`), sharing the pure libs, recorder and FX rack; feeds
+    exercise history/streaks. Full spec §17.2.
+15. **SEO lead — "Break Glass With Your Voice".** The H1 and the primary
+    SKAG keyword. Aliases emitted for `/break-glass-with-your-voice`,
+    `/high-note-test` AND `/shatter` (short/brandable). Byte-copies in v1;
+    upgrade `/high-note-test` to a keyword-matched H1 if its SKAG launches
+    (§12).
+16. **Shatter timing — slower + performance-scaled.** Baseline slow-mo
+    slower than the prototype (maff's review note), and the drama scales
+    with HOW the shatter was earned: clean first-try = most cinematic;
+    fatigue-grind = quicker, rawer. Spec §17.3.
+17. **FX preset naming — cosmic.** `Dry · Starlight · Nebula · Supernova`
+    (matches the "Sing the Universe" world).
+18. **Audible guided demos.** Every instruction demo must be HEARABLE, not
+    just animated — users need to hear what a glide/hold/lock sounds like to
+    know what to do with their voice. Synthesized examples accompany every
+    Glass task intro (§17.4), and the same module fixes Voice Mirror's
+    silent `TaskDemo` as a follow-up (maff: "even voice mirror does this
+    wrongly — there is no sound").
 
 ## 2. The experience, beat by beat
 
@@ -90,17 +123,21 @@ the four AskUserQuestion rounds are compressed here.
    acquired inside the tap, `probeMic()` silence check with one automatic
    graph rebuild (the iOS WebKit fix), echoCancellation/noiseSuppression/AGC
    off for honest pitch. Copy the learnings from `MirrorApp.tsx` §start.
-3. **Calibration glide (~8 s).** "Slide from low to high, like a siren."
-   The mirror wakes up as they sing — first magic moment. Output: the
-   ceiling note and the **target** (§3.2), announced with theater: the pane
-   etches a gold target line and hums the note. "This glass rings at G4.
-   Your G4."
+3. **Calibration glide (~8 s).** "Slide from low to high, like a siren" —
+   and the intro PLAYS a ~2 s synthesized siren sweep so they hear exactly
+   what to do (decision 18, §17.4), not just watch an animation. The mirror
+   wakes up as they sing — first magic moment. Output: the ceiling note and
+   the **target** (§3.2), announced with theater: the pane etches a gold
+   target line and hums the note. "This glass rings at G4. Your G4."
 4. **Rep loop (×3, the heart).** Per rep:
    - **Sing (~8 s).** The waveform ribbon dances in the glass; nearing the
      target raises ripples and a perimeter resonance meter; near-misses
-     visibly fatigue the pane (hairline cracks that STAY).
+     visibly fatigue the pane (hairline cracks that STAY). Optional: live
+     FX monitoring in headphones (§17.1).
    - **Listen back.** Their actual recorded take replays (on-device) while
-     the mirror re-dances to the same frames in gold. Coach copy: "That was
+     the mirror re-dances to the same frames in gold. The FX rack (§17.1)
+     colors this playback — a touch of Starlight makes a first self-listen
+     kinder; presets can change mid-replay. Coach copy: "That was
      you. Getting used to your own voice IS the exercise."
    - **Retry.** Metrics quietly logged per rep (§4).
 5. **The shatter.** Resonance filled while locked ≥0.8 s → white flash →
@@ -189,7 +226,7 @@ nudge after ~6 reps) — high-note repetition is real strain.
 - `glass.html` — third standalone entry: SEO meta + FAQ JSON-LD (§12),
   loads `/src/features/glass/main.tsx`. Add to `rollupOptions.input` in
   `vite.config.ts`.
-- Dev/preview rewrites: add `GLASS_PATHS = new Set(['/glass', '/break-glass-with-your-voice'])`
+- Dev/preview rewrites: add `GLASS_PATHS = new Set(['/glass', '/break-glass-with-your-voice', '/high-note-test', '/shatter'])`
   to `standaloneEntryRewritePlugin`; emit alias HTML byte-copies in
   `mirrorAliasFilesPlugin` (rename it `aliasFilesPlugin`); check the root
   wrangler worker for the mirror/karaoke path rewrites and mirror them.
@@ -207,6 +244,8 @@ src/features/glass/
   funnel.ts           glass_* events (§11)
   glass.css
   take-recorder.ts    NET-NEW: MediaRecorder capture + on-device playback (§8)
+  fx-rack.ts          WebAudio FX graph: echo/reverb/hall sends (§17.1)
+  FxRack.tsx          slider rail + cosmic preset pills, left of the card
   card-renderer.ts    shatter card (adapt mirror card-renderer)
   renderer/
     GlassRenderer.ts            backend-agnostic seam (interface + factory)
@@ -214,6 +253,8 @@ src/features/glass/
     canvas2d/CanvasGlassRenderer.ts   lite fallback (seeded from the prototype painter)
 src/lib/glass/        pure logic + tests: session.ts, target.ts,
                       resonance.ts, fracture.ts, metrics.ts, baseline.ts
+src/lib/demo-audio.ts audible task demos (§17.4): siren sweep, hold tone,
+                      approach-and-lock sketch — shared; mirror adopts later
 src/lib/gpu/webgpu-device.ts   PROMOTED from guitar-tab-3d (shared acquire,
                       device-loss handling); tab-3d imports move here too
 ```
@@ -250,8 +291,8 @@ chunk regex) and have mirror + glass share it.
 4. **Cracks** — growing polyline segment list (uniform/storage buffer),
    rendered as SDF etches that also perturb the pane normals.
 5. **Shards** — CPU integrates ≤128 rigid bodies (gravity 980 px/s², drag,
-   3D tumble about a random in-plane axis, slow-mo 0.16× for 0.45 s then
-   ramp); per-frame instance buffer {2×3 affine from projected rotated
+   3D tumble about a random in-plane axis; slow-mo per the §7.4
+   performance-scaled timeline); per-frame instance buffer {2×3 affine from projected rotated
    basis, alpha, brightness = facing}; fragment samples the pane snapshot
    texture. Dust = instanced points; flash = fading fullscreen quad.
 6. **HUD/meter** — DOM/CSS overlay (chips, coach line, perimeter meter can
@@ -290,9 +331,12 @@ Shared pure module `src/lib/glass/fracture.ts` (used by BOTH backends):
 3. **Integration** — gravity 980, drag 0.4/0.3, weak-perspective projection
    (f=900): the affine from the rotated, projected basis vectors; brightness
    from facing (`|cos rot|`); alpha fade over ~3.5 s.
-4. **Timeline** — flash (0.22 s) → slow-mo 0.16× (0.45 s) → ramp to 1× →
-   results at ~1.9 s. Deterministic via seeded PRNG (mulberry32) so replays
-   and the Phase-2 video can reproduce a shatter exactly.
+4. **Timeline (updated by decision 16)** — flash (0.22 s) → slow-mo → ramp
+   to 1× → results. Baseline is SLOWER than the prototype's 0.16×/0.45 s
+   (maff's review verdict), and the drama scales with how the shatter was
+   earned — the epicness function in §17.3. Deterministic via seeded PRNG
+   (mulberry32) so replays and the Phase-2 video reproduce a shatter
+   exactly.
 
 ## 8. Self-voice recording & playback (NET-NEW infrastructure)
 
@@ -366,6 +410,8 @@ glass_rep_done (metrics: rep, meanAbsCents, bestLockMs, inBandPct)
 glass_playback_done · glass_shatter (metrics: rep, fatigue, renderer)
 glass_results_view (metrics: ceilingMidi, targetMidi, shatterRep,
                     bestLockMs, precisionCents, reps, renderer)
+glass_fx_change (metrics: echo, reverb, hall — committed 0..100 values)
+glass_monitor_on · glass_monitor_off
 glass_card_generated · glass_card_shared · glass_cta_app_click
 ```
 
@@ -405,8 +451,14 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
   (yes — resonance, loudness, sustain), "What note breaks glass?" (the
   glass's resonant frequency — here, tuned to YOUR range), "How do opera
   singers shatter glass?".
-- Alias route `/break-glass-with-your-voice` (byte-copy HTML like
-  `/vocal-range-test`); add both to `public/sitemap.xml`.
+- Alias routes (byte-copy HTML like `/vocal-range-test`), per decision 15:
+  `/break-glass-with-your-voice` (exact-match challenge),
+  `/high-note-test` (test-intent family, joins `/vocal-range-test` and
+  `/tone-deaf-test`), `/shatter` (short/brandable — bios, video
+  descriptions, ad display paths). All four URLs into `public/sitemap.xml`.
+  v1 aliases share the challenge H1; if a "high note test" SKAG launches
+  later, upgrade that alias to its own keyword-matched H1 (the
+  campaign-plan per-keyword H1 rule).
 - Cross-links: mirror results → "Think you can break glass with that
   range?" (funnel cross-pollination, and vice versa).
 
@@ -420,7 +472,9 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 - **P2 — Self-voice loop.** `take-recorder.ts` (record/decode/replay),
   playback-driven ghost replay, rep cycle end-to-end on the **Canvas2D lite
   renderer** (seeded from the prototype) — the full product loop works
-  before any GPU code.
+  before any GPU code. Includes the **FX rack** (§17.1: graph, slider
+  rail, cosmic presets, headphone-gated monitor) and the **audible task
+  demos** (§17.4, `src/lib/demo-audio.ts`).
 - **P3 — TypeGPU renderer.** Promote `webgpu-device.ts` → `src/lib/gpu/`;
   pane/ripples/ribbon/cracks pipelines behind the seam; lazy chunk;
   backend funnel metric.
@@ -432,9 +486,14 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 - **P6 — Campaign.** Remaining funnel events + ads mapping; campaigns-repo
   conversion action + config; Phase-0 checklist (Tag Assistant verify)
   before any spend.
+- **P7 — In-app exercise twin (§17.2).** `glass-shatter` exercise in
+  `/#/exercises` on the shared libs; exercise-history scoring; the
+  `/exercises/shatter-glass` slug (campaign CTA target); exercises-page
+  tour update in the same PR (CLAUDE.md ≥80% rule).
 - **Phase 2 (post-launch):** replay video, Higgsfield backdrop stills,
-  mirror cross-links, possibly "glass gallery" (wine glass / window /
-  chandelier as difficulty skins).
+  mirror cross-links, audible-demo back-port to Voice Mirror's `TaskDemo`
+  (§17.4), possibly "glass gallery" (wine glass / window / chandelier as
+  difficulty skins).
 
 ## 14. Risks & mitigations
 
@@ -444,6 +503,7 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 | iOS silent-mic / suspended AudioContext | Reuse the mirror's `probeMic` + `rebuildAudio` + gesture rules verbatim (hard-won) |
 | MediaRecorder codec matrix | mimeType fallback chain + decode-check + `<audio>` fallback (§8); recording is a progressive enhancement — if unsupported, the rep loop runs with contour-only replay |
 | Feedback/echo during playback | Capture fully paused during playback; modest playback gain |
+| Live FX monitoring feedback (mic → speakers loop) | OFF by default; explicit "I'm wearing headphones" confirm gates it; runaway-level detector kills the monitor and explains why (§17.1) |
 | Perf on low-end (shatter) | ≤128 shards, DPR clamp, reduced-motion path, pause on hidden |
 | Vocal strain (repeated high notes) | Soft rest nudge after ~6 reps; coach copy never pushes louder, only steadier |
 | Keyword volume unknown | Phase-0 Keyword Planner pass before building the SKAG; the theme doubles as organic short-form content either way |
@@ -494,13 +554,134 @@ campaigns-repo steps (§11.2) touch
 `disjoint-colliders/packages/campaigns` — a separate repo; keep its
 `.env`/refresh-token security rules.
 
-### Open items for maff
+### Open items
 
-- [ ] Judge the prototype's feel (run the guided demo + free sing): shatter
-      weight, slow-mo length, crack pacing, coach copy tone.
+- [x] Judge the prototype (2026-07-17 PC session): "the guided demo is
+      quite good"; shatter a bit slower → decision 16.
+- [x] Alias slugs decided → decision 15.
 - [ ] Confirm target rule (ceiling − 1 semitone) vs. a slightly easier
       ceiling − 2 for first-time visitors.
 - [ ] Keyword Planner pass on the §11.2 theme before the SKAG build.
-- [ ] Decide the alias slug: `/break-glass-with-your-voice` (long, exact
-      match) vs `/glass-challenge`.
+- [ ] Tune FX preset send levels with real ears (§17.1 numbers are
+      starting points).
+- [ ] Voice Mirror follow-up (separate PR, after `demo-audio.ts` exists):
+      make the mirror's `TaskDemo` intros audible (§17.4).
 - [ ] Phase-2 replay video: greenlight after v1 funnel data.
+
+---
+
+## 17. Addendum — 2026-07-17 PC session (prototype review + scope additions)
+
+Session moved to maff's PC (Higgsfield MCP reattached; no credits spent).
+Prototype verdict: **"the guided demo is quite good."** Prototype published
+as a private Claude artifact (reusable from the artifacts gallery):
+<https://claude.ai/code/artifact/f899e8b5-b271-42c6-8323-a2d856fd0e6a>.
+A second interview round produced decisions 13–18; specs below.
+
+### 17.1 Voice FX rack (decisions 13 + 17) — echo · reverb · hall
+
+The playback beat only works if hearing yourself is pleasant — a touch of
+space makes a first self-listen dramatically less uncomfortable, which
+serves the core goal (getting accustomed to your own voice). Hence the rack:
+
+- **Three effects, one crafted vertical slider each (0–100 wet), docked
+  LEFT of the glass card** (desktop; mobile: compact horizontal row above
+  the control dock):
+  - **Echo** — `DelayNode` ~0.28 s + feedback gain ~0.35; slider = send level.
+  - **Reverb** — `ConvolverNode` with a procedurally generated impulse
+    response (exponentially decaying stereo-decorrelated noise, ~1.2 s) —
+    zero downloaded assets, on-brand.
+  - **Hall** — second `ConvolverNode`, longer/darker IR (~3.5 s, lowpassed).
+- **Graph:** `takeSource → dryGain → out` plus three parallel sends
+  (`source → sendGain_i → effect_i → out`). Independent sends → combinable
+  by construction. Code: `fx-rack.ts` (graph) + `FxRack.tsx` (UI).
+- **Preset pills below the sliders — cosmic names (decision 17):**
+  `Dry (0/0/0)` · `Starlight (10/25/0)` · `Nebula (18/35/22)` ·
+  `Supernova (8/20/65)` (echo/reverb/hall). Tapping a pill animates the
+  sliders to its values; touching any slider clears the pill selection.
+  Send levels are starting points — tune by ear (open item).
+- **Where it applies:**
+  - **Replay: always available.** FX apply AT PLAYBACK; the recorded blob
+    stays dry, so presets can change mid-replay and after the take.
+  - **Live monitoring: opt-in toggle, OFF by default** — routes mic → FX →
+    output while singing. **Headphone-gated:** explicit "I'm wearing
+    headphones" confirm required (speaker monitoring = feedback loop);
+    a runaway-level detector (sustained near-clipping RMS) kills the
+    monitor and explains why.
+  - **Never in the analysis path:** the pitch detector, resonance, fatigue
+    and all metrics read the DRY signal. Honesty is non-negotiable.
+- **Slider craft** (brand: liquid mercury; custom SVG only, no emoji):
+  chrome channel, spectrum-gradient fill (signal→aqua), droplet thumb with
+  a specular dot, tabular-numeral value readout, focus-visible ring;
+  `prefers-reduced-motion` skips the preset-snap animation.
+- Funnel: `glass_fx_change` (committed values), `glass_monitor_on/off`
+  (§11.1) — extend the db-worker allowlist with the rest.
+
+### 17.2 In-app exercise twin (decision 14) — `glass-shatter`
+
+The same record → replay-with-animation → hear → repeat loop, packaged as a
+smaller exercise inside the app; the campaign's "train daily" CTA deep-links
+to it. Registration checklist (all five touchpoints REQUIRED — the shell
+indexes help unconditionally and the Records make omissions type errors):
+
+1. `src/features/exercises/types.ts` — `EXERCISE_GLASS_SHATTER =
+   'glass-shatter'` const + `ExerciseType` union entry.
+2. `src/features/exercises/exercise-help.ts` — help entry
+   (`ExerciseShell` reads `EXERCISE_HELP[type]` at mount).
+3. New pair `src/features/exercises/glass-shatter/GlassShatterExercise.tsx`
+   + `use-glass-shatter-controller.ts` on `useBaseExercise` (owns mic +
+   rAF pitch loop), reusing `src/lib/glass/*` (target, resonance, fatigue,
+   fracture, metrics), `take-recorder.ts`, the FX rack and `demo-audio.ts`.
+   Renderer through the same seam — TypeGPU chunk lazy-loaded on start,
+   Canvas2D lite fallback.
+4. `ExercisesPage.tsx` — route `<Show>` block; `ExerciseMenu.tsx` —
+   `EXERCISE_DIFFICULTY` entry + `CARDS` card.
+5. `slug-map.ts` — `shatter-glass` slug → `/exercises/shatter-glass`
+   (the campaign CTA target, attributing `app_open`).
+
+Campaign vs. exercise differences: calibration reuses the freshest prior
+ceiling (re-calibrate on demand); shorter default session (2 reps); results
+persist via `recordExerciseResult` with the house exercise scoring
+(0–100 ≈ `100 − meanAbsCents × 1.5`, floor 0 — consistent with
+`scoreSamples`) plus flat numeric metrics (`shatterRep`, `bestLockMs`,
+`fatigue`, `targetMidi`); streaks/challenges/history update automatically;
+no SEO surface or campaign funnel beacons. Update the exercises-page tour
+in the same PR (CLAUDE.md ≥80% coverage rule).
+
+### 17.3 Performance-scaled shatter timing (decision 16)
+
+Prototype review: the burst reads slightly too fast. New baseline + scaling
+— the drama is earned, not uniform:
+
+- `cleanliness = clamp01(1 − meanAbsCents_lock / TOL_CENTS)` over the
+  winning lock window.
+- `epicness = clamp01(0.55 + 0.45·cleanliness − 0.18·(shatterRep − 1)
+  − 0.35·fatigue)` — a clean first-try lock ⇒ epicness ≈ 1; a rep-5
+  fatigue-grind ⇒ ≈ 0.2.
+- `slowMoFactor = lerp(0.22, 0.08, epicness)` (more epic = slower),
+  `slowMoDuration = lerp(0.5 s, 1.1 s, epicness)`, then ease back to 1×;
+  results reveal at `slowMoDuration + ~1.4 s`.
+- Epicness derives from recorded metrics only → deterministic; the shatter
+  card and the Phase-2 replay video reproduce the exact same burst.
+- Update the prototype's fixed `0.16×/0.45 s` constants when tuning this.
+
+### 17.4 Audible guided demos (decision 18) + Voice Mirror back-port
+
+maff: "even voice mirror does this wrongly — on the guided instructions
+there is no sound. Users need to HEAR what to do with their voice, not just
+see an animation."
+
+- New shared module `src/lib/demo-audio.ts` (WebAudio, synthesized, zero
+  assets; plays only after a user gesture; respects the mute toggle):
+  - `playSirenSweep(ctx, lowHz, highHz, secs)` — gentle sine sweep with an
+    ADSR-ish envelope; the calibration intro's example (~2 s, ~1.5 octaves).
+  - `playHoldTone(ctx, hz, secs)` — steady example for "hold" moments.
+  - `playApproachAndLock(ctx, targetHz)` — short sketch that wanders, then
+    settles ON the target and blooms — "this is what winning sounds like";
+    played once before rep 1.
+- Every Glass task intro pairs its animation with the matching sound; the
+  target-announce hum (§2.3) already covers the "meet the glass" beat.
+- **Voice Mirror follow-up (separate PR):** wire the same module into the
+  mirror's `TaskDemo` intros — glide demo plays the siren sweep, hold demo
+  the hold tone, match demo the existing `playReferenceTone`. Tracked in
+  Open items; do it after Glass P2 lands so the module is proven.
