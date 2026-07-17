@@ -18,9 +18,11 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
+import { formatGlassDelta, loadGlassBaseline, saveGlassBaseline, } from '@/lib/glass/baseline'
 import { GLASS_CONFIG } from '@/lib/glass/config'
+import { computeShatterTimeline } from '@/lib/glass/fracture'
 import type { RepMetrics } from '@/lib/glass/metrics'
-import { computeRepMetrics } from '@/lib/glass/metrics'
+import { computeEpicness, computeRepMetrics, lockWindowMeanAbs, } from '@/lib/glass/metrics'
 import type { GlassPhysicsState } from '@/lib/glass/resonance'
 import { initialPhysics, shatterReady, startRep, tickPhysics, } from '@/lib/glass/resonance'
 import type { GlassEvent, GlassSessionState } from '@/lib/glass/session'
@@ -40,6 +42,7 @@ import { IconGlide, IconReplay, IconShatter } from './icons'
 // Type-only: the renderer module (and typegpu behind it) loads lazily at
 // Start so the landing ships zero renderer bytes.
 import type { GlassRenderer } from './renderer/GlassRenderer'
+import { playGlassShatter } from './sfx'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
 
@@ -50,8 +53,6 @@ const SILENCE_RMS = 1e-6
 const CAL_BRIEF_SEC = 3
 const REP_BRIEF_SEC = 2
 const GAP_SEC = 1.4
-// Placeholder pause where the P4 shatter animation will play.
-const SHATTER_PLACEHOLDER_SEC = 1.4
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -122,6 +123,7 @@ export const GlassApp: Component = () => {
   const [monitorOn, setMonitorOn] = createSignal(false)
   const [monitorConfirming, setMonitorConfirming] = createSignal(false)
   const [monitorNotice, setMonitorNotice] = createSignal<string | null>(null)
+  const [sinceLine, setSinceLine] = createSignal<string | null>(null)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -238,6 +240,7 @@ export const GlassApp: Component = () => {
     setMicSilent(false)
     setCalRetry(false)
     setMonitorNotice(null)
+    setSinceLine(null)
   }
 
   /** Mount point shared by the calibrate/sing/playback stages — the renderer
@@ -696,9 +699,32 @@ export const GlassApp: Component = () => {
         take.peakResonance,
       )
       if (take.shattered) {
+        // The drama is earned (§17.3): epicness from the winning lock's
+        // cleanliness, the rep it took, and how much fatigue helped.
+        const lockMean = lockWindowMeanAbs(take.frames, target)
+        const epicness = computeEpicness({
+          shatterRep: rep,
+          fatigue: physics.fatigue,
+          lockMeanAbsCents: lockMean,
+        })
+        const reduceMotion = window.matchMedia(
+          '(prefers-reduced-motion: reduce)',
+        ).matches
+        const timeline = computeShatterTimeline(epicness, GLASS_CONFIG, {
+          reduceMotion,
+        })
+        const seed = rep * 7919 + target * 131
+        // Snapshot + burst BEFORE the panel swap so the pane's final frame
+        // (ribbon at the lock) is what fractures.
+        renderer?.shatter({ epicness, seed })
+        if (audioContext !== null) playGlassShatter(audioContext, epicness)
         dispatch({ type: 'shattered', metrics })
-        trackGlass('glass_shatter', { rep, fatigue: round2(physics.fatigue) })
-        await sleep(SHATTER_PLACEHOLDER_SEC * 1000)
+        trackGlass('glass_shatter', {
+          rep,
+          fatigue: round2(physics.fatigue),
+          epicness: round2(epicness),
+        })
+        await sleep(timeline.totalSeconds * 1000)
         if (!alive()) return
         dispatch({ type: 'shatter-done' })
         finishRun()
@@ -728,6 +754,29 @@ export const GlassApp: Component = () => {
     teardownAudio()
     const state = session()
     const last = state.repMetrics[state.repMetrics.length - 1]
+
+    // Cross-visit baseline: honest "since last time" delta, then replace.
+    if (state.targetMidi !== null) {
+      try {
+        const storage = window.localStorage
+        const current = {
+          targetMidi: state.targetMidi,
+          shatterRep: state.shatterRep ?? 0,
+          bestLockMs:
+            last === undefined ? 0 : Math.round(last.bestLockSec * 1000),
+          precisionCents:
+            last?.meanAbsCents == null ? null : Math.round(last.meanAbsCents),
+        }
+        const previous = loadGlassBaseline(storage)
+        setSinceLine(
+          previous === null ? null : formatGlassDelta(previous, current),
+        )
+        saveGlassBaseline(storage, current)
+      } catch {
+        // Storage blocked — no delta, nothing else changes.
+      }
+    }
+
     trackGlass('glass_results_view', {
       ceilingMidi: state.ceilingMidi,
       targetMidi: state.targetMidi,
@@ -954,10 +1003,10 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'shatter'}>
-          <section class="glass-panel glass-shatter-flash">
-            <div class="glass-note-hero">✦</div>
-            <h2>The glass gave way</h2>
-            <p class="glass-dim">(The real burst animation lands in P4.)</p>
+          {/* The burst plays in the stage — the renderer animates
+              autonomously from the shatter() call until results. */}
+          <section class="glass-panel glass-panel-wide" data-shatter>
+            <div class="glass-stage" ref={(el) => mountStage(el)} />
           </section>
         </Show>
 
@@ -965,6 +1014,7 @@ export const GlassApp: Component = () => {
           <ResultsPanel
             session={session()}
             fatigue={physics.fatigue}
+            sinceLine={sinceLine()}
             onAgain={() => resetAll()}
           />
         </Show>
@@ -1174,6 +1224,8 @@ const MicPanel: Component<{
 const ResultsPanel: Component<{
   session: GlassSessionState
   fatigue: number
+  /** Cross-visit baseline delta ("Since Tue: lock +0.8s"), if any. */
+  sinceLine: string | null
   onAgain: () => void
 }> = (props) => {
   const shattered = (): boolean => props.session.shatterRep !== null
@@ -1249,6 +1301,9 @@ const ResultsPanel: Component<{
       </div>
       <Show when={deltaLine()}>
         <p class="glass-delta">{deltaLine()}</p>
+      </Show>
+      <Show when={props.sinceLine}>
+        <p class="glass-dim">{props.sinceLine}</p>
       </Show>
       <Show when={!shattered()}>
         <p class="glass-dim">

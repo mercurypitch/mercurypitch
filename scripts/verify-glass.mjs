@@ -25,6 +25,10 @@ import { chromium } from '@playwright/test'
 
 const BASE = process.argv[2] ?? 'https://localhost:3100'
 const HEADED = process.env.HEADED === '1'
+// SHATTER=1: after calibration the singer locks onto the target (G4) so the
+// glass actually breaks — verifies the burst + results path. Default mode
+// never enters the band, verifying the rep/playback/FX loop instead.
+const SHATTER = process.env.SHATTER === '1'
 
 function fullChromium() {
   const cache = join(homedir(), '.cache', 'ms-playwright')
@@ -54,10 +58,12 @@ const ctx = await browser.newContext({
 })
 const page = await ctx.newPage()
 
-// The injected singer: loops [0.4s rest → 8.5s exponential glide A2→A5 →
-// 2.2s hold on A4]. Holding A4 sustains the ceiling; the target becomes
-// A4 + GLASS_CONFIG.target.offsetSemitones.
-await page.addInitScript(() => {
+// The injected singer. Default: loops [0.4s rest → 8.5s exponential glide
+// A2→A5 → 2.2s hold on A4] — the A4 hold sets the ceiling, the target
+// becomes A4 + offsetSemitones (G4 at −2), and the singer never locks it.
+// Shatter mode: one calibration pattern, then a constant G4 from t=13.5 —
+// rep 1 locks immediately and the glass breaks.
+await page.addInitScript((shatterMode) => {
   const orig = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
   navigator.mediaDevices.getUserMedia = async (constraints) => {
     if (!constraints || !constraints.audio) return orig(constraints)
@@ -67,24 +73,35 @@ await page.addInitScript(() => {
     osc.type = 'sine'
     const gain = ac.createGain()
     const dest = ac.createMediaStreamDestination()
-    const PERIOD = 11.1
-    let t = ac.currentTime + 0.05
-    for (let k = 0; k < 40; k++) {
-      gain.gain.setValueAtTime(0.0001, t)
-      osc.frequency.setValueAtTime(110, t)
-      gain.gain.exponentialRampToValueAtTime(0.5, t + 0.45)
-      osc.frequency.setValueAtTime(110, t + 0.4)
-      osc.frequency.exponentialRampToValueAtTime(880, t + 8.9)
-      osc.frequency.setValueAtTime(440, t + 8.9)
-      gain.gain.setValueAtTime(0.5, t + 11.05)
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + PERIOD)
-      t += PERIOD
+    const t0 = ac.currentTime + 0.05
+    if (shatterMode) {
+      gain.gain.setValueAtTime(0.0001, t0)
+      osc.frequency.setValueAtTime(110, t0)
+      gain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.5)
+      osc.frequency.setValueAtTime(110, t0 + 1)
+      osc.frequency.exponentialRampToValueAtTime(880, t0 + 10.5)
+      osc.frequency.setValueAtTime(440, t0 + 10.5) // ceiling hold
+      osc.frequency.setValueAtTime(392, t0 + 13.5) // then: lock the target
+    } else {
+      const PERIOD = 11.1
+      let t = t0
+      for (let k = 0; k < 40; k++) {
+        gain.gain.setValueAtTime(0.0001, t)
+        osc.frequency.setValueAtTime(110, t)
+        gain.gain.exponentialRampToValueAtTime(0.5, t + 0.45)
+        osc.frequency.setValueAtTime(110, t + 0.4)
+        osc.frequency.exponentialRampToValueAtTime(880, t + 8.9)
+        osc.frequency.setValueAtTime(440, t + 8.9)
+        gain.gain.setValueAtTime(0.5, t + 11.05)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + PERIOD)
+        t += PERIOD
+      }
     }
     osc.connect(gain).connect(dest)
     osc.start()
     return dest.stream
   }
-})
+}, SHATTER)
 
 const errors = []
 const glassLogs = []
@@ -124,16 +141,29 @@ await page.waitForSelector('.glass-stagegrid .glass-stage canvas', {
 await page.waitForSelector('.glass-fx', { timeout: 5000 })
 log.push('rep stage + FX rail live')
 
-await page.getByText('That was you').waitFor({ timeout: 20000 })
-await page.getByRole('button', { name: 'Nebula' }).click()
-log.push('playback + preset change')
+if (SHATTER) {
+  // The singer locks the target — the glass must break on rep 1.
+  await page.waitForSelector('[data-shatter]', { timeout: 30000 })
+  log.push('SHATTER — burst playing')
+  await page.waitForTimeout(450) // mid slow-mo
+  await page.screenshot({ path: 'glass-shatter-burst.png' })
+  await page.waitForSelector('.glass-metrics', { timeout: 15000 })
+  log.push(
+    'results: ' +
+      (await page.locator('.glass-panel h2').first().textContent())?.trim(),
+  )
+} else {
+  await page.getByText('That was you').waitFor({ timeout: 20000 })
+  await page.getByRole('button', { name: 'Nebula' }).click()
+  log.push('playback + preset change')
 
-await page.getByRole('button', { name: 'End session' }).click()
-await page.waitForSelector('.glass-metrics', { timeout: 10000 })
-log.push(
-  'results: ' +
-    (await page.locator('.glass-panel h2').first().textContent())?.trim(),
-)
+  await page.getByRole('button', { name: 'End session' }).click()
+  await page.waitForSelector('.glass-metrics', { timeout: 10000 })
+  log.push(
+    'results: ' +
+      (await page.locator('.glass-panel h2').first().textContent())?.trim(),
+  )
+}
 
 const backend =
   glassLogs.find((l) => l.includes('renderer backend')) ?? '(no backend log)'

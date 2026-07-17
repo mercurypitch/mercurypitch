@@ -36,6 +36,13 @@ export interface GlassRenderer {
   update: (state: GlassSceneUpdate) => void
   /** A new take begins — clear the ribbon trail. */
   beginTake: () => void
+  /**
+   * Detonate the pane: snapshot its final pixels and burst them into
+   * shards (deterministic per seed; drama scaled by epicness, §17.3).
+   * The renderer animates autonomously from here; the app times the
+   * results transition with computeShatterTimeline on the same inputs.
+   */
+  shatter: (options: { epicness: number; seed: number }) => void
   dispose: () => void
 }
 

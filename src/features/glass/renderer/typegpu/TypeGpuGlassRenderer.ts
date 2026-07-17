@@ -24,6 +24,7 @@ import { abs, clamp, dot, exp, fract, length, max, min, mix, mul, sin, sub, } fr
 import { acquireWebGpuDevice } from '@/lib/gpu/webgpu-device'
 import { CrackField } from '../crack-field'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
+import { ShardBurst } from '../shard-burst'
 
 const VIEW_CENTS = 340 // half-range of the pane's vertical pitch view
 const RIBBON_MAX = 152
@@ -220,6 +221,10 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
   private ribbon: Array<{ y: number; voiced: number }> = []
   private calCenter: number | null = null
   private crackField = new CrackField()
+  private burst: ShardBurst | null = null
+  private reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   private constructor(root: TgpuRoot) {
     this.root = root
@@ -326,6 +331,64 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
     this.calCenter = null
   }
 
+  shatter(options: { epicness: number; seed: number }): void {
+    if (this.width === 0 || this.burst !== null) return
+    // Snapshot = the presented GPU frame + the overlay (frame, cracks,
+    // label) so all of it travels with the shards. drawImage from a WebGPU
+    // canvas returns the last presented image per spec; if a browser hands
+    // back a blank, fall back to a painted glass tint so the burst still
+    // reads as glass.
+    const snapshot = document.createElement('canvas')
+    snapshot.width = this.gpuCanvas.width
+    snapshot.height = this.gpuCanvas.height
+    const sc = snapshot.getContext('2d')
+    if (sc !== null) {
+      sc.drawImage(this.gpuCanvas, 0, 0)
+      const probe = sc.getImageData(
+        Math.floor(snapshot.width / 2),
+        Math.floor(snapshot.height / 2),
+        1,
+        1,
+      ).data
+      if (probe[3] === 0) {
+        const tint = sc.createLinearGradient(
+          0,
+          0,
+          snapshot.width,
+          snapshot.height,
+        )
+        tint.addColorStop(0, 'rgba(27, 36, 48, 0.6)')
+        tint.addColorStop(1, 'rgba(9, 7, 20, 0.65)')
+        sc.fillStyle = tint
+        sc.fillRect(0, 0, snapshot.width, snapshot.height)
+      }
+      sc.drawImage(this.overlay, 0, 0)
+    }
+    this.burst = new ShardBurst(snapshot, this.width, this.height, {
+      epicness: options.epicness,
+      seed: options.seed,
+      impact: [this.width / 2, this.height / 2],
+      reduceMotion: this.reduceMotion,
+    })
+    // Blank the GPU pane — from here only the shards exist. One clear-only
+    // pass; the frame loop skips scene drawing while the burst runs.
+    if (this.context !== null) {
+      const encoder = this.root.device.createCommandEncoder()
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: this.context.getCurrentTexture().createView(),
+            loadOp: 'clear',
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            storeOp: 'store',
+          },
+        ],
+      })
+      pass.end()
+      this.root.device.queue.submit([encoder.finish()])
+    }
+  }
+
   dispose(): void {
     this.disposed = true
     cancelAnimationFrame(this.rafId)
@@ -345,6 +408,17 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
 
   private frame(t: number): void {
     if (this.context === null || this.width === 0) return
+
+    // Burst mode: the GPU pane is blanked; shards animate on the overlay.
+    if (this.burst !== null) {
+      const c = this.overlayCtx
+      if (c !== null) {
+        c.clearRect(0, 0, this.width, this.height)
+        this.burst.draw(c, t)
+      }
+      return
+    }
+
     const s = this.state
     const head = this.ribbon[this.ribbon.length - 1]
     const headOffCents =

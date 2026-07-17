@@ -12,6 +12,7 @@
 
 import { CrackField } from '../crack-field'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
+import { ShardBurst } from '../shard-burst'
 
 const VIEW_CENTS = 340 // half-range of the pane's vertical pitch view
 const RIBBON_LENGTH = 150
@@ -44,6 +45,7 @@ export class CanvasGlassRenderer implements GlassRenderer {
   /** Rolling view center for calibrate mode (absolute cents). */
   private calCenter: number | null = null
   private crackField = new CrackField()
+  private burst: ShardBurst | null = null
   private reduceMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -115,6 +117,22 @@ export class CanvasGlassRenderer implements GlassRenderer {
     this.calCenter = null
   }
 
+  shatter(options: { epicness: number; seed: number }): void {
+    if (this.width === 0 || this.burst !== null) return
+    // Snapshot the pane's final pixels (device resolution) — the frame,
+    // ribbon and cracks all travel with the shards.
+    const snapshot = document.createElement('canvas')
+    snapshot.width = this.canvas.width
+    snapshot.height = this.canvas.height
+    snapshot.getContext('2d')?.drawImage(this.canvas, 0, 0)
+    this.burst = new ShardBurst(snapshot, this.width, this.height, {
+      epicness: options.epicness,
+      seed: options.seed,
+      impact: [this.width / 2, this.centsToY(0)],
+      reduceMotion: this.reduceMotion,
+    })
+  }
+
   dispose(): void {
     this.disposed = true
     cancelAnimationFrame(this.rafId)
@@ -151,6 +169,14 @@ export class CanvasGlassRenderer implements GlassRenderer {
     if (!c || this.width === 0) return
     const W = this.width
     const H = this.height
+
+    // Once the glass has burst, only the shards remain.
+    if (this.burst !== null) {
+      c.clearRect(0, 0, W, H)
+      this.burst.draw(c, t)
+      return
+    }
+
     const s = this.state
     const radius = Math.min(18, W * 0.05)
     c.clearRect(0, 0, W, H)

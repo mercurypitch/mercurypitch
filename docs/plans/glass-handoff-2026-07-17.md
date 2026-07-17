@@ -782,3 +782,18 @@ see an animation."
   implementation log / operating manual lives in maff's dotfiles:
   `~/.dotfiles/personal/mercurypitch/glass-implementation-log.md`
   (moved out of the repo by request — update it every phase).
+- **P4 — DONE (branch `feat/glass-campaign`).** The shatter:
+  `src/lib/glass/fracture.ts` (deterministic recursive biased convex
+  splitting, shard rigid bodies, `computeShatterTimeline` — the §17.3
+  performance-scaled slow-mo, reduced-motion aware; 17 tests) +
+  `renderer/shard-burst.ts`, the shared burst compositor both backends
+  drive (pane-snapshot shards with affine-projected 3D tumble, facing
+  brightness, edge glints, dust, flash; TypeGPU snapshots the presented
+  GPU frame + overlay with a blank-detect tint fallback and blanks the
+  pane with a clear-only pass). Epicness (winning-lock cleanliness + rep
+  + fatigue) drives the timeline, the burst and the new `epicness`
+  metric on `glass_shatter`. Synthesized shatter SFX (`sfx.ts`);
+  cross-visit baseline delta on the results (`baseline.ts`, 5 tests).
+  `scripts/verify-glass.mjs SHATTER=1` locks the target after
+  calibration and asserts "Shattered — first try"; both e2e modes pass
+  headless on the typegpu backend, zero runtime errors.
