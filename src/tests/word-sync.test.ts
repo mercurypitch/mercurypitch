@@ -66,6 +66,15 @@ describe('snapToOnsets', () => {
     const snapped = snapToOnsets([4.9, 4.95], [], 4, 5)
     expect(snapped.every((t) => t >= 4 && t < 5)).toBe(true)
   })
+
+  it('stays strictly monotonic even when capped at the line end', () => {
+    // Regression: capping AFTER the monotonic bump collapsed trailing
+    // words onto equal timestamps ([4.94, 4.95, 4.95]).
+    const snapped = snapToOnsets([4.94, 4.97, 4.99], [], 4, 5)
+    for (let i = 1; i < snapped.length; i++) {
+      expect(snapped[i]).toBeGreaterThan(snapped[i - 1])
+    }
+  })
 })
 
 describe('autoTimeLineWords', () => {

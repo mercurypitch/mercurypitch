@@ -76,9 +76,11 @@ export function snapToOnsets(
         break
       }
     }
+    // Cap to the line span FIRST, then enforce strict ordering — the other
+    // way round, words capped onto `prev` collapse to equal timestamps.
     let next = Math.max(lineStart, best)
-    if (next <= prev) next = prev + 0.03
     next = Math.min(next, Math.max(lineStart, lineEnd - 0.05))
+    if (next <= prev) next = prev + 0.03
     result.push(Math.round(next * 1000) / 1000)
     prev = next
   }

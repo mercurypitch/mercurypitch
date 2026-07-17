@@ -250,6 +250,25 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     schedulePillCollapse()
   }
 
+  // A cancelled touch (system edge-swipe, incoming-call sheet, palm
+  // rejection) is NOT a tap — reset state without toggling.
+  const onPillPointerCancel = (e: PointerEvent): void => {
+    if (pillPointerId !== e.pointerId) return
+    pillPointerId = null
+    try {
+      pillRef?.releasePointerCapture(e.pointerId)
+    } catch {
+      /* capture never took */
+    }
+    schedulePillCollapse()
+  }
+
+  // Keyboard/AT activation dispatches a click with no pointer events —
+  // detail === 0 identifies it, so touch taps don't double-toggle.
+  const onPillClick = (e: MouseEvent): void => {
+    if (e.detail === 0) pillTapToggle()
+  }
+
   const pillLevel = (): number => (vocalsOff() ? 0 : props.vocal().volume)
 
   // ── Progress / transport ──────────────────────────────────────
@@ -295,6 +314,18 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     const t = scrub()
     setScrub(null)
     if (t !== null) props.seekTo(t)
+  }
+
+  // Cancelled scrub: abort without seeking.
+  const onProgressCancel = (e: PointerEvent): void => {
+    if (progressPointerId !== e.pointerId) return
+    progressPointerId = null
+    try {
+      progressRef?.releasePointerCapture(e.pointerId)
+    } catch {
+      /* capture never took */
+    }
+    setScrub(null)
   }
 
   const remaining = (): number =>
@@ -471,7 +502,8 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           onPointerDown={onPillPointerDown}
           onPointerMove={onPillPointerMove}
           onPointerUp={onPillPointerUp}
-          onPointerCancel={onPillPointerUp}
+          onPointerCancel={onPillPointerCancel}
+          onClick={onPillClick}
           title={
             vocalsOff() ? 'Bring the vocals back' : 'Sing it — mute the vocals'
           }
@@ -521,7 +553,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             onPointerDown={onProgressDown}
             onPointerMove={onProgressMove}
             onPointerUp={onProgressUp}
-            onPointerCancel={onProgressUp}
+            onPointerCancel={onProgressCancel}
           >
             <div class={styles.progressTrack}>
               <div

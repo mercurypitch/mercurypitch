@@ -496,6 +496,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setBlockEditTarget,
     setUserScrolled,
     setCurrentLineIdx,
+    wordTimings,
 
     // Memos
     canonicalLrcLines,
@@ -1019,6 +1020,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         'Wait for the song to finish loading, then try again',
         'warning',
       )
+      return
+    }
+    // Same data-loss guard as the lyrics paste path: existing word timings
+    // (possibly hand-tapped) are replaced wholesale and there is no undo.
+    if (
+      Object.keys(wordTimings()).length > 0 &&
+      !window.confirm(
+        'Auto word-sync will replace the existing word timings for this song. This cannot be undone. Continue?',
+      )
+    ) {
       return
     }
     const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))

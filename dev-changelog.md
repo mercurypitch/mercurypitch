@@ -6,6 +6,22 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.13] - 2026-07-17
+
+### Added
+
+- **Zen mobile karaoke stage** (#265): `KaraokeMobileStage` replaces the mixer tree on phone-width viewports (`isNarrow` gate, performance preset only) — Portal-mounted on `<body>` (a filtered ancestor was capturing `position:fixed`), `100dvh` sizing + body-scroll lock, safe-area padding, auto-centering lyrics with word-level gradient sweep, tap-to-seek, scrubber + transport bottom bar, collapsible vocal pill (tap = mute via `toggleMute('Vocal')`, drag = `setTrackVolume`, pointercancel-safe, keyboard-activatable), in-stage song sheet (uvr-store library + playlist start, hydration via `KaraokeStageHost.pickSession`). Demo staging passes `autoPlay` through `KaraokeSong`.
+- **Auto word-sync v1** (#265): `src/lib/vocal-onsets.ts` (log-energy flux onset detection on the vocal stem, no model) + `src/lib/word-sync.ts` (syllable-weighted layout, onset snapping, strict monotonic within-span clamping; unit-tested) + `applyAutoWordSync` in the lyrics controller persisting word-level LRC through the gen-finish path. Button in the Fixed/Grid lyrics headers with an overwrite confirm. Research + roadmap in `docs/plans/lyrics-word-sync.md`.
+- **Highlight algorithm** (#265): `computeActiveWord` caps a word's sweep at its syllable-estimated sung duration (150ms floor), then dwells fully lit — held notes/rests no longer smear; returns continuous `fraction` for gradient renderers. Gen-mode taps subtract 180ms audio→motor latency (`TAP_LATENCY_SEC` const, calibration UI later).
+- **iOS audio unlock** (#265): `src/lib/audio-unlock.ts` — synthesized-silent-clip session promotion past the ring/silent switch (ambient→playback), gesture-scoped `resume()`, visibilitychange re-resume; installed by the audio controller and the karaoke entry.
+- **Email verification (soft gate)** (#265): `emailVerifications` table (hash-stored single-use 24h tokens; `scripts/migrate-add-emailVerifications.sql`), verify/resend endpoints (rate-limited, `#everified` redirect mirroring the Google flow), combined verify+welcome email, floating `VerifyEmailBanner` (authStamp-reactive), `karaoke_playlist_start` funnel event allowlisted.
+- **Password UX** (#265): policy relaxed to 8+ chars with letter+number (server + `src/lib/password-policy.ts` mirror — browser generators always pass), live `PasswordRequirements` checklist + `aria-invalid` red borders, proper autocomplete attrs; Karaoke Night sign-in modal de-upselled.
+- **KN mobile layout + playlists rail** (#265): no-overflow topbar (safe-area, truncating chip), hamburger collapsed rail, playlists card (`startPlaylist` one-tap), focus-mode transport restyled to the ControlOverlay glass recipe + focus toggle beside the stage-transparency slider, "our servers" copy sweep.
+
+### Fixed
+
+- Word-boundary black flash (transition-vs-class-swap on the gradient sweep), restart now glides the lyrics sheet to top (idx<0 handling + explicit scroll), demo stems CORS on LAN/https origins (mercury-pitch-models bucket → wildcard GET/HEAD), `snapToOnsets` strict monotonicity when capped at line end.
+
 ## [0.7.12] - 2026-07-16
 
 ### Added

@@ -3,6 +3,20 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.13] - 2026-07-17
+
+### Added
+
+- **Karaoke Night on your phone.** A full-screen zen stage: auto-scrolling synced lyrics with an Apple-style word sweep, a bottom bar with scrubber and transport, a floating vocal pill (tap to mute the guide vocals, drag to set their level), and an in-stage song sheet for switching songs or starting playlists. The demo now starts playing on its own once it loads.
+- **Auto word-sync.** One click in the studio's lyrics header times every word automatically from the separated vocal stem — no tapping needed when line-timed lyrics exist. Manual mapping also got smarter: taps compensate for reaction time, and the highlight now fills each word at a natural pace and rests fully lit through held notes.
+- **Playlists in Karaoke Night.** Your saved playlists appear in the side panel — one tap starts the night.
+- **Confirm your email.** New accounts get a confirmation link (you can keep using everything meanwhile), plus clearer password rules with live feedback while you type.
+
+### Fixed
+
+- Audio on iPhone: songs now play even with the ring/silent switch on.
+- The word highlight no longer flickers dark at word boundaries, restarting a song glides the lyrics back to the top, and the focus-mode control bar matches the Guitar 3D frosted-glass look.
+
 ## [0.7.12] - 2026-07-16
 
 ### Added
