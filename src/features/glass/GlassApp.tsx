@@ -49,6 +49,8 @@ import type { GlassRenderer } from './renderer/GlassRenderer'
 import { playGlassShatter } from './sfx'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
+import type { GlassTake } from './take-strip'
+import { computePeaks, TakeStrip } from './take-strip'
 
 const MIC_CONSUMER_ID = 'glass'
 // A live mic never reads exactly zero (room noise floors ~1e-3); dead zeros
@@ -139,6 +141,10 @@ export const GlassApp: Component = () => {
   // The glide brief waits on an I'm-ready click so users can read + watch
   // the demo; false once they commit (then a short prep count-in runs).
   const [awaitingReady, setAwaitingReady] = createSignal(false)
+  // Reviewable takes (session-only, in-memory — the privacy contract).
+  const [takes, setTakes] = createSignal<GlassTake[]>([])
+  const [playingTakeId, setPlayingTakeId] = createSignal<number | null>(null)
+  const [takeProgress, setTakeProgress] = createSignal(0)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -166,6 +172,15 @@ export const GlassApp: Component = () => {
   // The burst's seed — the share card reproduces THIS run's exact break.
   let burstSeed = 1
   let cardGeneratedSent = false
+  // Take review player — its OWN output context + FX rack so takes stay
+  // playable on the results screen after teardownAudio() closed the mic
+  // context. Decoded PCM (AudioBuffer) is context-independent.
+  let takeIdSeq = 1
+  const takeBuffers = new Map<number, AudioBuffer>()
+  let takeCtx: AudioContext | null = null
+  let takeFx: FxAudio | null = null
+  let takeSource: AudioBufferSourceNode | null = null
+  let takeRaf = 0
 
   const dispatch = (event: GlassEvent): GlassSessionState => {
     const next = reduceSession(session(), event)
@@ -178,8 +193,17 @@ export const GlassApp: Component = () => {
     flowGen++
     releaseReadyGate()
     teardownAudio()
+    disposeTakes()
     renderer?.dispose()
     renderer = null
+  })
+
+  // Any phase/sub-phase transition silences take review — a take must never
+  // bleed into a countdown, a live rep or the auto-replay.
+  createEffect(() => {
+    void session().phase
+    void subPhase()
+    stopTakePlayback()
   })
 
   function releaseReadyGate(): void {
@@ -226,6 +250,149 @@ export const GlassApp: Component = () => {
     }
   }
 
+  // ── take review player ──────────────────────────────────────
+
+  /** Register a finished rep's recording and decode its waveform. */
+  async function addTake(
+    rep: number,
+    blob: Blob,
+    shattered: boolean,
+  ): Promise<void> {
+    const id = takeIdSeq++
+    setTakes((prev) => [
+      ...prev,
+      { id, rep, blob, durationSec: 0, peaks: null, shattered },
+    ])
+    // Decode NOW, while the session context is alive — the PCM buffer
+    // outlives the context, so results-screen review needs no mic revival.
+    if (audioContext === null) return
+    try {
+      const buffer = await audioContext.decodeAudioData(await blob.arrayBuffer())
+      takeBuffers.set(id, buffer)
+      setTakes((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, durationSec: buffer.duration, peaks: computePeaks(buffer) }
+            : t,
+        ),
+      )
+    } catch {
+      // Decode failed — the card stays (placeholder wave); playback will
+      // retry the decode on tap via the player's own context.
+    }
+  }
+
+  /** The player's output graph, created lazily on the first tap. */
+  function ensureTakeAudio(): { ctx: AudioContext; fx: FxAudio } {
+    if (takeCtx === null || takeCtx.state === 'closed') {
+      takeCtx = new AudioContext()
+      takeFx = createFxRack(takeCtx)
+    }
+    takeFx?.setSettings(fxSettings())
+    void takeCtx.resume().catch(() => undefined)
+    return { ctx: takeCtx, fx: takeFx as FxAudio }
+  }
+
+  function stopTakePlayback(): void {
+    cancelAnimationFrame(takeRaf)
+    const source = takeSource
+    takeSource = null
+    if (source !== null) {
+      try {
+        source.stop()
+      } catch {
+        // Already stopped/never started — fine.
+      }
+      source.disconnect()
+    }
+    setPlayingTakeId(null)
+    setTakeProgress(0)
+  }
+
+  function startTakeSource(id: number, buffer: AudioBuffer): void {
+    const { ctx, fx } = ensureTakeAudio()
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(fx.input)
+    const startedAt = ctx.currentTime
+    source.onended = () => {
+      if (takeSource === source) stopTakePlayback()
+    }
+    source.start()
+    takeSource = source
+    setPlayingTakeId(id)
+    setTakeProgress(0)
+    const tick = (): void => {
+      if (takeSource !== source) return
+      setTakeProgress(Math.min(1, (ctx.currentTime - startedAt) / buffer.duration))
+      takeRaf = requestAnimationFrame(tick)
+    }
+    takeRaf = requestAnimationFrame(tick)
+  }
+
+  /** Tap a take card: play it through the FX rack, or pause if playing. */
+  function toggleTake(id: number): void {
+    if (playingTakeId() === id) {
+      stopTakePlayback()
+      return
+    }
+    // ONE sound at a time (the overlap rule): a take starting silences the
+    // demo, the live monitor and the rep auto-replay's audio.
+    stopTakePlayback()
+    stopDemo()
+    pauseMonitor()
+    stopPlaybackAudio()
+    const take = takes().find((t) => t.id === id)
+    if (take === undefined) return
+    const cached = takeBuffers.get(id)
+    if (cached !== undefined) {
+      startTakeSource(id, cached)
+      return
+    }
+    // In-session decode failed (or never ran) — retry on this tap.
+    const { ctx } = ensureTakeAudio()
+    void take.blob
+      .arrayBuffer()
+      .then((bytes) => ctx.decodeAudioData(bytes))
+      // playingTakeId() below is a resolution-time guard (don't autoplay if
+      // something else started meanwhile), not a subscription.
+      // eslint-disable-next-line solid/reactivity
+      .then((buffer) => {
+        takeBuffers.set(id, buffer)
+        setTakes((prev) =>
+          prev.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  durationSec: buffer.duration,
+                  peaks: computePeaks(buffer),
+                }
+              : t,
+          ),
+        )
+        if (playingTakeId() === null) startTakeSource(id, buffer)
+      })
+      .catch(() => undefined)
+  }
+
+  /** Drop a take's audio; metrics and the on-device delta are untouched. */
+  function removeTake(id: number): void {
+    if (playingTakeId() === id) stopTakePlayback()
+    takeBuffers.delete(id)
+    setTakes((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  function disposeTakes(): void {
+    stopTakePlayback()
+    takeBuffers.clear()
+    setTakes([])
+    takeIdSeq = 1
+    takeFx?.dispose()
+    takeFx = null
+    void takeCtx?.close().catch(() => undefined)
+    takeCtx = null
+  }
+
   function enableMonitor(): void {
     const stream = micManager.getStream()
     if (audioContext === null || fxAudio === null || stream === null) return
@@ -267,6 +434,7 @@ export const GlassApp: Component = () => {
 
   function resetAll(): void {
     teardownAudio()
+    disposeTakes() // a new session is a new glass — old takes go with it
     flowGen++
     releaseReadyGate()
     starting = false
@@ -338,6 +506,9 @@ export const GlassApp: Component = () => {
   function applyFxSettings(settings: FxSettings): void {
     setFxSettings(settings)
     fxAudio?.setSettings(settings)
+    // The take player mirrors the rack live — sliders stay tweakable while
+    // a take replays (one audio path per the design interview).
+    takeFx?.setSettings(settings)
   }
 
   function commitFxSettings(settings: FxSettings): void {
@@ -571,12 +742,21 @@ export const GlassApp: Component = () => {
         }
       }
       if (shatterReady(physics)) {
-        recorder?.discard() // the burst IS the payoff — no playback after it
+        // No playback BEAT after the burst (the burst is the payoff), but
+        // the winning take is kept for the review strip — with the wait
+        // capped so a slow MediaRecorder can never delay the shatter.
+        const winningBlob =
+          recorder === null
+            ? null
+            : await Promise.race([
+                recorder.stop(),
+                sleep(400).then(() => null),
+              ])
         return {
           frames: f0.takeFrames(),
           shattered: true,
           peakResonance: peak,
-          takeBlob: null,
+          takeBlob: winningBlob,
         }
       }
       if (left <= 0) break
@@ -785,6 +965,7 @@ export const GlassApp: Component = () => {
         // (ribbon at the lock) is what fractures.
         renderer?.shatter({ epicness, seed })
         if (audioContext !== null) playGlassShatter(audioContext, epicness)
+        if (take.takeBlob !== null) void addTake(rep, take.takeBlob, true)
         dispatch({ type: 'shattered', metrics })
         trackGlass('glass_shatter', {
           rep,
@@ -807,6 +988,7 @@ export const GlassApp: Component = () => {
         bestLockMs: Math.round(metrics.bestLockSec * 1000),
         inBandPct: round2(metrics.inBandPct),
       })
+      if (take.takeBlob !== null) void addTake(rep, take.takeBlob, false)
       await playbackPhase(take.frames, take.takeBlob)
       if (!alive()) return
       dispatch({ type: 'playback-done' })
@@ -1136,6 +1318,16 @@ export const GlassApp: Component = () => {
                     total={GLASS_CONFIG.reps.singSeconds}
                   />
                 </div>
+                {/* Third grid child → desktop: column 1, beneath the FX
+                    rail. Phones: a horizontal strip below everything. */}
+                <TakeStrip
+                  takes={takes()}
+                  playingId={playingTakeId()}
+                  progress={takeProgress()}
+                  disabled={subPhase() === 'active'}
+                  onToggle={toggleTake}
+                  onRemove={removeTake}
+                />
               </div>
             </Show>
             <button class="glass-textbtn" onClick={() => endSession()}>
@@ -1172,6 +1364,14 @@ export const GlassApp: Component = () => {
                   total={GLASS_CONFIG.reps.playbackMaxSeconds}
                 />
               </div>
+              <TakeStrip
+                takes={takes()}
+                playingId={playingTakeId()}
+                progress={takeProgress()}
+                disabled={false}
+                onToggle={toggleTake}
+                onRemove={removeTake}
+              />
             </div>
             <button class="glass-textbtn" onClick={() => endSession()}>
               End session
@@ -1183,6 +1383,14 @@ export const GlassApp: Component = () => {
           <section class="glass-panel glass-panel-clear">
             <h2>Again — you know where it lives now</h2>
             <div class="glass-countdown">{Math.ceil(remaining())}</div>
+            <TakeStrip
+              takes={takes()}
+              playingId={playingTakeId()}
+              progress={takeProgress()}
+              disabled={false}
+              onToggle={toggleTake}
+              onRemove={removeTake}
+            />
           </section>
         </Show>
 
@@ -1211,6 +1419,23 @@ export const GlassApp: Component = () => {
             onCopy={() => void onCopyCard()}
             onAgain={() => resetAll()}
           />
+          <Show when={takes().length > 0}>
+            <section class="glass-panel glass-panel-clear glass-takes-panel">
+              <h3 class="glass-takes-title">Your takes</h3>
+              <TakeStrip
+                takes={takes()}
+                playingId={playingTakeId()}
+                progress={takeProgress()}
+                disabled={false}
+                onToggle={toggleTake}
+                onRemove={removeTake}
+              />
+              <p class="glass-dim glass-takes-note">
+                Takes live only in this tab — leaving the page deletes the
+                audio. Your numbers and the next-time delta stay on device.
+              </p>
+            </section>
+          </Show>
         </Show>
       </main>
 

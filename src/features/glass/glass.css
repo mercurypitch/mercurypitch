@@ -756,6 +756,186 @@ body {
   }
 }
 
+/* ── Takes strip: reviewable recorded reps ─────────────────── */
+/* Desktop: a column beneath the FX rail (third stagegrid child lands in
+   column 1 row 2 by auto-placement). Phones: a swipeable horizontal strip
+   below the stage + sliders. Cards layer a faint cosmic backdrop (swap in
+   generated art via --glass-take-art) under the procedural waveform. */
+
+.glass-takes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px auto 4px;
+  max-width: 640px;
+}
+.glass-take-card {
+  position: relative;
+  width: 210px;
+  border: 1px solid rgba(138, 151, 166, 0.22);
+  border-radius: 12px;
+  background: var(
+    --glass-take-art,
+    radial-gradient(
+        120% 90% at 18% 0%,
+        rgba(120, 90, 255, 0.16),
+        transparent 55%
+      ),
+      radial-gradient(
+        130% 100% at 85% 100%,
+        rgba(45, 212, 191, 0.12),
+        transparent 60%
+      ),
+      rgba(11, 16, 38, 0.55)
+  );
+  background-size: cover;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.glass-take-card.playing {
+  border-color: rgba(255, 233, 168, 0.5);
+  box-shadow: 0 0 18px rgba(255, 233, 168, 0.12);
+}
+.glass-take-card.shattered {
+  border-color: rgba(255, 233, 168, 0.35);
+}
+.glass-take-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 26px 9px 10px;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.glass-take-main:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.glass-take-btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  background: rgba(11, 16, 38, 0.6);
+  color: var(--glass-starlight);
+}
+.glass-take-card.playing .glass-take-btn {
+  color: var(--glass-gold);
+  border-color: rgba(255, 233, 168, 0.5);
+}
+.glass-take-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.glass-take-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.glass-take-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--glass-chrome);
+}
+.glass-take-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--glass-gold);
+}
+.glass-take-time {
+  margin-left: auto;
+  font-family: ui-monospace, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--glass-chrome-dim);
+}
+.glass-take-wave {
+  display: block;
+  width: 100%;
+  height: 34px;
+}
+.glass-take-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(11, 16, 38, 0.5);
+  color: var(--glass-chrome-dim);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.glass-take-remove:hover {
+  color: #f8a1a1;
+  opacity: 1;
+}
+@media (min-width: 880px) {
+  /* The stagegrid column: fill the FX rail's width, stack vertically. */
+  .glass-stagegrid > .glass-takes {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .glass-stagegrid > .glass-takes .glass-take-card {
+    width: 100%;
+  }
+}
+@media (max-width: 879px) {
+  /* Phones: swipeable strip under stage + sliders — the pane stays big. */
+  .glass-stagegrid > .glass-takes {
+    order: 3;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    max-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .glass-stagegrid > .glass-takes .glass-take-card {
+    flex: 0 0 200px;
+  }
+}
+.glass-takes-panel .glass-takes {
+  margin-top: 4px;
+}
+.glass-takes-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-takes-note {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
 /* The FX rack rail — liquid-mercury sliders + cosmic preset pills. */
 .glass-fx {
   display: flex;

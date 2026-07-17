@@ -183,10 +183,23 @@ if (SHATTER) {
     await page.locator('.glass-panel h2').first().textContent()
   )?.trim()
   log.push(`results: ${h2}${sawShatter ? '' : ' (no burst seen)'}`)
+  // The winning take lands in the results strip, badged Shattered.
+  await page.waitForTimeout(1000)
+  const shatterCards = await page.locator('.glass-take-card.shattered').count()
+  log.push(`takes strip: ${shatterCards} shattered card(s)`)
 } else {
   await page.getByText('That was you').waitFor({ timeout: 20000 })
   await page.getByRole('button', { name: 'Nebula' }).click()
   log.push('playback + preset change')
+
+  // The rep's take is reviewable in the strip during playback: card exists,
+  // and tapping it swaps the audio to the take player (one sound at a time).
+  await page.waitForSelector('.glass-take-card', { timeout: 5000 })
+  const cards = await page.locator('.glass-take-card').count()
+  await page.locator('.glass-take-main').first().click()
+  await page.waitForTimeout(600)
+  const playing = await page.locator('.glass-take-card.playing').count()
+  log.push(`takes strip: ${cards} card(s), tap-to-play ${playing === 1 ? 'ok' : 'FAILED'}`)
 
   await page.getByRole('button', { name: 'End session' }).click()
   await page.waitForSelector('.glass-metrics', { timeout: 10000 })
