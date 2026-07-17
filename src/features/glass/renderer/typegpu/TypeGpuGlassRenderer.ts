@@ -22,6 +22,7 @@ import { tgpu } from 'typegpu'
 import { arrayOf, builtin, f32, struct, u32, vec2f, vec3f, vec4f, } from 'typegpu/data'
 import { abs, clamp, dot, exp, fract, length, max, min, mix, mul, sin, smoothstep, sub, } from 'typegpu/std'
 import { acquireWebGpuDevice } from '@/lib/gpu/webgpu-device'
+import { CalCamera } from '../cal-camera'
 import { CrackField } from '../crack-field'
 import { drawGlassFrame } from '../frame'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
@@ -237,7 +238,8 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
   private state: GlassSceneUpdate = IDLE_STATE
   /** Pane-space samples: x = y-position 0..1, y = voiced flag. */
   private ribbon: Array<{ y: number; voiced: number }> = []
-  private calCenter: number | null = null
+  /** Dead-zone view camera for calibrate mode (holding a note never pans). */
+  private calCamera = new CalCamera()
   private crackField = new CrackField()
   private burst: ShardBurst | null = null
   private reduceMotion =
@@ -308,7 +310,12 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
   private resize(host: HTMLElement): void {
     const rect = host.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
-    this.dpr = Math.min(DPR_CAP, window.devicePixelRatio || 1)
+    const dpr = Math.min(DPR_CAP, window.devicePixelRatio || 1)
+    // Setting canvas.width clears the surface (a visible flash) — skip
+    // observer callbacks that didn't actually change the backing size.
+    if (rect.width === this.width && rect.height === this.height && dpr === this.dpr)
+      return
+    this.dpr = dpr
     this.width = rect.width
     this.height = rect.height
     for (const canvas of [this.gpuCanvas, this.overlay]) {
@@ -320,22 +327,30 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
 
   update(state: GlassSceneUpdate): void {
     this.state = state
+    // voiced:0 is a BREAK in the shader's polyline: breaths AND
+    // out-of-view pitches cut the line instead of pinning at the pane
+    // edge (no more vertical swings when the singer leaves the visible
+    // range — the line resumes when they're back).
     if (state.mode === 'calibrate') {
       if (state.offCents === null) {
         this.ribbon.push({ y: 0.5, voiced: 0 })
       } else {
-        this.calCenter =
-          this.calCenter === null
-            ? state.offCents
-            : this.calCenter * 0.97 + state.offCents * 0.03
-        this.ribbon.push({
-          y: this.offToY(state.offCents - this.calCenter, CALIBRATE_VIEW_CENTS),
-          voiced: 1,
-        })
+        // No target yet: a dead-zone camera follows the voice — a held
+        // note stays put; only a real glide pans the view.
+        const center = this.calCamera.track(
+          state.offCents,
+          CALIBRATE_VIEW_CENTS,
+        )
+        const off = state.offCents - center
+        this.ribbon.push(
+          Math.abs(off) > CALIBRATE_VIEW_CENTS
+            ? { y: 0.5, voiced: 0 }
+            : { y: this.offToY(off, CALIBRATE_VIEW_CENTS), voiced: 1 },
+        )
       }
     } else if (state.mode === 'live' || state.mode === 'playback') {
       this.ribbon.push(
-        state.offCents === null
+        state.offCents === null || Math.abs(state.offCents) > VIEW_CENTS
           ? { y: 0.5, voiced: 0 }
           : { y: this.offToY(state.offCents), voiced: 1 },
       )
@@ -346,7 +361,7 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
 
   beginTake(): void {
     this.ribbon = []
-    this.calCenter = null
+    this.calCamera.reset()
   }
 
   shatter(options: { epicness: number; seed: number }): void {

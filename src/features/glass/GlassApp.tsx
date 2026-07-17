@@ -16,7 +16,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
 import type { DemoSound } from '@/lib/demo-audio'
@@ -890,6 +890,20 @@ export const GlassApp: Component = () => {
     return `You're ${Math.abs(Math.round(off))}¢ ${off < 0 ? 'flat' : 'sharp'} — ease ${off < 0 ? 'up' : 'off'}.`
   }
 
+  // The coach feeds off a ~30 Hz loop; throttle the visible text so the
+  // heading never strobes between phrasings at pitch boundaries. Layout
+  // safety is CSS's job (.glass-coach is a fixed-height single line).
+  const [coachLine, setCoachLine] = createSignal('Sing to the glass')
+  let coachChangedAt = 0
+  createEffect(() => {
+    const line = liveCoach()
+    const now = performance.now()
+    if (line !== coachLine() && now - coachChangedAt >= 400) {
+      coachChangedAt = now
+      setCoachLine(line)
+    }
+  })
+
   const targetLabel = (): string => {
     const midi = session().targetMidi
     return midi === null ? '—' : midiToNoteNameOctave(midi)
@@ -1082,15 +1096,15 @@ export const GlassApp: Component = () => {
         <Show when={phase() === 'sing'}>
           <section class="glass-panel glass-panel-wide glass-panel-clear">
             <div class="glass-progress">Rep {session().rep}</div>
-            <h2>
-              {subPhase() === 'active' ? liveCoach() : 'Sing to the glass'}
+            <h2 class="glass-coach">
+              {subPhase() === 'active' ? coachLine() : 'Sing to the glass'}
             </h2>
-            <p class="glass-dim">
-              Reach {targetLabel()} and hold it steady.
-              <Show when={session().rep > GLASS_CONFIG.reps.restNudgeAfterReps}>
-                {' '}
-                (Give your voice a rest soon — steadier beats louder.)
-              </Show>
+            {/* One line that SWAPS (never appends) — growing text would
+                reflow the stage below it on phones. */}
+            <p class="glass-dim glass-subline">
+              {session().rep > GLASS_CONFIG.reps.restNudgeAfterReps
+                ? 'Rest your voice a moment — steadier beats louder.'
+                : `Reach ${targetLabel()} and hold it steady.`}
             </p>
             <Show
               when={subPhase() === 'active'}

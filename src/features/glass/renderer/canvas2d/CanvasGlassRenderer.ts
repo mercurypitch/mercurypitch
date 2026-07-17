@@ -10,6 +10,7 @@
 // non-WebGPU fallback once the TypeGPU backend lands (P3).
 // ============================================================
 
+import { CalCamera } from '../cal-camera'
 import { CrackField } from '../crack-field'
 import { drawGlassFrame } from '../frame'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
@@ -45,8 +46,8 @@ export class CanvasGlassRenderer implements GlassRenderer {
   private state: GlassSceneUpdate = IDLE_STATE
   /** Ribbon trail — cents offsets (nulls are breaths) newest-last. */
   private ribbon: Array<{ off: number; level: number } | null> = []
-  /** Rolling view center for calibrate mode (absolute cents). */
-  private calCenter: number | null = null
+  /** Dead-zone view camera for calibrate mode (holding a note never pans). */
+  private calCamera = new CalCamera()
   private crackField = new CrackField()
   private burst: ShardBurst | null = null
   private reduceMotion =
@@ -76,7 +77,12 @@ export class CanvasGlassRenderer implements GlassRenderer {
   private resize(host: HTMLElement): void {
     const rect = host.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
-    this.dpr = Math.min(DPR_CAP, window.devicePixelRatio || 1)
+    const dpr = Math.min(DPR_CAP, window.devicePixelRatio || 1)
+    // Setting canvas.width clears the surface (a visible flash) — skip
+    // observer callbacks that didn't actually change the backing size.
+    if (rect.width === this.width && rect.height === this.height && dpr === this.dpr)
+      return
+    this.dpr = dpr
     this.width = rect.width
     this.height = rect.height
     this.canvas.width = Math.round(rect.width * this.dpr)
@@ -87,24 +93,30 @@ export class CanvasGlassRenderer implements GlassRenderer {
   update(state: GlassSceneUpdate): void {
     this.state = state
 
-    // Ribbon sample per update (~30 Hz from the app loop).
+    // Ribbon sample per update (~30 Hz from the app loop). A null is a
+    // BREAK: breaths AND out-of-view pitches cut the line instead of
+    // pinning at the pane edge (no more vertical swings when the singer
+    // leaves the visible range — the line resumes when they're back).
     if (state.mode === 'calibrate') {
       if (state.offCents === null) {
         this.ribbon.push(null)
       } else {
-        // No target yet: dance around a rolling center of what's sung.
-        this.calCenter =
-          this.calCenter === null
-            ? state.offCents
-            : this.calCenter * 0.97 + state.offCents * 0.03
-        this.ribbon.push({
-          off: state.offCents - this.calCenter,
-          level: state.level,
-        })
+        // No target yet: a dead-zone camera follows the voice — a held
+        // note stays put; only a real glide pans the view.
+        const center = this.calCamera.track(
+          state.offCents,
+          CALIBRATE_VIEW_CENTS,
+        )
+        const off = state.offCents - center
+        this.ribbon.push(
+          Math.abs(off) > CALIBRATE_VIEW_CENTS
+            ? null
+            : { off, level: state.level },
+        )
       }
     } else if (state.mode === 'live' || state.mode === 'playback') {
       this.ribbon.push(
-        state.offCents === null
+        state.offCents === null || Math.abs(state.offCents) > VIEW_CENTS
           ? null
           : { off: state.offCents, level: state.level },
       )
@@ -117,7 +129,7 @@ export class CanvasGlassRenderer implements GlassRenderer {
 
   beginTake(): void {
     this.ribbon = []
-    this.calCenter = null
+    this.calCamera.reset()
   }
 
   shatter(options: { epicness: number; seed: number }): void {

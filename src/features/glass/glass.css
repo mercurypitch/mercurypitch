@@ -174,6 +174,9 @@ body {
   font-variant-numeric: tabular-nums;
   font-size: 15px;
   color: var(--glass-starlight);
+  /* Widest value ("locked") — chips must not resize as values change. */
+  min-width: 6ch;
+  text-align: center;
 }
 .glass-chip .v.good {
   color: var(--glass-aqua);
@@ -399,6 +402,31 @@ body {
 .glass-dim {
   color: var(--glass-chrome);
   font-size: 13px;
+}
+
+/* Live coach heading + subline (sing phase): fixed-height single lines so
+   the ever-changing copy can NEVER wrap or reflow the stage beneath them —
+   wrapping here made the whole page flicker on phones while singing. */
+.glass-coach {
+  height: 1.35em;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.glass-subline {
+  height: 1.5em;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 879px) {
+  /* Phones: scale the coach down so the longest line fits one row. */
+  .glass-panel h2.glass-coach {
+    font-size: clamp(14px, 4.2vw, 20px);
+  }
 }
 .glass-error {
   color: #f8a1a1;
