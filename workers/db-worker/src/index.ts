@@ -650,6 +650,7 @@ const FUNNEL_EVENTS = new Set([
   'karaoke_upload_error',
   'karaoke_song_staged',
   'karaoke_playlist_deeplink',
+  'karaoke_playlist_start',
   'karaoke_cta_studio',
   // Reserved for the weekly-challenge/email releases, so those client
   // rollouts need no worker redeploy.

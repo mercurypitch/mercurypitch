@@ -22,6 +22,7 @@ export type KaraokeFunnelEvent =
   | 'karaoke_upload_error'
   | 'karaoke_song_staged'
   | 'karaoke_playlist_deeplink'
+  | 'karaoke_playlist_start'
   | 'karaoke_cta_studio'
 
 const CLIENT_ID_KEY = 'mirror.clientId.v1' // one anonymous id per device, shared across funnels

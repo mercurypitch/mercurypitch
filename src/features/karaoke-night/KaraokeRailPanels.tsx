@@ -3,7 +3,8 @@
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
-import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
+import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
@@ -113,6 +114,17 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     })
   }
 
+  const playPlaylist = (id: string) => {
+    startPlaylist(id)
+    if (isPlaylistActive()) {
+      trackKaraoke('karaoke_playlist_start')
+    } else {
+      // startPlaylist no-ops when nothing in the playlist resolves to a
+      // playable session on this device.
+      showNotification('That playlist has no playable songs yet.', 'warning')
+    }
+  }
+
   const handleFile = async (file: File | undefined) => {
     if (file === undefined) return
     setUploadError('')
@@ -177,10 +189,10 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
               classList={{ 'kn-chip--server': effectiveMode() === 'server' }}
               onClick={toggleMode}
               disabled={mode() === 'server' && !serverReady()}
-              title="Switch between on-device and studio-server separation"
+              title="Switch between on-device and studio-quality separation"
             >
               {effectiveMode() === 'server'
-                ? 'Studio servers'
+                ? 'Studio quality'
                 : 'On this device'}
             </button>
           </Show>
@@ -196,7 +208,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           }
         >
           <p class="kn-card-sub">
-            Studio-quality separation on our servers.
+            Studio-quality separation — the cleanest vocal lift.
             <Show when={credits() !== null}>
               {' '}
               <strong>{credits()} credits</strong> left · 1 credit per song.
@@ -256,9 +268,9 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             >
               <Show
                 when={uploadSession()?.phase === 'queued'}
-                fallback={`${Math.round(uploadSession()?.progress ?? 0)}% — separating on our servers.`}
+                fallback={`${Math.round(uploadSession()?.progress ?? 0)}% — separating in studio quality.`}
               >
-                Waiting for a studio server…
+                Warming up the studio — your song starts in a moment…
               </Show>
             </Show>
           </p>
@@ -289,6 +301,44 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                     onClick={() => void singSession(s.sessionId)}
                   >
                     {s.originalFile?.name ?? s.sessionId}
+                  </button>
+                </li>
+              )}
+            </For>
+          </ul>
+        </section>
+      </Show>
+
+      <Show when={getPlaylistsReactive().length > 0}>
+        <section class="kn-card">
+          <p class="kn-card-kicker">Your playlists</p>
+          <ul class="kn-library">
+            <For each={getPlaylistsReactive()}>
+              {(p) => (
+                <li>
+                  <button
+                    class="kn-library-song kn-playlist-row"
+                    onClick={() => playPlaylist(p.id)}
+                    title={`Start "${p.name}"`}
+                  >
+                    <svg
+                      class="kn-playlist-play"
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      aria-hidden="true"
+                    >
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                    <span class="kn-playlist-name">{p.name}</span>
+                    <span class="kn-playlist-count">
+                      {p.items.length}{' '}
+                      {p.items.some((i) => i.kind === 'group')
+                        ? 'entries'
+                        : p.items.length === 1
+                          ? 'song'
+                          : 'songs'}
+                    </span>
                   </button>
                 </li>
               )}

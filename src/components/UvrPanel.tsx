@@ -1326,7 +1326,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <Show when={uvrProcessingMode() === 'server'}>
                   <button
                     class="server-cost-hint"
-                    title="Server separation runs on a cloud GPU and uses credits from your account. Click to manage credits."
+                    title="Studio-quality separation runs on a cloud GPU and uses credits from your account. Click to manage credits."
                     data-testid="uvr-server-cost-hint"
                     onClick={() => openSettingsSection('credits')}
                   >

@@ -3,7 +3,8 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
+import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -236,11 +237,18 @@ export const useStemMixerAudioController = (
         ...PITCH_DETECTOR_DEFAULTS,
       })
     }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume()
+    if (audioCtx.state !== 'running') {
+      void audioCtx.resume().catch(() => {
+        // Outside a user gesture (iOS) — audio-unlock retries on the next tap.
+      })
     }
     return audioCtx
   }
+
+  // iOS: first tap anywhere primes the playback audio session (the ring/silent
+  // switch mutes plain WebAudio) and re-resumes a context iOS suspended while
+  // the tab was hidden. See src/lib/audio-unlock.ts.
+  onCleanup(installAudioUnlock(() => audioCtx))
 
   // ── Load Stems ───────────────────────────────────────────────
   const loadStems = async () => {
@@ -523,7 +531,9 @@ export const useStemMixerAudioController = (
 
   // ── Transport ────────────────────────────────────────────────
   const handlePlay = () => {
-    ensureAudioCtx()
+    // Runs inside the play gesture — the one moment iOS lets us both resume
+    // the context and promote the audio session past the silent switch.
+    unlockAudio(ensureAudioCtx())
     disconnectSources()
     createSources(pauseOffset)
     wallPlayStart = audioCtx!.currentTime
