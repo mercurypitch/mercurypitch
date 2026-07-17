@@ -40,7 +40,7 @@ export const GLASS_CONFIG = {
   reps: {
     singSeconds: 8,
     /** Cap on the listen-back replay of a take. */
-    playbackMaxSeconds: 4.2,
+    playbackMaxSeconds: 8,
     /** Reps per session before the results screen offers a wrap-up. */
     defaultReps: 3,
     /** Soft "give your voice a rest" nudge after this many reps. */

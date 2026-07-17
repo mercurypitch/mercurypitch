@@ -31,6 +31,15 @@ export interface F0Stream {
   takeFrames: () => PitchFrame[]
   /** The most recent frame, for live visual feedback (null before any). */
   latest: () => PitchFrame | null
+  /**
+   * The most recent frame with a display/gameplay smoothing pass on top of
+   * the detector's own stability filter: a median over the last few VOICED
+   * readings (kills residual octave flickers) and short-gap bridging (the
+   * held pitch survives consonants and quick breaths for ~130 ms instead
+   * of collapsing to unvoiced). Recorded `takeFrames()` stay RAW so
+   * metrics remain honest — this view is for ribbons and resonance.
+   */
+  latestSmoothed: () => PitchFrame | null
   /** RMS input level of the most recent analysed buffer (0..1). */
   latestLevel: () => number
   /** Highest RMS level observed since the last startTask(). */
@@ -75,6 +84,33 @@ export function createF0Stream(
   const buffer = new Float32Array(FFT_SIZE)
   let frames: PitchFrame[] = []
   let latestFrame: PitchFrame | null = null
+  // Smoothed-view state (median window over voiced f0 + gap bridging).
+  const MEDIAN_WINDOW = 5
+  const BRIDGE_FRAMES = 8 // ~130 ms at 60 fps
+  let voicedRing: number[] = []
+  let bridgeLeft = 0
+  let heldFrame: PitchFrame | null = null
+  let smoothedFrame: PitchFrame | null = null
+
+  function updateSmoothed(frame: PitchFrame): void {
+    const voiced = frame.f0 > 0 && frame.conf >= 0.5
+    if (voiced) {
+      voicedRing.push(frame.f0)
+      if (voicedRing.length > MEDIAN_WINDOW) voicedRing.shift()
+      const sorted = [...voicedRing].sort((a, b) => a - b)
+      const median = sorted[Math.floor(sorted.length / 2)]
+      smoothedFrame = { ...frame, f0: median }
+      heldFrame = smoothedFrame
+      bridgeLeft = BRIDGE_FRAMES
+    } else if (bridgeLeft > 0 && heldFrame !== null) {
+      // Bridge consonants/quick breaths: hold the last voiced pitch.
+      bridgeLeft--
+      smoothedFrame = { ...heldFrame, t: frame.t, rms: frame.rms }
+    } else {
+      smoothedFrame = frame
+      voicedRing = []
+    }
+  }
   let latestRms = 0
   let maxRms = 0
   let taskStart = performance.now()
@@ -107,6 +143,7 @@ export function createF0Stream(
     }
     frames.push(frame)
     latestFrame = frame
+    updateSmoothed(frame)
   }
   rafId = requestAnimationFrame(loop)
 
@@ -118,6 +155,10 @@ export function createF0Stream(
       latestRms = 0
       maxRms = 0
       recording = true
+      voicedRing = []
+      bridgeLeft = 0
+      heldFrame = null
+      smoothedFrame = null
       // The detector's stability filter keeps a short pitch history that
       // would otherwise clamp the first frames of a new take toward the
       // previous task's trailing pitch.
@@ -130,6 +171,7 @@ export function createF0Stream(
       return taken
     },
     latest: () => latestFrame,
+    latestSmoothed: () => smoothedFrame,
     latestLevel: () => latestRms,
     maxLevel: () => maxRms,
     dispose: () => {

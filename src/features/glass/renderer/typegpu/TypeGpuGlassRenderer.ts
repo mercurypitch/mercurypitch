@@ -20,7 +20,7 @@
 import type { TgpuRoot } from 'typegpu'
 import { tgpu } from 'typegpu'
 import { arrayOf, builtin, f32, struct, u32, vec2f, vec3f, vec4f, } from 'typegpu/data'
-import { abs, clamp, dot, exp, fract, length, max, min, mix, mul, sin, sub, } from 'typegpu/std'
+import { abs, clamp, dot, exp, fract, length, max, min, mix, mul, sin, smoothstep, sub, } from 'typegpu/std'
 import { acquireWebGpuDevice } from '@/lib/gpu/webgpu-device'
 import { CrackField } from '../crack-field'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
@@ -40,6 +40,8 @@ const SceneUniforms = struct({
   ribbonCount: u32,
   /** canvas width / height */
   aspect: f32,
+  /** pane height in CSS pixels — distances convert to px for crisp strokes */
+  heightPx: f32,
   /** Latest sample: y (0..1 pane space), voiced flag, in-band flag, level */
   headY: f32,
   headVoiced: f32,
@@ -77,35 +79,44 @@ const fragment = tgpu.fragmentFn({ in: { uv: vec2f }, out: vec4f })(({
   uv,
 }) => {
   const u = sceneLayout.$.uni
-  // Aspect-corrected space so distances are round, not stretched.
+  // Aspect-corrected space (units of pane HEIGHT); px converts to pixels.
   const p = vec2f(uv.x * u.aspect, uv.y)
 
-  // Glass body: a translucent depth tint — the page's cosmos glows
-  // through the transparent canvas behind this.
+  // Rounded-pane mask so nothing paints outside the chrome frame corners.
+  const halfW = (u.aspect * u.heightPx) / 2
+  const halfH = u.heightPx / 2
+  const posX = abs(p.x * u.heightPx - halfW) - (halfW - 20)
+  const posY = abs(p.y * u.heightPx - halfH) - (halfH - 20)
+  const sd =
+    length(vec2f(max(posX, 0), max(posY, 0))) + min(max(posX, posY), 0) - 18
+  const mask = 1 - smoothstep(-1.5, 0.5, sd)
+
+  // Glass body: a LIGHT translucent depth tint — the cosmos must genuinely
+  // glow through (the artifact look).
   let col = mul(
     mix(vec3f(0.105, 0.141, 0.188), vec3f(0.035, 0.027, 0.078), uv.y),
-    0.85,
+    0.55,
   )
-  let alpha = f32(0.34)
+  let alpha = f32(0.17)
 
-  // Resonance ripples blooming from the target line's center.
+  // Resonance ripples blooming from the target line.
   if (u.resonance > 0.02) {
     const rip = length(vec2f((uv.x - 0.5) * u.aspect, (uv.y - 0.5) * 2.6))
     const wave = sin(rip * 30 - u.time * 4.4) * 0.5 + 0.5
-    const glowR = wave * exp(-rip * 2.2) * u.resonance * 0.3
+    const glowR = wave * exp(-rip * 2.2) * u.resonance * 0.22
     col = vec3f(col.x + glowR, col.y + glowR * 0.914, col.z + glowR * 0.659)
   }
 
-  // Target etch (live + playback): soft gold band + a dashed line.
+  // Target etch (live + playback): soft gold band + a CRISP dashed line.
   if (u.mode >= 2) {
-    const dy = abs(uv.y - 0.5)
-    const band = f32(35.0 / (VIEW_CENTS * 2.0)) // tolerance half-height
-    const bandGlow = (1 - clamp(dy / band, 0, 1)) * 0.06
+    const dyPx = abs(uv.y - 0.5) * u.heightPx
+    const bandPx = (35.0 / (VIEW_CENTS * 2.0)) * u.heightPx
+    const bandGlow = (1 - clamp(dyPx / bandPx, 0, 1)) * 0.05
     const dash = sin(uv.x * 90) * 0.5 + 0.5
-    const line = exp(-dy * dy * 90000) * (0.25 + 0.5 * dash)
+    const line = (1 - smoothstep(0.7, 1.7, dyPx)) * (0.35 + 0.55 * dash)
     const gold = bandGlow + line * 0.7
     col = vec3f(col.x + gold, col.y + gold * 0.914, col.z + gold * 0.659)
-    alpha += line * 0.35
+    alpha += line * 0.45
   }
 
   // The ribbon: distance to the sample polyline (storage buffer).
@@ -125,10 +136,12 @@ const fragment = tgpu.fragmentFn({ in: { uv: vec2f }, out: vec4f })(({
       }
     }
   }
-  if (minDist < 8) {
-    const wide = exp(-minDist * 26)
-    const core = exp(-minDist * minDist * 14000)
-    // Blue → aqua when the head is in band; gold during playback.
+  const dPx = minDist * u.heightPx
+  if (dPx < 30) {
+    // The artifact's stroke: a crisp ~2 px core with a tight, quiet halo —
+    // never a glow cloud.
+    const core = 1 - smoothstep(1.4, 2.5, dPx)
+    const halo = exp(-dPx * 0.32) * 0.12
     let ribbonCol = mix(
       vec3f(0.345, 0.651, 1.0),
       vec3f(0.176, 0.831, 0.749),
@@ -137,43 +150,45 @@ const fragment = tgpu.fragmentFn({ in: { uv: vec2f }, out: vec4f })(({
     if (u.mode === 3) {
       ribbonCol = vec3f(1.0, 0.914, 0.659)
     }
-    // Quicksilver violet fringe rises with resonance.
-    const fringe = mul(vec3f(0.737, 0.549, 1.0), wide * u.resonance * 0.3)
+    const fringe = mul(vec3f(0.737, 0.549, 1.0), halo * u.resonance * 0.6)
     col = vec3f(
-      col.x + ribbonCol.x * (wide * 0.3 + core * 0.95) + fringe.x,
-      col.y + ribbonCol.y * (wide * 0.3 + core * 0.95) + fringe.y,
-      col.z + ribbonCol.z * (wide * 0.3 + core * 0.95) + fringe.z,
+      col.x + ribbonCol.x * (core * 0.95 + halo) + fringe.x,
+      col.y + ribbonCol.y * (core * 0.95 + halo) + fringe.y,
+      col.z + ribbonCol.z * (core * 0.95 + halo) + fringe.z,
     )
-    alpha += wide * 0.22 + core * 0.6
+    alpha += core * 0.85 + halo * 0.5
   }
 
-  // The singing head: a swelling dot at the newest sample.
+  // The singing head: a small bright disc that swells gently with level.
   if (u.headVoiced > 0.5 && u.mode !== 3 && u.ribbonCount > 0) {
     const headX = (f32(u.ribbonCount - 1) / f32(RIBBON_MAX - 1)) * u.aspect
-    const hd = length(sub(p, vec2f(headX, u.headY)))
-    const headGlow = exp(-hd * hd * 9000) * (0.7 + u.level * 2)
+    const hdPx = length(sub(p, vec2f(headX, u.headY))) * u.heightPx
+    const radius = 3.5 + u.level * 5
+    const disc = 1 - smoothstep(radius - 0.9, radius + 0.9, hdPx)
+    const glowH = exp(-hdPx * 0.3) * 0.16
     const headCol = mix(
       vec3f(0.345, 0.651, 1.0),
       vec3f(0.176, 0.831, 0.749),
       u.headInBand,
     )
     col = vec3f(
-      col.x + headCol.x * headGlow,
-      col.y + headCol.y * headGlow,
-      col.z + headCol.z * headGlow,
+      col.x + headCol.x * (disc + glowH),
+      col.y + headCol.y * (disc + glowH),
+      col.z + headCol.z * (disc + glowH),
     )
-    alpha += headGlow * 0.5
+    alpha += disc * 0.9 + glowH * 0.4
   }
 
   // Specular sheen drifting diagonally; brightens with resonance.
   const sweep = fract(u.time * 0.045) * 2.2 - 0.6
   const q = uv.x * 0.8 + uv.y * 0.2 - sweep
-  const spec = exp(-q * q * 240) * (0.05 + u.resonance * 0.1)
+  const spec = exp(-q * q * 240) * (0.04 + u.resonance * 0.08)
   col = vec3f(col.x + spec, col.y + spec, col.z + spec)
-  alpha += spec * 0.4
+  alpha += spec * 0.35
 
-  // Premultiplied-alpha safety: rgb must never exceed alpha.
-  alpha = clamp(alpha, 0, 1)
+  // Rounded-pane mask + premultiplied-alpha safety.
+  alpha = clamp(alpha, 0, 1) * mask
+  col = mul(col, mask)
   const lum = max(col.x, max(col.y, col.z))
   alpha = max(alpha, min(lum, 1))
   return vec4f(min(col.x, alpha), min(col.y, alpha), min(col.z, alpha), alpha)
@@ -441,6 +456,7 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
               : 0,
       ribbonCount: this.ribbon.length,
       aspect: this.width / this.height,
+      heightPx: this.height,
       headY: head?.y ?? 0.5,
       headVoiced: head?.voiced ?? 0,
       headInBand: inBand ? 1 : 0,

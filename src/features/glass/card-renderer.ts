@@ -62,20 +62,41 @@ export function renderShatterCard(
   }
   ctx.globalAlpha = 1
 
-  // Wordmark.
-  ctx.textAlign = 'center'
-  ctx.font = '600 30px system-ui, sans-serif'
+  // Wordmark in the brand logo colors: "Mercury" chrome-white, "Pitch" in
+  // the spectrum gradient, "GLASS" as the quiet chrome tail.
+  const wordmarkY = format === 'story' ? 150 : 86
+  ctx.font = '600 42px system-ui, sans-serif'
+  const wMercury = ctx.measureText('Mercury').width
+  const wPitch = ctx.measureText('Pitch').width
+  ctx.font = '600 26px system-ui, sans-serif'
+  const wTail = ctx.measureText('  GLASS').width
+  const total = wMercury + wPitch + wTail
+  let penX = cx - total / 2
+  ctx.textAlign = 'left'
+  ctx.font = '600 42px system-ui, sans-serif'
+  ctx.fillStyle = '#e6edf3'
+  ctx.fillText('Mercury', penX, wordmarkY)
+  penX += wMercury
+  const spectrum = ctx.createLinearGradient(penX, 0, penX + wPitch, 0)
+  spectrum.addColorStop(0, '#58a6ff')
+  spectrum.addColorStop(0.5, '#2dd4bf')
+  spectrum.addColorStop(1, '#bc8cff')
+  ctx.fillStyle = spectrum
+  ctx.fillText('Pitch', penX, wordmarkY)
+  penX += wPitch
+  ctx.font = '600 26px system-ui, sans-serif'
   ctx.fillStyle = CHROME
-  const wordmarkY = format === 'story' ? 150 : 92
-  ctx.fillText('M E R C U R Y P I T C H  ·  G L A S S', cx, wordmarkY)
+  ctx.fillText('  GLASS', penX, wordmarkY)
+  ctx.textAlign = 'center'
 
   // The pane, frozen mid-burst (or intact when it held).
-  const paneW = format === 'story' ? 620 : 480
-  const paneH = format === 'story' ? 806 : 560
+  const paneW = format === 'story' ? 620 : 460
+  const paneH = format === 'story' ? 806 : 520
   const paneX = cx - paneW / 2
-  const paneY = format === 'story' ? 260 : 170
+  const paneY = format === 'story' ? 260 : 150
   const shattered = input.shatterRep !== null
   drawFrozenPane(ctx, paneX, paneY, paneW, paneH, input.seed, shattered)
+  drawRibbonAccent(ctx, paneX, paneY, paneW, paneH, input.seed, shattered)
 
   // Gold target line + note.
   const targetY = paneY + paneH / 2
@@ -130,9 +151,65 @@ export function renderShatterCard(
 
   ctx.font = '500 32px system-ui, sans-serif'
   ctx.fillStyle = '#8a86a8'
-  ctx.fillText('mercurypitch.com/glass', cx, height - 60)
+  ctx.fillText('mercurypitch.com/glass', cx, height - 76)
 
   return canvas
+}
+
+/** The living aqua ribbon (and its head) crossing the pane — locked onto
+ *  the gold line when the glass broke, reaching for it when it held. */
+function drawRibbonAccent(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  seed: number,
+  shattered: boolean,
+): void {
+  const rng = mulberry32(seed ^ 0x7e11)
+  const phase = rng() * Math.PI * 2
+  const midY = y + h / 2
+  ctx.save()
+  ctx.beginPath()
+  ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 20)
+  ctx.clip()
+  const path = new Path2D()
+  const steps = 64
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const px = x + 14 + (w - 28) * t
+    const settle = shattered ? Math.min(1, t * 1.6) : Math.min(1, t * 1.15)
+    const wander =
+      Math.sin(t * 5.2 + phase) * 0.5 + Math.sin(t * 11.4 + phase * 2) * 0.22
+    const amp = (1 - settle) * h * 0.3 + (shattered ? 3 : 22)
+    const py = midY + wander * amp + (shattered ? 0 : -h * 0.06 * (1 - t))
+    if (i === 0) path.moveTo(px, py)
+    else path.lineTo(px, py)
+  }
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = '#2dd4bf'
+  ctx.shadowColor = '#2dd4bf'
+  ctx.shadowBlur = 18
+  ctx.globalAlpha = 0.28
+  ctx.lineWidth = 9
+  ctx.stroke(path)
+  ctx.globalAlpha = 0.95
+  ctx.lineWidth = 3.2
+  ctx.shadowBlur = 10
+  ctx.stroke(path)
+  ctx.shadowBlur = 0
+  // The head, resting on (or near) the gold line.
+  ctx.beginPath()
+  ctx.arc(x + w - 14, shattered ? midY : midY - h * 0.0, 7, 0, Math.PI * 2)
+  ctx.fillStyle = '#2dd4bf'
+  ctx.shadowColor = '#2dd4bf'
+  ctx.shadowBlur = 14
+  ctx.fill()
+  ctx.shadowBlur = 0
+  ctx.globalAlpha = 1
+  ctx.restore()
 }
 
 /** The pane as chrome-lit line art: this run's exact fracture, each shard

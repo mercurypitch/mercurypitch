@@ -208,11 +208,25 @@ body {
 .glass-wordmark {
   margin: 0 0 14px;
   font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.glass-wm-mercury {
+  color: #e6edf3;
+}
+.glass-wm-pitch {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.glass-wm-tail {
   color: var(--glass-chrome);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-left: 8px;
 }
 
 .glass-landing h1 {
@@ -606,7 +620,9 @@ body {
 
 .glass-stage {
   position: relative;
-  width: min(420px, 100%);
+  /* Zoomed-in: the pane is the experience — as large as the viewport
+     allows while leaving room for heading, chips and the time bar. */
+  width: min(540px, 100%, calc((100dvh - 320px) * 0.77));
   aspect-ratio: 3 / 3.9;
   margin: 6px auto 10px;
 }
@@ -642,6 +658,15 @@ body {
   }
   .glass-stagegrid > div:last-child {
     text-align: center;
+  }
+}
+@media (max-width: 879px) {
+  /* Phones: the pane leads, the FX rail tucks below it. */
+  .glass-stagegrid > .glass-fx {
+    order: 2;
+  }
+  .glass-stage {
+    width: min(100%, calc((100dvh - 380px) * 0.77));
   }
 }
 

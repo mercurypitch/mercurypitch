@@ -64,6 +64,11 @@ const round2 = (value: number): number => Math.round(value * 100) / 100
 
 const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 
+// Raw AGC-off mic RMS is tiny (~0.02-0.12 for honest singing); normalize to
+// the house full-scale (0.12, same as the level bars) so gameplay physics
+// and visuals run at designed rates on real microphones.
+const normLevel = (rms: number): number => Math.min(1, rms / 0.12)
+
 const FX_STORAGE_KEY = 'glass.fx.v1'
 
 function loadFxSettings(): FxSettings {
@@ -440,12 +445,12 @@ export const GlassApp: Component = () => {
       const elapsed = (performance.now() - start) / 1000
       const left = seconds - elapsed
       setRemaining(Math.max(0, left))
-      const frame = f0.latest()
+      const frame = f0.latestSmoothed()
       const voiced = frame !== null && frame.f0 > 0 && frame.conf >= CONF_MIN
       renderer?.update({
         mode: 'calibrate',
         offCents: voiced ? hzToCents(frame.f0) : null,
-        level: f0.latestLevel(),
+        level: normLevel(f0.latestLevel()),
         resonance: 0,
         fatigue: physics.fatigue,
         crackStep: physics.crackStep,
@@ -492,14 +497,15 @@ export const GlassApp: Component = () => {
       setRemaining(Math.max(0, left))
       const dt = Math.min(0.1, (now - lastTick) / 1000)
       lastTick = now
-      const frame = f0.latest()
+      const frame = f0.latestSmoothed()
       const voiced =
         frame !== null &&
         frame.f0 > 0 &&
         frame.conf >= CONF_MIN &&
         elapsed > 0.1
       const offCents = voiced ? hzToCents(frame.f0) - target * 100 : null
-      const level = f0.latestLevel()
+      const rawRms = f0.latestLevel()
+      const level = normLevel(rawRms)
       physics = tickPhysics(physics, { offCents, level, dt })
       peak = Math.max(peak, physics.resonance)
       setLive({
@@ -520,7 +526,7 @@ export const GlassApp: Component = () => {
       // Feedback guard: sustained near-clipping input while monitoring means
       // speakers are looping into the mic — kill the monitor and say why.
       if (monitorOn()) {
-        runawaySec = level > RUNAWAY_RMS ? runawaySec + dt : 0
+        runawaySec = rawRms > RUNAWAY_RMS ? runawaySec + dt : 0
         if (runawaySec > RUNAWAY_HOLD_SEC) {
           disableMonitor(
             'That was starting to feed back, so live monitoring turned itself off. Headphones fix it.',
@@ -616,7 +622,7 @@ export const GlassApp: Component = () => {
       renderer?.update({
         mode: 'playback',
         offCents,
-        level: frame?.rms ?? 0,
+        level: normLevel(frame?.rms ?? 0),
         resonance: 0,
         fatigue: physics.fatigue,
         crackStep: physics.crackStep,
@@ -1442,7 +1448,11 @@ const Landing: Component<{
   onHowItWorks: () => void
 }> = (props) => (
   <section class="glass-panel glass-landing">
-    <p class="glass-wordmark">MercuryPitch</p>
+    <p class="glass-wordmark">
+      <span class="glass-wm-mercury">Mercury</span>
+      <span class="glass-wm-pitch">Pitch</span>
+      <span class="glass-wm-tail">Glass</span>
+    </p>
     <h1>Break glass with your voice</h1>
     <p class="glass-lead">
       This mirror rings at a note near the top of <em>your</em> range. Land it,
