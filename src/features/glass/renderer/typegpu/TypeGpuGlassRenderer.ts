@@ -27,6 +27,8 @@ import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
 import { ShardBurst } from '../shard-burst'
 
 const VIEW_CENTS = 340 // half-range of the pane's vertical pitch view
+// Calibration shows a whole glide, so it gets a wider, calmer view.
+const CALIBRATE_VIEW_CENTS = 700
 const RIBBON_MAX = 152
 const DPR_CAP = 2
 
@@ -311,7 +313,7 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
             ? state.offCents
             : this.calCenter * 0.97 + state.offCents * 0.03
         this.ribbon.push({
-          y: this.offToY(state.offCents - this.calCenter),
+          y: this.offToY(state.offCents - this.calCenter, CALIBRATE_VIEW_CENTS),
           voiced: 1,
         })
       }
@@ -400,8 +402,8 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
     this.wrapper.remove()
   }
 
-  private offToY(offCents: number): number {
-    return Math.max(0.02, Math.min(0.98, 0.5 - offCents / (VIEW_CENTS * 2)))
+  private offToY(offCents: number, viewCents: number = VIEW_CENTS): number {
+    return Math.max(0.02, Math.min(0.98, 0.5 - offCents / (viewCents * 2)))
   }
 
   // ── frame ───────────────────────────────────────────────────

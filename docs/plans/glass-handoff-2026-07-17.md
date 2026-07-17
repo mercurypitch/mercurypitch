@@ -797,3 +797,26 @@ see an animation."
   `scripts/verify-glass.mjs SHATTER=1` locks the target after
   calibration and asserts "Shattered — first try"; both e2e modes pass
   headless on the typegpu backend, zero runtime errors.
+- **P5 — DONE (branch `feat/glass-campaign`).** Share card + the polish
+  pass (maff's prototype-parity review):
+  - `src/features/glass/card-renderer.ts` — the shatter card (square +
+    story): THIS run's exact fracture as chrome line art (same seed as
+    the burst), headline/stats/since-line, campaign URL; share/copy/
+    download reuse the mirror helpers (`shareCard` gained optional
+    share-sheet meta). Results panel: Share / Copy / story-format toggle;
+    `glass_card_generated` + `glass_card_shared` fire.
+  - Polish: flow phases float transparent on the cosmos (card chrome
+    removed — `.glass-panel-clear`; specificity gotcha: it must be a
+    compound selector or `.glass-panel`'s later rules win); artifact-
+    style HUD chips replace the debug bars; the sing heading is the LIVE
+    coach line ("You're 18¢ flat — ease up"); ribbon slimmed to the
+    artifact's thin-neon look in both backends; glass tint lightened so
+    the cosmos genuinely shows through; calibrate gets a wider ±700¢
+    view; page centering fixed (flex-start shell + `margin-block: auto`
+    main — centering via justify-content clips overflowing tops).
+  - **Higgsfield backdrops (spec §9, executed):** three `nano_banana_2`
+    generations (4.5 cr total, balance ≈265.5): portrait + landscape
+    cosmos stills (`public/glass/backdrop-{portrait,landscape}.webp`,
+    ~65 KB each, aspect-ratio media query, procedural gradients remain
+    the fallback) and the glass-hero key visual → `public/glass/og.jpg`
+    (now the page's `og:image`). Job ids in the implementation log.

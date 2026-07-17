@@ -15,6 +15,8 @@ import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
 import { ShardBurst } from '../shard-burst'
 
 const VIEW_CENTS = 340 // half-range of the pane's vertical pitch view
+// Calibration shows a whole glide, so it gets a wider, calmer view.
+const CALIBRATE_VIEW_CENTS = 700
 const RIBBON_LENGTH = 150
 const DPR_CAP = 2
 
@@ -142,9 +144,13 @@ export class CanvasGlassRenderer implements GlassRenderer {
 
   // ── painting ────────────────────────────────────────────────
 
+  private viewCents(): number {
+    return this.state.mode === 'calibrate' ? CALIBRATE_VIEW_CENTS : VIEW_CENTS
+  }
+
   private centsToY(off: number): number {
     const inner = this.height / 2 - 18
-    return this.height / 2 - (off / VIEW_CENTS) * inner
+    return this.height / 2 - (off / this.viewCents()) * inner
   }
 
   private roundedRect(
@@ -188,9 +194,9 @@ export class CanvasGlassRenderer implements GlassRenderer {
     // Glass body: translucent depth tint — the cosmos glows through from
     // the page behind (the canvas itself stays transparent).
     const body = c.createLinearGradient(0, 0, W, H)
-    body.addColorStop(0, 'rgba(27, 36, 48, 0.42)')
-    body.addColorStop(0.5, 'rgba(11, 16, 38, 0.22)')
-    body.addColorStop(1, 'rgba(9, 7, 20, 0.45)')
+    body.addColorStop(0, 'rgba(27, 36, 48, 0.2)')
+    body.addColorStop(0.5, 'rgba(11, 16, 38, 0.09)')
+    body.addColorStop(1, 'rgba(9, 7, 20, 0.22)')
     c.fillStyle = body
     c.fillRect(0, 0, W, H)
 
@@ -314,18 +320,20 @@ export class CanvasGlassRenderer implements GlassRenderer {
     const core =
       s.mode === 'playback' ? '#ffe9a8' : inBand ? '#2dd4bf' : '#58a6ff'
 
+    // Thin and elegant (the artifact look): a bright core with a tight,
+    // quiet halo — never a fat glow cloud.
     c.globalCompositeOperation = 'lighter'
     c.lineJoin = 'round'
     c.lineCap = 'round'
     c.strokeStyle = core
-    c.globalAlpha = 0.16
-    c.lineWidth = 11
+    c.globalAlpha = 0.09
+    c.lineWidth = 8
     c.stroke(path)
-    c.globalAlpha = 0.4
-    c.lineWidth = 4.5
+    c.globalAlpha = 0.28
+    c.lineWidth = 3.2
     c.stroke(path)
     c.globalAlpha = 0.95
-    c.lineWidth = 1.8
+    c.lineWidth = 1.7
     c.stroke(path)
     // Quicksilver chromatic fringe as resonance rises.
     if (s.mode === 'live' && s.resonance > 0.3) {
@@ -345,9 +353,9 @@ export class CanvasGlassRenderer implements GlassRenderer {
       const py = Math.max(12, Math.min(H - 12, this.centsToY(last.off)))
       c.fillStyle = core
       c.shadowColor = core
-      c.shadowBlur = 14
+      c.shadowBlur = 10
       c.beginPath()
-      c.arc(x1, py, 4 + last.level * 18, 0, Math.PI * 2)
+      c.arc(x1, py, 3.5 + last.level * 6, 0, Math.PI * 2)
       c.fill()
       c.shadowBlur = 0
     }

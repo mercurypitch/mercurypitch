@@ -17,6 +17,8 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
+import type { CardFormat } from '@/features/mirror/card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
 import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
 import { formatGlassDelta, loadGlassBaseline, saveGlassBaseline, } from '@/lib/glass/baseline'
 import { GLASS_CONFIG } from '@/lib/glass/config'
@@ -34,6 +36,7 @@ import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
+import { renderShatterCard } from './card-renderer'
 import { trackGlass } from './funnel'
 import type { FxRack as FxAudio, FxSettings } from './fx-rack'
 import { createFxRack, DEFAULT_FX } from './fx-rack'
@@ -124,6 +127,8 @@ export const GlassApp: Component = () => {
   const [monitorConfirming, setMonitorConfirming] = createSignal(false)
   const [monitorNotice, setMonitorNotice] = createSignal<string | null>(null)
   const [sinceLine, setSinceLine] = createSignal<string | null>(null)
+  const [cardFormat, setCardFormat] = createSignal<CardFormat>('square')
+  const [shareStatus, setShareStatus] = createSignal<string | null>(null)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -144,6 +149,9 @@ export const GlassApp: Component = () => {
   let readyResolve: (() => void) | null = null
   // Physics persists ACROSS reps within one glass (fatigue is cumulative).
   let physics: GlassPhysicsState = initialPhysics()
+  // The burst's seed — the share card reproduces THIS run's exact break.
+  let burstSeed = 1
+  let cardGeneratedSent = false
 
   const dispatch = (event: GlassEvent): GlassSessionState => {
     const next = reduceSession(session(), event)
@@ -241,6 +249,9 @@ export const GlassApp: Component = () => {
     setCalRetry(false)
     setMonitorNotice(null)
     setSinceLine(null)
+    setShareStatus(null)
+    burstSeed = 1
+    cardGeneratedSent = false
   }
 
   /** Mount point shared by the calibrate/sing/playback stages — the renderer
@@ -714,6 +725,7 @@ export const GlassApp: Component = () => {
           reduceMotion,
         })
         const seed = rep * 7919 + target * 131
+        burstSeed = seed
         // Snapshot + burst BEFORE the panel swap so the pane's final frame
         // (ribbon at the lock) is what fractures.
         renderer?.shatter({ epicness, seed })
@@ -800,12 +812,85 @@ export const GlassApp: Component = () => {
     finishRun()
   }
 
+  /** The artifact's live coaching line — precise, encouraging, never shaming. */
+  const liveCoach = (): string => {
+    const off = live().offCents
+    if (off === null) return 'Take a breath — the glass is listening.'
+    if (Math.abs(off) <= GLASS_CONFIG.target.tolCents) {
+      return live().resonance > 0.55
+        ? 'Locked. Keep pouring into it.'
+        : 'There — hold it steady.'
+    }
+    if (Math.abs(off) > 140) {
+      return off < 0
+        ? 'Slide up to the gold line.'
+        : 'Come down to the gold line.'
+    }
+    return `You're ${Math.abs(Math.round(off))}¢ ${off < 0 ? 'flat' : 'sharp'} — ease ${off < 0 ? 'up' : 'off'}.`
+  }
+
   const targetLabel = (): string => {
     const midi = session().targetMidi
     return midi === null ? '—' : midiToNoteNameOctave(midi)
   }
 
   const phase = (): GlassSessionState['phase'] => session().phase
+
+  function buildShatterCard(): HTMLCanvasElement | null {
+    const state = session()
+    if (state.targetMidi === null) return null
+    const last = state.repMetrics[state.repMetrics.length - 1]
+    return renderShatterCard(
+      {
+        targetLabel: midiToNoteNameOctave(state.targetMidi),
+        shatterRep: state.shatterRep,
+        reps: state.repMetrics.length,
+        bestLockSec: last?.bestLockSec ?? 0,
+        precisionCents:
+          last?.meanAbsCents == null ? null : Math.round(last.meanAbsCents),
+        peakResonance: last?.peakResonance ?? 0,
+        sinceLine: sinceLine(),
+        seed: burstSeed,
+      },
+      cardFormat(),
+    )
+  }
+
+  function markCardGenerated(): void {
+    if (cardGeneratedSent) return
+    cardGeneratedSent = true
+    trackGlass('glass_card_generated')
+  }
+
+  async function onShareCard(): Promise<void> {
+    const card = buildShatterCard()
+    if (card === null) return
+    markCardGenerated()
+    const shattered = session().shatterRep !== null
+    const outcome = await shareCard(
+      await cardToPngBlob(card),
+      datedFilename(shattered ? 'glass-shattered' : 'glass-held'),
+      {
+        title: 'Break glass with your voice',
+        text: shattered
+          ? 'I shattered it — mercurypitch.com/glass'
+          : 'The glass is still standing… for now — mercurypitch.com/glass',
+      },
+    )
+    trackGlass('glass_card_shared')
+    setShareStatus(
+      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
+    )
+  }
+
+  async function onCopyCard(): Promise<void> {
+    const card = buildShatterCard()
+    if (card === null) return
+    markCardGenerated()
+    const outcome = await copyCardToClipboard(cardToPngBlob(card))
+    if (outcome === 'copied') trackGlass('glass_card_shared')
+    setShareStatus(copyOutcomeMessage(outcome))
+  }
 
   return (
     <div class="glass-shell">
@@ -843,7 +928,7 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'calibrate'}>
-          <section class="glass-panel glass-panel-wide">
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Find your ceiling</h2>
             <p>
               Slide from your lowest comfy note to your highest — like the siren
@@ -909,16 +994,16 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'sing'}>
-          <section class="glass-panel glass-panel-wide">
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
             <div class="glass-progress">Rep {session().rep}</div>
-            <h2>Sing to the glass</h2>
-            <p>
+            <h2>
+              {subPhase() === 'active' ? liveCoach() : 'Sing to the glass'}
+            </h2>
+            <p class="glass-dim">
               Reach {targetLabel()} and hold it steady.
               <Show when={session().rep > GLASS_CONFIG.reps.restNudgeAfterReps}>
                 {' '}
-                <span class="glass-dim">
-                  (Give your voice a rest soon — steadier beats louder.)
-                </span>
+                (Give your voice a rest soon — steadier beats louder.)
               </Show>
             </p>
             <Show
@@ -945,8 +1030,7 @@ export const GlassApp: Component = () => {
                 />
                 <div>
                   <div class="glass-stage" ref={(el) => mountStage(el)} />
-                  <OffsetReadout offCents={live().offCents} />
-                  <Bars live={live()} />
+                  <Chips live={live()} rep={session().rep} />
                   <TimeBar
                     remaining={remaining()}
                     total={GLASS_CONFIG.reps.singSeconds}
@@ -961,7 +1045,7 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'playback'}>
-          <section class="glass-panel glass-panel-wide">
+          <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>That was you</h2>
             <p class="glass-dim">
               Your own take replays in the glass — getting used to your voice IS
@@ -996,7 +1080,7 @@ export const GlassApp: Component = () => {
         </Show>
 
         <Show when={phase() === 'gap'}>
-          <section class="glass-panel">
+          <section class="glass-panel glass-panel-clear">
             <h2>Again — you know where it lives now</h2>
             <div class="glass-countdown">{Math.ceil(remaining())}</div>
           </section>
@@ -1005,7 +1089,10 @@ export const GlassApp: Component = () => {
         <Show when={phase() === 'shatter'}>
           {/* The burst plays in the stage — the renderer animates
               autonomously from the shatter() call until results. */}
-          <section class="glass-panel glass-panel-wide" data-shatter>
+          <section
+            class="glass-panel glass-panel-wide glass-panel-clear"
+            data-shatter
+          >
             <div class="glass-stage" ref={(el) => mountStage(el)} />
           </section>
         </Show>
@@ -1015,6 +1102,13 @@ export const GlassApp: Component = () => {
             session={session()}
             fatigue={physics.fatigue}
             sinceLine={sinceLine()}
+            shareStatus={shareStatus()}
+            storyFormat={cardFormat() === 'story'}
+            onToggleFormat={() =>
+              setCardFormat((f) => (f === 'story' ? 'square' : 'story'))
+            }
+            onShare={() => void onShareCard()}
+            onCopy={() => void onCopyCard()}
             onAgain={() => resetAll()}
           />
         </Show>
@@ -1081,66 +1175,43 @@ const LiveNote: Component<{ latest: () => PitchFrame | null }> = (props) => {
   return <div class="glass-live-note">{label()}</div>
 }
 
-const OffsetReadout: Component<{ offCents: number | null }> = (props) => {
+/** Floating HUD chips (artifact style): offset · resonance · integrity · rep. */
+const Chips: Component<{ live: LiveReadout; rep: number }> = (props) => {
+  const off = (): number | null => props.live.offCents
   const inBand = (): boolean =>
-    props.offCents !== null &&
-    Math.abs(props.offCents) <= GLASS_CONFIG.target.tolCents
-  const text = (): string => {
-    if (props.offCents === null) return '· · ·'
-    const off = Math.round(props.offCents)
-    if (Math.abs(off) <= GLASS_CONFIG.target.tolCents) return 'locked'
-    return `${off > 0 ? '+' : '−'}${Math.abs(off)}¢ ${off > 0 ? 'sharp' : 'flat'}`
+    off() !== null && Math.abs(off()!) <= GLASS_CONFIG.target.tolCents
+  const offText = (): string => {
+    const value = off()
+    if (value === null) return '· · ·'
+    if (Math.abs(value) <= GLASS_CONFIG.target.tolCents) return 'locked'
+    const rounded = Math.abs(Math.round(value))
+    return `${value > 0 ? '+' : '−'}${rounded}¢`
   }
   return (
-    <div class="glass-offset" classList={{ 'glass-offset-locked': inBand() }}>
-      {text()}
+    <div class="glass-chips">
+      <div class="glass-chip">
+        <span class="k">Offset</span>
+        <span class="v" classList={{ good: inBand() }}>
+          {offText()}
+        </span>
+      </div>
+      <div class="glass-chip">
+        <span class="k">Resonance</span>
+        <span class="v" classList={{ warm: props.live.resonance > 0.6 }}>
+          {Math.round(props.live.resonance * 100)}%
+        </span>
+      </div>
+      <div class="glass-chip">
+        <span class="k">Integrity</span>
+        <span class="v">{Math.round((1 - props.live.fatigue) * 100)}%</span>
+      </div>
+      <div class="glass-chip">
+        <span class="k">Rep</span>
+        <span class="v">{props.rep}</span>
+      </div>
     </div>
   )
 }
-
-const Bars: Component<{ live: LiveReadout }> = (props) => (
-  <div class="glass-bars">
-    <BarRow
-      label="Resonance"
-      value={props.live.resonance}
-      kind="gold"
-      detail={`${Math.round(props.live.resonance * 100)}%`}
-    />
-    <BarRow
-      label="Integrity"
-      value={1 - props.live.fatigue}
-      kind="chrome"
-      detail={`${Math.round((1 - props.live.fatigue) * 100)}%`}
-    />
-    <BarRow
-      label="Lock"
-      value={Math.min(
-        1,
-        props.live.lockRun / GLASS_CONFIG.resonance.lockForShatterSec,
-      )}
-      kind="aqua"
-      detail={`${props.live.lockRun.toFixed(1)}s`}
-    />
-  </div>
-)
-
-const BarRow: Component<{
-  label: string
-  value: number
-  kind: 'gold' | 'aqua' | 'chrome'
-  detail: string
-}> = (props) => (
-  <div class="glass-barrow">
-    <span class="glass-barrow-label">{props.label}</span>
-    <div class="glass-bar">
-      <div
-        class={`glass-bar-fill glass-bar-${props.kind}`}
-        style={{ width: `${Math.max(0, Math.min(100, props.value * 100))}%` }}
-      />
-    </div>
-    <span class="glass-barrow-detail">{props.detail}</span>
-  </div>
-)
 
 const TimeBar: Component<{ remaining: number; total: number }> = (props) => (
   <div class="glass-timebar">
@@ -1226,6 +1297,11 @@ const ResultsPanel: Component<{
   fatigue: number
   /** Cross-visit baseline delta ("Since Tue: lock +0.8s"), if any. */
   sinceLine: string | null
+  shareStatus: string | null
+  storyFormat: boolean
+  onToggleFormat: () => void
+  onShare: () => void
+  onCopy: () => void
   onAgain: () => void
 }> = (props) => {
   const shattered = (): boolean => props.session.shatterRep !== null
@@ -1312,7 +1388,37 @@ const ResultsPanel: Component<{
         </p>
       </Show>
       <div class="glass-actions">
-        <button class="glass-cta" onClick={() => props.onAgain()}>
+        <button class="glass-cta" onClick={() => props.onShare()}>
+          Share the shatter card
+        </button>
+        <Show when={supportsImageClipboard()}>
+          <button
+            class="glass-cta glass-cta-secondary"
+            onClick={() => props.onCopy()}
+            title="Copy the card image to the clipboard"
+          >
+            Copy card
+          </button>
+        </Show>
+        <button
+          type="button"
+          class="glass-fx-pill"
+          classList={{ on: props.storyFormat }}
+          aria-pressed={props.storyFormat}
+          onClick={() => props.onToggleFormat()}
+          title="Export a tall 9:16 story card instead of the square card"
+        >
+          Story format {props.storyFormat ? 'on' : 'off'}
+        </button>
+      </div>
+      <Show when={props.shareStatus}>
+        <p class="glass-dim">{props.shareStatus}</p>
+      </Show>
+      <div class="glass-actions">
+        <button
+          class="glass-cta glass-cta-secondary"
+          onClick={() => props.onAgain()}
+        >
           Sing it again
         </button>
         <a

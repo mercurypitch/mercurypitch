@@ -33,25 +33,32 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* flex-start + margin-block auto on main: true centering that degrades to
+     a scrollable page when content is taller than the viewport (centering
+     with justify-content would clip the top of overflowing content). */
+  justify-content: flex-start;
   gap: 18px;
   padding: 28px 18px 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   color: var(--glass-starlight);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.55;
 }
 
-/* Procedural cosmos placeholder — replaced by the renderer backdrop (and
-   later the Higgsfield still) from P3 on. Pure CSS: nebula washes + two
-   star layers as repeating radial gradients. */
+/* The cosmos: a Higgsfield-generated still (liquid-mercury ribbons through
+   a resonance ring — public/glass/backdrop-*.webp) under a darkening wash,
+   with the procedural nebula gradients as the always-there fallback (a
+   missing image layer simply doesn't paint). */
 .glass-cosmos {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   background:
+    linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
+    url('/glass/backdrop-portrait.webp') center / cover no-repeat,
     radial-gradient(
       38% 30% at 22% 26%,
       rgba(188, 140, 255, 0.1),
@@ -68,6 +75,14 @@ body {
       transparent 70%
     ),
     linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+}
+@media (min-aspect-ratio: 5/4) {
+  .glass-cosmos {
+    background:
+      linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
+      url('/glass/backdrop-landscape.webp') center / cover no-repeat,
+      linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+  }
 }
 .glass-cosmos::before,
 .glass-cosmos::after {
@@ -118,6 +133,61 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
+  /* The centering half of the shell's flex-start + auto-margins pattern. */
+  margin-block: auto;
+}
+
+/* Flow phases float directly on the cosmos (the artifact look): the card
+   chrome disappears so the pane is genuinely transparent glass. */
+.glass-panel.glass-panel-clear {
+  background: none;
+  border: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.glass-panel.glass-panel-clear h2 {
+  text-shadow: 0 1px 18px rgba(9, 7, 20, 0.9);
+}
+
+/* Floating HUD chips (artifact style) under the stage. */
+.glass-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+.glass-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 82px;
+  padding: 7px 12px 6px;
+  border: 1px solid rgba(138, 151, 166, 0.22);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.55);
+  backdrop-filter: blur(6px);
+}
+.glass-chip .k {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--glass-chrome-dim);
+}
+.glass-chip .v {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--glass-starlight);
+}
+.glass-chip .v.good {
+  color: var(--glass-aqua);
+}
+.glass-chip .v.warm {
+  color: var(--glass-gold);
 }
 
 .glass-panel {

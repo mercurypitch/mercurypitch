@@ -778,12 +778,13 @@ export function datedFilename(base: string): string {
 export async function shareCard(
   blob: Blob,
   filename = 'voiceprint.png',
+  meta?: { title?: string; text?: string },
 ): Promise<'shared' | 'downloaded'> {
   const file = new File([blob], filename, { type: 'image/png' })
   const shareData: ShareData = {
     files: [file],
-    title: 'My voiceprint',
-    text: 'My voice, mapped — mercurypitch.com/mirror',
+    title: meta?.title ?? 'My voiceprint',
+    text: meta?.text ?? 'My voice, mapped — mercurypitch.com/mirror',
   }
   if (
     typeof navigator.canShare === 'function' &&
