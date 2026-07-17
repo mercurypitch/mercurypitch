@@ -171,6 +171,20 @@
   text-shadow: 0 0 22px rgba(255, 154, 213, 0.35);
 }
 
+/* In-progress word: continuous gradient sweep (Apple-style) driven by the
+   --sweep custom property instead of per-character stepping. */
+.wordActive {
+  background: linear-gradient(
+    90deg,
+    #ffffff var(--sweep, 0%),
+    rgba(255, 255, 255, 0.5) var(--sweep, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+
 .noLyrics {
   height: 100%;
   display: flex;

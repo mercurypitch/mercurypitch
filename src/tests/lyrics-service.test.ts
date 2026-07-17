@@ -631,8 +631,9 @@ describe('computeActiveWord — per-word timings', () => {
   })
 
   it('partially reveals characters within first word', () => {
-    // Midway through "Amigos" (duration from 150.6 to 152.0 = 1.4s)
-    // At 151.3, we're 0.7s into the word = 50% progress
+    // At 151.3, we're 0.7s into "Amigos". Its sung duration is the gap to
+    // the next word (1.4s) capped by the syllable estimate (3 syllables →
+    // 0.73s), so we're 0.7/0.73 ≈ 96% through the sweep.
     const result = computeActiveWord(
       words,
       startTime,
@@ -640,9 +641,9 @@ describe('computeActiveWord — per-word timings', () => {
       wordTimes,
       151.3,
     )
-    expect(result.activeUpTo).toBe(-1) // no word fully done
-    // 0.7 / 1.4 = 0.5, 0.5 * 6 chars = 3
-    expect(result.charProgress).toBe(3)
+    expect(result.activeUpTo).toBe(-1) // still mid-word
+    expect(result.charProgress).toBe(5)
+    expect(result.fraction).toBeGreaterThan(0.9)
   })
 
   it('fully highlights first word at second word boundary', () => {
@@ -670,8 +671,9 @@ describe('computeActiveWord — per-word timings', () => {
     expect(result.activeUpTo).toBe(1) // "no" fully highlighted
   })
 
-  it('highlights third word during its window', () => {
-    // At 2:32.8 (152.8s), between "more" (2:32.37) and "tears" (2:32.99)
+  it('dwells fully lit once a word is sung to completion', () => {
+    // At 2:32.8 (152.8s), "more" started 0.43s ago — past its ~0.41s sung
+    // duration — so it dwells fully highlighted until "tears" begins.
     const result = computeActiveWord(
       words,
       startTime,
@@ -679,13 +681,13 @@ describe('computeActiveWord — per-word timings', () => {
       wordTimes,
       152.8,
     )
-    // wordIdx=2 ("more"), activeUpTo=1 ("Amigos" and "no" fully done)
-    expect(result.activeUpTo).toBe(1)
+    expect(result.activeUpTo).toBe(2)
+    expect(result.charProgress).toBe(0)
   })
 
   it('highlights all words after the last word timestamp', () => {
-    // After 2:32.99, the last word "tears" is estimated to end at
-    // 152.99 + avgGap(0.80) = 153.79. At 160s all words are fully done.
+    // Long past the last word's sung duration: everything dwells lit and
+    // nothing is in progress.
     const result = computeActiveWord(
       words,
       startTime,
@@ -694,13 +696,14 @@ describe('computeActiveWord — per-word timings', () => {
       160.0,
     )
     expect(result.activeUpTo).toBe(3)
-    expect(result.charProgress).toBe(5)
+    expect(result.charProgress).toBe(0)
   })
 
   it('does NOT stretch highlighting to next line — uses word boundaries', () => {
-    // KEY TEST: At 2:31.8 (151.8s), which is between "Amigos" (150.6) and "no" (152.0)
-    // With even-division, this would be stretched across 87 seconds (to 237.26)
-    // With per-word timing, "Amigos" should still be the active word
+    // KEY TEST: At 2:31.8 (151.8s), between "Amigos" (150.6) and "no"
+    // (152.0). With even-division this would stretch across 87 seconds (to
+    // 237.26); with per-word timing "Amigos" finished its ~0.73s sung
+    // duration and simply dwells lit while the singer breathes.
     const result = computeActiveWord(
       words,
       startTime,
@@ -708,11 +711,8 @@ describe('computeActiveWord — per-word timings', () => {
       wordTimes,
       151.8,
     )
-    // activeUpTo = -1 (Amigos not fully done yet)
-    expect(result.activeUpTo).toBe(-1)
-    // charProgress should be through most of "Amigos"
-    // elapsed 1.2s into Amigos's 1.4s window, 1.2/1.4 * 6 ≈ 5 chars
-    expect(result.charProgress).toBeGreaterThanOrEqual(4)
+    expect(result.activeUpTo).toBe(0)
+    expect(result.charProgress).toBe(0)
   })
 
   it('interpolates within first word when elapsed is between first and second word times', () => {
@@ -930,7 +930,7 @@ describe('LRC word timing integration — Iron Maiden scenario', () => {
       160,
     )
     expect(result.activeUpTo).toBe(3)
-    expect(result.charProgress).toBe(5) // "tears" = 5 chars
+    expect(result.charProgress).toBe(0) // nothing in progress — all dwell lit
   })
 
   it('~Rest~ line has no per-word timings (falls back to even division)', () => {

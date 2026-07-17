@@ -50,6 +50,7 @@ interface StemMixerGridWorkspaceProps {
   handleForceSearch: () => void
   toggleEditMode: () => void
   startLrcGen: () => void
+  autoSyncWords: () => void
   handleDownloadLrc: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
@@ -471,6 +472,21 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   !lp().lrcGenMode()
                 }
               >
+                <button
+                  class="sm-lyrics-gen-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.autoSyncWords()
+                  }}
+                  title="Auto word-sync — time every word from the vocal stem"
+                >
+                  <svg viewBox="0 0 24 24" width="11" height="11">
+                    <path
+                      fill="currentColor"
+                      d="M7.5 5.6 9 2l1.5 3.6L14 7l-3.5 1.4L9 12 7.5 8.4 4 7l3.5-1.4zm9 4.8L18 8l1.5 2.4L22 12l-2.5 1.6L18 16l-1.5-2.4L14 12l2.5-1.6zM9 16l1 2.5L12.5 20 10 21.5 9 24l-1-2.5L5.5 20 8 18.5 9 16z"
+                    />
+                  </svg>
+                </button>
                 <button
                   class="sm-lyrics-gen-btn"
                   onClick={(e) => {
