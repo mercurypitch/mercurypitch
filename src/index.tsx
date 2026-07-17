@@ -12,7 +12,7 @@ import '@/styles/mobile-polish.css'
 import { App } from './App'
 
 import { setupConsent } from '@/components/ConsentBanner'
-import { consumeGoogleRedirect } from '@/db/services/auth-service'
+import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/services/auth-service'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 
 initGlobalErrorHandlers()
@@ -21,6 +21,8 @@ setupConsent()
 // Store the JWT from a Google sign-in redirect (#gauth=…) before the
 // app boots and ensureAuth() runs.
 consumeGoogleRedirect()
+// Likewise pick up the emailed confirm link's outcome (#everified=…).
+consumeEmailVerifyRedirect()
 
 const root = document.getElementById('root')
 if (!root) {

@@ -38,6 +38,22 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider
   ON users(authProvider, providerId) WHERE providerId IS NOT NULL;
 
+-- ── Email verification tokens (see auth.ts handleVerifyEmail) ────────
+-- One row per outstanding confirm link. The raw token never lands in the
+-- DB — only its SHA-256 (b64url). Rows are single-use and short-lived:
+-- consumed on click, superseded on resend, expiry checked at use time.
+-- Existing DBs: see scripts/migrate-add-emailVerifications.sql.
+CREATE TABLE IF NOT EXISTS emailVerifications (
+  tokenHash TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  email TEXT NOT NULL,
+  createdAt TEXT NOT NULL,
+  expiresAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_emailVerifications_user
+  ON emailVerifications(userId);
+
 -- ── User Profiles ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS userProfiles (
   id TEXT PRIMARY KEY,
