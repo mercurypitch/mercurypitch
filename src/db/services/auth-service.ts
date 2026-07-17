@@ -7,9 +7,20 @@
 // same userId server-side (deviceId is passed along), so local
 // attribution stays valid. See docs/plans/users-auth-plan.md.
 
+import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 import { getAuthToken, getUserId, setAuthToken } from './user-service'
+
+// Bumped on every auth transition (token issued, redirect consumed, logout)
+// so account-aware UI (e.g. the verify-email banner) can re-check /me
+// without polling or prop-threading.
+const [authStamp, bumpAuthStamp] = createSignal(0)
+export { authStamp }
+
+function authChanged(): void {
+  bumpAuthStamp((n) => n + 1)
+}
 
 export interface AuthUserInfo {
   id: string
@@ -111,6 +122,7 @@ async function postAuth(
   // Anonymous device provisioning is not a signup — only count real
   // account creation (register / first Google sign-in).
   if (auth.isNew && route !== 'anonymous') trackEvent('signup')
+  authChanged()
   return auth
 }
 
@@ -273,6 +285,7 @@ export function consumeGoogleRedirect(): void {
     setRequiresLogin(false)
     tokenServerVerified = true // freshly issued by the worker
     googleRedirectResult = { ok: true }
+    authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
     if (params.get('gauth_new') === '1') trackEvent('signup')
   } else if (error != null && error !== '') {
@@ -294,6 +307,66 @@ export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
   return result
 }
 
+// ── Email verification (confirm-link redirect + resend) ─────────────
+//
+// Password signups get a "confirm your email" link that routes through the
+// worker (GET /api/auth/verify-email) and bounces back to the app root with
+// #everified=1 / #everified_error=…, mirroring the Google flow above.
+
+export type EmailVerifyResult = { ok: true } | { ok: false; error: string }
+
+let emailVerifyResult: EmailVerifyResult | null = null
+
+/** Pick up the #everified / #everified_error fragment after the emailed
+ *  confirm link lands back on the app. Runs at startup, right after
+ *  consumeGoogleRedirect() and before the router boots. */
+export function consumeEmailVerifyRedirect(): void {
+  const hash = window.location.hash
+  if (!hash.startsWith('#everified')) return
+  const params = new URLSearchParams(hash.slice(1))
+  if (params.get('everified') === '1') {
+    emailVerifyResult = { ok: true }
+  } else {
+    emailVerifyResult = {
+      ok: false,
+      error: params.get('everified_error') ?? 'unknown',
+    }
+  }
+  history.replaceState(
+    null,
+    '',
+    window.location.pathname + window.location.search,
+  )
+  authChanged()
+}
+
+/** One-shot result of the confirm-link redirect, for UI notifications. */
+export function takeEmailVerifyResult(): EmailVerifyResult | null {
+  const result = emailVerifyResult
+  emailVerifyResult = null
+  return result
+}
+
+/** Ask the server to re-send the confirm-your-email link. */
+export async function resendVerificationEmail(): Promise<void> {
+  const token = getAuthToken()
+  if (token == null || token === '') throw new Error('Not signed in')
+  const res = await fetch(`${requireBaseUrl()}/api/auth/resend-verification`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    let message = ''
+    try {
+      message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(message !== '' ? message : `Resend failed (${res.status})`)
+  }
+}
+
 export function logout(): void {
   const token = getAuthToken()
   const payload = token != null ? decodeToken(token) : null
@@ -306,6 +379,7 @@ export function logout(): void {
   }
   setAuthToken(null)
   tokenServerVerified = false
+  authChanged()
 
   // Notify the server to revoke all tokens for this account.
   // Fire-and-forget: the client is already signed out regardless.

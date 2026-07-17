@@ -57,6 +57,13 @@
   border-color: var(--accent, #7aa2f7);
 }
 
+/* Live-invalid fields (password rules, server rejection) — soft red that
+   also wins while focused, so the state stays visible mid-typing. */
+.authInput[aria-invalid='true'],
+.authInput[aria-invalid='true']:focus {
+  border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
+}
+
 .buttonRow {
   display: flex;
   gap: 8px;

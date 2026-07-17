@@ -8,13 +8,15 @@
 //   POST /api/auth/google    { idToken, deviceId? }
 //   GET  /api/auth/google/start?deviceId=&returnTo=   (redirect flow)
 //   GET  /api/auth/google/callback?code=&state=       (Google redirect URI)
+//   GET  /api/auth/verify-email?token=&returnTo=      (email confirm link)
+//   POST /api/auth/resend-verification                (Bearer token)
 //   GET  /api/auth/me        (Bearer token)
 //
 // `deviceId` is the client's persisted anonymous UUID. Passing it to
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { sendSignupWelcome } from './email'
+import { sendEmailVerification, sendSignupWelcome } from './email'
 
 export interface Env {
   DB: D1Database
@@ -88,21 +90,20 @@ const UUID_RE =
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_MIN_LENGTH = 8
 
+// Length + letter + number only — no uppercase/special-char composition
+// rules. Browser password generators must always pass (Firefox generates
+// letters+digits with no specials), and NIST 800-63B favours length over
+// composition anyway. Mirrored client-side in src/lib/password-policy.ts —
+// keep the two in sync.
 function isStrongPassword(password: string): { ok: boolean; reason?: string } {
   if (password.length < PASSWORD_MIN_LENGTH) {
     return { ok: false, reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` }
   }
-  if (!/[A-Z]/.test(password)) {
-    return { ok: false, reason: 'Password must contain at least one uppercase letter' }
-  }
-  if (!/[a-z]/.test(password)) {
-    return { ok: false, reason: 'Password must contain at least one lowercase letter' }
+  if (!/[A-Za-z]/.test(password)) {
+    return { ok: false, reason: 'Password must contain at least one letter' }
   }
   if (!/[0-9]/.test(password)) {
-    return { ok: false, reason: 'Password must contain at least one digit' }
-  }
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return { ok: false, reason: 'Password must contain at least one special character' }
+    return { ok: false, reason: 'Password must contain at least one number' }
   }
   return { ok: true }
 }
@@ -368,6 +369,10 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   login: { max: 10, windowMs: 300_000 },       // 10/5min
   google: { max: 30, windowMs: 60_000 },       // 30/min
   logout: { max: 30, windowMs: 60_000 },       // 30/min
+  // Email-verification: the confirm link is a cheap GET; resend actually
+  // sends mail, so it gets the tightest budget.
+  'verify-email': { max: 30, windowMs: 60_000 },        // 30/min
+  'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
   // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
   // index.ts. Generous for normal use (session saves, settings, follows) but
   // bounds scripted spam / unbounded row creation. Tunable.
@@ -471,6 +476,75 @@ async function sendWelcomeEmail(
   }
 }
 
+// ── Email verification (password signups) ────────────────────────────
+//
+// Password accounts start with emailVerified = 0; the confirm link flips it.
+// Soft gate by design: the account works immediately, the app just shows a
+// "confirm your email" banner until the link is clicked. (Google accounts
+// arrive with Google's own email_verified claim instead.)
+
+const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+async function sha256b64url(s: string): Promise<string> {
+  return b64urlEncode(await crypto.subtle.digest('SHA-256', encoder.encode(s)))
+}
+
+/** Mint a single-use verification token (superseding any older ones for the
+ *  user) and store only its SHA-256. Returns the raw token for the link. */
+async function createEmailVerification(
+  db: D1Database,
+  userId: string,
+  email: string,
+): Promise<string> {
+  const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
+  const tokenHash = await sha256b64url(token)
+  await db.prepare('DELETE FROM emailVerifications WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare(
+      'INSERT INTO emailVerifications (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
+    )
+    .bind(
+      tokenHash,
+      userId,
+      email,
+      nowIso(),
+      new Date(Date.now() + VERIFY_TOKEN_TTL_MS).toISOString(),
+    )
+    .run()
+  return token
+}
+
+// Fire the confirm-your-email message (doubles as the welcome for password
+// signups) — best-effort, never blocks or fails signup. The link routes
+// through this worker and bounces back to the app origin the signup came
+// from (validated against the allowed origins; prod app as fallback).
+async function sendVerificationEmail(
+  request: Request,
+  env: Env,
+  userId: string,
+  email: string,
+  displayName: string | null | undefined,
+): Promise<void> {
+  if (!env.RESEND_API_KEY) return
+  try {
+    const token = await createEmailVerification(env.DB, userId, email)
+    const requestOrigin = request.headers.get('Origin') ?? ''
+    const returnTo = isAllowedReturnTo(requestOrigin, env)
+      ? requestOrigin
+      : 'https://mercurypitch.com'
+    const verifyUrl =
+      `${new URL(request.url).origin}/api/auth/verify-email` +
+      `?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(returnTo)}`
+    await sendEmailVerification(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      email,
+      { displayName, verifyUrl },
+    )
+  } catch (err) {
+    console.error(`[auth] verification email failed (non-fatal): ${String(err)}`)
+  }
+}
+
 async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
   const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
@@ -488,7 +562,12 @@ async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Prom
   return issueSession(env, row, respond, true)
 }
 
-async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+async function handleRegister(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const email = body.email?.trim().toLowerCase()
   if (!email || !EMAIL_RE.test(email)) {
     return respond({ error: 'Valid email required' }, { status: 400 })
@@ -528,7 +607,7 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
           .run()
       }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
-      await sendWelcomeEmail(env, email, body.displayName?.trim())
+      await sendVerificationEmail(request, env, anon.id, email, body.displayName?.trim())
       return issueSession(env, row, respond)
     }
   }
@@ -537,7 +616,7 @@ async function handleRegister(body: AuthBody, env: Env, respond: Respond): Promi
   await createUser(env.DB, { id, authProvider: 'password', email, passwordHash })
   await ensureProfile(env.DB, id, body.displayName?.trim() || defaultDisplayName(id))
   const row = (await findUserById(env.DB, id)) as UserRow
-  await sendWelcomeEmail(env, email, body.displayName?.trim())
+  await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
   return issueSession(env, row, respond, true)
 }
 
@@ -802,6 +881,69 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
   )
 }
 
+/** GET /api/auth/verify-email?token=&returnTo= — the emailed confirm link.
+ *  A top-level navigation, so success/failure land back in the app as a
+ *  fragment (#everified=1 / #everified_error=…), mirroring the Google flow. */
+async function handleVerifyEmail(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url)
+  const returnToRaw = url.searchParams.get('returnTo') ?? ''
+  const returnTo = isAllowedReturnTo(returnToRaw, env)
+    ? returnToRaw
+    : 'https://mercurypitch.com'
+  const fail = (reason: string): Response =>
+    redirect(`${returnTo}/#everified_error=${encodeURIComponent(reason)}`)
+
+  const token = url.searchParams.get('token') ?? ''
+  if (token === '') return fail('missing_token')
+  const tokenHash = await sha256b64url(token)
+  const row = await env.DB.prepare(
+    'SELECT userId, email, expiresAt FROM emailVerifications WHERE tokenHash = ?',
+  )
+    .bind(tokenHash)
+    .first<{ userId: string; email: string; expiresAt: string }>()
+  if (!row) return fail('invalid_or_used')
+  // Single-use: consume the token whatever the outcome below.
+  await env.DB.prepare('DELETE FROM emailVerifications WHERE tokenHash = ?')
+    .bind(tokenHash)
+    .run()
+  if (Date.parse(row.expiresAt) < Date.now()) return fail('expired')
+  const user = await findUserById(env.DB, row.userId)
+  // The address must still be the one the token was minted for.
+  if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
+    return fail('invalid_or_used')
+  }
+  await env.DB.prepare('UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?')
+    .bind(nowIso(), row.userId)
+    .run()
+  return redirect(`${returnTo}/#everified=1`)
+}
+
+/** POST /api/auth/resend-verification (Bearer) — re-send the confirm link. */
+async function handleResendVerification(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const row = await findUserById(env.DB, auth.userId)
+  if (!row) return respond({ error: 'User not found' }, { status: 404 })
+  if (!row.email) {
+    return respond({ error: 'No email on this account' }, { status: 400 })
+  }
+  if (row.emailVerified) {
+    return respond({ ok: true, alreadyVerified: true })
+  }
+  if (!env.RESEND_API_KEY) {
+    return respond({ error: 'Email sending is not configured' }, { status: 501 })
+  }
+  const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+    .bind(row.id)
+    .first<{ displayName: string | null }>()
+  await sendVerificationEmail(request, env, row.id, row.email, profile?.displayName)
+  return respond({ ok: true })
+}
+
 async function handleMe(request: Request, env: Env, respond: Respond): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
@@ -851,6 +993,17 @@ export async function handleAuth(
   if (route === 'google/callback' && request.method === 'GET') {
     return handleGoogleCallback(request, env, respond)
   }
+  if (route === 'verify-email' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'verify-email')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleVerifyEmail(request, env)
+  }
   if (request.method !== 'POST') {
     return respond({ error: 'Method not allowed' }, { status: 405 })
   }
@@ -865,9 +1018,12 @@ export async function handleAuth(
     )
   }
 
-  // Logout doesn't need a body
+  // These don't need a body
   if (route === 'logout') {
     return handleLogout(request, env, respond)
+  }
+  if (route === 'resend-verification') {
+    return handleResendVerification(request, env, respond)
   }
 
   const body = await parseBody(request)
@@ -877,7 +1033,7 @@ export async function handleAuth(
     case 'anonymous':
       return handleAnonymous(body, env, respond)
     case 'register':
-      return handleRegister(body, env, respond)
+      return handleRegister(request, body, env, respond)
     case 'login':
       return handleLogin(body, env, respond)
     case 'google':

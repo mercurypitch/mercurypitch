@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { lazy } from 'solid-js'
+import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -2871,6 +2872,7 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
 
         <Notifications />
+        <VerifyEmailBanner />
 
         <Show when={isLibraryModalOpenSignal()}>
           <LibraryModal

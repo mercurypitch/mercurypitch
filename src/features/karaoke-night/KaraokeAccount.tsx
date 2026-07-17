@@ -3,7 +3,10 @@
 // directly (AccountSection is settings-shell styled — the services are the
 // reusable part).
 import { createSignal, onMount, Show } from 'solid-js'
+import { PasswordRequirements } from '@/components/account/PasswordRequirements'
+import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
 import { account, credits, knLogout, refreshAccount, signedIn, } from './karaoke-account'
 
@@ -32,9 +35,18 @@ export function KaraokeAccount() {
     return a.email ?? 'Account'
   }
 
+  // Live password validity (register only) — red border + checklist instead
+  // of discovering the rules one server rejection at a time.
+  const pwdInvalid = () =>
+    mode() === 'register' && password() !== '' && !isPasswordValid(password())
+
   const submit = async (e: Event) => {
     e.preventDefault()
     if (busy()) return
+    if (mode() === 'register' && !isPasswordValid(password())) {
+      setError("Password doesn't meet the requirements yet.")
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -55,6 +67,9 @@ export function KaraokeAccount() {
 
   return (
     <div class="kn-account">
+      {/* Fixed-position pill — DOM placement here just rides the lazy
+          account chunk; visually it floats bottom-centre of the page. */}
+      <VerifyEmailBanner />
       <Show
         when={signedIn()}
         fallback={
@@ -114,29 +129,41 @@ export function KaraokeAccount() {
               </svg>
             </button>
             <h2>{mode() === 'register' ? 'Create your account' : 'Sign in'}</h2>
-            <p class="kn-modal-sub">
-              Sign in to separate songs on our servers in studio quality with
-              your credits.
-            </p>
             <form onSubmit={(e) => void submit(e)}>
               <input
                 type="email"
+                name="email"
+                id="kn-auth-email"
                 placeholder="Email"
-                autocomplete="email"
+                aria-label="Email"
+                autocomplete="username"
                 required
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
+                aria-invalid={error() !== '' ? 'true' : undefined}
               />
               <input
                 type="password"
+                name="password"
+                id="kn-auth-password"
                 placeholder="Password"
+                aria-label="Password"
                 autocomplete={
                   mode() === 'register' ? 'new-password' : 'current-password'
                 }
                 required
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
+                aria-invalid={
+                  pwdInvalid() || error() !== '' ? 'true' : undefined
+                }
               />
+              <Show when={mode() === 'register'}>
+                <PasswordRequirements
+                  password={password()}
+                  showInvalid={password() !== ''}
+                />
+              </Show>
               <Show when={error() !== ''}>
                 <p class="kn-modal-error">{error()}</p>
               </Show>
