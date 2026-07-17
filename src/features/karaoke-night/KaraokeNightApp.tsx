@@ -96,6 +96,7 @@ export function KaraokeNightApp() {
         sessionId: DEMO_SESSION_ID,
         title: `${md.title} — ${md.artist}`,
         stems: md.stems,
+        autoPlay: true,
       })
     })()
   }

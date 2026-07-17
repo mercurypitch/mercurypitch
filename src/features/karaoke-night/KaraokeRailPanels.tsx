@@ -15,6 +15,10 @@ export interface KaraokeSong {
   sessionId: string
   title: string
   stems: { vocal?: string; instrumental?: string }
+  /** Start playback as soon as the stems finish loading — set only for
+   *  explicit user stagings (the demo button); playlists run their own
+   *  countdown flow and background auto-stagings must stay silent. */
+  autoPlay?: boolean
 }
 
 interface KaraokeRailPanelsProps {
