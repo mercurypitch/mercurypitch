@@ -118,6 +118,16 @@ describe('reduceSession', () => {
     expect(state.repMetrics).toHaveLength(1)
   })
 
+  it('recovers from mic-denied when the singer retries and grants', () => {
+    let state = play([{ type: 'start' }, { type: 'mic-denied' }])
+    expect(state.phase).toBe('mic-denied')
+    // "Try again" → start() re-requests, then a granted prompt proceeds.
+    state = reduceSession(state, { type: 'start' })
+    expect(state.phase).toBe('mic')
+    state = reduceSession(state, { type: 'mic-granted' })
+    expect(state.phase).toBe('calibrate')
+  })
+
   it('ignores events that arrive in the wrong phase', () => {
     const idle = initialSessionState()
     expect(

@@ -82,7 +82,11 @@ export function reduceSession(
 ): GlassSessionState {
   switch (event.type) {
     case 'start':
-      return state.phase === 'idle' ? { ...state, phase: 'mic' } : state
+      // 'mic-denied' too, so "Try again" after a denied prompt can recover
+      // (deny/dismiss → grant would otherwise soft-lock on the mic panel).
+      return state.phase === 'idle' || state.phase === 'mic-denied'
+        ? { ...state, phase: 'mic' }
+        : state
     case 'mic-granted':
       return state.phase === 'mic' ? { ...state, phase: 'calibrate' } : state
     case 'mic-denied':

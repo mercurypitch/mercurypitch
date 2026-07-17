@@ -214,6 +214,18 @@ export const GlassApp: Component = () => {
     setMonitorNotice(notice)
   }
 
+  // Silence the live monitor DURING playback (you're listening to your take,
+  // not singing) without forgetting the preference; resumed for the next sing.
+  function pauseMonitor(): void {
+    monitorSource?.disconnect()
+  }
+
+  function resumeMonitor(): void {
+    if (monitorOn() && monitorSource !== null && fxAudio !== null) {
+      monitorSource.connect(fxAudio.wetInput)
+    }
+  }
+
   function enableMonitor(): void {
     const stream = micManager.getStream()
     if (audioContext === null || fxAudio === null || stream === null) return
@@ -507,6 +519,7 @@ export const GlassApp: Component = () => {
     const gen = flowGen
     setSubPhase('active')
     stopDemo()
+    resumeMonitor()
     f0.startTask()
     recorder?.start()
     renderer?.beginTake()
@@ -602,6 +615,7 @@ export const GlassApp: Component = () => {
 
     // Start the voice — decode path first (sample-accurate, FX-routed),
     // <audio> element through the rack as the Safari-webm fallback.
+    pauseMonitor()
     stopPlaybackAudio()
     if (takeBlob !== null && audioContext !== null && fxAudio !== null) {
       try {
@@ -842,6 +856,12 @@ export const GlassApp: Component = () => {
       fatigue: round2(physics.fatigue),
       renderer: rendererMetric(),
     })
+
+    // The results screen has no stage; stop the renderer's rAF loop instead
+    // of driving a detached canvas at 60fps until the singer moves on.
+    renderer?.dispose()
+    renderer = null
+    stageHost = null
   }
 
   /** The singer bails mid-loop: orphan the flow, honest results. */
