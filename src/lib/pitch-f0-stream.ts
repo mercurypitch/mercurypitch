@@ -1,13 +1,17 @@
 // ============================================================
-// Voice Mirror — F0 frame stream over the shared mic.
+// Shared F0 frame stream over the mic (Voice Mirror + Glass).
 //
 // Bridges the app's capture chain (MicManager stream → AnalyserNode)
-// and the YIN detector into the pure `F0Frame` contract the mirror
-// metrics consume. Polls on requestAnimationFrame (~16 ms hop),
-// which is sufficient for the mirror's 150 ms dwell/lock windows.
+// and the YIN detector into pure pitch frames. Polls on
+// requestAnimationFrame (~16 ms hop), which is sufficient for the
+// mirror's 150 ms dwell/lock windows and the glass's resonance tick.
+// Each frame also carries the buffer's RMS level (`rms`) — the glass
+// fatigue model needs per-frame loudness; mirror consumers see the
+// same frames through the narrower `F0Frame` contract.
 //
 // Deliberately uses only the 'yin' algorithm — no SwiftF0/ONNX —
-// so the mirror bundle ships no model weights (spec bundle rule).
+// so the standalone entries ship no model weights (bundle rule).
+// Lives in src/lib/ so it rides the `pitch-core` manualChunk.
 // ============================================================
 
 import type { F0Frame } from '@/lib/mirror/metrics'
@@ -15,13 +19,18 @@ import { PitchDetector } from '@/lib/pitch-detector'
 
 const FFT_SIZE = 2048
 
+/** An F0Frame plus the analysed buffer's RMS level (0..1). */
+export interface PitchFrame extends F0Frame {
+  rms: number
+}
+
 export interface F0Stream {
   /** Begin a task recording: clears frames and re-zeroes the clock. */
   startTask: () => void
   /** Frames captured since the last startTask(), time-relative to it. */
-  takeFrames: () => F0Frame[]
+  takeFrames: () => PitchFrame[]
   /** The most recent frame, for live visual feedback (null before any). */
-  latest: () => F0Frame | null
+  latest: () => PitchFrame | null
   /** RMS input level of the most recent analysed buffer (0..1). */
   latestLevel: () => number
   /** Highest RMS level observed since the last startTask(). */
@@ -64,8 +73,8 @@ export function createF0Stream(
   })
 
   const buffer = new Float32Array(FFT_SIZE)
-  let frames: F0Frame[] = []
-  let latestFrame: F0Frame | null = null
+  let frames: PitchFrame[] = []
+  let latestFrame: PitchFrame | null = null
   let latestRms = 0
   let maxRms = 0
   let taskStart = performance.now()
@@ -90,10 +99,11 @@ export function createF0Stream(
     if (latestRms > maxRms) maxRms = latestRms
 
     const detected = detector.detect(buffer)
-    const frame: F0Frame = {
+    const frame: PitchFrame = {
       t: (performance.now() - taskStart) / 1000,
       f0: detected.frequency > 0 ? detected.frequency : 0,
       conf: detected.frequency > 0 ? detected.clarity : 0,
+      rms: latestRms,
     }
     frames.push(frame)
     latestFrame = frame

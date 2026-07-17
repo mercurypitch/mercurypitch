@@ -712,3 +712,20 @@ see an animation."
   amendment), db-worker `FUNNEL_EVENTS` extension, sitemap entry, and the
   required "Powered by TypeGPU" footer credit. The landing's "Start
   singing" opens the three-step preview until P1 wires the mic flow.
+- **P1 — DONE (branch `feat/glass-campaign`).** The full audio core:
+  `src/lib/pitch-f0-stream.ts` (f0-stream promoted from the mirror, frames
+  now carry per-buffer `rms`; mirror imports updated; added to the
+  `pitch-core` chunk regex together with `src/lib/glass/`), pure libs with
+  synthetic-track tests — `target.ts` (ceiling/median/fallback),
+  `resonance.ts` (tick physics, crack steps, shatter condition),
+  `metrics.ts` (per-rep numbers, lock-window cleanliness, epicness),
+  `session.ts` (reducer incl. calibration retries and `end-session`) —
+  and `GlassApp.tsx` rewritten to run the real flow with the mirror's
+  hardened mic handling (probe + rebuild + generation tokens): landing →
+  mic → calibration glide (one retry) → announce → rep loop with live
+  resonance/fatigue debug bars → contour playback beat → gap → … →
+  results (shattered or "the glass held"), all funnel events firing.
+  Verified end-to-end headless with a synthesized siren-glide WAV as a
+  fake mic (full-binary Chromium + `--use-file-for-fake-audio-capture`;
+  the Playwright headless SHELL has no getUserMedia — remember this for
+  e2e). Playback is contour-only until P2 adds the recorded voice + FX.

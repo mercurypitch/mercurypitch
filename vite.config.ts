@@ -215,7 +215,7 @@ export default defineConfig({
           // landing in the 'advanced' chunk once dragged ~2.7 MB of static
           // JS into the mirror's first paint via ConsentBanner.
           if (
-            /src\/lib\/(mirror\/|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+            /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
               id,
             ) ||
             /src\/stores\/notifications-store/.test(id) ||
