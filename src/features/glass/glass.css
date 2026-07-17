@@ -197,6 +197,7 @@ body {
 }
 
 .glass-panel {
+  position: relative; /* anchors the corner trust "i" button */
   width: min(560px, 100%);
   text-align: center;
   padding: 34px 26px;
@@ -450,6 +451,48 @@ body {
   text-transform: uppercase;
   color: var(--glass-chrome-dim);
   margin-bottom: 8px;
+}
+
+/* Corner trust "i": the privacy story one tap away, occluding nothing. */
+.glass-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  text-align: right;
+}
+.glass-info-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+  background: rgba(11, 16, 38, 0.55);
+  color: var(--glass-chrome-dim);
+  cursor: pointer;
+}
+.glass-info-btn[aria-expanded='true'],
+.glass-info-btn:hover {
+  color: var(--glass-starlight);
+  border-color: rgba(138, 151, 166, 0.55);
+}
+.glass-info-pop {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  width: min(260px, 78vw);
+  padding: 10px 12px;
+  border: 1px solid rgba(138, 151, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--glass-chrome);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(9, 7, 20, 0.5);
 }
 
 /* Mic input picker (mic panel): switch off the browser's default device. */
@@ -840,6 +883,26 @@ body {
 }
 .glass-results-overlay .glass-actions {
   margin-top: 8px;
+}
+@media (max-width: 879px) {
+  /* Phones: an absolute overlay over the small pane trapped a NESTED
+     scroll (hard to tap, fights the page scroll). Flow the results card in
+     the document instead: shattered pane on top, card beneath it, room +
+     takes further down — one natural page scroll. */
+  .glass-results-overlay {
+    position: static;
+    inset: auto;
+    overflow: visible;
+    margin: 10px auto 0;
+    background: rgba(11, 16, 38, 0.55);
+    border: 1px solid rgba(138, 151, 166, 0.2);
+    backdrop-filter: blur(6px);
+  }
+  /* The pane is a backdrop here, not the tap target — keep it shorter so
+     the numbers are one small swipe away, not a full screen down. */
+  .glass-stage-wrap .glass-stage {
+    width: min(100%, calc((100dvh - 520px) * 0.77), 300px);
+  }
 }
 
 /* ── Takes strip: reviewable recorded reps ─────────────────── */

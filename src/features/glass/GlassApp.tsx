@@ -212,10 +212,17 @@ export const GlassApp: Component = () => {
 
   // Any phase/sub-phase transition silences take review — a take must never
   // bleed into a countdown, a live rep or the auto-replay.
+  let lastPhase: GlassSessionState['phase'] = 'idle'
   createEffect(() => {
-    void session().phase
+    const current = session().phase
     void subPhase()
     stopTakePlayback()
+    // New screen starts at the top — results/gap otherwise inherit the
+    // scroll of the tall sing screen and open with the pane above the fold.
+    if (current !== lastPhase) {
+      lastPhase = current
+      window.scrollTo({ top: 0 })
+    }
   })
 
   function releaseReadyGate(): void {
@@ -1260,8 +1267,8 @@ export const GlassApp: Component = () => {
           <section class="glass-panel glass-panel-wide glass-panel-clear">
             <h2>Find your ceiling</h2>
             <p>
-              Slide from your lowest comfy note to your highest — like the siren
-              you just heard. The glass listens and tunes itself to you.
+              Slide low to high, like the siren — the glass tunes itself to
+              you.
             </p>
             <Show when={calRetry()}>
               <p class="glass-dim">
@@ -1335,9 +1342,8 @@ export const GlassApp: Component = () => {
             </p>
             <div class="glass-note-hero">{targetLabel()}</div>
             <p>
-              Your {targetLabel()}. Land it, hold it, and pour into it until the
-              glass gives way. Every close call weakens it — persistence always
-              wins.
+              Land it, hold it, pour into it — every close call weakens the
+              glass.
             </p>
             <div class="glass-actions">
               <button class="glass-cta" onClick={() => releaseReadyGate()}>
@@ -1349,6 +1355,7 @@ export const GlassApp: Component = () => {
 
         <Show when={phase() === 'sing'}>
           <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
             <div class="glass-progress">Rep {session().rep}</div>
             <h2 class="glass-coach">
               {subPhase() === 'active' ? coachLine() : 'Sing to the glass'}
@@ -1413,11 +1420,11 @@ export const GlassApp: Component = () => {
 
         <Show when={phase() === 'playback'}>
           <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
             <h2>That was you</h2>
-            <p class="glass-dim">
-              Your own take replays in the glass — getting used to your voice IS
-              the exercise. Shape the room with the sliders; your recording
-              stays dry and is deleted after this replay.
+            <p class="glass-dim glass-subline">
+              Getting used to your voice IS the exercise — shape the room with
+              the sliders.
             </p>
             <div class="glass-stagegrid">
               <div class="glass-rail">
@@ -1460,9 +1467,10 @@ export const GlassApp: Component = () => {
           {/* The between-reps rest: NO auto-advance. Review takes, shape the
               room, study the cracked pane — the next rep starts on a tap. */}
           <section class="glass-panel glass-panel-wide glass-panel-clear">
-            <h2>Again — you know where it lives now</h2>
+            <TrustInfo />
+            <h2>You know where it lives now</h2>
             <p class="glass-dim glass-subline">
-              Replay your takes, tweak the room, then go when you're ready.
+              Replay your takes, tweak the room, go when ready.
             </p>
             <div class="glass-stagegrid">
               <div class="glass-rail">
@@ -1518,6 +1526,7 @@ export const GlassApp: Component = () => {
               stays on stage with the numbers overlaid, the room + takes in
               the rail — same screen, mirror-style, not a separate page. */}
           <section class="glass-panel glass-panel-wide glass-panel-clear">
+            <TrustInfo />
             <div class="glass-stagegrid">
               <div class="glass-rail">
                 <FxRackPanel
@@ -1540,12 +1549,6 @@ export const GlassApp: Component = () => {
                   onToggle={toggleTake}
                   onRemove={removeTake}
                 />
-                <Show when={takes().length > 0}>
-                  <p class="glass-dim glass-takes-note">
-                    Takes live only in this tab — leaving the page deletes
-                    the audio. Your numbers stay on device.
-                  </p>
-                </Show>
               </div>
               <div class="glass-stage-wrap">
                 <div class="glass-stage" ref={(el) => mountStage(el)} />
@@ -1609,6 +1612,45 @@ const LevelBar: Component<{ level: () => number }> = (props) => {
   return (
     <div class="glass-levelbar" title="Microphone input level">
       <div class="glass-levelbar-fill" style={{ width: `${percent()}%` }} />
+    </div>
+  )
+}
+
+/** The privacy story, tucked into a corner: an "i" button with a popover.
+ *  The full text lives on the landing; every other screen carries only
+ *  this — so trust stays one tap away without occluding the experience. */
+const TrustInfo: Component = () => {
+  const [open, setOpen] = createSignal(false)
+  return (
+    <div class="glass-info">
+      <button
+        class="glass-info-btn"
+        aria-expanded={open()}
+        aria-label="Privacy: how your audio is handled"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 10.8v5.4" />
+          <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
+        </svg>
+      </button>
+      <Show when={open()}>
+        <div class="glass-info-pop" role="note">
+          Private by design: your audio never leaves this device — analysis
+          runs in your browser. Takes live only in this tab and are gone when
+          you leave. Your numbers stay on device.
+        </div>
+      </Show>
     </div>
   )
 }
@@ -1724,11 +1766,10 @@ const MicPanel: Component<{
   )
   return (
     <section class="glass-panel">
+      <TrustInfo />
       <h2>One thing first</h2>
       <p class="glass-trust">
-        Your audio never leaves this device — we analyze it right here in your
-        browser. Takes are recorded on-device, played back to you, then
-        deleted.
+        We analyze your voice right here in your browser.
       </p>
       <Show when={props.error}>
         <p class="glass-error">{props.error}</p>
@@ -1897,8 +1938,7 @@ const ResultsPanel: Component<{
       </Show>
       <Show when={!shattered()}>
         <p class="glass-dim">
-          The damage you did is real — a fresh session starts a fresh glass, but
-          your voice remembers.
+          The damage is real — but a new session starts a fresh glass.
         </p>
       </Show>
       <div class="glass-actions">
@@ -2011,8 +2051,8 @@ const Landing: Component<{
       How it works
     </button>
     <p class="glass-trust">
-      Your audio never leaves this device. Takes are recorded on-device, played
-      back to you, then deleted.
+      Your audio never leaves this device — takes are recorded on-device and
+      gone when you leave.
     </p>
   </section>
 )

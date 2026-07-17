@@ -237,6 +237,34 @@ if (SHATTER) {
     'results: ' +
       (await page.locator('.glass-panel h2').first().textContent())?.trim(),
   )
+  if (SHOT_DIR !== '') {
+    // Layout probe: the pane must have real size under the results overlay.
+    const rect = await page.evaluate(() => {
+      const el = document.querySelector('.glass-stage-wrap .glass-stage')
+      const canvas = el?.querySelector('canvas')
+      const r = el?.getBoundingClientRect()
+      if (!r) return 'stage NOT FOUND'
+      if (!canvas) return 'canvas MISSING'
+      const cr = canvas.getBoundingClientRect()
+      // Painted? sample the canvas backing for any non-transparent pixel.
+      let painted = 'unreadable'
+      try {
+        const probe = document.createElement('canvas')
+        probe.width = 40
+        probe.height = 40
+        const ctx = probe.getContext('2d')
+        ctx.drawImage(canvas, 0, 0, 40, 40)
+        const data = ctx.getImageData(0, 0, 40, 40).data
+        let hits = 0
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 8) hits++
+        painted = `${hits}/1600 px`
+      } catch {
+        /* tainted/webgpu */
+      }
+      return `stage ${Math.round(r.width)}x${Math.round(r.height)} @y=${Math.round(r.top)} canvas ${Math.round(cr.width)}x${Math.round(cr.height)} backing ${canvas.width}x${canvas.height} painted ${painted}`
+    })
+    log.push(`results layout: ${rect}`)
+  }
   await shot('results')
 }
 
