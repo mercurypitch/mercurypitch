@@ -1,0 +1,939 @@
+<title>Glass — MercuryPitch look-dev</title>
+<style>
+  /* ==========================================================
+     GLASS — look-dev prototype (Canvas 2D)
+     Production renderer: TypeGPU (WebGPU). This page validates
+     choreography, palette, physics feel and copy — not the stack.
+     Single committed dark theme: this is the product's world.
+     ========================================================== */
+  :root {
+    --void-0: #090714;
+    --void-1: #0b1026;
+    --starlight: #f4f8fd;
+    --chrome: #8a97a6;
+    --chrome-dim: #5b6b7b;
+    --signal: #58a6ff;
+    --aqua: #2dd4bf;
+    --violet: #bc8cff;
+    --gold: #ffe9a8;
+    --gold-deep: #d4af6a;
+    --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-data: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  }
+  #glass-root {
+    position: fixed; inset: 0; overflow: hidden;
+    background: var(--void-0);
+    color: var(--starlight);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.45;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* ── chrome (the quiet parts) ─────────────────────────── */
+  #glass-root header {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid rgba(138, 151, 166, 0.14);
+    background: linear-gradient(rgba(9, 7, 20, 0.55), rgba(9, 7, 20, 0));
+    pointer-events: none;
+  }
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--chrome);
+  }
+  .eyebrow b { color: var(--gold); font-weight: 600; }
+  .headnote { font-size: 11px; letter-spacing: 0.06em; color: var(--chrome-dim); }
+
+  #coach {
+    position: absolute; top: 52px; left: 0; right: 0;
+    text-align: center; pointer-events: none;
+    font-family: var(--font-display);
+    font-size: clamp(14px, 2.2vw, 17px); font-weight: 500;
+    color: rgba(244, 248, 253, 0.88);
+    text-shadow: 0 1px 14px rgba(9, 7, 20, 0.9);
+    padding: 0 16px;
+  }
+  #coach small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--chrome); margin-top: 3px; }
+
+  /* ── HUD chips ────────────────────────────────────────── */
+  #hud {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: 86px;
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    pointer-events: none;
+  }
+  .chip {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    min-width: 84px; padding: 7px 12px 6px;
+    border: 1px solid rgba(138, 151, 166, 0.22);
+    border-radius: 10px;
+    background: rgba(11, 16, 38, 0.55);
+    backdrop-filter: blur(6px);
+  }
+  .chip .k { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--chrome-dim); }
+  .chip .v { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 15px; color: var(--starlight); }
+  .chip .v.good { color: var(--aqua); }
+  .chip .v.warm { color: var(--gold); }
+
+  /* ── control dock ─────────────────────────────────────── */
+  #controls {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: 22px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;
+    padding: 0 12px;
+  }
+  #controls button {
+    font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+    color: var(--starlight);
+    background: rgba(11, 16, 38, 0.7);
+    border: 1px solid rgba(138, 151, 166, 0.35);
+    border-radius: 999px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: border-color 140ms, background 140ms, transform 140ms;
+  }
+  #controls button:hover { border-color: var(--chrome); background: rgba(27, 36, 48, 0.8); }
+  #controls button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  #controls button.primary {
+    color: #201a08;
+    background: linear-gradient(160deg, var(--gold) 0%, var(--gold-deep) 100%);
+    border-color: transparent;
+  }
+  #controls button.primary:hover { transform: translateY(-1px); }
+  #controls button[aria-pressed="true"] { border-color: var(--aqua); color: var(--aqua); }
+
+  /* ── results panel ────────────────────────────────────── */
+  #results {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -46%);
+    width: min(400px, calc(100vw - 40px));
+    padding: 26px 26px 20px;
+    border: 1px solid rgba(255, 233, 168, 0.35);
+    border-radius: 18px;
+    background: linear-gradient(170deg, rgba(11, 16, 38, 0.86), rgba(9, 7, 20, 0.9));
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.6), 0 0 60px rgba(255, 233, 168, 0.08);
+    opacity: 0; pointer-events: none;
+    transition: opacity 700ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    text-align: center;
+  }
+  #results.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+  #results .r-eyebrow { font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--gold-deep); }
+  #results h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 26px; letter-spacing: -0.01em; margin: 6px 0 2px;
+    text-wrap: balance;
+  }
+  #results .r-note {
+    display: inline-block; margin: 6px 0 14px;
+    font-family: var(--font-data); font-size: 13px; color: var(--void-0);
+    background: linear-gradient(160deg, var(--gold), var(--gold-deep));
+    border-radius: 999px; padding: 4px 12px;
+  }
+  #results .r-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  #results .r-cell { border: 1px solid rgba(138, 151, 166, 0.2); border-radius: 10px; padding: 8px 4px 7px; }
+  #results .r-cell .k { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--chrome-dim); }
+  #results .r-cell .v { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 16px; color: var(--starlight); margin-top: 2px; }
+  #results .r-delta { font-size: 12.5px; color: var(--aqua); margin-bottom: 16px; }
+  #results .r-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  #results .r-actions button {
+    font-family: var(--font-display); font-size: 12.5px; font-weight: 600;
+    border-radius: 999px; padding: 8px 16px; cursor: pointer;
+    border: 1px solid rgba(138, 151, 166, 0.35); background: transparent; color: var(--starlight);
+  }
+  #results .r-actions button.primary { background: linear-gradient(160deg, var(--gold), var(--gold-deep)); color: #201a08; border-color: transparent; }
+  #results .r-foot { margin-top: 14px; font-size: 10.5px; color: var(--chrome-dim); }
+
+  #glass-root footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 8px 20px;
+    font-size: 10px; letter-spacing: 0.05em; color: var(--chrome-dim);
+    pointer-events: none;
+  }
+  #glass-root footer b { color: var(--chrome); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    #hud { bottom: 96px; gap: 6px; }
+    .chip { min-width: 70px; padding: 5px 9px 4px; }
+    #glass-root footer { justify-content: center; text-align: center; }
+    #glass-root footer .fright { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #results { transition: opacity 250ms ease; }
+  }
+</style>
+
+<div id="glass-root">
+  <canvas id="scene" aria-label="Voice Glass simulation: a mirror pane on a cosmic backdrop; your pitch dances inside it and shatters the glass when you hold the target note."></canvas>
+
+  <header>
+    <span class="eyebrow">MercuryPitch · <b>Glass</b> — look-dev prototype</span>
+    <span class="headnote">target G4 · 392 Hz · shatter by resonance</span>
+  </header>
+
+  <div id="coach">Meet the glass.<small>Run the guided demo, or drag on the mirror to sing with your pointer.</small></div>
+
+  <div id="hud" aria-live="off">
+    <div class="chip"><span class="k">Offset</span><span class="v" id="hud-off">—</span></div>
+    <div class="chip"><span class="k">Resonance</span><span class="v" id="hud-res">0%</span></div>
+    <div class="chip"><span class="k">Integrity</span><span class="v" id="hud-int">100%</span></div>
+    <div class="chip"><span class="k">Rep</span><span class="v" id="hud-rep">—</span></div>
+  </div>
+
+  <div id="controls">
+    <button id="btn-demo" class="primary">▶ Run guided demo</button>
+    <button id="btn-free">Free sing · drag</button>
+    <button id="btn-shatter" title="Dev shortcut: force the shatter">Shatter now</button>
+    <button id="btn-sound" aria-pressed="false">Sound off</button>
+    <button id="btn-reset">↺ New glass</button>
+  </div>
+
+  <div id="results" role="dialog" aria-label="Run results">
+    <div class="r-eyebrow">✦ The glass gave way</div>
+    <h2 id="r-title">Shattered on rep 3</h2>
+    <span class="r-note" id="r-note">G4 · 392 Hz</span>
+    <div class="r-grid">
+      <div class="r-cell"><div class="k">Resonance</div><div class="v" id="r-res">—</div></div>
+      <div class="r-cell"><div class="k">Best lock</div><div class="v" id="r-lock">—</div></div>
+      <div class="r-cell"><div class="k">Precision</div><div class="v" id="r-prec">—</div></div>
+    </div>
+    <div class="r-delta" id="r-delta"></div>
+    <div class="r-actions">
+      <button class="primary" id="r-again">Sing it again</button>
+      <button disabled title="Production feature: canvas share card">Share shatter card</button>
+    </div>
+    <div class="r-foot">Production shows the shareable shatter card here — this panel mocks the beat.</div>
+  </div>
+
+  <footer>
+    <span>Look-dev only: Canvas 2D. <b>Production renderer: TypeGPU (WebGPU).</b></span>
+    <span class="fright">Physics &amp; choreography transfer 1:1 — only rasterization changes.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  // ─── Tunables (these become the spec constants) ─────────────────
+  const TARGET_HZ = 392;            // G4
+  const TOL_CENTS = 35;             // in-band tolerance (house HIT_TOLERANCE_CENTS)
+  const VIEW_CENTS = 340;           // half-range of the pane's vertical pitch view
+  const LOCK_FOR_SHATTER = 0.8;     // s of continuous lock required before shatter can fire
+  const RES_RISE = 0.30;            // resonance growth base (1/s), accelerates with itself
+  const RES_FALL = 0.55;            // resonance decay when out of band (1/s)
+  const FATIGUE_RATE = 0.052;       // stress → permanent damage rate
+  const FATIGUE_ASSIST = 0.38;      // how much full fatigue lowers the shatter threshold
+  const CRACK_STEPS = [0.18, 0.36, 0.55, 0.74, 0.9]; // fatigue thresholds that spawn cracks
+  const REP_SECONDS = 8;
+  const PLAYBACK_MAX = 4.2;
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SHARD_DEPTH = reduceMotion ? 5 : 7; // recursion depth → ~2^n shards
+
+  // ─── Canvas & layout ────────────────────────────────────────────
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+  let pane = { x: 0, y: 0, w: 0, h: 0, r: 18 }; // mirror rect (CSS px)
+
+  const backdrop = document.createElement('canvas'); // static cosmos
+  const bctx = backdrop.getContext('2d');
+  const starsFar = [], starsNear = [];
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const ph = Math.min(H * 0.62, 560);
+    const pw = Math.min(W * 0.82, ph * 0.72);
+    pane = { w: pw, h: ph, x: (W - pw) / 2, y: (H - ph) / 2 - H * 0.015, r: Math.min(20, pw * 0.06) };
+    paintBackdrop();
+  }
+
+  // ─── Backdrop: procedural stand-in for the Higgsfield still ─────
+  function paintBackdrop() {
+    backdrop.width = Math.round(W * DPR); backdrop.height = Math.round(H * DPR);
+    bctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0b1026'); g.addColorStop(0.6, '#0a0a1e'); g.addColorStop(1, '#090714');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
+    // nebula wisps — violet + aqua + signal, very dim
+    const blobs = [
+      [W * 0.22, H * 0.28, W * 0.34, 'rgba(188,140,255,0.10)'],
+      [W * 0.80, H * 0.20, W * 0.30, 'rgba(88,166,255,0.09)'],
+      [W * 0.70, H * 0.82, W * 0.36, 'rgba(45,212,191,0.07)'],
+      [W * 0.14, H * 0.85, W * 0.28, 'rgba(188,140,255,0.06)'],
+    ];
+    for (const [x, y, r, c] of blobs) {
+      const rg = bctx.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      bctx.fillStyle = rg; bctx.fillRect(0, 0, W, H);
+    }
+    // star layers (regenerate per size)
+    starsFar.length = 0; starsNear.length = 0;
+    const rnd = mulberry32(7);
+    for (let i = 0; i < 220; i++) starsFar.push([rnd() * W, rnd() * H, 0.4 + rnd() * 0.8, 0.25 + rnd() * 0.5]);
+    for (let i = 0; i < 70; i++) starsNear.push([rnd() * W, rnd() * H, 0.8 + rnd() * 1.3, 0.4 + rnd() * 0.6, rnd() * Math.PI * 2]);
+    for (const [x, y, r, a] of starsFar) { bctx.globalAlpha = a; bctx.fillStyle = '#dfe8ff'; bctx.beginPath(); bctx.arc(x, y, r, 0, 7); bctx.fill(); }
+    bctx.globalAlpha = 1;
+  }
+
+  function drawBackdrop(t) {
+    ctx.drawImage(backdrop, 0, 0, W, H);
+    // near stars twinkle + drift (the only animated backdrop cost)
+    for (const s of starsNear) {
+      const a = s[3] * (0.6 + 0.4 * Math.sin(t * 1.3 + s[4]));
+      ctx.globalAlpha = a; ctx.fillStyle = '#eaf1ff';
+      ctx.beginPath(); ctx.arc(s[0] + Math.sin(t * 0.05 + s[4]) * 4, s[1], s[2], 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // vignette
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(5,4,12,0.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+
+  // ─── Deterministic PRNG (stable star field / fracture jitter) ───
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const clamp01 = (v) => clamp(v, 0, 1);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+  // ─── Session state ──────────────────────────────────────────────
+  const S = {
+    mode: 'idle',            // idle | demo | free
+    phase: 'idle',           // idle | sing | playback | gap | shatter | results
+    rep: 0,
+    t: 0,                    // phase-local clock
+    now: 0,                  // global clock
+    fatigue: 0, resonance: 0, lockRun: 0,
+    cracks: [], crackStep: 0,
+    voiced: false, cents: -VIEW_CENTS, level: 0,
+    ribbon: [],              // live trail: {cents, level}
+    take: [],                // recorded samples of current rep {t, cents, level, voiced}
+    reps: [],                // finished rep metrics
+    playbackTake: null,
+    shards: null, dust: [], shatterAt: 0, shatterRep: 0,
+    pointer: { down: false, y: 0 },
+    demoFn: null,
+  };
+
+  // ─── Scripted "singer" takes (three improving reps) ─────────────
+  function makeTake(q) {
+    const seed = Math.random() * 100;
+    return (t) => {
+      const settle = 1 - easeOutCubic(clamp01(t / q.settle));
+      const wob = lerp(q.wob0, q.wob1, easeOutCubic(clamp01(t / REP_SECONDS)));
+      const wobble =
+        Math.sin(t * 5.1 + seed) * wob * 0.55 +
+        Math.sin(t * 11.7 + seed * 2.1) * wob * 0.25 +
+        Math.sin(t * 2.3 + seed * 3.7) * wob * 0.35;
+      // slow sway: drifts through the band in long arcs, so early reps
+      // visit the target without settling on it (the realistic miss)
+      const sway = (q.sway || 0) * Math.sin(t * (q.swayRate || 1) + seed * 0.7);
+      const cents = q.start * settle + wobble + q.bias + sway;
+      const breath = t > q.breathAt && t < q.breathAt + 0.4;
+      const level = breath ? 0 : clamp(0.55 + 0.25 * Math.sin(t * 1.9 + seed) + 0.12 * Math.sin(t * 6.3), 0.2, 0.95);
+      return { cents, level, voiced: !breath && t > 0.25 };
+    };
+  }
+  const DEMO_REPS = [
+    // reps 1–2 must fail believably (graze the band, never settle in it);
+    // rep 3 locks and wins. Fatigue carries across all three.
+    { start: -290, settle: 5.2, wob0: 80, wob1: 40, bias: 12, sway: 62, swayRate: 0.8, breathAt: 3.1 },
+    { start: -230, settle: 3.0, wob0: 52, wob1: 20, bias: -6, sway: 48, swayRate: 1.15, breathAt: 4.6 },
+    { start: -180, settle: 1.6, wob0: 26, wob1: 6, bias: 0, breathAt: 99 },
+  ];
+
+  // ─── Coach copy (brand voice: encouraging, precise) ─────────────
+  const coach = document.getElementById('coach');
+  let coachKey = '';
+  function setCoach(main, sub = '') {
+    const key = main + '|' + sub;
+    if (key === coachKey) return; // called per-frame; only touch the DOM on change
+    coachKey = key;
+    coach.innerHTML = '';
+    coach.append(main);
+    if (sub) { const s = document.createElement('small'); s.textContent = sub; coach.append(s); }
+  }
+  function liveCoachLine() {
+    if (!S.voiced) return 'Take a breath — the mirror is listening.';
+    const off = S.cents;
+    if (Math.abs(off) <= TOL_CENTS) return S.resonance > 0.55 ? 'Locked. Keep pouring into it.' : 'There — hold it steady.';
+    const dir = off < 0 ? 'flat' : 'sharp';
+    if (Math.abs(off) > 140) return `Slide ${off < 0 ? 'up' : 'down'} to the gold line.`;
+    return `You're ${Math.abs(Math.round(off))}¢ ${dir} — ease ${off < 0 ? 'up' : 'off'}.`;
+  }
+
+  // ─── HUD ────────────────────────────────────────────────────────
+  const hudOff = document.getElementById('hud-off'), hudRes = document.getElementById('hud-res'),
+        hudInt = document.getElementById('hud-int'), hudRep = document.getElementById('hud-rep');
+  function updateHud() {
+    hudOff.textContent = S.voiced ? `${S.cents >= 0 ? '+' : '−'}${Math.abs(Math.round(S.cents))}¢` : '—';
+    hudOff.className = 'v' + (S.voiced && Math.abs(S.cents) <= TOL_CENTS ? ' good' : '');
+    hudRes.textContent = `${Math.round(S.resonance * 100)}%`;
+    hudRes.className = 'v' + (S.resonance > 0.6 ? ' warm' : '');
+    hudInt.textContent = `${Math.round((1 - S.fatigue) * 100)}%`;
+    hudRep.textContent = S.rep > 0 ? `${S.rep}/3` : '—';
+  }
+
+  // ─── Audio (all synthesized; nothing loaded) ────────────────────
+  let AC = null, master = null, voiceOsc = null, voiceGain = null,
+      humGain = null, playOsc = null, playGain = null;
+  let soundOn = false;
+  function ensureAudio() {
+    if (AC) return;
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+    // the singer (demo/pointer voice)
+    voiceOsc = AC.createOscillator(); voiceOsc.type = 'triangle';
+    voiceGain = AC.createGain(); voiceGain.gain.value = 0;
+    voiceOsc.connect(voiceGain).connect(master); voiceOsc.start();
+    // the glass hum at the target pitch (two detuned sines)
+    humGain = AC.createGain(); humGain.gain.value = 0; humGain.connect(master);
+    for (const det of [-3, 3]) {
+      const o = AC.createOscillator(); o.type = 'sine';
+      o.frequency.value = TARGET_HZ * Math.pow(2, det / 1200);
+      o.connect(humGain); o.start();
+    }
+    // the recorded take on playback ("your voice", darker timbre)
+    playOsc = AC.createOscillator(); playOsc.type = 'sawtooth';
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+    playGain = AC.createGain(); playGain.gain.value = 0;
+    playOsc.connect(lp).connect(playGain).connect(master); playOsc.start();
+  }
+  function setSound(on) {
+    soundOn = on;
+    const b = document.getElementById('btn-sound');
+    b.setAttribute('aria-pressed', String(on));
+    b.textContent = on ? 'Sound on' : 'Sound off';
+    if (on) { ensureAudio(); AC.resume(); master.gain.linearRampToValueAtTime(0.14, AC.currentTime + 0.2); }
+    else if (AC) master.gain.linearRampToValueAtTime(0, AC.currentTime + 0.1);
+  }
+  function audioTick() {
+    if (!AC || !soundOn) return;
+    const t = AC.currentTime;
+    const sing = S.phase === 'sing' && S.voiced;
+    if (sing) voiceOsc.frequency.setTargetAtTime(TARGET_HZ * Math.pow(2, S.cents / 1200), t, 0.02);
+    voiceGain.gain.setTargetAtTime(sing ? S.level * 0.05 : 0, t, 0.04);
+    const prox = sing ? clamp01(1 - Math.abs(S.cents) / 180) : 0;
+    humGain.gain.setTargetAtTime(prox * 0.045 * (0.35 + S.resonance), t, 0.08);
+    const pb = S.phase === 'playback' && S.voiced;
+    if (pb) playOsc.frequency.setTargetAtTime(TARGET_HZ * Math.pow(2, S.cents / 1200), t, 0.02);
+    playGain.gain.setTargetAtTime(pb ? S.level * 0.045 : 0, t, 0.05);
+  }
+  function shatterSound() {
+    if (!AC || !soundOn) return;
+    const t = AC.currentTime;
+    const noise = AC.createBufferSource();
+    const buf = AC.createBuffer(1, AC.sampleRate * 0.6, AC.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.6);
+    noise.buffer = buf;
+    const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+    bp.frequency.setValueAtTime(2600, t); bp.frequency.exponentialRampToValueAtTime(700, t + 0.5);
+    const ng = AC.createGain(); ng.gain.setValueAtTime(0.5, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    noise.connect(bp).connect(ng).connect(master); noise.start(t);
+    for (let i = 0; i < 6; i++) { // crystalline pings
+      const o = AC.createOscillator(); o.type = 'sine';
+      o.frequency.value = 1600 + Math.random() * 3800;
+      const g = AC.createGain();
+      const t0 = t + Math.random() * 0.12, dur = 0.5 + Math.random() * 0.9;
+      g.gain.setValueAtTime(0.06, t0); g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+      o.connect(g).connect(master); o.start(t0); o.stop(t0 + dur + 0.05);
+    }
+  }
+
+  // ─── Cracks (cumulative fatigue made visible) ───────────────────
+  function spawnCrack(rng) {
+    // start on the rim or near the target line, wander inward
+    const fromRim = rng() < 0.6;
+    let x, y, ang;
+    if (fromRim) {
+      const side = Math.floor(rng() * 4);
+      if (side === 0) { x = pane.x + rng() * pane.w; y = pane.y; ang = Math.PI / 2; }
+      else if (side === 1) { x = pane.x + rng() * pane.w; y = pane.y + pane.h; ang = -Math.PI / 2; }
+      else if (side === 2) { x = pane.x; y = pane.y + rng() * pane.h; ang = 0; }
+      else { x = pane.x + pane.w; y = pane.y + rng() * pane.h; ang = Math.PI; }
+    } else {
+      x = pane.x + pane.w * (0.3 + rng() * 0.4);
+      y = centsToY(0) + (rng() - 0.5) * 40;
+      ang = rng() * Math.PI * 2;
+    }
+    const pts = [[x, y]];
+    let steps = 5 + Math.floor(rng() * 5);
+    while (steps-- > 0) {
+      ang += (rng() - 0.5) * 1.15;
+      const len = 12 + rng() * 26;
+      x = clamp(x + Math.cos(ang) * len, pane.x + 4, pane.x + pane.w - 4);
+      y = clamp(y + Math.sin(ang) * len, pane.y + 4, pane.y + pane.h - 4);
+      pts.push([x, y]);
+    }
+    S.cracks.push({ pts, born: S.now });
+    if (rng() < 0.5 && pts.length > 3) { // one branch
+      const k = 1 + Math.floor(rng() * (pts.length - 2));
+      let [bx, by] = pts[k]; let bang = ang + (rng() < 0.5 ? 1 : -1) * (0.9 + rng() * 0.6);
+      const bpts = [[bx, by]];
+      for (let i = 0; i < 3 + Math.floor(rng() * 3); i++) {
+        bang += (rng() - 0.5) * 1.0;
+        bx = clamp(bx + Math.cos(bang) * (10 + rng() * 20), pane.x + 4, pane.x + pane.w - 4);
+        by = clamp(by + Math.sin(bang) * (10 + rng() * 20), pane.y + 4, pane.y + pane.h - 4);
+        bpts.push([bx, by]);
+      }
+      S.cracks.push({ pts: bpts, born: S.now });
+    }
+  }
+
+  // ─── Fracture: recursive convex splitting (spec §5 algorithm) ───
+  function splitPoly(poly, px, py, ang) {
+    const dx = Math.cos(ang), dy = Math.sin(ang);
+    const side = (p) => (p[0] - px) * dy - (p[1] - py) * dx;
+    const A = [], B = [];
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      const sp = side(p), sq = side(q);
+      (sp >= 0 ? A : B).push(p);
+      if ((sp >= 0) !== (sq >= 0)) {
+        const t = sp / (sp - sq);
+        const ix = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+        A.push(ix); B.push(ix);
+      }
+    }
+    return A.length > 2 && B.length > 2 ? [A, B] : null;
+  }
+  function polyCentroid(poly) {
+    let x = 0, y = 0, a = 0;
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      const c = p[0] * q[1] - q[0] * p[1];
+      a += c; x += (p[0] + q[0]) * c; y += (p[1] + q[1]) * c;
+    }
+    a *= 0.5;
+    return a === 0 ? [poly[0][0], poly[0][1], 0] : [x / (6 * a), y / (6 * a), Math.abs(a)];
+  }
+  function generateShards(impactX, impactY) {
+    const rng = mulberry32(42 + S.rep);
+    const out = [];
+    const rect = [[pane.x, pane.y], [pane.x + pane.w, pane.y], [pane.x + pane.w, pane.y + pane.h], [pane.x, pane.y + pane.h]];
+    const recurse = (poly, depth) => {
+      const [cx, cy, area] = polyCentroid(poly);
+      const nearImpact = Math.hypot(cx - impactX, cy - impactY) < pane.w * 0.36;
+      const done = depth <= 0 || area < 260 || (depth <= 2 && !nearImpact && rng() < 0.35);
+      if (done) { out.push(poly); return; }
+      // bias split chords through the impact for the radial-fracture look
+      const jx = cx + (rng() - 0.5) * 30, jy = cy + (rng() - 0.5) * 30;
+      const toImpact = Math.atan2(impactY - jy, impactX - jx);
+      const ang = (nearImpact && rng() < 0.55) ? toImpact + (rng() - 0.5) * 0.5 : rng() * Math.PI;
+      const halves = splitPoly(poly, jx, jy, ang);
+      if (!halves) { out.push(poly); return; }
+      recurse(halves[0], depth - 1); recurse(halves[1], depth - 1);
+    };
+    recurse(rect, SHARD_DEPTH);
+    // snapshot the pane's current pixels so shards carry its image
+    const snap = document.createElement('canvas');
+    snap.width = Math.round(pane.w * DPR); snap.height = Math.round(pane.h * DPR);
+    const sc = snap.getContext('2d');
+    sc.setTransform(DPR, 0, 0, DPR, -pane.x * DPR, -pane.y * DPR);
+    drawPane(sc, S.now, true);
+    return out.map((poly) => {
+      const [cx, cy] = polyCentroid(poly);
+      const dx = cx - impactX, dy = cy - impactY;
+      const dist = Math.hypot(dx, dy) || 1;
+      const boost = clamp(1.5 - dist / (pane.h * 0.8), 0.25, 1.5);
+      const speed = (120 + Math.random() * 260) * boost;
+      return {
+        local: poly.map(([x, y]) => [x - cx, y - cy]),
+        x: cx, y: cy, z: 0,
+        vx: (dx / dist) * speed + (Math.random() - 0.5) * 60,
+        vy: (dy / dist) * speed * 0.7 - 40 - Math.random() * 90,
+        vz: (Math.random() - 0.5) * 340,
+        ax: Math.random() * Math.PI * 2, // rotation axis (in-plane angle)
+        rot: 0, vrot: (Math.random() - 0.5) * (reduceMotion ? 3 : 7),
+        snapX: cx - pane.x, snapY: cy - pane.y,
+        snap,
+      };
+    });
+  }
+
+  // ─── The mirror pane painter ────────────────────────────────────
+  function centsToY(c) { return pane.y + pane.h / 2 - (c / VIEW_CENTS) * (pane.h / 2 - 26); }
+  function roundedRectPath(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+  function drawPane(c, t, forSnapshot = false) {
+    const { x, y, w, h, r } = pane;
+    c.save();
+    roundedRectPath(c, x, y, w, h, r);
+    c.clip();
+
+    // glass body: dim mirrored cosmos + depth gradient
+    c.globalAlpha = 0.55; c.drawImage(backdrop, 0, 0, W, H); c.globalAlpha = 1;
+    const gg = c.createLinearGradient(x, y, x + w, y + h);
+    gg.addColorStop(0, 'rgba(27,36,48,0.55)'); gg.addColorStop(0.5, 'rgba(11,16,38,0.30)'); gg.addColorStop(1, 'rgba(9,7,20,0.55)');
+    c.fillStyle = gg; c.fillRect(x, y, w, h);
+
+    // resonance ripples: standing rings around the target line
+    if (S.resonance > 0.02 && S.phase !== 'results') {
+      const cx = x + w / 2, cy = centsToY(0);
+      c.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 4; k++) {
+        const rr = ((t * 46 + k * 34) % 150);
+        const a = (1 - rr / 150) * S.resonance * 0.30;
+        c.globalAlpha = a; c.strokeStyle = '#ffe9a8'; c.lineWidth = 1.2;
+        c.beginPath(); c.ellipse(cx, cy, rr * 1.6, rr * 0.5, 0, 0, 7); c.stroke();
+      }
+      c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    }
+
+    // target etch: gold line + tolerance band + note tab
+    const ty = centsToY(0), band = Math.abs(centsToY(TOL_CENTS) - ty);
+    c.fillStyle = 'rgba(255,233,168,0.05)'; c.fillRect(x, ty - band, w, band * 2);
+    c.strokeStyle = 'rgba(255,233,168,0.75)'; c.lineWidth = 1.4; c.setLineDash([7, 9]);
+    c.beginPath(); c.moveTo(x + 10, ty); c.lineTo(x + w - 10, ty); c.stroke(); c.setLineDash([]);
+    c.font = `600 11px ${'Outfit, system-ui'}`; c.fillStyle = 'rgba(255,233,168,0.9)';
+    c.fillText('G4', x + 12, ty - 7);
+
+    // the ribbon: the voice dancing in the glass
+    const rb = S.ribbon;
+    if (rb.length > 1) {
+      const playback = S.phase === 'playback';
+      const x0 = x + 14, x1 = x + w - 14;
+      const path = new Path2D();
+      let started = false;
+      for (let i = 0; i < rb.length; i++) {
+        const s = rb[i];
+        if (!s) { started = false; continue; }
+        const px = lerp(x0, x1, i / (rb.length - 1));
+        const py = clamp(centsToY(s.cents), y + 12, y + h - 12);
+        if (!started) { path.moveTo(px, py); started = true; } else path.lineTo(px, py);
+      }
+      const last = rb[rb.length - 1];
+      const inBand = last && Math.abs(last.cents) <= TOL_CENTS;
+      const core = playback ? '#ffe9a8' : inBand ? '#2dd4bf' : '#58a6ff';
+      c.globalCompositeOperation = 'lighter';
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      c.strokeStyle = core; c.globalAlpha = 0.16; c.lineWidth = 11; c.stroke(path);
+      c.globalAlpha = 0.4; c.lineWidth = 4.5; c.stroke(path);
+      c.globalAlpha = 0.95; c.lineWidth = 1.8; c.stroke(path);
+      // quicksilver chromatic fringe as resonance rises
+      if (!playback && S.resonance > 0.3) {
+        c.globalAlpha = 0.25 * S.resonance;
+        c.strokeStyle = '#bc8cff'; c.lineWidth = 1.2;
+        c.save(); c.translate(0, 1.6); c.stroke(path); c.restore();
+      }
+      c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+      // the singing point
+      if (last && S.voiced && !playback) {
+        const py = clamp(centsToY(last.cents), y + 12, y + h - 12);
+        c.fillStyle = core; c.shadowColor = core; c.shadowBlur = 14;
+        c.beginPath(); c.arc(x1, py, 4 + last.level * 4, 0, 7); c.fill();
+        c.shadowBlur = 0;
+      }
+    }
+
+    // cracks — permanent damage
+    if (S.cracks.length) {
+      c.lineWidth = 0.9;
+      for (const cr of S.cracks) {
+        const age = clamp01((S.now - cr.born) / 0.4); // grow in
+        const n = Math.max(2, Math.ceil(cr.pts.length * age));
+        c.strokeStyle = 'rgba(226,238,255,0.5)';
+        c.shadowColor = 'rgba(180,210,255,0.7)'; c.shadowBlur = 3;
+        c.beginPath();
+        c.moveTo(cr.pts[0][0], cr.pts[0][1]);
+        for (let i = 1; i < n; i++) c.lineTo(cr.pts[i][0], cr.pts[i][1]);
+        c.stroke();
+      }
+      c.shadowBlur = 0;
+    }
+
+    // specular sweep — the "silver" of the mirror; brightens with resonance
+    const sw = w * 0.5, sx = x + ((t * 26) % (w + sw * 2)) - sw;
+    const sg = c.createLinearGradient(sx, y, sx + sw, y + h * 0.4);
+    const sa = 0.05 + S.resonance * 0.10;
+    sg.addColorStop(0, 'rgba(244,248,253,0)');
+    sg.addColorStop(0.5, `rgba(244,248,253,${sa})`);
+    sg.addColorStop(1, 'rgba(244,248,253,0)');
+    c.fillStyle = sg;
+    c.save(); c.rotate(0); c.fillRect(x - 40, y, w + 80, h); c.restore();
+    c.restore();
+
+    if (forSnapshot) return; // frame + perimeter meter stay on the live pane only
+
+    // chrome bevel frame
+    const fg = c.createLinearGradient(x, y, x + w, y + h);
+    fg.addColorStop(0, '#c3ccd6'); fg.addColorStop(0.4, '#5b6b7b'); fg.addColorStop(0.7, '#8a97a6'); fg.addColorStop(1, '#1b2430');
+    roundedRectPath(c, x - 2, y - 2, w + 4, h + 4, r + 2);
+    c.strokeStyle = fg; c.lineWidth = 3; c.stroke();
+
+    // resonance meter traced along the frame perimeter (gold → aqua)
+    if (S.resonance > 0.01) {
+      const perim = 2 * (w + h);
+      roundedRectPath(c, x - 6, y - 6, w + 12, h + 12, r + 5);
+      c.strokeStyle = S.resonance > 0.85 ? '#2dd4bf' : '#ffe9a8';
+      c.shadowColor = c.strokeStyle; c.shadowBlur = 8;
+      c.lineWidth = 2; c.setLineDash([perim * S.resonance, perim]);
+      c.stroke(); c.setLineDash([]); c.shadowBlur = 0;
+    }
+  }
+
+  // ─── Shatter rendering: affine-projected 3D shard tumble ────────
+  function drawShards(dt, t) {
+    const age = t - S.shatterAt;
+    const timeScale = reduceMotion ? 1 : (age < 0.45 ? 0.16 : Math.min(1, 0.16 + (age - 0.45) * 2.2));
+    const sdt = dt * timeScale;
+    const f = 900; // perspective focal length
+    for (const s of S.shards) {
+      s.vy += 980 * sdt;                       // gravity
+      s.vx *= (1 - 0.4 * sdt); s.vz *= (1 - 0.3 * sdt);
+      s.x += s.vx * sdt; s.y += s.vy * sdt; s.z += s.vz * sdt;
+      s.rot += s.vrot * sdt;
+      const scale = f / Math.max(220, f + s.z);
+      // 3D rotation about in-plane axis (ax), affine-approximated
+      const ca = Math.cos(s.ax), sa = Math.sin(s.ax), cr = Math.cos(s.rot), sr = Math.sin(s.rot);
+      // basis vectors of the rotated shard plane, projected
+      const a = (ca * ca + sa * sa * cr) * scale, b = (ca * sa * (1 - cr)) * scale;
+      const c2 = (ca * sa * (1 - cr)) * scale, d = (sa * sa + ca * ca * cr) * scale;
+      const nz = Math.abs(cr) * 0.85 + 0.15;   // facing → brightness
+      ctx.save();
+      ctx.setTransform(DPR * a, DPR * b, DPR * c2, DPR * d, DPR * s.x, DPR * s.y);
+      const p = new Path2D();
+      p.moveTo(s.local[0][0], s.local[0][1]);
+      for (let i = 1; i < s.local.length; i++) p.lineTo(s.local[i][0], s.local[i][1]);
+      p.closePath();
+      ctx.clip(p);
+      // glassy body tint so shards read against the void, then the pane pixels
+      ctx.globalAlpha = clamp01(1.15 - age * 0.28);
+      ctx.fillStyle = `rgba(182,198,216,${0.12 * nz})`;
+      ctx.fill(p);
+      ctx.globalAlpha = clamp01(1.15 - age * 0.28) * nz;
+      ctx.drawImage(s.snap, -s.snapX * 1, -s.snapY * 1, pane.w, pane.h);
+      ctx.globalAlpha = clamp01(1 - age * 0.3) * (0.5 + nz * 0.5);
+      ctx.strokeStyle = 'rgba(230,240,255,0.85)'; ctx.lineWidth = 0.8 / Math.max(0.3, scale);
+      ctx.stroke(p);
+      ctx.restore();
+    }
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    // glint dust
+    for (const g of S.dust) {
+      g.vy += 700 * sdt; g.x += g.vx * sdt; g.y += g.vy * sdt; g.a -= sdt * 0.7;
+      if (g.a <= 0) continue;
+      ctx.globalAlpha = g.a; ctx.fillStyle = '#eaf3ff';
+      ctx.fillRect(g.x, g.y, g.s, g.s * 2.4);
+    }
+    ctx.globalAlpha = 1;
+    // white flash at impact
+    if (!reduceMotion && age < 0.22) {
+      ctx.fillStyle = `rgba(244,248,253,${(1 - age / 0.22) * 0.5})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ─── Rep lifecycle ──────────────────────────────────────────────
+  function beginRep(n) {
+    S.rep = n; S.phase = 'sing'; S.t = 0;
+    S.take = []; S.ribbon = []; S.resonance = 0; S.lockRun = 0;
+    if (S.mode === 'demo') S.demoFn = makeTake(DEMO_REPS[Math.min(n - 1, 2)]);
+    setCoach(n === 1 ? 'Rep 1 — find the gold line and hold it.' : `Rep ${n} — you know where it lives now.`,
+      S.mode === 'demo' ? 'Scripted singer (demo input)' : 'Drag up/down on the mirror · hold to sing');
+  }
+  function pushRepMetrics() {
+    // pure metrics over the recorded take (spec §7 shapes)
+    const voiced = S.take.filter((s) => s.voiced);
+    const inBand = voiced.filter((s) => Math.abs(s.cents) <= TOL_CENTS);
+    const meanAbs = voiced.length ? voiced.reduce((a, s) => a + Math.abs(s.cents), 0) / voiced.length : null;
+    let best = 0, run = 0, prevT = null;
+    for (const s of S.take) {
+      if (s.voiced && Math.abs(s.cents) <= TOL_CENTS) { run += prevT === null ? 0 : s.t - prevT; best = Math.max(best, run); }
+      else run = 0;
+      prevT = s.t;
+    }
+    S.reps.push({ meanAbs, bestLock: best, inBandPct: voiced.length ? inBand.length / voiced.length : 0, peakRes: S.resonance });
+  }
+  function finishRep() {
+    pushRepMetrics();
+    // hand the take to the mirror for playback — "hear yourself"
+    S.playbackTake = S.take.slice();
+    S.phase = 'playback'; S.t = 0; S.ribbon = [];
+    setCoach(`Listening back — rep ${S.rep}.`, 'Your own take replays; the mirror dances to it again. (Production: your real recorded voice, on-device.)');
+  }
+  function beginShatter() {
+    S.shatterRep = S.rep;
+    pushRepMetrics(); // the winning rep's numbers feed the results panel
+    S.phase = 'shatter'; S.shatterAt = S.now;
+    S.shards = generateShards(pane.x + pane.w / 2, centsToY(0));
+    S.dust = [];
+    const n = reduceMotion ? 16 : 46;
+    for (let i = 0; i < n; i++) {
+      S.dust.push({ x: pane.x + Math.random() * pane.w, y: centsToY(0) + (Math.random() - 0.5) * 60,
+        vx: (Math.random() - 0.5) * 500, vy: -Math.random() * 320, s: 1 + Math.random() * 1.6, a: 0.9 });
+    }
+    shatterSound();
+    setCoach('✦', '');
+    setTimeout(showResults, reduceMotion ? 700 : 1900);
+  }
+  function fmtLock(s) { return s >= 0.05 ? `${s.toFixed(1)}s` : '—'; }
+  function showResults() {
+    S.phase = 'results';
+    const el = document.getElementById('results');
+    const last = S.reps[S.reps.length - 1] || { peakRes: 1, bestLock: 0, meanAbs: 0 };
+    const first = S.reps[0];
+    document.getElementById('r-title').textContent =
+      S.shatterRep <= 1 ? 'Shattered — first try' : `Shattered on rep ${S.shatterRep}`;
+    document.getElementById('r-res').textContent = `${Math.round(Math.max(last.peakRes, 1) * 100)}%`;
+    document.getElementById('r-lock').textContent = fmtLock(last.bestLock);
+    document.getElementById('r-prec').textContent = last.meanAbs !== null ? `±${Math.round(last.meanAbs)}¢` : '—';
+    const d = document.getElementById('r-delta');
+    if (first && S.reps.length > 1 && first.meanAbs && last.meanAbs) {
+      const gain = Math.round((1 - last.meanAbs / first.meanAbs) * 100);
+      d.textContent = gain > 0 ? `▲ ${gain}% tighter than rep 1 — the reps did their job.` : 'Every close call weakened the glass — persistence pays.';
+    } else d.textContent = 'One take. The glass never stood a chance.';
+    el.classList.add('open');
+    setCoach('');
+  }
+  function resetAll() {
+    document.getElementById('results').classList.remove('open');
+    Object.assign(S, { mode: 'idle', phase: 'idle', rep: 0, t: 0, fatigue: 0, resonance: 0, lockRun: 0,
+      cracks: [], crackStep: 0, voiced: false, cents: -VIEW_CENTS, level: 0,
+      ribbon: [], take: [], reps: [], playbackTake: null, shards: null, dust: [] });
+    setCoach('Meet the glass.', 'Run the guided demo, or drag on the mirror to sing with your pointer.');
+  }
+
+  // ─── Simulation tick ────────────────────────────────────────────
+  const crackRng = mulberry32(1234);
+  function tick(dt) {
+    S.t += dt;
+    if (S.phase === 'sing') {
+      // input: scripted singer or pointer
+      if (S.mode === 'demo' && S.demoFn) {
+        const v = S.demoFn(S.t);
+        S.cents = v.cents; S.level = v.level; S.voiced = v.voiced;
+      } else if (S.mode === 'free') {
+        S.voiced = S.pointer.down;
+        if (S.voiced) {
+          const target = ((pane.y + pane.h / 2) - S.pointer.y) / (pane.h / 2 - 26) * VIEW_CENTS;
+          S.cents = lerp(S.cents, clamp(target, -VIEW_CENTS, VIEW_CENTS), 1 - Math.pow(0.0001, dt));
+          S.level = 0.7;
+        } else S.level = 0;
+      }
+      S.take.push({ t: S.t, cents: S.cents, level: S.level, voiced: S.voiced });
+      S.ribbon.push(S.voiced ? { cents: S.cents, level: S.level } : null);
+      if (S.ribbon.length > 150) S.ribbon.shift();
+
+      // resonance + lock
+      const off = Math.abs(S.cents);
+      if (S.voiced && off <= TOL_CENTS) {
+        S.lockRun += dt;
+        S.resonance = clamp01(S.resonance + dt * (RES_RISE + 0.5 * S.resonance) * (1 - (off / TOL_CENTS) * 0.4));
+      } else {
+        S.lockRun = 0;
+        S.resonance = clamp01(S.resonance - dt * RES_FALL);
+      }
+      // cumulative fatigue: proximity² × level — near-misses count
+      if (S.voiced) {
+        const prox = clamp01(1 - off / 300);
+        S.fatigue = clamp01(S.fatigue + dt * FATIGUE_RATE * S.level * prox * prox);
+        while (S.crackStep < CRACK_STEPS.length && S.fatigue >= CRACK_STEPS[S.crackStep]) {
+          spawnCrack(crackRng); S.crackStep++;
+        }
+      }
+      if (S.phase === 'sing') setCoach(liveCoachLine(), S.mode === 'demo' ? 'Scripted singer (demo input)' : 'Drag up/down on the mirror · hold to sing');
+      // shatter check: fatigue honestly lowers the wall
+      const threshold = 1 - FATIGUE_ASSIST * S.fatigue;
+      if (S.resonance >= threshold && S.lockRun >= LOCK_FOR_SHATTER) { beginShatter(); return; }
+      if (S.t >= REP_SECONDS && S.mode === 'demo') finishRep();
+      if (S.t >= REP_SECONDS * 2 && S.mode === 'free') finishRep(); // free reps auto-cycle slower
+    } else if (S.phase === 'playback') {
+      const take = S.playbackTake, dur = Math.min(take.length ? take[take.length - 1].t : 0, PLAYBACK_MAX);
+      const i = take.findIndex((s) => s.t >= Math.min(S.t, dur));
+      const s = i >= 0 ? take[i] : null;
+      if (s) { S.cents = s.cents; S.level = s.level; S.voiced = s.voiced; }
+      S.ribbon.push(s && s.voiced ? { cents: s.cents, level: s.level } : null);
+      if (S.ribbon.length > 150) S.ribbon.shift();
+      S.resonance = clamp01(S.resonance - dt * 0.4);
+      if (S.t >= dur + 0.6) {
+        S.phase = 'gap'; S.t = 0; S.voiced = false;
+        setCoach('That was you.', 'Getting used to your own voice IS the exercise. Next rep…');
+      }
+    } else if (S.phase === 'gap') {
+      S.resonance = clamp01(S.resonance - dt * 0.6);
+      if (S.t > 1.4) beginRep(S.rep + 1);
+    }
+  }
+
+  // ─── Main loop ──────────────────────────────────────────────────
+  let last = performance.now();
+  function frame(nowMs) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.033, (nowMs - last) / 1000); last = nowMs;
+    S.now = nowMs / 1000;
+    if (S.phase === 'sing' || S.phase === 'playback' || S.phase === 'gap') tick(dt);
+    audioTick();
+    drawBackdrop(S.now);
+    if (S.phase === 'shatter' || S.phase === 'results') { if (S.shards) drawShards(dt, S.now); }
+    else drawPane(ctx, S.now);
+    updateHud();
+  }
+
+  // ─── Controls ───────────────────────────────────────────────────
+  document.getElementById('btn-demo').addEventListener('click', () => {
+    resetAll(); S.mode = 'demo';
+    if (!soundOn) setSound(true);
+    beginRep(1);
+  });
+  document.getElementById('btn-free').addEventListener('click', () => {
+    resetAll(); S.mode = 'free';
+    if (!soundOn) setSound(true);
+    beginRep(1);
+  });
+  document.getElementById('btn-shatter').addEventListener('click', () => {
+    if (S.phase === 'shatter' || S.phase === 'results') return;
+    if (S.phase === 'idle') { S.mode = 'demo'; S.rep = 1; }
+    S.resonance = 1; S.lockRun = LOCK_FOR_SHATTER; beginShatter();
+  });
+  document.getElementById('btn-sound').addEventListener('click', () => setSound(!soundOn));
+  document.getElementById('btn-reset').addEventListener('click', resetAll);
+  document.getElementById('r-again').addEventListener('click', () => {
+    const wasFree = S.mode === 'free';
+    resetAll(); S.mode = wasFree ? 'free' : 'demo';
+    if (!soundOn) setSound(true);
+    beginRep(1);
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (S.mode !== 'free' || S.phase !== 'sing') return;
+    S.pointer.down = true; S.pointer.y = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => { S.pointer.y = e.clientY; });
+  const release = () => { S.pointer.down = false; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+
+  addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
