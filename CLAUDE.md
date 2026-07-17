@@ -19,16 +19,15 @@
 ## Guided Tours
 
 - The full `/tour-check` browser walk (`pnpm run test:tours` via
-  `.claude/skills/tour-check/SKILL.md`) is required only:
-  - **before a prod release** (it is a step of `/prod-upd`), and
-  - when a change **directly edits the tours themselves** — `Walkthrough.tsx`
-    or `WALKTHROUGH_STEPS`/`PAGE_TOURS`/`PAGE_TOUR_CATALOG` in
-    `src/stores/app-store.ts`.
-- For other UI changes that touch tour-targeted surfaces (`data-tour` hooks,
-  control bars, sidebar, settings panel), a lightweight check is enough:
-  verify the affected `targetSelector`s still resolve (grep the selectors, or
-  walk just the affected page's tour). Don't run the full two-viewport walk
-  per PR — it's a release gate, not a per-change gate.
+  `.claude/skills/tour-check/SKILL.md`) is a **release gate only**: it runs
+  **before a prod release** (as a step of `/prod-upd`) and never per PR —
+  the two-viewport walk takes 20+ minutes.
+- For any change touching tour-targeted surfaces or the tours themselves
+  (`data-tour` hooks, control bars, sidebar, settings panel,
+  `Walkthrough.tsx`, `WALKTHROUGH_STEPS`/`PAGE_TOURS`/`PAGE_TOUR_CATALOG` in
+  `src/stores/app-store.ts`), a lightweight check is enough: verify the
+  affected `targetSelector`s still resolve (grep the selectors, click them
+  in a preview, or walk just the affected page's tour).
 - Known pre-existing misses are tracked in the walker output; only NEW misses
   introduced by your change are blockers outside a release.
 - Tours should cover ≥80% of a page's user-visible features — when adding a
