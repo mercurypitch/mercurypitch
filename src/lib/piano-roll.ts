@@ -515,6 +515,10 @@ export class PianoRollEditor {
   private totalRows = 0
   private stretchedWidth = 0
 
+  // Detaches every document/window listener this instance registered
+  // (drag/seek trackers, keyboard shortcuts, resize) when destroy() runs.
+  private readonly globalListeners = new AbortController()
+
   // Playback
   private playbackState: PlaybackState = 'stopped'
   private playbackAnimationId: number | null = null
@@ -1477,6 +1481,7 @@ export class PianoRollEditor {
     if (this.playbackAnimationId !== null) {
       cancelAnimationFrame(this.playbackAnimationId)
     }
+    this.globalListeners.abort()
     this.container.innerHTML = ''
   }
 
@@ -1799,6 +1804,26 @@ export class PianoRollEditor {
     this.buildCanvases()
   }
 
+  /**
+   * Resolution scale for a canvas backing store. Browsers hard-cap canvas
+   * dimensions (Firefox: 32,767px per side and ~125M px area; Chrome/Safari
+   * are larger), and a long MIDI at 48px/beat times devicePixelRatio blows
+   * the side cap — after which every context call throws "Canvas exceeds max
+   * size". Render oversized canvases at reduced resolution instead: CSS size
+   * (and so layout, scrolling and hit-testing) is unchanged, the pixels just
+   * get softer on monster songs.
+   */
+  private static backingScale(cssW: number, cssH: number, dpr: number): number {
+    const MAX_SIDE = 32000
+    const MAX_AREA = 120_000_000
+    let s = dpr
+    if (cssW > 0) s = Math.min(s, MAX_SIDE / cssW)
+    if (cssH > 0) s = Math.min(s, MAX_SIDE / cssH)
+    const area = cssW * cssH
+    if (area > 0 && area * s * s > MAX_AREA) s = Math.sqrt(MAX_AREA / area)
+    return Math.max(0.05, s)
+  }
+
   private buildCanvases(): void {
     const dpr = window.devicePixelRatio || 1
     const totalHeight = this.totalRows * this.rowHeight
@@ -1810,43 +1835,51 @@ export class PianoRollEditor {
 
     // Piano canvas
     if (this.pianoCanvas) {
-      this.pianoCanvas.width = this.pianoWidth * dpr
-      this.pianoCanvas.height = totalHeight * dpr
+      const s = PianoRollEditor.backingScale(this.pianoWidth, totalHeight, dpr)
+      this.pianoCanvas.width = this.pianoWidth * s
+      this.pianoCanvas.height = totalHeight * s
       this.pianoCanvas.style.height = `${totalHeight}px`
       this.pianoCtx = this.pianoCanvas.getContext('2d')
-      if (this.pianoCtx) this.pianoCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.pianoCtx) this.pianoCtx.setTransform(s, 0, 0, s, 0, 0)
     }
 
     // Ruler canvas spans full width (piano + grid)
     const rulerWidth = this.pianoWidth + this.stretchedWidth
     if (this.rulerCanvas) {
-      this.rulerCanvas.width = rulerWidth * dpr
-      this.rulerCanvas.height = this.rulerHeight * dpr
+      const s = PianoRollEditor.backingScale(rulerWidth, this.rulerHeight, dpr)
+      this.rulerCanvas.width = rulerWidth * s
+      this.rulerCanvas.height = this.rulerHeight * s
       this.rulerCanvas.style.width = `${rulerWidth}px`
       this.rulerCanvas.style.height = `${this.rulerHeight}px`
       this.rulerCtx = this.rulerCanvas.getContext('2d')
-      if (this.rulerCtx) this.rulerCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.rulerCtx) this.rulerCtx.setTransform(s, 0, 0, s, 0, 0)
     }
 
     // Grid canvas
     if (this.gridCanvas) {
-      this.gridCanvas.width = this.stretchedWidth * dpr
-      this.gridCanvas.height = totalHeight * dpr
+      const s = PianoRollEditor.backingScale(
+        this.stretchedWidth,
+        totalHeight,
+        dpr,
+      )
+      this.gridCanvas.width = this.stretchedWidth * s
+      this.gridCanvas.height = totalHeight * s
       this.gridCanvas.style.width = `${this.stretchedWidth}px`
       this.gridCanvas.style.height = `${totalHeight}px`
       this.gridCtx = this.gridCanvas.getContext('2d')
-      if (this.gridCtx) this.gridCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.gridCtx) this.gridCtx.setTransform(s, 0, 0, s, 0, 0)
     }
 
     // Ball canvas (for Yousician-style ball jumping through notes)
     if (this.ballCanvas) {
       const containerWidth = this.gridContainer?.clientWidth ?? 0
-      this.ballCanvas.width = containerWidth * dpr
-      this.ballCanvas.height = totalHeight * dpr
+      const s = PianoRollEditor.backingScale(containerWidth, totalHeight, dpr)
+      this.ballCanvas.width = containerWidth * s
+      this.ballCanvas.height = totalHeight * s
       this.ballCanvas.style.width = `${containerWidth}px`
       this.ballCanvas.style.height = `${totalHeight}px`
       this.ballCtx = this.ballCanvas.getContext('2d') ?? null
-      if (this.ballCtx) this.ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.ballCtx) this.ballCtx.setTransform(s, 0, 0, s, 0, 0)
     }
 
     // Cache status bar elements
@@ -2093,9 +2126,15 @@ export class PianoRollEditor {
     // Toolbar has overflow-x: auto — listen on it too
     const toolbarEl = container.querySelector('.roll-toolbar')
     toolbarEl?.addEventListener('scroll', repositionPopover, { passive: true })
-    window.addEventListener('scroll', repositionPopover, { passive: true })
+    window.addEventListener('scroll', repositionPopover, {
+      passive: true,
+      signal: this.globalListeners.signal,
+    })
     // Also reposition on resize
-    window.addEventListener('resize', repositionPopover, { passive: true })
+    window.addEventListener('resize', repositionPopover, {
+      passive: true,
+      signal: this.globalListeners.signal,
+    })
 
     // Clear
     container
@@ -2188,17 +2227,21 @@ export class PianoRollEditor {
       this.seekToRulerPosition(e)
     })
 
-    document.addEventListener('mousemove', (e) => {
-      if (this.loopDragTarget !== null) {
-        const beat = this.rulerBeatFromClientX(e.clientX)
-        if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
-        else this.onMoveLoopB?.(beat)
-        return
-      }
-      if (this.isSeeking) {
-        this.seekToRulerPosition(e)
-      }
-    })
+    document.addEventListener(
+      'mousemove',
+      (e) => {
+        if (this.loopDragTarget !== null) {
+          const beat = this.rulerBeatFromClientX(e.clientX)
+          if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
+          else this.onMoveLoopB?.(beat)
+          return
+        }
+        if (this.isSeeking) {
+          this.seekToRulerPosition(e)
+        }
+      },
+      { signal: this.globalListeners.signal },
+    )
 
     // Touch support for seeking - track touch move outside canvas
     document.addEventListener(
@@ -2209,70 +2252,78 @@ export class PianoRollEditor {
           this.seekToRulerPosition({ clientX: touch.clientX } as MouseEvent)
         }
       },
-      { passive: false },
+      { passive: false, signal: this.globalListeners.signal },
     )
 
-    document.addEventListener('mouseup', () => {
-      this.loopDragTarget = null
-      this.isSeeking = false
-      this._lastScrubNoteId = -1
-      if (this._activeScrubNoteId !== null) {
-        ;(
-          window as Window & {
-            pianoRollAudioEngine?: { stopNote: (id: number) => void }
-          }
-        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
-        this._activeScrubNoteId = null
-      }
-      // Always finalize box selection regardless of where mouse was released
-      if (this.isBoxSelecting) {
-        const boxX1 = Math.min(this.boxStartX, this.boxEndX)
-        const boxY1 = Math.min(this.boxStartY, this.boxEndY)
-        const boxX2 = Math.max(this.boxStartX, this.boxEndX)
-        const boxY2 = Math.max(this.boxStartY, this.boxEndY)
-        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
-          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+    document.addEventListener(
+      'mouseup',
+      () => {
+        this.loopDragTarget = null
+        this.isSeeking = false
+        this._lastScrubNoteId = -1
+        if (this._activeScrubNoteId !== null) {
+          ;(
+            window as Window & {
+              pianoRollAudioEngine?: { stopNote: (id: number) => void }
+            }
+          ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+          this._activeScrubNoteId = null
         }
-        this.isBoxSelecting = false
+        // Always finalize box selection regardless of where mouse was released
+        if (this.isBoxSelecting) {
+          const boxX1 = Math.min(this.boxStartX, this.boxEndX)
+          const boxY1 = Math.min(this.boxStartY, this.boxEndY)
+          const boxX2 = Math.max(this.boxStartX, this.boxEndX)
+          const boxY2 = Math.max(this.boxStartY, this.boxEndY)
+          if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+            this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+          }
+          this.isBoxSelecting = false
+          this.isDragging = false
+          this.selectedNotesCache = []
+        }
+        // Also handle dragging/resizing that started on the canvas
         this.isDragging = false
+        this.isResizing = false
         this.selectedNotesCache = []
-      }
-      // Also handle dragging/resizing that started on the canvas
-      this.isDragging = false
-      this.isResizing = false
-      this.selectedNotesCache = []
-      this.resizeHandle = null
-    })
+        this.resizeHandle = null
+      },
+      { signal: this.globalListeners.signal },
+    )
 
     // Touch support - finalize dragging/resizing when touch ends outside canvas
-    document.addEventListener('touchend', () => {
-      this.isSeeking = false
-      this._lastScrubNoteId = -1
-      if (this._activeScrubNoteId !== null) {
-        ;(
-          window as Window & {
-            pianoRollAudioEngine?: { stopNote: (id: number) => void }
-          }
-        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
-        this._activeScrubNoteId = null
-      }
-      if (this.isBoxSelecting) {
-        const boxX1 = Math.min(this.boxStartX, this.boxEndX)
-        const boxY1 = Math.min(this.boxStartY, this.boxEndY)
-        const boxX2 = Math.max(this.boxStartX, this.boxEndX)
-        const boxY2 = Math.max(this.boxStartY, this.boxEndY)
-        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
-          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+    document.addEventListener(
+      'touchend',
+      () => {
+        this.isSeeking = false
+        this._lastScrubNoteId = -1
+        if (this._activeScrubNoteId !== null) {
+          ;(
+            window as Window & {
+              pianoRollAudioEngine?: { stopNote: (id: number) => void }
+            }
+          ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+          this._activeScrubNoteId = null
         }
-        this.isBoxSelecting = false
+        if (this.isBoxSelecting) {
+          const boxX1 = Math.min(this.boxStartX, this.boxEndX)
+          const boxY1 = Math.min(this.boxStartY, this.boxEndY)
+          const boxX2 = Math.max(this.boxStartX, this.boxEndX)
+          const boxY2 = Math.max(this.boxStartY, this.boxEndY)
+          if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+            this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+          }
+          this.isBoxSelecting = false
+          this.isDragging = false
+          this.selectedNotesCache = []
+        }
         this.isDragging = false
+        this.isResizing = false
         this.selectedNotesCache = []
-      }
-      this.isDragging = false
-      this.isResizing = false
-      this.selectedNotesCache = []
-      this.resizeHandle = null
-    })
+        this.resizeHandle = null
+      },
+      { signal: this.globalListeners.signal },
+    )
 
     // Scroll sync ruler
     this.gridContainer?.addEventListener('scroll', () => {
@@ -2282,18 +2333,26 @@ export class PianoRollEditor {
     })
 
     // Keyboard
-    document.addEventListener('keydown', (e) => {
-      this.onKeyDown(e)
-    })
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        this.onKeyDown(e)
+      },
+      { signal: this.globalListeners.signal },
+    )
 
     // Window resize
-    window.addEventListener('resize', () => {
-      this.buildCanvases()
-      this.draw()
-      if (this.pitchTrackVisible) {
-        this._resizePitchTrackCanvas()
-      }
-    })
+    window.addEventListener(
+      'resize',
+      () => {
+        this.buildCanvases()
+        this.draw()
+        if (this.pitchTrackVisible) {
+          this._resizePitchTrackCanvas()
+        }
+      },
+      { signal: this.globalListeners.signal },
+    )
 
     // Octave controls
     container
