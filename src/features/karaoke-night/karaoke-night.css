@@ -40,8 +40,11 @@ body {
   --on-accent: #0d1117;
 
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  /* Phones: nothing here may push the page wider than the viewport. */
+  overflow-x: clip;
   background:
     linear-gradient(
       180deg,
@@ -246,12 +249,6 @@ body {
   font-size: 1.3rem;
 }
 
-.kn-modal-sub {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: #cdbde6;
-}
-
 .kn-modal form {
   display: flex;
   flex-direction: column;
@@ -270,6 +267,13 @@ body {
 .kn-modal input:focus {
   outline: none;
   border-color: rgba(255, 154, 213, 0.6);
+}
+
+/* Live-invalid fields (password rules, server rejection) — soft red that
+   also wins while focused, so the state stays visible mid-typing. */
+.kn-modal input[aria-invalid='true'],
+.kn-modal input[aria-invalid='true']:focus {
+  border-color: rgba(255, 122, 122, 0.7);
 }
 
 .kn-modal .kn-btn {
@@ -323,6 +327,38 @@ body {
 .kn-glass-slider {
   width: 88px;
   accent-color: #ff9ad5;
+}
+
+/* Focus-mode toggle — sits beside the transparency slider; account-chip
+   styling with the slider's pink as its active accent. */
+.kn-focus-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  flex: none;
+  border: 1px solid rgba(183, 154, 224, 0.35);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.1);
+  color: #cdbde6;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.kn-focus-toggle:hover {
+  background: rgba(183, 154, 224, 0.2);
+  color: #ffffff;
+}
+
+.kn-focus-toggle--active {
+  color: #ff9ad5;
+  border-color: rgba(255, 154, 213, 0.55);
+  background: rgba(255, 154, 213, 0.14);
 }
 
 /* ── Body: rail + stage ──────────────────────────────────── */
@@ -393,6 +429,25 @@ body {
 }
 
 .kn-rail-icon:hover {
+  color: #ffffff;
+  background: rgba(183, 154, 224, 0.16);
+}
+
+/* Phone-only hamburger for the collapsed rail (see the media query). */
+.kn-rail-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #cdbde6;
+  cursor: pointer;
+}
+
+.kn-rail-burger:hover {
   color: #ffffff;
   background: rgba(183, 154, 224, 0.16);
 }
@@ -587,6 +642,31 @@ body {
   background: rgba(183, 154, 224, 0.14);
 }
 
+/* Playlist rows — a library row with a play glyph and a count tail. */
+.kn-playlist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.kn-playlist-play {
+  flex: none;
+  color: #ff9ad5;
+}
+
+.kn-playlist-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kn-playlist-count {
+  flex: none;
+  margin-left: auto;
+  font-size: 0.74rem;
+  color: #9c88bd;
+}
+
 /* ── Stage ───────────────────────────────────────────────── */
 
 .kn-stage {
@@ -740,6 +820,59 @@ body {
     padding: 0.5rem 0.9rem 1rem;
   }
 
+  /* Compact single-row topbar that can never overflow: the studio link
+     lives in the footer, the account chip truncates, and the stage-glass
+     controls make way (on phones a staged song opens the zen stage, which
+     has no use for them). Safe-area padding for notched iPhones. */
+  .kn-topbar {
+    padding: 0.6rem 0.9rem;
+    padding-top: calc(0.6rem + env(safe-area-inset-top, 0px));
+    gap: 0.6rem;
+  }
+
+  .kn-topbar-links {
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .kn-topbar-links > a[href='/#/karaoke'] {
+    display: none;
+  }
+
+  .kn-glass,
+  .kn-focus-toggle {
+    display: none;
+  }
+
+  .kn-account-chip {
+    max-width: 10rem;
+  }
+
+  .kn-footer {
+    padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Collapsed rail: not a full-width strip of tiny centred icons — just one
+     compact hamburger pill hugging the left edge. */
+  .kn-rail--min {
+    align-items: flex-start;
+  }
+
+  .kn-rail--min .kn-rail-icons {
+    flex-direction: row;
+    width: auto;
+    padding: 0.15rem;
+    border-radius: 12px;
+  }
+
+  .kn-rail--min .kn-rail-icon {
+    display: none;
+  }
+
+  .kn-rail-burger {
+    display: inline-flex;
+  }
+
   /* Once a song is on stage, the stage leads and the rail tucks below it. */
   .kn-body--staged {
     display: flex;
@@ -763,5 +896,19 @@ body {
 
   .kn-footer-links {
     margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .kn-topbar-title {
+    display: none;
+  }
+
+  .kn-account-chip {
+    max-width: 7.5rem;
+  }
+
+  .kn-hero h1 {
+    font-size: 1.7rem;
   }
 }

@@ -1,6 +1,7 @@
 // ============================================================
 // Lyrics Service — fetch, parse, and sync lyrics
 import { IS_DEV } from './defaults'
+import { estimateWordDuration } from './word-sync'
 
 export interface LrcLine {
   time: number // seconds
@@ -513,8 +514,9 @@ export function computeActiveWord(
   endTime: number,
   wordTimes: number[] | undefined,
   elapsedTime: number,
-): { activeUpTo: number; charProgress: number } {
-  if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+): { activeUpTo: number; charProgress: number; fraction: number } {
+  if (words.length === 0)
+    return { activeUpTo: -1, charProgress: 0, fraction: 0 }
 
   // Per-word LRC timings — use actual word timestamps for interpolation
   if (wordTimes && wordTimes.length === words.length) {
@@ -525,12 +527,12 @@ export function computeActiveWord(
         break
       }
     }
-    if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0 }
+    if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0, fraction: 0 }
 
     const wordStart = wordTimes[wordIdx]
-    let wordEnd: number
+    let gap: number
     if (wordIdx + 1 < wordTimes.length) {
-      wordEnd = wordTimes[wordIdx + 1]
+      gap = wordTimes[wordIdx + 1] - wordStart
     } else {
       // Estimate last word's duration from the average of known word gaps,
       // rather than stretching it to endTime (which may include long rests).
@@ -538,38 +540,45 @@ export function computeActiveWord(
       for (let i = 1; i < wordTimes.length; i++) {
         gaps.push(wordTimes[i] - wordTimes[i - 1])
       }
-      const avgGap =
+      gap =
         gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0.5
-      wordEnd = wordStart + avgGap
     }
-    const wordDuration = Math.max(0.01, wordEnd - wordStart)
+    // The sweep runs for the word's *sung* duration — the gap to the next
+    // word, capped by a syllable-based estimate. A held note or an in-line
+    // rest no longer smears the sweep across the silence: the word fills
+    // at a natural pace, then dwells fully lit until the next word starts.
+    // Floored at 150ms so machine-tight word gaps (auto-sync spacing on
+    // fast runs) still render a visible sweep instead of a flash.
+    const wordDuration = Math.max(
+      0.15,
+      Math.min(gap, estimateWordDuration(words[wordIdx])),
+    )
     const elapsedInWord = elapsedTime - wordStart
 
-    // When past the estimated end of the last word, all words are done
-    if (elapsedTime >= wordEnd && wordIdx === words.length - 1) {
-      return {
-        activeUpTo: words.length - 1,
-        charProgress: words[wordIdx].length,
-      }
+    if (elapsedInWord >= wordDuration) {
+      // Sung to completion — dwell with the word (and all before it) lit.
+      return { activeUpTo: wordIdx, charProgress: 0, fraction: 0 }
     }
 
     const activeUpTo = wordIdx - 1
     const currentWord = words[wordIdx]
+    const fraction = Math.min(1, elapsedInWord / wordDuration)
     const charProgress = Math.min(
-      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+      Math.floor(fraction * currentWord.length),
       currentWord.length,
     )
-    return { activeUpTo, charProgress }
+    return { activeUpTo, charProgress, fraction }
   }
 
   // Fallback: evenly divide line duration among words
   const lineDuration = Math.max(0.05, endTime - startTime)
   const progress = (elapsedTime - startTime) / lineDuration
-  if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
+  if (progress < 0) return { activeUpTo: -1, charProgress: 0, fraction: 0 }
   if (progress >= 1)
     return {
       activeUpTo: words.length - 1,
       charProgress: words[words.length - 1]?.length || 0,
+      fraction: 1,
     }
 
   const wordDuration = lineDuration / words.length
@@ -578,12 +587,13 @@ export function computeActiveWord(
 
   const elapsedInWord = elapsedTime - startTime - currentWordIdx * wordDuration
   const currentWord = words[currentWordIdx]
+  const fraction = Math.min(1, Math.max(0, elapsedInWord / wordDuration))
   const charProgress = Math.min(
-    Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+    Math.floor(fraction * currentWord.length),
     currentWord.length,
   )
 
-  return { activeUpTo, charProgress }
+  return { activeUpTo, charProgress, fraction }
 }
 
 // ── LRC to Melody Alignment ─────────────────────────────────────

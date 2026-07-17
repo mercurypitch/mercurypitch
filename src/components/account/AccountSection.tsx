@@ -15,8 +15,10 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AccountSection.module.css'
+import { PasswordRequirements } from './PasswordRequirements'
 
 // ── Component ───────────────────────────────────────────────────
 
@@ -110,12 +112,21 @@ export const AccountSection: Component = () => {
     }
   }
 
+  // Live password validity (register only) — drives the red border and the
+  // checklist so nobody discovers the rules one server rejection at a time.
+  const pwdInvalid = (): boolean =>
+    mode() === 'register' && password() !== '' && !isPasswordValid(password())
+
   function handleSubmit(e: Event): void {
     e.preventDefault()
     // Snapshot the form inside the event handler — the async closures
     // below run outside the tracked scope (and the form could change
     // mid-request).
     const credentials = { email: email(), password: password() }
+    if (mode() === 'register' && !isPasswordValid(credentials.password)) {
+      setError("Password doesn't meet the requirements yet.")
+      return
+    }
     if (mode() === 'register') {
       const name = displayName()
       void handleAuthAction(async () => {
@@ -340,23 +351,26 @@ export const AccountSection: Component = () => {
                 type="password"
                 name="password"
                 id="auth-password"
-                placeholder={
-                  mode() === 'register'
-                    ? 'Password (min 8 characters)'
-                    : 'Password'
-                }
+                placeholder="Password"
                 aria-label="Password"
                 autocomplete={
                   mode() === 'register' ? 'new-password' : 'current-password'
                 }
                 required
-                minLength={mode() === 'register' ? 8 : undefined}
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
-                aria-invalid={error() !== '' ? 'true' : undefined}
+                aria-invalid={
+                  pwdInvalid() || error() !== '' ? 'true' : undefined
+                }
                 aria-describedby={error() !== '' ? 'auth-error' : undefined}
                 data-testid="auth-password"
               />
+              <Show when={mode() === 'register'}>
+                <PasswordRequirements
+                  password={password()}
+                  showInvalid={password() !== ''}
+                />
+              </Show>
               <Show when={error() !== ''}>
                 <p
                   class={styles.errorNote}

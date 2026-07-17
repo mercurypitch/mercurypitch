@@ -651,6 +651,7 @@ const FUNNEL_EVENTS = new Set([
   'karaoke_upload_error',
   'karaoke_song_staged',
   'karaoke_playlist_deeplink',
+  'karaoke_playlist_start',
   'karaoke_cta_studio',
   // Glass funnel (src/features/glass/funnel.ts)
   'glass_view',

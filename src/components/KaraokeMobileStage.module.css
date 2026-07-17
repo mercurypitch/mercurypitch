@@ -1,0 +1,485 @@
+/* KaraokeMobileStage — zen full-screen karaoke for phones.
+   Native-app feel: safe-area aware, no horizontal overflow, big type,
+   Apple-Music-style lyrics with faded edges. */
+
+.stage {
+  /* Portal-mounted on <body>: nothing between it and the viewport, so no
+     filtered/transformed ancestor can capture this fixed box. Height in dvh
+     tracks the collapsing mobile URL bar — the bottom bar stays visible. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 450;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f4ecff;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(14, 6, 25, 0.9) 0%,
+      rgba(18, 8, 31, 0.72) 45%,
+      rgba(10, 4, 18, 0.94) 100%
+    ),
+    url('/karaoke-night-stage.webp') center / cover no-repeat,
+    #12081f;
+  padding-top: env(safe-area-inset-top, 0px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #f4ecff;
+  cursor: pointer;
+}
+
+.backBtn:active {
+  transform: scale(0.94);
+}
+
+.listBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #f4ecff;
+  cursor: pointer;
+}
+
+.listBtn:active {
+  transform: scale(0.94);
+}
+
+.titleWrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.74rem;
+  color: rgba(244, 236, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Lyrics ─────────────────────────────────────────────── */
+
+.lyrics {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 24vh 1.5rem 32vh;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 11%,
+    #000 78%,
+    transparent 96%
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 11%,
+    #000 78%,
+    transparent 96%
+  );
+}
+
+.lyrics::-webkit-scrollbar {
+  display: none;
+}
+
+.line {
+  margin: 0 0 1.3rem;
+  font-size: clamp(1.5rem, 6.8vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  color: rgba(244, 236, 255, 0.34);
+  cursor: pointer;
+  transform-origin: left center;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.line.past {
+  opacity: 0.5;
+  color: rgba(244, 236, 255, 0.26);
+}
+
+.line.current {
+  color: rgba(255, 255, 255, 0.55);
+  transform: scale(1.02);
+}
+
+/* No color transition here: the sung/active classes swap between plain
+   color and a background-clipped gradient, and animating `color` across
+   that swap leaves the glyphs transparent (a black flash) for the length
+   of the transition on EVERY word boundary. The gradient sweep itself is
+   the animation — class flips must be instant. */
+.word {
+  transition: none;
+}
+
+.wordSung {
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(255, 154, 213, 0.35);
+}
+
+/* In-progress word: continuous gradient sweep (Apple-style) driven by the
+   --sweep custom property instead of per-character stepping. */
+.wordActive {
+  background: linear-gradient(
+    90deg,
+    #ffffff var(--sweep, 0%),
+    rgba(255, 255, 255, 0.5) var(--sweep, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+
+.noLyrics {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.noLyrics p {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: rgba(244, 236, 255, 0.8);
+}
+
+.noLyricsSub {
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+  color: rgba(244, 236, 255, 0.5) !important;
+}
+
+/* ── Sing pill ──────────────────────────────────────────── */
+
+.pill {
+  position: absolute;
+  right: 14px;
+  /* Just above the progress row of the bottom bar. */
+  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: 46px;
+  /* Idle: only the mic capsule. Touch slides the level track out. */
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(120, 100, 160, 0.22);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  touch-action: none;
+  transition: height 0.2s ease;
+}
+
+.pillExpanded {
+  height: 118px;
+}
+
+.pillTrack {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pillFill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.pillBase {
+  flex: none;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #221933;
+}
+
+/* Vocals off = "karaoke on": the level empties and the mic warms up pink. */
+.pillOff .pillBase {
+  color: #e35fae;
+}
+
+/* ── Bottom bar ─────────────────────────────────────────── */
+
+.bottomBar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    180deg,
+    transparent 0,
+    rgba(9, 4, 16, 0.55) 40%,
+    rgba(9, 4, 16, 0.75) 100%
+  );
+}
+
+.progress {
+  padding: 8px 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.progressTrack {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: rgba(244, 236, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 38px;
+  padding-top: 2px;
+}
+
+.sideBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(244, 236, 255, 0.85);
+  cursor: pointer;
+}
+
+.sideBtn:active {
+  transform: scale(0.92);
+}
+
+.playBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.playBtn:active {
+  transform: scale(0.94);
+}
+
+.playBtn:disabled {
+  opacity: 0.5;
+}
+
+/* ── Load / error overlay ───────────────────────────────── */
+
+.stateOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(10, 4, 18, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.stateOverlay p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(244, 236, 255, 0.85);
+}
+
+/* ── Song sheet ─────────────────────────────────────────── */
+
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(9, 4, 16, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.sheet {
+  width: 100%;
+  max-height: 68dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(183, 154, 224, 0.3);
+  background: rgba(24, 12, 40, 0.96);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.sheetHandle {
+  width: 38px;
+  height: 4px;
+  margin: 4px auto 12px;
+  border-radius: 2px;
+  background: rgba(244, 236, 255, 0.3);
+}
+
+.sheetKicker {
+  margin: 10px 4px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #b79ae0;
+}
+
+.sheetList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #f4ecff;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheetRow:active {
+  background: rgba(183, 154, 224, 0.16);
+}
+
+.sheetPlay {
+  flex: none;
+  color: #ff9ad5;
+}
+
+.sheetEmpty {
+  margin: 14px 6px 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(244, 236, 255, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line,
+  .word,
+  .playBtn,
+  .pill {
+    transition: none;
+  }
+}

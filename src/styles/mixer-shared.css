@@ -57,31 +57,38 @@ input[type='range'] {
 
 /* ── Focus mode: toggle buttons ──────────────────────────────── */
 
+/* Quiet glass buttons (control-bar style): transparent at rest, tinted on
+   hover, accent glow when active — they only ever render on the glass pill. */
 .sm-focus-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--fg-secondary);
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-secondary, #8b949e);
   cursor: pointer;
-  opacity: 0.8;
   transition:
-    opacity 0.15s,
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.sm-focus-toggle-btn:hover,
-.sm-focus-toggle-btn--active {
-  opacity: 1;
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-dim);
+.sm-focus-toggle-btn:hover {
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-focus-toggle-btn--active,
+.sm-focus-toggle-btn--active:hover {
+  color: var(--accent, #58a6ff);
+  border-color: color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
+  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
+  box-shadow: 0 0 10px
+    color-mix(in srgb, var(--accent, #58a6ff) 28%, transparent);
 }
 
 .sm-focus-toggle-btn svg {
@@ -109,34 +116,106 @@ input[type='range'] {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--fg-tertiary);
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-tertiary, #8b949e);
   cursor: pointer;
   transition:
-    opacity 0.15s,
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .sm-focus-exit-btn:hover {
-  color: var(--error);
-  border-color: var(--error);
+  color: var(--error, #f85149);
+  background: color-mix(in srgb, var(--error, #f85149) 14%, transparent);
 }
 
-/* Transport floating pill styles in focus mode */
+/* Transport floating pill in focus mode — frosted glass matching the
+   Guitar 3D / practice ControlOverlay shell. Solid fallback first for
+   engines without color-mix. */
 .stem-mixer--focus .sm-transport {
   zoom: 0.82;
-  background: rgba(22, 27, 34, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+  background: var(--bg-card, #161b22);
+  background: color-mix(in srgb, var(--bg-card, #161b22) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  border: 1px solid var(--border, #30363d);
+  border: 1px solid color-mix(in srgb, var(--border, #30363d) 65%, transparent);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    0 8px 30px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   z-index: 401;
+}
+
+/* Inside the glass pill the opaque button chrome reads as gray blocks —
+   strip it to quiet glass: transparent at rest, tinted on hover; accent
+   fills (play, active mic/layout/sidebar states) re-asserted below. */
+.stem-mixer--focus .sm-transport .sm-transport-btn,
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn,
+.stem-mixer--focus .sm-transport .sm-sidebar-toggle {
+  background: transparent;
+  border-color: transparent;
+}
+
+.stem-mixer--focus .sm-transport .sm-transport-btn:hover:not(:disabled),
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn:hover:not(:disabled),
+.stem-mixer--focus .sm-transport .sm-sidebar-toggle:hover {
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.stem-mixer--focus .sm-transport .sm-transport-play,
+.stem-mixer--focus .sm-transport .sm-transport-play:hover:not(:disabled) {
+  background: var(--accent, #58a6ff);
+  color: var(--on-accent, #0d1117);
+  box-shadow: 0 3px 12px
+    color-mix(in srgb, var(--accent, #58a6ff) 40%, transparent);
+}
+
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn--active,
+.stem-mixer--focus
+  .sm-transport
+  .sm-mic-toggle-btn--active:hover:not(:disabled) {
+  background: var(--accent, #58a6ff);
+  color: var(--on-accent, #0d1117);
+}
+
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn--error {
+  background: color-mix(in srgb, var(--danger, #da3633) 20%, transparent);
+  color: var(--danger, #da3633);
+}
+
+.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active,
+.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active:hover {
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+
+.stem-mixer--focus .sm-transport .sm-col-toggle {
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 7%, transparent);
+}
+
+.stem-mixer--focus .sm-transport .sm-speed-select {
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 7%, transparent);
+  border-color: transparent;
+}
+
+.stem-mixer--focus .sm-transport .sm-speed-select:hover {
+  border-color: color-mix(in srgb, var(--border, #30363d) 80%, transparent);
+}
+
+.stem-mixer--focus .sm-transport .sm-speed-select:focus {
+  border-color: var(--accent, #58a6ff);
+}
+
+.stem-mixer--focus .sm-transport .sm-progress-bar {
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 12%, transparent);
+}
+
+.stem-mixer--focus .sm-transport .sm-focus-divider {
+  background: color-mix(in srgb, var(--border, #30363d) 60%, transparent);
 }
 
 /* Bottom Center Dock (Default) */

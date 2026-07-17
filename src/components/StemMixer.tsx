@@ -24,12 +24,15 @@ import { lrcEntriesToSegments } from '@/lib/pitch-word-alignment'
 import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
+import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
+import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
@@ -74,6 +77,9 @@ interface StemMixerProps {
    *  Night page uses it as the demo-engagement funnel milestone. */
   onThirtySecondsPlayed?: () => void
   onBack?: () => void
+  /** Zen mobile stage: stage another library session from the in-stage song
+   *  sheet. Undefined hides the sheet (the studio has its own pickers). */
+  onPickSession?: (sessionId: string) => void
 }
 
 interface StemTrack {
@@ -342,6 +348,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // eslint-disable-next-line solid/reactivity
   const isPerformancePreset = props.preset === 'performance'
 
+  // Phone-width viewports get the zen Apple-Music-style stage instead of the
+  // desktop mixer — same controllers, different presentation. Width-based
+  // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
+  // mixer. Reactive, so a rotation or resize swaps the presentation without
+  // losing playback (the audio engine lives in setup, not in either JSX tree).
+  const zenStage = () => isPerformancePreset && isNarrow()
+
   // True when this StemMixer instance is the playlist's current song (guards
   // the brief window where a new song is loading and a stale instance lingers).
   const isCurrentPlaylistSong = () =>
@@ -483,6 +496,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setBlockEditTarget,
     setUserScrolled,
     setCurrentLineIdx,
+    wordTimings,
 
     // Memos
     canonicalLrcLines,
@@ -523,6 +537,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleNextLine,
     handleNextWord,
     handleLrcGenFinish,
+    applyAutoWordSync,
     handleLrcGenReset,
     handleDownloadLrc,
     getGenLines,
@@ -995,6 +1010,42 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onSetLoopLyric,
   }
 
+  // ── Auto word-sync ───────────────────────────────────────────
+  // One click: detect onsets on the separated vocal stem and time every
+  // lyric word automatically (docs/plans/lyrics-word-sync.md).
+  const autoSyncWords = () => {
+    const buf = vocal().buffer
+    if (!buf) {
+      showNotification(
+        'Wait for the song to finish loading, then try again',
+        'warning',
+      )
+      return
+    }
+    // Same data-loss guard as the lyrics paste path: existing word timings
+    // (possibly hand-tapped) are replaced wholesale and there is no undo.
+    if (
+      Object.keys(wordTimings()).length > 0 &&
+      !window.confirm(
+        'Auto word-sync will replace the existing word timings for this song. This cannot be undone. Continue?',
+      )
+    ) {
+      return
+    }
+    const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))
+    if (linesSynced > 0) {
+      showNotification(
+        `Word sync drafted for ${linesSynced} lines — words now light up as they're sung`,
+        'success',
+      )
+    } else {
+      showNotification(
+        'Auto word-sync needs line-timed lyrics — load an LRC or run LRC Gen first',
+        'warning',
+      )
+    }
+  }
+
   // ── Volume / Mute / Solo ─────────────────────────────────────
   const setTrackVolume = (label: string, volume: number) => {
     const setter =
@@ -1259,590 +1310,628 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div
-      class="stem-mixer"
-      classList={{
-        'stem-mixer--focus': karaokeFocus(),
-        [`stem-mixer--focus-docked-${karaokeToolbarPosition()}`]:
-          karaokeFocus(),
-      }}
-    >
-      {/* Header */}
-      <Show when={!karaokeFocus()}>
-        <div class="sm-header">
-          <div class="sm-header-left">
-            <Show when={props.onBack}>
-              <button
-                class="sm-back-btn"
-                onClick={() => props.onBack?.()}
-                title="Back"
-              >
-                <ChevronLeft />
-              </button>
-            </Show>
-            <div class="sm-header-titles">
-              <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
-              <Show
-                when={playlist.isPlaylistActive() && playlist.currentSong()}
-                fallback={
-                  <Show when={audio.duration() > 0}>
-                    <span class="sm-session-id">
-                      {canvas.formatTime(audio.duration())}
-                    </span>
-                  </Show>
-                }
-              >
-                <div class="sm-playlist-subtitle">
-                  <Show when={playlist.currentSong()!.singerName}>
-                    <span class="sm-playlist-singer">
-                      {playlist.currentSong()!.singerName}
-                    </span>
-                    <span class="sm-playlist-dot">·</span>
-                  </Show>
-                  <span>{playlist.currentSong()!.songTitle}</span>
-                  <Show when={playlist.nextSong()}>
-                    <span class="sm-playlist-next">
-                      · Next: {playlist.nextSong()!.songTitle}
-                      <Show when={playlist.nextSong()!.singerName}>
-                        {' '}
-                        ({playlist.nextSong()!.singerName})
-                      </Show>
-                    </span>
-                  </Show>
-                  <span class="sm-playlist-controls">
-                    <button
-                      class="sm-playlist-ctrl-btn"
-                      title="Previous song"
-                      disabled={playlist.currentIndex() === 0}
-                      onClick={handlePlaylistPrev}
-                    >
-                      <SkipBack />
-                    </button>
-                    <button
-                      class="sm-playlist-ctrl-btn"
-                      title="Skip to next song"
-                      onClick={handlePlaylistNext}
-                    >
-                      <SkipForward />
-                    </button>
-                    <button
-                      class="sm-playlist-ctrl-btn"
-                      title="Stop playlist"
-                      onClick={handlePlaylistStopAll}
-                    >
-                      <X />
-                    </button>
-                  </span>
-                </div>
-              </Show>
-            </div>
-          </div>
-          <div
-            class="sm-header-actions"
-            style={{ display: 'flex', gap: '0.5rem' }}
-            data-tour="mixer.header"
-          >
-            <Show when={props.onOfferTour}>
-              <button
-                class="sm-btn sm-btn-secondary"
-                onClick={() => props.onOfferTour?.('button')}
-                title="Take a guided tour of the mixer"
-                style={{ gap: '0.4rem' }}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
-                  />
-                </svg>{' '}
-                Tour
-              </button>
-            </Show>
-            <button
-              class="sm-btn sm-btn-secondary"
-              data-tour="mixer.playlist"
-              classList={{ 'sm-btn--active': playlistSidebarOpen() }}
-              onClick={() => setPlaylistSidebarOpen((prev) => !prev)}
-              title="Karaoke playlists"
-              style={{ gap: '0.4rem' }}
-            >
-              <Music /> Playlist
-            </button>
-            <Show when={props.preset !== 'performance'}>
-              <button
-                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
-                title="Pitch Analysis & Settings"
-                style={{ gap: '0.4rem' }}
-              >
-                <Settings /> Pitch
-              </button>
-            </Show>
-            {/* Share links are only useful once songs are cloud-synced across
-                devices — gated behind the premium flag (off by default). */}
-            <Show when={PREMIUM_FEATURES}>
-              <button
-                class="sm-share-btn"
-                classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-                onClick={() => {
-                  const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-                  void navigator.clipboard.writeText(url).then(() => {
-                    setShareToast('Link copied to clipboard!')
-                    setTimeout(() => setShareToast(''), 2500)
-                  })
-                }}
-                title="Copy share link"
-              >
-                <Share /> {shareToast() || 'Share'}
-              </button>
-            </Show>
-            <button
-              class="sm-btn sm-btn-secondary"
-              data-tour="mixer.focus"
-              onClick={() => setKaraokeFocus((prev) => !prev)}
-              title={
-                karaokeFocus()
-                  ? 'Exit karaoke mode (Esc)'
-                  : 'Karaoke focus mode'
-              }
-            >
-              {karaokeFocus() ? (
-                <Minimize2 size={14} />
-              ) : (
-                <Maximize2 size={14} />
-              )}
-            </button>
-          </div>
-        </div>
-      </Show>
-
-      {/* Focus-mode now-playing bar — the header (with the playlist subtitle and
-          transport) is hidden in focus mode, so surface the current
-          singer/song + Prev/Skip/Stop here when a playlist is running. */}
-      <Show
-        when={
-          karaokeFocus() &&
-          playlist.isPlaylistActive() &&
-          playlist.currentSong()
-        }
-      >
-        <div class="sm-focus-nowplaying">
-          <div class="sm-focus-np-info">
-            <Show when={playlist.currentSong()!.singerName}>
-              <span class="sm-playlist-singer">
-                {playlist.currentSong()!.singerName}
-              </span>
-            </Show>
-            <span class="sm-focus-song">
-              {playlist.currentSong()!.songTitle}
-            </span>
-            <Show when={playlist.nextSong()}>
-              <span class="sm-playlist-next">
-                · Next: {playlist.nextSong()!.songTitle}
-                <Show when={playlist.nextSong()!.singerName}>
-                  {' '}
-                  ({playlist.nextSong()!.singerName})
-                </Show>
-              </span>
-            </Show>
-          </div>
-          <span class="sm-playlist-controls">
-            <button
-              class="sm-playlist-ctrl-btn"
-              title="Previous song"
-              disabled={playlist.currentIndex() === 0}
-              onClick={handlePlaylistPrev}
-            >
-              <SkipBack />
-            </button>
-            <button
-              class="sm-playlist-ctrl-btn"
-              title="Skip to next song"
-              onClick={handlePlaylistNext}
-            >
-              <SkipForward />
-            </button>
-            <button
-              class="sm-playlist-ctrl-btn"
-              title="Stop playlist"
-              onClick={handlePlaylistStopAll}
-            >
-              <X />
-            </button>
-          </span>
-        </div>
-      </Show>
-
-      {/* Loading / Error */}
-      <Show when={audio.loading() || audio.midiGenerating()}>
-        <div class="sm-loading">
-          <Show
-            when={audio.midiGenerating()}
-            fallback={<div class="sm-loading-spinner" />}
-          >
-            <CircularProgress pct={audio.midiProgress()} size={40} />
-          </Show>
-          <span>
-            {audio.midiGenerating()
-              ? audio.midiPhase() === 'rendering'
-                ? 'Rendering MIDI audio...'
-                : audio.midiPhase() === 'synthesizing'
-                  ? `Building MIDI graph... ${audio.midiProgress()}%`
-                  : `Detecting pitches... ${audio.midiProgress()}%`
-              : `Loading stems... ${audio.loadProgress()}%`}
-          </span>
-        </div>
-      </Show>
-
-      <Show when={audio.loadError()}>
-        <div class="sm-error">
-          <span>{audio.loadError()}</span>
-          <button
-            class="sm-error-retry"
-            onClick={() => {
-              void audio.loadStems()
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      </Show>
-
-      <Show when={!audio.loading() && !audio.loadError()}>
-        <StemMixerTransport
+    <Show
+      when={!zenStage()}
+      fallback={
+        <KaraokeMobileStage
+          songTitle={props.songTitle}
+          onBack={props.onBack}
           playing={audio.playing}
+          loading={audio.loading}
+          loadError={audio.loadError}
           elapsed={audio.elapsed}
           duration={audio.duration}
-          onStop={audio.handleStop}
-          onRestart={audio.handleRestart}
           onPlay={audio.handlePlay}
           onPause={audio.handlePause}
-          onSeek={handleSeek}
-          workspaceLayout={layout.workspaceLayout}
-          setWorkspaceLayout={layout.setWorkspaceLayout}
-          sidebarHidden={layout.sidebarHidden}
-          setSidebarHidden={layout.setSidebarHidden}
-          onQueueRedraw={() => canvas.queueCanvasRedraw()}
-          micActive={mic.micActive}
-          micError={mic.micError}
-          onToggleMic={() => void mic.toggleMic()}
-          micMonitorEnabled={mic.micMonitorEnabled}
-          onToggleMicMonitor={() => mic.setMicMonitor(!mic.micMonitorEnabled())}
-          formatTime={canvas.formatTime}
-          speed={audio.speed}
-          onSpeedChange={audio.setSpeed}
-          karaokeFocus={karaokeFocus}
-          setKaraokeFocus={setKaraokeFocus}
-          toolbarPosition={karaokeToolbarPosition}
-          setToolbarPosition={setKaraokeToolbarPosition}
-          showWaveform={showWaveform}
-          setShowWaveform={setShowWaveform}
-          showPitch={showPitch}
-          setShowPitch={setShowPitch}
-          showLyrics={showLyrics}
-          setShowLyrics={setShowLyrics}
-          loopEnabled={audio.loopEnabled}
-          loopStart={audio.loopStart}
-          loopEnd={audio.loopEnd}
-          onSetLoopA={() => {
-            const newTime = audio.elapsed()
-            const currentB = audio.loopEnd()
-            if (currentB > 0 && newTime > currentB) {
-              audio.setLoopEnd(newTime)
-              audio.setLoopStart(currentB)
-            } else {
-              audio.setLoopStart(newTime)
-            }
-            canvas.queueCanvasRedraw()
+          onRestart={audio.handleRestart}
+          seekTo={audio.seekTo}
+          vocal={vocal}
+          onToggleVocal={() => toggleMute('Vocal')}
+          onVocalVolume={(v) => setTrackVolume('Vocal', v)}
+          parsedLyrics={stableParsedLyrics}
+          currentLineIdx={currentLineIdx}
+          lyricsLoading={lyricsLoading}
+          computeActiveWord={computeActiveWord}
+          onLineClick={handleLyricLineClick}
+          playlistOverlayActive={isCurrentPlaylistSong}
+          onPlaylistStart={() => playlist.beginCountdown()}
+          onPlaylistSkip={() => {
+            audio.handlePause()
+            playlist.advance()
           }}
-          onSetLoopB={() => {
-            const newTime = audio.elapsed()
-            const currentA = audio.loopStart()
-            if (newTime < currentA) {
-              audio.setLoopStart(newTime)
-              audio.setLoopEnd(currentA)
-            } else {
-              audio.setLoopEnd(newTime)
-            }
-            audio.setLoopEnabled(true)
-            canvas.queueCanvasRedraw()
-          }}
-          onClearLoop={() => {
-            audio.clearLoop()
-            setLoopStartLyricIdx(null)
-            setLoopEndLyricIdx(null)
-            canvas.queueCanvasRedraw()
-          }}
-          onToggleLoop={() => {
-            audio.setLoopEnabled(!audio.loopEnabled())
-            canvas.queueCanvasRedraw()
-          }}
+          onPickSession={props.onPickSession}
         />
+      }
+    >
+      <div
+        class="stem-mixer"
+        classList={{
+          'stem-mixer--focus': karaokeFocus(),
+          [`stem-mixer--focus-docked-${karaokeToolbarPosition()}`]:
+            karaokeFocus(),
+        }}
+      >
+        {/* Header */}
+        <Show when={!karaokeFocus()}>
+          <div class="sm-header">
+            <div class="sm-header-left">
+              <Show when={props.onBack}>
+                <button
+                  class="sm-back-btn"
+                  onClick={() => props.onBack?.()}
+                  title="Back"
+                >
+                  <ChevronLeft />
+                </button>
+              </Show>
+              <div class="sm-header-titles">
+                <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
+                <Show
+                  when={playlist.isPlaylistActive() && playlist.currentSong()}
+                  fallback={
+                    <Show when={audio.duration() > 0}>
+                      <span class="sm-session-id">
+                        {canvas.formatTime(audio.duration())}
+                      </span>
+                    </Show>
+                  }
+                >
+                  <div class="sm-playlist-subtitle">
+                    <Show when={playlist.currentSong()!.singerName}>
+                      <span class="sm-playlist-singer">
+                        {playlist.currentSong()!.singerName}
+                      </span>
+                      <span class="sm-playlist-dot">·</span>
+                    </Show>
+                    <span>{playlist.currentSong()!.songTitle}</span>
+                    <Show when={playlist.nextSong()}>
+                      <span class="sm-playlist-next">
+                        · Next: {playlist.nextSong()!.songTitle}
+                        <Show when={playlist.nextSong()!.singerName}>
+                          {' '}
+                          ({playlist.nextSong()!.singerName})
+                        </Show>
+                      </span>
+                    </Show>
+                    <span class="sm-playlist-controls">
+                      <button
+                        class="sm-playlist-ctrl-btn"
+                        title="Previous song"
+                        disabled={playlist.currentIndex() === 0}
+                        onClick={handlePlaylistPrev}
+                      >
+                        <SkipBack />
+                      </button>
+                      <button
+                        class="sm-playlist-ctrl-btn"
+                        title="Skip to next song"
+                        onClick={handlePlaylistNext}
+                      >
+                        <SkipForward />
+                      </button>
+                      <button
+                        class="sm-playlist-ctrl-btn"
+                        title="Stop playlist"
+                        onClick={handlePlaylistStopAll}
+                      >
+                        <X />
+                      </button>
+                    </span>
+                  </div>
+                </Show>
+              </div>
+            </div>
+            <div
+              class="sm-header-actions"
+              style={{ display: 'flex', gap: '0.5rem' }}
+              data-tour="mixer.header"
+            >
+              <Show when={props.onOfferTour}>
+                <button
+                  class="sm-btn sm-btn-secondary"
+                  onClick={() => props.onOfferTour?.('button')}
+                  title="Take a guided tour of the mixer"
+                  style={{ gap: '0.4rem' }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path
+                      fill="currentColor"
+                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4l5 2.5L12 11 7 8.5 12 6zm-5 4l5 2.5V18l-5-2.5V10zm10 0v5.5L12 18v-5.5L17 10z"
+                    />
+                  </svg>{' '}
+                  Tour
+                </button>
+              </Show>
+              <button
+                class="sm-btn sm-btn-secondary"
+                data-tour="mixer.playlist"
+                classList={{ 'sm-btn--active': playlistSidebarOpen() }}
+                onClick={() => setPlaylistSidebarOpen((prev) => !prev)}
+                title="Karaoke playlists"
+                style={{ gap: '0.4rem' }}
+              >
+                <Music /> Playlist
+              </button>
+              <Show when={props.preset !== 'performance'}>
+                <button
+                  class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
+                  onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+                  title="Pitch Analysis & Settings"
+                  style={{ gap: '0.4rem' }}
+                >
+                  <Settings /> Pitch
+                </button>
+              </Show>
+              {/* Share links are only useful once songs are cloud-synced across
+                devices — gated behind the premium flag (off by default). */}
+              <Show when={PREMIUM_FEATURES}>
+                <button
+                  class="sm-share-btn"
+                  classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
+                  onClick={() => {
+                    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+                    void navigator.clipboard.writeText(url).then(() => {
+                      setShareToast('Link copied to clipboard!')
+                      setTimeout(() => setShareToast(''), 2500)
+                    })
+                  }}
+                  title="Copy share link"
+                >
+                  <Share /> {shareToast() || 'Share'}
+                </button>
+              </Show>
+              <button
+                class="sm-btn sm-btn-secondary"
+                data-tour="mixer.focus"
+                onClick={() => setKaraokeFocus((prev) => !prev)}
+                title={
+                  karaokeFocus()
+                    ? 'Exit karaoke mode (Esc)'
+                    : 'Karaoke focus mode'
+                }
+              >
+                {karaokeFocus() ? (
+                  <Minimize2 size={14} />
+                ) : (
+                  <Maximize2 size={14} />
+                )}
+              </button>
+            </div>
+          </div>
+        </Show>
 
+        {/* Focus-mode now-playing bar — the header (with the playlist subtitle and
+          transport) is hidden in focus mode, so surface the current
+          singer/song + Prev/Skip/Stop here when a playlist is running. */}
         <Show
-          when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+          when={
+            karaokeFocus() &&
+            playlist.isPlaylistActive() &&
+            playlist.currentSong()
+          }
         >
-          <LoopMetricsBar
-            comparisonData={mic.comparisonData}
-            loopCount={audio.loopCount}
+          <div class="sm-focus-nowplaying">
+            <div class="sm-focus-np-info">
+              <Show when={playlist.currentSong()!.singerName}>
+                <span class="sm-playlist-singer">
+                  {playlist.currentSong()!.singerName}
+                </span>
+              </Show>
+              <span class="sm-focus-song">
+                {playlist.currentSong()!.songTitle}
+              </span>
+              <Show when={playlist.nextSong()}>
+                <span class="sm-playlist-next">
+                  · Next: {playlist.nextSong()!.songTitle}
+                  <Show when={playlist.nextSong()!.singerName}>
+                    {' '}
+                    ({playlist.nextSong()!.singerName})
+                  </Show>
+                </span>
+              </Show>
+            </div>
+            <span class="sm-playlist-controls">
+              <button
+                class="sm-playlist-ctrl-btn"
+                title="Previous song"
+                disabled={playlist.currentIndex() === 0}
+                onClick={handlePlaylistPrev}
+              >
+                <SkipBack />
+              </button>
+              <button
+                class="sm-playlist-ctrl-btn"
+                title="Skip to next song"
+                onClick={handlePlaylistNext}
+              >
+                <SkipForward />
+              </button>
+              <button
+                class="sm-playlist-ctrl-btn"
+                title="Stop playlist"
+                onClick={handlePlaylistStopAll}
+              >
+                <X />
+              </button>
+            </span>
+          </div>
+        </Show>
+
+        {/* Loading / Error */}
+        <Show when={audio.loading() || audio.midiGenerating()}>
+          <div class="sm-loading">
+            <Show
+              when={audio.midiGenerating()}
+              fallback={<div class="sm-loading-spinner" />}
+            >
+              <CircularProgress pct={audio.midiProgress()} size={40} />
+            </Show>
+            <span>
+              {audio.midiGenerating()
+                ? audio.midiPhase() === 'rendering'
+                  ? 'Rendering MIDI audio...'
+                  : audio.midiPhase() === 'synthesizing'
+                    ? `Building MIDI graph... ${audio.midiProgress()}%`
+                    : `Detecting pitches... ${audio.midiProgress()}%`
+                : `Loading stems... ${audio.loadProgress()}%`}
+            </span>
+          </div>
+        </Show>
+
+        <Show when={audio.loadError()}>
+          <div class="sm-error">
+            <span>{audio.loadError()}</span>
+            <button
+              class="sm-error-retry"
+              onClick={() => {
+                void audio.loadStems()
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </Show>
+
+        <Show when={!audio.loading() && !audio.loadError()}>
+          <StemMixerTransport
+            playing={audio.playing}
+            elapsed={audio.elapsed}
+            duration={audio.duration}
+            onStop={audio.handleStop}
+            onRestart={audio.handleRestart}
+            onPlay={audio.handlePlay}
+            onPause={audio.handlePause}
+            onSeek={handleSeek}
+            workspaceLayout={layout.workspaceLayout}
+            setWorkspaceLayout={layout.setWorkspaceLayout}
+            sidebarHidden={layout.sidebarHidden}
+            setSidebarHidden={layout.setSidebarHidden}
+            onQueueRedraw={() => canvas.queueCanvasRedraw()}
+            micActive={mic.micActive}
+            micError={mic.micError}
+            onToggleMic={() => void mic.toggleMic()}
+            micMonitorEnabled={mic.micMonitorEnabled}
+            onToggleMicMonitor={() =>
+              mic.setMicMonitor(!mic.micMonitorEnabled())
+            }
+            formatTime={canvas.formatTime}
+            speed={audio.speed}
+            onSpeedChange={audio.setSpeed}
+            karaokeFocus={karaokeFocus}
+            setKaraokeFocus={setKaraokeFocus}
+            toolbarPosition={karaokeToolbarPosition}
+            setToolbarPosition={setKaraokeToolbarPosition}
+            showWaveform={showWaveform}
+            setShowWaveform={setShowWaveform}
+            showPitch={showPitch}
+            setShowPitch={setShowPitch}
+            showLyrics={showLyrics}
+            setShowLyrics={setShowLyrics}
+            loopEnabled={audio.loopEnabled}
+            loopStart={audio.loopStart}
+            loopEnd={audio.loopEnd}
+            onSetLoopA={() => {
+              const newTime = audio.elapsed()
+              const currentB = audio.loopEnd()
+              if (currentB > 0 && newTime > currentB) {
+                audio.setLoopEnd(newTime)
+                audio.setLoopStart(currentB)
+              } else {
+                audio.setLoopStart(newTime)
+              }
+              canvas.queueCanvasRedraw()
+            }}
+            onSetLoopB={() => {
+              const newTime = audio.elapsed()
+              const currentA = audio.loopStart()
+              if (newTime < currentA) {
+                audio.setLoopStart(newTime)
+                audio.setLoopEnd(currentA)
+              } else {
+                audio.setLoopEnd(newTime)
+              }
+              audio.setLoopEnabled(true)
+              canvas.queueCanvasRedraw()
+            }}
+            onClearLoop={() => {
+              audio.clearLoop()
+              setLoopStartLyricIdx(null)
+              setLoopEndLyricIdx(null)
+              canvas.queueCanvasRedraw()
+            }}
+            onToggleLoop={() => {
+              audio.setLoopEnabled(!audio.loopEnabled())
+              canvas.queueCanvasRedraw()
+            }}
+          />
+
+          <Show
+            when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+          >
+            <LoopMetricsBar
+              comparisonData={mic.comparisonData}
+              loopCount={audio.loopCount}
+            />
+          </Show>
+
+          <StemMixerGridWorkspace
+            workspaceLayout={layout.workspaceLayout}
+            panelStyle={layout.panelStyle}
+            getPanel={layout.getPanel}
+            handlePanelDragStart={layout.handlePanelDragStart}
+            handlePanelDragMove={layout.handlePanelDragMove}
+            handlePanelDragEnd={layout.handlePanelDragEnd}
+            handleResizeStart={layout.handleResizeStart}
+            setCanvasRef={canvas.setCanvasRef}
+            handleCanvasWheel={canvas.handleCanvasWheel}
+            handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+            handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+            handleCanvasPointerUp={canvas.handleCanvasPointerUp}
+            setWindowDuration={audio.setWindowDuration}
+            stemControls={stemControls}
+            micMonitor={micMonitor}
+            lyricsPanel={lyricsPanel}
+            handleForceSearch={() => void handleForceSearch()}
+            toggleEditMode={toggleEditMode}
+            startLrcGen={startLrcGen}
+            autoSyncWords={autoSyncWords}
+            handleDownloadLrc={handleDownloadLrc}
+            lyricsFileInputRef={(el) => {
+              lyricsFileInputRef = el
+            }}
+            handleLyricsChange={handleLyricsChange}
+            triggerChangeFile={() => lyricsFileInputRef?.click()}
+            handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
+            showMidi={showMidi}
+            showNoteLabels={showNoteLabels}
+            setShowNoteLabels={setShowNoteLabels}
+            showLyricLabels={showLyricLabels}
+            setShowLyricLabels={setShowLyricLabels}
+            showLyricNoteLabels={showLyricNoteLabels}
+            setShowLyricNoteLabels={setShowLyricNoteLabels}
+            melodyAudio={melodyAudio}
+            onToggleMelodyAudio={toggleMelodyAudio}
+            whisperStatus={whisperStatus}
+            whisperProgress={whisperProgress}
+            transcribeElapsed={transcribeElapsed}
+            alignmentResult={alignmentResult}
+            startWhisperTranscription={startWhisperTranscription}
+            whisperLanguage={whisperLanguage}
+            setWhisperLanguage={setWhisperLanguage}
+            workspaceRef={(el) => {
+              workspaceRef = el
+            }}
+            onWorkspaceWheel={onWorkspaceWheel}
+            showWaveform={showWaveform}
+            showPitch={showPitch}
+            showLyrics={showLyrics}
+          />
+          <StemMixerFixedWorkspace
+            workspaceLayout={layout.workspaceLayout}
+            fixedPanelHeights={layout.fixedPanelHeights}
+            handleFixedResizeStart={layout.handleFixedResizeStart}
+            sidebarHidden={layout.sidebarHidden}
+            setCanvasRef={canvas.setCanvasRef}
+            handleCanvasWheel={canvas.handleCanvasWheel}
+            handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+            handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+            handleCanvasPointerUp={canvas.handleCanvasPointerUp}
+            stemControls={stemControls}
+            micMonitor={micMonitor}
+            lyricsPanel={lyricsPanel}
+            handleForceSearch={() => void handleForceSearch()}
+            toggleEditMode={toggleEditMode}
+            startLrcGen={startLrcGen}
+            autoSyncWords={autoSyncWords}
+            handleDownloadLrc={handleDownloadLrc}
+            lyricsFileInputRef={(el) => {
+              lyricsFileInputRef = el
+            }}
+            handleLyricsChange={handleLyricsChange}
+            triggerChangeFile={() => lyricsFileInputRef?.click()}
+            handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
+            showMidi={showMidi}
+            showNoteLabels={showNoteLabels}
+            setShowNoteLabels={setShowNoteLabels}
+            showLyricLabels={showLyricLabels}
+            setShowLyricLabels={setShowLyricLabels}
+            showLyricNoteLabels={showLyricNoteLabels}
+            setShowLyricNoteLabels={setShowLyricNoteLabels}
+            melodyAudio={melodyAudio}
+            onToggleMelodyAudio={toggleMelodyAudio}
+            whisperStatus={whisperStatus}
+            whisperProgress={whisperProgress}
+            transcribeElapsed={transcribeElapsed}
+            alignmentResult={alignmentResult}
+            startWhisperTranscription={startWhisperTranscription}
+            whisperLanguage={whisperLanguage}
+            setWhisperLanguage={setWhisperLanguage}
+            showMicLine={showMicLine}
+            setShowMicLine={setShowMicLine}
+            showUserNoteLabels={showUserNoteLabels}
+            setShowUserNoteLabels={setShowUserNoteLabels}
+            micMessage={micInsights.message}
+            micInsight={micInsights.insight}
+            micLevel={mic.micLevel}
+            micActive={mic.micActive}
+            showWaveform={showWaveform}
+            showPitch={showPitch}
+            showLyrics={showLyrics}
+          />
+          <StemMixerPerformanceWorkspace
+            workspaceLayout={layout.workspaceLayout}
+            sidebarHidden={layout.sidebarHidden}
+            setCanvasRef={canvas.setCanvasRef}
+            handleCanvasPointerDown={canvas.handleCanvasPointerDown}
+            handleCanvasPointerMove={canvas.handleCanvasPointerMove}
+            handleCanvasPointerUp={canvas.handleCanvasPointerUp}
+            stemControls={stemControls}
+            micMonitor={micMonitor}
+            lyricsPanel={lyricsPanel}
+            showLyricNoteLabels={showLyricNoteLabels}
+            alignmentResult={alignmentResult}
+            lyricsAlign={lyricsAlign}
+            setLyricsAlign={setLyricsAlign}
+            handleForceSearch={() => void handleForceSearch()}
+            triggerChangeFile={() => lyricsFileInputRef?.click()}
+            showWaveform={showWaveform}
           />
         </Show>
 
-        <StemMixerGridWorkspace
-          workspaceLayout={layout.workspaceLayout}
-          panelStyle={layout.panelStyle}
-          getPanel={layout.getPanel}
-          handlePanelDragStart={layout.handlePanelDragStart}
-          handlePanelDragMove={layout.handlePanelDragMove}
-          handlePanelDragEnd={layout.handlePanelDragEnd}
-          handleResizeStart={layout.handleResizeStart}
-          setCanvasRef={canvas.setCanvasRef}
-          handleCanvasWheel={canvas.handleCanvasWheel}
-          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
-          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
-          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
-          setWindowDuration={audio.setWindowDuration}
-          stemControls={stemControls}
-          micMonitor={micMonitor}
-          lyricsPanel={lyricsPanel}
-          handleForceSearch={() => void handleForceSearch()}
-          toggleEditMode={toggleEditMode}
-          startLrcGen={startLrcGen}
-          handleDownloadLrc={handleDownloadLrc}
-          lyricsFileInputRef={(el) => {
-            lyricsFileInputRef = el
+        <StemMixerScoreModal
+          showScore={mic.showScore}
+          score={mic.score}
+          onClose={() => {
+            mic.setShowScore(false)
+            if (playlist.isPlaylistActive() && pendingAdvance) {
+              pendingAdvance = false
+              playlist.reportSongScore(mic.score())
+              playlist.advance()
+            }
           }}
-          handleLyricsChange={handleLyricsChange}
-          triggerChangeFile={() => lyricsFileInputRef?.click()}
-          handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
-          showMidi={showMidi}
-          showNoteLabels={showNoteLabels}
-          setShowNoteLabels={setShowNoteLabels}
-          showLyricLabels={showLyricLabels}
-          setShowLyricLabels={setShowLyricLabels}
-          showLyricNoteLabels={showLyricNoteLabels}
-          setShowLyricNoteLabels={setShowLyricNoteLabels}
-          melodyAudio={melodyAudio}
-          onToggleMelodyAudio={toggleMelodyAudio}
-          whisperStatus={whisperStatus}
-          whisperProgress={whisperProgress}
-          transcribeElapsed={transcribeElapsed}
-          alignmentResult={alignmentResult}
-          startWhisperTranscription={startWhisperTranscription}
-          whisperLanguage={whisperLanguage}
-          setWhisperLanguage={setWhisperLanguage}
-          workspaceRef={(el) => {
-            workspaceRef = el
-          }}
-          onWorkspaceWheel={onWorkspaceWheel}
-          showWaveform={showWaveform}
-          showPitch={showPitch}
-          showLyrics={showLyrics}
         />
-        <StemMixerFixedWorkspace
-          workspaceLayout={layout.workspaceLayout}
-          fixedPanelHeights={layout.fixedPanelHeights}
-          handleFixedResizeStart={layout.handleFixedResizeStart}
-          sidebarHidden={layout.sidebarHidden}
-          setCanvasRef={canvas.setCanvasRef}
-          handleCanvasWheel={canvas.handleCanvasWheel}
-          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
-          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
-          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
-          stemControls={stemControls}
-          micMonitor={micMonitor}
-          lyricsPanel={lyricsPanel}
-          handleForceSearch={() => void handleForceSearch()}
-          toggleEditMode={toggleEditMode}
-          startLrcGen={startLrcGen}
-          handleDownloadLrc={handleDownloadLrc}
-          lyricsFileInputRef={(el) => {
-            lyricsFileInputRef = el
-          }}
-          handleLyricsChange={handleLyricsChange}
-          triggerChangeFile={() => lyricsFileInputRef?.click()}
-          handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
-          showMidi={showMidi}
-          showNoteLabels={showNoteLabels}
-          setShowNoteLabels={setShowNoteLabels}
-          showLyricLabels={showLyricLabels}
-          setShowLyricLabels={setShowLyricLabels}
-          showLyricNoteLabels={showLyricNoteLabels}
-          setShowLyricNoteLabels={setShowLyricNoteLabels}
-          melodyAudio={melodyAudio}
-          onToggleMelodyAudio={toggleMelodyAudio}
-          whisperStatus={whisperStatus}
-          whisperProgress={whisperProgress}
-          transcribeElapsed={transcribeElapsed}
-          alignmentResult={alignmentResult}
-          startWhisperTranscription={startWhisperTranscription}
-          whisperLanguage={whisperLanguage}
-          setWhisperLanguage={setWhisperLanguage}
-          showMicLine={showMicLine}
-          setShowMicLine={setShowMicLine}
-          showUserNoteLabels={showUserNoteLabels}
-          setShowUserNoteLabels={setShowUserNoteLabels}
-          micMessage={micInsights.message}
-          micInsight={micInsights.insight}
-          micLevel={mic.micLevel}
-          micActive={mic.micActive}
-          showWaveform={showWaveform}
-          showPitch={showPitch}
-          showLyrics={showLyrics}
-        />
-        <StemMixerPerformanceWorkspace
-          workspaceLayout={layout.workspaceLayout}
-          sidebarHidden={layout.sidebarHidden}
-          setCanvasRef={canvas.setCanvasRef}
-          handleCanvasPointerDown={canvas.handleCanvasPointerDown}
-          handleCanvasPointerMove={canvas.handleCanvasPointerMove}
-          handleCanvasPointerUp={canvas.handleCanvasPointerUp}
-          stemControls={stemControls}
-          micMonitor={micMonitor}
-          lyricsPanel={lyricsPanel}
-          showLyricNoteLabels={showLyricNoteLabels}
-          alignmentResult={alignmentResult}
-          lyricsAlign={lyricsAlign}
-          setLyricsAlign={setLyricsAlign}
-          handleForceSearch={() => void handleForceSearch()}
-          triggerChangeFile={() => lyricsFileInputRef?.click()}
-          showWaveform={showWaveform}
-        />
-      </Show>
 
-      <StemMixerScoreModal
-        showScore={mic.showScore}
-        score={mic.score}
-        onClose={() => {
-          mic.setShowScore(false)
-          if (playlist.isPlaylistActive() && pendingAdvance) {
-            pendingAdvance = false
-            playlist.reportSongScore(mic.score())
-            playlist.advance()
-          }
-        }}
-      />
-
-      {/* In edit mode the panel collapses and a floating toolbar takes over,
+        {/* In edit mode the panel collapses and a floating toolbar takes over,
           so the pitch lane stays visible and clickable. */}
-      <Show when={props.preset !== 'performance' && pitchAnalysis.editMode()}>
-        <StemMixerEditToolbar
-          pitchView={pitchAnalysis.pitchView()}
-          setPitchView={pitchAnalysis.setPitchView}
-          hasEdits={pitchAnalysis.hasEdits()}
-          hasSelection={pitchAnalysis.selectedNoteId() !== null}
-          onDelete={() => pitchAnalysis.deleteSelectedNote()}
-          onSplit={() => pitchAnalysis.splitSelectedNote()}
-          onMerge={() => pitchAnalysis.mergeSelectedWithNext()}
-          onUndo={() => pitchAnalysis.undoEdit()}
-          onReset={() => pitchAnalysis.resetEdits()}
-          onDone={() => {
-            pitchAnalysis.setEditMode(false)
-            pitchAnalysis.setSelectedNoteId(null)
-          }}
-        />
-      </Show>
-
-      <Show
-        when={
-          props.preset !== 'performance' &&
-          pitchAnalysis.panelOpen() &&
-          !pitchAnalysis.editMode()
-        }
-      >
-        <StemMixerPitchAnalysisPanel
-          algorithm={pitchAnalysis.algorithm()}
-          setAlgorithm={pitchAnalysis.setAlgorithm}
-          bufferSize={pitchAnalysis.bufferSize()}
-          setBufferSize={pitchAnalysis.setBufferSize}
-          sensitivity={pitchAnalysis.sensitivity()}
-          setSensitivity={pitchAnalysis.setSensitivity}
-          minConfidence={pitchAnalysis.minConfidence()}
-          setMinConfidence={pitchAnalysis.setMinConfidence}
-          minAmplitude={pitchAnalysis.minAmplitude()}
-          setMinAmplitude={pitchAnalysis.setMinAmplitude}
-          isAnalyzing={pitchAnalysis.isAnalyzing()}
-          progress={pitchAnalysis.progress()}
-          pitchSourceMode={pitchAnalysis.pitchSourceMode()}
-          setPitchSourceMode={(mode) => {
-            pitchAnalysis.setPitchSourceMode(mode)
-            canvas.queueCanvasRedraw()
-          }}
-          runAnalysis={() => {
-            void pitchAnalysis.runAnalysis().then(() => {
-              // After re-analysis with new settings, auto re-run whisper
-              // transcription so alignment stays in sync
-              if (whisper.segments().length > 0) {
-                showNotification(
-                  'Re-running transcription with updated pitch...',
-                  'info',
-                )
-                whisper.startTranscription()
-              }
-            })
-          }}
-          cleanupAmount={pitchAnalysis.cleanupAmount()}
-          setCleanupAmount={(n) => {
-            pitchAnalysis.setCleanupAmount(n)
-            canvas.queueCanvasRedraw()
-          }}
-          songKey={pitchAnalysis.songKey()}
-          setSongKey={(k) => {
-            pitchAnalysis.setSongKey(k)
-            canvas.queueCanvasRedraw()
-          }}
-          songScale={pitchAnalysis.songScale()}
-          setSongScale={(s) => {
-            pitchAnalysis.setSongScale(s)
-            canvas.queueCanvasRedraw()
-          }}
-          songBpm={pitchAnalysis.songBpm()}
-          setSongBpm={(b) => {
-            pitchAnalysis.setSongBpm(b)
-            canvas.queueCanvasRedraw()
-          }}
-          contourReady={pitchAnalysis.contourReady()}
-          detectedKeyLabel={(() => {
-            const k = pitchAnalysis.detectedKey()
-            return k !== null
-              ? `${k.keyName} ${k.scaleType === 'major' ? 'major' : 'minor'}`
-              : ''
-          })()}
-          keyRegionCount={pitchAnalysis.keyRegions().length}
-          editMode={pitchAnalysis.editMode()}
-          onToggleEditMode={() => {
-            pitchAnalysis.setEditMode((v) => !v)
-            pitchAnalysis.setSelectedNoteId(null)
-          }}
-          canEdit={pitchAnalysis.editableNotes().length > 0}
-          hasEdits={pitchAnalysis.hasEdits()}
-          pitchView={pitchAnalysis.pitchView()}
-          setPitchView={pitchAnalysis.setPitchView}
-          onClose={() => pitchAnalysis.setPanelOpen(false)}
-        />
-      </Show>
-
-      {/* ── Karaoke playlist ─────────────────────────────────── */}
-      <Show when={playlistSidebarOpen()}>
-        <div class="sm-playlist-sidebar-wrap">
-          <KaraokePlaylistSidebar
-            onClose={() => setPlaylistSidebarOpen(false)}
+        <Show when={props.preset !== 'performance' && pitchAnalysis.editMode()}>
+          <StemMixerEditToolbar
+            pitchView={pitchAnalysis.pitchView()}
+            setPitchView={pitchAnalysis.setPitchView}
+            hasEdits={pitchAnalysis.hasEdits()}
+            hasSelection={pitchAnalysis.selectedNoteId() !== null}
+            onDelete={() => pitchAnalysis.deleteSelectedNote()}
+            onSplit={() => pitchAnalysis.splitSelectedNote()}
+            onMerge={() => pitchAnalysis.mergeSelectedWithNext()}
+            onUndo={() => pitchAnalysis.undoEdit()}
+            onReset={() => pitchAnalysis.resetEdits()}
+            onDone={() => {
+              pitchAnalysis.setEditMode(false)
+              pitchAnalysis.setSelectedNoteId(null)
+            }}
           />
-        </div>
-      </Show>
+        </Show>
 
-      {/* Only the StemMixer for the current song drives the overlay/Start, so a
+        <Show
+          when={
+            props.preset !== 'performance' &&
+            pitchAnalysis.panelOpen() &&
+            !pitchAnalysis.editMode()
+          }
+        >
+          <StemMixerPitchAnalysisPanel
+            algorithm={pitchAnalysis.algorithm()}
+            setAlgorithm={pitchAnalysis.setAlgorithm}
+            bufferSize={pitchAnalysis.bufferSize()}
+            setBufferSize={pitchAnalysis.setBufferSize}
+            sensitivity={pitchAnalysis.sensitivity()}
+            setSensitivity={pitchAnalysis.setSensitivity}
+            minConfidence={pitchAnalysis.minConfidence()}
+            setMinConfidence={pitchAnalysis.setMinConfidence}
+            minAmplitude={pitchAnalysis.minAmplitude()}
+            setMinAmplitude={pitchAnalysis.setMinAmplitude}
+            isAnalyzing={pitchAnalysis.isAnalyzing()}
+            progress={pitchAnalysis.progress()}
+            pitchSourceMode={pitchAnalysis.pitchSourceMode()}
+            setPitchSourceMode={(mode) => {
+              pitchAnalysis.setPitchSourceMode(mode)
+              canvas.queueCanvasRedraw()
+            }}
+            runAnalysis={() => {
+              void pitchAnalysis.runAnalysis().then(() => {
+                // After re-analysis with new settings, auto re-run whisper
+                // transcription so alignment stays in sync
+                if (whisper.segments().length > 0) {
+                  showNotification(
+                    'Re-running transcription with updated pitch...',
+                    'info',
+                  )
+                  whisper.startTranscription()
+                }
+              })
+            }}
+            cleanupAmount={pitchAnalysis.cleanupAmount()}
+            setCleanupAmount={(n) => {
+              pitchAnalysis.setCleanupAmount(n)
+              canvas.queueCanvasRedraw()
+            }}
+            songKey={pitchAnalysis.songKey()}
+            setSongKey={(k) => {
+              pitchAnalysis.setSongKey(k)
+              canvas.queueCanvasRedraw()
+            }}
+            songScale={pitchAnalysis.songScale()}
+            setSongScale={(s) => {
+              pitchAnalysis.setSongScale(s)
+              canvas.queueCanvasRedraw()
+            }}
+            songBpm={pitchAnalysis.songBpm()}
+            setSongBpm={(b) => {
+              pitchAnalysis.setSongBpm(b)
+              canvas.queueCanvasRedraw()
+            }}
+            contourReady={pitchAnalysis.contourReady()}
+            detectedKeyLabel={(() => {
+              const k = pitchAnalysis.detectedKey()
+              return k !== null
+                ? `${k.keyName} ${k.scaleType === 'major' ? 'major' : 'minor'}`
+                : ''
+            })()}
+            keyRegionCount={pitchAnalysis.keyRegions().length}
+            editMode={pitchAnalysis.editMode()}
+            onToggleEditMode={() => {
+              pitchAnalysis.setEditMode((v) => !v)
+              pitchAnalysis.setSelectedNoteId(null)
+            }}
+            canEdit={pitchAnalysis.editableNotes().length > 0}
+            hasEdits={pitchAnalysis.hasEdits()}
+            pitchView={pitchAnalysis.pitchView()}
+            setPitchView={pitchAnalysis.setPitchView}
+            onClose={() => pitchAnalysis.setPanelOpen(false)}
+          />
+        </Show>
+
+        {/* ── Karaoke playlist ─────────────────────────────────── */}
+        <Show when={playlistSidebarOpen()}>
+          <div class="sm-playlist-sidebar-wrap">
+            <KaraokePlaylistSidebar
+              onClose={() => setPlaylistSidebarOpen(false)}
+            />
+          </div>
+        </Show>
+
+        {/* Only the StemMixer for the current song drives the overlay/Start, so a
           stale instance during a song switch can't begin the wrong song. */}
-      <Show when={isCurrentPlaylistSong()}>
-        <KaraokePlaylistOverlay
-          onStart={handlePlaylistStart}
-          onSkip={() => playlist.advance()}
-          durationSec={audio.duration}
-          loading={audio.loading}
-        />
-      </Show>
-      <KaraokePlaylistSummary />
-    </div>
+        <Show when={isCurrentPlaylistSong()}>
+          <KaraokePlaylistOverlay
+            onStart={handlePlaylistStart}
+            onSkip={() => playlist.advance()}
+            durationSec={audio.duration}
+            loading={audio.loading}
+          />
+        </Show>
+        <KaraokePlaylistSummary />
+      </div>
+    </Show>
   )
 }
 
@@ -3997,6 +4086,8 @@ export const StemMixerStyles: string = `
   flex-direction: column;
 }
 
+/* Only rendered in focus mode, on the glass pill — quiet grip like the
+   practice ControlOverlay's: no block background, just a soft hover tint. */
 .sm-transport-drag-handle {
   display: flex;
   align-items: center;
@@ -4006,14 +4097,17 @@ export const StemMixerStyles: string = `
   margin: -0.375rem; /* Increase hit area without changing layout size */
   cursor: grab;
   color: var(--fg-muted, #8b949e);
-  border-radius: 0.25rem;
-  transition: all 0.15s;
+  background: transparent;
+  border-radius: 9px;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   touch-action: none;
   -webkit-touch-callout: none;
 }
 
 .sm-transport-drag-handle:hover {
-  background: var(--bg-hover, #30363d);
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
   color: var(--fg-primary, #c9d1d9);
 }
 

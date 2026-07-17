@@ -1,0 +1,100 @@
+/* VerifyEmailBanner — floating glass pill, bottom-centre. Var fallbacks keep
+   it styled on the standalone Karaoke Night page (no app.css :root). Sits
+   below the focus-mode stage (z 400) so an immersive performance stays clean. */
+
+.banner {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 560px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--bg-card, #161b22);
+  background: color-mix(in srgb, var(--bg-card, #161b22) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 35%, transparent);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.34);
+  color: var(--text-primary, #e6edf3);
+  font-size: 0.85rem;
+}
+
+.icon {
+  flex: none;
+  color: var(--accent, #58a6ff);
+}
+
+.text {
+  margin: 0;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.text strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.resend {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
+  color: var(--accent, #58a6ff);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.resend:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 24%, transparent);
+}
+
+.resend:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sent {
+  flex: none;
+  color: var(--green, #3fb950);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.close:hover {
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 10%, transparent);
+}
+
+@media (max-width: 600px) {
+  .banner {
+    bottom: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+}

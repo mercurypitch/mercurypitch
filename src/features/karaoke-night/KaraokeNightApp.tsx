@@ -1,5 +1,6 @@
 import { createSignal, lazy, onMount, Show, Suspense } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
+import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
 import { trackKaraoke } from './funnel'
@@ -95,6 +96,7 @@ export function KaraokeNightApp() {
         sessionId: DEMO_SESSION_ID,
         title: `${md.title} — ${md.artist}`,
         stems: md.stems,
+        autoPlay: true,
       })
     })()
   }
@@ -127,6 +129,30 @@ export function KaraokeNightApp() {
                 onInput={(e) => updateAlpha(Number(e.currentTarget.value))}
               />
             </label>
+            <button
+              class="kn-focus-toggle"
+              classList={{ 'kn-focus-toggle--active': karaokeFocus() }}
+              title="Focus mode — just the stage and a floating control bar (Esc exits)"
+              aria-label="Toggle focus mode"
+              aria-pressed={karaokeFocus()}
+              onClick={() => setKaraokeFocus((v) => !v)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 3h6v6" />
+                <path d="M9 21H3v-6" />
+                <path d="M21 3l-7 7" />
+                <path d="M3 21l7-7" />
+              </svg>
+            </button>
           </Show>
           <a
             href="/#/karaoke"
@@ -152,6 +178,27 @@ export function KaraokeNightApp() {
             when={!railCollapsed()}
             fallback={
               <div class="kn-rail-icons">
+                {/* Phones collapse to a single hamburger (see the media query);
+                    the icon strip below is the desktop affordance. */}
+                <button
+                  class="kn-rail-burger"
+                  title="Open the panel"
+                  aria-label="Open the panel"
+                  onClick={() => updateRail(false)}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
                 <button
                   class="kn-rail-icon"
                   title="Expand the panel"
@@ -281,6 +328,7 @@ export function KaraokeNightApp() {
                   <KaraokeStageHost
                     song={song}
                     onExit={() => setActiveSong(null)}
+                    onSong={setActiveSong}
                   />
                 </Suspense>
               </div>

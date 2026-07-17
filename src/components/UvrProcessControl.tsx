@@ -66,7 +66,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
    *  song simply running past its estimate. */
   const waitingMessage = (): string => {
     if (props.phase === 'queued') {
-      return "Warming up the server — the first song can take a minute. You can switch away; we'll fetch your stems automatically when it's done."
+      return "Warming up the studio — the first song can take a minute. You can switch away; we'll fetch your stems automatically when it's done."
     }
     return 'Taking a little longer than estimated — still separating'
   }
@@ -254,7 +254,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
                   )}
                 </span>
                 {props.processingMode === 'server'
-                  ? 'Cloud Server'
+                  ? 'Studio GPU'
                   : props.provider === 'webgpu'
                     ? 'GPU (WebGPU)'
                     : 'CPU (WASM)'}

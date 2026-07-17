@@ -435,6 +435,119 @@ export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
   return { subject, html, text }
 }
 
+// ── Email verification (confirm-your-address) ────────────────────────
+// Password signups get this INSTEAD of the plain welcome — it carries the
+// welcome so a new account never receives two emails at once.
+export interface EmailVerifyVars {
+  /** Registrant display name; falls back to a neutral greeting when absent. */
+  displayName?: string | null
+  /** Absolute confirm link (GET /api/auth/verify-email?token=…&returnTo=…). */
+  verifyUrl: string
+}
+
+/** Pure renderer for the "confirm your email" message. Image-light like the
+ *  welcome — better inboxing, renders anywhere. */
+export function renderEmailVerification(v: EmailVerifyVars): RenderedEmail {
+  const name = v.displayName?.trim()
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
+  const subject = 'Confirm your email — welcome to MercuryPitch'
+  const preheader = 'One click and your account is fully set.'
+  const url = escapeHtml(v.verifyUrl)
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
+    ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+          <tr>
+            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
+
+              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
+                Confirm your email
+              </h1>
+              <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:${C.text};">${greeting}</p>
+              <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:${C.muted};">
+                Welcome to MercuryPitch! One quick click confirms this address is
+                really yours, so your account and anything on it stay safely
+                reachable.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px;">
+                <tr>
+                  <td align="center" bgcolor="${C.blue}" style="border-radius:10px;">
+                    <a href="${url}"
+                      style="display:inline-block; padding:13px 26px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#04121f; text-decoration:none; border-radius:10px;">
+                      Confirm email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:18px 0 0; font-size:13px; line-height:1.7; color:${C.muted};">
+                The link expires in 24 hours. If the button doesn&#39;t open, paste
+                this into your browser:<br>
+                <a href="${url}" style="color:${C.blue}; text-decoration:none; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;">${url}</a>
+              </p>
+
+              <div style="border-top:1px solid ${C.border}; margin:24px 0 0; padding-top:16px;">
+                <p style="margin:0; font-size:13px; line-height:1.6; color:${C.muted};">
+                  Didn&#39;t create a MercuryPitch account? You can safely ignore
+                  this email.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          ${footerHtml('You&#39;re receiving this because this address was used to create an account on')}
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  const text = [
+    `Confirm your email`,
+    ``,
+    name ? `Hi ${name},` : `Hi there,`,
+    ``,
+    `Welcome to MercuryPitch! One quick click confirms this address is really yours, so your account and anything on it stay safely reachable.`,
+    ``,
+    `Confirm your email: ${v.verifyUrl}`,
+    ``,
+    `The link expires in 24 hours.`,
+    `Didn't create a MercuryPitch account? You can safely ignore this email.`,
+    ``,
+    `— MercuryPitch · Learn to sing, together.`,
+    `${ABOUT_URL} · ${REPO_URL}`,
+    `You're receiving this because this address was used to create an account on mercurypitch.com.`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 // ── Sending (Resend) ─────────────────────────────────────────────────
 
 export interface ResendConfig {
@@ -520,6 +633,17 @@ export async function sendSignupWelcome(
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderSignupWelcome(vars))
   if (ok) console.log(`[email] signup welcome sent to ${to}`)
+  return ok
+}
+
+/** Send the confirm-your-email message. Best-effort; see resendSend. */
+export async function sendEmailVerification(
+  cfg: ResendConfig,
+  to: string,
+  vars: EmailVerifyVars,
+): Promise<boolean> {
+  const ok = await resendSend(cfg, to, renderEmailVerification(vars))
+  if (ok) console.log(`[email] verification sent to ${to}`)
   return ok
 }
 
