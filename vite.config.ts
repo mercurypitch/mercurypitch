@@ -2,6 +2,7 @@ import ssl from '@vitejs/plugin-basic-ssl'
 import { copyFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vite'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
@@ -134,6 +135,9 @@ export default defineConfig({
     isDev ? ssl() : [],
     qrcode(),
     solidPlugin(),
+    // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
+    // vertexFn/fragmentFn closures) — same setup as chaos-master.
+    typegpuPlugin({}),
     standaloneEntryRewritePlugin(),
     mirrorAliasFilesPlugin(),
     removeWasmAssetsPlugin(),
@@ -202,6 +206,12 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('onnxruntime')) return undefined
+            // GPU stack rides its own chunk: only the lazily-imported glass
+            // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
+            // vendor chunk must never drag typegpu into first paints, and
+            // vendor must never be dragged in BY the gpu backend.
+            if (id.includes('typegpu') || id.includes('wgpu-matrix'))
+              return 'vendor-gpu'
             // solid-js gets its own chunk so the standalone mirror entry
             // (which uses nothing else from node_modules) doesn't drag the
             // whole app vendor bundle onto mobile 4G.

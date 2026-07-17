@@ -759,3 +759,23 @@ see an animation."
     calibration and reps, FX rail present, preset tap mid-replay, and
     the recorded take audibly played (`[glass] take playback 4.2s`),
     zero runtime errors.
+- **P3 — DONE (branch `feat/glass-campaign`).** The TypeGPU mandate,
+  delivered: `typegpu` upgraded to 0.11.9 + `unplugin-typegpu` wired in
+  vite (TGSL requires it; `tinyest` pinned 0.3.1 in pnpm-workspace.yaml —
+  all matching chaos-master), `webgpu-device.ts` promoted to
+  `src/lib/gpu/` (tab-3d imports updated), and
+  `TypeGpuGlassRenderer` behind the seam: one fullscreen TGSL fragment
+  (glass tint, target band, resonance ripples, ribbon as
+  distance-to-polyline over a storage buffer, specular sweep,
+  premultiplied-alpha safe) + a transparent Canvas2D overlay for frame/
+  cracks/meter/label (shared `crack-field.ts`, so both backends stay
+  identical). Whole renderer stack is lazy: seam chunk ~3 KB gz, GPU
+  backend ~3 KB gz, `vendor-gpu` (typegpu) ~81 KB gz loads ONLY on
+  WebGPU browsers post-gesture; the landing ships zero renderer bytes.
+  Backend reported as `renderer: 1|0` on calibrate/results funnel events.
+  Verified: headless WebGPU (Vulkan flags) ran the typegpu backend with
+  zero errors end-to-end; a headed run visually confirmed the GPU pane
+  (headless screenshots omit WebGPU surfaces); the no-adapter path fell
+  back to Canvas2D and completed the full flow. E2E now uses
+  `scripts/verify-glass.mjs` — a getUserMedia-level injected synthetic
+  singer (OS fake-audio devices proved flaky on desktops).

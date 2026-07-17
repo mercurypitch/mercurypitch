@@ -10,3 +10,8 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   workerd: true
+
+overrides:
+  # tinyest 0.3.2 dropped FORMAT_VERSION; unplugin-typegpu needs 0.3.1
+  # (same override as chaos-master).
+  tinyest: 0.3.1

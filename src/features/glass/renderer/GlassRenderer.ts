@@ -1,12 +1,15 @@
 // ============================================================
 // GlassRenderer — backend-agnostic seam for the mirror scene
 // (plan §5.3). One imperative interface, swappable backends:
-// the Canvas2D "lite" renderer ships in P2; the TypeGPU/WebGPU
-// primary backend slots in behind this same interface in P3
-// (factory switches on isWebGpuSupported + device acquisition,
-// mirroring the guitar-tab-3d TabRenderer pattern).
+// TypeGPU/WebGPU is the PRIMARY (the mandate — decision 9), the
+// Canvas2D "lite" renderer is the fallback for browsers without
+// WebGPU or when GPU init fails. The whole module is loaded via
+// dynamic import from GlassApp, and the TypeGPU backend is a
+// further dynamic import — so non-WebGPU visitors never download
+// typegpu, and the landing never downloads any renderer at all.
 // ============================================================
 
+import { isWebGpuSupported } from '@/lib/gpu/webgpu-device'
 import { CanvasGlassRenderer } from './canvas2d/CanvasGlassRenderer'
 
 export interface GlassSceneUpdate {
@@ -25,6 +28,8 @@ export interface GlassSceneUpdate {
 }
 
 export interface GlassRenderer {
+  /** Which backend this is — reported to the funnel (renderer: 1|0). */
+  readonly backend: 'typegpu' | 'canvas2d'
   /** Create (or move) the scene canvas into `host`. */
   mount: (host: HTMLElement) => void
   /** Push the freshest state; the renderer draws on its own rAF clock. */
@@ -35,12 +40,22 @@ export interface GlassRenderer {
 }
 
 /**
- * Pick the rendering backend. TypeGPU/WebGPU is the planned primary
- * (P3); until it lands the Canvas2D mirror is used everywhere — and
- * remains the fallback for browsers without WebGPU thereafter.
+ * Pick the rendering backend: TypeGPU when WebGPU is available and the
+ * device + context come up; the Canvas2D mirror otherwise. Any GPU-side
+ * failure falls back silently — the show must go on.
  */
-export function createGlassRenderer(): GlassRenderer {
-  // TODO(P3): isWebGpuSupported() && acquireWebGpuDevice() →
-  //           new TypeGpuGlassRenderer(device), funnel metric renderer:1.
+export async function createGlassRenderer(options?: {
+  /** Skip the GPU path (used after a mount-time GPU failure). */
+  forceCanvas?: boolean
+}): Promise<GlassRenderer> {
+  if (options?.forceCanvas !== true && isWebGpuSupported()) {
+    try {
+      const { TypeGpuGlassRenderer } =
+        await import('./typegpu/TypeGpuGlassRenderer')
+      return await TypeGpuGlassRenderer.create()
+    } catch (err) {
+      console.warn('[glass] TypeGPU init failed — Canvas2D fallback:', err)
+    }
+  }
   return new CanvasGlassRenderer()
 }

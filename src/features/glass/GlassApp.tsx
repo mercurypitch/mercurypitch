@@ -37,8 +37,9 @@ import type { FxRack as FxAudio, FxSettings } from './fx-rack'
 import { createFxRack, DEFAULT_FX } from './fx-rack'
 import { FxRackPanel } from './FxRackPanel'
 import { IconGlide, IconReplay, IconShatter } from './icons'
+// Type-only: the renderer module (and typegpu behind it) loads lazily at
+// Start so the landing ships zero renderer bytes.
 import type { GlassRenderer } from './renderer/GlassRenderer'
-import { createGlassRenderer } from './renderer/GlassRenderer'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
 
@@ -131,6 +132,8 @@ export const GlassApp: Component = () => {
   let playbackElement: HTMLAudioElement | null = null
   let playbackUrl: string | null = null
   let monitorSource: MediaStreamAudioSourceNode | null = null
+  let stageHost: HTMLElement | null = null
+  let rendererLoading = false
   let cancelled = false
   // Generation token: each start/reset bumps it, so an orphaned flow dies at
   // its next checkpoint instead of clobbering the new run (mirror pattern).
@@ -224,6 +227,7 @@ export const GlassApp: Component = () => {
     // A new session is a NEW glass — fresh pane, no inherited cracks.
     renderer?.dispose()
     renderer = null
+    stageHost = null
     setSession(initialSessionState())
     setPreviewOpen(false)
     setSubPhase('brief')
@@ -237,11 +241,46 @@ export const GlassApp: Component = () => {
   }
 
   /** Mount point shared by the calibrate/sing/playback stages — the renderer
-   *  survives phase changes (cracks persist per glass) and moves its canvas. */
+   *  survives phase changes (cracks persist per glass) and moves its canvas.
+   *  A GPU failure AT MOUNT (iOS null webgpu context) swaps to the lite
+   *  backend in place. */
   function mountStage(host: HTMLElement): void {
-    renderer ??= createGlassRenderer()
-    renderer.mount(host)
+    stageHost = host
+    if (renderer === null) return
+    try {
+      renderer.mount(host)
+    } catch (err) {
+      console.warn('[glass] GPU mount failed — Canvas2D fallback:', err)
+      renderer.dispose()
+      renderer = null
+      void initRenderer({ forceCanvas: true })
+    }
   }
+
+  /** Load the renderer stack (lazy chunk; TypeGPU → Canvas2D fallback). */
+  async function initRenderer(options?: {
+    forceCanvas?: boolean
+  }): Promise<void> {
+    if (renderer !== null || rendererLoading) return
+    rendererLoading = true
+    try {
+      const { createGlassRenderer } = await import('./renderer/GlassRenderer')
+      const created = await createGlassRenderer(options)
+      if (cancelled) {
+        created.dispose()
+        return
+      }
+      renderer = created
+      console.info('[glass] renderer backend:', created.backend)
+      if (stageHost !== null) mountStage(stageHost)
+    } catch (err) {
+      console.warn('[glass] renderer init failed:', err)
+    } finally {
+      rendererLoading = false
+    }
+  }
+
+  const rendererMetric = (): number => (renderer?.backend === 'typegpu' ? 1 : 0)
 
   function applyFxSettings(settings: FxSettings): void {
     setFxSettings(settings)
@@ -337,6 +376,9 @@ export const GlassApp: Component = () => {
     if (starting) return
     starting = true
     dispatch({ type: 'start' })
+    // Kick the renderer chunk (TypeGPU when available) in parallel with the
+    // mic acquisition — both ride the same user gesture.
+    void initRenderer()
     try {
       audioContext = new AudioContext()
       if (audioContext.state === 'suspended') await audioContext.resume()
@@ -617,6 +659,7 @@ export const GlassApp: Component = () => {
       ceilingMidi: announced.ceilingMidi,
       targetMidi: announced.targetMidi,
       usedFallback: announced.usedFallback ? 1 : 0,
+      renderer: rendererMetric(),
     })
 
     // "This glass rings at G4 — your G4." The pane HUMS its note while the
@@ -695,6 +738,7 @@ export const GlassApp: Component = () => {
       precisionCents:
         last?.meanAbsCents == null ? null : Math.round(last.meanAbsCents),
       fatigue: round2(physics.fatigue),
+      renderer: rendererMetric(),
     })
   }
 

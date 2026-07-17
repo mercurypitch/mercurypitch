@@ -6,9 +6,9 @@
 // today (and is the fallback for browsers without WebGPU); a WebGPU/TypeGPU
 // backend will slot in behind the same interface later.
 
+import { isWebGpuSupported } from '@/lib/gpu/webgpu-device'
 import type { CameraState } from './camera'
 import { Canvas2dTabRenderer } from './canvas2d/Canvas2dTabRenderer'
-import { isWebGpuSupported } from './webgpu/webgpu-device'
 
 /** Per-string colours, high-e (index 0) to low-E (index 5). */
 export const DEFAULT_STRING_COLORS: readonly string[] = [
