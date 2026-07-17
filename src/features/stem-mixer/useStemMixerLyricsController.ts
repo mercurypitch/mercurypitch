@@ -14,6 +14,7 @@ import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } fro
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
@@ -133,7 +134,7 @@ export interface StemMixerLyricsController {
     endTime: number,
     wordTimes: number[] | undefined,
     elapsedTime: number,
-  ) => { activeUpTo: number; charProgress: number }
+  ) => { activeUpTo: number; charProgress: number; fraction: number }
 
   // Actions — lyric line click
   handleLyricLineClick: (idx: number) => void
@@ -163,6 +164,7 @@ export interface StemMixerLyricsController {
   handleNextLine: () => void
   handleNextWord: () => void
   handleLrcGenFinish: () => void
+  applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
   handleLrcGenReset: () => void
   handleDownloadLrc: () => void
   getGenLines: () => string[]
@@ -1217,8 +1219,16 @@ export function useStemMixerLyricsController(
     saveLrcGenProgress()
   }
 
+  // Taps land ~180ms after the sung sound (human audio→motor latency), so
+  // every gen-mode stamp subtracts it — otherwise the whole map trails the
+  // singer. A per-user metronome calibration can replace the constant later
+  // (docs/plans/lyrics-word-sync.md).
+  const TAP_LATENCY_SEC = 0.18
+  const tapTime = () =>
+    Math.max(0, Math.round((deps.elapsed() - TAP_LATENCY_SEC) * 1000) / 1000)
+
   const handleNextLine = () => {
-    const t = Math.round(deps.elapsed() * 1000) / 1000
+    const t = tapTime()
     const lines = getGenLines()
     const idx = lrcGenLineIdx()
     if (idx >= lines.length) return
@@ -1298,7 +1308,7 @@ export function useStemMixerLyricsController(
       return
     }
 
-    const t = Math.round(deps.elapsed() * 1000) / 1000
+    const t = tapTime()
     const words = lines[lineIdx]
       .split(/\s+/)
       .filter((w: string) => w.length > 0)
@@ -1525,6 +1535,51 @@ export function useStemMixerLyricsController(
     touchedLines = new Set()
     clearLrcGenProgress()
     preGenSnapshot = null
+  }
+
+  // ── Auto word-sync (vocal-stem onsets → word timings) ───────────
+  /**
+   * Generate word timings for every line automatically: words are laid out
+   * across each line's [start, next start) span by syllable weight, then
+   * snapped to vocal onsets detected on the separated stem. Needs
+   * line-timed lyrics (canonical LRC). Returns how many lines got timings.
+   */
+  const applyAutoWordSync = (onsets: number[]): { linesSynced: number } => {
+    const canonical = canonicalLrcLines()
+    const dur = deps.duration()
+    if (canonical.length === 0 || dur <= 0) return { linesSynced: 0 }
+
+    const lineEntries = canonical.filter((e) => e.type === 'line')
+    const auto: WordTimingsMap = {} // keyed by lrcIndex, like wordTimings()
+    let synced = 0
+    for (let i = 0; i < lineEntries.length; i++) {
+      const entry = lineEntries[i]
+      if (entry.lrcIndex < 0 || entry.words.length === 0) continue
+      const lineStart = entry.time
+      const lineEnd = Math.min(dur, lineEntries[i + 1]?.time ?? dur)
+      if (lineEnd - lineStart < 0.1) continue
+      const wt = autoTimeLineWords(entry.words, lineStart, lineEnd, onsets)
+      if (wt.length === entry.words.length) {
+        auto[entry.lrcIndex] = wt
+        synced++
+      }
+    }
+    if (synced === 0) return { linesSynced: 0 }
+
+    const lrcText = buildLrcTextFromCanonical(canonical, undefined, auto)
+    if (!lrcText.trim()) return { linesSynced: 0 }
+    const persisted = loadPersistedLyrics()
+    persistLyrics(
+      lrcText,
+      'lrc',
+      persisted?.filename ?? 'auto-synced.lrc',
+      auto,
+      persisted?.originalText ?? rawLyricsText(),
+    )
+    setLrcLines(parseLrcFile(lrcText))
+    setLyricsLines([])
+    setWordTimings(auto)
+    return { linesSynced: synced }
   }
 
   const handleLrcGenReset = () => {
@@ -2021,6 +2076,7 @@ export function useStemMixerLyricsController(
     handleNextLine,
     handleNextWord,
     handleLrcGenFinish,
+    applyAutoWordSync,
     handleLrcGenReset,
     handleDownloadLrc,
     getGenLines,

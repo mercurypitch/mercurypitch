@@ -59,7 +59,7 @@ export interface KaraokeMobileStageProps {
     endTime: number,
     wordTimes: number[] | undefined,
     elapsedTime: number,
-  ) => { activeUpTo: number; charProgress: number }
+  ) => { activeUpTo: number; charProgress: number; fraction: number }
   onLineClick: (idx: number) => void
 
   // Playlist chrome (only the current playlist song drives the overlay)
@@ -137,7 +137,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Word-level progress for the current line only.
   const activeWord = createMemo(() => {
     const entry = props.parsedLyrics().get(props.currentLineIdx())
-    if (!entry) return { activeUpTo: -1, charProgress: 0 }
+    if (!entry) return { activeUpTo: -1, charProgress: 0, fraction: 0 }
     return props.computeActiveWord(
       entry.words,
       entry.time,
@@ -413,7 +413,17 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                           classList={{
                             [styles.word]: true,
                             [styles.wordSung]: i() <= activeWord().activeUpTo,
+                            [styles.wordActive]:
+                              i() === activeWord().activeUpTo + 1 &&
+                              activeWord().fraction > 0,
                           }}
+                          style={
+                            i() === activeWord().activeUpTo + 1
+                              ? {
+                                  '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
+                                }
+                              : undefined
+                          }
                         >
                           {word}
                           {i() < entry.words.length - 1 ? ' ' : ''}

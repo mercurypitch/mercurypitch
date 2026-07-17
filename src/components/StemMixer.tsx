@@ -26,6 +26,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
+import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -535,6 +536,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleNextLine,
     handleNextWord,
     handleLrcGenFinish,
+    applyAutoWordSync,
     handleLrcGenReset,
     handleDownloadLrc,
     getGenLines,
@@ -1005,6 +1007,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     loopStartLyricIdx,
     loopEndLyricIdx,
     onSetLoopLyric,
+  }
+
+  // ── Auto word-sync ───────────────────────────────────────────
+  // One click: detect onsets on the separated vocal stem and time every
+  // lyric word automatically (docs/plans/lyrics-word-sync.md).
+  const autoSyncWords = () => {
+    const buf = vocal().buffer
+    if (!buf) {
+      showNotification(
+        'Wait for the song to finish loading, then try again',
+        'warning',
+      )
+      return
+    }
+    const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))
+    if (linesSynced > 0) {
+      showNotification(
+        `Word sync drafted for ${linesSynced} lines — words now light up as they're sung`,
+        'success',
+      )
+    } else {
+      showNotification(
+        'Auto word-sync needs line-timed lyrics — load an LRC or run LRC Gen first',
+        'warning',
+      )
+    }
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -1655,6 +1683,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
             startLrcGen={startLrcGen}
+            autoSyncWords={autoSyncWords}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -1702,6 +1731,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
             startLrcGen={startLrcGen}
+            autoSyncWords={autoSyncWords}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
