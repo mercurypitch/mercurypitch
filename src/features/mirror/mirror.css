@@ -114,6 +114,22 @@ body {
   margin: 1.2em auto 0;
 }
 
+/* Cross-link to the sibling Glass experience (reciprocal of Glass's footer
+   link back to the mirror). */
+.mirror-crosslink {
+  color: var(--mirror-dim);
+  font-size: 0.86rem;
+  margin: 0.8em auto 0;
+}
+.mirror-crosslink a {
+  color: #2dd4bf;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mirror-crosslink a:hover {
+  color: #7ff0dd;
+}
+
 .mirror-dim {
   color: var(--mirror-dim);
 }

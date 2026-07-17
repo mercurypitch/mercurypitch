@@ -634,6 +634,7 @@ const FUNNEL_EVENTS = new Set([
   'free_sing_done',
   'cosmic_done',
   'twin_revealed',
+  'cta_glass_click',
   // App funnel (src/lib/analytics.ts)
   'app_open',
   'signup',

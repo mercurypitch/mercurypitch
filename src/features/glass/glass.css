@@ -76,14 +76,6 @@ body {
     ),
     linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
 }
-@media (min-aspect-ratio: 5/4) {
-  .glass-cosmos {
-    background:
-      linear-gradient(rgba(9, 7, 20, 0.38), rgba(9, 7, 20, 0.55)),
-      url('/glass/backdrop-landscape.webp') center / cover no-repeat,
-      linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
-  }
-}
 .glass-cosmos::before,
 .glass-cosmos::after {
   content: '';
@@ -398,7 +390,10 @@ body {
   font-weight: 700;
 }
 .glass-panel > p {
-  margin: 0 0 14px;
+  /* auto side-margins so max-width paragraphs (lead, trust) stay centered —
+     this rule out-specifies their own `margin: 0 auto`, so it must carry the
+     centering itself or they pin left. */
+  margin: 0 auto 14px;
 }
 
 .glass-dim {

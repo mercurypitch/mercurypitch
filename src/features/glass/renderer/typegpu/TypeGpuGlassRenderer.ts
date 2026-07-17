@@ -23,6 +23,7 @@ import { arrayOf, builtin, f32, struct, u32, vec2f, vec3f, vec4f, } from 'typegp
 import { abs, clamp, dot, exp, fract, length, max, min, mix, mul, sin, smoothstep, sub, } from 'typegpu/std'
 import { acquireWebGpuDevice } from '@/lib/gpu/webgpu-device'
 import { CrackField } from '../crack-field'
+import { drawGlassFrame } from '../frame'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
 import { ShardBurst } from '../shard-burst'
 
@@ -111,12 +112,12 @@ const fragment = tgpu.fragmentFn({ in: { uv: vec2f }, out: vec4f })(({
   if (u.mode >= 2) {
     const dyPx = abs(uv.y - 0.5) * u.heightPx
     const bandPx = (35.0 / (VIEW_CENTS * 2.0)) * u.heightPx
-    const bandGlow = (1 - clamp(dyPx / bandPx, 0, 1)) * 0.05
-    const dash = sin(uv.x * 90) * 0.5 + 0.5
-    const line = (1 - smoothstep(0.7, 1.7, dyPx)) * (0.35 + 0.55 * dash)
-    const gold = bandGlow + line * 0.7
+    const bandGlow = (1 - clamp(dyPx / bandPx, 0, 1)) * 0.07
+    const dash = sin(uv.x * 80) * 0.5 + 0.5
+    const line = (1 - smoothstep(1.2, 2.6, dyPx)) * (0.55 + 0.45 * dash)
+    const gold = bandGlow + line
     col = vec3f(col.x + gold, col.y + gold * 0.914, col.z + gold * 0.659)
-    alpha += line * 0.45
+    alpha += bandGlow * 0.5 + line * 0.7
   }
 
   // The ribbon: distance to the sample polyline (storage buffer).
@@ -506,15 +507,9 @@ export class TypeGpuGlassRenderer implements GlassRenderer {
       c.fillText(s.targetLabel, 12, H / 2 - 7)
     }
 
-    const frame = c.createLinearGradient(0, 0, W, H)
-    frame.addColorStop(0, '#c3ccd6')
-    frame.addColorStop(0.4, '#5b6b7b')
-    frame.addColorStop(0.7, '#8a97a6')
-    frame.addColorStop(1, '#1b2430')
-    this.roundedRect(c, 1.5, 1.5, W - 3, H - 3, radius)
-    c.strokeStyle = frame
-    c.lineWidth = 3
-    c.stroke()
+    drawGlassFrame(c, W, H, radius, (x, y, w, h, r) =>
+      this.roundedRect(c, x, y, w, h, r),
+    )
 
     if (s.resonance > 0.01) {
       const perimeter = 2 * (W + H)

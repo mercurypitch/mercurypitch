@@ -11,6 +11,7 @@
 // ============================================================
 
 import { CrackField } from '../crack-field'
+import { drawGlassFrame } from '../frame'
 import type { GlassRenderer, GlassSceneUpdate } from '../GlassRenderer'
 import { ShardBurst } from '../shard-burst'
 
@@ -258,16 +259,10 @@ export class CanvasGlassRenderer implements GlassRenderer {
     }
     c.restore()
 
-    // Chrome bevel frame.
-    const frame = c.createLinearGradient(0, 0, W, H)
-    frame.addColorStop(0, '#c3ccd6')
-    frame.addColorStop(0.4, '#5b6b7b')
-    frame.addColorStop(0.7, '#8a97a6')
-    frame.addColorStop(1, '#1b2430')
-    this.roundedRect(c, 1.5, 1.5, W - 3, H - 3, radius)
-    c.strokeStyle = frame
-    c.lineWidth = 3
-    c.stroke()
+    // Chrome bevel frame — layered for real depth (shadow, bevel, highlight).
+    drawGlassFrame(c, W, H, radius, (x, y, w, h, r) =>
+      this.roundedRect(c, x, y, w, h, r),
+    )
 
     // Resonance meter traced along the frame perimeter.
     if (s.resonance > 0.01) {
@@ -348,14 +343,16 @@ export class CanvasGlassRenderer implements GlassRenderer {
     c.globalAlpha = 1
     c.globalCompositeOperation = 'source-over'
 
-    // The singing head.
+    // The singing head — at the trail's leading tip (index len-1), so it
+    // sits exactly where the line ends instead of pinned to the right edge.
     if (last !== null && last !== undefined && s.mode !== 'playback') {
+      const headX = x0 + ((x1 - x0) * (ribbon.length - 1)) / (RIBBON_LENGTH - 1)
       const py = Math.max(12, Math.min(H - 12, this.centsToY(last.off)))
       c.fillStyle = core
       c.shadowColor = core
       c.shadowBlur = 10
       c.beginPath()
-      c.arc(x1, py, 3.5 + last.level * 6, 0, Math.PI * 2)
+      c.arc(headX, py, 3.5 + last.level * 6, 0, Math.PI * 2)
       c.fill()
       c.shadowBlur = 0
     }

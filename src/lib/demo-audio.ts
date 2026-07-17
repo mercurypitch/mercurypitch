@@ -6,97 +6,149 @@
 // what to do with their voice. Synthesized on the caller's
 // AudioContext (post-gesture), zero assets. Shared so the Voice
 // Mirror's silent TaskDemo can adopt the same examples later.
+//
+// Each play* routes through one master gain and returns a handle
+// the caller MUST be able to stop: demos overlap otherwise (a
+// siren still ringing under the target hum, an approach sketch
+// bleeding into the live sing). GlassApp stops the previous demo
+// before starting the next and the moment recording begins.
 // ============================================================
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Master level for demo audio — examples, not performances. */
 const DEMO_GAIN = 0.07
 
-function envGain(ctx: AudioContext, seconds: number, peak: number): GainNode {
-  const gain = ctx.createGain()
-  const t = ctx.currentTime
-  gain.gain.setValueAtTime(0.0001, t)
-  gain.gain.exponentialRampToValueAtTime(peak, t + 0.08)
-  gain.gain.setValueAtTime(peak, t + seconds - 0.15)
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds)
-  return gain
+export interface DemoSound {
+  /** Ramp down and stop immediately (safe to call more than once). */
+  stop: () => void
+}
+
+/** Wrap a routed master gain + its oscillators into a stoppable handle. */
+function sound(ctx: AudioContext): {
+  master: GainNode
+  track: (node: OscillatorNode) => void
+  handle: DemoSound
+} {
+  const master = ctx.createGain()
+  master.connect(ctx.destination)
+  const oscillators: OscillatorNode[] = []
+  let stopped = false
+  return {
+    master,
+    track: (node) => oscillators.push(node),
+    handle: {
+      stop: () => {
+        if (stopped) return
+        stopped = true
+        const t = ctx.currentTime
+        try {
+          master.gain.cancelScheduledValues(t)
+          master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t)
+          master.gain.linearRampToValueAtTime(0.0001, t + 0.04)
+        } catch {
+          // Context closed mid-stop — the nodes are already dead.
+        }
+        for (const osc of oscillators) {
+          try {
+            osc.stop(t + 0.06)
+          } catch {
+            // Already stopped.
+          }
+        }
+      },
+    },
+  }
+}
+
+function envelope(
+  gain: AudioParam,
+  t: number,
+  seconds: number,
+  peak: number,
+): void {
+  gain.setValueAtTime(0.0001, t)
+  gain.exponentialRampToValueAtTime(peak, t + 0.08)
+  gain.setValueAtTime(peak, t + seconds - 0.15)
+  gain.exponentialRampToValueAtTime(0.0001, t + seconds)
 }
 
 /**
- * "Like a siren": an exponential low→high sweep — the calibration
- * glide's audible example. Resolves when the sound has finished.
+ * "Like a siren": an exponential low→high sweep — the calibration glide's
+ * audible example.
  */
-export async function playSirenSweep(
+export function playSirenSweep(
   ctx: AudioContext,
   { lowHz = 150, highHz = 640, seconds = 2.2 } = {},
-): Promise<void> {
+): DemoSound {
+  const { master, track, handle } = sound(ctx)
+  const t = ctx.currentTime
   const osc = ctx.createOscillator()
   osc.type = 'sine'
-  const t = ctx.currentTime
   osc.frequency.setValueAtTime(lowHz, t)
   osc.frequency.exponentialRampToValueAtTime(highHz, t + seconds)
-  const gain = envGain(ctx, seconds, DEMO_GAIN)
-  osc.connect(gain).connect(ctx.destination)
+  envelope(master.gain, t, seconds, DEMO_GAIN)
+  osc.connect(master)
   osc.start(t)
   osc.stop(t + seconds + 0.05)
-  await sleep(seconds * 1000)
+  track(osc)
+  return handle
 }
 
 /** A steady example tone — "hold it like this". */
-export async function playHoldTone(
+export function playHoldTone(
   ctx: AudioContext,
   hz: number,
   seconds = 1.6,
-): Promise<void> {
+): DemoSound {
+  const { master, track, handle } = sound(ctx)
+  const t = ctx.currentTime
   const osc = ctx.createOscillator()
   osc.type = 'sine'
   osc.frequency.value = hz
-  const gain = envGain(ctx, seconds, DEMO_GAIN)
-  osc.connect(gain).connect(ctx.destination)
-  const t = ctx.currentTime
+  envelope(master.gain, t, seconds, DEMO_GAIN)
+  osc.connect(master)
   osc.start(t)
   osc.stop(t + seconds + 0.05)
-  await sleep(seconds * 1000)
+  track(osc)
+  return handle
 }
 
 /**
  * The glass's voice: two barely-detuned sines at its resonant note —
  * played when the target is announced ("this glass rings at G4").
  */
-export async function playTargetHum(
+export function playTargetHum(
   ctx: AudioContext,
   hz: number,
   seconds = 1.8,
-): Promise<void> {
-  const gain = envGain(ctx, seconds, DEMO_GAIN * 0.9)
-  gain.connect(ctx.destination)
+): DemoSound {
+  const { master, track, handle } = sound(ctx)
   const t = ctx.currentTime
+  envelope(master.gain, t, seconds, DEMO_GAIN * 0.9)
   for (const detune of [-4, 4]) {
     const osc = ctx.createOscillator()
     osc.type = 'sine'
     osc.frequency.value = hz * Math.pow(2, detune / 1200)
-    osc.connect(gain)
+    osc.connect(master)
     osc.start(t)
     osc.stop(t + seconds + 0.05)
+    track(osc)
   }
-  await sleep(seconds * 1000)
+  return handle
 }
 
 /**
- * "This is what winning sounds like": wanders below the target, settles
- * onto it, and blooms — played once before the first rep.
+ * "This is what winning sounds like": wanders below the target, settles onto
+ * it, and blooms — played once before the first rep.
  */
-export async function playApproachAndLock(
+export function playApproachAndLock(
   ctx: AudioContext,
   targetHz: number,
   { seconds = 2.4 } = {},
-): Promise<void> {
+): DemoSound {
+  const { master, track, handle } = sound(ctx)
   const t = ctx.currentTime
   const osc = ctx.createOscillator()
   osc.type = 'sine'
-  // Start a fourth below, wobble in, land on the target for the back half.
   const start = targetHz * Math.pow(2, -5 / 12)
   const landAt = t + seconds * 0.45
   osc.frequency.setValueAtTime(start, t)
@@ -109,10 +161,13 @@ export async function playApproachAndLock(
     t + seconds * 0.38,
   )
   osc.frequency.exponentialRampToValueAtTime(targetHz, landAt)
-  const gain = envGain(ctx, seconds, DEMO_GAIN)
-  osc.connect(gain).connect(ctx.destination)
+  envelope(master.gain, t, seconds, DEMO_GAIN)
+  osc.connect(master)
+  osc.start(t)
+  osc.stop(t + seconds + 0.05)
+  track(osc)
 
-  // The "bloom" once locked: a soft fifth shimmering in above the note.
+  // The bloom once locked: a soft fifth shimmering in above the note.
   const bloom = ctx.createOscillator()
   bloom.type = 'sine'
   bloom.frequency.value = targetHz * 1.5
@@ -121,11 +176,9 @@ export async function playApproachAndLock(
   bloomGain.gain.setValueAtTime(0.0001, landAt)
   bloomGain.gain.exponentialRampToValueAtTime(DEMO_GAIN * 0.4, landAt + 0.25)
   bloomGain.gain.exponentialRampToValueAtTime(0.0001, t + seconds)
-  bloom.connect(bloomGain).connect(ctx.destination)
-
-  osc.start(t)
+  bloom.connect(bloomGain).connect(master)
   bloom.start(t)
-  osc.stop(t + seconds + 0.05)
   bloom.stop(t + seconds + 0.05)
-  await sleep(seconds * 1000)
+  track(bloom)
+  return handle
 }

@@ -14,7 +14,7 @@ export const GLASS_CONFIG = {
     /** Length of the low-to-high siren glide take. */
     glideSeconds: 8,
     /** A semitone must be sustained this long to count toward the ceiling. */
-    ceilingSustainMs: 300,
+    ceilingSustainMs: 450,
     /** Under this much voiced audio the glide is re-run once. */
     minVoicedSeconds: 1.5,
     /** Under this glide span (semitones) the glide is re-run once. */
@@ -31,9 +31,9 @@ export const GLASS_CONFIG = {
      * raise toward −1 when testing says so. A future "Pro mode" pins the
      * target to a legend's actual famous note instead (plan §17.5).
      */
-    offsetSemitones: -2,
+    offsetSemitones: -3,
     /** In-band tolerance, cents (matches the mirror's HIT_TOLERANCE_CENTS). */
-    tolCents: 35,
+    tolCents: 45,
   },
 
   /** The rep loop (sing → hear yourself → retry). */

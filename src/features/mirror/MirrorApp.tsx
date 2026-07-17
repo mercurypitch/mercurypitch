@@ -1181,6 +1181,13 @@ const Landing: Component<{
       Your audio never leaves this device — we analyze it right here in your
       browser.
     </p>
+    <p class="mirror-crosslink">
+      Or{' '}
+      <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
+        break glass with your voice
+      </a>
+      .
+    </p>
   </section>
 )
 

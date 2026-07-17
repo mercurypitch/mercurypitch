@@ -20,6 +20,8 @@ const MIC_INFO =
 const FIND_INFO = "Sing one steady note and we'll suggest your voice range."
 const MIRROR_INFO =
   'A free 60-second voiceprint — your range, mapped in stars. No sign-up.'
+const GLASS_INFO =
+  'Break glass with your voice — hold the note that shatters a mirror tuned to your range.'
 
 // A small corner "i" that reveals a pill's description on tap. Hidden on
 // pointer devices (they use the pill's hover tooltip); shown on touch.
@@ -216,6 +218,33 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 text={MIRROR_INFO}
                 label="What is the Voice Mirror?"
               />
+            </span>
+            <span class={styles.welcomePillWrap}>
+              <Tooltip text={GLASS_INFO} placement="bottom">
+                <a
+                  href="/glass"
+                  class={styles.welcomeMirrorPill}
+                  aria-label="Glass — break glass with your voice"
+                  onClick={() => {
+                    dismissWelcome()
+                  }}
+                >
+                  <svg
+                    class={styles.welcomeMirrorPillIcon}
+                    viewBox="0 0 24 24"
+                    width="13"
+                    height="13"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M12 2l2.2 6.3 6.3-1.4-4.3 4.9 3.4 5.5-6-2.4-4.4 4.6.5-6.4L4 20l3.6-5.3L4 9.4l6.2 1z"
+                    />
+                  </svg>
+                  Glass
+                </a>
+              </Tooltip>
+              <PillInfoDot text={GLASS_INFO} label="What is Glass?" />
             </span>
           </div>
           <Show when={micError() !== null}>

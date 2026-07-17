@@ -227,6 +227,9 @@ export const SettingsPanel: Component = () => {
               <a href="/mirror" class={styles.settingsActionBtn}>
                 Open Voice Mirror
               </a>
+              <a href="/glass" class={styles.settingsActionBtn}>
+                Open Glass
+              </a>
             </div>
           </div>
 

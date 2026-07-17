@@ -19,6 +19,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
+import type { DemoSound } from '@/lib/demo-audio'
 import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
 import { formatGlassDelta, loadGlassBaseline, saveGlassBaseline, } from '@/lib/glass/baseline'
 import { GLASS_CONFIG } from '@/lib/glass/config'
@@ -144,6 +145,10 @@ export const GlassApp: Component = () => {
   let playbackElement: HTMLAudioElement | null = null
   let playbackUrl: string | null = null
   let monitorSource: MediaStreamAudioSourceNode | null = null
+  // Only ONE guided-demo sound plays at a time — a new one (or a take
+  // starting) stops the previous, so nothing overlaps or bleeds into the
+  // live sing.
+  let activeDemo: DemoSound | null = null
   let stageHost: HTMLElement | null = null
   let rendererLoading = false
   let cancelled = false
@@ -219,7 +224,18 @@ export const GlassApp: Component = () => {
     trackGlass('glass_monitor_on')
   }
 
+  function playDemo(next: DemoSound): void {
+    activeDemo?.stop()
+    activeDemo = next
+  }
+
+  function stopDemo(): void {
+    activeDemo?.stop()
+    activeDemo = null
+  }
+
   function teardownAudio(): void {
+    stopDemo()
     stopPlaybackAudio()
     disableMonitor()
     recorder?.dispose()
@@ -239,6 +255,7 @@ export const GlassApp: Component = () => {
     releaseAnnounceGate()
     starting = false
     physics = initialPhysics()
+    stopDemo()
     // A new session is a NEW glass — fresh pane, no inherited cracks.
     renderer?.dispose()
     renderer = null
@@ -438,6 +455,7 @@ export const GlassApp: Component = () => {
     if (!f0) return []
     const gen = flowGen
     setSubPhase('active')
+    stopDemo()
     f0.startTask()
     renderer?.beginTake()
     const start = performance.now()
@@ -483,6 +501,7 @@ export const GlassApp: Component = () => {
       return { frames: [], shattered: false, peakResonance: 0, takeBlob: null }
     const gen = flowGen
     setSubPhase('active')
+    stopDemo()
     f0.startTask()
     recorder?.start()
     renderer?.beginTake()
@@ -651,7 +670,7 @@ export const GlassApp: Component = () => {
     // example (decision 18) — hear what to do, don't just read it.
     while (alive() && session().phase === 'calibrate') {
       setSubPhase('brief')
-      if (audioContext !== null) void playSirenSweep(audioContext)
+      if (audioContext !== null) playDemo(playSirenSweep(audioContext))
       await countdown(CAL_BRIEF_SEC)
       if (!alive()) return
       const frames = await recordCalibration(
@@ -685,7 +704,7 @@ export const GlassApp: Component = () => {
     // "This glass rings at G4 — your G4." The pane HUMS its note while the
     // announce shows it; waits for the I'm-ready tap.
     if (audioContext !== null && announced.targetMidi !== null) {
-      void playTargetHum(audioContext, midiToHz(announced.targetMidi))
+      playDemo(playTargetHum(audioContext, midiToHz(announced.targetMidi)))
     }
     await announceGate(gen)
     if (!alive()) return
@@ -699,9 +718,11 @@ export const GlassApp: Component = () => {
       // Before the first rep: an audible sketch of the win — wander, settle
       // on the target, bloom (decision 18).
       if (rep === 1 && audioContext !== null && session().targetMidi !== null) {
-        void playApproachAndLock(
-          audioContext,
-          midiToHz(session().targetMidi ?? 69),
+        playDemo(
+          playApproachAndLock(
+            audioContext,
+            midiToHz(session().targetMidi ?? 69),
+          ),
         )
       }
       await countdown(rep === 1 ? CAL_BRIEF_SEC : REP_BRIEF_SEC)
