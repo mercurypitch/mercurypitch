@@ -3,8 +3,15 @@
    Apple-Music-style lyrics with faded edges. */
 
 .stage {
+  /* Portal-mounted on <body>: nothing between it and the viewport, so no
+     filtered/transformed ancestor can capture this fixed box. Height in dvh
+     tracks the collapsing mobile URL bar — the bottom bar stays visible. */
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 450;
   display: flex;
   flex-direction: column;
@@ -51,6 +58,27 @@
 }
 
 .backBtn:active {
+  transform: scale(0.94);
+}
+
+.listBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #f4ecff;
+  cursor: pointer;
+}
+
+.listBtn:active {
   transform: scale(0.94);
 }
 
@@ -171,12 +199,14 @@
 .pill {
   position: absolute;
   right: 14px;
-  bottom: calc(158px + env(safe-area-inset-bottom, 0px));
+  /* Just above the progress row of the bottom bar. */
+  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
   z-index: 3;
   display: flex;
   flex-direction: column;
   width: 46px;
-  height: 118px;
+  /* Idle: only the mic capsule. Touch slides the level track out. */
+  height: 46px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 24px;
@@ -187,6 +217,11 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   touch-action: none;
+  transition: height 0.2s ease;
+}
+
+.pillExpanded {
+  height: 118px;
 }
 
 .pillTrack {
@@ -334,10 +369,97 @@
   color: rgba(244, 236, 255, 0.85);
 }
 
+/* ── Song sheet ─────────────────────────────────────────── */
+
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(9, 4, 16, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.sheet {
+  width: 100%;
+  max-height: 68dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid rgba(183, 154, 224, 0.3);
+  background: rgba(24, 12, 40, 0.96);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.sheetHandle {
+  width: 38px;
+  height: 4px;
+  margin: 4px auto 12px;
+  border-radius: 2px;
+  background: rgba(244, 236, 255, 0.3);
+}
+
+.sheetKicker {
+  margin: 10px 4px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #b79ae0;
+}
+
+.sheetList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #f4ecff;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheetRow:active {
+  background: rgba(183, 154, 224, 0.16);
+}
+
+.sheetPlay {
+  flex: none;
+  color: #ff9ad5;
+}
+
+.sheetEmpty {
+  margin: 14px 6px 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(244, 236, 255, 0.6);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .line,
   .word,
-  .playBtn {
+  .playBtn,
+  .pill {
     transition: none;
   }
 }

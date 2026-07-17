@@ -76,6 +76,9 @@ interface StemMixerProps {
    *  Night page uses it as the demo-engagement funnel milestone. */
   onThirtySecondsPlayed?: () => void
   onBack?: () => void
+  /** Zen mobile stage: stage another library session from the in-stage song
+   *  sheet. Undefined hides the sheet (the studio has its own pickers). */
+  onPickSession?: (sessionId: string) => void
 }
 
 interface StemTrack {
@@ -1297,6 +1300,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             audio.handlePause()
             playlist.advance()
           }}
+          onPickSession={props.onPickSession}
         />
       }
     >

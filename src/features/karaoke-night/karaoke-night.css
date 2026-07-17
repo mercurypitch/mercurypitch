@@ -433,6 +433,25 @@ body {
   background: rgba(183, 154, 224, 0.16);
 }
 
+/* Phone-only hamburger for the collapsed rail (see the media query). */
+.kn-rail-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #cdbde6;
+  cursor: pointer;
+}
+
+.kn-rail-burger:hover {
+  color: #ffffff;
+  background: rgba(183, 154, 224, 0.16);
+}
+
 .kn-card {
   background: rgba(24, 12, 40, 0.78);
   border: 1px solid rgba(183, 154, 224, 0.22);
@@ -831,6 +850,27 @@ body {
 
   .kn-footer {
     padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Collapsed rail: not a full-width strip of tiny centred icons — just one
+     compact hamburger pill hugging the left edge. */
+  .kn-rail--min {
+    align-items: flex-start;
+  }
+
+  .kn-rail--min .kn-rail-icons {
+    flex-direction: row;
+    width: auto;
+    padding: 0.15rem;
+    border-radius: 12px;
+  }
+
+  .kn-rail--min .kn-rail-icon {
+    display: none;
+  }
+
+  .kn-rail-burger {
+    display: inline-flex;
   }
 
   /* Once a song is on stage, the stage leads and the rail tucks below it. */
