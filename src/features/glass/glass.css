@@ -1,0 +1,308 @@
+/* ============================================================
+   Glass — standalone page styles (P0 landing).
+
+   Committed dark cosmic theme: this page IS the product's world
+   (indigo void, quicksilver chrome, gold resonance), so it does
+   not follow the app's light/dark toggle. Palette matches the
+   mirror cosmos and BRAND.md tokens.
+   ============================================================ */
+
+:root {
+  --glass-void-0: #090714;
+  --glass-void-1: #0b1026;
+  --glass-starlight: #f4f8fd;
+  --glass-chrome: #8a97a6;
+  --glass-chrome-dim: #5b6b7b;
+  --glass-signal: #58a6ff;
+  --glass-aqua: #2dd4bf;
+  --glass-violet: #bc8cff;
+  --glass-gold: #ffe9a8;
+  --glass-gold-deep: #d4af6a;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--glass-void-0);
+}
+
+.glass-shell {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px 18px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--glass-starlight);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Procedural cosmos placeholder — replaced by the renderer backdrop (and
+   later the Higgsfield still) from P3 on. Pure CSS: nebula washes + two
+   star layers as repeating radial gradients. */
+.glass-cosmos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      38% 30% at 22% 26%,
+      rgba(188, 140, 255, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      32% 26% at 80% 18%,
+      rgba(88, 166, 255, 0.09),
+      transparent 70%
+    ),
+    radial-gradient(
+      36% 30% at 70% 84%,
+      rgba(45, 212, 191, 0.07),
+      transparent 70%
+    ),
+    linear-gradient(var(--glass-void-1), #0a0a1e 60%, var(--glass-void-0));
+}
+.glass-cosmos::before,
+.glass-cosmos::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      1.1px 1.1px at 12% 22%,
+      rgba(223, 232, 255, 0.7),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 34% 68%,
+      rgba(223, 232, 255, 0.5),
+      transparent 100%
+    ),
+    radial-gradient(
+      1.3px 1.3px at 58% 12%,
+      rgba(223, 232, 255, 0.6),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.8px 0.8px at 73% 44%,
+      rgba(223, 232, 255, 0.45),
+      transparent 100%
+    ),
+    radial-gradient(
+      1.2px 1.2px at 88% 76%,
+      rgba(223, 232, 255, 0.55),
+      transparent 100%
+    ),
+    radial-gradient(
+      0.9px 0.9px at 45% 88%,
+      rgba(223, 232, 255, 0.4),
+      transparent 100%
+    );
+  background-size: 520px 520px;
+}
+.glass-cosmos::after {
+  background-size: 340px 340px;
+  opacity: 0.6;
+  transform: translate(120px, 60px);
+}
+
+.glass-main {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.glass-panel {
+  width: min(560px, 100%);
+  text-align: center;
+  padding: 34px 26px;
+  border: 1px solid rgba(138, 151, 166, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(
+    170deg,
+    rgba(11, 16, 38, 0.66),
+    rgba(9, 7, 20, 0.72)
+  );
+  backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.glass-wordmark {
+  margin: 0 0 14px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--glass-chrome);
+}
+
+.glass-landing h1 {
+  margin: 0 0 12px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.glass-lead {
+  margin: 0 auto 20px;
+  max-width: 44ch;
+  color: rgba(244, 248, 253, 0.86);
+}
+.glass-lead em {
+  font-style: normal;
+  color: var(--glass-gold);
+}
+
+.glass-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.glass-cta {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #201a08;
+  background: linear-gradient(
+    160deg,
+    var(--glass-gold),
+    var(--glass-gold-deep)
+  );
+  border: none;
+  border-radius: 999px;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+.glass-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(255, 233, 168, 0.25);
+}
+.glass-cta:focus-visible {
+  outline: 2px solid var(--glass-signal);
+  outline-offset: 2px;
+}
+.glass-cta-secondary {
+  color: var(--glass-starlight);
+  background: rgba(11, 16, 38, 0.7);
+  border: 1px solid rgba(138, 151, 166, 0.35);
+}
+.glass-cta-secondary:hover {
+  box-shadow: none;
+  border-color: var(--glass-chrome);
+}
+
+.glass-trust {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--glass-chrome);
+}
+
+/* Three-step preview */
+.glass-steps h2 {
+  margin: 0 0 18px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+.glass-step-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+.glass-step-list li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.glass-step-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 233, 168, 0.3);
+  color: var(--glass-gold);
+  background: rgba(255, 233, 168, 0.06);
+}
+.glass-step-list h3 {
+  margin: 0 0 3px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.glass-step-list p {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(244, 248, 253, 0.78);
+}
+
+.glass-soon {
+  margin: 14px 0 16px;
+  font-size: 12.5px;
+  color: var(--glass-violet);
+}
+
+/* Footer — the required TypeGPU credit + sibling cross-links */
+.glass-foot {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--glass-chrome-dim);
+}
+.glass-foot-link {
+  color: var(--glass-chrome);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 140ms,
+    border-color 140ms;
+}
+.glass-foot-link:hover {
+  color: var(--glass-starlight);
+  border-color: var(--glass-chrome-dim);
+}
+.glass-foot-typegpu {
+  font-weight: 600;
+  color: var(--glass-aqua);
+}
+.glass-foot-typegpu:hover {
+  color: var(--glass-aqua);
+  border-color: var(--glass-aqua);
+}
+.glass-foot-sep {
+  opacity: 0.6;
+}
+
+@media (max-width: 480px) {
+  .glass-panel {
+    padding: 26px 18px;
+  }
+}

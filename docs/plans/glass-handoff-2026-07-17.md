@@ -97,10 +97,12 @@ quite good") — full specs in §17.
     (`glass-shatter`), sharing the pure libs, recorder and FX rack; feeds
     exercise history/streaks. Full spec §17.2.
 15. **SEO lead — "Break Glass With Your Voice".** The H1 and the primary
-    SKAG keyword. Aliases emitted for `/break-glass-with-your-voice`,
-    `/high-note-test` AND `/shatter` (short/brandable). Byte-copies in v1;
-    upgrade `/high-note-test` to a keyword-matched H1 if its SKAG launches
-    (§12).
+    SKAG keyword, with aliases `/break-glass-with-your-voice`,
+    `/high-note-test` AND `/shatter` (short/brandable). AMENDED at build
+    kickoff (maff): **no byte-copied HTML** — the aliases are routed to the
+    glass entry by the worker via wrangler `assets.run_worker_first` (§12);
+    if a "high note test" SKAG launches later, that alias graduates to its
+    own entry with a keyword-matched H1.
 16. **Shatter timing — slower + performance-scaled.** Baseline slow-mo
     slower than the prototype (maff's review note), and the drama scales
     with HOW the shatter was earned: clean first-try = most cinematic;
@@ -113,6 +115,14 @@ quite good") — full specs in §17.
     Glass task intro (§17.4), and the same module fixes Voice Mirror's
     silent `TaskDemo` as a follow-up (maff: "even voice mirror does this
     wrongly — there is no sound").
+19. **Tunables are config, not code (build kickoff).** −1 vs −2 semitones
+    "doesn't matter — make it easily configurable": every game-feel number
+    lives in `src/lib/glass/config.ts` (`GLASS_CONFIG`) and gets retuned
+    during maff's testing. Beginner-friendly default (−2): "we are making
+    it a fun experience, not a perfect something." Logged for later, not
+    scheduled: a **Pro mode** toggle where the glass pins to a caricature
+    legend's actual famous high note ("HIT that high note") — genuinely
+    hard, prestige tier.
 
 ## 2. The experience, beat by beat
 
@@ -227,9 +237,11 @@ nudge after ~6 reps) — high-note repetition is real strain.
   loads `/src/features/glass/main.tsx`. Add to `rollupOptions.input` in
   `vite.config.ts`.
 - Dev/preview rewrites: add `GLASS_PATHS = new Set(['/glass', '/break-glass-with-your-voice', '/high-note-test', '/shatter'])`
-  to `standaloneEntryRewritePlugin`; emit alias HTML byte-copies in
-  `mirrorAliasFilesPlugin` (rename it `aliasFilesPlugin`); check the root
-  wrangler worker for the mirror/karaoke path rewrites and mirror them.
+  to `standaloneEntryRewritePlugin`. Production aliases are NOT byte-copied
+  files (decision 15 amendment): wrangler `assets.run_worker_first` lists
+  the three aliases so `src/worker.ts` runs before the asset layer and
+  serves `glass.html` content at the alias URL; `/glass` itself maps via
+  Cloudflare `html_handling`, like `/karaoke`. DONE in P0.
 - Bundle rules (strict, same as mirror): **YIN only, no ONNX/model weights**;
   shared leaves ride the `pitch-core` manualChunk; the TypeGPU renderer is a
   **dynamic import behind the Start tap** so the landing stays instant.
@@ -451,13 +463,15 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
   (yes — resonance, loudness, sustain), "What note breaks glass?" (the
   glass's resonant frequency — here, tuned to YOUR range), "How do opera
   singers shatter glass?".
-- Alias routes (byte-copy HTML like `/vocal-range-test`), per decision 15:
+- Alias routes, per decision 15 (amended — worker-routed, no HTML copies):
   `/break-glass-with-your-voice` (exact-match challenge),
   `/high-note-test` (test-intent family, joins `/vocal-range-test` and
   `/tone-deaf-test`), `/shatter` (short/brandable — bios, video
-  descriptions, ad display paths). All four URLs into `public/sitemap.xml`.
-  v1 aliases share the challenge H1; if a "high note test" SKAG launches
-  later, upgrade that alias to its own keyword-matched H1 (the
+  descriptions, ad display paths). Wrangler `assets.run_worker_first` +
+  `GLASS_PATHS` in `src/worker.ts` serve `glass.html` content at those
+  URLs; canonical stays `/glass`, so only `/glass` is listed in
+  `public/sitemap.xml`. If a "high note test" SKAG launches later, that
+  alias graduates to its own entry with a keyword-matched H1 (the
   campaign-plan per-keyword H1 rule).
 - Cross-links: mirror results → "Think you can break glass with that
   range?" (funnel cross-pollination, and vice versa).
@@ -685,3 +699,16 @@ see an animation."
   mirror's `TaskDemo` intros — glide demo plays the siren sweep, hold demo
   the hold tone, match demo the existing `playReferenceTone`. Tracked in
   Open items; do it after Glass P2 lands so the module is proven.
+
+### 17.5 Implementation log
+
+- **P0 — DONE (branch `feat/glass-campaign`).** Landed: `glass.html` (SEO
+  head + FAQ schema, canonical `/glass`), `src/features/glass/`
+  (`main.tsx`, `GlassApp.tsx` landing + three-step preview, `funnel.ts`
+  full event set with session-deduped `glass_view`, `icons.tsx`,
+  `glass.css` committed dark cosmic theme), `src/lib/glass/config.ts`
+  (every tunable — decision 19), vite entry + `GLASS_PATHS` dev rewrite,
+  worker alias routing via `assets.run_worker_first` (decision 15
+  amendment), db-worker `FUNNEL_EVENTS` extension, sitemap entry, and the
+  required "Powered by TypeGPU" footer credit. The landing's "Start
+  singing" opens the three-step preview until P1 wires the mic flow.

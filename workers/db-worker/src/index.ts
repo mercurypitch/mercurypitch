@@ -651,6 +651,21 @@ const FUNNEL_EVENTS = new Set([
   'karaoke_song_staged',
   'karaoke_playlist_deeplink',
   'karaoke_cta_studio',
+  // Glass funnel (src/features/glass/funnel.ts)
+  'glass_view',
+  'glass_mic_granted',
+  'glass_mic_denied',
+  'glass_calibrate_done',
+  'glass_rep_done',
+  'glass_playback_done',
+  'glass_shatter',
+  'glass_results_view',
+  'glass_fx_change',
+  'glass_monitor_on',
+  'glass_monitor_off',
+  'glass_card_generated',
+  'glass_card_shared',
+  'glass_cta_app_click',
   // Reserved for the weekly-challenge/email releases, so those client
   // rollouts need no worker redeploy.
   'weekly_join',
