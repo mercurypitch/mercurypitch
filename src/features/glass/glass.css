@@ -241,8 +241,10 @@ body {
 
 .glass-lead {
   margin: 0 auto 20px;
-  max-width: 44ch;
+  max-width: 42ch;
   color: rgba(244, 248, 253, 0.86);
+  /* Centered raggedness reads as misalignment — balance the line lengths. */
+  text-wrap: balance;
 }
 .glass-lead em {
   font-style: normal;
@@ -295,9 +297,11 @@ body {
 }
 
 .glass-trust {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 52ch;
   font-size: 12.5px;
   color: var(--glass-chrome);
+  text-wrap: balance;
 }
 
 /* Three-step preview */
