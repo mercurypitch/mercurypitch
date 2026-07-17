@@ -78,6 +78,9 @@ const ctx = await browser.newContext({
   hasTouch: MOBILE,
 })
 const page = await ctx.newPage()
+// Cap every implicit action/wait so a single stuck step can't hang the whole
+// walk. Calls that need longer (page load, tour start) pass explicit timeouts.
+page.setDefaultTimeout(5000)
 await page.addInitScript((v) => {
   window.E2E_TEST_MODE = true
   // Skip first-run overlays so tours start cleanly.
@@ -135,6 +138,78 @@ const openGuide = async () => {
 let totalSteps = 0
 let missing = 0
 
+// ---- step settling ------------------------------------------------------
+// Clicking Next flips the step title immediately (it's reactive) but the
+// spotlight only repositions once Walkthrough.tsx's waitForTarget budget
+// (~1s) resolves and any tab switch / sidebar drawer / reveal animation
+// finishes. Instead of sleeping for that whole worst case on every step,
+// poll: wait for the title to change (we're now looking at the *new* step,
+// not the outgoing one), then sample the highlight box until it stops moving
+// AND has left the previous step's position — so we never mistake the stale
+// leftover box for the new spotlight. A settled step usually resolves in
+// ~200–400ms; a genuinely missing spotlight still waits the full budget
+// before we call it, so real MISSes are not lost to a race.
+const POLL_MS = 85
+const TITLE_POLLS = 12 // ~1s for the reactive title to flip
+const BOX_POLLS = 24 // ~2s for the spotlight to reposition and settle
+
+const readTitle = () =>
+  page
+    .locator('[class*="walkthroughStepTitle"]')
+    .textContent({ timeout: 1500 })
+    .then((t) => (t ?? '').trim())
+    .catch(() => '')
+
+const readBox = async () => {
+  const hl = page.locator('[class*="walkthroughHighlight"]')
+  if (!(await hl.isVisible().catch(() => false))) return null
+  return hl.boundingBox().catch(() => null)
+}
+
+// Two boxes are "the same place" within 1px (boundingBox returns floats).
+// null === null so a hidden spotlight compares equal to a hidden spotlight.
+const sameBox = (a, b) => {
+  if (a === null || b === null) return a === b
+  return (
+    Math.abs(a.x - b.x) < 1 &&
+    Math.abs(a.y - b.y) < 1 &&
+    Math.abs(a.width - b.width) < 1 &&
+    Math.abs(a.height - b.height) < 1
+  )
+}
+
+// Wait for the current step to settle and return its final highlight box
+// (or null when the spotlight is hidden — i.e. a MISS). `prevTitle` is the
+// outgoing step's title (null on the first step); `lastBox` is its final box.
+async function settleStep(prevTitle, lastBox) {
+  // 1) Wait for the reactive title to replace the outgoing step's, so we
+  //    don't measure the previous spotlight mid-transition. Skipped on the
+  //    first step and harmless if the title genuinely repeats (falls through).
+  if (prevTitle !== null) {
+    for (let p = 0; p < TITLE_POLLS; p++) {
+      if ((await readTitle()) !== prevTitle) break
+      await page.waitForTimeout(POLL_MS)
+    }
+  }
+  // 2) Sample the highlight until it POSITIVELY settles: visible, stopped
+  //    moving (two consecutive reads agree), and left the previous step's box
+  //    (proof the reposition happened, not a stale leftover). Crucially we
+  //    never early-return a *null*: a step's target is transiently hidden
+  //    (display:none) while prep runs — a tab switch or scroll fires the
+  //    reposition handler before the new target mounts — and returning that
+  //    hidden frame would be a false MISS. Genuine misses instead fall
+  //    through the whole budget to the final read below, matching the old
+  //    flat-sleep-then-measure-once behaviour.
+  let prev = await readBox()
+  for (let p = 0; p < BOX_POLLS; p++) {
+    await page.waitForTimeout(POLL_MS)
+    const cur = await readBox()
+    if (cur !== null && sameBox(prev, cur) && !sameBox(cur, lastBox)) return cur
+    prev = cur
+  }
+  return prev
+}
+
 async function walkTour(name) {
   await openGuide()
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -154,43 +229,40 @@ async function walkTour(name) {
   }
   console.log(`\n### ${name}`)
   const seen = new Set()
+  let prevTitle = null
+  let lastBox = null
   for (let i = 0; i < 40; i++) {
-    // Let step preparation settle: tab switch, sidebar drawer, reveals,
-    // and the ~1s waitForTarget budget in Walkthrough.tsx.
-    await page.waitForTimeout(1700)
     if (!(await tooltip.isVisible().catch(() => false))) break
-    const title = (
-      (await page
-        .locator('[class*="walkthroughStepTitle"]')
-        .textContent()
-        .catch(() => '')) ?? ''
-    ).trim()
+    // Poll until this step's spotlight has settled (replaces a flat 1700ms
+    // sleep — see settleStep above).
+    const box = await settleStep(prevTitle, lastBox)
+    if (!(await tooltip.isVisible().catch(() => false))) break
+    const title = await readTitle()
     const key = `${i}:${title}`
     if (seen.has(key)) break
     seen.add(key)
-    const hl = page.locator('[class*="walkthroughHighlight"]')
-    const hlVisible = await hl.isVisible().catch(() => false)
-    const box = hlVisible ? await hl.boundingBox() : null
     const ok = !!box && box.width > 14 && box.height > 14
     totalSteps++
     if (!ok) missing++
     console.log(
       `  ${ok ? 'ok  ' : 'MISS'}  step ${i + 1}: ${title}  ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : 'no-highlight'}`,
     )
+    prevTitle = title
+    lastBox = box
     const next = page
       .locator('[class*="walkthroughNext"]:not([class*="NextSection"])')
       .last()
     if (!(await next.isVisible().catch(() => false))) break
-    await next.click().catch(() => {})
+    await next.click({ timeout: 4000 }).catch(() => {})
   }
   if (await tooltip.isVisible().catch(() => false)) {
     await page
       .locator('[class*="walkthroughClose"]')
       .click()
       .catch(() => {})
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(200)
   }
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(200)
 }
 
 for (const t of [...SECTION_TOURS, ...PAGE_TOURS]) {
