@@ -56,6 +56,12 @@ const MIC_CONSUMER_ID = 'glass'
 // A live mic never reads exactly zero (room noise floors ~1e-3); dead zeros
 // mean the capture graph is broken (iOS WebKit) or the mic is OS-muted.
 const SILENCE_RMS = 1e-6
+// The flow gate. A WRONG device (webcam across the room, a virtual input)
+// is usually not dead-zero — it carries faint noise that sails past the
+// dead-graph check, so the flow used to start against an inaudible mic
+// ("the app cannot hear me" with no explanation). Below this peak level
+// during the say-"ahh" probe, stay on the mic panel and offer the picker.
+const QUIET_RMS = 0.004
 const CAL_BRIEF_SEC = 3
 const CAL_PREP_SEC = 2
 const REP_BRIEF_SEC = 2
@@ -572,13 +578,17 @@ export const GlassApp: Component = () => {
     fxAudio.setSettings(fxSettings())
   }
 
-  /** Silence check with one automatic graph rebuild. */
+  /** Quiet check with one automatic graph rebuild for dead-zero inputs. */
   async function probeMic(): Promise<boolean> {
     setMicChecking(true)
     try {
-      if ((await probeLevel(900)) > SILENCE_RMS) return true
-      await rebuildAudio()
-      return (await probeLevel(900)) > SILENCE_RMS
+      const level = await probeLevel(900)
+      if (level > QUIET_RMS) return true
+      // Dead zero = broken graph (iOS WebKit) — rebuild before re-probing.
+      // Merely quiet = likely the wrong device; the retry gives the singer
+      // one more beat to speak up before the panel offers the picker.
+      if (level <= SILENCE_RMS) await rebuildAudio()
+      return (await probeLevel(900)) > QUIET_RMS
     } finally {
       setMicChecking(false)
     }
@@ -1683,7 +1693,7 @@ const MicPanel: Component<{
       </Show>
       <Show when={props.error === null && props.silent && !props.checking}>
         <p class="glass-error">
-          We're not hearing anything from your microphone.
+          We're not hearing much from your microphone.
         </p>
         <Show
           when={props.devices.length > 1}

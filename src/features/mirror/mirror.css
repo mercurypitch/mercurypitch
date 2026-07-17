@@ -239,6 +239,41 @@ body {
   overflow: hidden;
 }
 
+/* Mic input picker (mic panel): switch off the browser's default device —
+   a wrong default probes ~0 with AGC off and reads as "mic doesn't work". */
+.mirror-micpick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin: 10px auto 12px;
+  max-width: 320px;
+}
+.mirror-micpick-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mirror-dim);
+}
+.mirror-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(143, 163, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.7);
+  color: var(--mirror-text);
+  font: inherit;
+  font-size: 13px;
+}
+.mirror-select:focus-visible {
+  outline: 2px solid rgba(143, 163, 255, 0.6);
+  outline-offset: 1px;
+}
+.mirror-mic-hearing {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
 .mirror-miclevel-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--mirror-green), var(--mirror-gold));
