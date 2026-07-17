@@ -103,6 +103,9 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   })
 
   // Playback cursor + current-note highlight + auto-scroll.
+  // Last smooth-scroll target, so the follow logic issues one scrollTo per
+  // system hop instead of restarting the animation every animation frame.
+  let lastFollowTarget = -1
   const [cursorX, setCursorX] = createSignal<number | null>(null)
   const [cursorTop, setCursorTop] = createSignal(0)
   const [cursorH, setCursorH] = createSignal(0)
@@ -148,16 +151,29 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
       setHl(null)
     }
 
-    // Keep the cursor in view during playback.
+    // Follow playback: nudge horizontally near the edges; vertically, once
+    // the cursor's system sinks past the middle of the visible sheet (or
+    // jumps above it on a loop wrap / backwards seek), glide that system up
+    // to the top quarter of the view.
     if (props.isPlaying?.() === true && scrollRef) {
       const c = scrollRef
       const m = 80
       if (pos.x < c.scrollLeft + m) c.scrollLeft = Math.max(0, pos.x - m)
       else if (pos.x > c.scrollLeft + c.clientWidth - m)
         c.scrollLeft = pos.x - c.clientWidth + m
-      if (pos.top < c.scrollTop) c.scrollTop = Math.max(0, pos.top - 20)
-      else if (pos.bottom > c.scrollTop + c.clientHeight)
-        c.scrollTop = pos.bottom - c.clientHeight + 20
+      const midY = c.scrollTop + c.clientHeight / 2
+      if (pos.bottom > midY || pos.top < c.scrollTop) {
+        const target = Math.max(
+          0,
+          Math.round(pos.top - Math.max(16, c.clientHeight * 0.25)),
+        )
+        if (target !== lastFollowTarget) {
+          lastFollowTarget = target
+          c.scrollTo({ top: target, behavior: 'smooth' })
+        }
+      }
+    } else {
+      lastFollowTarget = -1
     }
   })
 
@@ -183,9 +199,18 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     if (!l || !c) return
 
     if (!editable()) {
-      // Read-only: click anywhere in a note's column seeks to it.
+      // Read-only: a click in a note's column seeks to that note; anywhere
+      // else in a bar scrubs to the nearest beat under the click.
       const hit = noteBoxAt(l, c.px, c.py)
-      if (hit && props.onSeek) props.onSeek(hit.startBeat)
+      if (hit && props.onSeek) {
+        props.onSeek(hit.startBeat)
+        return
+      }
+      const sys = systemAtY(l, c.py)
+      if (sys && props.onSeek) {
+        const beat = Math.round(xToBeat(l, sys, c.px))
+        props.onSeek(Math.max(0, Math.min(beat, l.totalBeats)))
+      }
       return
     }
 
@@ -199,7 +224,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     // Otherwise place a note at the clicked staff position.
     const sys = systemAtY(l, c.py)
     if (!sys) return
-    const beat = xToBeat(sys, c.px)
+    const beat = xToBeat(l, sys, c.px)
     const dur = props.noteDuration?.() ?? 1
     const snapUnit = dur >= 1 ? 1 : 0.5
     const startBeat = Math.max(0, Math.round(beat / snapUnit) * snapUnit)

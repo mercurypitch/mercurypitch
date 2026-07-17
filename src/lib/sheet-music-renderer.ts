@@ -721,13 +721,44 @@ export function systemAtY(
   return layout.systems[layout.systems.length - 1] ?? null
 }
 
-/** Map an SVG-space x within a system to a beat position. */
-export function xToBeat(system: SheetSystemBox, x: number): number {
-  const span = system.noteEndX - system.noteStartX
-  if (span < EPS) return system.startBeat
-  const frac = (x - system.noteStartX) / span
-  const beat =
-    system.startBeat +
-    Math.max(0, Math.min(1, frac)) * (system.endBeat - system.startBeat)
-  return beat
+/**
+ * Map an SVG-space x within a system to a beat position, interpolating
+ * between the actual rendered notehead positions (the inverse of
+ * beatToCursor's piecewise mapping). Falls back to a linear mapping over
+ * the system when it holds no note boxes.
+ */
+export function xToBeat(
+  layout: SheetLayout,
+  system: SheetSystemBox,
+  x: number,
+): number {
+  const boxes = layout.notes
+    .filter((n) => n.systemIndex === system.index)
+    .sort((a, b) => a.startBeat - b.startBeat)
+
+  const pts: Array<{ beat: number; x: number }> = [
+    { beat: system.startBeat, x: system.noteStartX },
+  ]
+  // Keep x strictly increasing so the inverse is well-defined (formatter
+  // quirks can nudge a notehead a hair left of its predecessor).
+  for (const b of boxes) {
+    if (b.x > pts[pts.length - 1].x) pts.push({ beat: b.startBeat, x: b.x })
+  }
+  const last = pts[pts.length - 1]
+  pts.push({
+    beat: system.endBeat,
+    x: Math.max(system.noteEndX, last.x + EPS),
+  })
+
+  if (x <= pts[0].x) return system.startBeat
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i]
+    const b = pts[i + 1]
+    if (x >= a.x && x <= b.x) {
+      const span = b.x - a.x
+      if (span < EPS) return a.beat
+      return a.beat + ((x - a.x) / span) * (b.beat - a.beat)
+    }
+  }
+  return system.endBeat
 }

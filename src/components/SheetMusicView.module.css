@@ -1,12 +1,18 @@
+/* The one and only scroller: bounded so a long song scrolls inside the
+   sheet instead of growing the page. Hosts can tighten the cap via
+   --sheet-max-h (e.g. the split strip); in flex-column hosts the
+   flex/min-height pair lets it fill the available canvas area instead. */
 .sheetScroll {
   position: relative;
   width: 100%;
+  flex: 1 1 auto;
   overflow: auto;
   padding: 12px 8px;
   background: var(--bg-secondary, #161b22);
   border: 1px solid var(--border, #30363d);
   border-radius: 8px;
   min-height: 200px;
+  max-height: var(--sheet-max-h, 72vh);
 }
 
 /* Inner canvas: sized exactly to the rendered SVG so the overlay maps 1:1. */
