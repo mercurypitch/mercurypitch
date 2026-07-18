@@ -1,0 +1,54 @@
+/* OptionsSheet — section/row skeleton for practice options. */
+
+.kicker {
+  margin: 14px 4px 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted, inherit);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--touch-target);
+  padding: 4px 4px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border, #30363d) 55%, transparent);
+  font-size: 0.92rem;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowLabel {
+  flex: none;
+  color: var(--text-primary, inherit);
+}
+
+.rowControl {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary, inherit);
+}
+
+/* Range inputs inside rows get a consistent width. */
+.rowControl input[type='range'] {
+  width: 140px;
+  accent-color: var(--accent, #58a6ff);
+}
+
+.rowControl select {
+  max-width: 170px;
+}

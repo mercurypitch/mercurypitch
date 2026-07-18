@@ -1,0 +1,287 @@
+/* SingingMobileStage — default dark skin via app tokens. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  --scrubber-track: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  --scrubber-fill: var(--accent);
+  --scrubber-height: 3px;
+}
+
+/* ── Status chips ── */
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 4px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.chip {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+.chipAccent {
+  margin-left: auto;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-dim);
+  max-width: 46vw;
+}
+
+.progress {
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+/* ── Canvas ── */
+
+.canvasWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.hud {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: var(--z-canvas-hud);
+  pointer-events: none;
+}
+
+.hudChip {
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Session pill ── */
+
+.sessionPill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--green) 45%, transparent);
+  background: var(--green-dim);
+  flex-shrink: 0;
+}
+
+.sessionLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionBtn {
+  flex: none;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sessionEnd {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+/* ── Transport ── */
+
+.transport {
+  gap: 12px;
+}
+
+.roundBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.roundBtn:active {
+  transform: scale(0.93);
+}
+
+.micBtn {
+  color: var(--text-secondary);
+}
+
+.micOn {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 55%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--red) 35%, transparent);
+}
+
+.playBtn {
+  width: 56px;
+  height: 56px;
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--bg-primary);
+}
+
+.stopBtn {
+  color: var(--red);
+}
+
+.stopGlyph {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.modeBtn {
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modeBtn:active {
+  transform: scale(0.96);
+}
+
+.moreGlyph {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.moreGlyph i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.countBadge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Options sheet controls ── */
+
+.stepBtn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stepValue {
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition-fast, 0.12s ease);
+}
+
+.toggle i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transition: left 0.15s ease;
+}
+
+.toggleOn {
+  background: var(--green);
+  border-color: transparent;
+}
+
+.toggleOn i {
+  left: 20px;
+  background: #ffffff;
+}
