@@ -139,8 +139,14 @@ by overriding tokens locally, which becomes the standard "skinning" mechanism).
    audit fixed/absolute chrome (`ConsentBanner`, `Notifications`, sidebar,
    FABs) in the same PR.
 2. `feat/mobile-kit-primitives` — `Sheet`, `PillControl`, `Scrubber`,
-   `StageShell`, `TransportBar`, `useScrollLock`, `haptics`, `platform/`;
+   `StageShell`, `useScrollLock`, `haptics`, `platform/`;
    karaoke stage refactored onto them (behavior-identical; walk the
    standalone karaoke page + `/tour-check` karaoke tour before merge).
+   `TransportBar` is deliberately deferred to Phase 1: karaoke's bottom
+   bar stays bespoke, and the Singing stage — the first second consumer —
+   defines the shared API (abstracting from one consumer guesses wrong).
+   Note from implementation: kit tokens live in `styles/mobile-kit.css`,
+   imported per entry — the standalone karaoke entry never loads app.css,
+   and an undefined token silently invalidates every declaration using it.
 3. `feat/mobile-tabbar` — `BottomTabBar` + `MoreSheet` + header slimming on
    narrow; tour hooks; audit assertion "tab bar visible & not overlapped".
