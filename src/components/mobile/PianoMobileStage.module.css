@@ -1,0 +1,32 @@
+/* PianoMobileStage — default dark skin; shares SingingMobileStage's
+   chip/transport/sheet-control classes. */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  --scrubber-track: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  --scrubber-fill: var(--purple);
+  --scrubber-height: 3px;
+}
+
+.canvasWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The finished-run corner card docks above the transport, full width,
+   instead of the desktop's top-right corner. */
+.canvasWrap :global(.fn-score-corner) {
+  top: auto;
+  right: 12px;
+  left: 12px;
+  bottom: 12px;
+}
+
+.labelsOn {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
