@@ -1,0 +1,20 @@
+/* StageShell — mobile stage viewport mechanics (skin via --stage-* props). */
+
+.shell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* dvh tracks the collapsing mobile URL bar; vh is the fallback. */
+  height: 100vh;
+  height: 100dvh;
+  z-index: var(--z-stage);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: var(--safe-top);
+  background: var(--stage-bg, var(--bg-primary));
+  color: var(--stage-color, var(--text-primary));
+  user-select: none;
+  -webkit-user-select: none;
+}

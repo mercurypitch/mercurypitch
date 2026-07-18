@@ -1,0 +1,62 @@
+/* ============================================================
+   Mobile-kit tokens (docs/plans/mobile-native/mobile-kit.md)
+   ============================================================
+
+   Imported by EVERY entry that renders kit primitives: the main app
+   (src/index.tsx) and the standalone karaoke-night entry
+   (src/features/karaoke-night/main.tsx). Keep it dependency-free —
+   standalone entries do not load app.css, so nothing here may reference
+   app.css-only custom properties without a literal fallback. */
+
+:root {
+  /* ── Safe areas ──
+     Resolve to real insets only with viewport-fit=cover in the HTML entry;
+     consume them through max(design-min, var(--safe-*)). */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* ── Touch — HIG default control size; never render smaller hit areas. */
+  --touch-target: 44px;
+  --touch-gap: 0.5rem;
+
+  /* ── Mobile chrome metrics ── */
+  --tabbar-height: 54px; /* content box, excl. safe area */
+  --tabbar-total: calc(var(--tabbar-height) + var(--safe-bottom));
+
+  /* ── Spacing extension — larger rhythm for full-screen stages ── */
+  --spacing-3xl: 2rem; /* 32px */
+  --spacing-4xl: 3rem; /* 48px */
+
+  /* ── Z-scale — new code uses these instead of ad-hoc numbers. Ordering:
+     FocusMode (500) covers stages (450); stages cover the tab bar (380);
+     sheets sit above stages; modals/toasts above everything. ── */
+  --z-canvas-hud: 10;
+  --z-control-overlay: 30;
+  --z-tabbar: 380;
+  --z-stage: 450;
+  --z-focus: 500;
+  --z-sheet: 600;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* ── Glass — the translucent-chrome recipe (chrome only, never content).
+     The color falls back to the app-shell token when present. ── */
+  --glass-bg: color-mix(in srgb, var(--bg-secondary, #161b22) 72%, transparent);
+  --glass-blur: blur(18px) saturate(1.35);
+  --glass-border: color-mix(
+    in srgb,
+    var(--text-primary, #e6edf3) 12%,
+    transparent
+  );
+}
+
+/* Glass surface utility — apply to floating chrome (bars, pills, HUD chips).
+   Both prefixes required: Safari still needs -webkit-backdrop-filter. */
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}

@@ -1,0 +1,59 @@
+/* PillControl — capsule toggle with slide-out level track
+   (skin via --pill-* props; placement via the consumer's class). */
+
+.pill {
+  display: flex;
+  flex-direction: column;
+  width: var(--pill-width, 46px);
+  /* Idle: only the capsule base. Touch slides the level track out. */
+  height: var(--pill-size, 46px);
+  padding: 0;
+  border: 1px solid var(--pill-border, rgba(255, 255, 255, 0.22));
+  border-radius: var(--pill-radius, 24px);
+  overflow: hidden;
+  background: var(--pill-bg, var(--glass-bg));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  touch-action: none;
+  transition: height 0.2s ease;
+}
+
+.expanded {
+  height: var(--pill-expanded, 118px);
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--pill-fill, rgba(255, 255, 255, 0.92));
+}
+
+.base {
+  flex: none;
+  height: var(--pill-base-size, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pill-base-bg, #ffffff);
+  color: var(--pill-base-color, var(--bg-primary));
+}
+
+.off .base {
+  color: var(--pill-off-color, var(--red));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}

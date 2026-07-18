@@ -1,0 +1,23 @@
+/* Scrubber — seek bar (skin via --scrubber-* props). */
+
+.scrubber {
+  padding: 8px 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.track {
+  height: var(--scrubber-height, 4px);
+  border-radius: calc(var(--scrubber-height, 4px) / 2);
+  background: var(
+    --scrubber-track,
+    color-mix(in srgb, currentColor 22%, transparent)
+  );
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--scrubber-fill, currentColor);
+}

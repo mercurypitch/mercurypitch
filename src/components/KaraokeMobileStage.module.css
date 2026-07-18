@@ -1,34 +1,36 @@
 /* KaraokeMobileStage — zen full-screen karaoke for phones.
-   Native-app feel: safe-area aware, no horizontal overflow, big type,
-   Apple-Music-style lyrics with faded edges. */
+   Viewport mechanics live in the kit (StageShell/Sheet/PillControl/
+   Scrubber); this file is the karaoke SKIN — the purple stage tokens
+   (mobile-kit.md convention #8) — plus the lyrics typography. */
 
 .stage {
-  /* Portal-mounted on <body>: nothing between it and the viewport, so no
-     filtered/transformed ancestor can capture this fixed box. Height in dvh
-     tracks the collapsing mobile URL bar — the bottom bar stays visible. */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 450;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  color: #f4ecff;
-  background:
+  /* Stage skin: consumed by StageShell (background/color) and cascaded
+     into the kit primitives rendered inside the stage. */
+  --stage-color: #f4ecff;
+  --stage-bg:
     linear-gradient(
       180deg,
       rgba(14, 6, 25, 0.9) 0%,
       rgba(18, 8, 31, 0.72) 45%,
       rgba(10, 4, 18, 0.94) 100%
     ),
-    url('/karaoke-night-stage.webp') center / cover no-repeat,
-    #12081f;
-  padding-top: env(safe-area-inset-top, 0px);
-  user-select: none;
-  -webkit-user-select: none;
+    url('/karaoke-night-stage.webp') center / cover no-repeat, #12081f;
+
+  /* Sing pill */
+  --pill-bg: rgba(120, 100, 160, 0.22);
+  --pill-base-color: #221933;
+  /* Vocals off = "karaoke on": the mic warms up pink. */
+  --pill-off-color: #e35fae;
+
+  /* Song sheet */
+  --sheet-backdrop: rgba(9, 4, 16, 0.55);
+  --sheet-bg: rgba(24, 12, 40, 0.96);
+  --sheet-border: rgba(183, 154, 224, 0.3);
+  --sheet-handle: rgba(244, 236, 255, 0.3);
+
+  /* Progress */
+  --scrubber-track: rgba(255, 255, 255, 0.22);
+  --scrubber-fill: #ffffff;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -214,63 +216,14 @@
   color: rgba(244, 236, 255, 0.5) !important;
 }
 
-/* ── Sing pill ──────────────────────────────────────────── */
+/* ── Sing pill placement (mechanics in kit PillControl) ─── */
 
-.pill {
+.singPill {
   position: absolute;
   right: 14px;
   /* Just above the progress row of the bottom bar. */
-  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(128px + var(--safe-bottom));
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  width: 46px;
-  /* Idle: only the mic capsule. Touch slides the level track out. */
-  height: 46px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 24px;
-  overflow: hidden;
-  background: rgba(120, 100, 160, 0.22);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  touch-action: none;
-  transition: height 0.2s ease;
-}
-
-.pillExpanded {
-  height: 118px;
-}
-
-.pillTrack {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-}
-
-.pillFill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.pillBase {
-  flex: none;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  color: #221933;
-}
-
-/* Vocals off = "karaoke on": the level empties and the mic warms up pink. */
-.pillOff .pillBase {
-  color: #e35fae;
 }
 
 /* ── Bottom bar ─────────────────────────────────────────── */
@@ -280,32 +233,13 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 18px calc(14px + var(--safe-bottom));
   background: linear-gradient(
     180deg,
     transparent 0,
     rgba(9, 4, 16, 0.55) 40%,
     rgba(9, 4, 16, 0.75) 100%
   );
-}
-
-.progress {
-  padding: 8px 0;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.progressTrack {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.22);
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: 2px;
-  background: #ffffff;
 }
 
 .times {
@@ -389,39 +323,7 @@
   color: rgba(244, 236, 255, 0.85);
 }
 
-/* ── Song sheet ─────────────────────────────────────────── */
-
-.sheetBackdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  align-items: flex-end;
-  background: rgba(9, 4, 16, 0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.sheet {
-  width: 100%;
-  max-height: 68dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px));
-  border-radius: 20px 20px 0 0;
-  border-top: 1px solid rgba(183, 154, 224, 0.3);
-  background: rgba(24, 12, 40, 0.96);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
-
-.sheetHandle {
-  width: 38px;
-  height: 4px;
-  margin: 4px auto 12px;
-  border-radius: 2px;
-  background: rgba(244, 236, 255, 0.3);
-}
+/* ── Song sheet content (shell/handle/backdrop in kit Sheet) ── */
 
 .sheetKicker {
   margin: 10px 4px 6px;
@@ -478,8 +380,7 @@
 @media (prefers-reduced-motion: reduce) {
   .line,
   .word,
-  .playBtn,
-  .pill {
+  .playBtn {
     transition: none;
   }
 }
