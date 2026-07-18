@@ -22,7 +22,7 @@
 
 import type { Env } from './auth'
 import { getAuth } from './auth'
-import { sendPurchaseThankYou } from './email'
+import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
 import {
   UVR_TIER_PLAN_IDS,
@@ -72,6 +72,17 @@ async function stripeRequest(
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams(params),
+  })
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  return { ok: res.ok, status: res.status, data }
+}
+
+async function stripeGet(
+  env: Env,
+  pathWithQuery: string,
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  const res = await fetch(`${STRIPE_API}${pathWithQuery}`, {
+    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY as string}` },
   })
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
   return { ok: res.ok, status: res.status, data }
@@ -265,12 +276,21 @@ async function handlePortal(
   return respond({ url: portal.data.url })
 }
 
+/** Outcome of processing one checkout event — lets the reconciliation job
+ *  report exactly what happened without re-deriving it from the ledger. */
+interface GrantOutcome {
+  /** Credits written by THIS call (0 for duplicates and unusable metadata). */
+  granted: number
+  userId: string | null
+  duplicate: boolean
+}
+
 /** Grant credits for a completed checkout, idempotent on the event id. */
 async function grantCheckoutCredits(
   env: Env,
   eventId: string,
   session: Record<string, unknown>,
-): Promise<void> {
+): Promise<GrantOutcome> {
   const metadata =
     (session.metadata as Record<string, unknown> | undefined) ?? {}
   const userId = typeof metadata.userId === 'string' ? metadata.userId : ''
@@ -281,7 +301,7 @@ async function grantCheckoutCredits(
     console.error(
       `[billing] checkout ${eventId}: no grant (userId=${userId || 'missing'}, credits=${String(metadata.credits)})`,
     )
-    return
+    return { granted: 0, userId: null, duplicate: false }
   }
 
   const planId = typeof metadata.planId === 'string' ? metadata.planId : null
@@ -351,6 +371,24 @@ async function grantCheckoutCredits(
       )
     }
   }
+  return {
+    granted: res.meta.changes > 0 ? credits : 0,
+    userId,
+    duplicate: res.meta.changes === 0,
+  }
+}
+
+/** Mark a Stripe event as fully processed (idempotent). */
+async function recordBillingEvent(
+  env: Env,
+  eventId: string,
+  type: string | null,
+): Promise<void> {
+  await env.DB.prepare(
+    'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
+  )
+    .bind(eventId, new Date().toISOString(), type)
+    .run()
 }
 
 // ── UVR job metering (debit / refund) ────────────────────────────────
@@ -555,21 +593,119 @@ async function handleWebhook(
     return respond({ error: 'Missing event id' }, { status: 400 })
   }
 
-  // Idempotency: record the event id first; a second delivery is a no-op.
-  const recorded = await env.DB.prepare(
-    'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
-  )
-    .bind(event.id, new Date().toISOString(), event.type ?? null)
-    .run()
-  if (recorded.meta.changes === 0) {
-    return respond({ received: true, duplicate: true })
-  }
+  // Idempotency: an event id already in billingEvents was FULLY processed —
+  // ack the redelivery as a duplicate. The id is recorded only after the
+  // grant succeeds (below): recording first would turn a mid-grant failure
+  // (500 → Stripe retry → "duplicate") into permanently lost credits. A
+  // concurrent double delivery can reach the grant twice, but the ledger's
+  // UNIQUE idempotencyKey (`evt:<id>`) makes the second write a no-op.
+  const seen = await env.DB.prepare('SELECT id FROM billingEvents WHERE id = ?')
+    .bind(event.id)
+    .first<{ id: string }>()
+  if (seen) return respond({ received: true, duplicate: true })
 
   if (event.type === 'checkout.session.completed') {
     await grantCheckoutCredits(env, event.id, event.data?.object ?? {})
   }
   // Other event types are acknowledged (200) without action for now.
+  await recordBillingEvent(env, event.id, event.type ?? null)
   return respond({ received: true })
+}
+
+// ── Reconciliation (cron) ────────────────────────────────────────────
+// Webhooks fail silently: Stripe keeps the money, we never learn a grant was
+// missed (2026-07: the endpoints pointed at a dead host for 10 days). This
+// sweep is the safety net for ANY delivery failure — it asks Stripe for
+// recent checkout completions and processes every event billingEvents has
+// never seen, through the exact same grant path the webhook uses.
+
+/** How far back the sweep looks. Stripe's events list retains 30 days —
+ *  wide enough to survive a long outage, tiny at our purchase volume. */
+const RECONCILE_WINDOW_DAYS = 30
+/** Pagination bound (100 events/page). Purely a runaway guard. */
+const RECONCILE_MAX_PAGES = 10
+
+interface StripeEventListItem {
+  id?: string
+  type?: string
+  data?: { object?: Record<string, unknown> }
+}
+
+/** Sweep Stripe's recent `checkout.session.completed` events and grant any
+ *  the webhook missed. Safe to run at any frequency: already-seen events are
+ *  skipped, and the grant itself is idempotent per event id. Alerts by email
+ *  (BILLING_ALERT_EMAIL) when it had to recover anything — a recovery means
+ *  webhook delivery is broken and needs looking at. */
+export async function reconcileBilling(env: Env): Promise<void> {
+  if (!isStripeConfigured(env)) {
+    console.log('[billing] reconcile: Stripe not configured — skipped')
+    return
+  }
+  const since =
+    Math.floor(Date.now() / 1000) - RECONCILE_WINDOW_DAYS * 24 * 60 * 60
+  const recovered: string[] = []
+  let checked = 0
+  let startingAfter: string | undefined
+  for (let page = 0; page < RECONCILE_MAX_PAGES; page++) {
+    const qs = new URLSearchParams({
+      type: 'checkout.session.completed',
+      limit: '100',
+      'created[gte]': String(since),
+    })
+    if (startingAfter !== undefined) qs.set('starting_after', startingAfter)
+    const res = await stripeGet(env, `/events?${qs.toString()}`)
+    if (!res.ok) {
+      console.error(
+        `[billing] reconcile: Stripe events list failed (${res.status})`,
+      )
+      break
+    }
+    const events = Array.isArray(res.data.data)
+      ? (res.data.data as StripeEventListItem[])
+      : []
+    for (const ev of events) {
+      if (typeof ev.id !== 'string') continue
+      checked++
+      const seen = await env.DB.prepare(
+        'SELECT id FROM billingEvents WHERE id = ?',
+      )
+        .bind(ev.id)
+        .first<{ id: string }>()
+      if (seen) continue
+      const outcome = await grantCheckoutCredits(
+        env,
+        ev.id,
+        ev.data?.object ?? {},
+      )
+      await recordBillingEvent(env, ev.id, ev.type ?? null)
+      recovered.push(
+        `${ev.id}: +${outcome.granted} credits, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
+      )
+    }
+    if (res.data.has_more !== true || events.length === 0) break
+    startingAfter = events[events.length - 1].id
+  }
+  console.log(
+    `[billing] reconcile: ${checked} event(s) checked, ${recovered.length} recovered`,
+  )
+  if (recovered.length > 0) {
+    console.error(
+      `[billing] reconcile RECOVERED missed grants — webhook delivery is broken:\n${recovered.join('\n')}`,
+    )
+    await sendBillingAlert(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      env.BILLING_ALERT_EMAIL ?? '',
+      `Recovered ${recovered.length} missed credit grant(s)`,
+      [
+        'The billing reconciliation sweep found paid checkouts whose webhook',
+        'event was never processed, and granted the credits now. This means',
+        'Stripe webhook delivery is BROKEN — check the endpoint URL and its',
+        'recent deliveries in the Stripe dashboard.',
+        '',
+        ...recovered,
+      ],
+    )
+  }
 }
 
 /** Route /api/billing/* requests. Returns null when the path doesn't match. */

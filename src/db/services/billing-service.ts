@@ -94,6 +94,64 @@ export async function fetchBillingMe(base?: string): Promise<BillingMe | null> {
   }
 }
 
+// ── Expected-credits stash (checkout → success-return round trip) ────
+// Written just before redirecting to Stripe, read back on /billing/success.
+// Knowing the exact balance to expect is what lets the return page VERIFY the
+// webhook grant landed instead of just hoping (2026-07: webhooks silently
+// died for 10 days and buyers saw a success toast over an unchanged balance).
+// sessionStorage survives the same-tab redirect, like the ads stash in
+// consent.ts.
+
+const PENDING_CREDITS_KEY = 'pitchperfect_pending_credits'
+/** Ignore stashes older than this — an abandoned checkout must not make some
+ *  unrelated future return wait for credits that were never bought. */
+const PENDING_CREDITS_TTL_MS = 2 * 60 * 60 * 1000
+
+interface PendingCredits {
+  expectedMin: number
+  ts: number
+}
+
+/** Remember the balance the account should reach once the purchase lands. */
+export function stashExpectedCredits(
+  balanceBefore: number,
+  credits: number,
+): void {
+  try {
+    const record: PendingCredits = {
+      expectedMin: balanceBefore + credits,
+      ts: Date.now(),
+    }
+    sessionStorage.setItem(PENDING_CREDITS_KEY, JSON.stringify(record))
+  } catch {
+    // No storage — the return page falls back to blind refreshes.
+  }
+}
+
+/** One-shot read of the expected post-purchase balance (clears the stash).
+ *  Null when absent, expired, or malformed. */
+export function takeExpectedCredits(): number | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_CREDITS_KEY)
+    if (raw == null || raw === '') return null
+    sessionStorage.removeItem(PENDING_CREDITS_KEY)
+    const stash = JSON.parse(raw) as PendingCredits
+    if (
+      typeof stash.ts !== 'number' ||
+      Date.now() - stash.ts > PENDING_CREDITS_TTL_MS
+    ) {
+      return null
+    }
+    return typeof stash.expectedMin === 'number' &&
+      Number.isFinite(stash.expectedMin) &&
+      stash.expectedMin > 0
+      ? stash.expectedMin
+      : null
+  } catch {
+    return null
+  }
+}
+
 /** Start checkout for a pack; returns the Stripe-hosted URL to redirect to. */
 export async function startCheckout(
   planId: string,

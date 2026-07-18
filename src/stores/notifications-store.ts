@@ -27,6 +27,9 @@ let _notifId = 0
 interface NotificationOptions {
   /** Replace any existing notification on this channel (see `Notification.channel`). */
   channel?: string
+  /** How long the toast stays up (default 3000 ms). Use for messages the
+   *  user genuinely needs time to read (e.g. billing anomalies). */
+  durationMs?: number
 }
 
 /** Append a notification, first evicting any prior toast sharing its channel. */
@@ -47,7 +50,7 @@ export function showNotification(
 ): void {
   const id = ++_notifId
   pushNotification({ id, message, type, channel: opts?.channel })
-  setTimeout(() => removeNotification(id), 3000)
+  setTimeout(() => removeNotification(id), opts?.durationMs ?? 3000)
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */

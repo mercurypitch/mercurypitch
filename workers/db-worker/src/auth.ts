@@ -59,6 +59,10 @@ export interface Env {
    *  domain — the root mercurypitch.com is verified; send.mercurypitch.com is
    *  only its return-path. Defaults to hello@mercurypitch.com when unset. */
   EMAIL_FROM?: string
+  /** Operator address for billing-reconciliation alerts (a recovery email
+   *  means Stripe webhook delivery is broken). Optional — unset logs only.
+   *  `wrangler secret put BILLING_ALERT_EMAIL` (kept out of the public repo). */
+  BILLING_ALERT_EMAIL?: string
 }
 
 export interface AuthUser {

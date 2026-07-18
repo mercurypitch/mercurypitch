@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.15] - 2026-07-19
+
+### Fixed
+
+- **Purchased credits now always arrive.** An infrastructure change had silently broken the payment confirmations Stripe sends our server — payments went through but credits didn't appear. Affected purchases have been restored, and the pipeline now protects itself three ways: the app verifies your new balance when you return from checkout (and tells you plainly if it's delayed, instead of leaving you guessing), the server re-checks recent Stripe payments every few hours and grants anything a lost confirmation missed, and we get alerted the moment that safety net has to catch something.
+
 ## [0.7.14] - 2026-07-18
 
 ### Added

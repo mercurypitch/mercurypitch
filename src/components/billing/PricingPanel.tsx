@@ -8,7 +8,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
 import type { PricingPlan } from '@/db/services/billing-service'
-import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
 import { TERMS_URL } from '@/lib/legal-links'
@@ -66,6 +66,11 @@ export const PricingPanel: Component = () => {
       // be fired with its value when Stripe redirects back to /billing/success.
       if (plan.amount != null) {
         stashPendingPurchase(plan.amount / 100, plan.currency)
+      }
+      // And the balance to expect, so the success return can VERIFY the
+      // credits actually landed (and warn when they didn't).
+      if (plan.credits != null && plan.credits > 0) {
+        stashExpectedCredits(me()?.creditBalance ?? 0, plan.credits)
       }
       window.location.assign(url)
     } catch (err) {
