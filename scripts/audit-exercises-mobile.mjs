@@ -142,7 +142,10 @@ const page = await context.newPage()
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded' })
 await page.waitForTimeout(2500)
-const exTab = page.locator('.app-tab', { hasText: 'Exercise' })
+// #tab-exercises is the shared tab id: the desktop top bar and the mobile
+// BottomTabBar both use it (only one is mounted per viewport), so this
+// works regardless of which bar the audit viewport gets.
+const exTab = page.locator('#tab-exercises')
 if (!(await exTab.count())) {
   console.error('FAIL: could not find the Exercises tab — is the app served at ' + BASE + '?')
   await browser.close()

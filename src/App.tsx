@@ -26,6 +26,8 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
+import { BottomTabBar } from './components/mobile/BottomTabBar'
+import { isNarrow } from './lib/use-viewport'
 
 const SessionBrowser = lazy(async () =>
   import('@/components/SessionBrowser').then((m) => ({
@@ -2168,14 +2170,19 @@ const AppShell: Component<AppProps> = (props) => {
                 onOpenGuide={openGuideSelection}
               />
             </div>
-            <AppNavTabs
-              activeTab={activeTab}
-              handleTabChange={(tab) => {
-                handleTabChange(tab)
-              }}
-              tabLabel={tabLabel}
-              advancedFeaturesEnabled={advancedFeaturesEnabled}
-            />
+            {/* Desktop/tablet: top tab bar. On narrow viewports it unmounts
+                and BottomTabBar (same #tab-* ids) takes over, so tour
+                selectors resolve on whichever bar is actually visible. */}
+            <Show when={!isNarrow()}>
+              <AppNavTabs
+                activeTab={activeTab}
+                handleTabChange={(tab) => {
+                  handleTabChange(tab)
+                }}
+                tabLabel={tabLabel}
+                advancedFeaturesEnabled={advancedFeaturesEnabled}
+              />
+            </Show>
 
             {/* Version + support (Ko-fi) double-pill, pinned to the far
                 right of the header row (after the nav tabs) */}
@@ -2184,6 +2191,16 @@ const AppShell: Component<AppProps> = (props) => {
               <SupportBadge />
             </div>
           </header>
+
+          {/* Mobile primary nav — floating glass bar (self-gates on
+              isNarrow; sits under stages/FocusMode by z-scale design). */}
+          <BottomTabBar
+            activeTab={activeTab}
+            handleTabChange={(tab) => {
+              handleTabChange(tab)
+            }}
+            tabLabel={tabLabel}
+          />
 
           {/* Main layout: sidebar + content */}
           <div class={styles.mainLayout} id="main-layout">

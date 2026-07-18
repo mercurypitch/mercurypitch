@@ -266,6 +266,14 @@
     padding-right: max(8px, var(--safe-right));
   }
 
+  /* The floating BottomTabBar overlays the content's bottom edge — every
+     page needs clearance for it (bar height + its 8px float gap + safe
+     area, all inside --tabbar-total + 8px). Replaces the plain safe-area
+     padding from app.css for narrow viewports. */
+  .main-content {
+    padding-bottom: calc(var(--tabbar-total) + 8px);
+  }
+
   /* Exercises: the sticky Start CTA and the Stop FAB sit at the very
      bottom edge — keep them above the home indicator. */
   .exercise-idle-start {
