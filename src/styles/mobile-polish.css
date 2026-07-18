@@ -332,3 +332,31 @@
     display: none;
   }
 }
+
+/* ============================================================
+   Exercises: heavy-setup sheet trigger (mobile-native Phase 4).
+   Guided Warmup routes its routine + 36-note comfort grid into a
+   bottom sheet (ExerciseShell settingsSheetLabel) so Start stays
+   above the fold; the trigger reads as a full-width secondary row.
+   ============================================================ */
+@media (max-width: 768px) {
+  .exercise-settings-trigger {
+    width: 100%;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .exercise-settings-trigger::after {
+    content: '›';
+    margin-left: 4px;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+}

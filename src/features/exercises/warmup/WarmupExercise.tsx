@@ -130,6 +130,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
           </p>
         </div>
       }
+      settingsSheetLabel="Routine & comfort note"
       idleSettings={
         <>
           <div class="note-pill-selector">
