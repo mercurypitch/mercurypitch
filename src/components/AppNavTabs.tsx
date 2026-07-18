@@ -17,14 +17,17 @@ export interface AppNavTabsProps {
 // Order and grouping live in TAB_GROUPS (the single source of truth shared
 // with the swipe navigation). This map only carries the bits that are unique
 // to each button: its DOM id, accessible label, optional test id, and icon.
-interface TabMeta {
+// Exported: BottomTabBar (mobile) renders the same ids/labels/icons — only
+// one of the two bars is mounted at a time (isNarrow swaps them), so the
+// shared DOM ids never collide and tour selectors resolve on both viewports.
+export interface TabMeta {
   id: string
   ariaLabel: string
   testId?: string
   icon: () => JSX.Element
 }
 
-const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
+export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
   [TAB_SINGING]: {
     id: 'tab-singing',
     ariaLabel: 'Singing practice',
