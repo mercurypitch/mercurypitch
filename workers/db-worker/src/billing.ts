@@ -683,6 +683,12 @@ export async function reconcileBilling(env: Env): Promise<void> {
       )
     }
     if (res.data.has_more !== true || events.length === 0) break
+    if (page === RECONCILE_MAX_PAGES - 1) {
+      // Never truncate silently — at this volume something is very wrong.
+      console.error(
+        `[billing] reconcile: page cap hit (${RECONCILE_MAX_PAGES}) with more events pending — sweep incomplete`,
+      )
+    }
     startingAfter = events[events.length - 1].id
   }
   console.log(
