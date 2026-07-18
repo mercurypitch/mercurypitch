@@ -111,7 +111,12 @@ page.on('console', (m) => {
 })
 
 await page.goto(BASE)
-await page.waitForSelector('#app-tabs', { timeout: 30000 })
+// Nav differs by viewport: desktop has the top #app-tabs bar; mobile
+// (<=768px) unmounts it and shows the floating BottomTabBar instead.
+await page.waitForSelector(
+  MOBILE ? '[data-tour="mobile-tabbar"]' : '#app-tabs',
+  { timeout: 30000 },
+)
 await page.waitForTimeout(1500)
 
 const openGuide = async () => {

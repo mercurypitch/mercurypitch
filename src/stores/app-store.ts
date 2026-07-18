@@ -5,6 +5,7 @@ import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
+import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 import { getUvrInstrumentalIntensity, getUvrMode, getUvrSmoothing, getUvrVocalIntensity, } from './uvr-store'
@@ -88,6 +89,13 @@ export interface WalkthroughStep {
    * sidebar-anchored targets are on-screen. No-op on desktop.
    */
   inSidebar?: boolean
+  /**
+   * Restrict a step to one viewport. Omitted = both. 'desktop' steps target
+   * chrome that only exists on the wide layout (the control bar / toolbar);
+   * 'mobile' steps walk the phone stages instead. Filtered at tour-build time
+   * against isNarrow(), so a tour started at either width shows the right run.
+   */
+  viewport?: 'mobile' | 'desktop'
 }
 export interface WalkthroughSection {
   id: string
@@ -250,6 +258,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Play / Pause / Stop',
@@ -259,6 +268,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Practice Mode',
@@ -268,9 +278,42 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'right',
     section: 'practice',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
 
-  // ── Toolbar Section ──
+  // ── Mobile stage steps (phone-width Singing surface) ──
+  {
+    title: 'Your practice bar',
+    targetSelector: '[data-tour="singing-transport"]',
+    description:
+      'Everything you need mid-practice sits here: tap the mic to let the app hear you, play/pause the melody, and switch between Once, Repeat and Session.',
+    placement: 'top',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Pick a song',
+    targetSelector: '[data-tour="singing-songs"]',
+    description:
+      'Load a preset melody or import your own — the current song shows here, tap to change it.',
+    placement: 'bottom',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Move around',
+    targetSelector: '[data-tour="mobile-tabbar"]',
+    description:
+      'Jump between Singing, Piano, Exercises and more from this bar. Tap More for everything else.',
+    placement: 'top',
+    section: 'practice',
+    requiredTab: TAB_SINGING,
+    viewport: 'mobile',
+  },
+
+  // ── Toolbar Section (desktop) ──
   {
     title: 'BPM Control',
     targetSelector: '#bpm-input',
@@ -280,6 +323,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'toolbar',
     requiredTab: TAB_SINGING,
     reveal: '[data-testid="singing-more-toggle"]',
+    viewport: 'desktop',
   },
   {
     title: 'Volume',
@@ -290,6 +334,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'toolbar',
     requiredTab: TAB_SINGING,
     reveal: '[data-testid="singing-more-toggle"]',
+    viewport: 'desktop',
   },
   {
     title: 'Playback Speed',
@@ -300,6 +345,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'toolbar',
     requiredTab: TAB_SINGING,
     reveal: '[data-testid="singing-more-toggle"]',
+    viewport: 'desktop',
   },
   {
     title: 'Play Modes: Once',
@@ -309,6 +355,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Play Modes: Repeat',
@@ -318,6 +365,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Play Modes: Session',
@@ -327,6 +375,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Pre-count',
@@ -336,6 +385,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Anchor tone',
@@ -345,6 +395,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Metronome',
@@ -354,6 +405,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Mic waveform',
@@ -363,6 +415,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
   },
   {
     title: 'Focus Mode',
@@ -372,6 +425,18 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: TAB_SINGING,
+    viewport: 'desktop',
+  },
+  // Mobile: the toolbar's controls all live in one sheet.
+  {
+    title: 'Practice options',
+    targetSelector: '[data-tour="singing-options"]',
+    description:
+      'Tempo, speed, key & scale, precount and the metronome all live in this sheet — tap to open it any time.',
+    placement: 'top',
+    section: 'toolbar',
+    requiredTab: TAB_SINGING,
+    viewport: 'mobile',
   },
 
   // ── Editor Section ──
@@ -828,10 +893,22 @@ function markGuideSectionCompleted(sectionId: string): void {
   saveGuideSections(completed)
 }
 
+/** Drop steps that don't apply to the current viewport (see WalkthroughStep
+ *  .viewport). Evaluated once at tour-build time — a mid-tour rotation keeps
+ *  the run it started with, which is fine for a guided walk. */
+function forThisViewport(steps: WalkthroughStep[]): WalkthroughStep[] {
+  const narrow = isNarrow()
+  return steps.filter(
+    (s) =>
+      s.viewport === undefined ||
+      s.viewport === (narrow ? 'mobile' : 'desktop'),
+  )
+}
+
 /** Build step list from given section IDs */
 function buildStepsFromSections(sectionIds: string[]): WalkthroughStep[] {
-  return WALKTHROUGH_STEPS.filter((step) =>
-    sectionIds.includes(step.section ?? ''),
+  return forThisViewport(
+    WALKTHROUGH_STEPS.filter((step) => sectionIds.includes(step.section ?? '')),
   )
 }
 
@@ -952,6 +1029,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano.song-picker"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
+    viewport: 'desktop',
   },
   {
     title: 'Play the falling notes',
@@ -960,6 +1038,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano.canvas"]',
     placement: 'top',
     requiredTab: TAB_PIANO,
+    viewport: 'desktop',
   },
   {
     title: 'Sing it or play it',
@@ -968,6 +1047,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '#btn-mic',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
+    viewport: 'desktop',
   },
   {
     title: 'Transport',
@@ -976,6 +1056,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-testid="piano-control-bar"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
+    viewport: 'desktop',
   },
   {
     title: 'Once or on repeat',
@@ -984,6 +1065,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '#btn-once',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
+    viewport: 'desktop',
   },
   {
     title: 'Tempo, volume & zoom',
@@ -993,6 +1075,44 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_PIANO,
     reveal: '[data-testid="piano-more-toggle"]',
+    viewport: 'desktop',
+  },
+  // ── Mobile stage steps ──
+  {
+    title: 'Pick a song',
+    description:
+      'Load a preset or import a MIDI song here — the current song shows in this chip.',
+    targetSelector: '[data-tour="piano-songs"]',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Play the falling notes',
+    description:
+      'Notes fall toward the on-screen keyboard — tap the keys or sing them in time. Pinch to zoom the lanes in or out.',
+    targetSelector: '[data-tour="piano-canvas"]',
+    placement: 'top',
+    requiredTab: TAB_PIANO,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Your practice bar',
+    description:
+      'Turn on the mic to sing the notes, play or pause the run, and toggle note-name labels — all from here.',
+    targetSelector: '[data-tour="piano-transport"]',
+    placement: 'top',
+    requiredTab: TAB_PIANO,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Practice options',
+    description:
+      'Tempo, speed, play mode, zoom and MIDI input live in this sheet — tap to open it any time.',
+    targetSelector: '[data-tour="piano-options"]',
+    placement: 'top',
+    requiredTab: TAB_PIANO,
+    viewport: 'mobile',
   },
 ]
 
@@ -1440,7 +1560,8 @@ export const PAGE_TOUR_CATALOG: {
 ]
 
 export function hasPageTour(tab: ActiveTab): boolean {
-  return (PAGE_TOURS[tab]?.length ?? 0) > 0
+  const steps = PAGE_TOURS[tab]
+  return steps !== undefined && forThisViewport(steps).length > 0
 }
 
 /** Start an arbitrary spotlight tour from a list of steps (no-op if empty). */
@@ -1455,7 +1576,9 @@ export function startTour(steps: WalkthroughStep[]): void {
 export function startPageTour(tab: ActiveTab): void {
   const steps = PAGE_TOURS[tab]
   if (steps === undefined) return
-  startTour(steps)
+  const forView = forThisViewport(steps)
+  if (forView.length === 0) return
+  startTour(forView)
 }
 
 export function nextWalkthroughStep(): void {
