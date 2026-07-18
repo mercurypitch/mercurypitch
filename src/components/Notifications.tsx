@@ -31,6 +31,26 @@ export const Notifications: Component = () => {
                 {notif.action.label}
               </button>
             )}
+            {/* Explicit dismiss — toasts auto-expire, but a user who doesn't
+                want the action (e.g. the "take a tour" offer) needs a way to
+                clear it now, especially on a phone where it floats above the
+                tab bar. */}
+            <button
+              class={styles.closeBtn}
+              onClick={() => removeNotification(notif.id)}
+              title="Dismiss"
+              aria-label="Dismiss notification"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  d="M6 6l12 12M18 6L6 18"
+                />
+              </svg>
+            </button>
           </div>
         )}
       </For>
