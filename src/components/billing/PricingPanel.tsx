@@ -68,9 +68,12 @@ export const PricingPanel: Component = () => {
         stashPendingPurchase(plan.amount / 100, plan.currency)
       }
       // And the balance to expect, so the success return can VERIFY the
-      // credits actually landed (and warn when they didn't).
-      if (plan.credits != null && plan.credits > 0) {
-        stashExpectedCredits(me()?.creditBalance ?? 0, plan.credits)
+      // credits actually landed (and warn when they didn't). Only when the
+      // current balance is actually known: guessing 0 for a user who already
+      // holds >= the pack would make the return confirm a grant it never saw.
+      const balanceBefore = me()?.creditBalance
+      if (balanceBefore != null && plan.credits != null && plan.credits > 0) {
+        stashExpectedCredits(balanceBefore, plan.credits)
       }
       window.location.assign(url)
     } catch (err) {
