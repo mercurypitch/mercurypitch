@@ -2,6 +2,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, on, Show } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
 import { MicInsightHint } from '@/components/MicInsightHint'
+import { PianoMobileStage } from '@/components/mobile/PianoMobileStage'
 import { PianoControlBar } from '@/components/piano/PianoControlBar'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
@@ -14,6 +15,7 @@ import { midiToNoteName } from '@/lib/note-utils'
 import { midiToFreq } from '@/lib/scale-data'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
+import { isNarrow } from '@/lib/use-viewport'
 import { showNotification } from '@/stores'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { selectedSongName } from '@/stores/falling-notes-store'
@@ -116,229 +118,262 @@ export function PianoPage(props: PianoPageProps) {
       showNotification('Drop a .mid or .midi file to load it here.', 'info'),
   })
 
-  return (
-    <div id="falling-notes-panel">
-      {/* In flow above the canvas, so the canvas HUD (score corners) keeps
-          the full canvas top to itself. */}
-      <MidiSongStatusBar
-        picker={picker}
-        prefix="fn"
-        dataTour="piano.song-picker"
-        currentSong={fallingNotes.currentSong}
-        mutedTrackIds={fallingNotes.mutedTrackIds}
-        onToggleMute={fallingNotes.toggleTrackMute}
-        visibleTrackIds={fallingNotes.visibleTrackIds}
-        onToggleVisibility={fallingNotes.toggleTrackVisibility}
-        playheadBeat={fallingNotes.playheadBeat}
-        totalBeats={fallingNotes.totalBeats}
-        songBpm={fallingNotes.currentSongBpm}
-        onSeek={props.onSeek ?? fallingNotes.seekToBeat}
-        songName={selectedSongName}
-        isPlaying={() => fallingNotes.gameState() === 'playing'}
-        loopA={props.loopA}
-        loopB={props.loopB}
-        loopEnabled={props.loopEnabled}
-        onMoveLoopA={props.onMoveLoopA}
-        onMoveLoopB={props.onMoveLoopB}
-      />
-      <div
-        id="falling-notes-canvas-container"
-        data-tour="piano.canvas"
-        ref={dropZone.bind}
-        style={{ position: 'relative' }}
-      >
-        <Show when={dropZone.isDragOver()}>
-          <div class={barStyles.dropOverlay}>
-            <span class={barStyles.dropLabel}>Drop MIDI to load</span>
+  // Shared factories: the desktop tree and the mobile stage each mount
+  // their OWN instances inside their branch (a canvas must never be
+  // re-parented across the isNarrow() swap). The controller lives in
+  // AppShell above the branch, so swapping is presentation-only.
+  const renderFallingCanvas = () => (
+    <FallingNotesCanvas
+      songNotes={fallingNotes.songNotes}
+      gameState={fallingNotes.gameState}
+      playheadBeat={fallingNotes.playheadBeat}
+      hitResults={fallingNotes.hitResults}
+      combo={fallingNotes.combo}
+      score={fallingNotes.score}
+      totalNotes={fallingNotes.totalNotes}
+      notesMissed={fallingNotes.notesMissed}
+      currentPitch={fallingNotes.currentPitch}
+      isMicActive={fallingNotes.isMicActive}
+      inputMode={fallingNotes.inputMode}
+      visibleBeatWindow={fallingNotes.visibleBeatWindow}
+      midiHeldNotes={fallingNotes.midiHeldNotes}
+      onClickPianoOn={fallingNotes.clickPianoNoteOn}
+      onClickPianoOff={fallingNotes.clickPianoNoteOff}
+      clickPianoEnabled={fallingNotes.clickPianoEnabled}
+      loopA={props.loopA}
+      loopB={props.loopB}
+      loopEnabled={props.loopEnabled}
+      onMoveLoopA={props.onMoveLoopA}
+      onMoveLoopB={props.onMoveLoopB}
+    />
+  )
+
+  const renderMicHint = (top: string) => (
+    <MicInsightHint
+      message={micInsights.message}
+      insight={micInsights.insight}
+      style={{
+        position: 'absolute',
+        top,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        'z-index': '6',
+        'white-space': 'nowrap',
+      }}
+    />
+  )
+
+  // Finished-run score: a non-blocking corner card (same pattern as the
+  // Guitar 3D and Singing scoreboards) instead of a modal — the board
+  // stays visible and playable behind it. The mobile stage re-docks it
+  // above the transport via CSS.
+  const renderScoreCard = () => (
+    <Show when={fallingNotes.gameState() === 'finished'}>
+      {(() => {
+        const pct = () => {
+          const t = fallingNotes.totalNotes()
+          return t > 0
+            ? Math.round((fallingNotes.score() / (t * 100)) * 100)
+            : 0
+        }
+        const grade = () =>
+          pct() >= 90
+            ? 'Pitch Perfect!'
+            : pct() >= 80
+              ? 'Excellent!'
+              : pct() >= 65
+                ? 'Good!'
+                : pct() >= 50
+                  ? 'Okay!'
+                  : 'Keep Practicing!'
+        return (
+          <div class="fn-score-corner" aria-label="Run score">
+            <span class="fn-score-corner-title">Complete</span>
+            <span class="fn-score-corner-pct">{pct()}%</span>
+            <span class="fn-score-corner-grade">{grade()}</span>
+            <span class="fn-score-corner-detail">
+              {fallingNotes.totalNotes()} notes · Max Combo:{' '}
+              {fallingNotes.maxCombo()}x
+            </span>
+            <div class="fn-score-corner-actions">
+              <button
+                class="fn-btn fn-btn-play"
+                onClick={() => void fallingNotes.startGame()}
+                aria-label="Play again"
+                title="Play again"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>{' '}
+                Play Again
+              </button>
+              <button
+                class="fn-btn fn-btn-close"
+                onClick={fallingNotes.resetGame}
+                aria-label="Close"
+                title="Close"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>{' '}
+                Close
+              </button>
+            </div>
           </div>
-        </Show>
-        <MicInsightHint
-          message={micInsights.message}
-          insight={micInsights.insight}
-          style={{
-            position: 'absolute',
-            // Below the top-docked control bar.
-            top: '68px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            'z-index': '6',
-            'white-space': 'nowrap',
-          }}
+        )
+      })()}
+    </Show>
+  )
+
+  return (
+    <Show
+      when={!isNarrow()}
+      fallback={
+        <PianoMobileStage
+          fallingNotes={fallingNotes}
+          picker={picker}
+          onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+          volume={props.volume}
+          onVolumeChange={props.onVolumeChange}
+          renderCanvas={renderFallingCanvas}
+          renderMicHint={() => renderMicHint('10px')}
+          renderScoreCard={renderScoreCard}
         />
-        <FallingNotesCanvas
-          songNotes={fallingNotes.songNotes}
-          gameState={fallingNotes.gameState}
+      }
+    >
+      <div id="falling-notes-panel">
+        {/* In flow above the canvas, so the canvas HUD (score corners) keeps
+          the full canvas top to itself. */}
+        <MidiSongStatusBar
+          picker={picker}
+          prefix="fn"
+          dataTour="piano.song-picker"
+          currentSong={fallingNotes.currentSong}
+          mutedTrackIds={fallingNotes.mutedTrackIds}
+          onToggleMute={fallingNotes.toggleTrackMute}
+          visibleTrackIds={fallingNotes.visibleTrackIds}
+          onToggleVisibility={fallingNotes.toggleTrackVisibility}
           playheadBeat={fallingNotes.playheadBeat}
-          hitResults={fallingNotes.hitResults}
-          combo={fallingNotes.combo}
-          score={fallingNotes.score}
-          totalNotes={fallingNotes.totalNotes}
-          notesMissed={fallingNotes.notesMissed}
-          currentPitch={fallingNotes.currentPitch}
-          isMicActive={fallingNotes.isMicActive}
-          inputMode={fallingNotes.inputMode}
-          visibleBeatWindow={fallingNotes.visibleBeatWindow}
-          midiHeldNotes={fallingNotes.midiHeldNotes}
-          onClickPianoOn={fallingNotes.clickPianoNoteOn}
-          onClickPianoOff={fallingNotes.clickPianoNoteOff}
-          clickPianoEnabled={fallingNotes.clickPianoEnabled}
+          totalBeats={fallingNotes.totalBeats}
+          songBpm={fallingNotes.currentSongBpm}
+          onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+          songName={selectedSongName}
+          isPlaying={() => fallingNotes.gameState() === 'playing'}
           loopA={props.loopA}
           loopB={props.loopB}
           loopEnabled={props.loopEnabled}
           onMoveLoopA={props.onMoveLoopA}
           onMoveLoopB={props.onMoveLoopB}
         />
-        <ControlOverlay
-          idPrefix="piano"
-          containerSelector="#falling-notes-canvas-container"
-          defaultDock="top"
+        <div
+          id="falling-notes-canvas-container"
+          data-tour="piano.canvas"
+          ref={dropZone.bind}
+          style={{ position: 'relative' }}
         >
-          <PianoControlBar
-            isPlaying={props.isPlaying}
-            isPaused={props.isPaused}
-            onPlay={() => {
-              // Fresh user-triggered Play resets cycle counter.
-              if (fallingNotes.gameState() !== 'paused') {
-                fallingNotes.setPianoCurrentCycle(1)
+          <Show when={dropZone.isDragOver()}>
+            <div class={barStyles.dropOverlay}>
+              <span class={barStyles.dropLabel}>Drop MIDI to load</span>
+            </div>
+          </Show>
+          {/* Below the top-docked control bar. */}
+          {renderMicHint('68px')}
+          {renderFallingCanvas()}
+          <ControlOverlay
+            idPrefix="piano"
+            containerSelector="#falling-notes-canvas-container"
+            defaultDock="top"
+          >
+            <PianoControlBar
+              isPlaying={props.isPlaying}
+              isPaused={props.isPaused}
+              onPlay={() => {
+                // Fresh user-triggered Play resets cycle counter.
+                if (fallingNotes.gameState() !== 'paused') {
+                  fallingNotes.setPianoCurrentCycle(1)
+                }
+                void fallingNotes.startGame()
+              }}
+              onPause={fallingNotes.pauseGame}
+              onResume={fallingNotes.resumeGame}
+              onStop={fallingNotes.resetGame}
+              playMode={() =>
+                fallingNotes.pianoPlayMode() === 'repeat'
+                  ? PLAYBACK_MODE_REPEAT
+                  : PLAYBACK_MODE_ONCE
               }
-              void fallingNotes.startGame()
-            }}
-            onPause={fallingNotes.pauseGame}
-            onResume={fallingNotes.resumeGame}
-            onStop={fallingNotes.resetGame}
-            playMode={() =>
-              fallingNotes.pianoPlayMode() === 'repeat'
-                ? PLAYBACK_MODE_REPEAT
-                : PLAYBACK_MODE_ONCE
-            }
-            playModeChange={(mode) => {
-              fallingNotes.setPianoPlayMode(
-                mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
-              )
-              if (mode === PLAYBACK_MODE_REPEAT) {
-                fallingNotes.setPianoCurrentCycle(1)
-              }
-            }}
-            practiceCycles={() => fallingNotes.pianoRepeatCycles()}
-            onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
-            currentCycle={() => fallingNotes.pianoCurrentCycle()}
-            isCountingIn={() => fallingNotes.isCountingIn()}
-            countInBeat={() => fallingNotes.countInBeat()}
-            volume={props.volume}
-            onVolumeChange={props.onVolumeChange}
-            speed={fallingNotes.speed}
-            onSpeedChange={fallingNotes.setSpeed}
-            bpm={fallingNotes.currentSongBpm}
-            onBpmChange={fallingNotes.setBpm}
-            micActive={fallingNotes.isMicActive}
-            onMicToggle={() => {
-              if (fallingNotes.isMicActive()) {
-                fallingNotes.stopMic()
-              } else {
-                void fallingNotes.startMic()
-              }
-            }}
-            midiConnected={fallingNotes.midiConnected}
-            onMidiToggle={() => {
-              if (fallingNotes.midiConnected()) {
-                fallingNotes.midiDisconnect()
-              } else {
-                void fallingNotes.midiConnect()
-              }
-            }}
-            showNoteLabels={fallingNotes.showNoteLabels}
-            onToggleNoteLabels={fallingNotes.toggleNoteLabels}
-            zoomPercent={fallingNotes.zoomPercent}
-            onZoomIn={fallingNotes.zoomIn}
-            onZoomOut={fallingNotes.zoomOut}
-            loopEnabled={props.loopEnabled}
-            loopA={props.loopA}
-            loopB={props.loopB}
-            onSetLoopA={props.onSetLoopA}
-            onSetLoopB={props.onSetLoopB}
-            onToggleLoop={props.onToggleLoop}
-            onClearLoop={props.onClearLoop}
-          />
-        </ControlOverlay>
-        {/* Finished-run score: a non-blocking corner card (same pattern as
-            the Guitar 3D and Singing scoreboards) instead of a modal — the
-            board stays visible and playable behind it. */}
-        <Show when={fallingNotes.gameState() === 'finished'}>
-          {(() => {
-            const pct = () => {
-              const t = fallingNotes.totalNotes()
-              return t > 0
-                ? Math.round((fallingNotes.score() / (t * 100)) * 100)
-                : 0
-            }
-            const grade = () =>
-              pct() >= 90
-                ? 'Pitch Perfect!'
-                : pct() >= 80
-                  ? 'Excellent!'
-                  : pct() >= 65
-                    ? 'Good!'
-                    : pct() >= 50
-                      ? 'Okay!'
-                      : 'Keep Practicing!'
-            return (
-              <div class="fn-score-corner" aria-label="Run score">
-                <span class="fn-score-corner-title">Complete</span>
-                <span class="fn-score-corner-pct">{pct()}%</span>
-                <span class="fn-score-corner-grade">{grade()}</span>
-                <span class="fn-score-corner-detail">
-                  {fallingNotes.totalNotes()} notes · Max Combo:{' '}
-                  {fallingNotes.maxCombo()}x
-                </span>
-                <div class="fn-score-corner-actions">
-                  <button
-                    class="fn-btn fn-btn-play"
-                    onClick={() => void fallingNotes.startGame()}
-                    aria-label="Play again"
-                    title="Play again"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="1 4 1 10 7 10" />
-                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                    </svg>{' '}
-                    Play Again
-                  </button>
-                  <button
-                    class="fn-btn fn-btn-close"
-                    onClick={fallingNotes.resetGame}
-                    aria-label="Close"
-                    title="Close"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>{' '}
-                    Close
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
-        </Show>
+              playModeChange={(mode) => {
+                fallingNotes.setPianoPlayMode(
+                  mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
+                )
+                if (mode === PLAYBACK_MODE_REPEAT) {
+                  fallingNotes.setPianoCurrentCycle(1)
+                }
+              }}
+              practiceCycles={() => fallingNotes.pianoRepeatCycles()}
+              onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
+              currentCycle={() => fallingNotes.pianoCurrentCycle()}
+              isCountingIn={() => fallingNotes.isCountingIn()}
+              countInBeat={() => fallingNotes.countInBeat()}
+              volume={props.volume}
+              onVolumeChange={props.onVolumeChange}
+              speed={fallingNotes.speed}
+              onSpeedChange={fallingNotes.setSpeed}
+              bpm={fallingNotes.currentSongBpm}
+              onBpmChange={fallingNotes.setBpm}
+              micActive={fallingNotes.isMicActive}
+              onMicToggle={() => {
+                if (fallingNotes.isMicActive()) {
+                  fallingNotes.stopMic()
+                } else {
+                  void fallingNotes.startMic()
+                }
+              }}
+              midiConnected={fallingNotes.midiConnected}
+              onMidiToggle={() => {
+                if (fallingNotes.midiConnected()) {
+                  fallingNotes.midiDisconnect()
+                } else {
+                  void fallingNotes.midiConnect()
+                }
+              }}
+              showNoteLabels={fallingNotes.showNoteLabels}
+              onToggleNoteLabels={fallingNotes.toggleNoteLabels}
+              zoomPercent={fallingNotes.zoomPercent}
+              onZoomIn={fallingNotes.zoomIn}
+              onZoomOut={fallingNotes.zoomOut}
+              loopEnabled={props.loopEnabled}
+              loopA={props.loopA}
+              loopB={props.loopB}
+              onSetLoopA={props.onSetLoopA}
+              onSetLoopB={props.onSetLoopB}
+              onToggleLoop={props.onToggleLoop}
+              onClearLoop={props.onClearLoop}
+            />
+          </ControlOverlay>
+          {renderScoreCard()}
+        </div>
       </div>
-    </div>
+    </Show>
   )
 }
