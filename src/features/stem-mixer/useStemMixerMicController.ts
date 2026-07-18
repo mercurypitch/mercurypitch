@@ -9,6 +9,7 @@ import { micManager } from '@/lib/mic-manager'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
+import { sliderToGain } from '@/lib/volume-curve'
 import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ export const useStemMixerMicController = (
     if (micMonitorEnabled()) {
       if (!monitorGainNode) {
         monitorGainNode = ctx.createGain()
-        monitorGainNode.gain.value = micMonitorVolume()
+        monitorGainNode.gain.value = sliderToGain(micMonitorVolume())
         micGainNode.connect(monitorGainNode)
         monitorGainNode.connect(ctx.destination)
       }
@@ -178,7 +179,7 @@ export const useStemMixerMicController = (
   const setMicMonitorVolume = (volume: number) => {
     const v = Math.max(0, Math.min(1, volume))
     setMicMonitorVolumeSignal(v)
-    if (monitorGainNode) monitorGainNode.gain.value = v
+    if (monitorGainNode) monitorGainNode.gain.value = sliderToGain(v)
   }
 
   const getMicAnalyserNode = () => micAnalyserNode
