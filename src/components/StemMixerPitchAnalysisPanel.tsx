@@ -2,7 +2,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { PitchAlgorithm } from '@/lib/pitch-detector'
+import type { AnalysisAlgorithm } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { NOTE_NAMES } from '@/lib/scale-data'
 
 /** Scales offered for cleanup key-snapping. */
@@ -15,8 +15,8 @@ const CLEANUP_SCALES: { value: string; label: string }[] = [
 ]
 
 export interface StemMixerPitchAnalysisPanelProps {
-  algorithm: PitchAlgorithm
-  setAlgorithm: (a: PitchAlgorithm) => void
+  algorithm: AnalysisAlgorithm
+  setAlgorithm: (a: AnalysisAlgorithm) => void
   bufferSize: number
   setBufferSize: (b: number) => void
   sensitivity: number
@@ -132,10 +132,11 @@ export const StemMixerPitchAnalysisPanel: Component<
             <SafeSelect
               value={props.algorithm}
               onChange={(e) =>
-                props.setAlgorithm(e.currentTarget.value as PitchAlgorithm)
+                props.setAlgorithm(e.currentTarget.value as AnalysisAlgorithm)
               }
               disabled={props.isAnalyzing}
             >
+              <option value="auto">Auto (best of YIN + MPM)</option>
               <option value="yin">YIN</option>
               <option value="mpm">MPM</option>
               <option value="swift">SwiftF0 (ML)</option>

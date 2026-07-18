@@ -5,6 +5,22 @@
 import type { LrcLine } from './lyrics-service'
 import type { MergedNote } from './midi-generator'
 import type { WhisperSegment } from './whisper-service'
+import { estimateWordDuration, layoutLineWords } from './word-sync'
+
+/** Longest window a single word may occupy relative to its syllable-based
+ *  sung-duration estimate. Keeps a word's bracket from swallowing the
+ *  instrumental gap after its line (which maps it to silence or to the next
+ *  line's notes) while still covering ordinary holds. */
+const MAX_WORD_WINDOW_FACTOR = 2
+
+/** Cap a word's window end so it stays within a plausible sung duration. */
+function capWordEnd(word: string, start: number, end: number): number {
+  const capped = Math.min(
+    end,
+    start + estimateWordDuration(word) * MAX_WORD_WINDOW_FACTOR,
+  )
+  return Math.max(start + 0.05, capped)
+}
 
 export interface AlignedWord {
   word: string
@@ -281,26 +297,28 @@ export function lrcEntriesToSegments(
     if (wordTimes && wordTimes.length > 0) {
       for (let j = 0; j < entry.words.length; j++) {
         const start = wordTimes[j] ?? entry.time
-        const end =
-          j + 1 < wordTimes.length
-            ? wordTimes[j + 1]
-            : j + 1 < entry.words.length
-              ? lineEnd
-              : lineEnd
+        const end = j + 1 < wordTimes.length ? wordTimes[j + 1] : lineEnd
         segments.push({
           text: entry.words[j],
-          timestamp: [start, Math.max(start + 0.05, end)],
+          timestamp: [start, capWordEnd(entry.words[j], start, end)],
         })
       }
     } else {
-      // No word-level timestamps — distribute evenly across line duration
-      const duration = lineEnd - entry.time
-      const wordDuration = Math.max(0.05, duration / entry.words.length)
+      // No word-level timestamps — estimate the sung span (so a line followed
+      // by an instrumental gap doesn't smear its words into the silence) and
+      // lay the words out across it by syllable weight.
+      const estSungDur = entry.words.reduce(
+        (sum, w) => sum + estimateWordDuration(w),
+        0,
+      )
+      const spanEnd = Math.min(lineEnd, entry.time + estSungDur * 1.5)
+      const starts = layoutLineWords(entry.words, entry.time, spanEnd)
       for (let j = 0; j < entry.words.length; j++) {
-        const start = entry.time + j * wordDuration
+        const start = starts[j]
+        const end = j + 1 < starts.length ? starts[j + 1] : spanEnd
         segments.push({
           text: entry.words[j],
-          timestamp: [start, start + wordDuration],
+          timestamp: [start, capWordEnd(entry.words[j], start, end)],
         })
       }
     }
@@ -322,14 +340,19 @@ export function lrcLinesToSegments(lines: LrcLine[]): WhisperSegment[] {
     if (words.length === 0) continue
 
     const lineEnd = i + 1 < lines.length ? lines[i + 1].time : line.time + 5
-    const duration = lineEnd - line.time
-    const wordDuration = Math.max(0.05, duration / words.length)
+    const estSungDur = words.reduce(
+      (sum, w) => sum + estimateWordDuration(w),
+      0,
+    )
+    const spanEnd = Math.min(lineEnd, line.time + estSungDur * 1.5)
+    const starts = layoutLineWords(words, line.time, spanEnd)
 
     for (let j = 0; j < words.length; j++) {
-      const start = line.time + j * wordDuration
+      const start = starts[j]
+      const end = j + 1 < starts.length ? starts[j + 1] : spanEnd
       segments.push({
         text: words[j],
-        timestamp: [start, Math.min(lineEnd, start + wordDuration)],
+        timestamp: [start, capWordEnd(words[j], start, end)],
       })
     }
   }

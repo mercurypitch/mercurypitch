@@ -27,6 +27,7 @@ import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } fr
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
+import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -745,13 +746,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
     }
 
-    // Prefer whisper segments; fall back to LRC word timings
+    // Word-window source priority: word-timed LRC (user taps / enhanced LRC)
+    // beats whisper — whisper hallucinates words and timestamps on sung
+    // vocals, while tapped timings are deliberate. Whisper still beats
+    // line-only LRC, whose even word spread is a rough guess. Both sources
+    // are read unconditionally so the memo tracks them.
+    const lrc = canonicalLrcLines()
+    const lrcSegments = lrc.length > 0 ? lrcEntriesToSegments(lrc) : []
+    const lrcHasWordTimes = lrc.some((e) => (e.wordTimes?.length ?? 0) > 0)
     let segments = wsSegs
-    if (segments.length === 0) {
-      const lrc = canonicalLrcLines()
-      if (lrc.length > 0) {
-        segments = lrcEntriesToSegments(lrc)
-      }
+    let wordSource = 'whisper'
+    if (lrcHasWordTimes && lrcSegments.length > 0) {
+      segments = lrcSegments
+      wordSource = 'lrc-word'
+    } else if (segments.length === 0 && lrcSegments.length > 0) {
+      segments = lrcSegments
+      wordSource = 'lrc-line'
     }
 
     if (segments.length === 0) {
@@ -769,7 +779,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     console.log(
-      `[StemMixer] Alignment using ${noteSource} notes (${merged.length} notes, ${segments.length} word segments)`,
+      `[StemMixer] Alignment using ${noteSource} notes x ${wordSource} words (${merged.length} notes, ${segments.length} word segments)`,
     )
     return computeAlignment(merged, segments)
   })
@@ -1055,7 +1065,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           ? setInstrumental
           : setMidi
     setter((prev) => {
-      if (prev.gainNode) prev.gainNode.gain.value = volume
+      if (prev.gainNode) prev.gainNode.gain.value = sliderToGain(volume)
       return { ...prev, volume, muted: false }
     })
   }
@@ -1071,7 +1081,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setter((prev) => {
       const muted = !prev.muted
       const isAudible = prev.soloed || (!muted && !hasSolo)
-      if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
+      if (prev.gainNode)
+        prev.gainNode.gain.value = isAudible ? sliderToGain(prev.volume) : 0
       return { ...prev, muted }
     })
   }
@@ -1092,10 +1103,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       if (prev.gainNode)
         prev.gainNode.gain.value = soloed
-          ? prev.volume
+          ? sliderToGain(prev.volume)
           : prev.muted || newAnySoloed
             ? 0
-            : prev.volume
+            : sliderToGain(prev.volume)
 
       for (const ot of otherTracks) {
         const otherSetter =
@@ -1107,7 +1118,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         otherSetter((oPrev) => {
           if (oPrev.gainNode)
             oPrev.gainNode.gain.value =
-              oPrev.soloed || (!oPrev.muted && !soloed) ? oPrev.volume : 0
+              oPrev.soloed || (!oPrev.muted && !soloed)
+                ? sliderToGain(oPrev.volume)
+                : 0
           return oPrev
         })
       }

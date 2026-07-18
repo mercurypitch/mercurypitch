@@ -10,6 +10,7 @@ import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTO
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi } from '@/lib/scale-data'
+import { sliderToGain } from '@/lib/volume-curve'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -384,7 +385,7 @@ export const useStemMixerAudioController = (
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      const targetGain = isAudible ? track.volume : 0
+      const targetGain = isAudible ? sliderToGain(track.volume) : 0
       gain.gain.setValueAtTime(0, now)
       gain.gain.linearRampToValueAtTime(targetGain, now + 0.03)
 

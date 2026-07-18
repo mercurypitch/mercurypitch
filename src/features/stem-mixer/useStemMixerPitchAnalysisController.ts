@@ -18,6 +18,12 @@ import type { PitchNote } from './types'
 /** Fields a drag edit may change. */
 type EditPatch = Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>
 
+/** Offline analysis algorithm choice: a concrete detector, or 'auto' which
+ *  runs YIN and MPM over the same frames and keeps whichever produces more
+ *  cleaned-note coverage. Belted/layered passages that YIN rejects outright
+ *  are usually tracked fine by MPM, and vice versa for breathy solo takes. */
+export type AnalysisAlgorithm = PitchAlgorithm | 'auto'
+
 // The pipeline's frame-count thresholds are tuned for the live ~10ms cadence;
 // the stem-mixer detects at a coarse 100ms hop (WINDOW_STEP_SEC), so shrink the
 // frame counts proportionally or notes won't register / break correctly.
@@ -98,8 +104,8 @@ export interface StemMixerPitchAnalysisController {
   ) => void
   endEdit: () => void
 
-  algorithm: Accessor<PitchAlgorithm>
-  setAlgorithm: Setter<PitchAlgorithm>
+  algorithm: Accessor<AnalysisAlgorithm>
+  setAlgorithm: Setter<AnalysisAlgorithm>
 
   bufferSize: Accessor<number>
   setBufferSize: Setter<number>
@@ -138,7 +144,7 @@ export const useStemMixerPitchAnalysisController = (
     MergedNote[]
   >([])
 
-  const [algorithm, setAlgorithm] = createSignal<PitchAlgorithm>('yin')
+  const [algorithm, setAlgorithm] = createSignal<AnalysisAlgorithm>('auto')
   const [bufferSize, setBufferSize] = createSignal(1024)
   const [sensitivity, setSensitivity] = createSignal(7)
   const [minConfidence, setMinConfidence] = createSignal(0.3)
@@ -240,17 +246,24 @@ export const useStemMixerPitchAnalysisController = (
     return history
   }
 
-  /** Re-segment the retained contour at the current cleanup settings into the
-   *  BASE note list. Cheap — no re-detection. Edits are reapplied reactively. */
-  const resegment = (): MergedNote[] => {
-    const items = segmentSecondsContourToMelody(rawContour, {
+  /** Run the denoise pipeline over a contour at the current cleanup settings. */
+  const segmentContour = (
+    contour: OfflineSegmentSecondsFrame[],
+  ): MergedNote[] => {
+    const items = segmentSecondsContourToMelody(contour, {
       bpm: songBpm(),
       key: songKey(),
       scaleType: songScale(),
       cleanupAmount: cleanupAmount(),
       pipeline: COARSE_HOP_PIPELINE,
     })
-    const segMerged = melodyItemsToMergedNotes(items, songBpm())
+    return melodyItemsToMergedNotes(items, songBpm())
+  }
+
+  /** Re-segment the retained contour at the current cleanup settings into the
+   *  BASE note list. Cheap — no re-detection. Edits are reapplied reactively. */
+  const resegment = (): MergedNote[] => {
+    const segMerged = segmentContour(rawContour)
     setBaseNotes(baseToEditable(segMerged))
     return segMerged
   }
@@ -405,14 +418,23 @@ export const useStemMixerPitchAnalysisController = (
     try {
       const data = buffer.getChannelData(0)
       const sr = buffer.sampleRate
-      const detector = new PitchDetector({
-        sampleRate: sr,
-        bufferSize: bufferSize(),
-        algorithm: algorithm(),
-        sensitivity: sensitivity(),
-        minConfidence: minConfidence(),
-        minAmplitude: minAmplitude(),
-      })
+      // 'auto' runs YIN and MPM over the same frames and keeps whichever
+      // yields more cleaned-note coverage; a concrete choice runs alone.
+      const algos: PitchAlgorithm[] =
+        algorithm() === 'auto'
+          ? ['yin', 'mpm']
+          : [algorithm() as PitchAlgorithm]
+      const detectors = algos.map(
+        (algo) =>
+          new PitchDetector({
+            sampleRate: sr,
+            bufferSize: bufferSize(),
+            algorithm: algo,
+            sensitivity: sensitivity(),
+            minConfidence: minConfidence(),
+            minAmplitude: minAmplitude(),
+          }),
+      )
 
       const stepSamples = Math.floor(WINDOW_STEP_SEC * sr)
       const totalFrames =
@@ -422,14 +444,16 @@ export const useStemMixerPitchAnalysisController = (
         throw new Error('Buffer too short')
       }
 
-      const rawDetections: {
-        midi: number
-        noteName: string
-        timeSec: number
-      }[] = []
-      // Full per-frame contour incl. unvoiced frames (freq: null) — the pipeline
-      // needs the silences to break held notes.
-      const contour: OfflineSegmentSecondsFrame[] = []
+      interface DetectionRun {
+        rawDetections: { midi: number; noteName: string; timeSec: number }[]
+        // Full per-frame contour incl. unvoiced frames (freq: null) — the
+        // pipeline needs the silences to break held notes.
+        contour: OfflineSegmentSecondsFrame[]
+      }
+      const runs: DetectionRun[] = algos.map(() => ({
+        rawDetections: [],
+        contour: [],
+      }))
 
       // To avoid freezing UI completely
       const YIELD_BATCH = 50
@@ -437,20 +461,26 @@ export const useStemMixerPitchAnalysisController = (
       for (let i = 0; i < totalFrames; i++) {
         const offset = i * stepSamples
         const chunk = data.slice(offset, offset + bufferSize())
-        const pitch = detector.detect(chunk)
         const timeSec = offset / sr + bufferSize() / sr / 2
 
-        const midi = pitch.frequency > 0 ? freqToMidi(pitch.frequency) : -1
-        const inRange =
-          midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max
+        for (let a = 0; a < detectors.length; a++) {
+          const pitch = detectors[a].detect(chunk)
+          const midi = pitch.frequency > 0 ? freqToMidi(pitch.frequency) : -1
+          const inRange =
+            midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max
 
-        contour.push({
-          timeSec,
-          freq: inRange ? pitch.frequency : null,
-          clarity: inRange ? pitch.clarity : 0,
-        })
-        if (inRange) {
-          rawDetections.push({ midi, noteName: pitch.noteName, timeSec })
+          runs[a].contour.push({
+            timeSec,
+            freq: inRange ? pitch.frequency : null,
+            clarity: inRange ? pitch.clarity : 0,
+          })
+          if (inRange) {
+            runs[a].rawDetections.push({
+              midi,
+              noteName: pitch.noteName,
+              timeSec,
+            })
+          }
         }
 
         if (i % YIELD_BATCH === 0 && i > 0) {
@@ -460,6 +490,28 @@ export const useStemMixerPitchAnalysisController = (
       }
 
       setProgress(100)
+
+      // Pick the run whose cleaned notes cover the most sung time.
+      const candidates = runs.map((run, a) => {
+        const segmented = segmentContour(run.contour)
+        const coverage = segmented.reduce(
+          (sum, n) => sum + (n.endSec - n.startSec),
+          0,
+        )
+        return { algo: algos[a], run, coverage }
+      })
+      let best = candidates[0]
+      for (const c of candidates) {
+        if (c.coverage > best.coverage) best = c
+      }
+      if (candidates.length > 1) {
+        console.log(
+          `[PitchAnalysis] auto pick: ${candidates
+            .map((c) => `${c.algo} ${c.coverage.toFixed(1)}s`)
+            .join(' vs ')} -> ${best.algo}`,
+        )
+      }
+      const { rawDetections, contour } = best.run
 
       // Raw (un-cleaned) merged notes for reference.
       const merged = mergeConsecutiveNotes(
