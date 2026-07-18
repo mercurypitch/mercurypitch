@@ -14,9 +14,11 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
 import { MicButton } from '@/components/MicButton'
+import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { EngineContext } from '@/contexts/EngineContext'
 import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
 import { haptics } from '@/lib/haptics'
+import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
@@ -43,6 +45,11 @@ export interface ExerciseShellProps {
 
   /** Settings shown in idle (note pickers, scale selects). Optional. */
   idleSettings?: JSX.Element
+  /** When set, heavy idle settings move into a mobile bottom sheet behind a
+   *  button with this label (keeps the Start CTA above the fold on phones);
+   *  desktop always renders them inline. Only the content-heavy setups
+   *  (Guided Warmup, Routine Runner) opt in. */
+  settingsSheetLabel?: string
   /** Idle placeholder (icon + short hint). Falls back to the help summary. */
   idlePlaceholder?: JSX.Element
   onStart: () => void
@@ -67,6 +74,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // 'manual' | seconds
   const [timerMode, setTimerMode] = createSignal<'manual' | number>('manual')
   const [remainingMs, setRemainingMs] = createSignal(0)
+
+  // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
+  const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
+  const useSettingsSheet = () =>
+    props.settingsSheetLabel !== undefined && isNarrow()
 
   const help = () => EXERCISE_HELP[props.type]
   // Memoize the status string. props.status() reads base.state(), which is
@@ -337,7 +349,27 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               {props.idlePlaceholder}
             </Show>
             <div class="exercise-idle-controls">
-              <Show when={props.idleSettings}>{props.idleSettings}</Show>
+              <Show when={props.idleSettings}>
+                {/* Heavy setups (settingsSheetLabel set) move into a bottom
+                    sheet on phones so Start stays above the fold; inline
+                    everywhere else. useSettingsSheet is false on desktop. */}
+                <Show when={useSettingsSheet()} fallback={props.idleSettings}>
+                  <button
+                    type="button"
+                    class="exercise-btn exercise-settings-trigger"
+                    onClick={() => setSettingsSheetOpen(true)}
+                  >
+                    {props.settingsSheetLabel}
+                  </button>
+                  <OptionsSheet
+                    isOpen={settingsSheetOpen()}
+                    close={() => setSettingsSheetOpen(false)}
+                    ariaLabel={props.settingsSheetLabel ?? 'Settings'}
+                  >
+                    {props.idleSettings}
+                  </OptionsSheet>
+                </Show>
+              </Show>
               <Show when={props.autoTimer}>
                 <TimerToggle />
               </Show>
