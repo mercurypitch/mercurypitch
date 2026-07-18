@@ -52,6 +52,11 @@ export const Sheet: Component<SheetProps> = (props) => {
   useFocusTrap(() => panelRef, {
     isOpen: () => props.isOpen,
     onClose: () => props.close(),
+    // Focus the panel itself, not the first row's control: an options sheet
+    // leads with a native <select> (Key), which mobile browsers pop open when
+    // it's focused right after the tap that opened the sheet — so tapping "⋯"
+    // appeared to open both the sheet and the Key dropdown at once.
+    initialFocus: () => panelRef,
   })
 
   const onHandleDown = (e: PointerEvent): void => {
@@ -100,6 +105,7 @@ export const Sheet: Component<SheetProps> = (props) => {
           role="dialog"
           aria-modal="true"
           aria-label={props.ariaLabel}
+          tabindex="-1"
           classList={{
             [styles.panel]: true,
             [styles.tall]: props.snap === 'tall',
