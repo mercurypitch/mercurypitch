@@ -17,6 +17,9 @@ interface ConfirmDialogProps {
   message: JSX.Element
   /** Confirm button label. Defaults to "Delete". */
   confirmLabel?: string
+  /** Icon on the confirm button. Defaults to a trash can (delete actions).
+   *  Pass a different icon for non-delete confirms (e.g. replace/overwrite). */
+  confirmIcon?: JSX.Element
   onConfirm: () => void
   onCancel: () => void
 }
@@ -62,7 +65,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
               data-testid="confirm-delete"
               onClick={() => props.onConfirm()}
             >
-              <Trash2 /> {props.confirmLabel ?? 'Delete'}
+              {props.confirmIcon ?? <Trash2 />} {props.confirmLabel ?? 'Delete'}
             </button>
           </div>
         </div>

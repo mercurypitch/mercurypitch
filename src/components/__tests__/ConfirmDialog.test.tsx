@@ -101,6 +101,24 @@ describe('ConfirmDialog', () => {
     expect(confirmBtn.textContent).not.toContain('Delete')
   })
 
+  it('defaults the confirm icon to the trash can', () => {
+    render(() => <ConfirmDialog {...baseProps} open={true} />)
+    expect(screen.getByTestId('trash-icon')).toBeTruthy()
+  })
+
+  it('renders a custom confirm icon instead of the trash can', () => {
+    render(() => (
+      <ConfirmDialog
+        {...baseProps}
+        open={true}
+        confirmLabel="Replace"
+        confirmIcon={<span data-testid="custom-icon">!</span>}
+      />
+    ))
+    expect(screen.getByTestId('custom-icon')).toBeTruthy()
+    expect(screen.queryByTestId('trash-icon')).toBeNull()
+  })
+
   it('reactively opens and closes', () => {
     const [open, setOpen] = createSignal(false)
     render(() => <ConfirmDialog {...baseProps} open={open()} />)

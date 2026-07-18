@@ -24,6 +24,7 @@ import { lrcEntriesToSegments } from '@/lib/pitch-word-alignment'
 import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { useConfirm } from '@/lib/use-confirm'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
@@ -32,7 +33,8 @@ import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
-import { ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
+import { ConfirmDialog } from './ConfirmDialog'
+import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
@@ -248,6 +250,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioCtx: (() => undefined) as () => AudioContext | null | undefined,
     ensureAudioCtx: (() => ({}) as AudioContext) as () => AudioContext,
   }
+
+  // Styled confirm modal, shared by the destructive lyrics actions below
+  // (paste-overwrite, auto word-sync) in place of native window.confirm.
+  const confirm = useConfirm()
 
   // ── Mic / Scoring controller ─────────────────────────────────
   const mic = useStemMixerMicController({
@@ -986,21 +992,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         try {
           const text = await navigator.clipboard.readText()
           if (!text || text.trim().length === 0) return
-          if (
-            !window.confirm(
-              'Are you sure you want to overwrite current lyrics and word timings with clipboard content? This action cannot be undone.',
-            )
-          )
-            return
-
-          const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
-          const baseName = props.songTitle
-            ? props.songTitle.replace(/[^a-zA-Z0-9_-]/g, '_')
-            : 'clipboard'
-          handleLyricsUpload({
-            text,
-            format: isLrc ? 'lrc' : 'txt',
-            filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
+          confirm.request({
+            title: 'Overwrite lyrics?',
+            message:
+              'This replaces the current lyrics and word timings with the clipboard content. This cannot be undone.',
+            confirmLabel: 'Overwrite',
+            confirmIcon: <AlertTriangle />,
+            onConfirm: () => {
+              const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
+              const baseName = props.songTitle
+                ? props.songTitle.replace(/[^a-zA-Z0-9_-]/g, '_')
+                : 'clipboard'
+              handleLyricsUpload({
+                text,
+                format: isLrc ? 'lrc' : 'txt',
+                filename: `${baseName}.${isLrc ? 'lrc' : 'txt'}`,
+              })
+            },
           })
         } catch (err) {
           console.warn('Clipboard paste failed', err)
@@ -1032,28 +1040,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       )
       return
     }
+    const runSync = () => {
+      const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))
+      if (linesSynced > 0) {
+        showNotification(
+          `Word sync drafted for ${linesSynced} lines — words now light up as they're sung`,
+          'success',
+        )
+      } else {
+        showNotification(
+          'Auto word-sync needs line-timed lyrics — load an LRC or run LRC Gen first',
+          'warning',
+        )
+      }
+    }
     // Same data-loss guard as the lyrics paste path: existing word timings
     // (possibly hand-tapped) are replaced wholesale and there is no undo.
-    if (
-      Object.keys(wordTimings()).length > 0 &&
-      !window.confirm(
-        'Auto word-sync will replace the existing word timings for this song. This cannot be undone. Continue?',
-      )
-    ) {
+    if (Object.keys(wordTimings()).length > 0) {
+      confirm.request({
+        title: 'Replace word timings?',
+        message:
+          'Auto word-sync will replace the existing word timings for this song — including any you tapped by hand. This cannot be undone.',
+        confirmLabel: 'Replace',
+        confirmIcon: <AlertTriangle />,
+        onConfirm: runSync,
+      })
       return
     }
-    const { linesSynced } = applyAutoWordSync(detectVocalOnsets(buf))
-    if (linesSynced > 0) {
-      showNotification(
-        `Word sync drafted for ${linesSynced} lines — words now light up as they're sung`,
-        'success',
-      )
-    } else {
-      showNotification(
-        'Auto word-sync needs line-timed lyrics — load an LRC or run LRC Gen first',
-        'warning',
-      )
-    }
+    runSync()
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -1943,6 +1957,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
         </Show>
         <KaraokePlaylistSummary />
+        <ConfirmDialog
+          open={confirm.pending() !== null}
+          title={confirm.pending()?.title ?? ''}
+          message={confirm.pending()?.message ?? ''}
+          confirmLabel={confirm.pending()?.confirmLabel}
+          confirmIcon={confirm.pending()?.confirmIcon}
+          onConfirm={confirm.accept}
+          onCancel={confirm.cancel}
+        />
       </div>
     </Show>
   )

@@ -9,10 +9,12 @@ import type { LibraryEntry } from '@/components/shared'
 import { MelodyLibraryList } from '@/components/shared'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
+import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showActionNotification, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
+import { ConfirmDialog } from './ConfirmDialog'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
 // Drag and drop state
@@ -38,6 +40,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   const [searchQuery, setSearchQuery] = createSignal('')
   const [dragState, setDragState] = createSignal<DragState>(null)
+  const confirm = useConfirm()
 
   const sessions = createMemo(() => melodyStore.getSessions())
 
@@ -79,16 +82,24 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     const session = melodyStore.getSession(id)
     if (session === undefined) return
     const sessionName = session.name || 'Unnamed'
-    if (confirm(`Delete session "${sessionName}"?`)) {
-      melodyStore.deleteSession(id)
-      showActionNotification(`Deleted "${sessionName}"`, 'warning', {
-        label: 'Undo',
-        onClick: () => {
-          melodyStore.restoreSession(session)
-          showNotification(`Restored "${sessionName}"`, 'success')
-        },
-      })
-    }
+    confirm.request({
+      title: 'Delete Session',
+      message: (
+        <>
+          Delete <strong>{sessionName}</strong>? You can undo this right after.
+        </>
+      ),
+      onConfirm: () => {
+        melodyStore.deleteSession(id)
+        showActionNotification(`Deleted "${sessionName}"`, 'warning', {
+          label: 'Undo',
+          onClick: () => {
+            melodyStore.restoreSession(session)
+            showNotification(`Restored "${sessionName}"`, 'success')
+          },
+        })
+      },
+    })
   }
 
   const handleEdit = (session: PlaybackSession) => {
@@ -266,6 +277,15 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirm.pending() !== null}
+        title={confirm.pending()?.title ?? ''}
+        message={confirm.pending()?.message ?? ''}
+        confirmLabel={confirm.pending()?.confirmLabel}
+        confirmIcon={confirm.pending()?.confirmIcon}
+        onConfirm={confirm.accept}
+        onCancel={confirm.cancel}
+      />
     </Show>
   )
 }
