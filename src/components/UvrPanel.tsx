@@ -8,6 +8,7 @@ import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
+import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
@@ -884,6 +885,78 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  /** Re-run a completed browser separation on the cloud GPU, feeding it the
+   *  original upload we keep in IndexedDB. 'same' upgrades the session in
+   *  place (stems are replaced when the job lands); 'new' spawns a sibling
+   *  session so the browser and HQ results can be compared side by side. */
+  const handleRerunHq = async (
+    sessionId: string,
+    target: 'same' | 'new',
+  ): Promise<void> => {
+    const s = getUvrSession(sessionId)
+    if (!s) return
+    if (allSessions().some((x) => x.status === 'processing')) {
+      showNotification(
+        'A separation is already running — wait for it to finish first.',
+        'info',
+      )
+      return
+    }
+    if (!requireServerAuth()) return
+    const orig = await getOriginalFileBlob(sessionId)
+    if (!orig) {
+      showNotification(
+        "The original file isn't stored for this session, so it can't be re-processed.",
+        'warning',
+      )
+      return
+    }
+    if (orig.size > SERVER_MAX_UPLOAD_BYTES) {
+      showNotification(
+        'This file is over the cloud GPU upload limit, so an HQ re-run is not available for it.',
+        'warning',
+      )
+      return
+    }
+
+    if (target === 'same') {
+      // Clear any stale upload selection: handleProcessStart prefers
+      // selectedFile() over the stored original, and the original is already
+      // persisted under THIS session — let the fallback re-read it.
+      setSelectedFile(null)
+      // Stamp server mode BEFORE starting: a mid-run reload re-attaches only
+      // to sessions with processingMode 'server' (see handleResumeServer).
+      saveAllUvrSessions(
+        getAllUvrSessions().map((x) =>
+          x.sessionId === sessionId
+            ? { ...x, processingMode: 'server' as const }
+            : x,
+        ),
+      )
+      // Reset progress/error/apiSessionId from the previous run.
+      retryUvrSession(sessionId)
+      // The HQ stems will differ from the browser stems — a cached pitch
+      // analysis would silently mismatch, so drop it now (cheap to re-run).
+      void deletePitchAnalysisFromDb(sessionId)
+      setCurrentView('processing')
+      await handleProcessStart(sessionId, 'server')
+    } else {
+      // New sibling session: hand the original over as the "selected file" so
+      // handleProcessStart persists it under the new session id too.
+      setSelectedFile(orig)
+      const newId = startUvrSession(
+        orig.name,
+        orig.size,
+        orig.type,
+        'separate',
+        'server',
+        s.fileHash,
+      )
+      setCurrentView('processing')
+      await handleProcessStart(newId, 'server')
+    }
+  }
+
   const handleExport = async (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => {
@@ -1636,6 +1709,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           const fileName =
                             session?.originalFile?.name ?? 'Unknown'
                           void indexStemFingerprint(sessionId, fileName)
+                        }}
+                        onRerunHq={(sessionId, target) => {
+                          void handleRerunHq(sessionId, target)
                         }}
                       />
                     )}

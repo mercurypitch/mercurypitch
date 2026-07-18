@@ -24,6 +24,10 @@ interface SessionResultProps {
   onRetry?: (sessionId: string) => void
   onClose?: () => void
   onReindexStem?: (sessionId: string) => void
+  /** Re-run this song on the cloud GPU: 'same' upgrades this session's stems
+   *  in place, 'new' spawns a separate session so both results can be
+   *  compared. Offered only for completed browser-processed sessions. */
+  onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
 }
 
 export const UvrSessionResult: Component<SessionResultProps> = (props) => {
@@ -36,6 +40,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
   const [reindexing, setReindexing] = createSignal(false)
   const [downloadingOriginal, setDownloadingOriginal] = createSignal(false)
+  const [showHqMenu, setShowHqMenu] = createSignal(false)
   const [showGroupSelect, setShowGroupSelect] = createSignal(false)
   const [newGroupName, setNewGroupName] = createSignal('')
 
@@ -211,6 +216,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const hasSelection = () => selectedStems().size > 0
+
+  // HQ re-run makes sense only for a finished browser separation that still
+  // has its original upload to feed the cloud GPU. Manual-stem sessions have
+  // no full mix, and server sessions already ran the HQ model.
+  const canRerunHq = () => {
+    const s = session()
+    return (
+      s?.status === 'completed' &&
+      s.processingMode === 'local' &&
+      s.provider !== 'manual' &&
+      s.originalFile != null &&
+      props.onRerunHq !== undefined
+    )
+  }
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
@@ -751,6 +770,58 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               >
                 <Download /> Original
               </button>
+            </Show>
+            <Show when={canRerunHq()}>
+              <div class="session-hq-rerun">
+                <button
+                  class="session-result-btn session-result-btn-hq"
+                  disabled={props.disabled}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowHqMenu(!showHqMenu())
+                  }}
+                  title="Re-run this song on the cloud GPU for higher-quality stems"
+                >
+                  <Zap /> HQ
+                  <span
+                    class="session-hq-rerun-chevron"
+                    classList={{ open: showHqMenu() }}
+                  >
+                    <ChevronDown size={12} />
+                  </span>
+                </button>
+                <Show when={showHqMenu()}>
+                  <div class="session-hq-rerun-menu">
+                    <button
+                      class="session-hq-rerun-item"
+                      onClick={() => {
+                        setShowHqMenu(false)
+                        props.onRerunHq?.(props.sessionId, 'same')
+                      }}
+                    >
+                      Upgrade this session
+                      <span class="session-hq-rerun-item-note">
+                        Replaces these stems with cloud HQ stems
+                      </span>
+                    </button>
+                    <button
+                      class="session-hq-rerun-item"
+                      onClick={() => {
+                        setShowHqMenu(false)
+                        props.onRerunHq?.(props.sessionId, 'new')
+                      }}
+                    >
+                      New session to compare
+                      <span class="session-hq-rerun-item-note">
+                        Keeps this one — the HQ result arrives separately
+                      </span>
+                    </button>
+                    <div class="session-hq-rerun-hint">
+                      Runs on the cloud GPU — uses credits
+                    </div>
+                  </div>
+                </Show>
+              </div>
             </Show>
           </Show>
           <Show when={session()?.status === 'error' && session()?.originalFile}>

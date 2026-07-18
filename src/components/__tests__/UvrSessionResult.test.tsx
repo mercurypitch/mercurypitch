@@ -498,4 +498,61 @@ describe('UvrSessionResult Component', () => {
       )
     })
   })
+
+  describe('HQ re-run', () => {
+    const localCompleted = {
+      sessionId: 'session-123',
+      status: 'completed',
+      progress: 100,
+      processingMode: 'local',
+      originalFile: {
+        name: 'song.mp3',
+        size: 1024 * 1000,
+        mimeType: 'audio/mpeg',
+      },
+      createdAt: Date.now() - 3600000,
+    }
+
+    it('shows the HQ button for a completed browser session', () => {
+      seedSession(localCompleted)
+      render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
+      expect(document.querySelector('.session-result-btn-hq')).toBeTruthy()
+    })
+
+    it('hides the HQ button for server-processed sessions', () => {
+      seedSession({ ...localCompleted, processingMode: 'server' })
+      render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
+      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+    })
+
+    it('hides the HQ button for manual-stem sessions', () => {
+      seedSession({ ...localCompleted, provider: 'manual' })
+      render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
+      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+    })
+
+    it('hides the HQ button when no handler is wired', () => {
+      seedSession(localCompleted)
+      render(() => <UvrSessionResult {...defaultProps} />)
+      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+    })
+
+    it('fires onRerunHq with same/new from the menu options', () => {
+      const onRerunHq = vi.fn()
+      seedSession(localCompleted)
+      render(() => <UvrSessionResult {...defaultProps} onRerunHq={onRerunHq} />)
+
+      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
+      const items = document.querySelectorAll('.session-hq-rerun-item')
+      expect(items.length).toBe(2)
+
+      fireEvent.click(items[0])
+      expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'same')
+
+      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
+      fireEvent.click(document.querySelectorAll('.session-hq-rerun-item')[1])
+      expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
+      expect(onRerunHq).toHaveBeenCalledTimes(2)
+    })
+  })
 })
