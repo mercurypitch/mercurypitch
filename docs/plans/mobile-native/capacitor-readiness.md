@@ -61,3 +61,73 @@ committed except findings written back into this doc.
 - No IAP — billing stays web (Stripe) until store policy forces the issue;
   the native app links out per current App Store external-purchase rules at
   submission time (re-check then — this area moves).
+
+## E. Running the spike (Phase S)
+
+A one-shot harness exists: `scripts/spike-capacitor.sh`. It builds the
+local-mode bundle, adds `@capacitor/*`, writes `capacitor.config.ts`,
+creates `ios/`, patches `NSMicrophoneUsageDescription`, and opens Xcode.
+It is **throwaway** — run it on a `spike/capacitor` branch and discard;
+none of what it creates is committed to the mobile PR (the native project
+lands in Phase 5, §C).
+
+```sh
+git switch -c spike/capacitor
+./scripts/spike-capacitor.sh          # macOS + Xcode + CocoaPods
+# run the §B smoke tests, record findings in the table below
+rm -rf ios capacitor.config.ts && git checkout package.json pnpm-lock.yaml
+git switch feat/mobile-first-redesign && git branch -D spike/capacitor
+```
+
+For on-device getUserMedia, serve over HTTPS: `pnpm run dev:host` already
+uses `@vitejs/plugin-basic-ssl`; set `server.url` in the generated config
+to `https://<LAN-IP>:3000` (mkcert if the self-signed cert is rejected).
+
+### Findings (fill in after running)
+
+| # | Risk | Result | Mitigation needed? |
+| --- | --- | --- | --- |
+| B1 | mic permission flow | _tbd_ | |
+| B2 | earpiece routing on mic | _tbd_ | |
+| B3 | cold audio-session first-play | _tbd_ | |
+| B4 | pitch latency vs iOS Safari | _tbd_ | |
+| B5 | threaded ONNX (COOP/COEP) | _tbd_ | |
+| B6 | IndexedDB persistence | _tbd_ | |
+| B7 | background/lock behavior | _tbd_ | |
+| B8 | live-reload HTTPS getUserMedia | _tbd_ | |
+| B9 | R2 model fetch + cache | _tbd_ | |
+
+## F. Capacitor `platform/` adapter (Phase 5 drop-in)
+
+The web `src/lib/platform/index.ts` is the only seam. The native build
+swaps its impls for these (kept here rather than in-tree so the branch
+stays dependency-free until Phase 5). Selected via a build flag, e.g.
+`export const platform = import.meta.env.VITE_NATIVE ? capacitorPlatform : webPlatform`.
+
+```ts
+// src/lib/platform/capacitor.ts  (Phase 5)
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
+import { KeepAwake } from '@capacitor/keep-awake'
+import { Share } from '@capacitor/share'
+import { StatusBar, Style } from '@capacitor/status-bar'
+import { Browser } from '@capacitor/browser'
+import type { PlatformServices } from './index'
+
+export const capacitorPlatform: PlatformServices = {
+  haptics: {
+    tapLight: () => void Haptics.impact({ style: ImpactStyle.Light }),
+    success: () => void Haptics.notification({ type: NotificationType.Success }),
+    warning: () => void Haptics.notification({ type: NotificationType.Warning }),
+  },
+  keepAwake: {
+    enable: () => KeepAwake.keepAwake().then(() => undefined),
+    disable: () => KeepAwake.allowSleep().then(() => undefined),
+  },
+  statusBar: {
+    setStyle: (s) =>
+      void StatusBar.setStyle({ style: s === 'dark' ? Style.Dark : Style.Light }),
+  },
+  share: (data) => Share.share(data).then(() => true).catch(() => false),
+  openExternal: (url) => void Browser.open({ url }),
+}
+```
