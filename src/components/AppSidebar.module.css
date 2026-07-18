@@ -39,9 +39,12 @@
     max-height: 100dvh;
     height: auto;
     /* Edge-to-edge drawer (viewport-fit=cover): keep content clear of the
-       status bar, home indicator and the left rounded corner/notch. */
+       status bar and the left rounded corner/notch. The bottom tab bar
+       (z-index above this drawer) overlaps the drawer's lower edge, so add
+       its full footprint as bottom scroll room — otherwise the last items
+       sit permanently under the bar and can't be tapped. */
     padding-top: var(--safe-top);
-    padding-bottom: var(--safe-bottom);
+    padding-bottom: calc(var(--tabbar-total) + 16px);
     padding-left: var(--safe-left);
   }
   :global(.app-sidebar.open) {
