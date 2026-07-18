@@ -3,10 +3,16 @@
 .focusMode {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 500; /* keep in sync with --z-focus (app.css) */
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
+  /* Full-screen overlay: with viewport-fit=cover it extends under the
+     notch/home indicator — pad the chrome clear (0 on desktop). */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 /* Top stats bar */

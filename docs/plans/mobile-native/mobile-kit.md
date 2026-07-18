@@ -120,6 +120,16 @@ by overriding tokens locally, which becomes the standard "skinning" mechanism).
 8. **Skins override tokens, not components.** Karaoke's purple, Glass's
    glassmorphism, default GitHub-dark: all are token override blocks on the
    stage root.
+9. **Iconography: SVG only — never emoji.** All UI icons are stroke-based
+   inline SVGs (24 viewBox, 1.8px stroke, round caps/joins — SF-Symbols
+   feel), extending the existing precedent in
+   `src/components/shared/control-bar/icons.tsx`; kit icons live in
+   `src/components/mobile/icons.tsx`. No emoji anywhere in product UI —
+   not as icons, not as decorations, not in hint copy. Generated artwork
+   (e.g. Higgsfield sets, like the voice-mirror legends/characters in
+   `public/`) is welcome for *decorative imagery* — backdrops, character
+   art, empty states — but chrome icons stay hand-drawn SVG so they render
+   crisp at every DPR, inherit `currentColor`, and follow themes.
 
 ## 5. Extraction sequencing (Phase 0 PRs)
 

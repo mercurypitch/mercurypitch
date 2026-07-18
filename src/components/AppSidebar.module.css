@@ -38,6 +38,11 @@
     max-height: 100vh;
     max-height: 100dvh;
     height: auto;
+    /* Edge-to-edge drawer (viewport-fit=cover): keep content clear of the
+       status bar, home indicator and the left rounded corner/notch. */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
   }
   :global(.app-sidebar.open) {
     left: 0;

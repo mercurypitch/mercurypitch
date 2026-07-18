@@ -250,3 +250,32 @@
     display: none;
   }
 }
+
+/* ============================================================
+   Safe-area adoption (mobile-native Phase 0).
+   viewport-fit=cover makes env(safe-area-inset-*) real on notched
+   phones — fixed/sticky chrome that previously sat at the raw viewport
+   edge must now pad itself clear of the status bar, home indicator and
+   rounded corners. Tokens: --safe-* in app.css.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* App header now extends under the status bar — pad it clear. */
+  header {
+    padding-top: calc(6px + var(--safe-top));
+    padding-left: max(8px, var(--safe-left));
+    padding-right: max(8px, var(--safe-right));
+  }
+
+  /* Exercises: the sticky Start CTA and the Stop FAB sit at the very
+     bottom edge — keep them above the home indicator. */
+  .exercise-idle-start {
+    padding-bottom: calc(13px + var(--safe-bottom));
+  }
+  .exercise-canvas-area.is-active {
+    padding-bottom: calc(76px + var(--safe-bottom));
+  }
+  .exercise-active-controls {
+    right: calc(14px + var(--safe-right));
+    bottom: calc(14px + var(--safe-bottom));
+  }
+}
