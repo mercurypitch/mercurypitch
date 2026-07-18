@@ -27,7 +27,7 @@ import type { PitchBufferSize } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
-import { practiceScope, setPracticeScope, setUiMode, uiMode, } from '@/stores/settings-store'
+import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
 import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
 import styles from './SettingsPanel.module.css'
 
@@ -759,6 +759,32 @@ export const SettingsPanel: Component = () => {
                 <option value="plus-jakarta-sans">Plus Jakarta Sans</option>
                 <option value="system">System Default</option>
               </SafeSelect>
+            </div>
+          </div>
+
+          {/* Navigation (gestures) */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Navigation</h3>
+            <div class={styles.settingsDivider} />
+
+            <div class={styles.settingsRow}>
+              <label for="set-swipe-nav">Swipe to change tabs</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="set-swipe-nav"
+                  checked={swipeNavEnabled()}
+                  onChange={(e) => {
+                    setSwipeNavEnabled(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Swipe left or right across the screen to move between tabs. Off
+                by default so accidental swipes don't switch views — on a phone
+                the bottom bar is the quick way to navigate.
+              </small>
             </div>
           </div>
 
