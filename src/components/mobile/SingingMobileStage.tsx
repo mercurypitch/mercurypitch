@@ -406,10 +406,12 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       </OptionsSheet>
 
       {/* ── Song / track picker modals (same wiring as the desktop
-             SingingStatusBar host — only one host mounts per viewport) ── */}
+             SingingStatusBar host — only one host mounts per viewport).
+             prefix="fn" reuses the shared MIDI-picker styling the desktop
+             status bars already use; a bespoke prefix has no CSS. ── */}
       <Show when={props.picker.isModalOpen()}>
         <MidiSongSelectModal
-          prefix="sms"
+          prefix="fn"
           melodies={props.picker.melodies}
           savedSongs={savedMidiSongs}
           selectedId={props.picker.selectedId}
@@ -432,7 +434,7 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
         {(song) => (
           <MidiTrackPickerModal
             song={song}
-            prefix="sms"
+            prefix="fn"
             radioName="singing-stage-score-track"
             pendingScoreId={props.picker.pendingScoreId}
             setPendingScoreId={props.picker.setPendingScoreId}

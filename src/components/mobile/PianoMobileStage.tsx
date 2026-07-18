@@ -342,10 +342,12 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
       </OptionsSheet>
 
       {/* ── Song / track picker modals (stage hosts them — the desktop
-             host, MidiSongStatusBar, is unmounted on narrow) ── */}
+             host, MidiSongStatusBar, is unmounted on narrow). prefix="fn"
+             reuses the same shared MIDI-picker styling the desktop piano
+             status bar uses; a bespoke prefix has no CSS. ── */}
       <Show when={props.picker.isModalOpen()}>
         <MidiSongSelectModal
-          prefix="pms"
+          prefix="fn"
           melodies={props.picker.melodies}
           savedSongs={savedMidiSongs}
           selectedId={props.picker.selectedId}
@@ -368,7 +370,7 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
         {(song) => (
           <MidiTrackPickerModal
             song={song}
-            prefix="pms"
+            prefix="fn"
             radioName="piano-stage-score-track"
             pendingScoreId={props.picker.pendingScoreId}
             setPendingScoreId={props.picker.setPendingScoreId}
