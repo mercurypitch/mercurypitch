@@ -287,3 +287,36 @@
     bottom: calc(14px + var(--safe-bottom));
   }
 }
+
+/* ============================================================
+   Exercises menu alignment (mobile-native Phase 3): native-feel
+   touch idioms for the drill gallery — scrolling chip filters and
+   press feedback, per docs/plans/mobile-native/page-exercises.md.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Difficulty filter: one scrolling chip row, never wrapped. */
+  .exercise-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .exercise-filter::-webkit-scrollbar {
+    display: none;
+  }
+  .exercise-filter-pill {
+    flex: none;
+    min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Cards respond to touch like native list cells. */
+  .exercise-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .exercise-card:active {
+    transform: scale(0.985);
+    transition: transform 0.08s ease;
+  }
+}
