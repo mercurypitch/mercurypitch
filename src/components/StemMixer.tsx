@@ -361,7 +361,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
   // mixer. Reactive, so a rotation or resize swaps the presentation without
   // losing playback (the audio engine lives in setup, not in either JSX tree).
-  const zenStage = () => isPerformancePreset && isNarrow()
+  // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
+  // tab gets the same zen stage on phones as the standalone karaoke-night
+  // page — the studio mixer is a desktop surface (decision D4).
+  const zenStage = () => isNarrow()
 
   // True when this StemMixer instance is the playlist's current song (guards
   // the brief window where a new song is loading and a stale instance lingers).
