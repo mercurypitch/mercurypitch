@@ -113,7 +113,7 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
       />
 
       {/* ── Canvas (touch keys + pinch zoom live in-canvas) ── */}
-      <div class={styles.canvasWrap} data-stage-canvas>
+      <div class={styles.canvasWrap} data-stage-canvas data-tour="piano-canvas">
         {props.renderCanvas()}
         {props.renderMicHint?.()}
         {props.renderScoreCard()}
