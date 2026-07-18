@@ -131,12 +131,21 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
   [TAB_EXERCISES]: {
     id: 'tab-exercises',
     ariaLabel: 'Singing Exercises',
+    // Dumbbell — the universal "training/drills" glyph (the old mic-in-arc
+    // mark read as nothing in particular at 16px).
     icon: () => (
-      <svg viewBox="0 0 24 24" width="16" height="16" class={styles.tabIcon}>
-        <path
-          fill="currentColor"
-          d="M12 14c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2s2 .9 2 2v8c0 1.1-.9 2-2 2zm-1 4h2v2h-2zm-4.5-7.5c.8-.8 2-.8 2.8 0l1.4 1.4c.8.8.8 2 0 2.8-.8.8-2 .8-2.8 0L7.5 10.5zM3 13c0 5 4 9 9 9s9-4 9-9h-2c0 3.9-3.1 7-7 7s-7-3.1-7-7H3z"
-        />
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        class={styles.tabIcon}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.9"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6.2 7.8v8.4M3.4 9.6v4.8M17.8 7.8v8.4M20.6 9.6v4.8M6.2 12h11.6" />
       </svg>
     ),
   },

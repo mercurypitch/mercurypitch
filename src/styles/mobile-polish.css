@@ -320,3 +320,15 @@
     transition: transform 0.08s ease;
   }
 }
+
+/* ============================================================
+   Header slimming (mobile-native Phase 4): with the stages carrying
+   their own song chips and the bottom bar carrying navigation, the
+   header's melody-context pill duplicates on-stage info — drop it on
+   phones so the top row is just menu · logo · account.
+   ============================================================ */
+@media (max-width: 768px) {
+  .header-melody-context {
+    display: none;
+  }
+}
