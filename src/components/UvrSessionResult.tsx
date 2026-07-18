@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
-import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
+import { deleteUvrSessionFromDb, getOriginalFileBlob, } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { addSessionToGroup, createGroup, deleteUvrSession, getGroupsReactive, getUvrSession, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -35,6 +35,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const [toastMessage, setToastMessage] = createSignal('')
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
   const [reindexing, setReindexing] = createSignal(false)
+  const [downloadingOriginal, setDownloadingOriginal] = createSignal(false)
   const [showGroupSelect, setShowGroupSelect] = createSignal(false)
   const [newGroupName, setNewGroupName] = createSignal('')
 
@@ -175,6 +176,38 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     setReindexing(true)
     props.onReindexStem?.(props.sessionId)
     setTimeout(() => setReindexing(false), 3000)
+  }
+
+  // Download the original uploaded mix. We keep it in IndexedDB for the retry
+  // path (see UvrPanel.handleProcessStart), so users who deleted their local
+  // copy can pull it back — e.g. to re-run a higher-quality server separation.
+  const handleDownloadOriginal = async (e: Event) => {
+    e.stopPropagation()
+    if (downloadingOriginal()) return
+    setDownloadingOriginal(true)
+    try {
+      const file = await getOriginalFileBlob(props.sessionId)
+      if (!file) {
+        showNotification(
+          "The original file isn't stored for this session.",
+          'warning',
+        )
+        return
+      }
+      const url = URL.createObjectURL(file)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = session()?.originalFile?.name ?? file.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (err) {
+      console.error('[UvrSessionResult] original download failed:', err)
+      showNotification('Could not read the original file.', 'error')
+    } finally {
+      setDownloadingOriginal(false)
+    }
   }
 
   const hasSelection = () => selectedStems().size > 0
@@ -703,6 +736,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 onClick={handleMixSelected}
               >
                 <SlidersHorizontal /> Mix
+              </button>
+            </Show>
+            <Show
+              when={
+                session()?.status === 'completed' && session()?.originalFile
+              }
+            >
+              <button
+                class="session-result-btn"
+                disabled={props.disabled === true || downloadingOriginal()}
+                onClick={(e) => void handleDownloadOriginal(e)}
+                title="Download the original uploaded file (full mix)"
+              >
+                <Download /> Original
               </button>
             </Show>
           </Show>

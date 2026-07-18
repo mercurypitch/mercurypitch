@@ -10,6 +10,7 @@ import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
+import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
@@ -17,6 +18,7 @@ import { setEditorView } from '@/stores'
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showActionNotification, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
+import { ConfirmDialog } from './ConfirmDialog'
 import styles from './LibraryModal.module.css'
 import modalStyles from './Modal.module.css'
 
@@ -83,6 +85,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const [createScale, setCreateScale] = createSignal('major')
   const [createTags, setCreateTags] = createSignal('')
   const [createNotes, setCreateNotes] = createSignal('')
+
+  const confirm = useConfirm()
 
   // ===========================================
   // 2. Memos and helper values
@@ -283,20 +287,28 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const melody = melodyStore.getMelody(key)
     if (!melody) return
     const melodyName = melody.name || 'Untitled'
-    if (confirm(`Delete "${melodyName}"?`)) {
-      melodyStore.deleteMelody(key)
-      setSelectedMelodyKey(null)
-      if (editingMelodyKey() === key) {
-        cancelEdit()
-      }
-      showActionNotification(`Deleted "${melodyName}"`, 'warning', {
-        label: 'Undo',
-        onClick: () => {
-          melodyStore.restoreMelody(melody)
-          showNotification(`Restored "${melodyName}"`, 'success')
-        },
-      })
-    }
+    confirm.request({
+      title: 'Delete Melody',
+      message: (
+        <>
+          Delete <strong>{melodyName}</strong>? You can undo this right after.
+        </>
+      ),
+      onConfirm: () => {
+        melodyStore.deleteMelody(key)
+        setSelectedMelodyKey(null)
+        if (editingMelodyKey() === key) {
+          cancelEdit()
+        }
+        showActionNotification(`Deleted "${melodyName}"`, 'warning', {
+          label: 'Undo',
+          onClick: () => {
+            melodyStore.restoreMelody(melody)
+            showNotification(`Restored "${melodyName}"`, 'success')
+          },
+        })
+      },
+    })
   }
 
   const handleEdit = (melody: MelodyData) => {
@@ -447,31 +459,36 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     if (!playlistEdit || playlistEdit.mode !== 'delete') return
 
     const playlistId = playlistEdit.playlistId
-    if (
-      playlistId !== null &&
-      playlistId !== undefined &&
-      confirm('Delete this playlist?')
-    ) {
-      const playlist = melodyStore.getPlaylist(playlistId)
-      melodyStore.deletePlaylist(playlistId)
-      setPlaylistEditing(null)
-      if (playlist) {
-        const playlistName = playlist.name || 'Unnamed'
-        showActionNotification(
-          `Deleted playlist "${playlistName}"`,
-          'warning',
-          {
-            label: 'Undo',
-            onClick: () => {
-              melodyStore.restorePlaylist(playlistId, playlist)
-              showNotification(`Restored "${playlistName}"`, 'success')
+    if (playlistId === null || playlistId === undefined) return
+    const playlist = melodyStore.getPlaylist(playlistId)
+    const playlistName = (playlist?.name ?? '') || 'this playlist'
+    confirm.request({
+      title: 'Delete Playlist',
+      message: (
+        <>
+          Delete <strong>{playlistName}</strong>? You can undo this right after.
+        </>
+      ),
+      onConfirm: () => {
+        melodyStore.deletePlaylist(playlistId)
+        setPlaylistEditing(null)
+        if (playlist) {
+          showActionNotification(
+            `Deleted playlist "${playlistName}"`,
+            'warning',
+            {
+              label: 'Undo',
+              onClick: () => {
+                melodyStore.restorePlaylist(playlistId, playlist)
+                showNotification(`Restored "${playlistName}"`, 'success')
+              },
             },
-          },
-        )
-      } else {
-        showNotification('Playlist deleted', 'success')
-      }
-    }
+          )
+        } else {
+          showNotification('Playlist deleted', 'success')
+        }
+      },
+    })
   }
 
   const startAddMelodyMode = (playlistId: string) => {
@@ -1380,6 +1397,15 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={confirm.pending() !== null}
+        title={confirm.pending()?.title ?? ''}
+        message={confirm.pending()?.message ?? ''}
+        confirmLabel={confirm.pending()?.confirmLabel}
+        confirmIcon={confirm.pending()?.confirmIcon}
+        onConfirm={confirm.accept}
+        onCancel={confirm.cancel}
+      />
     </Show>
   )
 }

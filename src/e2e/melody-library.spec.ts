@@ -451,12 +451,11 @@ test.describe('Melody Library', () => {
 
     const deleteBtn = page.locator('.action-btn.delete-btn').first()
     if ((await deleteBtn.count()) > 0) {
-      page.on('dialog', async (dialog) => {
-        if (dialog.type() === 'confirm') {
-          await dialog.accept()
-        }
-      })
       await deleteBtn.click()
+      // Styled confirm modal (replaces the old native window.confirm)
+      const confirmBtn = page.locator('[data-testid="confirm-delete"]')
+      await expect(confirmBtn).toBeVisible()
+      await confirmBtn.click()
       await page.waitForTimeout(300)
     }
   })
@@ -1004,11 +1003,15 @@ test.describe('Melody Library', () => {
     // Click delete button
     const deleteBtn = page.locator('.action-btn.delete-btn').first()
     if ((await deleteBtn.count()) > 0) {
-      // Set up dialog handler before clicking
-      page.on('dialog', async (dialog) => {
-        await dialog.accept()
-      })
       await deleteBtn.click()
+      // The styled confirm modal must appear; cancelling must NOT delete.
+      const overlay = page.locator('[data-testid="confirm-overlay"]')
+      await expect(overlay).toBeVisible()
+      await page.locator('[data-testid="confirm-cancel"]').click()
+      await expect(overlay).toHaveCount(0)
+      // Confirming deletes for real.
+      await deleteBtn.click()
+      await page.locator('[data-testid="confirm-delete"]').click()
       await page.waitForTimeout(300)
     }
   })
