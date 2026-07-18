@@ -511,3 +511,78 @@
   color: var(--red, #ef4444);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
+
+/* ============================================================
+   Mobile: score + session-summary overlays as native bottom sheets
+   (mobile-native Phase 4). The end-of-run payoff should feel like an
+   iOS sheet, not a squished centred desktop card. Desktop (>768px)
+   keeps the centred card above. Slide-up + drag-to-dismiss are not
+   wired here (the card keeps its × / Close buttons); this is the
+   presentation pass. Global ids because the markup lives in App.tsx.
+   ============================================================ */
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding-top: 0;
+  }
+
+  :global(#score-card),
+  :global(#session-summary-card) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    /* Kill the base 8px margin so the sheet is flush + full-bleed. */
+    margin: 0;
+    max-height: 88dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    padding: 22px 20px calc(24px + var(--safe-bottom));
+    /* Opacity-only fade — a transform slide can strand the sheet
+       off-screen if Solid re-renders the card mid-animation. */
+    animation: scoreSheetIn 0.22s ease;
+  }
+
+  /* Grab-handle affordance at the top of the sheet. */
+  :global(#score-card)::before,
+  :global(#session-summary-card)::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text-primary) 26%, transparent);
+  }
+
+  /* Full-width, thumb-friendly actions stacked at the bottom. */
+  :global(#score-actions) {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  :global(#score-actions) .overlayBtn,
+  :global(#score-actions) button {
+    width: 100%;
+    min-height: 46px;
+  }
+}
+
+@keyframes scoreSheetIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(#score-card),
+  :global(#session-summary-card) {
+    animation: none;
+  }
+}
