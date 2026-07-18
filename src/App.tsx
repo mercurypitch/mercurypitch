@@ -120,7 +120,7 @@ import { melodyStore } from '@/stores/melody-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
-import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { openSettingsSection, settingsSection } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import type { PlaybackSession } from '@/types'
@@ -462,6 +462,9 @@ const AppShell: Component<AppProps> = (props) => {
   let touchStartY = 0
 
   const handleTouchStart = (e: TouchEvent) => {
+    // Opt-in gesture (off by default) — the bottom tab bar is the primary
+    // way to switch views on a phone; accidental swipes were changing tabs.
+    if (!swipeNavEnabled()) return
     const target = e.target as HTMLElement
     // Allow swiping on canvas now, but still ignore buttons, inputs, and modals
     if (
@@ -2461,6 +2464,16 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_COMPOSE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
+                  {/* Compose is the precision piano-roll editor — a desktop-
+                      first surface (decision D4). Keep it usable on a phone,
+                      but set expectations with a slim hint on narrow. */}
+                  <Show when={isNarrow()}>
+                    <p class="compose-mobile-hint">
+                      The Compose editor is built for a larger screen — rotate
+                      your phone, or open MercuryPitch on desktop, for the full
+                      piano-roll experience.
+                    </p>
+                  </Show>
                   <div class={styles.composeToolbarOuter}>
                     <div class={styles.composeToolbar}>
                       <div

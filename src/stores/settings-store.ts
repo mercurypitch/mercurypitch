@@ -266,6 +266,14 @@ export function setReverbType(type: ReverbType): void {
 export const [gridLinesVisible, setGridLinesVisible] =
   createPersistedSignal<boolean>('pitchperfect_grid', true)
 
+// ── Swipe-to-change-tabs (mobile) ───────────────────────────────────
+// Opt-in and OFF by default: with the bottom tab bar now the primary way
+// to move between views on a phone, a half-screen horizontal swipe was
+// firing accidental tab changes. Users who want the gesture can re-enable
+// it in Settings → Display & Controls.
+export const [swipeNavEnabled, setSwipeNavEnabled] =
+  createPersistedSignal<boolean>('pitchperfect_swipe_nav', false)
+
 /**
  * "Flame mode" — visual fire effect on the currently-playing note
  * during practice/playback. Persisted so it survives reloads. Toggleable
