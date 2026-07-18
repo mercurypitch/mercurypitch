@@ -2212,6 +2212,86 @@
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+/* HQ re-run (cloud GPU) button + its two-option dropdown */
+.session-hq-rerun {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.session-hq-rerun .session-result-btn-hq {
+  width: 100%;
+  background: var(--bg-tertiary);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.session-hq-rerun .session-result-btn-hq:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.session-hq-rerun-chevron {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+.session-hq-rerun-chevron.open {
+  transform: rotate(180deg);
+}
+
+.session-hq-rerun-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  animation: assign-menu-in 0.12s ease;
+}
+
+.session-hq-rerun-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.session-hq-rerun-item:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.session-hq-rerun-item-note {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--fg-secondary);
+}
+
+.session-hq-rerun-hint {
+  padding: 0.4rem 0.6rem 0.3rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  color: var(--fg-secondary);
+}
+
 /* Delete Confirmation Modal */
 .delete-confirm-overlay {
   position: fixed;
