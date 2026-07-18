@@ -50,6 +50,7 @@ import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { GuitarProvider, useGuitar } from '@/contexts/GuitarContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
@@ -108,7 +109,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
-import { refreshBalance } from '@/stores/billing-store'
+import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
@@ -641,21 +642,43 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Hash routing ────────────────────────────────────────────
   // Return from Stripe checkout: the router already navigated to Settings
-  // (Account is its default sub-tab); confirm and refresh the balance. The
-  // credit grant arrives via webhook, which can trail the redirect by a few
-  // seconds — refresh again after a delay so the new balance shows up.
+  // (Account is its default sub-tab); confirm and watch the balance. The
+  // credit grant arrives via webhook, which can trail the redirect — poll
+  // until the stashed expected balance shows up, and SAY SO if it doesn't
+  // (a silent webhook failure once left buyers with a success toast over an
+  // unchanged balance).
   const handleBillingReturn = (outcome: 'success' | 'cancel'): void => {
     if (outcome === 'success') {
       showNotification(
         'Payment received — credits are being added to your account.',
         'success',
+        { channel: 'billing-return' },
       )
       // Fire the Google Ads credits_purchase conversion (with the stashed EUR
       // value). Dedup-safe: only fires once per checkout.
       flushPendingPurchase()
-      refreshBalance()
-      window.setTimeout(refreshBalance, 3000)
-      window.setTimeout(refreshBalance, 10000)
+      const expectedMin = takeExpectedCredits()
+      if (expectedMin != null) {
+        void waitForCreditGrant(expectedMin).then((arrived) => {
+          if (arrived) {
+            showNotification('Credits added — you are all set.', 'success', {
+              channel: 'billing-return',
+            })
+          } else {
+            showNotification(
+              'Your payment went through, but the credits are taking longer than usual. They are added automatically — if they have not appeared within a few hours, email hello@mercurypitch.com.',
+              'warning',
+              { channel: 'billing-return', durationMs: 15000 },
+            )
+          }
+        })
+      } else {
+        // No stash (storage blocked / checkout started elsewhere) — fall back
+        // to blind refreshes; we cannot tell what balance to expect.
+        refreshBalance()
+        window.setTimeout(refreshBalance, 3000)
+        window.setTimeout(refreshBalance, 10000)
+      }
     } else {
       showNotification('Checkout cancelled.', 'info')
     }

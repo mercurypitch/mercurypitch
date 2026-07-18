@@ -625,6 +625,27 @@ export async function sendPurchaseThankYou(
   return ok
 }
 
+/** Send a plain-text ops alert (billing reconciliation). Best-effort; see
+ *  resendSend. Unlike the user-facing emails this is for the operator, so
+ *  it skips the branded HTML — the information is the whole point. */
+export async function sendBillingAlert(
+  cfg: ResendConfig,
+  to: string,
+  subject: string,
+  lines: string[],
+): Promise<boolean> {
+  const text = lines.join('\n')
+  const ok = await resendSend(cfg, to, {
+    subject: `[MercuryPitch billing] ${subject}`,
+    text,
+    html: `<pre style="font: 13px/1.5 monospace">${text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')}</pre>`,
+  })
+  if (ok) console.log(`[email] billing alert sent to ${to}`)
+  return ok
+}
+
 /** Send the account sign-up welcome email. Best-effort; see resendSend. */
 export async function sendSignupWelcome(
   cfg: ResendConfig,

@@ -6,6 +6,19 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.15] - 2026-07-19
+
+### Fixed
+
+- **Stripe webhook outage recovery + self-healing billing** (#273): PR #219's custom-domain routes implicitly disabled the db-worker's workers.dev hosts, 404ing BOTH Stripe webhook endpoints (live + test) from 2026-07-08 — paid checkouts stopped granting credits (webhook is the sole credit writer). Endpoints repointed to `api[-dev].mercurypitch.com`; missed grants restored idempotently (`evt:<id>` ledger keys; the pending live event pre-marked in `billingEvents` so redelivery can't double-credit).
+- **Webhook idempotency ordering** (#273): `billingEvents` is recorded AFTER the grant instead of before — previously a mid-grant failure (500) made Stripe's retry read as "duplicate" and the credits were permanently lost. Concurrent double delivery stays safe via the ledger's UNIQUE idempotencyKey.
+
+### Added
+
+- **Billing reconciliation cron** (#273): `reconcileBilling` (db-worker `scheduled`, `17 */6 * * *`, all envs) sweeps Stripe's last 30 days of `checkout.session.completed` and processes any event `billingEvents` has never seen through the exact webhook grant path; emails `BILLING_ALERT_EMAIL` (new optional secret) on every recovery — a recovery means webhook delivery is broken. Verified locally: first sweep recovered all 4 historical test-mode events, second recovered 0.
+- **Post-checkout grant watch** (#273): `stashExpectedCredits`/`takeExpectedCredits` (sessionStorage, 2h TTL, one-shot) capture `balanceBefore + credits` at buy time; on `#/billing/success` `waitForCreditGrant` polls `/api/billing/me` (~90s schedule, `GRANT_POLL_DELAYS_MS`) bumping `balanceVersion` each pass — confirming "Credits added" or explicitly warning with the support address on timeout (15s toast via new `showNotification` `durationMs` option, `billing-return` channel). Unit-tested (stash round-trip/TTL/malformed; watch success/timeout/null-backend).
+- **workers_dev pinned off** (#273): explicit `workers_dev: false` + warning comment in `workers/db-worker/wrangler.jsonc` (top-level and both envs) — nothing may ever point at workers.dev hosts again.
+
 ## [0.7.13] - 2026-07-17
 
 ### Added

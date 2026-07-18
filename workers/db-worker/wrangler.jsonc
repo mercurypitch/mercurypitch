@@ -34,17 +34,30 @@
       "invocation_logs": true
     }
   },
-  // Reachable on both the workers.dev URL and a dedicated custom subdomain
-  // per env (api.mercurypitch.com / api-dev.mercurypitch.com). A dedicated
+  // Custom subdomain per env (api.mercurypitch.com / api-dev.mercurypitch.com).
+  // NOTE: deploying with custom_domain routes DISABLES the workers.dev URLs —
+  // anything registered against them (e.g. Stripe webhook endpoints) breaks
+  // silently. External callbacks must always point at the custom domains
+  // (this bit us 2026-07-08→18: credit grants died on both Stripe modes).
+  // A dedicated
   // host — not a /api/* route on the shared mercurypitch.com domain — avoids
   // shadowing the main worker's /api/uvr/* and /api/share/* routes. wrangler
   // auto-creates the custom domain + DNS record on deploy (the zone is on
   // Cloudflare). The frontend points at the right worker via VITE_API_BASE_URL
   // per build; the OAuth /api/auth/google/callback is derived from the
   // request origin, so it follows whichever host the frontend uses.
+  // Billing reconciliation sweep (src/billing.ts reconcileBilling): grants
+  // any paid checkout whose webhook delivery was lost. Keep in every env.
+  "triggers": { "crons": ["17 */6 * * *"] },
+  // workers.dev stays OFF everywhere (custom_domain routes disable it
+  // implicitly; a top-level deploy has no routes, so pin it here too —
+  // NOTHING may point at workers.dev hosts, see the routes note above).
+  "workers_dev": false,
   "env": {
     "dev": {
       "name": "mercury-pitch-db-dev",
+      "workers_dev": false,
+      "triggers": { "crons": ["17 */6 * * *"] },
       "routes": [
         { "pattern": "api-dev.mercurypitch.com", "custom_domain": true }
       ],
@@ -65,6 +78,8 @@
     },
     "prod": {
       "name": "mercury-pitch-db",
+      "workers_dev": false,
+      "triggers": { "crons": ["17 */6 * * *"] },
       "routes": [{ "pattern": "api.mercurypitch.com", "custom_domain": true }],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",

@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, withModelCredits, } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -173,5 +173,41 @@ describe('startCheckout', () => {
 
   it('throws when no API is configured', async () => {
     await expect(startCheckout('p', '')).rejects.toThrow('not available')
+  })
+})
+
+describe('expected-credits stash (checkout round trip)', () => {
+  afterEach(() => {
+    sessionStorage.clear()
+    vi.useRealTimers()
+  })
+
+  it('round-trips balanceBefore + credits and clears on take', () => {
+    stashExpectedCredits(12, 30)
+    expect(takeExpectedCredits()).toBe(42)
+    // One-shot: a page refresh of the success return must not re-watch.
+    expect(takeExpectedCredits()).toBeNull()
+  })
+
+  it('expires an abandoned stash after the TTL', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-18T12:00:00Z'))
+    stashExpectedCredits(0, 30)
+    vi.setSystemTime(new Date('2026-07-18T14:00:01Z'))
+    expect(takeExpectedCredits()).toBeNull()
+  })
+
+  it('rejects malformed and non-positive stashes', () => {
+    sessionStorage.setItem('pitchperfect_pending_credits', 'not json')
+    expect(takeExpectedCredits()).toBeNull()
+    sessionStorage.setItem(
+      'pitchperfect_pending_credits',
+      JSON.stringify({ expectedMin: 0, ts: Date.now() }),
+    )
+    expect(takeExpectedCredits()).toBeNull()
+  })
+
+  it('returns null when nothing was stashed', () => {
+    expect(takeExpectedCredits()).toBeNull()
   })
 })

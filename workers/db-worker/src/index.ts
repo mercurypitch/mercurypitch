@@ -16,7 +16,7 @@
 
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
-import { handleBilling } from './billing'
+import { handleBilling, reconcileBilling } from './billing'
 import type { TableDef } from './tables'
 import { TABLES } from './tables'
 
@@ -781,6 +781,17 @@ export default {
       console.error('[db-worker] unhandled error:', err)
       return respond({ error: 'Internal server error' }, { status: 500 })
     }
+  },
+
+  // Cron (wrangler.jsonc "triggers"): billing reconciliation — the safety
+  // net for lost Stripe webhook deliveries (see reconcileBilling). Runs in
+  // every deployed env; a no-op wherever Stripe isn't configured.
+  async scheduled(
+    _controller: ScheduledController,
+    env: Env,
+    _ctx: ExecutionContext,
+  ): Promise<void> {
+    await reconcileBilling(env)
   },
 }
 
