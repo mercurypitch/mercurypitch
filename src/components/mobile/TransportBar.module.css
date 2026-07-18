@@ -1,0 +1,18 @@
+/* TransportBar — stage footer row (skin via --transport-* props). */
+
+.bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px calc(10px + var(--safe-bottom));
+  background: var(
+    --transport-scrim,
+    linear-gradient(
+      180deg,
+      transparent 0,
+      color-mix(in srgb, var(--bg-primary, #0d1117) 82%, transparent) 45%
+    )
+  );
+}

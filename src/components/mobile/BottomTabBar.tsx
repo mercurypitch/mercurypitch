@@ -19,13 +19,12 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { TabMeta } from '@/components/AppNavTabs'
 import { TAB_META } from '@/components/AppNavTabs'
+import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { isTabVisible, TAB_GROUPS, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
-import { platform } from '@/lib/platform'
 import { isNarrow } from '@/lib/use-viewport'
-import { showNotification } from '@/stores/notifications-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
 import styles from './BottomTabBar.module.css'
@@ -65,17 +64,6 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
     haptics.tapLight()
     setMoreOpen(false)
     props.handleTabChange(tab)
-  }
-
-  const copyDesktopLink = (): void => {
-    void platform
-      .share({
-        title: 'MercuryPitch',
-        url: window.location.origin,
-      })
-      .then((ok) => {
-        if (ok) showNotification('Link copied — open it on your computer')
-      })
   }
 
   const renderIcon = (meta: TabMeta | undefined) => meta?.icon() ?? null
@@ -147,15 +135,7 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
             )}
           </For>
         </ul>
-        <div class={styles.desktopHint}>
-          <p>
-            The full studio — piano-roll editor, vocal analysis, stem mixing —
-            lives on desktop.
-          </p>
-          <button class={styles.hintBtn} onClick={copyDesktopLink}>
-            Copy link
-          </button>
-        </div>
+        <DesktopHint />
       </Sheet>
     </Show>
   )

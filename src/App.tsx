@@ -27,6 +27,7 @@ import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
+import { SingingMobileStage } from './components/mobile/SingingMobileStage'
 import { isNarrow } from './lib/use-viewport'
 
 const SessionBrowser = lazy(async () =>
@@ -2061,6 +2062,39 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Hash routing: state → URL syncing is handled by useHashRouter above
 
+  // Shared factory for the Singing pitch canvas: the desktop panel and the
+  // mobile stage each call it to create their OWN instance inside their
+  // branch (a canvas must never be re-parented across the isNarrow() swap —
+  // its ResizeObserver binds to the mount-time parent). Engines and playback
+  // state live above the branch, so swapping is presentation-only.
+  const renderSingingCanvas = () => (
+    <PitchCanvas
+      melody={activePlaybackItems}
+      scale={() => melodyStore.currentScale()}
+      totalBeats={totalBeats}
+      currentBeat={currentBeat}
+      pitchHistory={pitchHistory}
+      currentNoteIndex={currentNoteIndex}
+      activeNoteIndices={activeNoteIndices}
+      isPlaying={isPlaying}
+      isPaused={isPaused}
+      isScrolling={() => true}
+      targetPitch={targetPitch}
+      targetPitches={targetPitches}
+      livePitch={currentPitch}
+      noteAccuracyMap={noteAccuracyMap}
+      isRecording={recording.isRecording}
+      getWaveform={() => audioEngine?.getWaveformData() ?? null}
+      noteResults={noteResults}
+      countInBeats={() => countIn()}
+      loopA={loopA}
+      loopB={loopB}
+      loopEnabled={loopEnabled}
+      onMoveLoopA={handleMoveLoopA}
+      onMoveLoopB={handleMoveLoopB}
+    />
+  )
+
   // ============================================================
   // Render
   // ============================================================
@@ -2230,161 +2264,198 @@ const AppShell: Component<AppProps> = (props) => {
             <main class="main-content" id="main-content" tabindex="-1">
               <Show when={activeTab() === TAB_SINGING}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
-                  {/* Practice panel */}
-                  <div id="practice-panel">
-                    {/* The status bar sits in flow above the canvas (it also
-                        carries the live session/playback state that the old
-                        green SessionPlayer banner showed here). */}
-                    <div style={{ position: 'relative' }}>
-                      <SingingStatusBar
-                        keyName={keyNameSignal}
-                        scaleType={scaleTypeSignal}
-                        melodyName={() =>
-                          melodyStore.currentMelody()?.name ?? null
-                        }
-                        bpm={bpm}
-                        currentBeat={currentBeat}
-                        isPlaying={isPlaying}
+                  {/* Adaptive swap: purpose-built mobile stage on narrow
+                      viewports, the full desktop panel otherwise. Engines &
+                      handlers live in this component, above the branch. */}
+                  <Show
+                    when={!isNarrow()}
+                    fallback={
+                      <SingingMobileStage
                         picker={singingPicker}
-                        currentSong={singingSong}
-                        playheadBeat={currentBeat}
+                        currentBeat={currentBeat}
                         totalBeats={totalBeats}
-                        onSeek={handleLoopSeek}
+                        onSeekBeat={handleLoopSeek}
+                        renderCanvas={renderSingingCanvas}
+                        renderMicHint={() => (
+                          <MicInsightHint
+                            message={micInsights.message}
+                            insight={micInsights.insight}
+                            style={{
+                              position: 'absolute',
+                              top: '10px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              'z-index': '6',
+                              'white-space': 'nowrap',
+                            }}
+                          />
+                        )}
+                        liveScore={liveScore}
+                        targetNoteName={targetNoteName}
+                        micActive={micActive}
+                        onMicToggle={() => {
+                          void handleMicToggle()
+                        }}
+                        isPlaying={isPlaying}
+                        isPaused={isPaused}
+                        onPlay={handlePracticePlay}
+                        onPause={handlePause}
+                        onResume={handleResume}
+                        onStop={() => void handleStop()}
+                        isCountingIn={() => isCountingIn()}
+                        countInBeat={() => countInBeat()}
+                        playMode={() => playMode()}
+                        onPlayModeChange={handlePracticeModeChange}
                         onSessionSkip={handleSessionSkip}
                         onSessionEnd={handleSessionEnd}
-                        loopA={loopA}
-                        loopB={loopB}
-                        loopEnabled={loopEnabled}
-                        onMoveLoopA={handleMoveLoopA}
-                        onMoveLoopB={handleMoveLoopB}
+                        speed={playbackSpeed}
+                        onSpeedChange={setPlaybackSpeed}
+                        volume={savedVol}
+                        onVolumeChange={(vol) => {
+                          setSavedVol(vol)
+                          audioEngine?.setVolume(vol / 100)
+                        }}
+                        metronomeEnabled={() => metronomeEnabled()}
+                        onMetronomeToggle={() =>
+                          setMetronomeEnabled(metronomeEnabled() === false)
+                        }
+                        onOctaveShift={handleOctaveShift}
+                        onAutoCalibrate={() => {
+                          void handleAutoCalibrate()
+                        }}
                       />
-                    </div>
+                    }
+                  >
+                    {/* Practice panel */}
+                    <div id="practice-panel">
+                      {/* The status bar sits in flow above the canvas (it also
+                        carries the live session/playback state that the old
+                        green SessionPlayer banner showed here). */}
+                      <div style={{ position: 'relative' }}>
+                        <SingingStatusBar
+                          keyName={keyNameSignal}
+                          scaleType={scaleTypeSignal}
+                          melodyName={() =>
+                            melodyStore.currentMelody()?.name ?? null
+                          }
+                          bpm={bpm}
+                          currentBeat={currentBeat}
+                          isPlaying={isPlaying}
+                          picker={singingPicker}
+                          currentSong={singingSong}
+                          playheadBeat={currentBeat}
+                          totalBeats={totalBeats}
+                          onSeek={handleLoopSeek}
+                          onSessionSkip={handleSessionSkip}
+                          onSessionEnd={handleSessionEnd}
+                          loopA={loopA}
+                          loopB={loopB}
+                          loopEnabled={loopEnabled}
+                          onMoveLoopA={handleMoveLoopA}
+                          onMoveLoopB={handleMoveLoopB}
+                        />
+                      </div>
 
-                    <div id="canvas-container" ref={singingDropZone.bind}>
-                      {/* Below the top-docked control bar, in the empty band
+                      <div id="canvas-container" ref={singingDropZone.bind}>
+                        {/* Below the top-docked control bar, in the empty band
                           above the notes — matches the Piano/Guitar hint
                           placement. Centring it on the status bar occluded
                           the song timeline. */}
-                      <MicInsightHint
-                        message={micInsights.message}
-                        insight={micInsights.insight}
-                        style={{
-                          position: 'absolute',
-                          top: '68px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          'z-index': '6',
-                          'white-space': 'nowrap',
+                        <MicInsightHint
+                          message={micInsights.message}
+                          insight={micInsights.insight}
+                          style={{
+                            position: 'absolute',
+                            top: '68px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            'z-index': '6',
+                            'white-space': 'nowrap',
+                          }}
+                        />
+                        {renderSingingCanvas()}
+                        <SingingCanvasHud
+                          noteResults={noteResults}
+                          pitch={currentPitch}
+                          targetNoteName={targetNoteName}
+                          liveScore={liveScore}
+                          isPlaying={isPlaying}
+                        />
+                        <Show when={singingDropZone.isDragOver()}>
+                          <div class={statusBarStyles.dropOverlay}>
+                            <span class={statusBarStyles.dropLabel}>
+                              Drop MIDI to load as melody
+                            </span>
+                          </div>
+                        </Show>
+                        <ControlOverlay defaultDock="top">
+                          <SingingControlBar
+                            isPlaying={isPlaying}
+                            isPaused={isPaused}
+                            onPlay={handlePracticePlay}
+                            onPause={handlePause}
+                            onResume={handleResume}
+                            onStop={() => void handleStop()}
+                            volume={savedVol}
+                            onVolumeChange={(vol) => {
+                              setSavedVol(vol)
+                              audioEngine?.setVolume(vol / 100)
+                            }}
+                            speed={playbackSpeed()}
+                            onSpeedChange={setPlaybackSpeed}
+                            metronomeEnabled={() => metronomeEnabled()}
+                            onMetronomeToggle={() =>
+                              setMetronomeEnabled(metronomeEnabled() === false)
+                            }
+                            playMode={() => playMode()}
+                            playModeChange={handlePracticeModeChange}
+                            practiceCycles={() => repeatCycles()}
+                            onCyclesChange={setRepeatCycles}
+                            currentCycle={() => currentRepeat()}
+                            practiceSubMode={() => practiceSubMode()}
+                            onPracticeSubModeChange={setPracticeSubMode}
+                            spacedRestMode={spacedRestMode}
+                            onSpacedRestModeChange={setSpacedRestMode}
+                            isCountingIn={() => isCountingIn()}
+                            countInBeat={() => countInBeat()}
+                            onMicToggle={() => {
+                              void handleMicToggle()
+                            }}
+                            loopEnabled={loopEnabled}
+                            loopA={loopA}
+                            loopB={loopB}
+                            onSetLoopA={handleSetLoopA}
+                            onSetLoopB={handleSetLoopB}
+                            onToggleLoop={handleToggleLoop}
+                            onClearLoop={handleClearLoop}
+                          />
+                        </ControlOverlay>
+                      </div>
+
+                      <PitchAccuracyHeatmap
+                        scale={() => melodyStore.currentScale()}
+                        onSeekNote={(midi, _name) => {
+                          const items = melodyStore.items()
+                          const idx = items.findIndex(
+                            (item) => item.note.midi === midi,
+                          )
+                          if (idx >= 0) {
+                            playbackRuntime.seekTo(items[idx].startBeat)
+                          }
                         }}
                       />
-                      <PitchCanvas
-                        melody={activePlaybackItems}
-                        scale={() => melodyStore.currentScale()}
-                        totalBeats={totalBeats}
-                        currentBeat={currentBeat}
-                        pitchHistory={pitchHistory}
-                        currentNoteIndex={currentNoteIndex}
-                        activeNoteIndices={activeNoteIndices}
-                        isPlaying={isPlaying}
-                        isPaused={isPaused}
-                        isScrolling={() => true}
-                        targetPitch={targetPitch}
-                        targetPitches={targetPitches}
-                        livePitch={currentPitch}
-                        noteAccuracyMap={noteAccuracyMap}
-                        isRecording={recording.isRecording}
-                        getWaveform={() =>
-                          audioEngine?.getWaveformData() ?? null
-                        }
-                        noteResults={noteResults}
-                        countInBeats={() => countIn()}
-                        loopA={loopA}
-                        loopB={loopB}
-                        loopEnabled={loopEnabled}
-                        onMoveLoopA={handleMoveLoopA}
-                        onMoveLoopB={handleMoveLoopB}
-                      />
-                      <SingingCanvasHud
-                        noteResults={noteResults}
-                        pitch={currentPitch}
-                        targetNoteName={targetNoteName}
-                        liveScore={liveScore}
-                        isPlaying={isPlaying}
-                      />
-                      <Show when={singingDropZone.isDragOver()}>
-                        <div class={statusBarStyles.dropOverlay}>
-                          <span class={statusBarStyles.dropLabel}>
-                            Drop MIDI to load as melody
-                          </span>
+
+                      <Show when={showHistoryPanel()}>
+                        <div id="history-container">
+                          <HistoryCanvas
+                            frequencyData={frequencyData}
+                            waveformData={waveformData}
+                            liveScore={liveScore}
+                          />
                         </div>
                       </Show>
-                      <ControlOverlay defaultDock="top">
-                        <SingingControlBar
-                          isPlaying={isPlaying}
-                          isPaused={isPaused}
-                          onPlay={handlePracticePlay}
-                          onPause={handlePause}
-                          onResume={handleResume}
-                          onStop={() => void handleStop()}
-                          volume={savedVol}
-                          onVolumeChange={(vol) => {
-                            setSavedVol(vol)
-                            audioEngine?.setVolume(vol / 100)
-                          }}
-                          speed={playbackSpeed()}
-                          onSpeedChange={setPlaybackSpeed}
-                          metronomeEnabled={() => metronomeEnabled()}
-                          onMetronomeToggle={() =>
-                            setMetronomeEnabled(metronomeEnabled() === false)
-                          }
-                          playMode={() => playMode()}
-                          playModeChange={handlePracticeModeChange}
-                          practiceCycles={() => repeatCycles()}
-                          onCyclesChange={setRepeatCycles}
-                          currentCycle={() => currentRepeat()}
-                          practiceSubMode={() => practiceSubMode()}
-                          onPracticeSubModeChange={setPracticeSubMode}
-                          spacedRestMode={spacedRestMode}
-                          onSpacedRestModeChange={setSpacedRestMode}
-                          isCountingIn={() => isCountingIn()}
-                          countInBeat={() => countInBeat()}
-                          onMicToggle={() => {
-                            void handleMicToggle()
-                          }}
-                          loopEnabled={loopEnabled}
-                          loopA={loopA}
-                          loopB={loopB}
-                          onSetLoopA={handleSetLoopA}
-                          onSetLoopB={handleSetLoopB}
-                          onToggleLoop={handleToggleLoop}
-                          onClearLoop={handleClearLoop}
-                        />
-                      </ControlOverlay>
                     </div>
-
-                    <PitchAccuracyHeatmap
-                      scale={() => melodyStore.currentScale()}
-                      onSeekNote={(midi, _name) => {
-                        const items = melodyStore.items()
-                        const idx = items.findIndex(
-                          (item) => item.note.midi === midi,
-                        )
-                        if (idx >= 0) {
-                          playbackRuntime.seekTo(items[idx].startBeat)
-                        }
-                      }}
-                    />
-
-                    <Show when={showHistoryPanel()}>
-                      <div id="history-container">
-                        <HistoryCanvas
-                          frequencyData={frequencyData}
-                          waveformData={waveformData}
-                          liveScore={liveScore}
-                        />
-                      </div>
-                    </Show>
-                  </div>
+                  </Show>
                 </TabErrorBoundary>
               </Show>
 

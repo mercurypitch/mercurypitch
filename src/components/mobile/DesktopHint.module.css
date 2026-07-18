@@ -1,0 +1,35 @@
+/* DesktopHint — desktop-upsell row inside sheets. */
+
+.hint {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border, rgba(255, 255, 255, 0.18));
+  border-radius: var(--radius-lg, 12px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hint p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary, inherit);
+}
+
+.btn {
+  flex: none;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
