@@ -16,6 +16,7 @@ import { IconQuestion } from '@/components/exercise-icons'
 import { MicButton } from '@/components/MicButton'
 import { EngineContext } from '@/contexts/EngineContext'
 import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
+import { haptics } from '@/lib/haptics'
 import { getExerciseStats } from '@/stores/exercise-history-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
@@ -91,6 +92,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         const stats = getExerciseStats(props.type)
         setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
         setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
+      }
+      // Score reveal gets a haptic on devices that support it (Android):
+      // celebratory for a strong run, a light tick otherwise.
+      if (s === 'complete' && previous === 'active') {
+        const score = props.resultScore()
+        if (score !== null && score >= 80) haptics.success()
+        else haptics.tapLight()
       }
     }),
   )
