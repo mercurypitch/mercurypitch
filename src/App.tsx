@@ -84,7 +84,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -114,6 +114,7 @@ import HomePage from '@/pages/HomePage'
 import { JamPage } from '@/pages/JamPage'
 import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
+import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
@@ -2287,6 +2288,12 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_HOME}>
                 <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
                   <HomePage />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_PATH}>
+                <TabErrorBoundary tabName={tabLabel(TAB_PATH)}>
+                  <PathPage />
                 </TabErrorBoundary>
               </Show>
 

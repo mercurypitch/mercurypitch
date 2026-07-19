@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -1516,12 +1516,55 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_HOME,
   },
   {
+    title: 'The Ascent',
+    description:
+      'Your guided path — seven themed weeks of practice, one glowing orb each. Every day you meet your practice goal lights another segment.',
+    targetSelector: '.home-ascent-card',
+    placement: 'top',
+    requiredTab: TAB_HOME,
+  },
+  {
     title: 'Your week at a glance',
     description:
       'A quick read on your recent drills, average score and best streak — your progress, growing over time.',
     targetSelector: '.home-progress',
     placement: 'top',
     requiredTab: TAB_HOME,
+  },
+]
+
+const PATH_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'The Ascent',
+    description:
+      'A guided path through the craft of singing — seven themed weeks, from foundations and breath to range, ear, agility, tone and recovery.',
+    targetSelector: '.path-trail',
+    placement: 'bottom',
+    requiredTab: TAB_PATH,
+  },
+  {
+    title: 'One orb, one week',
+    description:
+      'Each orb is a week. Its ring has seven segments — one lights for every day you meet your ~5-minute practice goal. Seven days completes the week and unlocks the next orb.',
+    targetSelector: '.path-orb-current',
+    placement: 'bottom',
+    requiredTab: TAB_PATH,
+  },
+  {
+    title: 'The week card',
+    description:
+      'Tap any orb to open its guidebook: what to focus on, the goals, and the drills this week leans into. Completed weeks stay open — replay them any time.',
+    targetSelector: '.path-week-card',
+    placement: 'top',
+    requiredTab: TAB_PATH,
+  },
+  {
+    title: 'Practise today',
+    description:
+      'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
+    targetSelector: '.path-cta',
+    placement: 'top',
+    requiredTab: TAB_PATH,
   },
 ]
 
@@ -1570,6 +1613,7 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
 
 export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_HOME]: HOME_TOUR_STEPS,
+  [TAB_PATH]: PATH_TOUR_STEPS,
   [TAB_GUITAR]: GUITAR_TOUR_STEPS,
   [TAB_PIANO]: PIANO_TOUR_STEPS,
   [TAB_ANALYSIS]: ANALYSIS_TOUR_STEPS,
@@ -1594,6 +1638,12 @@ export const PAGE_TOUR_CATALOG: {
     title: 'Home',
     description:
       'Your daily hub: streak, today’s guided session, this week’s challenge, and progress',
+  },
+  {
+    tab: TAB_PATH,
+    title: 'Path',
+    description:
+      'The Ascent — the guided seven-week path whose orbs fill as you practise',
   },
   {
     tab: TAB_GUITAR,

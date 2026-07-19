@@ -1,0 +1,418 @@
+/* The Ascent — cosmic guided-path surface.
+   Deliberately committed to one visual world (deep space) regardless of
+   app theme: the path IS the night sky the voice climbs through. Local
+   palette tokens keep it self-contained. */
+
+.page {
+  --path-void: #0a0b16;
+  --path-violet: #6d5efc;
+  --path-cyan: #45d3e8;
+  --path-gold: #f0c674;
+  --path-peri: #a99bf6;
+  --path-mist: #c9cbe8;
+  --path-muted: #7d80a8;
+  --path-line: #262a4e;
+
+  position: relative;
+  min-height: 100%;
+  padding: 26px 16px 56px;
+  color: var(--path-mist);
+  background:
+    radial-gradient(
+      900px 560px at 80% -4%,
+      rgba(109, 94, 252, 0.2),
+      transparent 60%
+    ),
+    radial-gradient(
+      720px 500px at 10% 6%,
+      rgba(69, 211, 232, 0.09),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #0d0e1e, var(--path-void) 42%, #08090f);
+  /* .main-content is a flex column with a definite height: without this the
+     page SHRINKS to the container (content spills past the box and the
+     bottom padding never scrolls into view). Grow with content instead and
+     let .main-content do the scrolling. */
+  flex-shrink: 0;
+}
+
+/* Static CSS starfield — three parallax-ish dot layers, zero JS/rAF. */
+.cosmos,
+.cosmos::before,
+.cosmos::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+.cosmos {
+  background-image: radial-gradient(
+    1px 1px at 12px 34px,
+    rgba(255, 255, 255, 0.55),
+    transparent 1.5px
+  );
+  background-size: 190px 170px;
+}
+.cosmos::before {
+  background-image: radial-gradient(
+    1.4px 1.4px at 80px 120px,
+    rgba(169, 155, 246, 0.5),
+    transparent 2px
+  );
+  background-size: 260px 240px;
+}
+.cosmos::after {
+  background-image: radial-gradient(
+    1px 1px at 150px 60px,
+    rgba(240, 198, 116, 0.4),
+    transparent 1.5px
+  );
+  background-size: 340px 300px;
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto 10px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--path-peri);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.title {
+  margin: 0;
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: clamp(38px, 8vw, 58px);
+  line-height: 1;
+  color: #fff;
+  text-wrap: balance;
+}
+.title em {
+  font-style: italic;
+  background: linear-gradient(92deg, var(--path-peri), var(--path-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tagline {
+  margin: 14px auto 0;
+  max-width: 44ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--path-mist);
+}
+.progressLine {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--path-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Graduation ───────────────────────────────────────────── */
+.graduation {
+  position: relative;
+  max-width: 480px;
+  margin: 18px auto 6px;
+  padding: 18px 20px;
+  text-align: center;
+  border: 1px solid rgba(240, 198, 116, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(240, 198, 116, 0.12),
+    rgba(20, 22, 46, 0.6)
+  );
+}
+.graduation h2 {
+  margin: 0 0 6px;
+  font-family: Georgia, serif;
+  font-weight: 500;
+  color: var(--path-gold);
+  font-size: 22px;
+}
+.graduation p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--path-mist);
+}
+
+/* ── The trail ────────────────────────────────────────────── */
+.trail {
+  position: relative;
+  max-width: 560px;
+  margin: 26px auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 34px;
+  padding: 12px 0 4px;
+}
+.spine {
+  position: absolute;
+  top: 36px;
+  bottom: 36px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(240, 198, 116, 0.55),
+    rgba(109, 94, 252, 0.5) 46%,
+    rgba(69, 211, 232, 0.16) 72%,
+    rgba(125, 128, 168, 0.1)
+  );
+}
+
+.node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.left {
+  justify-content: flex-start;
+  padding-left: 4%;
+}
+.right {
+  justify-content: flex-end;
+  padding-right: 4%;
+  flex-direction: row-reverse;
+}
+.right .label {
+  text-align: right;
+}
+
+.orbBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.orbBtn:focus-visible {
+  outline: 2px solid var(--path-cyan);
+  outline-offset: 4px;
+}
+
+.label {
+  max-width: 200px;
+  min-width: 0;
+}
+.week {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--path-muted);
+}
+.name {
+  font-family: Georgia, serif;
+  font-weight: 500;
+  font-size: 19px;
+  line-height: 1.15;
+  color: #f2f2fb;
+  margin: 3px 0 4px;
+}
+.status {
+  font-size: 12px;
+  color: var(--path-muted);
+}
+.statusDone {
+  color: var(--path-gold);
+}
+.statusActive {
+  color: var(--path-cyan);
+}
+
+/* ── Week card (the guidebook) ────────────────────────────── */
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: -8px auto 0;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--path-line);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 33, 64, 0.94),
+    rgba(18, 20, 40, 0.96)
+  );
+  box-shadow:
+    0 24px 60px -24px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(109, 94, 252, 0.1);
+}
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--path-cyan);
+}
+.cardTitle {
+  margin: 5px 0 0;
+  font-family: Georgia, serif;
+  font-weight: 500;
+  font-size: 24px;
+  color: #fff;
+}
+.focus {
+  margin: 9px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--path-mist);
+}
+.goals {
+  margin: 10px 0 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--path-muted);
+}
+.goals li::marker {
+  color: var(--path-peri);
+}
+
+.minibar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.miniTrack {
+  flex: 1;
+  height: 7px;
+  border-radius: 6px;
+  background: rgba(201, 203, 232, 0.1);
+  overflow: hidden;
+}
+.miniFill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--path-violet), var(--path-cyan));
+  transition: width 0.3s ease;
+}
+.miniText {
+  font-size: 12px;
+  color: var(--path-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+.chip {
+  font-size: 12px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--path-line);
+  color: var(--path-peri);
+  background: rgba(109, 94, 252, 0.08);
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--path-violet);
+  color: #d9d2ff;
+}
+
+.cta {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(92deg, var(--path-violet), #8b7bff);
+  color: #fff;
+  font-weight: 650;
+  font-size: 15px;
+  cursor: pointer;
+}
+.cta:hover {
+  filter: brightness(1.08);
+}
+.replayNote {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--path-gold);
+}
+
+.resources {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--path-line);
+}
+.resHead {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--path-muted);
+  margin-bottom: 8px;
+}
+.resLink {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 0;
+  color: var(--path-mist);
+  text-decoration: none;
+  font-size: 13px;
+}
+.resLink b {
+  color: #fff;
+  font-weight: 600;
+}
+.resLink span {
+  color: var(--path-muted);
+  font-size: 12px;
+}
+.resLink:hover b {
+  color: var(--path-cyan);
+}
+
+.foot {
+  position: relative;
+  text-align: center;
+  max-width: 46ch;
+  margin: 34px auto 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--path-muted);
+}
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page {
+    /* Clear the floating mobile tab bar (54px + safe area) ourselves —
+       the scroller's own bottom padding isn't reliably reachable. */
+    padding: 18px 12px calc(48px + var(--tabbar-total, 62px));
+  }
+  .trail {
+    gap: 26px;
+  }
+  .left {
+    padding-left: 0;
+  }
+  .right {
+    padding-right: 0;
+  }
+  .label {
+    max-width: 46vw;
+  }
+  .name {
+    font-size: 17px;
+  }
+  .card {
+    max-width: none;
+  }
+}
