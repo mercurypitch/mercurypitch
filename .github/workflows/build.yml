@@ -106,17 +106,34 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
-      # Deploys to mercurypitch-preview.workers.dev on PRs
-      # Every deploy generates a unique hashed URL (Option 1)
-      - name: Deploy PR Preview
+      # Uploads a new *version* of the mercurypitch-preview Worker and captures
+      # its unique, immutable preview URL. Unlike `deploy` (which always
+      # publishes to the Worker's single fixed URL, so every PR overwrote the
+      # last), `versions upload` gives each PR/commit its own URL — concurrent
+      # PRs never clobber each other. It does NOT change the active deployment.
+      #
+      # Requires "Preview URLs" enabled on the mercurypitch-preview Worker
+      # (Cloudflare dashboard -> Workers & Pages -> mercurypitch-preview ->
+      # Settings -> Preview URLs). Without it, no URL is printed and the
+      # comment step is skipped (the build still passes).
+      - name: Deploy PR Preview (versioned)
         id: deploy-preview
         if: github.event_name == 'pull_request'
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env preview
-          packageManager: 'pnpm'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          pnpm exec wrangler versions upload --env preview 2>&1 | tee upload.log
+          # Prefer the explicit "Version Preview URL" line; fall back to any
+          # workers.dev URL in the output.
+          url=$(grep -iE 'preview url' upload.log \
+                  | grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' | head -1)
+          if [ -z "$url" ]; then
+            url=$(grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -1)
+          fi
+          echo "deployment-url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: ${url:-<none — enable Preview URLs on the Worker>}"
 
       # Post or update PR comment with preview link from template
       - name: Post Preview Link

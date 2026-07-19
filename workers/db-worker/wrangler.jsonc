@@ -63,9 +63,13 @@
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
-        // Dev is the testing environment: the dev frontend plus any
-        // localhost port (local vite, previews, tour walks) may call it.
-        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost"
+        // Dev is the testing environment: the dev frontend, any localhost port
+        // (local vite, tour walks), and per-PR preview Workers may call it.
+        // `*.workers.dev` allows the versioned preview frontends
+        // (<version>-mercurypitch-preview.<subdomain>.workers.dev), whose
+        // hostnames aren't known ahead of time — broad, but scoped to dev
+        // (test data, rate-limited). Prod (below) never lists it.
+        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev"
       },
       "d1_databases": [
         {
