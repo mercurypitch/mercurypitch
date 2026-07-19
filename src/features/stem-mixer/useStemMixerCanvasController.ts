@@ -37,6 +37,9 @@ export interface StemMixerCanvasDeps {
   showLyricLabels: Accessor<boolean>
   showMicLine: Accessor<boolean>
   showUserNoteLabels: Accessor<boolean>
+  /** Scoring diff bars (sung↔reference verticals) — debug visual, off by
+   *  default. */
+  showScoreDiffBars: Accessor<boolean>
   alignedWords: Accessor<AlignedWord[]>
   seekTo: (time: number) => void
   setWindowStart: Setter<number>
@@ -586,10 +589,17 @@ export const useStemMixerCanvasController = (
       ctx.stroke()
     }
 
-    // Diff bars
+    // Diff bars — vertical sung↔reference connectors. Debug visual: useful
+    // for inspecting the scoring, noisy while actually singing, so gated
+    // behind an off-by-default toolbar toggle.
     const pitchHistory = deps.getPitchHistory()
     const TOLERANCE_CENTS = 50
-    if (deps.micActive() && pitchHistory.length > 0 && micHistory.length > 0) {
+    if (
+      deps.showScoreDiffBars() &&
+      deps.micActive() &&
+      pitchHistory.length > 0 &&
+      micHistory.length > 0
+    ) {
       let vi = 0
       let mi = 0
       let lastDiffX = -999
