@@ -67,6 +67,8 @@ interface StemMixerFixedWorkspaceProps {
   setShowMicLine: Setter<boolean>
   showUserNoteLabels: Accessor<boolean>
   setShowUserNoteLabels: Setter<boolean>
+  showScoreDiffBars: Accessor<boolean>
+  setShowScoreDiffBars: Setter<boolean>
   melodyAudio?: Accessor<boolean>
   onToggleMelodyAudio?: () => void
 
@@ -553,6 +555,8 @@ export const StemMixerFixedWorkspace: Component<
                     setShowUserNoteLabels={props.setShowUserNoteLabels}
                     melodyAudio={props.melodyAudio}
                     onToggleMelodyAudio={props.onToggleMelodyAudio}
+                    showScoreDiffBars={props.showScoreDiffBars}
+                    setShowScoreDiffBars={props.setShowScoreDiffBars}
                   />
                 </div>
                 <canvas

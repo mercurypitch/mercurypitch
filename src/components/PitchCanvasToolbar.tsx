@@ -18,6 +18,10 @@ export interface PitchCanvasToolbarProps {
   // Melody audio — sounds the detected notes during playback (StemMixer only).
   melodyAudio?: Accessor<boolean>
   onToggleMelodyAudio?: () => void
+  // Scoring diff bars (sung↔reference verticals) — debug visual, off by
+  // default (StemMixer only).
+  showScoreDiffBars?: Accessor<boolean>
+  setShowScoreDiffBars?: Setter<boolean>
 }
 
 export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
@@ -146,6 +150,35 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
             <path d="M12.5 4 C14 4, 19 3, 20 8 C21 12, 17 11, 12.5 10 Z" />
           </svg>
           <span>My Notes</span>
+        </button>
+      </Show>
+      <Show when={props.setShowScoreDiffBars}>
+        <button
+          class={`pitch-canvas-toggle${props.showScoreDiffBars?.() === true ? ' active' : ''}`}
+          onClick={() => props.setShowScoreDiffBars?.((prev) => !prev)}
+          title={
+            props.showScoreDiffBars?.() === true
+              ? 'Hide the scoring diff bars'
+              : 'Show scoring diff bars — verticals from your pitch to the reference (debug)'
+          }
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <circle cx="6" cy="6" r="1.6" fill="currentColor" stroke="none" />
+            <line x1="6" y1="8" x2="6" y2="18" />
+            <circle cx="12" cy="4" r="1.6" fill="currentColor" stroke="none" />
+            <line x1="12" y1="6" x2="12" y2="14" />
+            <circle cx="18" cy="9" r="1.6" fill="currentColor" stroke="none" />
+            <line x1="18" y1="11" x2="18" y2="20" />
+          </svg>
+          <span>Diff Bars</span>
         </button>
       </Show>
     </div>

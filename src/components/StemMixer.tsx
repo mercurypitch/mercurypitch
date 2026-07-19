@@ -648,6 +648,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   )
   const [showUserNoteLabels, setShowUserNoteLabels] =
     createPersistedSignal<boolean>('pitchperfect_show_user_note_labels', false)
+  // Scoring diff bars (vertical sung-vs-reference connectors) are a debug
+  // visual — noisy while actually singing, so off by default.
+  const [showScoreDiffBars, setShowScoreDiffBars] =
+    createPersistedSignal<boolean>('pitchperfect_show_score_diff_bars', false)
 
   const whisper = useWhisperTranscription({
     getAudioBuffer: () => vocal().buffer,
@@ -810,6 +814,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     showLyricLabels,
     showMicLine,
     showUserNoteLabels,
+    showScoreDiffBars,
     alignedWords: () => alignmentResult().alignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
@@ -1737,6 +1742,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setShowLyricLabels={setShowLyricLabels}
             showLyricNoteLabels={showLyricNoteLabels}
             setShowLyricNoteLabels={setShowLyricNoteLabels}
+            showScoreDiffBars={showScoreDiffBars}
+            setShowScoreDiffBars={setShowScoreDiffBars}
             melodyAudio={melodyAudio}
             onToggleMelodyAudio={toggleMelodyAudio}
             whisperStatus={whisperStatus}
@@ -1785,6 +1792,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setShowLyricLabels={setShowLyricLabels}
             showLyricNoteLabels={showLyricNoteLabels}
             setShowLyricNoteLabels={setShowLyricNoteLabels}
+            showScoreDiffBars={showScoreDiffBars}
+            setShowScoreDiffBars={setShowScoreDiffBars}
             melodyAudio={melodyAudio}
             onToggleMelodyAudio={toggleMelodyAudio}
             whisperStatus={whisperStatus}

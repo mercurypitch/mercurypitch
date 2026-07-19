@@ -67,6 +67,8 @@ interface StemMixerGridWorkspaceProps {
   setShowLyricLabels: Setter<boolean>
   showLyricNoteLabels: Accessor<boolean>
   setShowLyricNoteLabels: Setter<boolean>
+  showScoreDiffBars: Accessor<boolean>
+  setShowScoreDiffBars: Setter<boolean>
   melodyAudio?: Accessor<boolean>
   onToggleMelodyAudio?: () => void
 
@@ -286,6 +288,8 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 setShowLyricLabels={props.setShowLyricLabels}
                 melodyAudio={props.melodyAudio}
                 onToggleMelodyAudio={props.onToggleMelodyAudio}
+                showScoreDiffBars={props.showScoreDiffBars}
+                setShowScoreDiffBars={props.setShowScoreDiffBars}
               />
             </div>
             <canvas
