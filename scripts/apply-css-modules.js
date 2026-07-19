@@ -26,10 +26,7 @@ const files = [
   'src/components/SettingsPanel.tsx',
   'src/components/StatsBars.tsx',
   'src/components/WelcomeScreen.tsx',
-  'src/components/shared/CoreControls.tsx',
   'src/components/shared/SharedControlToolbar.tsx',
-  'src/components/shared/SpeedGroup.tsx',
-  'src/components/shared/VolumeGroup.tsx',
 ]
 
 function refactorVersion(file) {

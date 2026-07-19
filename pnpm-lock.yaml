@@ -29,15 +29,9 @@ importers:
       lightningcss:
         specifier: ^1.32.0
         version: 1.32.0
-      midi-writer-js:
-        specifier: ^3.2.1
-        version: 3.2.1
       onnxruntime-web:
         specifier: ^1.25.1
         version: 1.26.0
-      open-props:
-        specifier: ^1.7.23
-        version: 1.7.23
       solid-js:
         specifier: ^1.9.12
         version: 1.9.13
@@ -1225,15 +1219,6 @@ packages:
   '@testing-library/jest-dom@6.9.1':
     resolution: {integrity: sha512-zIcONa+hVtVSSep9UT3jZ5rizo2BsxgyDYU7WFD5eICBE7no3881HGeb/QkGfsJs6JTkY1aQhT7rIPC7e+0nnA==}
     engines: {node: '>=14', npm: '>=6', yarn: '>=1'}
-
-  '@tonaljs/midi@4.10.2':
-    resolution: {integrity: sha512-MPamXhEwPL7L1udLfYMm3Ft8mLYtHr62Zi2w5zYHM2P7YwIvNoiX0+dvAN5is1Wvq4iVRa8AjFHerjOW/SZhGg==}
-
-  '@tonaljs/pitch-note@6.1.0':
-    resolution: {integrity: sha512-A4OSLo8DjM38u73862LnDmL4YInDDRBmg0fojXcvu4cyU3oOlqndyeHOra1OVoH/WW46uNIxNs1wJDZNPWL5KQ==}
-
-  '@tonaljs/pitch@5.0.2':
-    resolution: {integrity: sha512-mxaXJPPe+LIJdjzpZEl8I8Wx3dEvlzkBbsr2Ltwc2dTAdnErAZ5R0TxVq2egF27lMvQN2QPQPWI9iDPPdVUmrg==}
 
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
@@ -2693,9 +2678,6 @@ packages:
     resolution: {integrity: sha512-eRtbOb1N5iyH0tkQDAoQ4Ipsp/5qSR79Dzrz8hEPxRX10RWWR/iQXdoKmBSRCThY1Fh5EhISDtpSc93fpxUniQ==}
     engines: {node: '>=12.13'}
 
-  midi-writer-js@3.2.1:
-    resolution: {integrity: sha512-mILW/zthDiinxd/fsVfCe0XWef0hHQzS+fukjS3W+gwBG3ljur241u7CsEC5T+9cOwIPVZCgw37pjKiKb7LJ1g==}
-
   mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
@@ -2809,9 +2791,6 @@ packages:
 
   onnxruntime-web@1.26.0-dev.20260416-b7804b056c:
     resolution: {integrity: sha512-MD6Ss4GSpQBo6zqoJzyT9LRbKYs7x/JVN23FT24EcEvlqF4VuzPOeH6X38orZPKHQDbprn7K+SBpu0/mj2CQiw==}
-
-  open-props@1.7.23:
-    resolution: {integrity: sha512-+xyrJmxV9QUBFbSwPROYhOg/FLXry+uuPr4R+B5EaE4556Oc18/8ZC/fL5A+/lbRSwNvA0Alh+C0KpyFWLmLZg==}
 
   open@11.0.0:
     resolution: {integrity: sha512-smsWv2LzFjP03xmvFoJ331ss6h+jixfA4UUV/Bsiyuu4YJPfN+FIQGOIiv4w9/+MoHkfkJ22UIaQWRVFRfH6Vw==}
@@ -4530,16 +4509,6 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
 
-  '@tonaljs/midi@4.10.2':
-    dependencies:
-      '@tonaljs/pitch-note': 6.1.0
-
-  '@tonaljs/pitch-note@6.1.0':
-    dependencies:
-      '@tonaljs/pitch': 5.0.2
-
-  '@tonaljs/pitch@5.0.2': {}
-
   '@tybys/wasm-util@0.10.2':
     dependencies:
       tslib: 2.8.1
@@ -6118,10 +6087,6 @@ snapshots:
     dependencies:
       is-what: 4.1.16
 
-  midi-writer-js@3.2.1:
-    dependencies:
-      '@tonaljs/midi': 4.10.2
-
   mime-db@1.52.0: {}
 
   mime-types@2.1.35:
@@ -6248,8 +6213,6 @@ snapshots:
       onnxruntime-common: 1.24.0-dev.20251116-b39e144322
       platform: 1.3.6
       protobufjs: 7.6.0
-
-  open-props@1.7.23: {}
 
   open@11.0.0:
     dependencies:

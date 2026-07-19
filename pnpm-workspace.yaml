@@ -4,7 +4,6 @@ minimumReleaseAge: 0
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
-  midi-writer-js: true
   onnxruntime-node: false
   protobufjs: true
   sharp: true
