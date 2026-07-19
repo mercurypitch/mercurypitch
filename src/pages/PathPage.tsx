@@ -143,7 +143,6 @@ const PathPage: Component = () => {
 
   return (
     <div class={`${styles.page} path-trail`} ref={pageEl}>
-      <div class={styles.backdrop} aria-hidden="true" />
       <div class={styles.cosmos} aria-hidden="true" />
 
       {/* Plain <div>, not <header>/<footer>: the app applies global flex
