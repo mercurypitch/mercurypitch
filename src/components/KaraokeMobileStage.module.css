@@ -216,6 +216,23 @@
   color: rgba(244, 236, 255, 0.5) !important;
 }
 
+.addLyricsBtn {
+  margin-top: 1.25rem;
+  padding: 0.6rem 1.4rem;
+  border: 1px solid rgba(183, 154, 224, 0.5);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.16);
+  color: #f4ecff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.addLyricsBtn:active {
+  transform: scale(0.96);
+}
+
 /* ── Sing pill placement (mechanics in kit PillControl) ─── */
 
 .singPill {

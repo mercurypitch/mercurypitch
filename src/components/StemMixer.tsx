@@ -1447,6 +1447,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             playlist.advance()
           }}
           onPickSession={props.onPickSession}
+          onUploadLyrics={handleLyricsUpload}
+          lyricsSuggestion={() => props.songTitle}
+          lrclibSearchUrl={lrclibSearchUrl}
         />
       }
     >

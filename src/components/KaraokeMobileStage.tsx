@@ -20,6 +20,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
+import type { LyricsUploadResult } from '@/components/LyricsUploader'
+import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
 import { ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
@@ -29,6 +31,19 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { getPlaylistsReactive, isPlaylistActive, nextSong, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
+
+// The uploader's CSS is a plain string injected once. The standalone host
+// injects it too (same key → deduped); this covers the in-app karaoke tab,
+// where the zen stage renders without that host.
+if (
+  typeof document !== 'undefined' &&
+  document.head.querySelector('style[data-kn="lyrics-uploader"]') === null
+) {
+  const el = document.createElement('style')
+  el.setAttribute('data-kn', 'lyrics-uploader')
+  el.textContent = LyricsUploaderStyles
+  document.head.appendChild(el)
+}
 
 interface ParsedLine {
   time: number
@@ -78,6 +93,14 @@ export interface KaraokeMobileStageProps {
 
   /** Stage another library song from the in-stage song sheet. */
   onPickSession?: (sessionId: string) => void
+
+  /** Attach user-supplied lyrics when none were found (paste or file).
+      Reuses the studio's lyrics controller, so they parse, sync, persist,
+      and show in the studio too. When omitted, the no-lyrics state is a
+      plain message (e.g. read-only contexts). */
+  onUploadLyrics?: (result: LyricsUploadResult) => void
+  lyricsSuggestion?: () => string
+  lrclibSearchUrl?: () => string
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -206,6 +229,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // ── In-stage song sheet ───────────────────────────────────────
   const [sheetOpen, setSheetOpen] = createSignal(false)
 
+  // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
+  const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
+
   const librarySongs = createMemo(() =>
     getAllUvrSessionsReactive()
       .filter(
@@ -284,6 +310,14 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                 <p class={styles.noLyricsSub}>
                   The music still plays — sing it your way.
                 </p>
+                <Show when={props.onUploadLyrics}>
+                  <button
+                    class={styles.addLyricsBtn}
+                    onClick={() => setAddLyricsOpen(true)}
+                  >
+                    Add lyrics
+                  </button>
+                </Show>
               </Show>
             </div>
           }
@@ -455,6 +489,25 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </p>
         </Show>
       </Sheet>
+
+      {/* ── Add-lyrics fallback (paste text / load a .lrc or .txt) ── */}
+      <Show when={props.onUploadLyrics}>
+        <Sheet
+          isOpen={addLyricsOpen()}
+          close={() => setAddLyricsOpen(false)}
+          ariaLabel="Add lyrics"
+        >
+          <LyricsUploader
+            suggestion={props.lyricsSuggestion?.()}
+            searchUrl={props.lrclibSearchUrl?.()}
+            onUpload={(result) => {
+              props.onUploadLyrics?.(result)
+              setAddLyricsOpen(false)
+            }}
+            onDismiss={() => setAddLyricsOpen(false)}
+          />
+        </Sheet>
+      </Show>
 
       {/* ── Playlist chrome (store-driven, self-gating) ────── */}
       <Show when={props.playlistOverlayActive()}>
