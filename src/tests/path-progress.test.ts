@@ -4,13 +4,14 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ASCENT_WEEKS, DAYS_PER_WEEK } from '@/features/path/path-content'
-import { activePathExercises, ENDOWED_DAY, pathComplete, pathProgress, recordPathPracticeDay, resetAscent, ringFill, startAscent, weekState, } from '@/features/path/path-progress'
+import { activePathExercises, ENDOWED_DAY, pathComplete, pathFreeRoam, pathProgress, recordPathPracticeDay, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
 
 const day = (n: number): string => `2026-08-${String(n).padStart(2, '0')}` // distinct local dates
 
 beforeEach(() => {
   localStorage.clear()
   resetAscent()
+  setPathFreeRoam(false) // the in-memory signal survives localStorage.clear()
 })
 
 describe('startAscent', () => {
@@ -80,6 +81,34 @@ describe('weekState', () => {
   it('shows week 1 available (not locked) before starting', () => {
     expect(weekState(1)).toBe('available')
     expect(weekState(2)).toBe('locked')
+  })
+})
+
+describe('free-roam', () => {
+  it('defaults off under test (sequential lock stays intact)', () => {
+    expect(pathFreeRoam()).toBe(false)
+  })
+
+  it('opens unreached weeks without touching real states', () => {
+    // Explicit param keeps the assertion pure (no global toggle).
+    expect(weekState(3, null, false)).toBe('locked')
+    expect(weekState(3, null, true)).toBe('available')
+
+    startAscent()
+    for (let i = 1; i <= 6; i++) recordPathPracticeDay(day(i)) // finish week 1
+    // Completed + active weeks are unchanged; only future weeks open up.
+    expect(weekState(1, pathProgress(), true)).toBe('complete')
+    expect(weekState(2, pathProgress(), true)).toBe('active')
+    expect(weekState(5, pathProgress(), false)).toBe('locked')
+    expect(weekState(5, pathProgress(), true)).toBe('available')
+  })
+
+  it('the reactive flag flips weekState for the whole path', () => {
+    startAscent()
+    expect(weekState(5)).toBe('locked')
+    setPathFreeRoam(true)
+    expect(weekState(5)).toBe('available')
+    expect(weekState(1)).toBe('active') // still honours real progress
   })
 })
 
