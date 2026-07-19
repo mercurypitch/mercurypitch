@@ -5,6 +5,7 @@
 import { getDb } from '@/db'
 import type { UvrSessionLyrics } from '@/db/entities'
 import { IS_DEV } from '@/lib/defaults'
+import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 
 export interface LyricsData {
   text: string
@@ -15,6 +16,8 @@ export interface LyricsData {
   blocks?: unknown[]
   blockInstances?: Record<string, unknown>
   fontSize?: number
+  versions?: LyricsVersion[]
+  activeVersionKind?: LyricsVersionKind
 }
 
 /** Save or update lyrics for a session in IndexedDB. */
@@ -52,6 +55,11 @@ export async function saveLyricsToDb(
           ? JSON.stringify(data.blockInstances)
           : undefined,
       fontSize: data.fontSize,
+      versionsJson:
+        data.versions !== undefined && data.versions.length > 0
+          ? JSON.stringify(data.versions)
+          : undefined,
+      activeVersionKind: data.activeVersionKind,
     })
     for (const entry of existing) {
       if (entry.id !== created.id) await repo.delete(entry.id)
@@ -103,6 +111,16 @@ export async function loadLyricsFromDb(
       }
     }
     if (entry.fontSize !== undefined) data.fontSize = entry.fontSize
+    if (entry.versionsJson !== undefined) {
+      try {
+        data.versions = JSON.parse(entry.versionsJson)
+      } catch (err) {
+        if (IS_DEV) console.warn('[LyricsDB] corrupt versionsJson:', err)
+      }
+    }
+    if (entry.activeVersionKind !== undefined) {
+      data.activeVersionKind = entry.activeVersionKind as LyricsVersionKind
+    }
     return data
   } catch (err) {
     if (IS_DEV) console.warn('[LyricsDB] loadLyricsFromDb failed:', err)

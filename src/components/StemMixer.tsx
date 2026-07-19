@@ -550,6 +550,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleDownloadLrc,
     getGenLines,
 
+    // Lyric versions
+    lyricsVersions,
+    activeVersionKind,
+    switchVersion,
+    deleteVersion,
+
     // Actions — block management
     handleMarkBlock,
     handleUnlinkInstance,
@@ -1761,6 +1767,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             toggleEditMode={toggleEditMode}
             startLrcGen={startLrcGen}
             autoSyncWords={autoSyncWords}
+            lyricsVersions={lyricsVersions}
+            activeVersionKind={activeVersionKind}
+            switchVersion={switchVersion}
+            deleteVersion={deleteVersion}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -1812,6 +1822,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             toggleEditMode={toggleEditMode}
             startLrcGen={startLrcGen}
             autoSyncWords={autoSyncWords}
+            lyricsVersions={lyricsVersions}
+            activeVersionKind={activeVersionKind}
+            switchVersion={switchVersion}
+            deleteVersion={deleteVersion}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -3430,6 +3444,107 @@ export const StemMixerStyles: string = `
   transition: all 0.15s;
   flex-shrink: 0;
   margin-left: 0.15rem;
+}
+
+/* Lyrics version switcher (Original / Edited / Auto-sync / Tapped) */
+.sm-lyrics-version {
+  position: relative;
+  display: inline-flex;
+  margin-left: 0.25rem;
+}
+.sm-lyrics-version-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.15rem;
+  padding: 0 0.4rem;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-secondary, #a8b3bf);
+  font-size: 0.62rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.sm-lyrics-version-btn:hover,
+.sm-lyrics-version-btn--open {
+  color: var(--accent, #58a6ff);
+  border-color: color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
+}
+.sm-lyrics-version-label {
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sm-lyrics-version-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.sm-lyrics-version-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 61;
+  min-width: 160px;
+  padding: 0.25rem;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.45rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: sm-loop-menu-in 0.1s ease-out;
+}
+.sm-lyrics-version-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  border-radius: 0.3rem;
+}
+.sm-lyrics-version-row--active {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 12%, transparent);
+}
+.sm-lyrics-version-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  padding: 0.4rem 0.45rem;
+  background: none;
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--fg-primary, #e6edf3);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+.sm-lyrics-version-pick:hover {
+  background: var(--bg-tertiary, #21262d);
+}
+.sm-lyrics-version-check {
+  display: inline-flex;
+  width: 12px;
+  color: var(--accent, #58a6ff);
+  flex-shrink: 0;
+}
+.sm-lyrics-version-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  margin-right: 0.15rem;
+  background: none;
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--fg-tertiary, #8b949e);
+  cursor: pointer;
+}
+.sm-lyrics-version-del:hover {
+  color: var(--error, #f85149);
+  background: color-mix(in srgb, var(--error, #f85149) 12%, transparent);
 }
 
 .sm-lyrics-gen-btn:hover {
