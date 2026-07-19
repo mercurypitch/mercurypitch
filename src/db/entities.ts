@@ -67,6 +67,8 @@ export interface SessionRecord extends DbEntity {
   streak: number
   avgCents?: number
   rating?: string
+  /** Set when this attempt was a weekly "Sing the Legend" challenge take. */
+  weeklyChallengeId?: string
   results: PracticeResultRecord[]
 }
 

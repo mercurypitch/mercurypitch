@@ -1,5 +1,6 @@
 import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
+import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { trackEvent } from '@/lib/analytics'
@@ -41,6 +42,8 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // If this run was launched from a challenge, report the score back so the
   // challenge records the attempt (and completes when the target is met).
   void recordChallengeAttempt({ type: entry.type, score: entry.score })
+  // Same return path for a weekly "Sing the Legend" attempt.
+  void recordWeeklyAttempt({ type: entry.type, score: entry.score })
 
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)

@@ -778,6 +778,474 @@ async function handleMirrorEvent(
   return respond({ ok: true }, { status: 201 })
 }
 
+// ── Weekly "Sing the Legend" challenges ──────────────────────────────
+// The weeklyChallenges table is NOT in the generic TABLES allowlist: these
+// custom handlers are its only reader, so queued/future rows never leak.
+// active/board/archive are public reads; create/update/delete are X-Admin-Key
+// gated. The board derives from sessionRecords tagged with weeklyChallengeId.
+
+const WEEKLY_GRACE_MS = 48 * 60 * 60 * 1000 // late attempts still count 48h
+
+interface WeeklyRow {
+  id: string
+  createdAt: string
+  updatedAt: string
+  slug: string
+  title: string
+  description: string
+  featType: string
+  voiceTypeSplit: string | null
+  difficulty: string
+  targetItems: string
+  targetScore: number
+  hearItUrl: string | null
+  startsAt: string
+  endsAt: string
+  rewardBadgeId: string | null
+  founderScore: number | null
+  founderTrace: string | null
+  evergreen: number
+  status: string
+  resultsJson: string | null
+}
+
+/** Public view of a weekly row (drops internal bookkeeping). */
+function publicWeekly(row: WeeklyRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    featType: row.featType,
+    voiceTypeSplit: row.voiceTypeSplit ? safeJson(row.voiceTypeSplit) : null,
+    difficulty: row.difficulty,
+    targetItems: safeJson(row.targetItems) ?? [],
+    targetScore: row.targetScore,
+    hearItUrl: row.hearItUrl,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    rewardBadgeId: row.rewardBadgeId,
+    founderScore: row.founderScore,
+    founderTrace: row.founderTrace ? safeJson(row.founderTrace) : null,
+    status: row.status,
+  }
+}
+
+function safeJson(s: string): unknown {
+  try {
+    return JSON.parse(s)
+  } catch {
+    return null
+  }
+}
+
+/** Monday 00:00 UTC of the week containing `nowMs` (ISO). */
+function startOfWeekUtcIso(nowMs: number): string {
+  const d = new Date(nowMs)
+  const day = d.getUTCDay() // 0=Sun..6=Sat
+  const diff = (day + 6) % 7 // days since Monday
+  const monday = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate() - diff,
+  )
+  return new Date(monday).toISOString()
+}
+
+interface BoardUser {
+  userId: string
+  displayName: string
+  best: number
+}
+
+async function computeWeeklyBoard(
+  row: WeeklyRow,
+  env: Env,
+): Promise<{
+  perUser: BoardUser[]
+  attemptedCount: number
+  completedCount: number
+}> {
+  const { results } = await env.DB.prepare(
+    `SELECT s."userId" AS userId,
+            COALESCE(p."displayName", 'Singer-' || substr(s."userId", 1, 6)) AS displayName,
+            MAX(s."score") AS best
+     FROM "sessionRecords" s
+     LEFT JOIN "userProfiles" p ON p."id" = s."userId"
+     WHERE s."weeklyChallengeId" = ?
+     GROUP BY s."userId"
+     ORDER BY best DESC`,
+  )
+    .bind(row.id)
+    .all<BoardUser>()
+  const perUser = results ?? []
+  const completedCount = perUser.filter((u) => u.best >= row.targetScore).length
+  return { perUser, attemptedCount: perUser.length, completedCount }
+}
+
+/** Top-N (founder merged in), participation counts, and the caller's standing. */
+async function handleWeeklyBoard(
+  url: URL,
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const id = url.searchParams.get('id')
+  if (id === null || id === '') {
+    return respond({ error: 'id required' }, { status: 400 })
+  }
+  const row = await env.DB.prepare(
+    `SELECT * FROM weeklyChallenges WHERE id = ?`,
+  )
+    .bind(id)
+    .first<WeeklyRow>()
+  if (!row) return respond({ error: 'Not found' }, { status: 404 })
+
+  const { perUser, attemptedCount, completedCount } = await computeWeeklyBoard(
+    row,
+    env,
+  )
+
+  // Merge the founder's seed score in as a labelled entry.
+  type Entry = { displayName: string; best: number; isFounder: boolean }
+  const entries: Entry[] = perUser.map((u) => ({
+    displayName: u.displayName,
+    best: Math.round(u.best),
+    isFounder: false,
+  }))
+  if (row.founderScore !== null) {
+    entries.push({
+      displayName: 'The Founder',
+      best: Math.round(row.founderScore),
+      isFounder: true,
+    })
+  }
+  entries.sort((a, b) => b.best - a.best)
+  const top = entries.slice(0, 10).map((e, i) => ({ rank: i + 1, ...e }))
+
+  // Caller's standing (ranked among real singers only).
+  const auth = await getAuth(request, env)
+  let you: {
+    best: number
+    rank: number
+    percentile: number
+    beatFounder: boolean
+    completed: boolean
+  } | null = null
+  if (auth) {
+    const mine = perUser.find((u) => u.userId === auth.userId)
+    if (mine) {
+      const better = perUser.filter((u) => u.best > mine.best).length
+      const rank = better + 1
+      you = {
+        best: Math.round(mine.best),
+        rank,
+        percentile:
+          attemptedCount > 0 ? Math.round((100 * rank) / attemptedCount) : 100,
+        beatFounder:
+          row.founderScore !== null && mine.best > row.founderScore,
+        completed: mine.best >= row.targetScore,
+      }
+    }
+  }
+
+  return respond({
+    top,
+    attemptedCount,
+    completedCount,
+    targetScore: row.targetScore,
+    founderScore: row.founderScore,
+    frozen: row.status === 'closed',
+    you,
+  })
+}
+
+/** Close a past-window active challenge: snapshot the board, mark closed. */
+async function closeWeekly(row: WeeklyRow, env: Env): Promise<void> {
+  const { perUser, attemptedCount, completedCount } = await computeWeeklyBoard(
+    row,
+    env,
+  )
+  const top3 = perUser
+    .slice(0, 3)
+    .map((u) => ({ displayName: u.displayName, best: Math.round(u.best) }))
+  const results = {
+    top3,
+    attemptedCount,
+    completedCount,
+    closedAt: new Date().toISOString(),
+  }
+  await env.DB.prepare(
+    `UPDATE weeklyChallenges SET status = 'closed', resultsJson = ?, updatedAt = ? WHERE id = ?`,
+  )
+    .bind(JSON.stringify(results), new Date().toISOString(), row.id)
+    .run()
+}
+
+/** Encore: clone a random evergreen closed row as this week's active challenge. */
+async function encoreWeekly(
+  env: Env,
+  nowMs: number,
+): Promise<WeeklyRow | null> {
+  const ev = await env.DB.prepare(
+    `SELECT * FROM weeklyChallenges WHERE evergreen = 1 AND status = 'closed' ORDER BY RANDOM() LIMIT 1`,
+  ).first<WeeklyRow>()
+  if (!ev) return null
+  const startsAt = startOfWeekUtcIso(nowMs)
+  const endsAt = new Date(Date.parse(startsAt) + 7 * 86_400_000).toISOString()
+  const now = new Date(nowMs).toISOString()
+  const id = crypto.randomUUID()
+  const slug = `${ev.slug}-encore-${Math.floor(nowMs / 86_400_000)}`
+  await env.DB.prepare(
+    `INSERT INTO weeklyChallenges
+      (id, createdAt, updatedAt, slug, title, description, featType, voiceTypeSplit,
+       difficulty, targetItems, targetScore, hearItUrl, startsAt, endsAt,
+       rewardBadgeId, founderScore, founderTrace, evergreen, status, resultsJson)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active',NULL)`,
+  )
+    .bind(
+      id,
+      now,
+      now,
+      slug,
+      ev.title,
+      ev.description,
+      ev.featType,
+      ev.voiceTypeSplit,
+      ev.difficulty,
+      ev.targetItems,
+      ev.targetScore,
+      ev.hearItUrl,
+      startsAt,
+      endsAt,
+      ev.rewardBadgeId,
+      ev.founderScore,
+      ev.founderTrace,
+      ev.evergreen,
+    )
+    .run()
+  return { ...ev, id, slug, startsAt, endsAt, status: 'active', resultsJson: null }
+}
+
+/** Resolve the current challenge; lazily activate/close/encore (no cron). */
+async function handleWeeklyActive(env: Env): Promise<Response> {
+  const nowMs = Date.now()
+  const nowIso = new Date(nowMs).toISOString()
+
+  let active = await env.DB.prepare(
+    `SELECT * FROM weeklyChallenges WHERE status = 'active' ORDER BY startsAt DESC LIMIT 1`,
+  ).first<WeeklyRow>()
+
+  // Past its window (+grace)? Close it and look for the next.
+  if (active && Date.parse(active.endsAt) + WEEKLY_GRACE_MS < nowMs) {
+    await closeWeekly(active, env)
+    active = null
+  }
+
+  // Promote a queued row whose window contains now.
+  if (!active) {
+    const queued = await env.DB.prepare(
+      `SELECT * FROM weeklyChallenges WHERE status = 'queued' AND startsAt <= ? AND endsAt > ? ORDER BY startsAt ASC LIMIT 1`,
+    )
+      .bind(nowIso, nowIso)
+      .first<WeeklyRow>()
+    if (queued) {
+      await env.DB.prepare(
+        `UPDATE weeklyChallenges SET status = 'active', updatedAt = ? WHERE id = ?`,
+      )
+        .bind(nowIso, queued.id)
+        .run()
+      active = { ...queued, status: 'active' }
+    }
+  }
+
+  // Nothing scheduled — re-run an evergreen as an Encore week.
+  if (!active) {
+    active = await encoreWeekly(env, nowMs)
+  }
+
+  return respond({ challenge: active ? publicWeekly(active) : null })
+}
+
+const WEEKLY_WRITE_COLS = new Set([
+  'slug',
+  'title',
+  'description',
+  'featType',
+  'voiceTypeSplit',
+  'difficulty',
+  'targetItems',
+  'targetScore',
+  'hearItUrl',
+  'startsAt',
+  'endsAt',
+  'rewardBadgeId',
+  'founderScore',
+  'founderTrace',
+  'evergreen',
+  'status',
+])
+
+/** Admin: create a queued challenge. */
+async function createWeekly(request: Request, env: Env): Promise<Response> {
+  let body: Record<string, unknown>
+  try {
+    body = (await request.json()) as Record<string, unknown>
+  } catch {
+    return respond({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const required = [
+    'slug',
+    'title',
+    'description',
+    'featType',
+    'difficulty',
+    'targetItems',
+    'startsAt',
+    'endsAt',
+  ]
+  for (const key of required) {
+    if (body[key] === undefined || body[key] === null || body[key] === '') {
+      return respond({ error: `Missing field: ${key}` }, { status: 400 })
+    }
+  }
+  const now = new Date().toISOString()
+  const id = crypto.randomUUID()
+  const j = (v: unknown): string =>
+    typeof v === 'string' ? v : JSON.stringify(v)
+  try {
+    await env.DB.prepare(
+      `INSERT INTO weeklyChallenges
+        (id, createdAt, updatedAt, slug, title, description, featType, voiceTypeSplit,
+         difficulty, targetItems, targetScore, hearItUrl, startsAt, endsAt,
+         rewardBadgeId, founderScore, founderTrace, evergreen, status, resultsJson)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
+    )
+      .bind(
+        id,
+        now,
+        now,
+        String(body.slug),
+        String(body.title),
+        String(body.description),
+        String(body.featType),
+        body.voiceTypeSplit != null ? j(body.voiceTypeSplit) : null,
+        String(body.difficulty),
+        j(body.targetItems),
+        typeof body.targetScore === 'number' ? body.targetScore : 70,
+        body.hearItUrl != null ? String(body.hearItUrl) : null,
+        String(body.startsAt),
+        String(body.endsAt),
+        body.rewardBadgeId != null ? String(body.rewardBadgeId) : null,
+        typeof body.founderScore === 'number' ? body.founderScore : null,
+        body.founderTrace != null ? j(body.founderTrace) : null,
+        body.evergreen === true || body.evergreen === 1 ? 1 : 0,
+        typeof body.status === 'string' ? body.status : 'queued',
+      )
+      .run()
+  } catch (err) {
+    console.error('[weekly] create failed', err)
+    return respond({ error: 'Could not create (slug taken?)' }, { status: 400 })
+  }
+  return respond({ id }, { status: 201 })
+}
+
+/** Admin: patch a challenge (incl. seeding founderScore/Trace). */
+async function updateWeekly(
+  id: string,
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  let body: Record<string, unknown>
+  try {
+    body = (await request.json()) as Record<string, unknown>
+  } catch {
+    return respond({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const sets: string[] = []
+  const binds: SqlValue[] = []
+  for (const [key, value] of Object.entries(body)) {
+    if (!WEEKLY_WRITE_COLS.has(key)) continue
+    sets.push(`"${key}" = ?`)
+    if (key === 'evergreen') binds.push(value === true || value === 1 ? 1 : 0)
+    else if (
+      key === 'voiceTypeSplit' ||
+      key === 'targetItems' ||
+      key === 'founderTrace'
+    )
+      binds.push(typeof value === 'string' ? value : JSON.stringify(value))
+    else binds.push(value as SqlValue)
+  }
+  if (sets.length === 0) return respond({ error: 'No fields' }, { status: 400 })
+  sets.push(`"updatedAt" = ?`)
+  binds.push(new Date().toISOString())
+  binds.push(id)
+  await env.DB.prepare(
+    `UPDATE weeklyChallenges SET ${sets.join(', ')} WHERE id = ?`,
+  )
+    .bind(...binds)
+    .run()
+  return respond({ ok: true })
+}
+
+async function handleWeekly(
+  url: URL,
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const sub = url.pathname.replace(/^\/api\/weekly\/?/, '').split('/')[0]
+  const method = request.method
+
+  // ── Admin writes ──
+  if (method === 'POST' && sub === '') {
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
+    return createWeekly(request, env)
+  }
+  if (method === 'PATCH' && sub !== '' && sub !== 'board' && sub !== 'archive') {
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
+    return updateWeekly(sub, request, env)
+  }
+  if (method === 'DELETE' && sub !== '') {
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
+    await env.DB.prepare(`DELETE FROM weeklyChallenges WHERE id = ?`)
+      .bind(sub)
+      .run()
+    return respond({ ok: true })
+  }
+
+  // ── Admin: list ALL rows (incl. queued) for the authoring page ──
+  if (method === 'GET' && sub === 'all') {
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
+    const { results } = await env.DB.prepare(
+      `SELECT * FROM weeklyChallenges ORDER BY startsAt DESC LIMIT 200`,
+    ).all<WeeklyRow>()
+    return respond({ challenges: results ?? [] })
+  }
+
+  // ── Public reads ──
+  if (method === 'GET' && (sub === '' || sub === 'active')) {
+    return handleWeeklyActive(env)
+  }
+  if (method === 'GET' && sub === 'board') {
+    return handleWeeklyBoard(url, request, env)
+  }
+  if (method === 'GET' && sub === 'archive') {
+    const { results } = await env.DB.prepare(
+      `SELECT * FROM weeklyChallenges WHERE status = 'closed' ORDER BY endsAt DESC LIMIT 20`,
+    ).all<WeeklyRow>()
+    const archive = (results ?? []).map((r) => ({
+      ...publicWeekly(r),
+      results: r.resultsJson ? safeJson(r.resultsJson) : null,
+    }))
+    return respond({ archive })
+  }
+
+  return respond({ error: 'Not found' }, { status: 404 })
+}
+
 // ── Router ───────────────────────────────────────────────────────────
 
 export default {
@@ -827,6 +1295,29 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
     return handleMirrorEvent(request, env)
+  }
+
+  if (
+    url.pathname === '/api/weekly' ||
+    url.pathname.startsWith('/api/weekly/')
+  ) {
+    // /api/weekly writes are rate-limited like the generic CRUD path.
+    if (request.method !== 'GET' && request.method !== 'OPTIONS') {
+      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
+      if (!rl.allowed) {
+        return respond(
+          {
+            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+          },
+        )
+      }
+    }
+    return handleWeekly(url, request, env)
   }
 
   const match = url.pathname.match(/^\/api\/([A-Za-z]+)(?:\/([^/]+))?$/)

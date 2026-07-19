@@ -18,6 +18,8 @@ export type AppFunnelEvent =
   | 'challenge_attempt'
   | 'pricing_view'
   | 'checkout_start'
+  | 'weekly_join'
+  | 'weekly_attempt'
 
 const CLIENT_ID_KEY = 'mp.analytics.clientId.v1'
 const APP_OPEN_SENT_KEY = 'mp.analytics.appOpenSent.v1'

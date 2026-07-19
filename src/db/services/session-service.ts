@@ -16,6 +16,8 @@ export async function saveSessionRecord(data: {
   accuracy: number
   /** Real practice duration if known; else estimated from note count. */
   durationMs?: number
+  /** Tags the attempt to a weekly "Sing the Legend" challenge (board ranking). */
+  weeklyChallengeId?: string
 }): Promise<SessionRecord | null> {
   try {
     const db = await getDb()
@@ -37,6 +39,9 @@ export async function saveSessionRecord(data: {
       notesHit: data.notesHit,
       notesTotal: data.notesTotal,
       streak,
+      ...(data.weeklyChallengeId !== undefined
+        ? { weeklyChallengeId: data.weeklyChallengeId }
+        : {}),
       results: [],
     })
   } catch {
