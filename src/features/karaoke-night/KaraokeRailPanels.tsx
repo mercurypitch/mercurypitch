@@ -3,6 +3,7 @@
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
+import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-accept'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
@@ -272,7 +273,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          accept={AUDIO_UPLOAD_ACCEPT}
           class="kn-file-input"
           onChange={(e) => {
             void handleFile(e.currentTarget.files?.[0])

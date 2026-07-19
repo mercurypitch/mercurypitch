@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { isZipFile } from '@/db/services/session-export-service'
+import { AUDIO_UPLOAD_ALLOWED_TYPES } from '@/lib/audio-accept'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, ImportFile, MusicNote } from './icons'
@@ -30,19 +31,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
 
   const maxSize = () => props.maxSize ?? 100 * 1024 * 1024 // 100MB default
-  const allowedTypes = () =>
-    props.allowedTypes || [
-      'audio/mpeg',
-      'audio/wav',
-      'audio/mp3',
-      'audio/wave',
-      'audio/x-wav',
-      'audio/flac',
-      'audio/x-flac',
-      '.mp3',
-      '.wav',
-      '.flac',
-    ]
+  const allowedTypes = () => props.allowedTypes || AUDIO_UPLOAD_ALLOWED_TYPES
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
