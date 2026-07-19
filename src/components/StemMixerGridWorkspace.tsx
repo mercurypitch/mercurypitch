@@ -6,8 +6,10 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { WorkspaceLayout, WorkspacePanel, } from '@/features/stem-mixer/useStemMixerLayoutController'
+import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { karaokeFocus } from '@/stores/ui-store'
+import { LyricsVersionMenu } from './LyricsVersionMenu'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
@@ -53,6 +55,10 @@ interface StemMixerGridWorkspaceProps {
   toggleEditMode: () => void
   startLrcGen: () => void
   autoSyncWords: () => void
+  lyricsVersions: Accessor<LyricsVersion[]>
+  activeVersionKind: Accessor<LyricsVersionKind | null>
+  switchVersion: (kind: LyricsVersionKind) => void
+  deleteVersion: (kind: LyricsVersionKind) => void
   handleDownloadLrc: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
@@ -511,6 +517,12 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   </svg>
                 </button>
               </Show>
+              <LyricsVersionMenu
+                versions={props.lyricsVersions}
+                activeKind={props.activeVersionKind}
+                onSwitch={props.switchVersion}
+                onDelete={props.deleteVersion}
+              />
               <Show when={lp().lrcGenMode()}>
                 <span class="sm-lyrics-gen-label">LRC Gen</span>
               </Show>

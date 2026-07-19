@@ -334,6 +334,11 @@ export interface UvrSessionLyrics extends DbEntity {
   /** JSON-serialized BlockInstancesMap */
   blockInstancesJson?: string
   fontSize?: number
+  /** JSON-serialized LyricsVersion[] — the named mappings (Original / Edited
+   *  / Auto-sync / Tapped). Absent on legacy rows; migrated on load. */
+  versionsJson?: string
+  /** Active version's kind (LyricsVersionKind). */
+  activeVersionKind?: string
 }
 
 export interface OfflinePitchAnalysisRecord extends DbEntity {

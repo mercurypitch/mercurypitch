@@ -2,7 +2,7 @@
 // StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions
 // ============================================================
 
-import type { Setter } from 'solid-js'
+import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
@@ -14,6 +14,8 @@ import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } fro
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
+import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
@@ -202,7 +204,14 @@ export interface StemMixerLyricsController {
     filename: string,
     wt?: WordTimingsMap,
     originalText?: string,
+    versionKind?: LyricsVersionKind,
   ) => void
+
+  // Lyric versions
+  lyricsVersions: Accessor<LyricsVersion[]>
+  activeVersionKind: Accessor<LyricsVersionKind | null>
+  switchVersion: (kind: LyricsVersionKind) => void
+  deleteVersion: (kind: LyricsVersionKind) => void
 }
 
 // ── Pure helpers ───────────────────────────────────────────────────
@@ -276,6 +285,11 @@ export function useStemMixerLyricsController(
   )
   const [editMode, setEditMode] = createSignal(false)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
+  // Saved lyric mappings (Original / Edited / Auto-sync / Tapped) the user can
+  // switch between — see src/lib/lyrics-versions.ts.
+  const [lyricsVersions, setLyricsVersions] = createSignal<LyricsVersion[]>([])
+  const [activeVersionKind, setActiveVersionKind] =
+    createSignal<LyricsVersionKind | null>(null)
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
   const [editPopover, setEditPopover] = createSignal<EditPopover | null>(null)
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
@@ -351,7 +365,29 @@ export function useStemMixerLyricsController(
     filename: string,
     wt?: WordTimingsMap,
     originalText?: string,
+    /** When set, snapshot the saved mapping as this named version and make it
+     *  active. Omit for saves that don't change the mapping (font size,
+     *  block edits) — those keep the existing versions untouched. */
+    versionKind?: LyricsVersionKind,
   ) => {
+    let versions = lyricsVersions()
+    let activeKind = activeVersionKind()
+    if (versionKind !== undefined) {
+      // A fresh import (upload / online match) is a clean slate — it must not
+      // carry over Edited/Auto-sync versions from a previously loaded file.
+      // Every other kind builds on top of the current import.
+      const base = versionKind === 'imported' ? [] : versions
+      versions = upsertVersion(base, {
+        kind: versionKind,
+        text,
+        wordTimings: wt && Object.keys(wt).length > 0 ? wt : undefined,
+        createdAt: Date.now(),
+      })
+      activeKind = versionKind
+      setLyricsVersions(versions)
+      setActiveVersionKind(versionKind)
+    }
+
     const payload: CachedLyricsPayload = {
       text,
       format,
@@ -365,12 +401,107 @@ export function useStemMixerLyricsController(
     const bi = blockInstances()
     if (Object.keys(bi).length > 0) payload.blockInstances = bi
     payload.fontSize = lyricsFontSize()
+    if (versions.length > 0) payload.versions = versions
+    if (activeKind !== null) payload.activeVersionKind = activeKind
 
     // Update local cache immediately (keeps reads sync)
     _setLyricsCache(payload)
 
     // Persist to IndexedDB (fire-and-forget)
     void saveLyricsToDb(deps.sessionId, payload)
+  }
+
+  // ── Lyric versions (switch / delete) ─────────────────────────────
+  const LRC_LINE_RE = /^\s*\[\d{1,3}:\d{2}/m
+  /** Load a saved version's text + timings into the live lyric state. */
+  const applyVersionToLive = (version: LyricsVersion) => {
+    const isLrc = LRC_LINE_RE.test(version.text)
+    setRawLyricsText(version.text)
+    if (isLrc) {
+      setLrcLines(parseLrcFile(version.text))
+      setLyricsLines([])
+    } else {
+      setLyricsLines(parseTextLyrics(version.text))
+      setLrcLines([])
+    }
+    setWordTimings(version.wordTimings ?? {})
+    setEditMode(false)
+    // Blocks/repeats belong to a specific mapping — reset on switch.
+    setBlocks([])
+    setBlockInstances({})
+    setLyricsSource('upload')
+  }
+
+  /** Rebuild the versions list from a persisted payload (migrating legacy
+   *  single-slot records once), setting the version signals. Returns the
+   *  active version, or null when the record has no lyrics. */
+  const hydrateVersions = (
+    payload: CachedLyricsPayload | null,
+  ): LyricsVersion | null => {
+    if (payload === null) {
+      setLyricsVersions([])
+      setActiveVersionKind(null)
+      return null
+    }
+    const { versions, activeVersionKind: active } = synthesizeVersions(
+      {
+        text: payload.text,
+        // The DB's looser element type (number | undefined) is the same shape
+        // at runtime; the versions module only reads keys + passes it through.
+        wordTimings: payload.wordTimings as WordTimingsMap | undefined,
+        originalText: payload.originalText,
+        versions: payload.versions,
+        activeVersionKind: payload.activeVersionKind,
+      },
+      Date.now(),
+    )
+    setLyricsVersions(versions)
+    setActiveVersionKind(active ?? null)
+    return findVersion(versions, active ?? undefined) ?? null
+  }
+
+  const switchVersion = (kind: LyricsVersionKind) => {
+    if (kind === activeVersionKind()) return
+    const version = findVersion(lyricsVersions(), kind)
+    if (version === undefined) return
+    applyVersionToLive(version)
+    setActiveVersionKind(kind)
+    const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
+    persistLyrics(
+      version.text,
+      LRC_LINE_RE.test(version.text) ? 'lrc' : 'txt',
+      filename,
+      version.wordTimings,
+    )
+  }
+
+  const deleteVersion = (kind: LyricsVersionKind) => {
+    const remaining = removeVersion(lyricsVersions(), kind)
+    setLyricsVersions(remaining)
+    const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
+    if (kind === activeVersionKind()) {
+      const next = remaining[0]
+      if (next !== undefined) {
+        applyVersionToLive(next)
+        setActiveVersionKind(next.kind)
+        persistLyrics(
+          next.text,
+          LRC_LINE_RE.test(next.text) ? 'lrc' : 'txt',
+          filename,
+          next.wordTimings,
+        )
+        return
+      }
+      setActiveVersionKind(null)
+    }
+    // Deleted a non-active version (or the last one) — re-save with the
+    // trimmed list, keeping the current active text.
+    persistLyrics(
+      rawLyricsText(),
+      lrcLines().length > 0 ? 'lrc' : 'txt',
+      filename,
+      wordTimings(),
+    )
   }
 
   const loadPersistedLyrics = ():
@@ -435,7 +566,14 @@ export function useStemMixerLyricsController(
       setLyricsLines(parseTextLyrics(result.text))
       setLrcLines([])
     }
-    persistLyrics(result.text, result.format, `${title}.${result.format}`)
+    persistLyrics(
+      result.text,
+      result.format,
+      `${title}.${result.format}`,
+      undefined,
+      undefined,
+      'imported',
+    )
     setLyricsSource('api')
   }
 
@@ -514,6 +652,21 @@ export function useStemMixerLyricsController(
         setLrcLines([])
       }
       if (persisted.wordTimings) setWordTimings(persisted.wordTimings)
+      // Build the version list from the stored payload (migrating a legacy
+      // single-slot record once). Persist the migration so it sticks.
+      const cache = _lyricsCache()
+      const hadVersions =
+        cache?.versions !== undefined && cache.versions.length > 0
+      hydrateVersions(cache)
+      if (!hadVersions && lyricsVersions().length > 0) {
+        persistLyrics(
+          persisted.text,
+          persisted.format,
+          persisted.filename,
+          persisted.wordTimings,
+          persisted.originalText,
+        )
+      }
       setLyricsSource('upload')
       return
     }
@@ -572,7 +725,14 @@ export function useStemMixerLyricsController(
     setBlocks([])
     setBlockInstances({})
     setRawLyricsText(result.text)
-    persistLyrics(result.text, result.format, result.filename)
+    persistLyrics(
+      result.text,
+      result.format,
+      result.filename,
+      undefined,
+      undefined,
+      'imported',
+    )
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
       setLyricsLines([])
@@ -839,7 +999,7 @@ export function useStemMixerLyricsController(
         .join('\n')
     }
 
-    persistLyrics(text, 'lrc', filename, merged)
+    persistLyrics(text, 'lrc', filename, merged, undefined, 'edited')
     const parsed = parseLrcFile(text)
     setLrcLines(parsed)
     setLyricsLines([])
@@ -1520,6 +1680,7 @@ export function useStemMixerLyricsController(
       filename,
       mergedWordTimes,
       snapshotOriginalText,
+      'lrc-gen',
     )
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
@@ -1575,6 +1736,7 @@ export function useStemMixerLyricsController(
       persisted?.filename ?? 'auto-synced.lrc',
       auto,
       persisted?.originalText ?? rawLyricsText(),
+      'auto-sync',
     )
     setLrcLines(parseLrcFile(lrcText))
     setLyricsLines([])
@@ -2098,5 +2260,11 @@ export function useStemMixerLyricsController(
     // LRC gen persistence helpers (needed by handleDownloadLrc called from JSX)
     loadPersistedLyrics,
     persistLyrics,
+
+    // Lyric versions (switch / delete between saved mappings)
+    lyricsVersions,
+    activeVersionKind,
+    switchVersion,
+    deleteVersion,
   }
 }
