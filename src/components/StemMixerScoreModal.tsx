@@ -5,14 +5,7 @@
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
-
-interface MicScore {
-  totalNotes: number
-  matchedNotes: number
-  accuracyPct: number
-  avgCentsOff: number
-  grade: 'S' | 'A' | 'B' | 'C' | 'D'
-}
+import type { MicScore } from '@/lib/mic-scoring'
 
 interface StemMixerScoreModalProps {
   showScore: Accessor<boolean>
@@ -57,9 +50,15 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
                 <span class="sm-mic-score-accuracy">
                   {props.score()!.accuracyPct}% accuracy
                 </span>
+                <Show when={(props.score()!.notesTotal ?? 0) > 0}>
+                  <span class="sm-mic-score-detail">
+                    {props.score()!.notesHit}/{props.score()!.notesTotal} melody
+                    notes hit
+                  </span>
+                </Show>
                 <span class="sm-mic-score-detail">
                   {props.score()!.matchedNotes}/{props.score()!.totalNotes}{' '}
-                  notes in tolerance
+                  samples in tune
                 </span>
                 <span class="sm-mic-score-detail">
                   ±{props.score()!.avgCentsOff}¢ avg deviation

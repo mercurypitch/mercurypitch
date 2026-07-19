@@ -12,11 +12,17 @@ export interface ComparisonPoint {
 }
 
 export interface MicScore {
+  /** Judged comparison frames (samples), not melody notes. */
   totalNotes: number
+  /** Frames within tolerance. */
   matchedNotes: number
   accuracyPct: number
   avgCentsOff: number
   grade: 'S' | 'A' | 'B' | 'C' | 'D'
+  /** Reference melody notes in the run (pitch-compare-engine segments). */
+  notesTotal?: number
+  /** Melody notes the singer hit (>= half their judged frames in tune). */
+  notesHit?: number
 }
 
 /**

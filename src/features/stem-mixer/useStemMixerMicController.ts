@@ -3,9 +3,12 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { micManager } from '@/lib/mic-manager'
+import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
+import { computeScore as computeFrameScore } from '@/lib/mic-scoring'
+import { createPitchCompareEngine } from '@/lib/pitch-compare-engine'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
@@ -13,22 +16,6 @@ import { sliderToGain } from '@/lib/volume-curve'
 import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
 
 // ── Types ──────────────────────────────────────────────────────
-
-interface ComparisonPoint {
-  time: number
-  vocalNote: string
-  micNote: string
-  centsOff: number // positive = mic is sharp
-  inTolerance: boolean
-}
-
-interface MicScore {
-  totalNotes: number
-  matchedNotes: number
-  accuracyPct: number
-  avgCentsOff: number
-  grade: 'S' | 'A' | 'B' | 'C' | 'D'
-}
 
 interface PitchNote {
   time: number
@@ -62,6 +49,8 @@ export interface StemMixerMicController {
   setMicMonitorVolume: (volume: number) => void
   comparisonData: Accessor<ComparisonPoint[]>
   setComparisonData: Setter<ComparisonPoint[]>
+  /** Comparison points of the current loop iteration only. */
+  iterationComparisonData: Accessor<ComparisonPoint[]>
   toleranceCents: Accessor<number>
   score: Accessor<MicScore | null>
   setScore: Setter<MicScore | null>
@@ -75,6 +64,12 @@ export interface StemMixerMicController {
   resetMicPitchHistory: () => void
 
   // Scoring
+  /** Feed one RAF frame into the compare engine (0 = unvoiced). */
+  pushComparison: (timeSec: number, refFreq: number, micFreq: number) => void
+  /** Start a new loop iteration for the live metrics bar. */
+  markLoopIteration: () => void
+  /** Drop accumulated comparison data (start of a fresh run). */
+  clearComparisonData: () => void
   computeScore: () => MicScore
   resetScore: () => void
 
@@ -95,9 +90,50 @@ export const useStemMixerMicController = (
   const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>(
     [],
   )
-  const [toleranceCents] = createSignal(50)
+  const TOLERANCE_CENTS = 50
+  const [toleranceCents] = createSignal(TOLERANCE_CENTS)
   const [score, setScore] = createSignal<MicScore | null>(null)
   const [showScore, setShowScore] = createSignal(false)
+
+  // Octave-agnostic, transition-tolerant comparison core (see the engine's
+  // header for the fairness rules). Signals mirror its counters so the
+  // per-iteration slice below stays reactive.
+  const compareEngine = createPitchCompareEngine({
+    toleranceCents: TOLERANCE_CENTS,
+  })
+  const [pointsTotal, setPointsTotal] = createSignal(0)
+  const [iterationStart, setIterationStart] = createSignal(0)
+
+  const pushComparison = (
+    timeSec: number,
+    refFreq: number,
+    micFreq: number,
+  ): void => {
+    const point = compareEngine.push(timeSec, refFreq, micFreq)
+    if (point) {
+      setComparisonData((prev) => [...prev.slice(-12000), point])
+      setPointsTotal((n) => n + 1)
+    }
+  }
+
+  const markLoopIteration = (): void => {
+    setIterationStart(pointsTotal())
+  }
+
+  const clearComparisonData = (): void => {
+    compareEngine.reset()
+    setComparisonData([])
+    setPointsTotal(0)
+    setIterationStart(0)
+  }
+
+  // The stored array is capped, so slice by "points since the iteration
+  // started" from the tail instead of by absolute index.
+  const iterationComparisonData = createMemo<ComparisonPoint[]>(() => {
+    const data = comparisonData()
+    const count = Math.min(data.length, pointsTotal() - iterationStart())
+    return count >= data.length ? data : data.slice(data.length - count)
+  })
 
   // Mic monitoring — persisted so the choice survives reloads/song switches.
   const [micMonitorEnabled, setMicMonitorEnabled] = createPersistedSignal(
@@ -191,41 +227,17 @@ export const useStemMixerMicController = (
 
   // ── Scoring ─────────────────────────────────────────────────
   const computeScore = (): MicScore => {
-    const data = comparisonData()
-    if (data.length === 0) {
-      return {
-        totalNotes: 0,
-        matchedNotes: 0,
-        accuracyPct: 0,
-        avgCentsOff: 0,
-        grade: 'D',
-      }
-    }
-    const total = data.length
-    const matched = data.filter((d) => d.inTolerance).length
-    const sumCents = data.reduce((s, d) => s + Math.abs(d.centsOff), 0)
-    const accuracy = (matched / total) * 100
-    const grade =
-      accuracy >= 95
-        ? 'S'
-        : accuracy >= 85
-          ? 'A'
-          : accuracy >= 70
-            ? 'B'
-            : accuracy >= 50
-              ? 'C'
-              : 'D'
+    const frameScore = computeFrameScore(comparisonData())
+    const notes = compareEngine.noteStats()
     return {
-      totalNotes: total,
-      matchedNotes: matched,
-      accuracyPct: Math.round(accuracy),
-      avgCentsOff: Math.round(sumCents / total),
-      grade,
+      ...frameScore,
+      notesTotal: notes.notesTotal,
+      notesHit: notes.notesHit,
     }
   }
 
   const resetScore = () => {
-    setComparisonData([])
+    clearComparisonData()
     setScore(null)
     setShowScore(false)
   }
@@ -274,7 +286,7 @@ export const useStemMixerMicController = (
         applyDetectorSettings()
 
         micPitchHistory = []
-        setComparisonData([])
+        clearComparisonData()
         setScore(null)
         setShowScore(false)
         setMicActive(true)
@@ -316,6 +328,7 @@ export const useStemMixerMicController = (
     setMicMonitorVolume,
     comparisonData,
     setComparisonData,
+    iterationComparisonData,
     toleranceCents,
     score,
     setScore,
@@ -325,6 +338,9 @@ export const useStemMixerMicController = (
     getMicPitchDetector,
     getMicPitchHistory,
     resetMicPitchHistory,
+    pushComparison,
+    markLoopIteration,
+    clearComparisonData,
     computeScore,
     resetScore,
     toggleMic,

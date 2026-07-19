@@ -5,11 +5,15 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
-import { freqToMidi } from '@/lib/scale-data'
+import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
+import { createOctaveCorrector } from '@/lib/pitch-pipeline/octave-corrector'
+import { createRunningMedian } from '@/lib/pitch-pipeline/running-median'
+import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { PitchNote } from './types'
 
@@ -26,22 +30,6 @@ interface StemTrack {
   muted: boolean
   soloed: boolean
   volume: number
-}
-
-interface ComparisonPoint {
-  time: number
-  vocalNote: string
-  micNote: string
-  centsOff: number
-  inTolerance: boolean
-}
-
-interface MicScore {
-  totalNotes: number
-  matchedNotes: number
-  accuracyPct: number
-  avgCentsOff: number
-  grade: 'S' | 'A' | 'B' | 'C' | 'D'
 }
 
 interface CanvasView {
@@ -86,8 +74,12 @@ export interface StemMixerAudioDeps {
   getMicPitchHistory: () => PitchNote[]
   setMicPitch: Setter<DetectedPitch | null>
   comparisonData: Accessor<ComparisonPoint[]>
-  setComparisonData: Setter<ComparisonPoint[]>
-  toleranceCents: Accessor<number>
+  /** Feed one RAF frame into the compare engine (0 = unvoiced side). */
+  pushComparison: (timeSec: number, refFreq: number, micFreq: number) => void
+  /** New loop iteration begins (loop wrap) — scopes the live metrics bar. */
+  markLoopIteration: () => void
+  /** Drop accumulated comparison data (fresh run after a stop). */
+  clearComparisonData: () => void
   resetMicPitchHistory: () => void
 
   // Scoring (called by handleStop / handleRestart)
@@ -222,6 +214,59 @@ export const useStemMixerAudioController = (
   let playbackSpeed = 1.0
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
+
+  // ── Live pitch smoothing ─────────────────────────────────────
+  // Raw per-frame detection flickers (single-frame octave/harmonic errors,
+  // consonant scrapes) — the same defence the Singing tab's live pipeline
+  // uses: a short median plus the shared octave corrector, applied to both
+  // the stem reference and the mic before drawing or scoring. Filters reset
+  // after a silence gap so a new phrase may start in any octave.
+  const SMOOTH_SILENCE_RESET_SEC = 0.25
+  interface PitchSmoother {
+    median: ReturnType<typeof createRunningMedian>
+    octave: ReturnType<typeof createOctaveCorrector>
+    lastVoicedAt: number
+  }
+  const makeSmoother = (): PitchSmoother => ({
+    median: createRunningMedian(3),
+    octave: createOctaveCorrector({ confirmFrames: 3 }),
+    lastVoicedAt: -1,
+  })
+  let stemSmoother = makeSmoother()
+  let micSmoother = makeSmoother()
+  const resetSmoothers = (): void => {
+    stemSmoother = makeSmoother()
+    micSmoother = makeSmoother()
+  }
+
+  /** Median + octave-corrected copy of a raw detection; null when unvoiced. */
+  const smoothPitch = (
+    s: PitchSmoother,
+    raw: DetectedPitch,
+    timeSec: number,
+  ): DetectedPitch | null => {
+    if (raw.frequency <= 0) return null
+    if (
+      s.lastVoicedAt >= 0 &&
+      timeSec - s.lastVoicedAt > SMOOTH_SILENCE_RESET_SEC
+    ) {
+      s.median.reset()
+      s.octave.reset()
+    }
+    s.lastVoicedAt = timeSec
+    const midiFloat = s.octave.correct(
+      s.median.push(freqToMidiFloat(raw.frequency)),
+    )
+    const rounded = Math.round(midiFloat)
+    const { name, octave } = midiToNote(rounded)
+    return {
+      frequency: midiToFreq(midiFloat),
+      clarity: raw.clarity,
+      noteName: name,
+      octave,
+      cents: Math.round((midiFloat - rounded) * 100),
+    }
+  }
 
   // ── Audio Context ────────────────────────────────────────────
   const ensureAudioCtx = () => {
@@ -543,6 +588,7 @@ export const useStemMixerAudioController = (
     pitchHistory = []
     deps.resetMicPitchHistory()
     pitchDetector?.resetHistory()
+    resetSmoothers()
     startRafLoop()
   }
 
@@ -565,6 +611,10 @@ export const useStemMixerAudioController = (
       deps.setScore(s)
       deps.setShowScore(true)
     }
+    // The score modal holds the materialized result — drop the raw data so
+    // the next run starts clean instead of averaging with this one.
+    deps.clearComparisonData()
+    resetSmoothers()
     setLoopCount(0)
     pauseOffset = 0
     disconnectSources()
@@ -627,6 +677,10 @@ export const useStemMixerAudioController = (
       bufferPlayStart = pauseOffset
       pitchHistory = []
       pitchDetector?.resetHistory()
+      resetSmoothers()
+      // Close the compare engine's active note — the time jump would
+      // otherwise fuse two distant stretches into one fake segment.
+      deps.pushComparison(pauseOffset, 0, 0)
     }
     requestAnimationFrame(() => {
       const { canvas } = deps
@@ -652,16 +706,19 @@ export const useStemMixerAudioController = (
         bufferPlayStart + (now - wallPlayStart) * playbackSpeed
       setElapsed(Math.min(elapsedTime, duration()))
 
-      // Pitch detection from vocal analyser
+      // Pitch detection from vocal analyser (median + octave-corrected)
+      let stemFreq = 0
       if (vocalAnalyser && deps.vocal().buffer) {
         const timeData = new Float32Array(PITCH_FFT_SIZE)
         vocalAnalyser.getFloatTimeDomainData(timeData)
-        const pitch = pitchDetector!.detect(timeData)
-        setCurrentPitch(pitch.frequency > 0 ? pitch : null)
+        const raw = pitchDetector!.detect(timeData)
+        const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
+        setCurrentPitch(pitch)
 
-        if (pitch.frequency > 0) {
+        if (pitch) {
           const midi = freqToMidi(pitch.frequency)
           if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
+            stemFreq = pitch.frequency
             pitchHistory.push({
               time: elapsedTime,
               noteName: pitch.noteName,
@@ -672,7 +729,9 @@ export const useStemMixerAudioController = (
         }
       }
 
-      // Mic pitch detection
+      // Mic pitch detection (same smoothing), judged by the compare engine —
+      // octave-agnostic, transition-graced, note-aggregated (see
+      // pitch-compare-engine.ts).
       if (deps.micActive()) {
         const micAnalyser = deps.getMicAnalyserNode()
         if (micAnalyser) {
@@ -680,12 +739,14 @@ export const useStemMixerAudioController = (
           // read its current size rather than a fixed constant.
           const micData = new Float32Array(micAnalyser.fftSize)
           micAnalyser.getFloatTimeDomainData(micData)
-          const micPd = deps.getMicPitchDetector()
-          const mp = micPd!.detect(micData)
-          deps.setMicPitch(mp.frequency > 0 ? mp : null)
-          if (mp.frequency > 0) {
+          const rawMic = deps.getMicPitchDetector()!.detect(micData)
+          const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
+          deps.setMicPitch(mp)
+          let micFreq = 0
+          if (mp) {
             const midi = freqToMidi(mp.frequency)
             if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
+              micFreq = mp.frequency
               deps.getMicPitchHistory().push({
                 time: elapsedTime,
                 noteName: mp.noteName,
@@ -694,22 +755,7 @@ export const useStemMixerAudioController = (
               })
             }
           }
-          const vocalPitch = currentPitch()
-          if (mp.frequency > 0 && vocalPitch && vocalPitch.frequency > 0) {
-            const centsOff =
-              1200 * Math.log2(mp.frequency / vocalPitch.frequency)
-            const tol = deps.toleranceCents()
-            deps.setComparisonData((prev) => [
-              ...prev.slice(-12000),
-              {
-                time: elapsedTime,
-                vocalNote: vocalPitch.noteName,
-                micNote: mp.noteName,
-                centsOff,
-                inTolerance: Math.abs(centsOff) <= tol,
-              },
-            ])
-          }
+          deps.pushComparison(elapsedTime, stemFreq, micFreq)
         }
       }
 
@@ -771,6 +817,7 @@ export const useStemMixerAudioController = (
       if (elapsedTime >= endTime) {
         if (loopEnabled() && !seekedOutsideLoop) {
           setLoopCount(loopCount() + 1)
+          deps.markLoopIteration()
           seekTo(loopStart())
           rafId = requestAnimationFrame(tick)
           return

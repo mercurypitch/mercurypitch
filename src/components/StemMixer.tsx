@@ -298,8 +298,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getMicPitchHistory: mic.getMicPitchHistory,
     setMicPitch: mic.setMicPitch,
     comparisonData: mic.comparisonData,
-    setComparisonData: mic.setComparisonData,
-    toleranceCents: mic.toleranceCents,
+    pushComparison: mic.pushComparison,
+    markLoopIteration: mic.markLoopIteration,
+    clearComparisonData: mic.clearComparisonData,
     resetMicPitchHistory: mic.resetMicPitchHistory,
     computeScore: mic.computeScore,
     setScore: mic.setScore,
@@ -1696,7 +1697,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
           >
             <LoopMetricsBar
-              comparisonData={mic.comparisonData}
+              comparisonData={mic.iterationComparisonData}
               loopCount={audio.loopCount}
             />
           </Show>

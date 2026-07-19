@@ -5,6 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
+import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
@@ -614,9 +615,14 @@ export const useStemMixerCanvasController = (
               lastDiffX = x
               const vocalY = (11 - vocalNoteIdx) * rowH + rowH * 0.5
               const micY = (11 - micNoteIdx) * rowH + rowH * 0.5
-              const centsOff =
+              // Octave-agnostic, matching the scoring: the lanes are pitch
+              // classes, so an octave-down singer should read as green here.
+              const centsOff = foldCentsToOctave(
                 1200 *
-                Math.log2(micHistory[mi].frequency / pitchHistory[vi].frequency)
+                  Math.log2(
+                    micHistory[mi].frequency / pitchHistory[vi].frequency,
+                  ),
+              )
               const absOff = Math.abs(centsOff)
 
               ctx.strokeStyle =
