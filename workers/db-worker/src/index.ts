@@ -1093,10 +1093,10 @@ async function createWeekly(request: Request, env: Env): Promise<Response> {
   } catch {
     return respond({ error: 'Invalid JSON' }, { status: 400 })
   }
+  // description is optional (the hero renders fine without a blurb).
   const required = [
     'slug',
     'title',
-    'description',
     'featType',
     'difficulty',
     'targetItems',
@@ -1126,7 +1126,7 @@ async function createWeekly(request: Request, env: Env): Promise<Response> {
         now,
         String(body.slug),
         String(body.title),
-        String(body.description),
+        body.description != null ? String(body.description) : '',
         String(body.featType),
         body.voiceTypeSplit != null ? j(body.voiceTypeSplit) : null,
         String(body.difficulty),

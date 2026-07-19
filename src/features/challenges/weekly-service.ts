@@ -10,7 +10,8 @@
 
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
-import type { MelodyItem } from '@/types'
+import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
+import type { MelodyItem, NoteName } from '@/types'
 
 export interface WeeklyChallenge {
   id: string
@@ -141,4 +142,130 @@ export async function updateWeekly(
 export function hoursUntil(endsAtIso: string): number {
   const ms = Date.parse(endsAtIso) - Date.now()
   return Math.max(0, Math.floor(ms / 3_600_000))
+}
+
+// ── Admin authoring (the /admin/weekly page) ─────────────────────────
+
+const ADMIN_KEY_STORAGE = 'pitchperfect_admin_key'
+
+/** Raw admin row — targetItems arrives as a JSON string from /all. */
+export interface WeeklyAdminRow {
+  id: string
+  slug: string
+  title: string
+  description: string
+  featType: string
+  difficulty: string
+  targetItems: string
+  targetScore: number
+  hearItUrl: string | null
+  startsAt: string
+  endsAt: string
+  rewardBadgeId: string | null
+  founderScore: number | null
+  evergreen: number
+  status: string
+}
+
+export function getAdminKey(): string {
+  try {
+    return localStorage.getItem(ADMIN_KEY_STORAGE) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAdminKey(key: string): void {
+  try {
+    if (key !== '') localStorage.setItem(ADMIN_KEY_STORAGE, key)
+    else localStorage.removeItem(ADMIN_KEY_STORAGE)
+  } catch {
+    // ignore
+  }
+}
+
+/** List every row (incl. queued) for the authoring page. null = auth failed. */
+export async function listAllWeekly(
+  adminKey: string,
+): Promise<WeeklyAdminRow[] | null> {
+  if (base() === '') return null
+  try {
+    const res = await fetch(`${base()}/api/weekly/all`, {
+      headers: { 'X-Admin-Key': adminKey },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { challenges: WeeklyAdminRow[] }
+    return data.challenges ?? []
+  } catch {
+    return null
+  }
+}
+
+export async function deleteWeekly(
+  id: string,
+  adminKey: string,
+): Promise<boolean> {
+  if (base() === '') return false
+  try {
+    const res = await fetch(`${base()}/api/weekly/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Key': adminKey },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/** Parse a "G4 A4 B4" note-name list into MelodyItem[] (unknown names dropped). */
+export function notesToMelodyItems(input: string): MelodyItem[] {
+  const names = input
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+  const items: MelodyItem[] = []
+  names.forEach((name, i) => {
+    let midi: number
+    try {
+      midi = noteToMidi(name)
+    } catch {
+      return
+    }
+    if (!Number.isFinite(midi)) return
+    items.push({
+      id: i + 1,
+      note: {
+        midi,
+        name: midiToNoteName(midi) as NoteName,
+        octave: Math.floor(midi / 12) - 1,
+        freq: midiToFrequency(midi),
+      },
+      duration: 1,
+      startBeat: i,
+    })
+  })
+  return items
+}
+
+/** Render MelodyItem[] back to a "G4 A4 B4" note-name list (for editing). */
+export function melodyItemsToNotes(items: MelodyItem[]): string {
+  return items
+    .map((it) => `${midiToNoteName(it.note.midi)}${it.note.octave}`)
+    .join(' ')
+}
+
+/** Monday 00:00 UTC of the current week (ISO) — the default challenge start. */
+export function thisMondayUtcIso(): string {
+  const d = new Date()
+  const monday = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate() - ((d.getUTCDay() + 6) % 7),
+  )
+  return new Date(monday).toISOString()
+}
+
+/** startsAt + 7 days (ISO) — the default challenge end. */
+export function plusOneWeekIso(startIso: string): string {
+  return new Date(Date.parse(startIso) + 7 * 86_400_000).toISOString()
 }
