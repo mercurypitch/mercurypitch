@@ -228,9 +228,15 @@ export const useStemMixerCanvasController = (
       ctx.lineTo(w, midY)
       ctx.stroke()
 
-      // Waveform -- compute exact per-pixel sample ranges with
-      // floating-point boundaries and Peak Cache to completely eliminate Moire banding
-      // while maintaining blazing fast <1ms render times
+      // Waveform — EXACT per-pixel min/max over [sStart, sEnd). The peak
+      // cache (256-sample block min/max) accelerates the whole blocks that
+      // fall *strictly inside* a pixel; the two partial edge blocks are read
+      // raw. Crucially we do NOT fold in whole blocks that merely overlap the
+      // pixel edges (the old `b <= blockEnd`): that makes the block count per
+      // column alternate (e.g. 5 vs 6) and beat against the pixel grid — a
+      // fine stripe moiré that visibly crawls/flickers as the window
+      // auto-scrolls during playback. Exact ranges give the same result as a
+      // full raw scan with no beat, at O(BLOCK_SIZE) per pixel.
       const amp = trackHeight * 0.35
       ctx.strokeStyle = track.color
       ctx.lineWidth = 1
@@ -245,17 +251,34 @@ export const useStemMixerCanvasController = (
           max = -1
 
         if (sEnd - sStart > BLOCK_SIZE * 2) {
-          // Use precomputed peak cache for zoomed-out views (ultra-fast, zero aliasing)
-          const blockStart = Math.floor(sStart / BLOCK_SIZE)
-          const blockEnd = Math.floor(sEnd / BLOCK_SIZE)
-          for (let b = blockStart; b <= blockEnd; b++) {
+          const firstWhole = Math.ceil(sStart / BLOCK_SIZE)
+          const lastWhole = Math.floor(sEnd / BLOCK_SIZE) // exclusive
+          // Leading partial block: [sStart, firstWhole * BLOCK_SIZE)
+          const leadEnd = Math.min(firstWhole * BLOCK_SIZE, sEnd)
+          for (let s = sStart; s < leadEnd; s++) {
+            const v = data[s]
+            if (v < min) min = v
+            if (v > max) max = v
+          }
+          // Whole blocks fully inside the pixel: [firstWhole, lastWhole)
+          for (let b = firstWhole; b < lastWhole; b++) {
             const pMin = peaks[b * 2]
             const pMax = peaks[b * 2 + 1]
             if (pMin < min) min = pMin
             if (pMax > max) max = pMax
           }
+          // Trailing partial block: [lastWhole * BLOCK_SIZE, sEnd)
+          for (
+            let s = Math.max(lastWhole * BLOCK_SIZE, leadEnd);
+            s < sEnd;
+            s++
+          ) {
+            const v = data[s]
+            if (v < min) min = v
+            if (v > max) max = v
+          }
         } else {
-          // Use raw data for zoomed-in views (range is small, so it's fast)
+          // Zoomed in — the range is tiny, so a raw scan is already fast.
           for (let s = sStart; s < sEnd; s++) {
             const v = data[s]
             if (v < min) min = v
