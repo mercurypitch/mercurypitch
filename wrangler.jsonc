@@ -28,14 +28,24 @@
     // undefined and any non-asset path (e.g. /exercises/<slug>) 500s.
     "binding": "ASSETS",
     // Serve index.html for non-asset paths (e.g. /exercises/<slug> marketing
-    // deep-links) so the SPA shell loads instead of a 404. /api/* is matched
-    // in src/worker.ts before the asset fallthrough, so APIs are unaffected.
+    // deep-links) so the SPA shell loads instead of a 404.
     "not_found_handling": "single-page-application",
-    // Glass SEO aliases: invoke the Worker BEFORE the asset layer for these
-    // exact paths so src/worker.ts can serve glass.html content at the alias
-    // URL (no byte-copied HTML files, unlike the mirror/karaoke aliases).
-    // /glass itself is not listed — html_handling maps it to glass.html.
+    // CRITICAL: with static assets + SPA not_found_handling, the asset layer
+    // answers every path NOT listed here WITHOUT invoking the Worker — non-GET
+    // requests get an empty 405 and unknown GETs get index.html. Every
+    // Worker-owned route MUST be listed or it silently dies at the asset
+    // layer (2026-07-19 prod incident: /api/uvr/* server separation returned
+    // empty 405s and mirror.mercurypitch.com served the SPA shell).
+    //   /api/*  — UVR bridge, share API, JSON 404 guard (src/worker.ts)
+    //   /       — mirror.mercurypitch.com root serves mirror.html via the
+    //             Worker's hostname check; the main site's / falls through
+    //             to env.ASSETS inside the Worker.
+    //   glass aliases — served as glass.html content with the URL preserved
+    //             (no byte-copied HTML files, unlike mirror/karaoke aliases;
+    //             /glass itself maps via html_handling).
     "run_worker_first": [
+      "/api/*",
+      "/",
       "/break-glass-with-your-voice",
       "/high-note-test",
       "/shatter"

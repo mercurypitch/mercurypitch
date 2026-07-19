@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Worker-first routing for /api/* + mirror host**: Cloudflare's asset layer with `not_found_handling: single-page-application` answers every path not in `assets.run_worker_first` WITHOUT invoking the Worker — `POST /api/uvr/process` died as an empty-body 405 (server separation broken with a blank error), `GET /api/*` returned cached index.html, and `mirror.mercurypitch.com` served the SPA shell instead of mirror.html. `run_worker_first` now lists `/api/*` and `/` alongside the glass aliases. Client hardening: `uvr-api` names the HTTP status when an error response has no body (HTTP/2 has no statusText).
 - **Stem-mixer canvas staleness** (#276): `syncCanvasSizes` pinned inline pixel width/height, overriding `.sm-canvas { width:100% }` and silencing the ResizeObserver — canvases froze at first measure across sidebar/layout/zoom/HMR changes. Observers now follow Show-block canvas swaps; DPR changes resync.
 
 ## [0.7.15] - 2026-07-19
