@@ -1,8 +1,22 @@
 # Karaoke Night — polish & robustness plan
 
-**Status**: planned (not implemented). Batch captured 2026-07-19 for the next
-session. Four items: a desktop zen toggle, a lyrics fallback, a stuck-state
-reactivity bug, and account-chip truncation on the zen view.
+**Status**: IMPLEMENTED (2026-07-19). All items shipped on
+`feat/karaoke-zen-polish`:
+- **#1 Desktop zen toggle** — `karaokeZen` opt-in OR'd into the `zenStage`
+  gate; "Zen" button in the mixer toolbar; centered-column desktop CSS;
+  Back exits zen to the mixer. (`verify-karaoke-zen-desktop` 8/8)
+- **#2 Lyrics fallback** — "Add lyrics" in the zen no-lyrics state → kit
+  Sheet hosting the existing `LyricsUploader`, routed through the studio's
+  `handleLyricsUpload` (parses/syncs/persists, shows in studio too).
+- **#3 Stuck-state** — the core hydration/re-pick bug was already fixed on
+  main (`34a55e48`); the desktop toggle removes the "request desktop site"
+  trick that triggered it; a robustness loop guards repeated flips.
+- **#4 Account chip** — truncating label span + local-part display + menu
+  email header, so a long email no longer spills off-screen.
+- **#5 (added)** Desktop-zen playlist card — glass card in the side gutter
+  (now / up next / last-up + score), ≥1280px only.
+
+The original plan text is kept below for reference.
 
 Scope note: everything here lives in the Karaoke Night surface — the
 standalone entry `src/features/karaoke-night/**`, the shared
