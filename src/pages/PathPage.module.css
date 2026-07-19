@@ -142,6 +142,11 @@
 /* ── Hero ─────────────────────────────────────────────────── */
 .hero {
   position: relative;
+  /* Explicit column layout so no inherited/global rule (e.g. the app's
+     top-nav `header` flex-row) can squash the stacked hero content. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   max-width: 34rem;
   margin: 4px auto 8px;

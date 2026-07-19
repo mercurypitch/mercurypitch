@@ -139,7 +139,9 @@ const PathPage: Component = () => {
       <div class={styles.cosmos} aria-hidden="true" />
       <div class={styles.summitGlow} aria-hidden="true" />
 
-      <header class={styles.hero}>
+      {/* Plain <div>, not <header>/<footer>: the app applies global flex
+          layout to those elements (the top nav) which squashes the hero. */}
+      <div class={styles.hero}>
         <div class={styles.eyebrow}>MercuryPitch · Guided Path</div>
         <h1 class={styles.title}>
           The <em>Ascent</em>
@@ -154,7 +156,7 @@ const PathPage: Component = () => {
             practice {totalDays() === 1 ? 'day' : 'days'} so far
           </p>
         </Show>
-      </header>
+      </div>
 
       <Show when={IS_DEV}>
         <div class={styles.devbar}>
@@ -411,10 +413,10 @@ const PathPage: Component = () => {
         </For>
       </div>
 
-      <footer class={styles.foot}>
+      <div class={styles.foot}>
         Any practice that meets your daily goal lights a segment — freeform
         singing counts too. Missing a day never empties a ring.
-      </footer>
+      </div>
     </div>
   )
 }
