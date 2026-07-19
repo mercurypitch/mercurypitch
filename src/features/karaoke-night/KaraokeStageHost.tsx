@@ -7,6 +7,7 @@ import { LyricsUploaderStyles } from '@/components/LyricsUploader'
 import { StemMixer, StemMixerStyles } from '@/components/StemMixer'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
+import { showNotification } from '@/stores/notifications-store'
 import { getUvrSession } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
 import { trackKaraoke, trackKaraokeOnce } from './funnel'
@@ -34,21 +35,41 @@ interface KaraokeStageHostProps {
 export function KaraokeStageHost(props: KaraokeStageHostProps) {
   // Mirror of the rail's singSession: verify + re-mint blob URLs before
   // staging (stored object URLs die with the page that minted them).
+  let picking = false
   const pickSession = async (sessionId: string): Promise<void> => {
-    const s = getUvrSession(sessionId)
-    if (s === undefined) return
-    const hydrated = await ensureSessionHydrated(s)
-    const outputs = hydrated.outputs
-    if ((outputs?.vocal ?? '') === '' && (outputs?.instrumental ?? '') === '')
-      return
-    trackKaraoke('karaoke_song_staged')
-    props.onSong({
-      sessionId,
-      title: s.originalFile?.name ?? 'Your song',
-      stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
-      // Sheet picks are explicit taps — start singing right away.
-      autoPlay: true,
-    })
+    // Hydration takes a moment — rapid re-taps must not race each other
+    // onto the stage.
+    if (picking) return
+    picking = true
+    try {
+      const s = getUvrSession(sessionId)
+      if (s === undefined) {
+        showNotification('That song is no longer in your library.', 'warning')
+        return
+      }
+      const hydrated = await ensureSessionHydrated(s)
+      const outputs = hydrated.outputs
+      if (
+        (outputs?.vocal ?? '') === '' &&
+        (outputs?.instrumental ?? '') === ''
+      ) {
+        showNotification(
+          "This song's audio isn't on this device anymore — process it again to sing it.",
+          'warning',
+        )
+        return
+      }
+      trackKaraoke('karaoke_song_staged')
+      props.onSong({
+        sessionId,
+        title: s.originalFile?.name ?? 'Your song',
+        stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
+        // Sheet picks are explicit taps — start singing right away.
+        autoPlay: true,
+      })
+    } finally {
+      picking = false
+    }
   }
 
   return (

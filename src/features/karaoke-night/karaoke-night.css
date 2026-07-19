@@ -667,6 +667,28 @@ body {
   flex: none;
 }
 
+/* Library pick in flight — hydration can take a second or two. */
+.kn-song-spinner {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--kn-accent, #58a6ff);
+  animation: kn-song-spin 0.7s linear infinite;
+}
+@keyframes kn-song-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.kn-library-song--staging {
+  opacity: 0.85;
+}
+.kn-library-song[disabled] {
+  cursor: default;
+}
+
 .kn-eq i {
   width: 2.5px;
   border-radius: 1px;

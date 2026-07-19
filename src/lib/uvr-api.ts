@@ -25,17 +25,16 @@ async function fetchWithTimeout(
 ): Promise<Response> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
-  const outer = init?.signal
-  const onOuterAbort = () => ctrl.abort()
-  if (outer) {
-    if (outer.aborted) ctrl.abort()
-    else outer.addEventListener('abort', onOuterAbort, { once: true })
-  }
+  // AbortSignal.any keeps the caller's signal wired for the WHOLE response
+  // lifetime — including the body read after headers arrive (the internal
+  // timer only bounds time-to-headers and is cleared once fetch resolves).
+  const signal = init?.signal
+    ? AbortSignal.any([init.signal, ctrl.signal])
+    : ctrl.signal
   try {
-    return await fetch(input, { ...init, signal: ctrl.signal })
+    return await fetch(input, { ...init, signal })
   } finally {
     clearTimeout(timer)
-    if (outer) outer.removeEventListener('abort', onOuterAbort)
   }
 }
 
@@ -328,10 +327,15 @@ export async function getProcessStatus(
 export async function getOutputFile(
   sessionId: string,
   path: string,
+  /** Outer abort — lets callers bound the BODY read too (the internal
+   *  timeout only covers time-to-headers; reading a multi-MB stem on a
+   *  stalled connection would otherwise hang forever). */
+  signal?: AbortSignal,
 ): Promise<Response> {
   return fetchWithTimeout(
     `${API_BASE}/output/${sessionId}/${encodeURIComponent(path)}`,
     OUTPUT_FETCH_TIMEOUT_MS,
+    signal ? { signal } : undefined,
   )
 }
 

@@ -10,37 +10,51 @@ import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessions, getUvrSession, saveAllUvrSessions, } from '@/stores/uvr-store'
 
-const locallyHydratedSessions = new Set<string>()
-
 /** Make a completed session's stem URLs playable. Local sessions persist
  *  their stems as db blobs; the object URLs in the cached record die with the
  *  page that minted them, so verify liveness (cheap HEAD on blob:) and
- *  re-mint from the db when needed. */
+ *  re-mint from the db when needed.
+ *
+ *  Always verifies the record's CURRENT url — an earlier once-per-page cache
+ *  went stale whenever the store record was replaced behind it (e.g. a rail
+ *  remount reloading persisted sessions), which made re-picking a previously
+ *  staged song a silent no-op. After a re-mint the store record is healed
+ *  too, so every later read sees live URLs. */
 export async function ensureSessionHydrated(
   session: UvrSession,
 ): Promise<UvrSession> {
-  if (session.status === 'completed') {
-    if (locallyHydratedSessions.has(session.sessionId)) {
-      return session
-    }
+  if (session.status !== 'completed') return session
 
-    if (session.outputs?.vocal?.startsWith('blob:') === true) {
-      try {
-        const res = await fetch(session.outputs.vocal, { method: 'HEAD' })
-        if (res.ok) {
-          locallyHydratedSessions.add(session.sessionId)
-          return session
-        }
-      } catch {
-        // fetch failed, blob is dead
-      }
-    }
+  const candidate =
+    (session.outputs?.vocal ?? '') !== ''
+      ? (session.outputs?.vocal ?? '')
+      : (session.outputs?.instrumental ?? '')
 
-    const urls = await hydrateStemUrls(session.sessionId)
-    if (urls) {
-      locallyHydratedSessions.add(session.sessionId)
-      return { ...session, outputs: { ...session.outputs, ...urls } }
+  if (candidate !== '' && !candidate.startsWith('blob:')) {
+    // Remote stems (the demo song's R2 URLs) don't die with the page.
+    return session
+  }
+  if (candidate.startsWith('blob:')) {
+    try {
+      const res = await fetch(candidate, { method: 'HEAD' })
+      if (res.ok) return session
+    } catch {
+      // fetch failed, blob is dead — re-mint below
     }
+  }
+
+  const urls = await hydrateStemUrls(session.sessionId)
+  if (urls) {
+    // Heal the store record so the next read (library pick, playlist tick)
+    // starts from live URLs instead of the dead ones.
+    saveAllUvrSessions(
+      getAllUvrSessions().map((s) =>
+        s.sessionId === session.sessionId
+          ? { ...s, outputs: { ...s.outputs, ...urls } }
+          : s,
+      ),
+    )
+    return { ...session, outputs: { ...session.outputs, ...urls } }
   }
   return session
 }
