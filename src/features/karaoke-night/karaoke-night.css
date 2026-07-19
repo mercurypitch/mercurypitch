@@ -103,6 +103,7 @@ body {
 .kn-account {
   position: relative;
   display: inline-flex;
+  min-width: 0;
 }
 
 .kn-account-chip {
@@ -126,6 +127,16 @@ body {
   background: rgba(183, 154, 224, 0.18);
 }
 
+/* The identity text is a flex child, so text-overflow on the chip itself
+   can't clip it — this span does the truncation and must be allowed to
+   shrink (min-width: 0) below its content width. */
+.kn-account-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .kn-account-dot {
   width: 7px;
   height: 7px;
@@ -141,6 +152,7 @@ body {
   background: rgba(255, 214, 160, 0.18);
   color: #ffd9a0;
   font-size: 0.72rem;
+  flex: none;
 }
 
 /* Credits pill in the upload card — same accent as the account pill, so the
@@ -165,6 +177,7 @@ body {
 
 .kn-account-menu-wrap {
   position: relative;
+  min-width: 0;
 }
 
 .kn-account-menu {
@@ -174,12 +187,24 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 11rem;
+  max-width: min(18rem, calc(100vw - 1.8rem));
   padding: 0.35rem;
   border: 1px solid rgba(183, 154, 224, 0.25);
   border-radius: 10px;
   background: rgba(24, 12, 40, 0.96);
   backdrop-filter: blur(8px);
   z-index: 20;
+}
+
+/* Full email header in the account menu — the chip shows only the short
+   name, so surface the complete address here (tap the chip to reveal). */
+.kn-account-menu-email {
+  padding: 0.4rem 0.6rem 0.5rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid rgba(183, 154, 224, 0.18);
+  color: rgba(232, 220, 250, 0.72);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
 }
 
 .kn-account-menu a,
