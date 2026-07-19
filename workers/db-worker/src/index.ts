@@ -35,22 +35,39 @@ const CORS: Record<string, string> = {
  * (Google OAuth callback). Browsers always attach Origin to cross-origin
  * fetch/XHR/sendBeacon, so a locally served build can never reach a
  * deployed environment that doesn't list localhost.
+ *
+ * Rule syntax (comma-separated):
+ *   - an exact origin       → matches that origin verbatim
+ *   - `localhost`           → matches http(s)://localhost | 127.0.0.1 (any port)
+ *   - a `*.suffix` wildcard → matches any origin whose HOSTNAME ends with
+ *     `.suffix`. Used on DEV to allow per-PR versioned preview Workers
+ *     (`<version>-mercurypitch-preview.<subdomain>.workers.dev`), whose
+ *     hostnames aren't known ahead of time. Never used on prod.
  */
 function originAllowed(request: Request, env: Env): boolean {
   const origin = request.headers.get('Origin')
   if (origin === null) return true
   const allowed = env.ALLOWED_ORIGINS
   if (allowed === undefined || allowed === '') return true
+
+  let host: string | null = null
+  try {
+    host = new URL(origin).hostname
+  } catch {
+    host = null
+  }
+
   return allowed.split(',').some((entry) => {
     const rule = entry.trim()
+    if (rule === '') return false
     if (rule === origin) return true
     if (rule === 'localhost') {
-      try {
-        const host = new URL(origin).hostname
-        return host === 'localhost' || host === '127.0.0.1'
-      } catch {
-        return false
-      }
+      return host === 'localhost' || host === '127.0.0.1'
+    }
+    // `*.workers.dev` → suffix-match the hostname (e.g. per-PR preview URLs).
+    if (rule.startsWith('*.')) {
+      const suffix = rule.slice(1) // ".workers.dev"
+      return host !== null && host.endsWith(suffix)
     }
     return false
   })
