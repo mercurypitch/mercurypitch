@@ -64,7 +64,15 @@ CREATE TABLE IF NOT EXISTS userProfiles (
   bio TEXT,
   joinDate TEXT NOT NULL,
   lastPracticeDate TEXT,
-  currentStreak INTEGER NOT NULL DEFAULT 0
+  currentStreak INTEGER NOT NULL DEFAULT 0,
+  -- Streak forgiveness (freeze + repair). Additive; see
+  -- migrate-userProfiles-add-streak-freeze.sql for existing DBs.
+  longestStreak INTEGER NOT NULL DEFAULT 0,
+  streakFreezes INTEGER NOT NULL DEFAULT 0,
+  lastFreezeUsedDate TEXT,
+  previousStreak INTEGER NOT NULL DEFAULT 0,
+  streakResetDate TEXT,
+  lastRepairDate TEXT
 );
 
 -- ── Sessions & Practice Results (scores only — no audio) ────────────
