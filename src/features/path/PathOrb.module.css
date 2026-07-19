@@ -1,5 +1,5 @@
-/* One celestial node — the SVG carries the pearl + ring; this wrapper
-   adds state glow, the breathing of the active orb, and the overlays. */
+/* One celestial node — hi-res pearl art (per state) with the progress ring,
+   fraction, week icon and crown composited as crisp SVG on top. */
 
 .wrap {
   position: relative;
@@ -7,8 +7,23 @@
   display: grid;
   place-items: center;
 }
-.wrap svg {
-  display: block;
+
+/* The painterly pearl body (transparent webp — its own bloom is baked in). */
+.orbImg {
+  position: absolute;
+  inset: 4%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* Progress ring + fraction + icon sit above the art. */
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .frac {
@@ -21,31 +36,35 @@
   font-weight: 650;
   letter-spacing: 0.02em;
   color: #f2f4ff;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
-/* ── States ─────────────────────────────────────────────── */
-
-.done {
-  filter: drop-shadow(0 0 16px rgba(240, 198, 116, 0.5));
+/* Per-week icon — hidden by default; revealed on hover, always-on once the
+   week is active or complete. */
+.icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #eafcff;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.6));
 }
-
-.active {
-  filter: drop-shadow(0 0 22px rgba(90, 214, 238, 0.55));
-  animation: pathOrbBreathe 3.4s ease-in-out infinite;
+.hasIcon.done .icon,
+.hasIcon.active .icon,
+.wrap:hover .icon {
+  opacity: 1;
 }
-
-.avail {
-  filter: drop-shadow(0 0 12px rgba(120, 102, 250, 0.45));
-}
-
-.locked {
-  opacity: 0.7;
-}
-.locked .frac {
-  color: #8a8db4;
-  text-shadow: none;
+/* When the icon is showing, the fraction gets out of its way. */
+.hasIcon.done .frac,
+.hasIcon.active .frac,
+.hasIcon.avail:hover .frac,
+.hasIcon.locked:hover .frac {
+  opacity: 0;
 }
 
 .crown {
@@ -57,13 +76,34 @@
   filter: drop-shadow(0 0 6px rgba(240, 198, 116, 0.7));
 }
 
+/* ── State glow + motion ─────────────────────────────────── */
+.done .orbImg {
+  filter: drop-shadow(0 0 16px rgba(240, 198, 116, 0.5));
+}
+.active .orbImg {
+  filter: drop-shadow(0 0 22px rgba(90, 214, 238, 0.55));
+}
+.avail .orbImg {
+  filter: drop-shadow(0 0 12px rgba(120, 102, 250, 0.45));
+}
+.locked {
+  opacity: 0.85;
+}
+.locked .frac {
+  color: #c2c6ea;
+}
+
+.active {
+  animation: pathOrbBreathe 3.6s ease-in-out infinite;
+}
+
 @keyframes pathOrbBreathe {
   0%,
   100% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.04);
+    transform: scale(1.045);
   }
 }
 
