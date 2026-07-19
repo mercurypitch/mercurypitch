@@ -16,6 +16,17 @@ export interface UserProfile extends DbEntity {
   joinDate: string // ISO 8601
   lastPracticeDate: string | null // ISO 8601 date-only (YYYY-MM-DD)
   currentStreak: number
+  // Streak forgiveness (added 2026-07: freeze + repair). All optional so
+  // existing rows and older clients keep working; treated as 0/null when absent.
+  longestStreak?: number
+  /** Unspent streak freezes; a 1-day gap auto-consumes one instead of resetting. */
+  streakFreezes?: number
+  lastFreezeUsedDate?: string | null // YYYY-MM-DD
+  /** Streak value just before the most recent reset — restorable via repair. */
+  previousStreak?: number
+  /** When the streak last reset to 1 (drives the 72h repair window). */
+  streakResetDate?: string | null // YYYY-MM-DD
+  lastRepairDate?: string | null // YYYY-MM-DD (repair allowed once per 30 days)
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────

@@ -1,7 +1,8 @@
 import { createMemo, createSignal } from 'solid-js'
+import { pickApplyPhrase } from '@/data/apply-melodies'
 import { dailyRoutines, getRoutineById } from '@/data/routine-templates'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_WARMUP } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_STACCATO, EXERCISE_WARMUP, } from '@/features/exercises/types'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { createPersistedSignal } from '@/lib/storage'
 import type { RoutineSegment, RoutineTemplate } from './types'
@@ -43,6 +44,81 @@ const [recentTemplateIds, setRecentTemplateIds] = createPersistedSignal<
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+/** 0-based day-of-year — the deterministic seed for today's generated session. */
+export function dayOfYear(d = new Date()): number {
+  const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 0)
+  const midnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  return Math.floor((midnight - startOfYear) / 86_400_000)
+}
+
+// The daily session's rotating pieces (deterministic by day-of-year so
+// "today" is stable across reloads and shared between the sidebar + Home).
+const WARMUP_PATTERNS = [
+  'ascending-scale',
+  'lip-trill',
+  'sirens',
+  'five-tone-descending',
+]
+const GROW_POOL: ExerciseType[] = [
+  EXERCISE_INTERVAL_TRAINER,
+  EXERCISE_SCALE_RUNNER,
+  EXERCISE_ARPEGGIO_JUMPER,
+  EXERCISE_PITCH_PURSUIT,
+  EXERCISE_STACCATO,
+  EXERCISE_DYNAMIC_SWELL,
+]
+const DEFAULT_REVIEW_EXERCISE: ExerciseType = EXERCISE_LONG_NOTE
+
+/**
+ * Build today's generated session: warm-up → review a weak spot → grow a
+ * skill → apply on a real (public-domain) phrase. Pure and deterministic given
+ * `dayIndex`; `weakType` steers the review slot when practice history has one.
+ */
+export function buildDailySession(
+  dayIndex: number,
+  weakType?: ExerciseType,
+): RoutineTemplate {
+  const warmup: RoutineSegment = {
+    type: 'warmup',
+    durationSec: 60,
+    config: { pattern: WARMUP_PATTERNS[dayIndex % WARMUP_PATTERNS.length] },
+  }
+
+  const reviewType = weakType ?? DEFAULT_REVIEW_EXERCISE
+  const review: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 150,
+    config: { exercise: reviewType },
+  }
+
+  // Grow a different skill than the one being reviewed.
+  let growType = GROW_POOL[dayIndex % GROW_POOL.length]!
+  if (growType === reviewType) {
+    growType = GROW_POOL[(dayIndex + 1) % GROW_POOL.length]!
+  }
+  const grow: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 150,
+    config: { exercise: growType },
+  }
+
+  const phrase = pickApplyPhrase(dayIndex)
+  const applyExercise: ExerciseType =
+    dayIndex % 2 === 0 ? EXERCISE_CALL_RESPONSE : EXERCISE_SIGHT_SINGING
+  const apply: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 120,
+    config: { exercise: applyExercise, notes: phrase.notes },
+  }
+
+  return {
+    id: 'daily-session',
+    name: "Today's Session",
+    description: `Warm up, sharpen a weak spot, grow a skill, then sing ${phrase.name}.`,
+    segments: [warmup, review, grow, apply],
+  }
 }
 
 // Shared persisted signal so auto-advance can update it from outside the hook
@@ -226,11 +302,19 @@ export function useDailyRoutine() {
 
   function generate(): RoutineTemplate {
     const prefs = routinePrefs()
-    const base = pickTemplate(prefs.focus)
+    // 'auto' (the default) builds today's generated 4-slot session; the
+    // handcrafted templates stay reachable via 'surprise' or an explicit id.
+    let base: RoutineTemplate
+    if (prefs.focus === 'auto') {
+      const report = generateWeaknessReport()
+      base = buildDailySession(dayOfYear(), report.weakExercises[0]?.type)
+    } else {
+      base = pickTemplate(prefs.focus)
+      setRecentTemplateIds((prev) =>
+        [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
+      )
+    }
     const routine = applyLength(base, prefs.length)
-    setRecentTemplateIds((prev) =>
-      [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
-    )
     setPersisted({
       templateId: routine.id,
       date: todayStr(),
