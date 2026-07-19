@@ -422,3 +422,23 @@
   max-width: 100%;
   height: auto;
 }
+
+/* Belt-and-suspenders: collapse is a desktop-rail concept. On a phone the
+   sidebar is always the full off-canvas drawer, even if the .collapsed class
+   is somehow applied — a desktop-collapsed preference must never shrink the
+   mobile drawer to a 40px rail. Placed last so it wins over the global
+   .collapsed rules on equal specificity (the JS also gates the class off on
+   narrow; this guarantees the outcome regardless). */
+@media (max-width: 768px) {
+  :global(.app-sidebar.collapsed) {
+    width: 270px;
+    min-width: 0;
+    align-items: stretch;
+    overflow-y: auto;
+    padding: var(--safe-top) 0 calc(var(--tabbar-total) + 16px);
+    padding-left: var(--safe-left);
+  }
+  :global(.app-sidebar.collapsed) > *:not(:first-child) {
+    display: revert;
+  }
+}
