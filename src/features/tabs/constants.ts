@@ -2,6 +2,7 @@
 // Use these everywhere instead of raw strings.
 // Renaming a tab is a single-line change here — no string-hunt needed.
 
+export const TAB_HOME = 'home' as const
 export const TAB_SINGING = 'singing' as const
 export const TAB_PIANO = 'piano' as const
 export const TAB_COMPOSE = 'compose' as const
@@ -18,6 +19,7 @@ export const TAB_JAM = 'jam' as const
 export const TAB_GUITAR = 'guitar' as const
 
 export type ActiveTab =
+  | typeof TAB_HOME
   | typeof TAB_SINGING
   | typeof TAB_PIANO
   | typeof TAB_COMPOSE
@@ -33,8 +35,8 @@ export type ActiveTab =
   | typeof TAB_JAM
   | typeof TAB_GUITAR
 
-/** Default tab when the app loads. */
-export const DEFAULT_TAB = TAB_SINGING
+/** Default tab when the app loads — the daily Home hub. */
+export const DEFAULT_TAB = TAB_HOME
 
 // ── Canonical tab order & grouping ──────────────────────────────────
 // SINGLE source of truth for the order tabs appear in. Both the visible
@@ -52,7 +54,14 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
   {
     id: 'practice',
     label: 'Practice',
-    tabs: [TAB_SINGING, TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_KARAOKE],
+    tabs: [
+      TAB_HOME,
+      TAB_SINGING,
+      TAB_PIANO,
+      TAB_GUITAR,
+      TAB_EXERCISES,
+      TAB_KARAOKE,
+    ],
   },
   {
     id: 'social',
@@ -87,6 +96,8 @@ export type UiMode = 'advanced' | 'simple'
 
 /** Which scopes a tab belongs to. Settings is handled separately (always). */
 const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
+  // Home is the daily hub for every instrument.
+  [TAB_HOME]: ['singing', 'guitar', 'piano'],
   [TAB_SINGING]: ['singing'],
   [TAB_PIANO]: ['piano'],
   [TAB_GUITAR]: ['guitar'],
@@ -130,16 +141,12 @@ export function visibleTabOrder(
   return TAB_ORDER.filter((t) => isTabVisible(t, scope, mode))
 }
 
-/** Landing tab when the current one is filtered out by a scope change. */
-export function scopeHomeTab(scope: PracticeScope): ActiveTab {
-  switch (scope) {
-    case 'guitar':
-      return TAB_GUITAR
-    case 'piano':
-      return TAB_PIANO
-    default:
-      return DEFAULT_TAB
-  }
+/**
+ * Landing tab when the current one is filtered out by a scope change.
+ * Home is visible in every scope, so it's the universal fallback.
+ */
+export function scopeHomeTab(_scope: PracticeScope): ActiveTab {
+  return TAB_HOME
 }
 
 // ── PlaybackMode constants ──────────────────────────────────────────
@@ -165,6 +172,7 @@ export type WalkthroughTab = ActiveTab | typeof WALKTHROUGH_TAB_STUDY
 // ── DOM helpers ─────────────────────────────────────────────────────
 
 const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
+  [TAB_HOME]: 'home',
   [TAB_SINGING]: 'singing',
   [TAB_PIANO]: 'piano',
   [TAB_COMPOSE]: 'compose',
@@ -194,6 +202,7 @@ export function tabButtonId(tab: ActiveTab): string {
 /** Human-readable label for each tab (shown in UI). */
 export function tabLabel(tab: ActiveTab): string {
   const labels: Record<ActiveTab, string> = {
+    [TAB_HOME]: 'Home',
     [TAB_SINGING]: 'Singing',
     [TAB_PIANO]: 'Piano',
     [TAB_COMPOSE]: 'Compose',

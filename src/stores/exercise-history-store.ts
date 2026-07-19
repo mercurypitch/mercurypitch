@@ -1,4 +1,4 @@
-import { updatePracticeStreak } from '@/db/services/streak-service'
+import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
@@ -45,10 +45,11 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)
 
-  // Fire-and-forget: keep the local practice streak current. Leaderboard
-  // standings are now derived server-side from sessionRecords, so exercises
-  // no longer post leaderboard entries.
-  void updatePracticeStreak()
+  // Credit practice minutes toward today's daily goal (which bumps the streak
+  // once met). Leaderboard standings are derived server-side from
+  // sessionRecords, so exercises no longer post leaderboard entries.
+  const runMs = entry.metrics.durationMs ?? entry.metrics.elapsedMs
+  void addScoredMs(runMs !== undefined && runMs > 0 ? runMs : NOMINAL_RUN_MS)
 
   trackEvent('session_complete')
   recordActivity()
