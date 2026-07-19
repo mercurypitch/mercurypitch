@@ -833,7 +833,12 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await page.setViewportSize({ width: 768, height: 600 })
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-settings')).toBeVisible()
+    // 768px is the mobile breakpoint: the desktop top-nav (#tab-settings)
+    // unmounts and BottomTabBar takes over, with Settings living in the More
+    // sheet. Assert the settings *panel* itself survives the resize — that is
+    // what this test is about — rather than the nav button, which is
+    // viewport-specific.
+    await expect(page.locator('#settings-panel')).toBeVisible()
   })
 
   test(' piano roll scales with viewport', async ({ page }) => {
