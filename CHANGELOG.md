@@ -21,6 +21,7 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Studio-quality separation works again.** A hosting-platform routing change had cut off the cloud GPU service — server separations failed instantly with a blank error, and the Voice Mirror's dedicated address showed the wrong page. Routing is pinned explicitly now, and if the server is ever unreachable again the app says so clearly instead of showing an empty message.
 - **Waveforms fit their panels again.** The stem-mixer displays could get stuck at a stale width after resizing the window, toggling the sidebar, zooming, or switching layouts — they now always follow their container, and existing sessions heal themselves on the next draw.
 
 ## [0.7.15] - 2026-07-19

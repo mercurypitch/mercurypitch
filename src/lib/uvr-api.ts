@@ -292,8 +292,12 @@ export async function processAudio(
     } catch {
       /* non-JSON error body — keep the raw text */
     }
+    // HTTP/2 has no statusText and gateway-level failures can have an empty
+    // body — always name the status code so the user (and our logs) see
+    // something actionable instead of a bare "Failed to process audio:".
     throw new Error(
-      message || `Failed to process audio: ${response.statusText}`,
+      message ||
+        `The processing server could not be reached (HTTP ${response.status}). Please try again in a moment.`,
     )
   }
 
