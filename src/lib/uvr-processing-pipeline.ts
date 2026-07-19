@@ -317,6 +317,11 @@ async function pollAndPersistServer(
         callbacks.onProgress(progress)
       },
       async (files: OutputFile[]) => {
+        // The completed status arrives without a progress tick, and the stem
+        // downloads below can legitimately run toward their 120s deadlines —
+        // renew ownership here so a foreground re-kick can't start a second
+        // download pass mid-way.
+        renewServerPoll(apiSessionId)
         const outputs: UvrSession['outputs'] = {}
         const meta: Record<string, { duration?: number; size?: number }> = {}
 

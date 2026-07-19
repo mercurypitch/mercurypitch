@@ -32,12 +32,17 @@ describe('ensureSessionHydrated', () => {
     saveAllUvrSessions([])
   })
 
-  it('returns as-is when the blob URL is alive', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+  it('returns as-is when the blob URL is alive (GET probe — blob: rejects HEAD by spec)', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchSpy)
     const s = makeSession({ vocal: 'blob:live' })
     const out = await ensureSessionHydrated(s)
     expect(out).toBe(s)
     expect(mockedHydrate).not.toHaveBeenCalled()
+    // Must NOT be a HEAD request — blob: URLs only support GET, so a HEAD
+    // probe reports every live URL as dead (the old always-re-mint bug).
+    const init = fetchSpy.mock.calls[0][1] as RequestInit | undefined
+    expect(init?.method).toBeUndefined()
   })
 
   it('returns as-is for remote (non-blob) stems without a HEAD probe', async () => {
@@ -49,14 +54,22 @@ describe('ensureSessionHydrated', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('re-mints dead blob URLs and heals the store record', async () => {
+  it('re-mints dead blob URLs, revokes the dead ones, and heals the store record', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('dead')))
+    const revoke = vi.fn()
+    vi.stubGlobal('URL', {
+      ...URL,
+      revokeObjectURL: revoke,
+      createObjectURL: URL.createObjectURL,
+    })
     mockedHydrate.mockResolvedValue({ vocal: 'blob:fresh' })
     const stale = makeSession({ vocal: 'blob:dead' })
     saveAllUvrSessions([stale])
 
     const out = await ensureSessionHydrated(stale)
     expect(out.outputs?.vocal).toBe('blob:fresh')
+    // The replaced dead URL is revoked so repeated picks don't leak refs.
+    expect(revoke).toHaveBeenCalledWith('blob:dead')
   })
 
   it('re-verifies every call — a store record emptied behind our back still re-mints (regression: stale once-per-page cache)', async () => {
