@@ -28,7 +28,8 @@ import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
-import { getPlaylistsReactive, isPlaylistActive, nextSong, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { isNarrow } from '@/lib/use-viewport'
+import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
 
@@ -253,6 +254,32 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     startPlaylist(id)
   }
 
+  // ── Desktop-zen playlist card ─────────────────────────────────
+  // Only on a wide screen (there's a gutter beside the lyric column); on a
+  // phone the existing overlay/summary carry playlist chrome.
+  const nowEntry = () => queue()[currentIndex()] ?? null
+  const nextEntry = () => queue()[currentIndex() + 1] ?? null
+  const prevEntry = () =>
+    currentIndex() > 0 ? (queue()[currentIndex() - 1] ?? null) : null
+  const prevScore = () =>
+    currentIndex() > 0 ? (perSongScores()[currentIndex() - 1] ?? null) : null
+  const singerOf = (
+    e: { singerName?: string; songTitle: string } | null,
+  ): string => {
+    const name = e?.singerName?.trim()
+    return name !== undefined && name !== '' ? name : (e?.songTitle ?? '—')
+  }
+  const gradeColor = (g: string): string =>
+    ({
+      S: '#ffd479',
+      A: '#7ee0a0',
+      B: '#8fb8ff',
+      C: '#ffcf8f',
+      D: '#f8a0a0',
+    })[g] ?? '#e8dcfa'
+  const showPlaylistCard = () =>
+    !isNarrow() && isPlaylistActive() && queue().length > 0
+
   return (
     <StageShell class={styles.stage} testId="karaoke-mobile-stage">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -290,6 +317,51 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </button>
         </Show>
       </div>
+
+      {/* ── Desktop-zen playlist card (uses the side gutter) ── */}
+      <Show when={showPlaylistCard()}>
+        <aside class={styles.playlistCard} aria-label="Playlist status">
+          <p class={styles.plKicker}>Playlist</p>
+
+          <div class={styles.plNow}>
+            <span class={styles.plLabel}>Now singing</span>
+            <div class={styles.plSingerRow}>
+              <span class={styles.plDot} />
+              <span class={styles.plName}>{singerOf(nowEntry())}</span>
+            </div>
+            <p class={styles.plSong}>{nowEntry()?.songTitle}</p>
+          </div>
+
+          <Show when={nextEntry()}>
+            <div class={styles.plRow}>
+              <span class={styles.plLabel}>Up next</span>
+              <span class={styles.plName}>{singerOf(nextEntry())}</span>
+              <p class={styles.plSong}>{nextEntry()!.songTitle}</p>
+            </div>
+          </Show>
+
+          <Show when={prevEntry()}>
+            <div class={styles.plRow}>
+              <div class={styles.plPrevHead}>
+                <span class={styles.plLabel}>Last up</span>
+                <Show when={prevScore()}>
+                  <span class={styles.plScore}>
+                    <span
+                      class={styles.plGrade}
+                      style={{ color: gradeColor(prevScore()!.grade) }}
+                    >
+                      {prevScore()!.grade}
+                    </span>
+                    {Math.round(prevScore()!.accuracyPct)}%
+                  </span>
+                </Show>
+              </div>
+              <span class={styles.plName}>{singerOf(prevEntry())}</span>
+              <p class={styles.plSong}>{prevEntry()!.songTitle}</p>
+            </div>
+          </Show>
+        </aside>
+      </Show>
 
       {/* ── Lyrics ─────────────────────────────────────────── */}
       <div

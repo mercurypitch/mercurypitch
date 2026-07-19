@@ -41,6 +41,13 @@ await page.waitForTimeout(1200)
 const stage = page.locator(stageSel)
 check('Zen toggle swaps in the zen stage', await stage.isVisible())
 
+// The playlist card is gated to an active playlist — a single staged song
+// must not show it (and it must not break the layout).
+check(
+  'no playlist card for a single staged song',
+  (await page.getByLabel('Playlist status').count()) === 0,
+)
+
 // The zen content should be a centered column (~760px), not full-bleed.
 const geom = await page.evaluate(() => {
   const lyrics = document.querySelector(
