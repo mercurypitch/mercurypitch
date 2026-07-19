@@ -19,7 +19,6 @@ export default defineConfig(
       'docs/**',
       'src/index.js',
       'src/index.tsx',
-      'src/lib/engine-bridge.ts',
       'src/uvr-container.js',
       'e2e-server.js',
     ],
