@@ -74,6 +74,34 @@ check(
 )
 await page.screenshot({ path: `${OUT}/3-back-to-mixer.png` })
 
+// Robustness: repeated zen<->mixer round-trips + viewport flips must not
+// leave a stuck state / leaked full-screen overlay (the class of bug the
+// "request desktop site" flip used to trigger). After each cycle the mixer
+// must still be interactive and no fixed overlay may cover its controls.
+let robust = true
+for (let i = 0; i < 3; i++) {
+  await page.setViewportSize({ width: 900, height: 860 })
+  await page.waitForTimeout(300)
+  await page.setViewportSize({ width: 1280, height: 860 })
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^zen/i }).first().click()
+  await page.waitForTimeout(600)
+  if ((await page.locator(stageSel).count()) === 0) robust = false
+  await page.getByRole('button', { name: /^back$/i }).first().click()
+  await page.waitForTimeout(600)
+  if ((await page.locator('.stem-mixer').count()) === 0) robust = false
+}
+check('repeated zen/mixer + viewport flips stay functional', robust)
+// No leaked full-screen overlay swallowing clicks at the viewport centre.
+const topEl = await page.evaluate(() => {
+  const el = document.elementFromPoint(window.innerWidth / 2, 200)
+  if (!el) return 'none'
+  const r = el.getBoundingClientRect()
+  const full = r.width >= window.innerWidth - 2 && r.height >= window.innerHeight - 2
+  return full && getComputedStyle(el).position === 'fixed' ? 'LEAKED-OVERLAY' : 'ok'
+})
+check('no leaked full-screen overlay after flips', topEl === 'ok', topEl)
+
 await browser.close()
 const failed = results.filter((r) => !r).length
 console.log(`\n${results.length - failed}/${results.length} checks passed`)
