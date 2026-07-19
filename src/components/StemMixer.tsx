@@ -4252,6 +4252,84 @@ export const StemMixerStyles: string = `
 .sm-transport-drag-handle:active {
   cursor: grabbing;
 }
+.sm-transport-drag-handle--open {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent);
+  color: var(--accent, #58a6ff);
+}
+
+/* Click-to-dock compass — a gizmo of four direction arrows around a hub,
+   the current side highlighted. Faster than drag on desktop. */
+.sm-transport-dock {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.sm-dock-compass-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+}
+.sm-dock-compass {
+  position: absolute;
+  z-index: 1002;
+  display: grid;
+  grid-template-columns: repeat(3, 1.55rem);
+  grid-template-rows: repeat(3, 1.55rem);
+  place-items: center;
+  padding: 0.3rem;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  animation: sm-dock-compass-in 0.12s ease-out;
+}
+@keyframes sm-dock-compass-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* Position the popover away from whichever edge the bar is docked on, so it
+   opens toward the content, not off-screen. */
+.sm-dock-compass--bottom { bottom: calc(100% + 0.4rem); left: 0; }
+.sm-dock-compass--top { top: calc(100% + 0.4rem); left: 0; }
+.sm-dock-compass--left { left: calc(100% + 0.4rem); top: 0; }
+.sm-dock-compass--right { right: calc(100% + 0.4rem); top: 0; }
+.sm-dock-compass-btn {
+  grid-column: 2;
+  grid-row: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--fg-secondary, #a8b3bf);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.sm-dock-compass-btn--top { grid-row: 1; }
+.sm-dock-compass-btn--bottom { grid-row: 3; }
+.sm-dock-compass-btn--left { grid-column: 1; grid-row: 2; }
+.sm-dock-compass-btn--right { grid-column: 3; grid-row: 2; }
+.sm-dock-compass-btn:hover {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
+  color: var(--fg-primary, #e6edf3);
+}
+.sm-dock-compass-btn--active {
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+.sm-dock-compass-hub {
+  grid-column: 2;
+  grid-row: 2;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--border, #30363d);
+  pointer-events: none;
+}
 
 .sm-drag-overlay {
   position: absolute;
