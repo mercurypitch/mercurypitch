@@ -1,418 +1,577 @@
-/* The Ascent — cosmic guided-path surface.
-   Deliberately committed to one visual world (deep space) regardless of
-   app theme: the path IS the night sky the voice climbs through. Local
-   palette tokens keep it self-contained. */
+/* ============================================================
+   The Ascent — a serpentine of celestial week-orbs climbing a
+   night sky. Deep indigo→cyan nebula, static CSS starfield (no
+   rAF), an organic light-trail (drawn in JS through the orbs'
+   real centres), floating uppercase labels, glass guidebook card.
+   Single committed cosmic theme — it is a place, not a document.
+   ============================================================ */
 
 .page {
-  --path-void: #0a0b16;
-  --path-violet: #6d5efc;
+  --path-void: #0a0b18;
+  --path-indigo: #171a3a;
   --path-cyan: #45d3e8;
+  --path-violet: #6d5efc;
   --path-gold: #f0c674;
-  --path-peri: #a99bf6;
-  --path-mist: #c9cbe8;
-  --path-muted: #7d80a8;
-  --path-line: #262a4e;
+  --path-ink: #eaecff;
+  --path-muted: #8f95c2;
+
+  /* Serpentine amplitude + row rhythm (scale with viewport). */
+  --amp: clamp(54px, 25vw, 132px);
+  --row: clamp(112px, 15vh, 150px);
 
   position: relative;
+  isolation: isolate;
+  /* .main-content is a flex column with a definite height: without this
+     the page shrinks to the container and clips its lower orbs. Grow with
+     content and let .main-content scroll. */
+  flex-shrink: 0;
   min-height: 100%;
-  padding: 26px 16px 56px;
-  color: var(--path-mist);
+  padding: 26px 16px calc(52px + var(--tabbar-total, 0px));
+  color: var(--path-ink);
   background:
     radial-gradient(
-      900px 560px at 80% -4%,
-      rgba(109, 94, 252, 0.2),
+      130% 80% at 50% 8%,
+      rgba(109, 94, 252, 0.22),
       transparent 60%
     ),
     radial-gradient(
-      720px 500px at 10% 6%,
-      rgba(69, 211, 232, 0.09),
+      120% 70% at 78% 42%,
+      rgba(69, 211, 232, 0.16),
       transparent 55%
     ),
-    linear-gradient(180deg, #0d0e1e, var(--path-void) 42%, #08090f);
-  /* .main-content is a flex column with a definite height: without this the
-     page SHRINKS to the container (content spills past the box and the
-     bottom padding never scrolls into view). Grow with content instead and
-     let .main-content do the scrolling. */
-  flex-shrink: 0;
+    radial-gradient(
+      140% 90% at 18% 82%,
+      rgba(240, 198, 116, 0.1),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #0d1030 0%, var(--path-void) 46%, #06060e 100%);
+  overflow-x: clip;
 }
 
-/* Static CSS starfield — three parallax-ish dot layers, zero JS/rAF. */
-.cosmos,
+/* ── Static starfield + drifting nebula (pure CSS, no JS) ─────── */
+.cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* Contain the nebula ::before/::after bleed so it can't inflate the
+     scrollable height with empty space below the foot. */
+  overflow: hidden;
+  background-image:
+    radial-gradient(
+      1.5px 1.5px at 12% 18%,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    ),
+    radial-gradient(1px 1px at 27% 62%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(
+      1.6px 1.6px at 43% 33%,
+      rgba(214, 231, 255, 0.85),
+      transparent
+    ),
+    radial-gradient(1px 1px at 61% 78%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(
+      1.4px 1.4px at 72% 22%,
+      rgba(255, 255, 255, 0.8),
+      transparent
+    ),
+    radial-gradient(1px 1px at 84% 55%, rgba(206, 224, 255, 0.7), transparent),
+    radial-gradient(
+      1.7px 1.7px at 91% 84%,
+      rgba(255, 255, 255, 0.85),
+      transparent
+    ),
+    radial-gradient(1px 1px at 8% 88%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(
+      1.2px 1.2px at 54% 12%,
+      rgba(255, 255, 255, 0.7),
+      transparent
+    ),
+    radial-gradient(1px 1px at 36% 92%, rgba(255, 255, 255, 0.5), transparent);
+  background-repeat: repeat;
+  background-size: 100% 780px;
+  opacity: 0.9;
+}
 .cosmos::before,
 .cosmos::after {
   content: '';
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-repeat: repeat;
-}
-.cosmos {
-  background-image: radial-gradient(
-    1px 1px at 12px 34px,
-    rgba(255, 255, 255, 0.55),
-    transparent 1.5px
-  );
-  background-size: 190px 170px;
-}
-.cosmos::before {
-  background-image: radial-gradient(
-    1.4px 1.4px at 80px 120px,
-    rgba(169, 155, 246, 0.5),
-    transparent 2px
-  );
-  background-size: 260px 240px;
+  inset: -20% -10%;
+  background:
+    radial-gradient(
+      40% 30% at 30% 25%,
+      rgba(109, 94, 252, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      36% 26% at 74% 60%,
+      rgba(69, 211, 232, 0.2),
+      transparent 70%
+    );
+  filter: blur(28px);
+  opacity: 0.75;
 }
 .cosmos::after {
-  background-image: radial-gradient(
-    1px 1px at 150px 60px,
-    rgba(240, 198, 116, 0.4),
-    transparent 1.5px
+  background: radial-gradient(
+    30% 22% at 60% 40%,
+    rgba(150, 120, 255, 0.18),
+    transparent 70%
   );
-  background-size: 340px 300px;
+  opacity: 0.5;
+}
+
+/* Cyan-violet summit glow the trail climbs toward. */
+.summitGlow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  width: 460px;
+  height: 300px;
+  transform: translateX(-50%);
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(69, 211, 232, 0.22),
+    rgba(109, 94, 252, 0.12) 45%,
+    transparent 72%
+  );
+  filter: blur(10px);
 }
 
 /* ── Hero ─────────────────────────────────────────────────── */
 .hero {
   position: relative;
   text-align: center;
-  max-width: 560px;
-  margin: 0 auto 10px;
+  max-width: 34rem;
+  margin: 4px auto 8px;
 }
 .eyebrow {
   font-size: 11px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--path-peri);
   font-weight: 600;
-  margin-bottom: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--path-cyan);
+  opacity: 0.85;
 }
 .title {
-  margin: 0;
-  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  font-weight: 500;
-  font-size: clamp(38px, 8vw, 58px);
-  line-height: 1;
-  color: #fff;
+  margin: 8px 0 0;
+  font-size: clamp(2rem, 8vw, 3.1rem);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  line-height: 1.02;
   text-wrap: balance;
+  color: #f6f8ff;
+  text-shadow: 0 2px 30px rgba(109, 94, 252, 0.4);
 }
 .title em {
-  font-style: italic;
-  background: linear-gradient(92deg, var(--path-peri), var(--path-cyan));
+  font-style: normal;
+  font-weight: 600;
+  background: linear-gradient(
+    120deg,
+    var(--path-gold),
+    var(--path-cyan) 55%,
+    var(--path-violet)
+  );
   -webkit-background-clip: text;
   background-clip: text;
-  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 .tagline {
-  margin: 14px auto 0;
-  max-width: 44ch;
-  font-size: 15px;
+  margin: 12px auto 0;
+  max-width: 30rem;
+  font-size: 14px;
   line-height: 1.55;
-  color: var(--path-mist);
+  color: #c7cbef;
 }
 .progressLine {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--path-muted);
-  font-variant-numeric: tabular-nums;
+  margin: 14px auto 0;
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  color: #dfe2ff;
+  background: rgba(109, 94, 252, 0.16);
+  border: 1px solid rgba(150, 140, 255, 0.28);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
 }
 
 /* ── Graduation ───────────────────────────────────────────── */
 .graduation {
   position: relative;
-  max-width: 480px;
-  margin: 18px auto 6px;
-  padding: 18px 20px;
+  max-width: 30rem;
+  margin: 20px auto 4px;
+  padding: 20px 22px;
   text-align: center;
-  border: 1px solid rgba(240, 198, 116, 0.4);
-  border-radius: 16px;
+  border-radius: 20px;
   background: linear-gradient(
-    180deg,
-    rgba(240, 198, 116, 0.12),
-    rgba(20, 22, 46, 0.6)
+    160deg,
+    rgba(240, 198, 116, 0.16),
+    rgba(109, 94, 252, 0.1)
   );
+  border: 1px solid rgba(240, 198, 116, 0.32);
+  box-shadow: 0 0 40px rgba(240, 198, 116, 0.18);
 }
 .graduation h2 {
   margin: 0 0 6px;
-  font-family: Georgia, serif;
-  font-weight: 500;
+  font-size: 1.4rem;
+  font-weight: 600;
   color: var(--path-gold);
-  font-size: 22px;
 }
 .graduation p {
   margin: 0;
-  font-size: 14px;
-  color: var(--path-mist);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #dbdefb;
 }
 
 /* ── The trail ────────────────────────────────────────────── */
 .trail {
   position: relative;
-  max-width: 560px;
-  margin: 26px auto 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 34px;
-  padding: 12px 0 4px;
+  max-width: 40rem;
+  margin: 26px auto 0;
 }
-.spine {
+.trailSvg {
   position: absolute;
-  top: 36px;
-  bottom: 36px;
-  left: 50%;
-  width: 2px;
-  transform: translateX(-50%);
-  background: linear-gradient(
-    180deg,
-    rgba(240, 198, 116, 0.55),
-    rgba(109, 94, 252, 0.5) 46%,
-    rgba(69, 211, 232, 0.16) 72%,
-    rgba(125, 128, 168, 0.1)
-  );
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
 .node {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-.left {
-  justify-content: flex-start;
-  padding-left: 4%;
-}
-.right {
-  justify-content: flex-end;
-  padding-right: 4%;
-  flex-direction: row-reverse;
-}
-.right .label {
-  text-align: right;
+  z-index: 1;
+  min-height: var(--row);
+  display: grid;
+  place-items: center;
 }
 
 .orbBtn {
-  border: none;
-  background: transparent;
+  appearance: none;
+  border: 0;
   padding: 0;
+  margin: 0;
+  background: transparent;
   cursor: pointer;
   border-radius: 50%;
+  line-height: 0;
+  transform: translateX(calc(var(--off, 0) * var(--amp)));
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.25s ease;
+  outline: none;
 }
 .orbBtn:focus-visible {
-  outline: 2px solid var(--path-cyan);
-  outline-offset: 4px;
+  box-shadow:
+    0 0 0 3px rgba(10, 11, 24, 0.9),
+    0 0 0 5px var(--path-cyan);
+}
+.orbBtn:hover {
+  filter: brightness(1.08);
 }
 
+/* Floating uppercase label, in the gutter opposite the orb. */
 .label {
-  max-width: 200px;
-  min-width: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: min(46%, 168px);
+  pointer-events: none;
+  line-height: 1.2;
+}
+.labelLeft {
+  left: 0;
+  text-align: right;
+}
+.labelRight {
+  right: 0;
+  text-align: left;
 }
 .week {
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--path-muted);
 }
 .name {
-  font-family: Georgia, serif;
-  font-weight: 500;
-  font-size: 19px;
-  line-height: 1.15;
-  color: #f2f2fb;
-  margin: 3px 0 4px;
+  margin-top: 2px;
+  font-size: clamp(13px, 3.6vw, 16px);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.nameDone {
+  color: var(--path-gold);
+  text-shadow: 0 0 16px rgba(240, 198, 116, 0.4);
+}
+.nameActive {
+  color: #d6f7ff;
+  text-shadow: 0 0 18px rgba(69, 211, 232, 0.5);
+}
+.nameAvail {
+  color: #cfc7ff;
+}
+.nameLocked {
+  color: #6b7099;
 }
 .status {
-  font-size: 12px;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--path-muted);
 }
-.statusDone {
-  color: var(--path-gold);
-}
-.statusActive {
-  color: var(--path-cyan);
-}
 
-/* ── Week card (the guidebook) ────────────────────────────── */
+/* ── Guidebook card ───────────────────────────────────────── */
 .card {
   position: relative;
-  width: 100%;
-  max-width: 400px;
-  margin: -8px auto 0;
-  padding: 18px 20px 16px;
-  border: 1px solid var(--path-line);
-  border-radius: 16px;
+  z-index: 2;
+  width: min(100%, 30rem);
+  margin: 4px auto 18px;
+  padding: 20px 20px 22px;
+  border-radius: 22px;
   background: linear-gradient(
-    180deg,
-    rgba(30, 33, 64, 0.94),
-    rgba(18, 20, 40, 0.96)
+    165deg,
+    rgba(28, 31, 62, 0.9),
+    rgba(15, 17, 38, 0.92)
   );
+  border: 1px solid rgba(140, 148, 220, 0.24);
   box-shadow:
-    0 24px 60px -24px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(109, 94, 252, 0.1);
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 0 46px rgba(109, 94, 252, 0.14);
+  backdrop-filter: blur(14px);
+  animation: pathCardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pathCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .kicker {
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-weight: 600;
   color: var(--path-cyan);
 }
 .cardTitle {
-  margin: 5px 0 0;
-  font-family: Georgia, serif;
-  font-weight: 500;
-  font-size: 24px;
-  color: #fff;
+  margin: 6px 0 8px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f4f6ff;
+  text-wrap: balance;
 }
 .focus {
-  margin: 9px 0 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--path-mist);
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c9cdef;
 }
 .goals {
-  margin: 10px 0 0;
-  padding: 0 0 0 18px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--path-muted);
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
-.goals li::marker {
-  color: var(--path-peri);
+.goals li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #dde0f8;
+}
+.goals li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--path-cyan);
+  box-shadow: 0 0 8px rgba(69, 211, 232, 0.7);
 }
 
 .minibar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 .miniTrack {
+  position: relative;
   flex: 1;
-  height: 7px;
-  border-radius: 6px;
-  background: rgba(201, 203, 232, 0.1);
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 .miniFill {
-  height: 100%;
-  border-radius: 6px;
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
   background: linear-gradient(90deg, var(--path-violet), var(--path-cyan));
-  transition: width 0.3s ease;
+  box-shadow: 0 0 12px rgba(69, 211, 232, 0.6);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .miniText {
-  font-size: 12px;
-  color: var(--path-muted);
+  font-size: 11.5px;
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #c7cbef;
+  white-space: nowrap;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 13px;
+  gap: 8px;
+  margin-top: 16px;
 }
 .chip {
+  appearance: none;
+  padding: 7px 13px;
   font-size: 12px;
-  padding: 5px 11px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  color: #e7eaff;
+  background: rgba(109, 94, 252, 0.16);
+  border: 1px solid rgba(150, 140, 255, 0.3);
   border-radius: 999px;
-  border: 1px solid var(--path-line);
-  color: var(--path-peri);
-  background: rgba(109, 94, 252, 0.08);
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.12s ease;
 }
 .chip:hover {
-  border-color: var(--path-violet);
-  color: #d9d2ff;
+  background: rgba(109, 94, 252, 0.28);
+  border-color: rgba(170, 160, 255, 0.5);
+}
+.chip:active {
+  transform: scale(0.96);
 }
 
 .cta {
+  appearance: none;
   display: block;
   width: 100%;
-  margin-top: 14px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 11px;
-  background: linear-gradient(92deg, var(--path-violet), #8b7bff);
-  color: #fff;
+  margin-top: 18px;
+  padding: 13px 18px;
+  font-size: 14.5px;
   font-weight: 650;
-  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: #0a0b18;
+  background: linear-gradient(120deg, var(--path-gold), var(--path-cyan) 60%);
+  border: 0;
+  border-radius: 14px;
   cursor: pointer;
+  box-shadow: 0 10px 30px rgba(69, 211, 232, 0.28);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 .cta:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 38px rgba(69, 211, 232, 0.4);
+}
+.cta:active {
+  transform: translateY(1px) scale(0.99);
 }
 .replayNote {
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   font-size: 12.5px;
-  color: var(--path-gold);
+  line-height: 1.5;
+  color: var(--path-muted);
 }
 
 .resources {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--path-line);
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(140, 148, 220, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .resHead {
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--path-muted);
-  margin-bottom: 8px;
 }
 .resLink {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 6px 0;
-  color: var(--path-mist);
+  padding: 10px 12px;
+  border-radius: 12px;
   text-decoration: none;
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(140, 148, 220, 0.16);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.resLink:hover {
+  background: rgba(109, 94, 252, 0.14);
+  border-color: rgba(150, 140, 255, 0.34);
 }
 .resLink b {
-  color: #fff;
+  font-size: 13px;
   font-weight: 600;
+  color: #eef0ff;
 }
 .resLink span {
+  font-size: 11.5px;
   color: var(--path-muted);
-  font-size: 12px;
-}
-.resLink:hover b {
-  color: var(--path-cyan);
 }
 
+/* ── Foot ─────────────────────────────────────────────────── */
 .foot {
-  position: relative;
+  max-width: 30rem;
+  margin: 30px auto 0;
   text-align: center;
-  max-width: 46ch;
-  margin: 34px auto 0;
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.55;
-  color: var(--path-muted);
+  color: #7b80a8;
 }
 
-/* ── Mobile ───────────────────────────────────────────────── */
-@media (max-width: 768px) {
+/* ── Density tweak on wider screens ───────────────────────── */
+@media (min-width: 720px) {
   .page {
-    /* Clear the floating mobile tab bar (54px + safe area) ourselves —
-       the scroller's own bottom padding isn't reliably reachable. */
-    padding: 18px 12px calc(48px + var(--tabbar-total, 62px));
+    padding-top: 40px;
   }
-  .trail {
-    gap: 26px;
+  .node {
+    min-height: 156px;
   }
-  .left {
-    padding-left: 0;
-  }
-  .right {
-    padding-right: 0;
-  }
-  .label {
-    max-width: 46vw;
-  }
-  .name {
-    font-size: 17px;
-  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .card {
-    max-width: none;
+    animation: none;
+  }
+  .orbBtn,
+  .miniFill {
+    transition: none;
   }
 }
