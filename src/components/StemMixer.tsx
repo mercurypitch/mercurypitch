@@ -2495,6 +2495,11 @@ export const StemMixerStyles: string = `
 }
 
 .sm-canvas {
+  /* CSS owns the layout size; JS only maintains the device-pixel backing
+     store (see canvas-size-sync.ts). display:block kills the inline-canvas
+     baseline gap; flex: 1 (basis 0) keeps the backing-store height from
+     feeding back into the panel's intrinsic size. */
+  display: block;
   flex: 1;
   min-height: 0;
   min-width: 0;
