@@ -4,10 +4,12 @@
 // case) and keeps running if the visitor collapses the rail.
 import { onMount } from 'solid-js'
 import { useKaraokePlaylistRunner } from '@/features/stem-mixer/karaoke-playlist-runner'
+import { installAutoResume } from '@/lib/uvr-auto-resume'
 import { initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { initGroupStore, initSessionStore } from '@/stores/uvr-store'
 import { trackKaraoke } from './funnel'
+import { refreshCredits } from './karaoke-account'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 interface KaraokeNightRuntimeProps {
@@ -15,6 +17,12 @@ interface KaraokeNightRuntimeProps {
 }
 
 export function KaraokeNightRuntime(props: KaraokeNightRuntimeProps) {
+  // The standalone /karaoke bundle never loads UvrPanel, which used to be the
+  // only place server separations were recovered. Without this, a job started
+  // here (or in the studio) and orphaned by the full-page nav into /karaoke
+  // would sit at "still separating" forever. Idempotent with the app-level one.
+  installAutoResume({ onCreditsMaybeChanged: () => void refreshCredits() })
+
   onMount(() => {
     void (async () => {
       // The stores must be loaded before a deep-linked playlist can resolve

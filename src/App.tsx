@@ -29,6 +29,7 @@ import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
 import { isNarrow } from './lib/use-viewport'
+import { installAutoResume } from './lib/uvr-auto-resume'
 
 const SessionBrowser = lazy(async () =>
   import('@/components/SessionBrowser').then((m) => ({
@@ -1850,6 +1851,12 @@ const AppShell: Component<AppProps> = (props) => {
     void initSessionStore()
     void initGroupStore()
     void initKaraokePlaylistStore()
+
+    // Recover server (RunPod) separations orphaned by a reload or a full-page
+    // nav to /karaoke — re-attach and re-fetch the finished stems for free.
+    // App-level so it runs on every tab, not only while the Karaoke tab (and
+    // its UvrPanel) is mounted.
+    installAutoResume({ onCreditsMaybeChanged: refreshBalance })
 
     createEffect(() => {
       const font = fontFamily()
