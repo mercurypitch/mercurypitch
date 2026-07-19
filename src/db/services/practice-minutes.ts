@@ -10,6 +10,7 @@
 // streak itself is the cloud value.
 
 import { getCurrentStreak, todayDateString, updatePracticeStreak, } from '@/db/services/streak-service'
+import { recordPathPracticeDay } from '@/features/path/path-progress'
 
 export const DAILY_GOAL_MS = 5 * 60 * 1000 // 5 minutes
 /** Credit for a completed scored run when no real duration is available. */
@@ -93,6 +94,10 @@ export async function addScoredMs(ms: number): Promise<number> {
 
   const alreadyCounted = readNumber(countedKey(today)) === 1
   const justMet = total >= DAILY_GOAL_MS
+
+  // A goal-met day also lights a segment on the guided path's active orb
+  // (idempotent per date — safe to call on every scored run).
+  if (justMet) recordPathPracticeDay(today)
 
   // Bump on the crossing, or self-heal if a previous crossing failed to record.
   if (justMet && (!wasMet || !alreadyCounted)) {

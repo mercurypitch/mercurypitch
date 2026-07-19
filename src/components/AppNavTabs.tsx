@@ -1,6 +1,6 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -46,6 +46,29 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         <path d="M3 10.5 12 3l9 7.5" />
         <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
         <path d="M9.5 21v-6h5v6" />
+      </svg>
+    ),
+  },
+  [TAB_PATH]: {
+    id: 'tab-path',
+    ariaLabel: 'The Ascent guided path',
+    icon: () => (
+      <svg
+        class={styles.tabIcon}
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        {/* Orb with a segmented progress ring — the path's own mark */}
+        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+        <path d="M12 2.8a9.2 9.2 0 0 1 8.6 6" />
+        <path d="M21.2 12a9.2 9.2 0 0 1-3.4 7.2" />
+        <path d="M14.6 20.8a9.2 9.2 0 0 1-9.8-2.4" />
+        <path d="M2.8 12a9.2 9.2 0 0 1 3.4-7.2" />
       </svg>
     ),
   },
