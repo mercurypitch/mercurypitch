@@ -36,6 +36,11 @@ const SessionBrowser = lazy(async () =>
     default: m.SessionBrowser,
   })),
 )
+const AdminWeeklyPage = lazy(async () =>
+  import('@/features/challenges/AdminWeeklyPage').then((m) => ({
+    default: m.AdminWeeklyPage,
+  })),
+)
 const SessionEditor = lazy(async () =>
   import('@/components/SessionEditor').then((m) => ({
     default: m.SessionEditor,
@@ -111,7 +116,7 @@ import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -711,6 +716,8 @@ const AppShell: Component<AppProps> = (props) => {
     handleBillingReturn,
     openSettingsSection,
     settingsSection,
+    openAdminWeekly: () => setShowAdminWeekly(true),
+    showAdminWeekly,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -3011,6 +3018,12 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
             </div>
           </div>
+        </Show>
+
+        <Show when={showAdminWeekly()}>
+          <Suspense>
+            <AdminWeeklyPage onClose={() => setShowAdminWeekly(false)} />
+          </Suspense>
         </Show>
 
         <Notifications />

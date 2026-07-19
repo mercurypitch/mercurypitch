@@ -29,6 +29,7 @@ export type HashRoute =
   | { type: 'billing-return'; outcome: 'success' | 'cancel' }
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
+  | { type: 'admin-weekly' }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -206,6 +207,11 @@ export function parseHash(rawHash: string): HashRoute {
     }
   }
 
+  // Match: /admin/weekly (owner-only weekly-challenge authoring)
+  if (hash === '/admin/weekly' || hash === '/admin') {
+    return { type: 'admin-weekly' }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -250,6 +256,8 @@ export function buildHash(route: HashRoute): string {
       return route.outcome === 'success' ? '/billing/success' : '/pricing'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
+    case 'admin-weekly':
+      return '/admin/weekly'
     case 'unknown':
       return '/'
   }
