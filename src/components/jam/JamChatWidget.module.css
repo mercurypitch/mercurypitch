@@ -214,3 +214,19 @@
     transform: scale(1);
   }
 }
+
+/* ── Mobile: clear the floating bottom tab bar ───────────────────────
+   The chat bubble sits at the bottom-right with z-index above the bar, so
+   on a phone it covered navigation. Raise it above the bar's footprint and
+   keep the open window within the viewport. */
+@media (max-width: 768px) {
+  .widgetContainer {
+    bottom: calc(var(--tabbar-total, 62px) + 16px);
+    right: max(12px, var(--safe-right, 0px));
+  }
+
+  .chatWindow {
+    width: min(320px, calc(100vw - 24px));
+    height: min(400px, 58vh);
+  }
+}
