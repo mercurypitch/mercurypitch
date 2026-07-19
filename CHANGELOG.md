@@ -3,6 +3,26 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.16] - 2026-07-19
+
+### Added
+
+- **A scorecard worth singing for.** The karaoke score popup is a real scorecard now — a big glowing grade medal, your pitch accuracy front and center, and clear stat pills including the new **melody notes hit** (say, 5/6): how many of the song's actual notes you nailed, the way a singer counts, instead of a wall of raw numbers.
+- **Re-run any song in studio quality.** Completed browser separations now carry an HQ button: upgrade that session's stems in place on the cloud GPU, or spin the HQ result into a new session to compare side by side. Works even if you deleted the original file — we still have it — and there's a Download original button to get your full mix back too.
+- **Smarter pitch analysis.** "Analyze vocal" now tries two detection algorithms and keeps whichever hears more of the song — loud, layered choruses that used to come back empty now get notes end to end.
+
+### Changed
+
+- **Scoring is finally fair.** Sing in whatever octave fits your voice — you're scored on hitting the notes, not on matching the original singer's register. Each run is scored on its own (no more old attempts dragging the number down), brief note changes get a grace window instead of instant penalties, and the score resets cleanly every time you stop.
+- **Steadier pitch lines.** The red line tracking your voice no longer leaps between octaves on consonants and breaths — both your line and the song's line are smoothed the same way the Singing tab does it. The red scoring tick-marks are now off by default (a Diff Bars toggle brings them back).
+- **Lyrics know their notes.** Note labels above lyrics now trust your synced lyrics first (word taps or word-timed LRC files) — on our test song that took note labels from covering 15% of words to 83%.
+- **Volume sliders that feel right.** Stem and mic volume now follow your ears — 50% actually sounds like half — instead of doing almost nothing until the bottom fifth of the slider.
+- **Nicer confirmations.** Deleting sessions, melodies and playlists, overwriting lyrics, and auto word-sync now ask with the app's own styled dialog instead of the browser's raw popup.
+
+### Fixed
+
+- **Waveforms fit their panels again.** The stem-mixer displays could get stuck at a stale width after resizing the window, toggling the sidebar, zooming, or switching layouts — they now always follow their container, and existing sessions heal themselves on the next draw.
+
 ## [0.7.15] - 2026-07-19
 
 ### Fixed

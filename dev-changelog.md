@@ -6,6 +6,28 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.16] - 2026-07-19
+
+### Added
+
+- **Pitch compare engine** (#275): `src/lib/pitch-compare-engine.ts` — pure frame-driven mic-vs-reference scoring core. Octave-agnostic cents folding (`foldCentsToOctave`, [-600,600]); ~130ms reference-stability grace re-armed on >1-semitone moves (covers transition latency + onset scrapes); reference segments ≥150ms become melody notes with hit/miss verdicts (hit = ≥50% of judged frames in tolerance; unsung notes count as misses; sub-150ms blips never judge anyone); `mark()`/`pointsSinceMark()` scope loop iterations. 15 unit tests.
+- **HQ re-run from the session card** (#274): completed browser-processed sessions get an amber HQ menu — upgrade in place (stamps `processingMode: 'server'` BEFORE the job so mid-run reloads re-attach via `handleResumeServer`; drops the stale cached pitch analysis) or spawn a sibling session (same fileHash) for A/B. Feeds the original from IndexedDB; gated on auth, single-running-job, stored original, and `SERVER_MAX_UPLOAD_BYTES`.
+- **Download original** (#274): result-card button returning the exact uploaded mix from `getOriginalFileBlob` (persisted since the retry-path feature, never pruned).
+- **Auto pitch detection** (#272): 'auto' default in the stem-mixer analysis panel runs YIN and MPM over the same frames and keeps the run with more cleaned-note coverage (YIN returned 2.3s of pitch across the loud final 100s of the reference track; MPM tracked 56.7s).
+- **`useConfirm` + `confirmIcon`** (#274): controller hook driving one `ConfirmDialog` from many call sites; dialog accepts a non-delete icon (AlertTriangle added).
+- **Canvas size sync** (#276): `src/lib/canvas-size-sync.ts` — CSS owns canvas layout size, JS only maintains device-pixel backing stores; zero-size measures skipped; legacy inline pins self-heal; rAF-coalesced redraw scheduler; re-arming devicePixelRatio watcher. 11 unit tests.
+
+### Changed
+
+- **Mic scoring semantics** (#275): comparison judged by the engine (octave-agnostic, transition-graced); per-run scores (Stop materializes the modal then clears); loop metrics bar shows the current iteration only; stem AND mic RAF detection pass through a 3-tap median + shared octave corrector (reset on play/seek/stop + 250ms silence); canvas diff bars use folded cents and default OFF behind a persisted 'Diff Bars' toolbar toggle; score modal redesigned (karaoke-summary gradient card + Voice Mirror pills: grade medallion, verdict, large accuracy, melody-notes-hit pill) and labels frames honestly as samples.
+- **Word-note alignment source priority** (#272): word-timed LRC (taps / enhanced LRC) > whisper > line-timed LRC; word windows capped at 2× syllable-estimated sung duration; untimed lines laid out by syllable weight (15%→83% words mapped on the Dear Hunter reference session).
+- **Perceptual volume** (#272): `sliderToGain(p)=p²` applied at every GainNode write (stem strips, source creation, mic monitor); slider position stays stored.
+- **Native dialogs migrated** (#274): StemMixer paste-overwrite + auto word-sync, SessionLibraryModal delete, LibraryModal melody/playlist deletes → styled ConfirmDialog; melody-library e2e drives the modal (cancel path asserted).
+
+### Fixed
+
+- **Stem-mixer canvas staleness** (#276): `syncCanvasSizes` pinned inline pixel width/height, overriding `.sm-canvas { width:100% }` and silencing the ResizeObserver — canvases froze at first measure across sidebar/layout/zoom/HMR changes. Observers now follow Show-block canvas swaps; DPR changes resync.
+
 ## [0.7.15] - 2026-07-19
 
 ### Fixed
