@@ -128,6 +128,13 @@ exposeForE2E('__exitFocusMode', exitFocusMode)
 export const [karaokeFocus, setKaraokeFocus] = createSignal<boolean>(false)
 exposeForE2E('__exitKaraokeFocus', () => setKaraokeFocus(false))
 
+// Desktop opt-in to the zen karaoke stage — the clean, lyrics-forward
+// presentation phones get automatically. Session-scoped (like karaokeFocus)
+// so it never traps a returning visitor; a desktop toggle turns it on and the
+// stage's Back turns it off. On phones the stage is always shown regardless.
+export const [karaokeZen, setKaraokeZen] = createSignal<boolean>(false)
+exposeForE2E('__exitKaraokeZen', () => setKaraokeZen(false))
+
 // ── Welcome Screen (GH #131) ────────────────────────────────────
 const PITCH_PERFECT_WELCOME_VERSION_KEY = 'pitchperfect_welcome_version'
 

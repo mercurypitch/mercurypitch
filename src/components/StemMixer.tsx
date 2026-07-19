@@ -31,7 +31,7 @@ import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
+import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
@@ -364,7 +364,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
   // tab gets the same zen stage on phones as the standalone karaoke-night
   // page — the studio mixer is a desktop surface (decision D4).
-  const zenStage = () => isNarrow()
+  // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
+  // same clean lyrics stage the phone gets automatically.
+  const zenStage = () => isNarrow() || karaokeZen()
+
+  // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
+  // (keeping the song staged); otherwise it's the normal page-level back.
+  const handleZenBack = (): void => {
+    if (karaokeZen() && !isNarrow()) {
+      setKaraokeZen(false)
+    } else {
+      props.onBack?.()
+    }
+  }
 
   // True when this StemMixer instance is the playlist's current song (guards
   // the brief window where a new song is loading and a stale instance lingers).
@@ -1410,7 +1422,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       fallback={
         <KaraokeMobileStage
           songTitle={props.songTitle}
-          onBack={props.onBack}
+          onBack={handleZenBack}
           playing={audio.playing}
           loading={audio.loading}
           loadError={audio.loadError}
@@ -1575,6 +1587,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <Share /> {shareToast() || 'Share'}
                 </button>
               </Show>
+              <button
+                class="sm-btn sm-btn-secondary"
+                onClick={() => setKaraokeZen(true)}
+                title="Zen mode — the clean, lyrics-forward karaoke view (Back returns here)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h9" />
+                </svg>
+                Zen
+              </button>
               <button
                 class="sm-btn sm-btn-secondary"
                 data-tour="mixer.focus"

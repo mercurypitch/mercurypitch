@@ -384,3 +384,31 @@
     transition: none;
   }
 }
+
+/* ── Desktop zen (opt-in via the mixer's "Zen" toggle) ───────────────
+   The phone stage is a full-bleed column on a small screen. On a wide
+   screen, centre the header / lyrics / transport in a comfortable reading
+   column so it reads as a deliberate presentation rather than a stretched
+   phone layout — the immersive background still fills the viewport. */
+@media (min-width: 769px) {
+  .header,
+  .bottomBar {
+    width: min(760px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .lyrics {
+    width: min(760px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  /* Tuck the sing pill against the column's right edge, not the far edge of
+     a wide viewport. */
+  .singPill {
+    right: max(14px, calc((100vw - 760px) / 2 + 14px));
+  }
+}
