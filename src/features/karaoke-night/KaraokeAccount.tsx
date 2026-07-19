@@ -29,10 +29,16 @@ export function KaraokeAccount() {
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
 
-  const label = () => {
-    const a = account()
-    if (a === null) return 'Sign in'
-    return a.email ?? 'Account'
+  // Full email for the title/menu; a compact local-part for the chip so a
+  // long address never spills off the top-right on a phone (the chip is a
+  // flex row, where text-overflow can't truncate a bare text node — it needs
+  // its own ellipsised span, see .kn-account-label).
+  const fullEmail = () => account()?.email ?? ''
+  const shortName = () => {
+    const e = fullEmail()
+    if (e === '') return 'Account'
+    const at = e.indexOf('@')
+    return at > 0 ? e.slice(0, at) : e
   }
 
   // Live password validity (register only) — red border + checklist instead
@@ -88,15 +94,19 @@ export function KaraokeAccount() {
           <button
             class="kn-account-chip kn-account-chip--in"
             onClick={() => setMenuOpen((v) => !v)}
+            title={fullEmail() !== '' ? fullEmail() : undefined}
           >
             <span class="kn-account-dot" />
-            {label()}
+            <span class="kn-account-label">{shortName()}</span>
             <Show when={credits() !== null}>
               <span class="kn-account-credits">{credits()} cr</span>
             </Show>
           </button>
           <Show when={menuOpen()}>
             <div class="kn-account-menu">
+              <Show when={fullEmail() !== ''}>
+                <span class="kn-account-menu-email">{fullEmail()}</span>
+              </Show>
               <a href="/#/settings/credits">Manage credits</a>
               <button
                 onClick={() => {
