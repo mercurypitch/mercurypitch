@@ -135,7 +135,18 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
               title="Show or hide the track mixer"
               data-testid={`${props.prefix}-tracks-toggle`}
             >
-              Tracks
+              <span class={styles.chipIcon} aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h10" />
+                </svg>
+              </span>
+              <span class={styles.chipLabel}>Tracks</span>
               <span class={styles.chipCount}>{trackCount()}</span>
             </button>
           </Show>
@@ -143,8 +154,22 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
             class={styles.chipBtn}
             onClick={() => props.picker.importMidi()}
             title="Import a MIDI file (or drop one on the canvas)"
+            aria-label="Import MIDI"
           >
-            Import MIDI
+            <span class={styles.chipIcon} aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 3v10m0 0-3.5-3.5M12 13l3.5-3.5" />
+                <path d="M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" />
+              </svg>
+            </span>
+            <span class={styles.chipLabel}>Import MIDI</span>
           </button>
           {props.extraActions}
         </div>
