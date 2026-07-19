@@ -33,6 +33,10 @@ export interface UseHashRouterDeps {
   openSettingsSection: (section: SettingsSection) => void
   /** Current Settings sub-tab — synced into #/settings/<slug>. */
   settingsSection: Accessor<SettingsSection>
+  /** Open the owner-only weekly-challenge authoring overlay. */
+  openAdminWeekly: () => void
+  /** Whether that overlay is open (keeps the tab→hash sync off it). */
+  showAdminWeekly: Accessor<boolean>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -98,6 +102,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'settings-section') {
       deps.openSettingsSection(route.section)
       deps.setActiveUvrSessionId(null)
+    } else if (route.type === 'admin-weekly') {
+      deps.dismissWelcome()
+      deps.openAdminWeekly()
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
@@ -139,7 +146,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const surfaceOpen =
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
-      deps.showGuideSelection()
+      deps.showGuideSelection() ||
+      deps.showAdminWeekly()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
