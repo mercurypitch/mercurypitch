@@ -14,6 +14,7 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
@@ -271,6 +272,33 @@ export const SettingsPanel: Component = () => {
                 <option value="advanced">Advanced — the full app</option>
                 <option value="simple">Simple — practice only</option>
               </SafeSelect>
+            </div>
+          </div>
+
+          {/* Guided Path Section */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Guided Path</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              The Ascent normally opens one week at a time as you practise. Turn
+              this on to unlock every week now — jump ahead to preview a week or
+              try its drills. Your rings and streak are unaffected.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="set-path-free-roam">Explore all weeks</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="set-path-free-roam"
+                  checked={pathFreeRoam()}
+                  onChange={(e) => {
+                    setPathFreeRoam(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>Unlock the whole path instead of week-by-week</small>
             </div>
           </div>
         </Show>

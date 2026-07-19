@@ -39,6 +39,9 @@ export interface PathWeek {
   subtitle: string
   /** 1–2 sentences shown on the week card: what to focus on. */
   focus: string
+  /** A short line in the coach's voice — encouragement or the one cue that
+   *  matters most this week. Rendered as a highlighted tip on the card. */
+  coachNote?: string
   /** Concrete outcomes for the week. */
   goals: string[]
   /** In-app drills this week's daily sessions favour. */
@@ -61,6 +64,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Foundations',
     focus:
       'Gentle warm-ups that wake the voice without strain — lip rolls, sirens and steady tones. This week is about meeting your instrument, not pushing it.',
+    coachNote:
+      "If it feels effortless, you're doing it right. We're not chasing big notes yet — we're teaching your voice that singing can feel easy.",
     goals: [
       'Warm up daily with lip rolls and sirens',
       'Hold one steady, comfortable note for 6 seconds',
@@ -77,6 +82,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Dynamics',
     focus:
       'The engine under every note. Build breath support, then shape it — swelling a note from soft to strong and back without losing pitch.',
+    coachNote:
+      'Power comes from steady air, never from squeezing the throat. Think of leaning on the breath, not pushing it out.',
     goals: [
       'Swell a note soft-loud-soft in one breath',
       'Keep pitch steady while volume changes',
@@ -93,6 +100,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Range',
     focus:
       'Extend your range the safe way — gliding sirens and small leaps that visit high and low notes lightly before you ever hold them.',
+    coachNote:
+      'Visit new notes like a guest — lightly, briefly. Range grows by touching the edges often, not by forcing them.',
     goals: [
       'Glide smoothly past your comfortable top note',
       'Land octave leaps without reaching or strain',
@@ -109,6 +118,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Ear Training',
     focus:
       'Train the ear that steers the voice. Hear an interval, then sing it back true — scale degrees, fifths and echoes, tuned against a drone.',
+    coachNote:
+      'Your voice can only sing as true as your ear can hear. Listen all the way to the note, then let your voice match what you heard.',
     goals: [
       'Sing back intervals on the first try',
       'Hold your line against a drone',
@@ -130,6 +141,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Agility',
     focus:
       'Speed built on accuracy. Crisp staccato, clean scale runs and quick arpeggios — small patterns first, tempo only when every note lands.',
+    coachNote:
+      'Slow and clean beats fast and blurry every time. Earn each step up in tempo, and the speed will feel like it arrived on its own.',
     goals: [
       'Run a five-note scale cleanly at speed',
       'Keep staccato notes short and centred',
@@ -150,6 +163,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'Expression',
     focus:
       'Colour, earned last for a reason — vibrato and dynamics only bloom on top of steady breath. Shape notes you can already hold.',
+    coachNote:
+      'Vibrato is the sign of a relaxed, well-supported note — never something to force. Set the note up, then let it shimmer.',
     goals: [
       'Let an even vibrato appear on a held note',
       'Shade one phrase from bright to warm',
@@ -166,6 +181,8 @@ export const ASCENT_WEEKS: PathWeek[] = [
     subtitle: 'The Gentle Week',
     focus:
       'Rest is training too. Light, easy warm-ups, soft echoes, and time to listen back at how far your voice has climbed.',
+    coachNote:
+      'Rest is where the gains settle in. Sing for joy this week, look back at how far you have come, and arrive at the summit fresh.',
     goals: [
       'Keep every session light and easy',
       'Sing one favourite phrase from earlier weeks',

@@ -13,9 +13,10 @@ import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-
 import type { PathWeek } from '@/features/path/path-content'
 import { ASCENT_WEEKS, DAYS_PER_WEEK } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
-import { pathComplete, pathProgress, ringFill, startAscent, weekState, } from '@/features/path/path-progress'
+import { devMarkPracticeDay, pathComplete, pathFreeRoam, pathProgress, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
 import { PathOrb } from '@/features/path/PathOrb'
 import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { IS_DEV } from '@/lib/defaults'
 import { startExercise } from '@/stores/ui-store'
 import styles from './PathPage.module.css'
 
@@ -155,6 +156,23 @@ const PathPage: Component = () => {
         </Show>
       </header>
 
+      <Show when={IS_DEV}>
+        <div class={styles.devbar}>
+          <span class={styles.devTag}>dev</span>
+          <label class={styles.devToggle}>
+            <input
+              type="checkbox"
+              checked={pathFreeRoam()}
+              onChange={(e) => setPathFreeRoam(e.currentTarget.checked)}
+            />
+            Free-roam
+          </label>
+          <button onClick={() => devMarkPracticeDay()}>+ day</button>
+          <button onClick={() => startAscent()}>begin</button>
+          <button onClick={() => resetAscent()}>reset</button>
+        </div>
+      </Show>
+
       <Show when={finished()}>
         <div class={`${styles.graduation} path-graduation`}>
           <h2>The Ascent, complete.</h2>
@@ -274,6 +292,22 @@ const PathPage: Component = () => {
                     >
                       <p class={styles.focus}>{week.focus}</p>
 
+                      <Show when={week.coachNote !== undefined}>
+                        <p class={styles.coachNote}>
+                          <svg
+                            class={styles.coachQuote}
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path d="M7 7h4v4c0 3-1.6 5-4.5 6l-.5-1.4C7.7 14.9 8.5 14 8.5 12H7V7Zm7 0h4v4c0 3-1.6 5-4.5 6l-.5-1.4c1.7-.7 2.5-1.6 2.5-3.6H14V7Z" />
+                          </svg>
+                          {week.coachNote}
+                        </p>
+                      </Show>
+
                       <ul class={styles.goals}>
                         <For each={week.goals}>{(goal) => <li>{goal}</li>}</For>
                       </ul>
@@ -308,36 +342,41 @@ const PathPage: Component = () => {
                         </For>
                       </div>
 
-                      <Show
-                        when={started()}
-                        fallback={
-                          <button
-                            class={`${styles.cta} path-cta`}
-                            onClick={() => startAscent()}
-                          >
-                            Begin The Ascent
-                          </button>
-                        }
-                      >
-                        <Show when={state() !== 'complete'}>
-                          <button
-                            class={`${styles.cta} path-cta`}
-                            onClick={practiseToday}
-                          >
-                            Practise today · ~
-                            {Math.max(
-                              1,
-                              Math.round(routine.totalDurationSec() / 60) || 8,
-                            )}{' '}
-                            min
-                          </button>
-                        </Show>
-                        <Show when={state() === 'complete'}>
-                          <p class={styles.replayNote}>
-                            Complete — the drills above stay open. Revisit any
-                            time.
-                          </p>
-                        </Show>
+                      {/* Begin (pre-start) · Practise today (active week) ·
+                          preview note (a free-roamed future week) · replay
+                          note (a finished week). */}
+                      <Show when={!started()}>
+                        <button
+                          class={`${styles.cta} path-cta`}
+                          onClick={() => startAscent()}
+                        >
+                          Begin The Ascent
+                        </button>
+                      </Show>
+                      <Show when={started() && state() === 'active'}>
+                        <button
+                          class={`${styles.cta} path-cta`}
+                          onClick={practiseToday}
+                        >
+                          Practise today · ~
+                          {Math.max(
+                            1,
+                            Math.round(routine.totalDurationSec() / 60) || 8,
+                          )}{' '}
+                          min
+                        </button>
+                      </Show>
+                      <Show when={started() && state() === 'available'}>
+                        <p class={styles.replayNote}>
+                          Preview — try any drill above. Your daily climb
+                          continues on Week {currentOrder()}.
+                        </p>
+                      </Show>
+                      <Show when={started() && state() === 'complete'}>
+                        <p class={styles.replayNote}>
+                          Complete — the drills above stay open. Revisit any
+                          time.
+                        </p>
                       </Show>
 
                       <Show when={week.resources.length > 0}>

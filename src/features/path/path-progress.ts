@@ -17,12 +17,33 @@
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { ASCENT_ID, ASCENT_WEEKS, DAYS_PER_WEEK, getWeek, } from '@/features/path/path-content'
+import { IS_DEV, IS_TEST } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 
 const STORAGE_KEY = 'mp_path_progress'
 
 /** Sentinel for the pre-lit first segment — never collides with a date. */
 export const ENDOWED_DAY = 'endowed'
+
+// ── Free-roam ────────────────────────────────────────────────────
+// When on, every week is openable and practiceable — no sequential lock,
+// so anyone can jump ahead and read/try a later week. When off, weeks
+// unlock one at a time as the one before them fills.
+//
+// Default follows the build: unlocked in dev (so we can skip through all
+// the content while authoring it), locked in prod. LAUNCH-DAY DECISION —
+// flip this one constant to ship prod unlocked, and/or leave the Settings
+// toggle (Settings › Guided Path) for users to choose per-device.
+export const FREE_ROAM_DEFAULT = IS_DEV && !IS_TEST
+
+const [freeRoam, setFreeRoam] = createPersistedSignal<boolean>(
+  'mp_path_free_roam',
+  FREE_ROAM_DEFAULT,
+)
+
+/** Reactive: are all weeks unlocked for free exploration? */
+export const pathFreeRoam = freeRoam
+export const setPathFreeRoam = setFreeRoam
 
 export interface PathProgress {
   pathId: string
@@ -67,6 +88,16 @@ export function resetAscent(): void {
   setProgress(null)
 }
 
+/**
+ * Dev-only: count one more distinct day toward the active week so we can
+ * watch rings light and weeks advance without waiting for real days. Uses
+ * a unique synthetic stamp, so repeated calls always add a segment.
+ */
+export function devMarkPracticeDay(): void {
+  if (progress() === null) startAscent()
+  recordPathPracticeDay(`dev-${Date.now()}-${Math.floor(Math.random() * 1e6)}`)
+}
+
 /** True once every week of the path is complete. */
 export function pathComplete(p: PathProgress | null = progress()): boolean {
   return p !== null && p.completedWeeks.length >= ASCENT_WEEKS.length
@@ -84,12 +115,16 @@ export function ringFill(
 export function weekState(
   order: number,
   p: PathProgress | null = progress(),
+  freeRoam: boolean = pathFreeRoam(),
 ): WeekState {
-  if (p === null) return order === 1 ? 'available' : 'locked'
+  // A week that isn't yet reached is 'locked' under the sequential rule,
+  // but 'available' (openable + practiceable) when free-roam is on.
+  const unreached: WeekState = freeRoam ? 'available' : 'locked'
+  if (p === null) return order === 1 ? 'available' : unreached
   if (p.completedWeeks.includes(order)) return 'complete'
   if (pathComplete(p)) return 'complete'
   if (order === p.currentWeek) return 'active'
-  return order < p.currentWeek ? 'complete' : 'locked'
+  return order < p.currentWeek ? 'complete' : unreached
 }
 
 /**
