@@ -1767,6 +1767,26 @@ input:checked + .settings-slider:before {
   }
 }
 
+/* Continuous rotation for spinner icons (Loader2). Without this the arc glyph
+   sits still, so in-progress states — "Uploading…", "Saving stems…", "View
+   Progress" — look stuck even though work is happening. */
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-spin {
+  animation: icon-spin 0.9s linear infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-spin {
+    animation-duration: 1.8s;
+  }
+}
+
 .vocal-challenges-panel {
   justify-content: flex-start;
   align-items: stretch;
