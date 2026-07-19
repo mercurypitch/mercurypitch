@@ -32,9 +32,9 @@ await page.goto(`${BASE}/karaoke`, { waitUntil: 'domcontentloaded' })
 await page.waitForTimeout(1200)
 await page.screenshot({ path: `${OUT}/1-landing.png` })
 
-// Stage the demo song.
-const demoBtn = page.getByRole('button', { name: /sing the demo/i }).first()
-check('landing shows "Sing the demo"', await demoBtn.isVisible())
+// Stage the example song (main's opener CTA is "Sing this song").
+const demoBtn = page.getByRole('button', { name: /sing this song/i }).first()
+check('landing shows the opener CTA', await demoBtn.isVisible())
 await demoBtn.click()
 
 const stage = page.locator('[data-testid="karaoke-mobile-stage"]')
