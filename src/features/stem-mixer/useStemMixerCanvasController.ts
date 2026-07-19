@@ -294,42 +294,57 @@ export const useStemMixerCanvasController = (
         }
       }
 
-      // Loop region overlay (only draw on first track to avoid double-rendering)
-      if (ti === 0 && deps.loopEnd() > 0) {
+      // Loop markers (first track only, to avoid double-rendering). Drawn as
+      // soon as A is set — waiting for B (the old `loopEnd() > 0` gate) meant
+      // clicking A showed nothing until B closed the region. A alone draws a
+      // single marker; A+B draws the shaded region plus both boundaries.
+      if (ti === 0 && (deps.loopStart() > 0 || deps.loopEnd() > 0)) {
         const ls = deps.loopStart()
         const le = deps.loopEnd()
-        const lx1 = ((ls - winStart) / deps.windowDuration()) * w
-        const lx2 = ((le - winStart) / deps.windowDuration()) * w
-        if (lx2 > 0 && lx1 < w) {
-          const clipX1 = Math.max(0, lx1)
-          const clipX2 = Math.min(w, lx2)
-          ctx.fillStyle = 'rgba(88, 166, 255, 0.08)'
-          ctx.fillRect(clipX1, 0, clipX2 - clipX1, h)
-          if (deps.loopEnabled()) {
-            // A boundary
-            ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)'
-            ctx.lineWidth = 1.5
-            if (lx1 >= -2 && lx1 <= w + 2) {
-              ctx.beginPath()
-              ctx.moveTo(clipX1, 0)
-              ctx.lineTo(clipX1, h)
-              ctx.stroke()
-              ctx.fillStyle = 'rgba(88, 166, 255, 0.9)'
-              ctx.font = 'bold 10px monospace'
-              ctx.fillText('A', clipX1 + 3, 12)
-            }
-            // B boundary
-            if (lx2 >= -2 && lx2 <= w + 2) {
-              ctx.beginPath()
-              ctx.moveTo(clipX2, 0)
-              ctx.lineTo(clipX2, h)
-              ctx.strokeStyle = 'rgba(255, 123, 114, 0.6)'
-              ctx.stroke()
-              ctx.fillStyle = 'rgba(255, 123, 114, 0.9)'
-              ctx.font = 'bold 10px monospace'
-              ctx.fillText('B', clipX2 - 10, 12)
-            }
+        const winDurLocal = deps.windowDuration()
+        const xOf = (t: number) => ((t - winStart) / winDurLocal) * w
+        const drawMarker = (t: number, color: string, label: string) => {
+          const x = xOf(t)
+          if (x < -2 || x > w + 2) return
+          const cx = Math.max(0, Math.min(w, x))
+          ctx.strokeStyle = color
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.moveTo(cx, 0)
+          ctx.lineTo(cx, h)
+          ctx.stroke()
+          ctx.fillStyle = color
+          ctx.font = 'bold 10px monospace'
+          ctx.fillText(label, label === 'B' ? cx - 10 : cx + 3, 12)
+        }
+
+        // Region shade only once both ends exist.
+        if (le > 0) {
+          const lx1 = xOf(ls)
+          const lx2 = xOf(le)
+          if (lx2 > 0 && lx1 < w) {
+            ctx.fillStyle = 'rgba(88, 166, 255, 0.08)'
+            const cX1 = Math.max(0, lx1)
+            ctx.fillRect(cX1, 0, Math.min(w, lx2) - cX1, h)
           }
+        }
+        // Boundary lines: the enabled A+B loop keeps its bright markers; an
+        // A-only (or not-yet-enabled) selection shows dimmer "pending" ones so
+        // the click registers visually without implying an active loop.
+        const active = deps.loopEnabled() && le > 0
+        if (ls > 0) {
+          drawMarker(
+            ls,
+            active ? 'rgba(88,166,255,0.9)' : 'rgba(88,166,255,0.5)',
+            'A',
+          )
+        }
+        if (le > 0) {
+          drawMarker(
+            le,
+            active ? 'rgba(255,123,114,0.9)' : 'rgba(255,123,114,0.5)',
+            'B',
+          )
         }
       }
 

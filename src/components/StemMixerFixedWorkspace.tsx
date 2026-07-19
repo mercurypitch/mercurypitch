@@ -31,6 +31,8 @@ interface StemMixerFixedWorkspaceProps {
   handleCanvasPointerDown: (e: PointerEvent) => void
   handleCanvasPointerMove: (e: PointerEvent) => void
   handleCanvasPointerUp: (e: PointerEvent) => void
+  /** Right-click on a timeline canvas → loop context menu at the clicked time. */
+  onCanvasContextMenu?: (e: MouseEvent) => void
 
   // Stem controls
   stemControls: Omit<StemMixerStemControlsProps, 'direction'>
@@ -118,6 +120,7 @@ export const StemMixerFixedWorkspace: Component<
                   onPointerDown={(e) => props.handleCanvasPointerDown(e)}
                   onPointerMove={(e) => props.handleCanvasPointerMove(e)}
                   onPointerUp={(e) => props.handleCanvasPointerUp(e)}
+                  onContextMenu={(e) => props.onCanvasContextMenu?.(e)}
                 />
                 <div
                   class="sm-resize-handle"
@@ -566,6 +569,7 @@ export const StemMixerFixedWorkspace: Component<
                   onPointerDown={(e) => props.handleCanvasPointerDown(e)}
                   onPointerMove={(e) => props.handleCanvasPointerMove(e)}
                   onPointerUp={(e) => props.handleCanvasPointerUp(e)}
+                  onContextMenu={(e) => props.onCanvasContextMenu?.(e)}
                 />
                 {/* Overlay the mic hint on the canvas (not in the fixed-height
                     header) so a long message can't balloon the header on

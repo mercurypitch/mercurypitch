@@ -25,6 +25,8 @@ interface StemMixerGridWorkspaceProps {
   handlePanelDragMove: (e: PointerEvent) => void
   handlePanelDragEnd: (e: PointerEvent) => void
   handleResizeStart: (id: string, e: PointerEvent) => void
+  /** Right-click on a timeline canvas → loop context menu at the clicked time. */
+  onCanvasContextMenu?: (e: MouseEvent) => void
 
   // Canvas
   setCanvasRef: (id: string) => (el: HTMLCanvasElement) => void
@@ -148,6 +150,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               onPointerDown={(e) => props.handleCanvasPointerDown(e)}
               onPointerMove={(e) => props.handleCanvasPointerMove(e)}
               onPointerUp={(e) => props.handleCanvasPointerUp(e)}
+              onContextMenu={(e) => props.onCanvasContextMenu?.(e)}
             />
             <div
               class="sm-resize-handle"
@@ -299,6 +302,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               onPointerDown={(e) => props.handleCanvasPointerDown(e)}
               onPointerMove={(e) => props.handleCanvasPointerMove(e)}
               onPointerUp={(e) => props.handleCanvasPointerUp(e)}
+              onContextMenu={(e) => props.onCanvasContextMenu?.(e)}
             />
             <div
               class="sm-resize-handle"

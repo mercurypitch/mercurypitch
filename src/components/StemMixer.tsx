@@ -617,6 +617,59 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // Set an A or B loop point at an explicit time, keeping A < B (swaps when a
+  // point lands on the wrong side — the "renumerate" behaviour). Shared by the
+  // transport A/B buttons (playhead time) and the waveform right-click menu
+  // (clicked time). Setting B enables the loop; setting A alone just marks the
+  // start (drawn immediately by the canvas overlay).
+  const applyLoopPoint = (which: 'A' | 'B', time: number) => {
+    const t = Math.max(0, time)
+    if (which === 'A') {
+      const currentB = audio.loopEnd()
+      if (currentB > 0 && t > currentB) {
+        audio.setLoopEnd(t)
+        audio.setLoopStart(currentB)
+      } else {
+        audio.setLoopStart(t)
+      }
+    } else {
+      const currentA = audio.loopStart()
+      if (t < currentA) {
+        audio.setLoopStart(t)
+        audio.setLoopEnd(currentA)
+      } else {
+        audio.setLoopEnd(t)
+      }
+      audio.setLoopEnabled(true)
+    }
+    canvas.queueCanvasRedraw()
+  }
+
+  // Waveform/pitch-canvas right-click → a small loop menu at the clicked time
+  // (mirrors the lyric-line right-click). The native context menu offered
+  // nothing useful here.
+  const [loopMenu, setLoopMenu] = createSignal<{
+    x: number
+    y: number
+    time: number
+  } | null>(null)
+  const openLoopMenu = (e: MouseEvent) => {
+    e.preventDefault()
+    const el = e.currentTarget as HTMLElement | null
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0) return
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const time = audio.windowStart() + ratio * audio.windowDuration()
+    setLoopMenu({ x: e.clientX, y: e.clientY, time })
+  }
+  const clearLoopFromMenu = () => {
+    audio.clearLoop()
+    setLoopStartLyricIdx(null)
+    setLoopEndLyricIdx(null)
+    canvas.queueCanvasRedraw()
+  }
+
   // ── Pitch Analysis controller ──────────────────────────────────
   const pitchAnalysis = useStemMixerPitchAnalysisController({
     // eslint-disable-next-line solid/reactivity
@@ -1663,29 +1716,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             loopEnabled={audio.loopEnabled}
             loopStart={audio.loopStart}
             loopEnd={audio.loopEnd}
-            onSetLoopA={() => {
-              const newTime = audio.elapsed()
-              const currentB = audio.loopEnd()
-              if (currentB > 0 && newTime > currentB) {
-                audio.setLoopEnd(newTime)
-                audio.setLoopStart(currentB)
-              } else {
-                audio.setLoopStart(newTime)
-              }
-              canvas.queueCanvasRedraw()
-            }}
-            onSetLoopB={() => {
-              const newTime = audio.elapsed()
-              const currentA = audio.loopStart()
-              if (newTime < currentA) {
-                audio.setLoopStart(newTime)
-                audio.setLoopEnd(currentA)
-              } else {
-                audio.setLoopEnd(newTime)
-              }
-              audio.setLoopEnabled(true)
-              canvas.queueCanvasRedraw()
-            }}
+            onSetLoopA={() => applyLoopPoint('A', audio.elapsed())}
+            onSetLoopB={() => applyLoopPoint('B', audio.elapsed())}
             onClearLoop={() => {
               audio.clearLoop()
               setLoopStartLyricIdx(null)
@@ -1708,6 +1740,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           </Show>
 
           <StemMixerGridWorkspace
+            onCanvasContextMenu={openLoopMenu}
             workspaceLayout={layout.workspaceLayout}
             panelStyle={layout.panelStyle}
             getPanel={layout.getPanel}
@@ -1762,6 +1795,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             showLyrics={showLyrics}
           />
           <StemMixerFixedWorkspace
+            onCanvasContextMenu={openLoopMenu}
             workspaceLayout={layout.workspaceLayout}
             fixedPanelHeights={layout.fixedPanelHeights}
             handleFixedResizeStart={layout.handleFixedResizeStart}
@@ -1976,6 +2010,59 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onConfirm={confirm.accept}
           onCancel={confirm.cancel}
         />
+        <Show when={loopMenu()}>
+          {(menu) => (
+            <>
+              <div
+                class="sm-loop-menu-backdrop"
+                onPointerDown={() => setLoopMenu(null)}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setLoopMenu(null)
+                }}
+              />
+              <div
+                class="sm-loop-menu"
+                style={{ left: `${menu().x}px`, top: `${menu().y}px` }}
+              >
+                <div class="sm-loop-menu-time">
+                  Loop point at {canvas.formatTime(menu().time)}
+                </div>
+                <button
+                  class="sm-loop-menu-item"
+                  onClick={() => {
+                    applyLoopPoint('A', menu().time)
+                    setLoopMenu(null)
+                  }}
+                >
+                  <span class="sm-loop-menu-dot sm-loop-menu-dot--a">A</span>
+                  Set loop start here
+                </button>
+                <button
+                  class="sm-loop-menu-item"
+                  onClick={() => {
+                    applyLoopPoint('B', menu().time)
+                    setLoopMenu(null)
+                  }}
+                >
+                  <span class="sm-loop-menu-dot sm-loop-menu-dot--b">B</span>
+                  Set loop end here
+                </button>
+                <Show when={audio.loopStart() > 0 || audio.loopEnd() > 0}>
+                  <button
+                    class="sm-loop-menu-item sm-loop-menu-item--clear"
+                    onClick={() => {
+                      clearLoopFromMenu()
+                      setLoopMenu(null)
+                    }}
+                  >
+                    Clear loop
+                  </button>
+                </Show>
+              </div>
+            </>
+          )}
+        </Show>
       </div>
     </Show>
   )
@@ -4515,6 +4602,70 @@ export const StemMixerStyles: string = `
 }
 
 /* Score modal overlay */
+/* Waveform/pitch right-click loop menu */
+.sm-loop-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+}
+.sm-loop-menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 190px;
+  padding: 0.3rem;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: sm-loop-menu-in 0.1s ease-out;
+}
+@keyframes sm-loop-menu-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.sm-loop-menu-time {
+  padding: 0.35rem 0.55rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--fg-tertiary, #8b949e);
+  border-bottom: 1px solid var(--border, #30363d);
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.sm-loop-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  background: none;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--fg-primary, #e6edf3);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+.sm-loop-menu-item:hover {
+  background: var(--bg-tertiary, #21262d);
+}
+.sm-loop-menu-item--clear {
+  color: var(--fg-secondary, #a8b3bf);
+}
+.sm-loop-menu-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sm-loop-menu-dot--a { background: #58a6ff; }
+.sm-loop-menu-dot--b { background: #ff7b72; }
+
 .sm-mic-score-overlay {
   position: absolute;
   inset: 0;
