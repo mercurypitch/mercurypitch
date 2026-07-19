@@ -3,6 +3,8 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
+import { onCleanup } from 'solid-js'
+import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
 import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
@@ -107,6 +109,10 @@ export const useStemMixerCanvasController = (
     midi: undefined,
   }
 
+  // Declared ahead of setCanvasRef, which (un)observes canvases as SolidJS
+  // swaps them in and out of the DOM. Created by initObserver on mount.
+  let observer: ResizeObserver | null = null
+
   const setCanvasRef = (id: string) => (el: HTMLCanvasElement | null) => {
     // Clean up previous listener when SolidJS calls ref(null) on unmount/change
     if (el === null) {
@@ -116,6 +122,7 @@ export const useStemMixerCanvasController = (
         prev.removeEventListener('touchstart', handleCanvasTouchStart)
         prev.removeEventListener('touchmove', handleCanvasTouchMove)
         prev.removeEventListener('touchend', handleCanvasTouchEnd)
+        observer?.unobserve(prev)
       }
       canvasRefs[id] = undefined
       return
@@ -127,24 +134,24 @@ export const useStemMixerCanvasController = (
     })
     el.addEventListener('touchmove', handleCanvasTouchMove, { passive: false })
     el.addEventListener('touchend', handleCanvasTouchEnd)
+    // Canvases mount/unmount independently of the workspace (Show blocks for
+    // karaoke focus, layout switches, HMR) — observe each one as it appears
+    // or the observer keeps watching a detached element and this one never
+    // triggers a resize redraw.
+    if (observer) {
+      observer.observe(el)
+      queueCanvasRedraw()
+    }
   }
 
   // ── Sizing ───────────────────────────────────────────────────
+  // CSS owns the layout size (.sm-canvas is width:100% + flex:1); this only
+  // maintains the device-pixel backing stores. See canvas-size-sync.ts for
+  // the rules (never pin style.width — it deadlocks the ResizeObserver).
   const syncCanvasSizes = () => {
     const dpr = window.devicePixelRatio || 1
     for (const ref of Object.values(canvasRefs)) {
-      if (!ref) continue
-      const rect = ref.getBoundingClientRect()
-      const cssW = Math.round(rect.width)
-      const cssH = Math.round(rect.height)
-      const w = cssW * dpr
-      const h = cssH * dpr
-      if (ref.width !== w || ref.height !== h) {
-        ref.style.width = `${cssW}px`
-        ref.style.height = `${cssH}px`
-        ref.width = w
-        ref.height = h
-      }
+      if (ref) syncCanvasBacking(ref, dpr)
     }
   }
 
@@ -892,8 +899,11 @@ export const useStemMixerCanvasController = (
     drawMidiCanvas()
   }
 
+  // Coalesced: resize storms (window drags, panel resizes, observer bursts)
+  // collapse to one full redraw per animation frame.
+  const redrawScheduler = createRedrawScheduler(redrawAll)
   const queueCanvasRedraw = () => {
-    requestAnimationFrame(redrawAll)
+    redrawScheduler.queue()
   }
 
   // ── Loop marker drag state (mutable refs — no rendering) ─────
@@ -1352,10 +1362,8 @@ export const useStemMixerCanvasController = (
 
   // ── ResizeObserver lifecycle ──────────────────────────────────
 
-  let observer: ResizeObserver | null = null
-
   const initObserver = (): ResizeObserver => {
-    observer = new ResizeObserver(redrawAll)
+    observer = new ResizeObserver(queueCanvasRedraw)
     for (const ref of Object.values(canvasRefs)) {
       if (ref) observer.observe(ref)
     }
@@ -1382,6 +1390,16 @@ export const useStemMixerCanvasController = (
     observer?.disconnect()
     observer = null
   }
+
+  // Browser zoom / moving the window between monitors changes the device
+  // pixel ratio without necessarily resizing any element — resync the
+  // backing stores or everything renders blurry (or at the wrong scale).
+  const dprWatcher = createDprWatcher(queueCanvasRedraw)
+  onCleanup(() => {
+    dprWatcher.dispose()
+    redrawScheduler.cancel()
+    disconnectObserver()
+  })
 
   return {
     setCanvasRef,
