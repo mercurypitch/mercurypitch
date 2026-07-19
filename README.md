@@ -1,6 +1,6 @@
 # MercuryPitch
 
-A browser-based vocal pitch practice tool with AI stem separation, community features, and real-time audio processing. Sing along with customizable melodies, get real-time feedback on your pitch accuracy, and track your progress over time.
+A free, open-source vocal pitch practice tool that runs in your browser. See your pitch in real time, sing along with customizable melodies, get per-note feedback on where you go flat or sharp, and track your progress over time. The pitch practice runs entirely on-device, so your voice never leaves your machine. It also includes optional vocal/instrumental stem separation, community features, and real-time audio processing.
 
 ## Live Demo
 
@@ -20,7 +20,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 - **Practice modes** — Once, Repeat, and cyclic Practice with configurable cycles
 - **Piano roll editor** — Click to place notes, drag to move, right-click to delete
 - **Scale builder** — Define root note and scale type to generate melodies
-- **Focus Mode** — AI-powered practice: app analyzes your history and targets the notes you struggle with
+- **Focus Mode** — targeted practice: analyzes your own practice history and drills the notes you struggle with
 - **Session tracking** — Record practice sessions, see per-note accuracy and cents deviation, review progress over time
 - **MIDI import/export** — Load .mid files or share your melody as a URL-encoded preset
 - **ADSR envelope** — Shape the Attack/Decay/Sustain/Release of note playback
@@ -31,7 +31,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 
 ### UVR Stem Separation
 
-- **AI vocal separation** — Separate any audio file into vocal and instrumental stems using UVR-MDX-NET
+- **Vocal separation** — Separate any audio file into vocal and instrumental stems (UVR-MDX-NET model)
 - **Multi-stem mixer** — Mix stems with independent volume control and synchronized playback
 - **Synced lyrics** — Auto-fetch and display synced (LRC) lyrics during stem playback
 - **LRC generator** — Generate timestamped lyrics with block/verse markers
@@ -59,7 +59,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 | Singing        | Main pitch practice with piano roll and real-time feedback       |
 | Compose        | Piano roll note editor with scale builder and MIDI import/export |
 | Analysis       | Visualize vocal recordings and session history                   |
-| Karaoke        | AI stem separation — upload audio, mix stems, synced lyrics      |
+| Karaoke        | Vocal/instrumental separation — upload audio, mix stems, lyrics   |
 | Community      | Browse shared melodies and sessions                              |
 | Leaderboard    | Top performers across challenges                                 |
 | Challenges     | Timed pitch accuracy challenges                                  |
