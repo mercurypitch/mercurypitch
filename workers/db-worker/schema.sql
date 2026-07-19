@@ -92,11 +92,47 @@ CREATE TABLE IF NOT EXISTS sessionRecords (
   streak INTEGER NOT NULL,
   avgCents REAL,
   rating TEXT,
+  -- Tags an attempt to a weekly "Sing the Legend" challenge so the weekly
+  -- board can aggregate best-per-user. NULL for ordinary practice. Existing
+  -- DBs: scripts/migrate-sessionRecords-add-weeklyChallengeId.sql.
+  weeklyChallengeId TEXT,
   results TEXT NOT NULL -- JSON
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessionRecords_userId ON sessionRecords(userId);
 CREATE INDEX IF NOT EXISTS idx_sessionRecords_endedAt ON sessionRecords(endedAt);
+CREATE INDEX IF NOT EXISTS idx_sessionRecords_weekly ON sessionRecords(weeklyChallengeId);
+
+-- ── Weekly "Sing the Legend" challenges (owner-published live-ops) ────
+-- The queue, the calendar, and the archive are the SAME rows (status drives
+-- which is which). Served ONLY by the custom /api/weekly/* handlers, never
+-- the generic CRUD allowlist — so queued/future rows never leak to clients.
+-- See docs/plans/sing-the-legend-phase1.md §5.
+CREATE TABLE IF NOT EXISTS weeklyChallenges (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  featType TEXT NOT NULL,           -- money-note | sustain | low-note | range | ...
+  voiceTypeSplit TEXT,              -- JSON: optional per-voice-type transposition
+  difficulty TEXT NOT NULL,         -- beginner | intermediate | advanced
+  targetItems TEXT NOT NULL,        -- JSON MelodyItem[] (the line to sing)
+  targetScore REAL NOT NULL DEFAULT 70,
+  hearItUrl TEXT,                   -- official-upload YouTube watch URL
+  startsAt TEXT NOT NULL,           -- ISO; Mondays 00:00 UTC by convention
+  endsAt TEXT NOT NULL,             -- ISO; startsAt + 7d
+  rewardBadgeId TEXT,               -- Completed-tier badge
+  founderScore REAL,                -- seed score (null until the founder sings)
+  founderTrace TEXT,                -- JSON compact contour for the ghost overlay
+  evergreen INTEGER NOT NULL DEFAULT 0, -- eligible for Encore re-runs
+  status TEXT NOT NULL DEFAULT 'queued', -- queued | active | closed
+  resultsJson TEXT                  -- frozen top-3 + counts, set at close
+);
+
+CREATE INDEX IF NOT EXISTS idx_weeklyChallenges_status ON weeklyChallenges(status);
+CREATE INDEX IF NOT EXISTS idx_weeklyChallenges_window ON weeklyChallenges(startsAt, endsAt);
 
 -- ── Challenges ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS challengeDefinitions (
