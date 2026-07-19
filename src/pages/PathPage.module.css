@@ -28,23 +28,15 @@
   min-height: 100%;
   padding: 26px 16px calc(52px + var(--tabbar-total, 0px));
   color: var(--path-ink);
+  /* Predominantly dark, so the orbs and the (darkened) nebula backdrop pop;
+     just one faint violet glow at the summit over a deep-space gradient. */
   background:
     radial-gradient(
-      130% 80% at 50% 8%,
-      rgba(109, 94, 252, 0.22),
-      transparent 60%
+      110% 55% at 50% 3%,
+      rgba(109, 94, 252, 0.12),
+      transparent 62%
     ),
-    radial-gradient(
-      120% 70% at 78% 42%,
-      rgba(69, 211, 232, 0.16),
-      transparent 55%
-    ),
-    radial-gradient(
-      140% 90% at 18% 82%,
-      rgba(240, 198, 116, 0.1),
-      transparent 60%
-    ),
-    linear-gradient(180deg, #0d1030 0%, var(--path-void) 46%, #06060e 100%);
+    linear-gradient(180deg, #090a1e 0%, #06060f 42%, #050508 100%);
   overflow-x: clip;
 }
 
@@ -53,14 +45,29 @@
    takes over. Painted behind the CSS starfield. */
 .backdrop {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  /* The art is a portrait nebula: fill the width on phones, but cap it to a
+     centred column on desktop so it never stretches wide (upscaled + blurry)
+     or overwhelms the page. The dark starfield fills the space around it. */
+  width: min(100%, 600px);
+  height: 100%;
   z-index: -2;
   pointer-events: none;
   background-image: url('/ascent/backdrop.webp');
   background-repeat: no-repeat;
   background-position: top center;
   background-size: 100% auto;
-  opacity: 0.92;
+  opacity: 0.72;
+  /* Feather the column edges into the dark base so it reads as a starry sky
+     with a soft glow at the summit, not a hard-edged photo. */
+  -webkit-mask-image: radial-gradient(
+    130% 82% at 50% 4%,
+    #000 46%,
+    transparent 86%
+  );
+  mask-image: radial-gradient(130% 82% at 50% 4%, #000 46%, transparent 86%);
 }
 
 /* ── Static starfield + drifting nebula (pure CSS, no JS) ─────── */
