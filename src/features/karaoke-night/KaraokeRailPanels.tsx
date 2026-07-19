@@ -37,6 +37,12 @@ interface KaraokeRailPanelsProps {
 // re-attaches to the in-flight upload when it comes back.
 const [uploadSessionId, setUploadSessionId] = createSignal<string | null>(null)
 const [uploadError, setUploadError] = createSignal('')
+// Session currently being staged from a library pick (hydration can take a
+// second or two) — shows a spinner on its row and locks out further picks.
+// Module scope so a rail collapse mid-stage can't strand the lock UI state.
+const [stagingSessionId, setStagingSessionId] = createSignal<string | null>(
+  null,
+)
 
 export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const [mode, setMode] = createSignal<UvrProcessingMode>(
@@ -110,21 +116,41 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   // autoPlay only for explicit picks (library click) — the auto-open after a
   // background separation must never start blasting audio unannounced.
   const singSession = async (sessionId: string, autoPlay = false) => {
-    const s = getUvrSession(sessionId)
-    if (s === undefined) return
-    // Local sessions persist stems as db blobs; the stored object URLs die
-    // with the page that minted them, so verify + re-mint before staging.
-    const hydrated = await ensureSessionHydrated(s)
-    const outputs = hydrated.outputs
-    if ((outputs?.vocal ?? '') === '' && (outputs?.instrumental ?? '') === '')
-      return
-    trackKaraoke('karaoke_song_staged')
-    props.onSing({
-      sessionId,
-      title: s.originalFile?.name ?? 'Your song',
-      stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
-      autoPlay,
-    })
+    // One stage at a time: hydration takes a moment and rapid re-clicks
+    // would race each other onto the stage.
+    if (stagingSessionId() !== null) return
+    setStagingSessionId(sessionId)
+    try {
+      const s = getUvrSession(sessionId)
+      if (s === undefined) {
+        showNotification('That song is no longer in your library.', 'warning')
+        return
+      }
+      // Local sessions persist stems as db blobs; the stored object URLs die
+      // with the page that minted them, so verify + re-mint before staging.
+      const hydrated = await ensureSessionHydrated(s)
+      const outputs = hydrated.outputs
+      if (
+        (outputs?.vocal ?? '') === '' &&
+        (outputs?.instrumental ?? '') === ''
+      ) {
+        // A silent no-op here reads as a dead button — say why.
+        showNotification(
+          "This song's audio isn't on this device anymore — process it again to sing it.",
+          'warning',
+        )
+        return
+      }
+      trackKaraoke('karaoke_song_staged')
+      props.onSing({
+        sessionId,
+        title: s.originalFile?.name ?? 'Your song',
+        stems: { vocal: outputs?.vocal, instrumental: outputs?.instrumental },
+        autoPlay,
+      })
+    } finally {
+      setStagingSessionId(null)
+    }
   }
 
   const playPlaylist = (id: string) => {
@@ -319,15 +345,28 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                     classList={{
                       'kn-library-song--active':
                         props.activeSessionId() === s.sessionId,
+                      'kn-library-song--staging':
+                        stagingSessionId() === s.sessionId,
                     }}
+                    disabled={stagingSessionId() !== null}
                     onClick={() => void singSession(s.sessionId, true)}
                     title={
-                      props.activeSessionId() === s.sessionId
-                        ? 'On stage now'
-                        : 'Sing this song'
+                      stagingSessionId() === s.sessionId
+                        ? 'Loading this song…'
+                        : props.activeSessionId() === s.sessionId
+                          ? 'On stage now'
+                          : 'Sing this song'
                     }
                   >
-                    <Show when={props.activeSessionId() === s.sessionId}>
+                    <Show when={stagingSessionId() === s.sessionId}>
+                      <span class="kn-song-spinner" aria-hidden="true" />
+                    </Show>
+                    <Show
+                      when={
+                        props.activeSessionId() === s.sessionId &&
+                        stagingSessionId() !== s.sessionId
+                      }
+                    >
                       <span class="kn-eq" aria-hidden="true">
                         <i />
                         <i />

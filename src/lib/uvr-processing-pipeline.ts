@@ -256,14 +256,31 @@ const SERVER_ETA_PROFILES: Record<
   ensemble: { realtimeDivisor: 4, capSecs: 480 },
 }
 
-// Jobs currently being polled (keyed by the RunPod apiSessionId), so an
-// auto-resume on load and a foreground/online re-kick can't run two poll loops
-// against the same job at once. Cleared when the poll settles.
-const activeServerPolls = new Set<string>()
+// Jobs currently being polled (keyed by the RunPod apiSessionId → last tick
+// timestamp), so an auto-resume on load and a foreground/online re-kick can't
+// run two poll loops against the same job at once. Entries EXPIRE when the
+// loop stops ticking (a hung await, a killed timer chain): otherwise a dead
+// loop would block every re-kick forever and the session would sit at "still
+// separating" until a full page reload — the exact stuck state this guards
+// against. Cleared when the poll settles.
+const activeServerPolls = new Map<string, number>()
+const POLL_LIVENESS_MS = 120_000
 
-/** Whether a poll loop is already running for this RunPod job. */
+function renewServerPoll(apiSessionId: string): void {
+  activeServerPolls.set(apiSessionId, Date.now())
+}
+
+/** Whether a LIVE poll loop is already running for this RunPod job. A loop
+ *  that hasn't ticked for POLL_LIVENESS_MS is treated as dead so a
+ *  foreground/online re-kick can take the job over. */
 export function isServerPollActive(apiSessionId: string): boolean {
-  return activeServerPolls.has(apiSessionId)
+  const lastTick = activeServerPolls.get(apiSessionId)
+  if (lastTick === undefined) return false
+  if (Date.now() - lastTick > POLL_LIVENESS_MS) {
+    activeServerPolls.delete(apiSessionId)
+    return false
+  }
+  return true
 }
 
 /**
@@ -279,8 +296,8 @@ async function pollAndPersistServer(
   callbacks: ProcessingCallbacks,
   estimatedSecs?: number,
 ): Promise<void> {
-  if (activeServerPolls.has(apiSessionId)) return
-  activeServerPolls.add(apiSessionId)
+  if (isServerPollActive(apiSessionId)) return
+  renewServerPoll(apiSessionId)
 
   const startTime = Date.now()
 
@@ -288,6 +305,7 @@ async function pollAndPersistServer(
     await pollForCompletion(
       apiSessionId,
       (progress, indeterminate, phase) => {
+        renewServerPoll(apiSessionId)
         const elapsed = Date.now() - startTime
         updateUvrSessionProgress(
           sessionId,
@@ -314,9 +332,19 @@ async function pollAndPersistServer(
           files.map(async (f) => {
             if (f.stem !== 'vocal' && f.stem !== 'instrumental') return
             meta[f.stem] = { duration: f.duration, size: f.size }
+            // Hard-bound the WHOLE download (headers + multi-MB body read) —
+            // a stalled connection here would otherwise hang the poll promise
+            // forever, freezing the session at "finalizing" until a reload.
+            const ctrl = new AbortController()
+            const deadline = setTimeout(() => ctrl.abort(), 120_000)
             try {
-              const resp = await getOutputFile(apiSessionId, f.path)
+              const resp = await getOutputFile(
+                apiSessionId,
+                f.path,
+                ctrl.signal,
+              )
               const blob = await resp.blob()
+              renewServerPoll(apiSessionId)
               const res = await saveStemBlobDurable(
                 sessionId,
                 f.stem,
@@ -333,6 +361,8 @@ async function pollAndPersistServer(
             } catch (err) {
               console.error('[uvr] stem download/persist failed:', f.stem, err)
               outputs[f.stem] = f.path
+            } finally {
+              clearTimeout(deadline)
             }
           }),
         )
