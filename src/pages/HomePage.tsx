@@ -11,6 +11,7 @@ import { createMemo, createResource, For, Show } from 'solid-js'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { getStreakState, repairStreak } from '@/db/services/streak-service'
+import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
@@ -182,14 +183,8 @@ const HomePage: Component = () => {
           </Show>
         </section>
 
-        {/* ── This Week's Legend (wired in PR 2) ─────────────── */}
-        <section class={`${styles.card} ${styles.legendCard} home-legend-card`}>
-          <span class={styles.legendEyebrow}>This Week's Legend</span>
-          <p class={styles.legendSoon}>
-            Weekly community vocal challenges are coming soon. Keep your streak
-            alive and you'll be ready to take on the first one.
-          </p>
-        </section>
+        {/* ── This Week's Legend ─────────────────────────────── */}
+        <WeeklyLegendHero />
 
         {/* ── Today's session ────────────────────────────────── */}
         <section
