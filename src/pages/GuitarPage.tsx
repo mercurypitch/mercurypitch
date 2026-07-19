@@ -12,6 +12,7 @@ import { GuitarTuner } from '@/components/guitar/GuitarTuner'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { MicInsightHint } from '@/components/MicInsightHint'
+import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { SegmentedControl } from '@/components/shared/SegmentedControl'
 import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
@@ -29,7 +30,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { GP_FILE_EXTENSIONS, parseGuitarProFile } from '@/lib/tab/gp-import'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
-import { isMobile } from '@/lib/use-viewport'
+import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { activeTab, showNotification } from '@/stores'
 import { saveMidiSong } from '@/stores/saved-midi-songs-store'
 import { recordActivity } from '@/stores/usage-store'
@@ -106,6 +107,24 @@ export function GuitarPage(props: GuitarPageProps) {
 
   // Audio input/output device picker panel.
   const [devicesOpen, setDevicesOpen] = createSignal(false)
+  // Mobile: the guitar-specific status-bar controls (sound / view / import /
+  // devices) collapse behind one "Options" button that opens this sheet, so
+  // the top of a phone isn't five stacked rows.
+  const [guitarOptionsOpen, setGuitarOptionsOpen] = createSignal(false)
+  const soundOptions = [
+    { value: 'guitar-acoustic', label: 'Acoustic' },
+    { value: 'guitar-electric', label: 'Electric' },
+    { value: 'bass', label: 'Bass' },
+  ] as const
+  const viewOptions = [
+    {
+      value: 'interactive' as const,
+      label: 'Fretboard',
+      dataTour: 'guitar.view-fretboard',
+    },
+    { value: 'hero' as const, label: 'Practice' },
+    { value: '3d' as const, label: '3D' },
+  ]
   // Recent run scores (%), most-recent-first, for the 3D corner score card.
   const [recentScores, setRecentScores] = createSignal<number[]>([])
   let prevGameState = guitar.gameState()
@@ -284,30 +303,29 @@ export function GuitarPage(props: GuitarPageProps) {
         }
         extraStatus={gpStatus}
         extraActions={
-          <>
+          <Show
+            when={!isNarrow()}
+            fallback={
+              <button
+                class={barStyles.chipBtn}
+                onClick={() => setGuitarOptionsOpen(true)}
+                title="Sound, view, import & devices"
+              >
+                Options
+              </button>
+            }
+          >
             <SegmentedControl
               label="Sound"
               dataTour="guitar.instruments"
-              options={[
-                { value: 'guitar-acoustic', label: 'Acoustic' },
-                { value: 'guitar-electric', label: 'Electric' },
-                { value: 'bass', label: 'Bass' },
-              ]}
+              options={soundOptions}
               value={() => guitar.instrumentType()}
               onChange={(v) => guitar.setInstrumentType(v as InstrumentType)}
             />
             <SegmentedControl
               ariaLabel="View"
               dataTour="guitar.view-toggle"
-              options={[
-                {
-                  value: 'interactive',
-                  label: 'Fretboard',
-                  dataTour: 'guitar.view-fretboard',
-                },
-                { value: 'hero', label: 'Practice' },
-                { value: '3d', label: '3D' },
-              ]}
+              options={viewOptions}
               value={guitarView}
               onChange={setGuitarView}
             />
@@ -318,18 +336,6 @@ export function GuitarPage(props: GuitarPageProps) {
             >
               Import GP
             </button>
-            <input
-              ref={gpFileInput}
-              type="file"
-              accept={GP_FILE_EXTENSIONS}
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const input = e.currentTarget as HTMLInputElement
-                const file = input.files?.[0]
-                input.value = ''
-                if (file) void importGuitarProFile(file)
-              }}
-            />
             <button
               class={barStyles.chipBtn}
               aria-expanded={devicesOpen()}
@@ -338,9 +344,76 @@ export function GuitarPage(props: GuitarPageProps) {
             >
               Devices
             </button>
-          </>
+          </Show>
         }
       />
+      {/* Hidden GP file input — shared by the desktop button and the mobile
+          options sheet. */}
+      <input
+        ref={gpFileInput}
+        type="file"
+        accept={GP_FILE_EXTENSIONS}
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const input = e.currentTarget as HTMLInputElement
+          const file = input.files?.[0]
+          input.value = ''
+          if (file) void importGuitarProFile(file)
+        }}
+      />
+
+      {/* Mobile: the guitar controls collapse into one options sheet so the
+          top of a phone isn't a stack of five rows (like Singing/Piano). */}
+      <Show when={isNarrow()}>
+        <OptionsSheet
+          isOpen={guitarOptionsOpen()}
+          close={() => setGuitarOptionsOpen(false)}
+          ariaLabel="Guitar options"
+        >
+          <OptionSection label="Sound">
+            <SegmentedControl
+              grow
+              ariaLabel="Instrument sound"
+              options={soundOptions}
+              value={() => guitar.instrumentType()}
+              onChange={(v) => guitar.setInstrumentType(v as InstrumentType)}
+            />
+          </OptionSection>
+          <OptionSection label="View">
+            <SegmentedControl
+              grow
+              ariaLabel="Fretboard view"
+              options={viewOptions}
+              value={guitarView}
+              onChange={setGuitarView}
+            />
+          </OptionSection>
+          <OptionSection label="More">
+            <OptionRow label="Guitar Pro tab">
+              <button
+                class={barStyles.chipBtn}
+                onClick={() => {
+                  setGuitarOptionsOpen(false)
+                  gpFileInput?.click()
+                }}
+              >
+                Import
+              </button>
+            </OptionRow>
+            <OptionRow label="Audio devices">
+              <button
+                class={barStyles.chipBtn}
+                onClick={() => {
+                  setGuitarOptionsOpen(false)
+                  setDevicesOpen(true)
+                }}
+              >
+                Open
+              </button>
+            </OptionRow>
+          </OptionSection>
+        </OptionsSheet>
+      </Show>
       <Show when={devicesOpen()}>
         <GuitarSignalFlow
           inputMode={guitar.inputMode}
