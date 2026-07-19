@@ -60,6 +60,7 @@ export const Settings: Component = () => (
 // Loader/Spinner Icon
 export const Loader2: Component = () => (
   <svg
+    class="icon-spin"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
