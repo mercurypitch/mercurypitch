@@ -210,7 +210,7 @@ export function KaraokeNightApp() {
                 </button>
                 <button
                   class="kn-rail-icon"
-                  title="Demo song"
+                  title="Tonight's opener"
                   onClick={() => updateRail(false)}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
@@ -259,18 +259,18 @@ export function KaraokeNightApp() {
             </button>
             <section class="kn-card kn-card--demo">
               <p class="kn-card-kicker">Tonight's opener</p>
-              <h2>{manifest()?.title ?? 'Demo mix'}</h2>
+              <h2>{manifest()?.title ?? "Tonight's opener"}</h2>
               <p class="kn-card-sub">{manifest()?.artist ?? ''}</p>
               <Show
                 when={demoIsPlayable(manifest())}
-                fallback={<p class="kn-soon">Demo mix coming soon</p>}
+                fallback={<p class="kn-soon">Opener coming soon</p>}
               >
                 <button
                   class="kn-btn kn-btn--primary"
                   onClick={singDemo}
                   disabled={activeSong()?.sessionId === DEMO_SESSION_ID}
                 >
-                  Sing the demo
+                  Sing this song
                 </button>
               </Show>
             </section>
@@ -293,9 +293,9 @@ export function KaraokeNightApp() {
               <div class="kn-hero">
                 <h1>Your stage is set</h1>
                 <p>
-                  Pick the demo, or add a song you own — the vocals lift away,
-                  the lyrics light up line by line, and every note you sing is
-                  scored live.
+                  Start with our ready-to-sing song, or add one you own — the
+                  vocals lift away, the lyrics light up line by line, and every
+                  note you sing is scored live.
                 </p>
                 <div class="kn-steps">
                   <div class="kn-step">
@@ -313,7 +313,7 @@ export function KaraokeNightApp() {
                 </div>
                 <Show when={demoIsPlayable(manifest())}>
                   <button class="kn-btn kn-btn--primary" onClick={singDemo}>
-                    Sing the demo
+                    Sing this song
                   </button>
                 </Show>
               </div>

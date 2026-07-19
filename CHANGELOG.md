@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.18] - 2026-07-19
+
+### Changed
+
+- **Karaoke Night's opener is a real song, not a "demo."** The ready-to-sing track on the stage is now framed as "tonight's opener" with a **Sing this song** button — it was always the full experience (real separation, synced lyrics, live scoring), so the copy no longer undersells it as a demo.
+
 ## [0.7.17] - 2026-07-19
 
 ### Changed

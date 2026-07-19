@@ -6,6 +6,12 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.18] - 2026-07-19
+
+### Changed
+
+- **Karaoke Night "demo" → "opener" copy** (#285): the ready-to-sing track on `/karaoke-night` is user-facing framed as "Tonight's opener" with a **Sing this song** CTA instead of "Sing the demo" / "Demo mix" — "demo" wrongly implied reduced functionality on a page the vocal-remover ad traffic lands on (Campaign E lost 16% of impressions to Ad Rank, higher than A/B/C — message-match matters). Copy-only in `src/features/karaoke-night/KaraokeNightApp.tsx` + one comment in `main.tsx`; the internal funnel event names (`karaoke_demo_start`/`karaoke_demo_complete`) and the `kn-card--demo` CSS class are unchanged. Pairs with the live Campaign E RSA description reword ("Try the demo mix." → ready-to-sing wording).
+
 ## [0.7.17] - 2026-07-19
 
 ### Added
