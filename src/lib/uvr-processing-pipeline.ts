@@ -6,7 +6,7 @@
 
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
+import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
@@ -433,9 +433,12 @@ async function processServer(
     throw new Error('Failed to start processing')
   }
 
-  // Persist the RunPod job id FIRST — durably enough that a reload before the
-  // first progress tick can still re-attach to (and re-fetch) this job.
-  setUvrSessionApiId(sessionId, response.session_id)
+  // Persist the RunPod job id DURABLY before polling. A full-page teardown (a
+  // reload, or navigating to the standalone /karaoke entry via location.assign)
+  // in the window before the first progress tick would otherwise lose the id,
+  // stranding the job as unrecoverable and forcing a re-billed fresh
+  // separation. Awaited so recovery is guaranteed once the job is submitted.
+  await setUvrSessionApiIdDurable(sessionId, response.session_id)
 
   await pollAndPersistServer(
     sessionId,

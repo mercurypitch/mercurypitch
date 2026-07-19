@@ -846,6 +846,24 @@ export function setUvrSessionApiId(
   }
 }
 
+/** Like {@link setUvrSessionApiId} but AWAITS a durable write of the RunPod job
+ *  id before resolving. Called right after job submit so a full-page teardown
+ *  (reload, or navigating to the standalone /karaoke entry) in the narrow
+ *  window before the first progress tick can still re-attach to — and re-fetch,
+ *  never re-charge — the job, instead of stranding it and forcing a fresh,
+ *  re-billed separation. Returns whether the id reached IndexedDB. */
+export async function setUvrSessionApiIdDurable(
+  sessionId: string,
+  apiSessionId: string,
+): Promise<boolean> {
+  const session = getUvrSession(sessionId)
+  if (!session) return false
+  const updated = { ...session, apiSessionId }
+  upsertSessionInCache(updated)
+  setCurrentUvrSession(updated)
+  return persistSessionDurable(updated)
+}
+
 /** Set the provider (WebGPU/WASM) on a local session */
 export function setUvrSessionProvider(
   sessionId: string,
