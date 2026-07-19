@@ -3,6 +3,7 @@
 // Renaming a tab is a single-line change here — no string-hunt needed.
 
 export const TAB_HOME = 'home' as const
+export const TAB_PATH = 'path' as const
 export const TAB_SINGING = 'singing' as const
 export const TAB_PIANO = 'piano' as const
 export const TAB_COMPOSE = 'compose' as const
@@ -20,6 +21,7 @@ export const TAB_GUITAR = 'guitar' as const
 
 export type ActiveTab =
   | typeof TAB_HOME
+  | typeof TAB_PATH
   | typeof TAB_SINGING
   | typeof TAB_PIANO
   | typeof TAB_COMPOSE
@@ -56,6 +58,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     label: 'Practice',
     tabs: [
       TAB_HOME,
+      TAB_PATH,
       TAB_SINGING,
       TAB_PIANO,
       TAB_GUITAR,
@@ -98,6 +101,8 @@ export type UiMode = 'advanced' | 'simple'
 const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   // Home is the daily hub for every instrument.
   [TAB_HOME]: ['singing', 'guitar', 'piano'],
+  // The Ascent guided path — every instrument's daily practice feeds it.
+  [TAB_PATH]: ['singing', 'guitar', 'piano'],
   [TAB_SINGING]: ['singing'],
   [TAB_PIANO]: ['piano'],
   [TAB_GUITAR]: ['guitar'],
@@ -173,6 +178,7 @@ export type WalkthroughTab = ActiveTab | typeof WALKTHROUGH_TAB_STUDY
 
 const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_HOME]: 'home',
+  [TAB_PATH]: 'path',
   [TAB_SINGING]: 'singing',
   [TAB_PIANO]: 'piano',
   [TAB_COMPOSE]: 'compose',
@@ -203,6 +209,7 @@ export function tabButtonId(tab: ActiveTab): string {
 export function tabLabel(tab: ActiveTab): string {
   const labels: Record<ActiveTab, string> = {
     [TAB_HOME]: 'Home',
+    [TAB_PATH]: 'Path',
     [TAB_SINGING]: 'Singing',
     [TAB_PIANO]: 'Piano',
     [TAB_COMPOSE]: 'Compose',

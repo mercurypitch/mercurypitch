@@ -12,13 +12,11 @@ import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exerc
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { getStreakState, repairStreak } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
-import { EXERCISE_WARMUP } from '@/features/exercises/types'
-import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
+import { AscentCard } from '@/features/path/AscentCard'
+import type { SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
-import { routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
-import { TAB_CHALLENGES } from '@/features/tabs/constants'
+import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { exerciseHistory } from '@/stores/exercise-history-store'
-import { setActiveTab, startExercise } from '@/stores/ui-store'
 import styles from './HomePage.module.css'
 
 const DAILY_GOAL_MIN = Math.round(DAILY_GOAL_MS / 60_000)
@@ -54,23 +52,6 @@ function greeting(): string {
   if (h < 12) return 'Good morning'
   if (h < 18) return 'Good afternoon'
   return 'Good evening'
-}
-
-/** Reuses the exact launch mechanism the sidebar panel uses. */
-function launchSegment(seg: RoutineSegment): void {
-  if (seg.type === 'challenge-prep') {
-    setActiveTab(TAB_CHALLENGES)
-    return
-  }
-  if (seg.type === 'warmup' || seg.type === 'cooldown') {
-    startExercise(EXERCISE_WARMUP, {
-      pattern: seg.config.pattern ?? seg.config.mode,
-    })
-    return
-  }
-  if (seg.config.exercise) {
-    startExercise(seg.config.exercise, { notes: seg.config.notes ?? [] })
-  }
 }
 
 const HomePage: Component = () => {
@@ -186,6 +167,9 @@ const HomePage: Component = () => {
         {/* ── This Week's Legend ─────────────────────────────── */}
         <WeeklyLegendHero />
 
+        {/* ── The Ascent (guided path bridge) ────────────────── */}
+        <AscentCard />
+
         {/* ── Today's session ────────────────────────────────── */}
         <section
           class={`${styles.card} ${styles.sessionCard} home-session-card`}
@@ -278,7 +262,7 @@ const HomePage: Component = () => {
                     <Show when={item.current && !item.done}>
                       <button
                         class={styles.segStart}
-                        onClick={() => launchSegment(item.seg)}
+                        onClick={() => launchRoutineSegment(item.seg)}
                       >
                         Start
                       </button>

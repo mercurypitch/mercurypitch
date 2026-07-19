@@ -1,0 +1,158 @@
+/* One celestial node: conic ring + notch overlay + luminous orb. */
+
+.wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Ring stroke: conic fill masked to an annulus; --fill in [0,1]. */
+.ring,
+.gaps {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 6px),
+    #000 calc(100% - 6px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 6px),
+    #000 calc(100% - 6px)
+  );
+}
+.ring {
+  background: conic-gradient(
+    from -90deg,
+    var(--path-cyan, #45d3e8) 0 calc(var(--fill, 0) * 1turn),
+    rgba(201, 203, 232, 0.12) 0
+  );
+}
+/* Seven notches carve the ring into daily segments. */
+.gaps {
+  background: repeating-conic-gradient(
+    from -90deg,
+    transparent 0 calc(1turn / 7 - 3.2deg),
+    var(--path-void, #0a0b16) calc(1turn / 7 - 3.2deg) calc(1turn / 7)
+  );
+}
+
+.orb {
+  position: absolute;
+  inset: 13%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    #b7a9ff 0%,
+    var(--path-violet, #6d5efc) 34%,
+    #2c2b74 74%,
+    #171633 100%
+  );
+  box-shadow:
+    inset 0 0 14px rgba(255, 255, 255, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.orb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 26%,
+    rgba(255, 255, 255, 0.5),
+    transparent 42%
+  );
+  opacity: 0.5;
+}
+
+.frac {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #eef0ff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* ── States ─────────────────────────────────────────────── */
+
+.done .orb {
+  background: radial-gradient(
+    circle at 34% 30%,
+    #fff2d0 0%,
+    var(--path-gold, #f0c674) 40%,
+    #b98b3a 78%,
+    #5c421c 100%
+  );
+}
+.done {
+  filter: drop-shadow(0 0 14px rgba(240, 198, 116, 0.45));
+}
+.done .ring {
+  background: conic-gradient(var(--path-gold, #f0c674) 0 1turn);
+}
+
+.active {
+  filter: drop-shadow(0 0 20px rgba(69, 211, 232, 0.55));
+  animation: pathOrbBreathe 3.4s ease-in-out infinite;
+}
+.active .orb {
+  background: radial-gradient(
+    circle at 34% 30%,
+    #d3f6ff 0%,
+    var(--path-cyan, #45d3e8) 34%,
+    #256e8a 76%,
+    #123043 100%
+  );
+}
+
+.avail {
+  filter: drop-shadow(0 0 11px rgba(109, 94, 252, 0.4));
+}
+
+.locked .orb {
+  background: radial-gradient(
+    circle at 40% 34%,
+    #3a3c58 0%,
+    #23253f 60%,
+    #191a2c 100%
+  );
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+.locked {
+  opacity: 0.62;
+}
+.locked .frac {
+  color: var(--path-muted, #7d80a8);
+}
+
+.crown {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--path-gold, #f0c674);
+  filter: drop-shadow(0 0 6px rgba(240, 198, 116, 0.7));
+}
+
+@keyframes pathOrbBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active {
+    animation: none;
+  }
+}

@@ -53,6 +53,7 @@ const SECTION_TOURS = [
 ]
 const PAGE_TOURS = [
   'Home',
+  'Path',
   'Guitar',
   'Piano',
   'Analysis',

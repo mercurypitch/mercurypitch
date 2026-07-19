@@ -62,4 +62,26 @@ describe('buildDailySession', () => {
     const odd = buildDailySession(1)
     expect(odd.segments[3].config.exercise).toBe('sight-singing')
   })
+
+  it('draws the grow slot from the guided-path theme pool when given', () => {
+    const theme = { pool: ['siren', 'slide'] as const }
+    const s = buildDailySession(0, undefined, {
+      pool: [...theme.pool],
+    })
+    expect(theme.pool).toContain(s.segments[2].config.exercise)
+  })
+
+  it('theme pool avoids duplicating the review exercise when it can', () => {
+    const s = buildDailySession(0, 'siren', { pool: ['siren', 'slide'] })
+    expect(s.segments[1].config.exercise).toBe('siren')
+    expect(s.segments[2].config.exercise).toBe('slide')
+  })
+
+  it("uses the theme's warm-up pattern override", () => {
+    const s = buildDailySession(0, undefined, {
+      pool: ['siren'],
+      warmupPattern: 'lip-trill',
+    })
+    expect(s.segments[0].config.pattern).toBe('lip-trill')
+  })
 })

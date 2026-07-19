@@ -53,6 +53,19 @@ describe('addScoredMs', () => {
     expect(getTodayScoredMinutes()).toBe(3)
   })
 
+  it("lights a segment on The Ascent's active orb when the goal is met", async () => {
+    const { startAscent, ringFill, resetAscent } =
+      await import('@/features/path/path-progress')
+    resetAscent()
+    startAscent()
+    expect(ringFill(1)).toBe(1) // endowed head start
+    await addScoredMs(DAILY_GOAL_MS) // goal met -> today lights a segment
+    expect(ringFill(1)).toBe(2)
+    await addScoredMs(60_000) // same day again -> no double fill
+    expect(ringFill(1)).toBe(2)
+    resetAscent()
+  })
+
   it('ignores non-positive or non-finite durations', async () => {
     await addScoredMs(-5000)
     await addScoredMs(Number.NaN)

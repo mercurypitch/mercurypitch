@@ -1,0 +1,68 @@
+/* Compact Home bridge into The Ascent — a slice of the cosmic surface. */
+
+.card {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  background:
+    radial-gradient(
+      420px 120px at 90% 0%,
+      rgba(109, 94, 252, 0.18),
+      transparent 70%
+    ),
+    linear-gradient(92deg, #12142a, #0d0e1e);
+}
+.card:hover {
+  border-color: #6d5efc;
+}
+.card:focus-visible {
+  outline: 2px solid #45d3e8;
+  outline-offset: 2px;
+}
+
+.orb {
+  flex: 0 0 auto;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #a99bf6;
+}
+.title {
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 650;
+  color: #f2f2fb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sub {
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: #7d80a8;
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: #7d80a8;
+}
+.card:hover .chevron {
+  color: #45d3e8;
+}
