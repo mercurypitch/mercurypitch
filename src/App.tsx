@@ -2258,7 +2258,11 @@ const AppShell: Component<AppProps> = (props) => {
               pitch={currentPitch}
               targetNoteName={targetNoteName}
               onClose={closeSidebar}
-              collapsed={sidebarCollapsed()}
+              // Collapse is a desktop-rail concept. On a phone the sidebar is
+              // the full-width off-canvas drawer; never apply the collapsed
+              // (40px, content-hidden) state there, or a desktop-collapsed
+              // preference leaves the mobile drawer stuck as a thin rail.
+              collapsed={sidebarCollapsed() && !isNarrow()}
               onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
               onAutoCalibrate={handleAutoCalibrate}
             />
