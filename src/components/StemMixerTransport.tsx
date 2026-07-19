@@ -4,8 +4,17 @@
 
 import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
+
+type DockPos = 'top' | 'bottom' | 'left' | 'right'
+/** [side, arrow-path, label] for the click-to-dock compass. */
+const DOCK_OPTIONS: readonly (readonly [DockPos, string, string])[] = [
+  ['top', 'M12 4l-6 6h4v8h4v-8h4z', 'Dock top'],
+  ['bottom', 'M12 20l6-6h-4V6h-4v8H6z', 'Dock bottom'],
+  ['left', 'M4 12l6-6v4h8v4h-8v4z', 'Dock left'],
+  ['right', 'M20 12l-6 6v-4H6v-4h8V6z', 'Dock right'],
+]
 import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
 
 export interface StemMixerTransportProps {
@@ -76,10 +85,23 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     'top' | 'bottom' | 'left' | 'right' | null
   >(null)
 
+  // The dock handle is dual-purpose: a plain click opens a compass popover
+  // (fast, precise docking on desktop — the Chrome DevTools "Dock side"
+  // pattern), while dragging past a small threshold reveals the edge-drop
+  // preview (natural on touch). We tell them apart by pointer travel.
+  const DRAG_THRESHOLD_PX = 6
+  const [compassOpen, setCompassOpen] = createSignal(false)
+  let dragStartX = 0
+  let dragStartY = 0
+  let didDrag = false
+
   const handleDragStart = (e: PointerEvent) => {
     e.preventDefault()
     const handle = e.currentTarget as HTMLElement
     handle.setPointerCapture(e.pointerId)
+    dragStartX = e.clientX
+    dragStartY = e.clientY
+    didDrag = false
   }
 
   const handleDragMove = (e: PointerEvent) => {
@@ -89,21 +111,22 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     )
       return
 
+    if (
+      !didDrag &&
+      Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) <
+        DRAG_THRESHOLD_PX
+    ) {
+      return // still within click tolerance — don't start a drag yet
+    }
+    didDrag = true
+    setCompassOpen(false)
+
     // Determine which edge we are closest to
     const x = e.clientX
     const y = e.clientY
     const w = window.innerWidth
     const h = window.innerHeight
-
-    // Distances to edges
-    const dists = {
-      top: y,
-      bottom: h - y,
-      left: x,
-      right: w - x,
-    }
-
-    // Find min distance
+    const dists = { top: y, bottom: h - y, left: x, right: w - x }
     let closestZone: 'top' | 'bottom' | 'left' | 'right' = 'bottom'
     let minDist = dists.bottom
     for (const [zone, dist] of Object.entries(dists)) {
@@ -112,7 +135,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         minDist = dist
       }
     }
-
     setDragHoverZone(closestZone)
   }
 
@@ -120,12 +142,20 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     const handle = e.currentTarget as HTMLElement
     if (handle.hasPointerCapture(e.pointerId)) {
       handle.releasePointerCapture(e.pointerId)
-      const zone = dragHoverZone()
-      if (zone && props.setToolbarPosition) {
-        props.setToolbarPosition(zone)
+      if (didDrag) {
+        const zone = dragHoverZone()
+        if (zone && props.setToolbarPosition) props.setToolbarPosition(zone)
+        setDragHoverZone(null)
+      } else {
+        // A tap/click, not a drag — toggle the compass popover.
+        setCompassOpen((v) => !v)
       }
-      setDragHoverZone(null)
     }
+  }
+
+  const dockTo = (pos: 'top' | 'bottom' | 'left' | 'right') => {
+    props.setToolbarPosition?.(pos)
+    setCompassOpen(false)
   }
 
   return (
@@ -143,15 +173,50 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         }}
       >
         <Show when={props.karaokeFocus()}>
-          <div
-            class="sm-transport-drag-handle"
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-            onPointerCancel={handleDragEnd}
-            title="Drag to dock toolbar"
-          >
-            <GripVertical />
+          <div class="sm-transport-dock">
+            <div
+              class="sm-transport-drag-handle"
+              classList={{ 'sm-transport-drag-handle--open': compassOpen() }}
+              onPointerDown={handleDragStart}
+              onPointerMove={handleDragMove}
+              onPointerUp={handleDragEnd}
+              onPointerCancel={handleDragEnd}
+              title="Click to dock (or drag)"
+            >
+              <GripVertical />
+            </div>
+            <Show when={compassOpen()}>
+              <div
+                class="sm-dock-compass-backdrop"
+                onPointerDown={() => setCompassOpen(false)}
+              />
+              <div
+                class={`sm-dock-compass sm-dock-compass--${props.toolbarPosition?.() ?? 'bottom'}`}
+                role="menu"
+                aria-label="Dock toolbar to a side"
+              >
+                <For each={DOCK_OPTIONS}>
+                  {(opt) => (
+                    <button
+                      class="sm-dock-compass-btn"
+                      classList={{
+                        [`sm-dock-compass-btn--${opt[0]}`]: true,
+                        'sm-dock-compass-btn--active':
+                          props.toolbarPosition?.() === opt[0],
+                      }}
+                      onClick={() => dockTo(opt[0])}
+                      title={opt[2]}
+                      aria-label={opt[2]}
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14">
+                        <path fill="currentColor" d={opt[1]} />
+                      </svg>
+                    </button>
+                  )}
+                </For>
+                <span class="sm-dock-compass-hub" aria-hidden="true" />
+              </div>
+            </Show>
           </div>
         </Show>
         <div class="sm-transport-controls">
