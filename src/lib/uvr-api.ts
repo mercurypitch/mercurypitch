@@ -409,6 +409,12 @@ export async function pollForCompletion(
   let estimateExceeded = false
   let hadSuccess = false
   let lastOkAt = startTime
+  // The duration-based progress estimate must only measure time spent
+  // actually PROCESSING. A cold start can sit IN_QUEUE for minutes; counting
+  // that burned the whole estimate, pinned the bar at 95% "still separating"
+  // before the GPU even started, and kept it frozen there through the real
+  // run (a reload "fixed" it only because the clock restarted).
+  let processingSince: number | null = null
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
@@ -470,16 +476,25 @@ export async function pollForCompletion(
         // image pull) — surface that instead of pretending to estimate.
         const phase: 'queued' | 'processing' =
           status.message === 'Queued' ? 'queued' : 'processing'
+        if (phase === 'processing' && processingSince === null) {
+          processingSince = Date.now()
+        }
 
         // Use server progress if available
         if (status.progress != null) {
           onProgress(status.progress, estimateExceeded, phase)
+        } else if (phase === 'queued') {
+          // Nothing is running yet — hold at 0/indeterminate under the
+          // "warming up" copy instead of burning the estimate on queue time.
+          onProgress(0, true, phase)
         } else {
           // Fallback: caller's duration-based estimate, else the server's
-          // estimated_total_secs, else a flat default.
+          // estimated_total_secs, else a flat default — measured from the
+          // moment the job actually started processing.
           const totalSecs = estimatedSecs ?? status.estimated_total_secs ?? 120
           const estimatedMs = Math.max(totalSecs * 1000, 10000)
-          const pct = (elapsed / estimatedMs) * 100
+          const processingElapsed = Date.now() - (processingSince ?? startTime)
+          const pct = (processingElapsed / estimatedMs) * 100
 
           if (pct >= 95 && !estimateExceeded) {
             estimateExceeded = true

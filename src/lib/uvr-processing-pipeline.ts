@@ -453,7 +453,9 @@ export async function resumeServerSession(
   apiSessionId: string,
   callbacks: ProcessingCallbacks,
 ): Promise<void> {
-  if (activeServerPolls.has(apiSessionId)) return
+  // Liveness-aware (NOT a bare .has): a poll loop that stopped ticking must
+  // not block the re-attach — that was the stuck-until-reload state.
+  if (isServerPollActive(apiSessionId)) return
   await pollAndPersistServer(sessionId, apiSessionId, callbacks)
 }
 
