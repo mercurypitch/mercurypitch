@@ -32,7 +32,13 @@ const ONCE_SENT_PREFIX = 'kn.funnel.once.'
 /** Milestones that are also Google Ads conversion actions. */
 const AD_CONVERSION_BY_EVENT = new Map<KaraokeFunnelEvent, string>([
   ['karaoke_demo_complete', AD_CONVERSIONS.karaoke_demo_complete],
+  // Campaign E's better-matched goal: the visitor brought their OWN song to the
+  // stage (vocal-remover intent → upload → sing), which this traffic does far
+  // more than the demo. See mercury/config/conversion-map.md.
+  ['karaoke_song_staged', AD_CONVERSIONS.karaoke_song_staged],
 ])
+
+const AD_SENT_PREFIX = 'kn.funnel.adSent.'
 
 function clientId(): string {
   try {
@@ -87,7 +93,30 @@ export function trackKaraoke(event: KaraokeFunnelEvent): void {
   // Consent Mode decides whether the Ads conversion sets cookies; a no-op
   // unless the build ships an ad tag.
   const sendTo = AD_CONVERSION_BY_EVENT.get(event)
-  if (sendTo !== undefined) trackAdConversion(sendTo)
+  if (sendTo !== undefined) fireAdConversionOncePerDevice(event, sendTo)
+}
+
+/**
+ * Fire an event's Ads conversion at most once per device. Events like
+ * karaoke_song_staged beacon on every occurrence (a rich first-party staging
+ * count), but the Ads conversion should count one per visitor. Ads' own
+ * ONE_PER_CLICK counting already dedups per ad click; this also avoids
+ * redundant pings within a session. Demo-complete reaches here via
+ * {@link trackKaraokeOnce}, so it is already one-shot — this guard is a
+ * harmless second layer for it.
+ */
+function fireAdConversionOncePerDevice(
+  event: KaraokeFunnelEvent,
+  sendTo: string,
+): void {
+  try {
+    const key = AD_SENT_PREFIX + event
+    if (localStorage.getItem(key) === '1') return
+    localStorage.setItem(key, '1')
+  } catch {
+    // No storage — fire anyway (Ads ONE_PER_CLICK still dedups per click).
+  }
+  trackAdConversion(sendTo)
 }
 
 /** Fire an event at most once per device (e.g. the demo-complete conversion —

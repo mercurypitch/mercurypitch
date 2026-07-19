@@ -100,6 +100,7 @@ export const AD_CONVERSIONS = {
   app_open: 'AW-18321142458/lmf2CK_UgNAcELrlmaBE',
   card_shared: 'AW-18321142458/W8rLCLLUgNAcELrlmaBE',
   karaoke_demo_complete: 'AW-18321142458/ij7mCMrOx9EcELrlmaBE',
+  karaoke_song_staged: 'AW-18321142458/yMwyCPfhhtMcELrlmaBE',
   glass_complete: 'AW-18321142458/_3BSCJWIndIcELrlmaBE',
 } as const
 

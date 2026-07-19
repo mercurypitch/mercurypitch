@@ -3,6 +3,12 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.17] - 2026-07-19
+
+### Changed
+
+- **Understanding what lands in Karaoke Night.** The app now counts the moment you bring your own song to the stage, so we can see which parts of the experience people actually use and invest there. As always it's an anonymous count — your audio never leaves your device, and EEA/UK/Switzerland visitors are asked before anything is measured.
+
 ## [0.7.16] - 2026-07-19
 
 ### Added
