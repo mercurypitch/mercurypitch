@@ -29,6 +29,35 @@ const PIANO_ROLL_CONFIG: PianoRollConfig = {
 }
 
 // ============================================================
+// Placement quantization
+// ============================================================
+
+/**
+ * Snap a click's beat position to the slot the cursor is in when PLACING a new
+ * note.
+ *
+ * Placement FLOORS into the current slot: a click at any fraction f in [0, 1)
+ * of a slot lands in THAT slot, never the next one. This is deliberately
+ * different from drag-move and resize, which round to the nearest slot — those
+ * paths do their own `Math.round` snapping in `onGridMouseMove` and must stay
+ * unchanged. Using round-to-nearest here caused a click past a slot's half-way
+ * mark to jump the note into the next slot (see
+ * `docs/specs/compose-note-placement.ears.md`, PLACE-*).
+ *
+ * The slot width (snap unit) is one whole beat for notes at least one beat long
+ * (so bar-length notes line up cleanly with the bar ruler) and one half-beat
+ * for shorter notes.
+ *
+ * @param beat     Raw beat position of the click (`x / beatWidth`).
+ * @param duration Duration of the note being placed, in beats.
+ * @returns The floored start beat for the new note.
+ */
+export function snapPlacementBeat(beat: number, duration: number): number {
+  const snapUnit = duration >= 1 ? 1 : 0.5
+  return Math.floor(beat / snapUnit) * snapUnit
+}
+
+// ============================================================
 // MIDI Export
 // ============================================================
 
@@ -3127,12 +3156,13 @@ export class PianoRollEditor {
     this.pushHistory()
     this.updateUndoRedoButtons()
 
-    // Snap placement to nearest half-beat for short notes, or whole beat
-    // for notes that are at least one full beat long. This makes bar-
-    // length notes line up cleanly with the bar ruler instead of
-    // floating between half-beat positions.
-    const snapUnit = duration >= 1 ? 1 : 0.5
-    const snappedBeat = Math.round(beat / snapUnit) * snapUnit
+    // Snap placement into the slot the cursor is in: half-beat grid for short
+    // notes, whole-beat grid for notes at least one full beat long (so bar-
+    // length notes line up cleanly with the bar ruler). We FLOOR rather than
+    // round-to-nearest so a click anywhere inside a slot — including past its
+    // half-way point — lands in THAT slot instead of jumping to the next one.
+    // Drag-move and resize keep their own nearest-rounding in onGridMouseMove.
+    const snappedBeat = snapPlacementBeat(beat, duration)
     let id = this.nextNoteId++
     // Belt-and-suspenders: if the counter somehow produces a duplicate ID
     // (e.g. after a setMelody that didn't resync), skip past all existing IDs.
