@@ -571,3 +571,43 @@
     max-height: 104px;
   }
 }
+
+/* Action chips carry an icon (mobile) and a text label (desktop). On a phone
+   the guitar status bar iconifies its chips so they sit on the top row with
+   the song dropdown, and the seek rail drops to its own full-width row —
+   matching the Singing / Piano stage layout. Desktop is unchanged. */
+.chipIcon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.chipIcon svg {
+  width: 15px;
+  height: 15px;
+}
+.chipLabel {
+  display: inline;
+}
+
+@media (max-width: 768px) {
+  .songBtn {
+    order: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .actions {
+    order: 2;
+    margin-left: auto;
+    flex-wrap: nowrap;
+  }
+  .scrub {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .chipIcon {
+    display: inline-flex;
+  }
+  .chipLabel {
+    display: none;
+  }
+}

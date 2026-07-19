@@ -311,8 +311,35 @@ export function GuitarPage(props: GuitarPageProps) {
                 data-tour="guitar.options"
                 onClick={() => setGuitarOptionsOpen(true)}
                 title="Sound, view, import & devices"
+                aria-label="Guitar options"
               >
-                Options
+                <span class={barStyles.chipIcon} aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <line x1="4" y1="8" x2="20" y2="8" />
+                    <line x1="4" y1="16" x2="20" y2="16" />
+                    <circle
+                      cx="9"
+                      cy="8"
+                      r="2.4"
+                      fill="currentColor"
+                      stroke="none"
+                    />
+                    <circle
+                      cx="15"
+                      cy="16"
+                      r="2.4"
+                      fill="currentColor"
+                      stroke="none"
+                    />
+                  </svg>
+                </span>
+                <span class={barStyles.chipLabel}>Options</span>
               </button>
             }
           >
