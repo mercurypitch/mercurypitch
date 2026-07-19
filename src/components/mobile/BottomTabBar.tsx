@@ -22,7 +22,7 @@ import { TAB_META } from '@/components/AppNavTabs'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
-import { isTabVisible, TAB_GROUPS, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_GROUPS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -63,6 +63,15 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   const pick = (tab: ActiveTab): void => {
     haptics.tapLight()
     setMoreOpen(false)
+    // On a phone the standalone Karaoke Night page (/karaoke) is the
+    // mobile-tuned experience, so send the Karaoke tab there instead of the
+    // in-app studio mixer. This bar only renders on narrow viewports, so
+    // desktop and landscape (wider than the breakpoint) still reach the
+    // in-app Karaoke tab via the top nav.
+    if (tab === TAB_KARAOKE) {
+      window.location.assign('/karaoke')
+      return
+    }
     props.handleTabChange(tab)
   }
 
