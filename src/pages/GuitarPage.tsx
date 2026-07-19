@@ -308,6 +308,7 @@ export function GuitarPage(props: GuitarPageProps) {
             fallback={
               <button
                 class={barStyles.chipBtn}
+                data-tour="guitar.options"
                 onClick={() => setGuitarOptionsOpen(true)}
                 title="Sound, view, import & devices"
               >
