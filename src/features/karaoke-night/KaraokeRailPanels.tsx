@@ -86,8 +86,21 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
 
   const uploadSession = createMemo(() => {
     const id = uploadSessionId()
-    if (id === null) return null
-    return sessions().find((s) => s.sessionId === id) ?? null
+    if (id !== null) return sessions().find((s) => s.sessionId === id) ?? null
+    // After a reload / full-page nav our in-memory id is gone, but a server job
+    // the auto-resume re-attached to may still be in flight. Surface the most
+    // recent one so the rail shows its progress instead of looking idle while a
+    // separation is quietly finishing in the background.
+    return (
+      sessions()
+        .filter(
+          (s) =>
+            s.sessionId !== DEMO_SESSION_ID &&
+            s.processingMode === 'server' &&
+            (s.status === 'processing' || s.status === 'finalizing'),
+        )
+        .sort((a, b) => b.createdAt - a.createdAt)[0] ?? null
+    )
   })
 
   // Local runs never leave status 'idle' until they finalize (the studio's
