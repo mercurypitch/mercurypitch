@@ -143,6 +143,26 @@ body {
   font-size: 0.72rem;
 }
 
+/* Credits pill in the upload card — same accent as the account pill, so the
+   balance reads as a balance instead of being buried in the sentence. */
+.kn-credits-pill {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 214, 160, 0.16);
+  border: 1px solid rgba(255, 214, 160, 0.3);
+  color: #ffd9a0;
+  font-weight: 700;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kn-credits-pill--low {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f8a0a0;
+}
+
 .kn-account-menu-wrap {
   position: relative;
 }

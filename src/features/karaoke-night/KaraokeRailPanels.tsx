@@ -252,7 +252,14 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             Studio-quality separation — the cleanest vocal lift.
             <Show when={credits() !== null}>
               {' '}
-              <strong>{credits()} credits</strong> left · 1 credit per song.
+              <span
+                class="kn-credits-pill"
+                classList={{ 'kn-credits-pill--low': (credits() ?? 0) < 1 }}
+                title={`${credits()} credits left · 1 credit per song`}
+              >
+                {credits()} cr
+              </span>{' '}
+              left · 1/song.
             </Show>
           </p>
         </Show>
