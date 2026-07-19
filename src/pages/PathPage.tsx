@@ -145,7 +145,6 @@ const PathPage: Component = () => {
     <div class={`${styles.page} path-trail`} ref={pageEl}>
       <div class={styles.backdrop} aria-hidden="true" />
       <div class={styles.cosmos} aria-hidden="true" />
-      <div class={styles.summitGlow} aria-hidden="true" />
 
       {/* Plain <div>, not <header>/<footer>: the app applies global flex
           layout to those elements (the top nav) which squashes the hero. */}
