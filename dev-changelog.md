@@ -6,6 +6,12 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.17] - 2026-07-19
+
+### Added
+
+- **`karaoke_song_staged` Google Ads conversion** (#280): Campaign E (Karaoke Any Song, Max Clicks) buys vocal-remover search intent ("remove vocals from song", "voice isolator") — and the first-party funnel shows that traffic brings its OWN song (`karaoke_song_staged` 6 visitors / 29 events) far more than it plays the sing-along demo (`karaoke_demo_complete` 2 events, both internal testing). So `karaoke_demo_complete` was the wrong bid goal for E. Created a new secondary Ads conversion action `karaoke_song_staged` (id `7690367223`, `send_to=AW-18321142458/yMwyCPfhhtMcELrlmaBE`, DEFAULT / secondary / ONE_PER_CLICK — kept out of the account-default goal so it can't pollute A/B/C's `mirror_complete` optimization) and wired it in `src/lib/consent.ts` (`AD_CONVERSIONS`) + `src/features/karaoke-night/funnel.ts`. New `fireAdConversionOncePerDevice` guard: `karaoke_song_staged` beacons on every stage for a rich first-party count, but its Ads conversion fires at most once per device (localStorage `kn.funnel.adSent.*`; Ads' ONE_PER_CLICK dedups per click regardless). Inert until a prod build ships the tag (`VITE_GOOGLE_ADS_TAG_ID`). Next: once E banks ~15 of these, switch E from Max Clicks → Maximize Conversions with a campaign-level goal on `karaoke_song_staged`. Conversion map + campaign playbook updated in the campaigns repo / dotfiles.
+
 ## [0.7.16] - 2026-07-19
 
 ### Added
