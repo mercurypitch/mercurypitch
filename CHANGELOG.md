@@ -3,11 +3,23 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.19] - 2026-07-20
+
+### Added
+
+- **A mobile-first redesign.** On a phone MercuryPitch now feels like a native app — a bottom tab bar for one-tap navigation, full-screen Singing and Piano practice stages with a single tidy options sheet, dismissible notifications, and touch-friendly, safe-area-aware controls throughout. Karaoke opens straight into its clean, lyrics-forward "zen" view.
+- **Zen karaoke on any screen.** A Zen toggle brings that clean lyrics stage to the desktop too — with a card showing who's up next and the previous singer's score during a playlist — and if a song has no synced lyrics you can now paste or load your own.
+- **More in the karaoke studio.** Draw an A–B loop in a single drag, switch between your saved lyric mappings (original, edited, auto-synced, tapped), and see your credit balance at a glance in the upload card.
+
+### Fixed
+
+- **A smoother phone experience.** The sidebar opens fully again, notifications and the Jam chat no longer cover the bottom bar, the guitar page fits the small screen, and the account chip, sheets, and dropdowns behave.
+
 ## [0.7.18] - 2026-07-19
 
 ### Changed
 
-- **Karaoke Night's opener is a real song, not a "demo."** The ready-to-sing track on the stage is now framed as "tonight's opener" with a **Sing this song** button — it was always the full experience (real separation, synced lyrics, live scoring), so the copy no longer undersells it as a demo.
+- **Karaoke Night's opener is a real song, not a "demo."** The ready-to-sing track is now framed as "tonight's opener" with a **Sing this song** button — it was always the full experience (real separation, synced lyrics, live scoring), so the copy no longer undersells it.
 
 ## [0.7.17] - 2026-07-19
 
@@ -19,22 +31,21 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
-- **A scorecard worth singing for.** The karaoke score popup is a real scorecard now — a big glowing grade medal, your pitch accuracy front and center, and clear stat pills including the new **melody notes hit** (say, 5/6): how many of the song's actual notes you nailed, the way a singer counts, instead of a wall of raw numbers.
-- **Re-run any song in studio quality.** Completed browser separations now carry an HQ button: upgrade that session's stems in place on the cloud GPU, or spin the HQ result into a new session to compare side by side. Works even if you deleted the original file — we still have it — and there's a Download original button to get your full mix back too.
-- **Smarter pitch analysis.** "Analyze vocal" now tries two detection algorithms and keeps whichever hears more of the song — loud, layered choruses that used to come back empty now get notes end to end.
+- **A scorecard worth singing for.** The karaoke score popup is now a real scorecard — a glowing grade medal, your pitch accuracy front and center, and stat pills including **melody notes hit** (say, 5/6): how many of the song's notes you nailed.
+- **Re-run any song in studio quality.** Completed browser separations get an HQ button to upgrade the stems on the cloud GPU (or spin up a new session to compare) — plus a Download original button, even if you deleted the file.
+- **Smarter pitch analysis.** "Analyze vocal" now tries two detection algorithms and keeps whichever hears more of the song, so loud, layered choruses that used to come back empty get notes end to end.
 
 ### Changed
 
-- **Scoring is finally fair.** Sing in whatever octave fits your voice — you're scored on hitting the notes, not on matching the original singer's register. Each run is scored on its own (no more old attempts dragging the number down), brief note changes get a grace window instead of instant penalties, and the score resets cleanly every time you stop.
-- **Steadier pitch lines.** The red line tracking your voice no longer leaps between octaves on consonants and breaths — both your line and the song's line are smoothed the same way the Singing tab does it. The red scoring tick-marks are now off by default (a Diff Bars toggle brings them back).
-- **Lyrics know their notes.** Note labels above lyrics now trust your synced lyrics first (word taps or word-timed LRC files) — on our test song that took note labels from covering 15% of words to 83%.
-- **Volume sliders that feel right.** Stem and mic volume now follow your ears — 50% actually sounds like half — instead of doing almost nothing until the bottom fifth of the slider.
-- **Nicer confirmations.** Deleting sessions, melodies and playlists, overwriting lyrics, and auto word-sync now ask with the app's own styled dialog instead of the browser's raw popup.
+- **Fairer scoring.** You're scored on hitting the notes, not on matching the original singer's octave; each run is scored on its own; and brief note changes get a grace window instead of instant penalties.
+- **Steadier pitch lines.** Your voice's line no longer leaps octaves on consonants and breaths (the red scoring tick-marks are now off by default, with a Diff Bars toggle to bring them back).
+- **Lyrics know their notes.** Note labels above lyrics now trust your synced lyrics first — on our test song that lifted coverage from 15% to 83% of words.
+- **Volume that feels right, nicer confirmations.** Stem and mic sliders now follow your ears (50% sounds like half), and deletes, overwrites, and auto word-sync ask with the app's own styled dialog instead of the browser's popup.
 
 ### Fixed
 
-- **Studio-quality separation works again.** A hosting-platform routing change had cut off the cloud GPU service — server separations failed instantly with a blank error, and the Voice Mirror's dedicated address showed the wrong page. Routing is pinned explicitly now, and if the server is ever unreachable again the app says so clearly instead of showing an empty message.
-- **Waveforms fit their panels again.** The stem-mixer displays could get stuck at a stale width after resizing the window, toggling the sidebar, zooming, or switching layouts — they now always follow their container, and existing sessions heal themselves on the next draw.
+- **Studio-quality separation works again.** A hosting routing change had cut off the cloud GPU service; routing is pinned now, and the app says so clearly if the server is ever unreachable instead of showing a blank error.
+- **Waveforms fit their panels again.** Stem-mixer displays now always follow their container after resizing, sidebar toggles, zooming, or layout switches.
 
 ## [0.7.15] - 2026-07-19
 
