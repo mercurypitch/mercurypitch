@@ -94,9 +94,16 @@ const PathPage: Component = () => {
 
   onMount(() => {
     drawTrail()
+    // Redraw as layout settles. rAF alone can be throttled/paused in some
+    // embeds, so also retry on plain timers — the first attempt often runs
+    // before the trail has a measurable height.
+    const timers = [50, 150, 400].map((ms) => window.setTimeout(drawTrail, ms))
     const ro = new ResizeObserver(drawTrail)
     if (trailEl) ro.observe(trailEl)
-    onCleanup(() => ro.disconnect())
+    onCleanup(() => {
+      ro.disconnect()
+      timers.forEach((t) => window.clearTimeout(t))
+    })
 
     // Land the climber at their current orb (week 1 sits at the very foot).
     const target = pageEl?.querySelector('.path-orb-current')
@@ -136,6 +143,7 @@ const PathPage: Component = () => {
 
   return (
     <div class={`${styles.page} path-trail`} ref={pageEl}>
+      <div class={styles.backdrop} aria-hidden="true" />
       <div class={styles.cosmos} aria-hidden="true" />
       <div class={styles.summitGlow} aria-hidden="true" />
 
@@ -219,13 +227,23 @@ const PathPage: Component = () => {
               opacity="0.35"
               filter="url(#ascent-trail-blur)"
             />
+            {/* Double ribbon: a fainter parallel line nudged aside. */}
+            <path
+              d={trailPath()}
+              fill="none"
+              stroke="url(#ascent-trail)"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              opacity="0.4"
+              transform="translate(3.5, 0)"
+            />
             <path
               d={trailPath()}
               fill="none"
               stroke="url(#ascent-trail)"
               stroke-width="2.2"
               stroke-linecap="round"
-              opacity="0.8"
+              opacity="0.85"
             />
           </svg>
         </Show>
@@ -256,6 +274,7 @@ const PathPage: Component = () => {
                     <PathOrb
                       fill={ringFill(week.order)}
                       state={state()}
+                      theme={week.theme}
                       size={98}
                     />
                   </button>
