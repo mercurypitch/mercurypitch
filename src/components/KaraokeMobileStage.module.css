@@ -429,3 +429,127 @@
     right: max(14px, calc((100vw - 760px) / 2 + 14px));
   }
 }
+
+/* ── Desktop-zen playlist card (side gutter, wide screens only) ──────
+   Rendered only when a playlist runs on a desktop-zen view; shown only
+   once the viewport is wide enough to have a real gutter beside the 760px
+   lyric column, so it never overlaps the lyrics. Sits 20px left of the
+   column at every width >= 1280px. */
+.playlistCard {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .playlistCard {
+    position: absolute;
+    top: 50%;
+    left: calc((100vw - 760px) / 2 - 230px);
+    transform: translateY(-50%);
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    width: 210px;
+    padding: 1.1rem 1.15rem;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(24, 12, 40, 0.55);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+    color: #f4ecff;
+  }
+}
+
+.plKicker {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(183, 154, 224, 0.9);
+}
+
+.plNow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.plRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plLabel {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(244, 236, 255, 0.45);
+}
+
+.plSingerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.plDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: #7ee0a0;
+  box-shadow: 0 0 10px rgba(126, 224, 160, 0.8);
+}
+
+.plName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plRow .plName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(244, 236, 255, 0.85);
+}
+
+.plSong {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(244, 236, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plPrevHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.plScore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(244, 236, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.plGrade {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
