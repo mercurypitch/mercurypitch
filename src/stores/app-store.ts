@@ -965,6 +965,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="guitar.view-toggle"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
+    viewport: 'desktop',
   },
   {
     title: 'Pick your sound',
@@ -973,6 +974,18 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="guitar.instruments"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
+    viewport: 'desktop',
+  },
+  // Mobile: instrument sound, the view switch, Guitar Pro import and audio
+  // devices all collapse behind one Options button.
+  {
+    title: 'Sound, view & more',
+    description:
+      'On a phone the instrument sound, the Fretboard / Practice / 3D view, Guitar Pro import and audio devices all live here — tap Options.',
+    targetSelector: '[data-tour="guitar.options"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+    viewport: 'mobile',
   },
   {
     title: 'Load a song',
@@ -990,6 +1003,18 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
     navigate: ['[data-tour="guitar.view-fretboard"]'],
+    viewport: 'desktop',
+  },
+  // Mobile: same transport, but the view lives in the Options sheet, so no
+  // fretboard navigation here.
+  {
+    title: 'Transport & controls',
+    description:
+      'Mic, play/stop, tempo and volume float over the canvas — drag the grip to move the bar, or tap it to flip sides.',
+    targetSelector: '[data-testid="guitar-control-bar"]',
+    placement: 'bottom',
+    requiredTab: TAB_GUITAR,
+    viewport: 'mobile',
   },
   {
     title: 'Key & scale',
@@ -999,6 +1024,9 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
     navigate: ['[data-tour="guitar.view-fretboard"]'],
+    // Fretboard-view internals — reached on mobile via the Options sheet, so
+    // these deeper steps are desktop-only.
+    viewport: 'desktop',
   },
   {
     title: 'The fretboard',
@@ -1009,6 +1037,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_GUITAR,
     // Make sure we're in Fretboard view (not Practice) before pointing at it.
     navigate: ['[data-tour="guitar.view-fretboard"]'],
+    viewport: 'desktop',
   },
   {
     title: 'Practice modes',
@@ -1018,6 +1047,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
     navigate: ['[data-tour="guitar.view-fretboard"]'],
+    viewport: 'desktop',
   },
 ]
 
