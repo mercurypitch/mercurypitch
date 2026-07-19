@@ -34,36 +34,6 @@
   overflow-x: clip;
 }
 
-/* Hi-res nebula backdrop — anchored at the top so its aurora sits at the
-   summit; fades to near-black at the foot, where the page's own gradient
-   takes over. Painted behind the CSS starfield. */
-.backdrop {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  /* The art is a portrait nebula: fill the width on phones, but cap it to a
-     centred column on desktop so it never stretches wide (upscaled + blurry)
-     or overwhelms the page. The dark starfield fills the space around it. */
-  width: min(100%, 600px);
-  height: 100%;
-  z-index: -2;
-  pointer-events: none;
-  background-image: url('/ascent/backdrop.webp');
-  background-repeat: no-repeat;
-  background-position: top center;
-  background-size: 100% auto;
-  opacity: 0.55;
-  /* Feather the column edges into the dark base so it reads as a starry sky
-     with a soft glow at the summit, not a hard-edged photo. */
-  -webkit-mask-image: radial-gradient(
-    130% 82% at 50% 4%,
-    #000 46%,
-    transparent 86%
-  );
-  mask-image: radial-gradient(130% 82% at 50% 4%, #000 46%, transparent 86%);
-}
-
 /* ── Static starfield + drifting nebula (pure CSS, no JS) ─────── */
 .cosmos {
   position: absolute;
