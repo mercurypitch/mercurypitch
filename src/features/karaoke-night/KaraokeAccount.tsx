@@ -5,6 +5,7 @@
 import { createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
+import { Eye, EyeOff } from '@/components/icons'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
@@ -26,6 +27,7 @@ export function KaraokeAccount() {
   const [mode, setMode] = createSignal<'login' | 'register'>('login')
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
+  const [showPassword, setShowPassword] = createSignal(false)
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
 
@@ -64,6 +66,7 @@ export function KaraokeAccount() {
       await refreshAccount()
       setModalOpen(false)
       setPassword('')
+      setShowPassword(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed.')
     } finally {
@@ -122,12 +125,21 @@ export function KaraokeAccount() {
       </Show>
 
       <Show when={modalOpen()}>
-        <div class="kn-modal-backdrop" onClick={() => setModalOpen(false)}>
+        <div
+          class="kn-modal-backdrop"
+          onClick={() => {
+            setModalOpen(false)
+            setShowPassword(false)
+          }}
+        >
           <div class="kn-modal" onClick={(e) => e.stopPropagation()}>
             <button
               class="kn-modal-close"
               title="Close"
-              onClick={() => setModalOpen(false)}
+              onClick={() => {
+                setModalOpen(false)
+                setShowPassword(false)
+              }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path
@@ -152,22 +164,38 @@ export function KaraokeAccount() {
                 onInput={(e) => setEmail(e.currentTarget.value)}
                 aria-invalid={error() !== '' ? 'true' : undefined}
               />
-              <input
-                type="password"
-                name="password"
-                id="kn-auth-password"
-                placeholder="Password"
-                aria-label="Password"
-                autocomplete={
-                  mode() === 'register' ? 'new-password' : 'current-password'
-                }
-                required
-                value={password()}
-                onInput={(e) => setPassword(e.currentTarget.value)}
-                aria-invalid={
-                  pwdInvalid() || error() !== '' ? 'true' : undefined
-                }
-              />
+              <div class="kn-password-field">
+                <input
+                  type={showPassword() ? 'text' : 'password'}
+                  name="password"
+                  id="kn-auth-password"
+                  placeholder="Password"
+                  aria-label="Password"
+                  autocomplete={
+                    mode() === 'register' ? 'new-password' : 'current-password'
+                  }
+                  required
+                  value={password()}
+                  onInput={(e) => setPassword(e.currentTarget.value)}
+                  aria-invalid={
+                    pwdInvalid() || error() !== '' ? 'true' : undefined
+                  }
+                />
+                <button
+                  class="kn-reveal-btn"
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={
+                    showPassword() ? 'Hide password' : 'Show password'
+                  }
+                  aria-pressed={showPassword()}
+                  title={showPassword() ? 'Hide password' : 'Show password'}
+                >
+                  <Show when={showPassword()} fallback={<Eye />}>
+                    <EyeOff />
+                  </Show>
+                </button>
+              </div>
               <Show when={mode() === 'register'}>
                 <PasswordRequirements
                   password={password()}

@@ -9,6 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { Eye, EyeOff } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
@@ -31,6 +32,7 @@ export const AccountSection: Component = () => {
   const [mode, setMode] = createSignal<FormMode>('none')
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
+  const [showPassword, setShowPassword] = createSignal(false)
   const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
@@ -346,25 +348,42 @@ export const AccountSection: Component = () => {
                 aria-describedby={error() !== '' ? 'auth-error' : undefined}
                 data-testid="auth-email"
               />
-              <input
-                class={styles.authInput}
-                type="password"
-                name="password"
-                id="auth-password"
-                placeholder="Password"
-                aria-label="Password"
-                autocomplete={
-                  mode() === 'register' ? 'new-password' : 'current-password'
-                }
-                required
-                value={password()}
-                onInput={(e) => setPassword(e.currentTarget.value)}
-                aria-invalid={
-                  pwdInvalid() || error() !== '' ? 'true' : undefined
-                }
-                aria-describedby={error() !== '' ? 'auth-error' : undefined}
-                data-testid="auth-password"
-              />
+              <div class={styles.passwordField}>
+                <input
+                  class={styles.authInput}
+                  type={showPassword() ? 'text' : 'password'}
+                  name="password"
+                  id="auth-password"
+                  placeholder="Password"
+                  aria-label="Password"
+                  autocomplete={
+                    mode() === 'register' ? 'new-password' : 'current-password'
+                  }
+                  required
+                  value={password()}
+                  onInput={(e) => setPassword(e.currentTarget.value)}
+                  aria-invalid={
+                    pwdInvalid() || error() !== '' ? 'true' : undefined
+                  }
+                  aria-describedby={error() !== '' ? 'auth-error' : undefined}
+                  data-testid="auth-password"
+                />
+                <button
+                  class={styles.revealButton}
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={
+                    showPassword() ? 'Hide password' : 'Show password'
+                  }
+                  aria-pressed={showPassword()}
+                  title={showPassword() ? 'Hide password' : 'Show password'}
+                  data-testid="auth-password-toggle"
+                >
+                  <Show when={showPassword()} fallback={<Eye />}>
+                    <EyeOff />
+                  </Show>
+                </button>
+              </div>
               <Show when={mode() === 'register'}>
                 <PasswordRequirements
                   password={password()}
@@ -396,6 +415,7 @@ export const AccountSection: Component = () => {
                   onClick={() => {
                     setMode('none')
                     setError('')
+                    setShowPassword(false)
                   }}
                 >
                   Cancel
