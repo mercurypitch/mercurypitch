@@ -984,6 +984,13 @@ input:checked + .settings-slider:before {
   margin-bottom: 12px;
 }
 
+/* Featured weekly-legend card at the top of the challenges hub. Constrained
+   so it reads as a tidy featured card, not a stretched full-width banner. */
+.challenges-weekly {
+  max-width: 640px;
+  margin: 0 0 18px;
+}
+
 #falling-notes-panel {
   display: flex;
   flex-direction: column;
