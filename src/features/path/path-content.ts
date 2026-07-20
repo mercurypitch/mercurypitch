@@ -73,7 +73,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
     ],
     exercises: [EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN],
     warmupPattern: 'lip-trill',
-    resources: [],
+    resources: [
+      {
+        title: 'Easy Vocal Warm-Up',
+        url: 'https://www.youtube.com/watch?v=UytojhIHRNA',
+        author: 'Saher Galt',
+        kind: 'video',
+      },
+      {
+        title: 'Daily Vocal Warm-Up Exercises',
+        url: 'https://www.youtube.com/watch?v=YkXHQJc9L6s',
+        author: 'Ken Tamplin Vocal Academy',
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 2,
@@ -91,7 +104,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
     ],
     exercises: [EXERCISE_DYNAMIC_SWELL, EXERCISE_LONG_NOTE, EXERCISE_SIREN],
     warmupPattern: 'sirens',
-    resources: [],
+    resources: [
+      {
+        title: "Appoggio Breathing: Breath Support's Gold Standard",
+        url: 'https://www.youtube.com/watch?v=oDrhkt8KIA4',
+        author: 'New York Vocal Coaching',
+        kind: 'video',
+      },
+      {
+        title: 'Better Breath Support (Aretha Franklin cues)',
+        url: 'https://www.youtube.com/watch?v=xen8frkK6ok',
+        author: 'Chris Liepe',
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 3,
@@ -109,7 +135,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
     ],
     exercises: [EXERCISE_SIREN, EXERCISE_ARPEGGIO_JUMPER, EXERCISE_SLIDE],
     warmupPattern: 'sirens',
-    resources: [],
+    resources: [
+      {
+        title: 'Stop Straining on High Notes: 4 Exercises',
+        url: 'https://www.youtube.com/watch?v=ak8P55m3rfw',
+        author: 'Ramsey Voice Studio',
+        kind: 'video',
+      },
+      {
+        title: 'Improve Your Vocal Range: Sing High Notes',
+        url: 'https://www.youtube.com/watch?v=OKwWqNY687Y',
+        author: 'Ken Tamplin Vocal Academy',
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 4,
@@ -132,7 +171,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_MIRROR_MELODY,
     ],
     warmupPattern: 'ascending-scale',
-    resources: [],
+    resources: [
+      {
+        title: 'Identify Musical Intervals by Ear',
+        url: 'https://www.youtube.com/watch?v=EBUJ0EJLrLU',
+        author: 'Saher Galt',
+        kind: 'video',
+      },
+      {
+        title: 'How to Fix Singing Out of Tune',
+        url: 'https://www.youtube.com/watch?v=l3K-GrrtRyY',
+        author: "Dr Dan's Voice Essentials",
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 5,
@@ -154,7 +206,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_ARPEGGIO_JUMPER,
     ],
     warmupPattern: 'five-tone-descending',
-    resources: [],
+    resources: [
+      {
+        title: 'Pentatonic Vocal Runs: Extra Practice',
+        url: 'https://www.youtube.com/watch?v=c49vW-SQ9fg',
+        author: 'Saher Galt',
+        kind: 'video',
+      },
+      {
+        title: 'Vocal Agility Exercise Duet',
+        url: 'https://www.youtube.com/watch?v=NO3Iw6bvYsQ',
+        author: 'Cheryl Porter',
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 6,
@@ -172,7 +237,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
     ],
     exercises: [EXERCISE_VIBRATO, EXERCISE_DYNAMIC_SWELL, EXERCISE_LONG_NOTE],
     warmupPattern: 'lip-trill',
-    resources: [],
+    resources: [
+      {
+        title: 'The Only Way to Find Natural Vibrato',
+        url: 'https://www.youtube.com/watch?v=_n0tKwZGfcQ',
+        author: 'Chris Liepe',
+        kind: 'video',
+      },
+      {
+        title: 'Develop Your Vibrato (From Scratch)',
+        url: 'https://www.youtube.com/watch?v=qC8zvN-iz7g',
+        author: 'Studio West',
+        kind: 'video',
+      },
+    ],
   },
   {
     order: 7,
@@ -194,7 +272,20 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_SIGHT_SINGING,
     ],
     warmupPattern: 'lip-trill',
-    resources: [],
+    resources: [
+      {
+        title: '5-Minute Vocal Cool-Down',
+        url: 'https://www.youtube.com/watch?v=8LKO13c28hU',
+        author: "Dr Dan's Voice Essentials",
+        kind: 'video',
+      },
+      {
+        title: "Victoria's Gentle Vocal Workout",
+        url: 'https://www.youtube.com/watch?v=9ovNiUEJtbQ',
+        author: 'Healthy Vocal Technique',
+        kind: 'video',
+      },
+    ],
   },
 ]
 
