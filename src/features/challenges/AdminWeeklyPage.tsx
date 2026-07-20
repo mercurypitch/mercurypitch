@@ -90,6 +90,20 @@ function rowToForm(row: WeeklyAdminRow): FormState {
   }
 }
 
+/**
+ * The genuinely live challenge is the one whose window covers *now* AND is
+ * marked active — not merely one with status "active". Several rows can carry
+ * status "active" at once; only ones passing this are actually on Home.
+ */
+function isLiveNow(row: WeeklyAdminRow): boolean {
+  const now = Date.now()
+  return (
+    row.status === 'active' &&
+    Date.parse(row.startsAt) <= now &&
+    now < Date.parse(row.endsAt)
+  )
+}
+
 export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
   const [key, setKey] = createSignal(getAdminKey())
   const [keyInput, setKeyInput] = createSignal(getAdminKey())
@@ -175,6 +189,31 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
     }
   }
 
+  /** Make this row THE live challenge: retarget to the current week + active. */
+  async function setLive(row: WeeklyAdminRow): Promise<void> {
+    const start = thisMondayUtcIso()
+    const ok = await updateWeekly(
+      row.id,
+      { startsAt: start, endsAt: plusOneWeekIso(start), status: 'active' },
+      key(),
+    )
+    if (ok) {
+      showNotification(`"${row.title}" is live this week`, 'success')
+      void refetch()
+    } else {
+      showNotification('Could not set it live — try again', 'error')
+    }
+  }
+
+  // Live one(s) first, then most-recent window; flag when >1 is live at once.
+  const sortedRows = (): WeeklyAdminRow[] =>
+    [...(rows() ?? [])].sort(
+      (a, b) =>
+        Number(isLiveNow(b)) - Number(isLiveNow(a)) ||
+        Date.parse(b.startsAt) - Date.parse(a.startsAt),
+    )
+  const liveCount = (): number => (rows() ?? []).filter(isLiveNow).length
+
   return (
     <div class={styles.overlay}>
       <div class={styles.panel}>
@@ -225,17 +264,36 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
                   </button>
                 </div>
 
+                <p class={styles.hint}>
+                  The live challenge is the one whose window covers today —
+                  that's what shows on Home. "Status" is just the stored flag.
+                </p>
+                <Show when={liveCount() > 1}>
+                  <p class={styles.warn}>
+                    {liveCount()} challenges are live this week — only one shows
+                    on Home. Reschedule or close the extras (Edit → Status).
+                  </p>
+                </Show>
+
                 <ul class={styles.list}>
                   <For
-                    each={rows() ?? []}
+                    each={sortedRows()}
                     fallback={<li class={styles.empty}>No challenges yet.</li>}
                   >
                     {(row) => (
-                      <li class={styles.row}>
+                      <li
+                        class={styles.row}
+                        classList={{ [styles.rowLive]: isLiveNow(row) }}
+                      >
                         <div class={styles.rowMain}>
-                          <span class={styles.rowTitle}>{row.title}</span>
+                          <span class={styles.rowTitle}>
+                            {row.title}
+                            <Show when={isLiveNow(row)}>
+                              <span class={styles.live}>Live now</span>
+                            </Show>
+                          </span>
                           <span class={styles.rowMeta}>
-                            {row.featType} · {row.difficulty} ·{' '}
+                            {row.featType} · {row.difficulty} · status:{' '}
                             <span
                               class={styles.status}
                               classList={{
@@ -256,6 +314,15 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
                           </span>
                         </div>
                         <div class={styles.rowActions}>
+                          <Show when={!isLiveNow(row)}>
+                            <button
+                              class={styles.setLive}
+                              onClick={() => void setLive(row)}
+                              title="Retarget to the current week and set active"
+                            >
+                              Set live this week
+                            </button>
+                          </Show>
                           <button onClick={() => setForm(rowToForm(row))}>
                             Edit
                           </button>
@@ -405,9 +472,13 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
                     const start = thisMondayUtcIso()
                     edit('startsAt', start)
                     edit('endsAt', plusOneWeekIso(start))
+                    showNotification(
+                      'Dates set to this week — Save to apply',
+                      'info',
+                    )
                   }}
                 >
-                  Set to this week
+                  Set dates to this week
                 </button>
               </div>
             </div>

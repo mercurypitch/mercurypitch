@@ -94,8 +94,55 @@
   min-width: 0;
 }
 .rowTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* The genuinely-live challenge (window covers today) — distinct from the
+   stored "active" status flag. */
+.live {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #08120b;
+  background: var(--green, #3fb950);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.rowLive {
+  border-color: color-mix(in srgb, var(--green, #3fb950) 45%, var(--border));
+  background: color-mix(in srgb, var(--green, #3fb950) 7%, var(--bg-secondary));
+}
+
+.hint {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.warn {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--warning, #e3b341);
+  background: color-mix(in srgb, var(--warning, #e3b341) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning, #e3b341) 38%, transparent);
+  border-radius: 8px;
+}
+.setLive {
+  border-color: color-mix(
+    in srgb,
+    var(--green, #3fb950) 45%,
+    var(--border)
+  ) !important;
+  color: var(--green, #3fb950) !important;
+  font-weight: 600;
 }
 .rowMeta {
   font-size: 0.78rem;
