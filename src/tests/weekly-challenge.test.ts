@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { weeklyTier } from '@/features/challenges/weekly-attempt'
-import { hoursUntil } from '@/features/challenges/weekly-service'
+import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
 
 describe('weeklyTier', () => {
   it('grades below target as attempted', () => {
@@ -39,5 +39,24 @@ describe('hoursUntil', () => {
   it('returns a positive count for a future deadline', () => {
     const inTwoDays = new Date(Date.now() + 2 * 86_400_000).toISOString()
     expect(hoursUntil(inTwoDays)).toBeGreaterThanOrEqual(47)
+  })
+})
+
+describe('target-note (de)serialization', () => {
+  it('renders note + octave exactly once (no doubled octave)', () => {
+    const items = notesToMelodyItems('G3 C4 E4 D4')
+    const rendered = melodyItemsToNotes(items)
+    expect(rendered).toBe('G3 C4 E4 D4')
+    expect(rendered).not.toMatch(/\d\d/) // guards against the "G33" bug
+  })
+
+  it('round-trips cleanly (parse -> render -> parse is stable)', () => {
+    const first = notesToMelodyItems('A2 F#4 Bb3')
+    const rendered = melodyItemsToNotes(first) // flats normalize to sharps (Bb3 -> A#3)
+    const second = notesToMelodyItems(rendered)
+    expect(melodyItemsToNotes(second)).toBe(rendered)
+    expect(second.map((i) => i.note.midi)).toEqual(
+      first.map((i) => i.note.midi),
+    )
   })
 })

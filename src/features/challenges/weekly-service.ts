@@ -249,9 +249,10 @@ export function notesToMelodyItems(input: string): MelodyItem[] {
 
 /** Render MelodyItem[] back to a "G4 A4 B4" note-name list (for editing). */
 export function melodyItemsToNotes(items: MelodyItem[]): string {
-  return items
-    .map((it) => `${midiToNoteName(it.note.midi)}${it.note.octave}`)
-    .join(' ')
+  // midiToNoteName already includes the octave (e.g. "G4"), so don't append
+  // it again — doing so rendered "G4" as "G44", and re-parsing that read the
+  // trailing digit as octave 44, corrupting the melody on save.
+  return items.map((it) => midiToNoteName(it.note.midi)).join(' ')
 }
 
 /** Monday 00:00 UTC of the current week (ISO) — the default challenge start. */
