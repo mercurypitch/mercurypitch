@@ -321,6 +321,49 @@ body {
   border-color: rgba(255, 122, 122, 0.7);
 }
 
+/* Password field with an in-field reveal toggle. */
+.kn-modal .kn-password-field {
+  position: relative;
+  display: flex;
+}
+
+.kn-modal .kn-password-field input {
+  flex: 1;
+  min-width: 0;
+  /* leave room for the reveal button so text never runs under it */
+  padding-right: 2.6rem;
+}
+
+.kn-modal .kn-reveal-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.7rem;
+  border: none;
+  background: none;
+  color: rgba(244, 236, 255, 0.55);
+  cursor: pointer;
+  border-radius: 9px;
+}
+
+.kn-modal .kn-reveal-btn:hover {
+  color: #f4ecff;
+}
+
+.kn-modal .kn-reveal-btn:focus-visible {
+  outline: 2px solid rgba(255, 154, 213, 0.7);
+  outline-offset: -2px;
+}
+
+.kn-modal .kn-reveal-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .kn-modal .kn-btn {
   margin-top: 0.2rem;
   width: 100%;

@@ -64,6 +64,50 @@
   border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
 }
 
+/* Password field with an in-field reveal toggle. The input stretches to
+   fill the row; the button floats over its trailing edge. */
+.passwordField {
+  position: relative;
+  display: flex;
+}
+
+.passwordField .authInput {
+  flex: 1;
+  min-width: 0;
+  /* leave room for the reveal button so text never runs under it */
+  padding-right: 38px;
+}
+
+.revealButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  border: none;
+  background: none;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.revealButton:hover {
+  color: var(--text-primary, #eee);
+}
+
+.revealButton:focus-visible {
+  outline: 2px solid var(--accent, #7aa2f7);
+  outline-offset: -2px;
+}
+
+.revealButton svg {
+  width: 18px;
+  height: 18px;
+}
+
 .buttonRow {
   display: flex;
   gap: 8px;

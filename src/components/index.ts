@@ -94,6 +94,7 @@ export {
   WaveformBars,
   MagnifyingGlass,
   Eye,
+  EyeOff,
 } from './icons'
 
 export { VoiceTypeDetectorModal } from './VoiceTypeDetectorModal'
