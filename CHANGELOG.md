@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.20] - 2026-07-20
+
+### Added
+
+- **A share preview for Karaoke Night.** Links to the Karaoke Night page now unfurl with their own artwork — the theatre stage, tonight's opener, and what the page does — instead of the generic logo card.
+
+### Fixed
+
+- **A crisper logo mark.** Cleaned up a faint light line along the bottom of the MercuryPitch orb that could show at small sizes on dark backgrounds, like a browser tab or app icon.
+
 ## [0.7.19] - 2026-07-20
 
 ### Added
