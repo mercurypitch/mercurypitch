@@ -7,11 +7,17 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
-- **A share preview for Karaoke Night.** Links to the Karaoke Night page now unfurl with their own artwork — the theatre stage, tonight's opener, and what the page does — instead of the generic logo card.
+- **Show/hide password toggle** on the sign-in and sign-up forms.
+- **A share preview for Karaoke Night** — the `/karaoke` link now unfurls with its own artwork (theatre stage, tonight's opener, what the page does) instead of the generic logo card.
 
 ### Fixed
 
-- **A crisper logo mark.** Cleaned up a faint light line along the bottom of the MercuryPitch orb that could show at small sizes on dark backgrounds, like a browser tab or app icon.
+- **Interrupted separations recover on their own.** A cut-off server separation (reload, flaky connection) is now resumed instead of stranded — app-wide and on Karaoke Night.
+- **iOS: mp3s are pickable again** in the file picker.
+- **Cleaner stem-mixer waveform** — no more moiré shimmer.
+- **Compose places notes in the slot you click**, not the next one.
+- **The loading spinner spins again.**
+- **A crisper logo mark** — removed a faint light line along the bottom of the orb at small sizes on dark backgrounds (browser tabs, app icons).
 
 ## [0.7.19] - 2026-07-20
 
