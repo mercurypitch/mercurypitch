@@ -48,7 +48,6 @@ const PathPage: Component = () => {
   const routine = useDailyRoutine()
   const [expanded, setExpanded] = createSignal<number | null>(null)
   const [trailPath, setTrailPath] = createSignal('')
-  const [trailSize, setTrailSize] = createSignal({ w: 0, h: 0 })
 
   let trailEl: HTMLDivElement | undefined
   let pageEl: HTMLDivElement | undefined
@@ -89,7 +88,6 @@ const PathPage: Component = () => {
       d += ` C ${a.x.toFixed(1)} ${(a.y + k).toFixed(1)}, ${b.x.toFixed(1)} ${(b.y - k).toFixed(1)}, ${b.x.toFixed(1)} ${b.y.toFixed(1)}`
     }
     setTrailPath(d)
-    setTrailSize({ w: box.width, h: box.height })
   }
 
   onMount(() => {
@@ -100,8 +98,13 @@ const PathPage: Component = () => {
     const timers = [50, 150, 400].map((ms) => window.setTimeout(drawTrail, ms))
     const ro = new ResizeObserver(drawTrail)
     if (trailEl) ro.observe(trailEl)
+    // Zoom / viewport changes move the orbs (their offset is vw-based) without
+    // necessarily resizing the trail box, so the ResizeObserver alone can miss
+    // them — redraw on window resize too.
+    window.addEventListener('resize', drawTrail)
     onCleanup(() => {
       ro.disconnect()
+      window.removeEventListener('resize', drawTrail)
       timers.forEach((t) => window.clearTimeout(t))
     })
 
@@ -143,7 +146,7 @@ const PathPage: Component = () => {
 
   return (
     <div class={`${styles.page} path-trail`} ref={pageEl}>
-      <div class={styles.cosmos} aria-hidden="true" />
+      <div class={styles.backdrop} aria-hidden="true" />
 
       {/* Plain <div>, not <header>/<footer>: the app applies global flex
           layout to those elements (the top nav) which squashes the hero. */}
@@ -194,12 +197,10 @@ const PathPage: Component = () => {
       <div class={styles.trail} ref={trailEl}>
         {/* The light-trail, drawn through the orbs' real centres. */}
         <Show when={trailPath() !== ''}>
-          <svg
-            class={styles.trailSvg}
-            viewBox={`0 0 ${trailSize().w} ${trailSize().h}`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
+          {/* No viewBox: user units == CSS pixels (1:1), so the path never
+              stretches when the box resizes — it just redraws through the
+              orbs' new centres. */}
+          <svg class={styles.trailSvg} aria-hidden="true">
             <defs>
               <linearGradient id="ascent-trail" x1="0" y1="1" x2="0" y2="0">
                 <stop offset="0%" stop-color="#f0c674" stop-opacity="0.7" />
