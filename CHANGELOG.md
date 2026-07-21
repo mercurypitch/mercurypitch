@@ -3,6 +3,26 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.21] - 2026-07-21
+
+### Added
+
+- **Move between songs in the full-screen Karaoke view.** The zen (lyrics-forward) karaoke stage now has back and next-song controls, plus an autoplay toggle that keeps playing through your library, song after song. The back control seeks to the start of the current song, or steps to the previous one when you're already at the beginning — like a phone music player.
+- **Find lyrics without leaving the karaoke stage.** The zen view now has the same LRCLIB search as the studio: search by artist and title, pick a match, or add your own by pasting or dropping a .lrc/.txt file. The "add lyrics" panel is cleaner and more polished on both the stage and in the studio.
+- **Set the wrong lyrics? Remove them.** A remove button in the studio lyrics panel clears a song's lyrics and takes you back to the search-and-add screen.
+- **A tidier library.** Once you've grouped your songs, the "Your library" rail shows them as a group → song list instead of one long flat list.
+- **Hear what to do in the Voice Mirror.** The onboarding demos now play a guide tone alongside the animation — a rising slide to glide up, a falling one to glide down, and a steady note to hold.
+
+### Changed
+
+- **Hop between the studio and Karaoke Night on the same song.** Opening Karaoke Night from a song you have loaded in the studio now carries it across (and back), so you don't have to reload it.
+- **Under the hood:** each account now records a last-active timestamp (admin-only, for usage insights) — nothing changes in what you see.
+
+### Fixed
+
+- **The lyrics search stays put when nothing matches** — retype the artist and title and search again, instead of being dropped straight to the file picker.
+- **"Open the studio" on the opener behaves.** Tonight's opener isn't one of your own songs, so its studio link now opens the studio home instead of a blank page.
+
 ## [0.7.20] - 2026-07-20
 
 ### Added
@@ -126,9 +146,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 ### Fixed
 
 - **Fairer, more honest exercise scoring.**
-  - **Drone Intonation** now judges how steadily you hold *each* note instead of penalising you for correctly moving between the intervals (a flawless run used to cap around a C).
-  - **Siren** no longer hands out full marks when no glide is detected — a siren *is* a glide, so sitting silent or jumping between notes no longer scores for it.
-  - **Pitch Hold** now counts silence against you: you have to actually *hold* the note, not just touch it and wait out the timer.
+  - **Drone Intonation** now judges how steadily you hold _each_ note instead of penalising you for correctly moving between the intervals (a flawless run used to cap around a C).
+  - **Siren** no longer hands out full marks when no glide is detected — a siren _is_ a glide, so sitting silent or jumping between notes no longer scores for it.
+  - **Pitch Hold** now counts silence against you: you have to actually _hold_ the note, not just touch it and wait out the timer.
   - **Dynamic Swell** now measures your real loudness (crescendo/decrescendo) instead of a pitch-clarity stand-in.
   - **Harmonic richness** is scored on the full 0–100 range, so a flawless run in the exercises that weigh it can reach the top.
 
