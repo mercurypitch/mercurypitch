@@ -637,6 +637,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     activeVersionKind,
     switchVersion,
     deleteVersion,
+    clearLyrics,
 
     // Actions — block management
     handleMarkBlock,
@@ -1134,6 +1135,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     songTitle: props.songTitle,
     lrclibSearchUrl,
     triggerChangeFile: () => lyricsFileInputRef?.click(),
+    handleRemoveLyrics: () => {
+      confirm.request({
+        title: 'Remove lyrics?',
+        message:
+          'This deletes the lyrics and word timings for this song and returns to the "no lyrics" screen. This cannot be undone.',
+        confirmLabel: 'Remove',
+        confirmIcon: <AlertTriangle />,
+        onConfirm: () => clearLyrics(),
+      })
+    },
     handlePasteLyricsHeader: () => {
       void (async () => {
         try {
@@ -1893,6 +1904,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handleLyricsChange={handleLyricsChange}
             triggerChangeFile={() => lyricsFileInputRef?.click()}
             handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
+            handleRemoveLyrics={lyricsPanel.handleRemoveLyrics}
             showMidi={showMidi}
             showNoteLabels={showNoteLabels}
             setShowNoteLabels={setShowNoteLabels}
@@ -1948,6 +1960,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handleLyricsChange={handleLyricsChange}
             triggerChangeFile={() => lyricsFileInputRef?.click()}
             handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
+            handleRemoveLyrics={lyricsPanel.handleRemoveLyrics}
             showMidi={showMidi}
             showNoteLabels={showNoteLabels}
             setShowNoteLabels={setShowNoteLabels}
@@ -1994,6 +2007,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setLyricsAlign={setLyricsAlign}
             handleForceSearch={() => void handleForceSearch()}
             triggerChangeFile={() => lyricsFileInputRef?.click()}
+            handleRemoveLyrics={lyricsPanel.handleRemoveLyrics}
             showWaveform={showWaveform}
           />
         </Show>

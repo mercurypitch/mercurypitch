@@ -48,6 +48,7 @@ interface StemMixerFixedWorkspaceProps {
 
   // Lyrics header actions (not in lyricsPanel)
   handleForceSearch: () => void
+  handleRemoveLyrics: () => void
   toggleEditMode: () => void
   startLrcGen: () => void
   autoSyncWords: () => void
@@ -188,6 +189,22 @@ export const StemMixerFixedWorkspace: Component<
                         <path
                           fill="currentColor"
                           d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      class="sm-lyrics-edit-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        props.handleRemoveLyrics()
+                      }}
+                      title="Remove lyrics"
+                      aria-label="Remove lyrics"
+                    >
+                      <svg viewBox="0 0 24 24" width="11" height="11">
+                        <path
+                          fill="currentColor"
+                          d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
                         />
                       </svg>
                     </button>
