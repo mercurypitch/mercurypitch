@@ -3,6 +3,13 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.22] - 2026-07-21
+
+### Fixed
+
+- **No more sideways scrolling on mobile.** Karaoke Night's library no longer pushes the page off-screen when a song has a long name, and the Glass "your takes" gallery now swipes on its own instead of dragging the whole page along.
+- **The "add lyrics" screen fits your phone.** In the full-screen karaoke view, the search-and-add-your-own-lyrics panel now uses the whole height instead of being squeezed into a couple of rows.
+
 ## [0.7.21] - 2026-07-21
 
 ### Added
