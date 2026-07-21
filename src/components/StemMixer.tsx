@@ -1523,6 +1523,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onUploadLyrics={handleLyricsUpload}
           lyricsSuggestion={() => props.songTitle}
           lrclibSearchUrl={lrclibSearchUrl}
+          songMatches={songMatches}
+          songPickerQuery={songPickerQuery}
+          onSongPickerQuery={setSongPickerQuery}
+          onSongPickerRefine={() => void handleSongPickerRefine()}
+          onSongPick={(m) => void handleSongPick(m)}
         />
       }
     >
@@ -5278,63 +5283,161 @@ export const StemMixerStyles: string = `
   color: #fff;
 }
 
+/* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────
+   Shared by the studio panel and the zen stage. Accent tracks the ambient
+   theme (blue in the studio); the zen stage sets --lyf-accent to its purple.
+   Surfaces derive from the foreground so it reads on any dark stage. */
 .sm-song-picker {
+  --lyf-acc: var(--lyf-accent, var(--accent, #8b5cf6));
+  --lyf-acc-rgb: var(--lyf-accent-rgb, 139, 92, 246);
+  --lyf-surface: color-mix(in srgb, var(--fg-primary, #e6edf3) 6%, transparent);
+  --lyf-surface-2: color-mix(in srgb, var(--fg-primary, #e6edf3) 11%, transparent);
+  --lyf-border: color-mix(in srgb, var(--fg-primary, #e6edf3) 14%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.7rem;
   padding: 1rem;
-  height: 100%;
-  overflow: hidden;
+  min-height: 0;
+}
+
+.sm-song-picker--inline {
+  padding: 0;
+  gap: 0.6rem;
 }
 
 .sm-song-picker-header {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--fg-primary, #c9d1d9);
+  letter-spacing: -0.01em;
+  color: var(--fg-primary, #e6edf3);
 }
 
 .sm-song-picker-search {
   display: flex;
   gap: 0.5rem;
+  align-items: stretch;
 }
 
 .sm-song-picker-input {
   flex: 1;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.375rem;
-  background: var(--bg-primary, #0d1117);
-  color: var(--fg-primary, #c9d1d9);
-  font-size: 0.85rem;
+  min-width: 0;
+  height: 44px;
+  padding: 0 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--fg-primary, #e6edf3);
+  background: var(--lyf-surface);
+  border: 1px solid var(--lyf-border);
+  border-radius: 12px;
   outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.sm-song-picker-input::placeholder {
+  color: var(--fg-tertiary, #6e7681);
 }
 
 .sm-song-picker-input:focus {
-  border-color: var(--accent, #58a6ff);
+  background: var(--lyf-surface-2);
+  border-color: rgba(var(--lyf-acc-rgb), 0.7);
+  box-shadow: 0 0 0 3px rgba(var(--lyf-acc-rgb), 0.2);
+}
+
+.sm-song-picker-search-btn {
+  flex: none;
+  height: 44px;
+  padding: 0 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--lyf-acc);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    filter 0.16s ease,
+    transform 0.06s ease;
+}
+
+.sm-song-picker-search-btn:hover {
+  filter: brightness(1.08);
+}
+
+.sm-song-picker-search-btn:active {
+  transform: scale(0.97);
+}
+
+.sm-song-picker-search-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.sm-song-picker-paste-btn {
+  flex: none;
+  height: 44px;
+  padding: 0 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--lyf-surface);
+  border: 1px solid var(--lyf-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.sm-song-picker-paste-btn:hover {
+  color: var(--fg-primary, #e6edf3);
+  background: var(--lyf-surface-2);
+}
+
+.sm-song-picker-count {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--fg-tertiary, #6e7681);
+  padding: 0 0.15rem;
 }
 
 .sm-song-picker-list {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
+  max-height: 320px;
   overflow-y: auto;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.375rem;
-  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--lyf-border);
+  border-radius: 14px;
+  background: var(--lyf-surface);
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
 }
 
 .sm-song-picker-row {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   width: 100%;
-  padding: 0.45rem 0.75rem;
+  min-height: 48px;
+  padding: 0.5rem 0.85rem;
   border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg-primary, #e6edf3) 7%, transparent);
   background: transparent;
-  color: var(--fg-primary, #c9d1d9);
-  font-size: 0.825rem;
+  color: var(--fg-primary, #e6edf3);
+  font-size: 0.9rem;
+  font-family: inherit;
   cursor: pointer;
   text-align: left;
-  gap: 0.15rem;
-  border-bottom: 1px solid var(--border, #30363d);
-  transition: background 0.1s;
+  transition: background 0.14s ease;
 }
 
 .sm-song-picker-row:last-child {
@@ -5342,22 +5445,23 @@ export const StemMixerStyles: string = `
 }
 
 .sm-song-picker-row:hover {
-  background: var(--bg-hover, #1c2128);
+  background: rgba(var(--lyf-acc-rgb), 0.12);
 }
 
 .sm-song-picker-artist {
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .sm-song-picker-sep {
-  color: var(--fg-muted, #8b949e);
+  color: var(--fg-tertiary, #6e7681);
   flex-shrink: 0;
 }
 
 .sm-song-picker-title {
+  color: var(--fg-secondary, #8b949e);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5366,30 +5470,14 @@ export const StemMixerStyles: string = `
 .sm-song-picker-badge {
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.25rem;
-  background: var(--accent, #58a6ff);
-  color: #fff;
-}
-
-.sm-song-picker-footer {
-  flex-shrink: 0;
-}
-
-.sm-song-picker-upload-link {
-  background: none;
-  border: none;
-  color: var(--fg-muted, #8b949e);
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-
-.sm-song-picker-upload-link:hover {
-  color: var(--accent, #58a6ff);
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  color: var(--lyf-acc);
+  background: rgba(var(--lyf-acc-rgb), 0.16);
+  border: 1px solid rgba(var(--lyf-acc-rgb), 0.3);
 }
 
 .sm-song-picker-no-results {
@@ -5397,61 +5485,105 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  text-align: center;
   gap: 0.5rem;
-  border: 1px dashed var(--border, #30363d);
-  border-radius: 0.375rem;
-  background: var(--bg-secondary, #161b22);
-  margin-top: 0.5rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  border: 1px dashed var(--lyf-border);
+  border-radius: 14px;
+  background: var(--lyf-surface);
 }
 
 .sm-song-picker-no-results-title {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--fg-primary, #c9d1d9);
+  color: var(--fg-primary, #e6edf3);
 }
 
 .sm-song-picker-no-results-hint {
-  font-size: 0.75rem;
-  color: var(--fg-muted, #8b949e);
-  margin-bottom: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--fg-tertiary, #6e7681);
+  max-width: 22rem;
 }
 
 .sm-song-picker-lrclib-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.75rem;
-  color: var(--accent, #58a6ff);
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--lyf-acc);
   text-decoration: none;
-  padding: 0.35rem 0.7rem;
-  border-radius: 0.375rem;
-  background: rgba(88, 166, 255, 0.08);
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  transition: all 0.15s;
+  padding: 0.45rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(var(--lyf-acc-rgb), 0.1);
+  border: 1px solid rgba(var(--lyf-acc-rgb), 0.28);
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .sm-song-picker-lrclib-link:hover {
-  background: rgba(88, 166, 255, 0.15);
-  border-color: rgba(88, 166, 255, 0.4);
-  text-decoration: none;
+  background: rgba(var(--lyf-acc-rgb), 0.16);
+  border-color: rgba(var(--lyf-acc-rgb), 0.45);
 }
 
 .sm-song-picker-lrclib-link svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.9rem;
+  height: 0.9rem;
   flex-shrink: 0;
 }
 
 .sm-song-picker-footer-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
 }
 
+.sm-song-picker-footer-btn {
+  height: 40px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--lyf-surface);
+  border: 1px solid var(--lyf-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease;
+}
+
+.sm-song-picker-footer-btn:hover {
+  color: var(--fg-primary, #e6edf3);
+  background: var(--lyf-surface-2);
+}
+
+.sm-song-picker-footer-btn--primary {
+  color: #fff;
+  background: var(--lyf-acc);
+  border-color: transparent;
+}
+
+.sm-song-picker-footer-btn--primary:hover {
+  filter: brightness(1.08);
+  background: var(--lyf-acc);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-song-picker-input,
+  .sm-song-picker-search-btn,
+  .sm-song-picker-paste-btn,
+  .sm-song-picker-row,
+  .sm-song-picker-lrclib-link,
+  .sm-song-picker-footer-btn {
+    transition: none;
+  }
+}
 
 /* Standard Buttons */
 .sm-btn {

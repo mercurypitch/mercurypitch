@@ -625,10 +625,12 @@ export function useStemMixerLyricsController(
   const handleForceSearch = async () => {
     // Save current source so cancelSearch can restore it
     preSearchSource = lyricsSource()
-    // Cancel any ongoing auto-search and open the picker for manual search
+    // Cancel any ongoing auto-search and open the picker for manual search,
+    // pre-seeded with the song title so it starts from a useful query.
     cancelSearch()
     setSongMatches([])
-    setSongPickerQuery('')
+    const forced = extractTitle(deps.songTitle ?? deps.sessionId ?? '')
+    setSongPickerQuery(forced && forced !== 'Unknown' ? forced : '')
     setShowSongPicker(true)
   }
 
@@ -677,6 +679,9 @@ export function useStemMixerLyricsController(
       setLyricsSource('none')
       return
     }
+    // Seed the picker query up front, so the zen finder (and a manual search)
+    // start from the song's title even when the auto-search returns nothing.
+    setSongPickerQuery(title)
 
     // Create new abort controller for this search session
     abortRef = new AbortController()
