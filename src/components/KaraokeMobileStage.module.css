@@ -170,6 +170,16 @@
   display: none;
 }
 
+/* No lyrics yet: the karaoke scroll padding (24vh/32vh) + edge-fade mask are
+   for scrolling lines — here they cram the finder into the middle third and
+   fade its top/bottom. Drop both so the "no lyrics" panel fills the full stage
+   height (it still centres via .noLyrics, and scrolls if taller). */
+.lyricsEmpty {
+  padding: 0.75rem 1.25rem;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
 .line {
   margin: 0 0 1.3rem;
   font-size: clamp(1.5rem, 6.8vw, 2.1rem);
