@@ -8,7 +8,7 @@ import { createPersistedSignal } from '@/lib/storage'
 
 export type LyricsAlign = 'left' | 'center' | 'right'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
-import { loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
+import { deleteLyricsFromDb, loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
@@ -212,6 +212,7 @@ export interface StemMixerLyricsController {
   activeVersionKind: Accessor<LyricsVersionKind | null>
   switchVersion: (kind: LyricsVersionKind) => void
   deleteVersion: (kind: LyricsVersionKind) => void
+  clearLyrics: () => void
 }
 
 // ── Pure helpers ───────────────────────────────────────────────────
@@ -502,6 +503,40 @@ export function useStemMixerLyricsController(
       filename,
       wordTimings(),
     )
+  }
+
+  /** Remove all lyrics for this song — db record, caches, versions, and edit
+   *  state — and return the panel to the "no lyrics" finder (seeded with the
+   *  song title so a fresh search is one tap). There is no undo. */
+  const clearLyrics = (): void => {
+    void deleteLyricsFromDb(deps.sessionId)
+    try {
+      localStorage.removeItem(genKey())
+    } catch {
+      /* ignore — best-effort cleanup of the LRC-gen scratch state */
+    }
+    _setLyricsCache(null)
+    setRawLyricsText('')
+    setLrcLines([])
+    setLyricsLines([])
+    setWordTimings({})
+    setBlocks([])
+    setBlockInstances({})
+    setBlockMarkMode(false)
+    setMarkStartLine(null)
+    setMarkEndLine(null)
+    setBlockEditTarget(null)
+    setLyricsVersions([])
+    setActiveVersionKind(null)
+    setEditMode(false)
+    setEditBuffer({})
+    setLrcGenMode(false)
+    setCurrentLineIdx(-1)
+    setShowSongPicker(false)
+    setSongMatches([])
+    const title = extractTitle(deps.songTitle ?? deps.sessionId ?? '')
+    setSongPickerQuery(title && title !== 'Unknown' ? title : '')
+    setLyricsSource('none')
   }
 
   const loadPersistedLyrics = ():
@@ -2271,5 +2306,6 @@ export function useStemMixerLyricsController(
     activeVersionKind,
     switchVersion,
     deleteVersion,
+    clearLyrics,
   }
 }

@@ -43,6 +43,7 @@ interface StemMixerPerformanceWorkspaceProps {
   lyricsAlign: Accessor<LyricsAlign>
   setLyricsAlign: Setter<LyricsAlign>
   handleForceSearch: () => void
+  handleRemoveLyrics: () => void
   triggerChangeFile: () => void
 
   // Focus-mode panel visibility
@@ -185,6 +186,19 @@ export const StemMixerPerformanceWorkspace: Component<
                     <path
                       fill="currentColor"
                       d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="sm-lyrics-edit-btn"
+                  onClick={() => props.handleRemoveLyrics()}
+                  title="Remove lyrics"
+                  aria-label="Remove lyrics"
+                >
+                  <svg viewBox="0 0 24 24" width="11" height="11">
+                    <path
+                      fill="currentColor"
+                      d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
                     />
                   </svg>
                 </button>
