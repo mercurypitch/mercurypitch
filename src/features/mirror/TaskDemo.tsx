@@ -22,6 +22,7 @@ import { seeded } from '@/lib/mirror/demo-frames'
 import type { DemoKind, DemoTimeline } from '@/lib/mirror/demo-timeline'
 import { buildDemoTimeline, demoStateAt } from '@/lib/mirror/demo-timeline'
 import { CONF_MIN, foldCents, HIT_TOLERANCE_CENTS, hzToCents, } from '@/lib/mirror/metrics'
+import { createDemoCue, planDemoCue } from './demo-cue'
 
 interface TaskDemoProps {
   kind: DemoKind
@@ -33,6 +34,13 @@ interface TaskDemoProps {
   active?: () => boolean
   /** Fires each time the loop wraps (drives the overview spotlight). */
   onLoopEnd?: () => void
+  /**
+   * Optional AudioContext for the guide cue (siren/hold). Returns the context,
+   * or null to stay silent. The cue plays once each time the demo becomes
+   * active + visible + on-screen (see planDemoCue). Glass's decision 18:
+   * users should HEAR what to do, not just watch it.
+   */
+  getAudioContext?: () => AudioContext | null
 }
 
 const SIZES = { card: { w: 320, h: 132 }, stage: { w: 640, h: 240 } }
@@ -118,6 +126,12 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
   /* eslint-enable solid/reactivity */
   const isActive = () => props.active?.() ?? true
   const tl = buildDemoTimeline(kind)
+  // The guide cue (siren/hold) that plays alongside the animation — Glass's
+  // decision 18: users should HEAR what to do, not just watch it.
+  const cue = createDemoCue(
+    planDemoCue(kind, tl),
+    () => props.getAudioContext?.() ?? null,
+  )
   const stars = starsFor(kind, dims.w, dims.h)
   const lockT = kind === 'match' ? lockTimeFor(tl) : Infinity
   const targetCents = hzToCents(tl.guide[0].f0)
@@ -440,6 +454,9 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     } else {
       startLoop()
     }
+    // The cue plays whenever the demo is on show — decoupled from the motion
+    // loop, so reduced-motion viewers still hear it.
+    cue.sync(isActive() && visible && onScreen)
   }
 
   onMount(() => {
@@ -472,6 +489,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
       document.removeEventListener('visibilitychange', onVisibility)
       observer?.disconnect()
       stopLoop()
+      cue.stop()
     })
   })
 
