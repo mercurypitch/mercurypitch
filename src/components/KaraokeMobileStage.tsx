@@ -409,6 +409,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       <div
         ref={scrollerRef}
         class={styles.lyrics}
+        classList={{ [styles.lyricsEmpty]: lines().length === 0 }}
         onTouchMove={noteUserScroll}
         onWheel={noteUserScroll}
       >
