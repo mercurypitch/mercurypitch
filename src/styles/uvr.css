@@ -3391,6 +3391,45 @@
   gap: 0.5rem;
 }
 
+.rv-header-right .session-result-btn {
+  flex: none;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--fg-primary);
+  border-radius: 0.4rem;
+  height: 2rem;
+  box-sizing: border-box;
+}
+
+.rv-header-right .session-result-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.rv-header-right .session-hq-rerun {
+  flex: none;
+}
+
+.rv-header-right .session-hq-rerun .session-result-btn-hq {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  height: 2rem;
+  box-sizing: border-box;
+  background: var(--bg-tertiary);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.rv-header-right .session-hq-rerun-menu {
+  top: 100%;
+  bottom: auto;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
 .rv-share-btn {
   display: inline-flex;
   align-items: center;

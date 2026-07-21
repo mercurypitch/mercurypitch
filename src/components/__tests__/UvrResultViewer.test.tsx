@@ -4,6 +4,8 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { saveAllUvrSessions } from '@/stores/app-store'
+import type { UvrSession } from '@/types/uvr'
 import { UvrResultViewer } from '../UvrResultViewer'
 
 describe('UvrResultViewer Component', () => {
@@ -52,6 +54,93 @@ describe('UvrResultViewer Component', () => {
       render(() => <UvrResultViewer outputs={mockOutputs} />)
 
       expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Original Download', () => {
+    it('shows Original button when session is completed and has originalFile', () => {
+      saveAllUvrSessions([
+        {
+          sessionId: 'session-123',
+          status: 'completed',
+          originalFile: { name: 'song.mp3', size: 1024, mimeType: 'audio/mp3' },
+        } as unknown as UvrSession,
+      ])
+      render(() => (
+        <UvrResultViewer {...defaultProps} sessionId="session-123" />
+      ))
+      expect(screen.getByText('Original')).toBeInTheDocument()
+    })
+
+    it('hides Original button when session has no originalFile', () => {
+      saveAllUvrSessions([
+        {
+          sessionId: 'session-123',
+          status: 'completed',
+        } as unknown as UvrSession,
+      ])
+      render(() => (
+        <UvrResultViewer {...defaultProps} sessionId="session-123" />
+      ))
+      expect(screen.queryByText('Original')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('HQ Re-run', () => {
+    const localCompleted = {
+      sessionId: 'session-123',
+      status: 'completed',
+      processingMode: 'local',
+      originalFile: { name: 'song.mp3', size: 1024, mimeType: 'audio/mp3' },
+      createdAt: Date.now(),
+    } as unknown as UvrSession
+
+    it('shows HQ button for completed browser session with handler', () => {
+      saveAllUvrSessions([localCompleted])
+      render(() => (
+        <UvrResultViewer
+          {...defaultProps}
+          sessionId="session-123"
+          onRerunHq={vi.fn()}
+        />
+      ))
+      expect(document.querySelector('.session-result-btn-hq')).toBeTruthy()
+    })
+
+    it('hides HQ button when processingMode is server', () => {
+      saveAllUvrSessions([{ ...localCompleted, processingMode: 'server' }])
+      render(() => (
+        <UvrResultViewer
+          {...defaultProps}
+          sessionId="session-123"
+          onRerunHq={vi.fn()}
+        />
+      ))
+      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+    })
+
+    it('fires onRerunHq with same/new when dropdown options are clicked', () => {
+      const onRerunHq = vi.fn()
+      saveAllUvrSessions([localCompleted])
+      render(() => (
+        <UvrResultViewer
+          {...defaultProps}
+          sessionId="session-123"
+          onRerunHq={onRerunHq}
+        />
+      ))
+
+      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
+      const items = document.querySelectorAll('.session-hq-rerun-item')
+      expect(items.length).toBe(2)
+
+      fireEvent.click(items[0])
+      expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'same')
+
+      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
+      fireEvent.click(document.querySelectorAll('.session-hq-rerun-item')[1])
+      expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
+      expect(onRerunHq).toHaveBeenCalledTimes(2)
     })
   })
 

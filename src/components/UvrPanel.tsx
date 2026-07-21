@@ -2123,6 +2123,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     onExport={(type) => {
                       void handleExport(type)
                     }}
+                    onRerunHq={(sessionId, target) => {
+                      void handleRerunHq(sessionId, target)
+                    }}
                   />
                 )}
               </Show>

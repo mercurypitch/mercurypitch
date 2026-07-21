@@ -5,9 +5,11 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
+import { getOriginalFileBlob } from '@/db/services/uvr-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { getUvrSession } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
-import { Clock, Download, Headphones, Midi, MusicBoard, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { ChevronDown, Clock, Download, Headphones, Midi, MusicBoard, Play, Repeat, Share, SlidersHorizontal, Voice, X, Zap, } from './icons'
 
 interface StemMeta {
   duration?: number
@@ -25,6 +27,7 @@ interface ResultViewerProps {
   processingTime?: number
   sessionId?: string
   originalFileName?: string
+  disabled?: boolean
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
   onStartMix?: (selectedStems: string[]) => void
   onOpenMixer?: (sessionId: string) => void
@@ -32,12 +35,74 @@ interface ResultViewerProps {
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => void
   onClose?: () => void
+  onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
 }
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   const [shareToast, setShareToast] = createSignal('')
   const [midiDownloading, setMidiDownloading] = createSignal(false)
   const [midiDownloadProgress, setMidiDownloadProgress] = createSignal(0)
+  const [downloadingOriginal, setDownloadingOriginal] = createSignal(false)
+  const [showHqMenu, setShowHqMenu] = createSignal(false)
+
+  const session = () =>
+    props.sessionId !== undefined && props.sessionId !== ''
+      ? getUvrSession(props.sessionId)
+      : undefined
+
+  const canDownloadOriginal = () => {
+    if (props.sessionId === undefined || props.sessionId === '') return false
+    const s = session()
+    return s?.status === 'completed' && s.originalFile != null
+  }
+
+  const handleDownloadOriginal = async (e: Event) => {
+    e.stopPropagation()
+    if (
+      props.sessionId === undefined ||
+      props.sessionId === '' ||
+      downloadingOriginal()
+    ) {
+      return
+    }
+    setDownloadingOriginal(true)
+    try {
+      const file = await getOriginalFileBlob(props.sessionId)
+      if (file === null || file === undefined) {
+        showNotification(
+          "The original file isn't stored for this session.",
+          'warning',
+        )
+        return
+      }
+      const url = URL.createObjectURL(file)
+      const a = document.createElement('a')
+      a.href = url
+      a.download =
+        props.originalFileName ?? session()?.originalFile?.name ?? file.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (err) {
+      console.error('[UvrResultViewer] original download failed:', err)
+      showNotification('Could not read the original file.', 'error')
+    } finally {
+      setDownloadingOriginal(false)
+    }
+  }
+
+  const canRerunHq = () => {
+    if (props.sessionId === undefined || props.sessionId === '') return false
+    const s = session()
+    return (
+      s?.status === 'completed' &&
+      s.processingMode === 'local' &&
+      s.provider !== 'manual' &&
+      s.originalFile != null &&
+      props.onRerunHq !== undefined
+    )
+  }
 
   const formatDuration = (secs?: number): string => {
     if (secs === undefined || secs <= 0) return ''
@@ -253,6 +318,68 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           </Show>
         </div>
         <div class="rv-header-right">
+          <Show when={canDownloadOriginal()}>
+            <button
+              class="session-result-btn"
+              disabled={props.disabled === true || downloadingOriginal()}
+              onClick={(e) => void handleDownloadOriginal(e)}
+              title="Download the original uploaded file (full mix)"
+            >
+              <Download /> Original
+            </button>
+          </Show>
+          <Show when={canRerunHq()}>
+            <div class="session-hq-rerun">
+              <button
+                class="session-result-btn session-result-btn-hq"
+                disabled={props.disabled}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowHqMenu(!showHqMenu())
+                }}
+                title="Re-run this song on the cloud GPU for higher-quality stems"
+              >
+                <Zap /> HQ
+                <span
+                  class="session-hq-rerun-chevron"
+                  classList={{ open: showHqMenu() }}
+                >
+                  <ChevronDown size={12} />
+                </span>
+              </button>
+              <Show when={showHqMenu()}>
+                <div class="session-hq-rerun-menu">
+                  <button
+                    class="session-hq-rerun-item"
+                    onClick={() => {
+                      setShowHqMenu(false)
+                      props.onRerunHq?.(props.sessionId!, 'same')
+                    }}
+                  >
+                    Upgrade this session
+                    <span class="session-hq-rerun-item-note">
+                      Replaces these stems with cloud HQ stems
+                    </span>
+                  </button>
+                  <button
+                    class="session-hq-rerun-item"
+                    onClick={() => {
+                      setShowHqMenu(false)
+                      props.onRerunHq?.(props.sessionId!, 'new')
+                    }}
+                  >
+                    New session to compare
+                    <span class="session-hq-rerun-item-note">
+                      Keeps this one — the HQ result arrives separately
+                    </span>
+                  </button>
+                  <div class="session-hq-rerun-hint">
+                    Runs on the cloud GPU — uses credits
+                  </div>
+                </div>
+              </Show>
+            </div>
+          </Show>
           <button
             class="rv-share-btn"
             onClick={() => {
