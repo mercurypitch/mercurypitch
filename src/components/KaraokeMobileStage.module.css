@@ -70,7 +70,6 @@
   width: 38px;
   height: 38px;
   flex: none;
-  margin-left: auto;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
@@ -82,6 +81,38 @@
 
 .listBtn:active {
   transform: scale(0.94);
+}
+
+/* Autoplay toggle — leads the header's right-hand cluster (its margin-left
+   pushes both it and the song-list button to the edge). */
+.autoplayBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.autoplayBtn:active {
+  transform: scale(0.94);
+}
+
+/* On: filled with the stage's purple accent so the state reads at a glance. */
+.autoplayBtnOn {
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
 }
 
 .titleWrap {
@@ -290,6 +321,16 @@
 
 .sideBtn:active {
   transform: scale(0.92);
+}
+
+/* Disabled next button (no next item) — dimmed but still discoverable. */
+.sideBtn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.sideBtn:disabled:active {
+  transform: none;
 }
 
 .playBtn {

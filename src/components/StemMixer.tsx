@@ -4,6 +4,7 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
@@ -13,6 +14,7 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
@@ -33,6 +35,7 @@ import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
+import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
@@ -313,7 +316,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     songTitle: props.songTitle,
     /* eslint-enable solid/reactivity */
     karaokeReferenceVocal: () => props.karaokeReferenceVocal === true,
-    onPlaybackEnded: () => handlePlaylistSongEnded(),
+    onPlaybackEnded: () => handleSongEnded(),
     showNotification,
   })
 
@@ -340,6 +343,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Karaoke playlist integration ─────────────────────────────
   const [playlistSidebarOpen, setPlaylistSidebarOpen] = createPersistedSignal(
     'sm-karaoke-playlist-sidebar',
+    false,
+  )
+  // Zen-mode autoplay: when on, the next library song plays automatically at
+  // end-of-song. Playlists run their own advance flow (scoring/summary), so
+  // this governs free-library listening. Persisted as a per-user preference.
+  const [autoplayEnabled, setAutoplayEnabled] = createPersistedSignal(
+    'sm-zen-autoplay',
     false,
   )
   // True between a natural song end and the score modal being dismissed, so we
@@ -419,6 +429,63 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const handlePlaylistStopAll = () => {
     audio.handlePause()
     playlist.stopPlaylist()
+  }
+
+  // ── Zen transport: unified song navigation ───────────────────
+  // The zen stage's back/next controls span whichever context is active: an
+  // in-progress playlist/group (playlist store), or free browsing of the whole
+  // library (step by createdAt order via onPickSession). Ordering matches the
+  // zen song sheet so the controls track the visible list. Nav decisions are
+  // the pure helpers in zen-navigation.ts (unit-tested).
+  const orderedLibraryIds = (): string[] =>
+    orderedLibrarySessions(getAllUvrSessionsReactive(), DEMO_SESSION_ID).map(
+      (s) => s.sessionId,
+    )
+  const canLibraryNav = (): boolean => props.onPickSession !== undefined
+
+  const hasPrevItem = (): boolean =>
+    playlist.isPlaylistActive()
+      ? playlist.currentIndex() > 0
+      : canLibraryNav() &&
+        prevSessionId(orderedLibraryIds(), props.sessionId) !== null
+
+  const hasNextItem = (): boolean =>
+    playlist.isPlaylistActive()
+      ? playlist.nextSong() !== null
+      : canLibraryNav() &&
+        nextSessionId(orderedLibraryIds(), props.sessionId) !== null
+
+  const goPrevItem = (): void => {
+    if (playlist.isPlaylistActive()) {
+      handlePlaylistPrev()
+      return
+    }
+    const id = prevSessionId(orderedLibraryIds(), props.sessionId)
+    if (id !== null) props.onPickSession?.(id)
+  }
+
+  const goNextItem = (): void => {
+    if (playlist.isPlaylistActive()) {
+      handlePlaylistNext()
+      return
+    }
+    const id = nextSessionId(orderedLibraryIds(), props.sessionId)
+    if (id !== null) props.onPickSession?.(id)
+  }
+
+  // End-of-song: a running playlist advances through its own flow (scoring,
+  // summary); free-library listening auto-advances only when autoplay is on.
+  const handleSongEnded = (): void => {
+    if (playlist.isPlaylistActive()) {
+      handlePlaylistSongEnded()
+      return
+    }
+    const target = autoAdvanceTarget(
+      autoplayEnabled(),
+      orderedLibraryIds(),
+      props.sessionId,
+    )
+    if (target !== null) props.onPickSession?.(target)
   }
 
   // Start playback once the countdown flips the phase to 'playing'. Wait for a
@@ -1430,8 +1497,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           duration={audio.duration}
           onPlay={audio.handlePlay}
           onPause={audio.handlePause}
-          onRestart={audio.handleRestart}
+          onSeekToStart={() => audio.seekTo(0)}
           seekTo={audio.seekTo}
+          hasPrevItem={hasPrevItem}
+          hasNextItem={hasNextItem}
+          onPrevItem={goPrevItem}
+          onNextItem={goNextItem}
+          autoplayEnabled={autoplayEnabled}
+          onToggleAutoplay={() => setAutoplayEnabled((v) => !v)}
           vocal={vocal}
           onToggleVocal={() => toggleMute('Vocal')}
           onVocalVolume={(v) => setTrackVolume('Vocal', v)}
