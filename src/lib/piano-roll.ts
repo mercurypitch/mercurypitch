@@ -10,6 +10,7 @@ import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlidePro
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
+import { showNotification } from '@/stores/notifications-store'
 import type { ChordType, MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 
@@ -215,7 +216,7 @@ export function downloadMIDI(
 ): boolean {
   const data = exportMelodyToMIDI(melody, bpm)
   if (!data) {
-    alert('No melody to export. Add some notes first.')
+    showNotification('No melody to export. Add some notes first.', 'warning')
     return false
   }
   const blob = new Blob([new Uint8Array(data)], { type: 'audio/midi' })
@@ -463,9 +464,9 @@ export interface PianoRollOptions {
   onInstrumentChange?: (instrument: InstrumentType) => void
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void
-  /** Drag the A / B loop markers on the ruler (beats). */
   onMoveLoopA?: (beat: number) => void
   onMoveLoopB?: (beat: number) => void
+  onConfirm?: (message: string, onAccept: () => void) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -552,6 +553,7 @@ export class PianoRollEditor {
   private loopDragTarget: 'A' | 'B' | null = null
   private onMoveLoopA?: (beat: number) => void
   private onMoveLoopB?: (beat: number) => void
+  private onConfirm?: (message: string, onAccept: () => void) => void
   private isSeeking = false
   private _lastScrubNoteId = -1
   private _activeScrubNoteId: number | null = null
@@ -641,6 +643,8 @@ export class PianoRollEditor {
     this.onPlaybackStateChange = options.onPlaybackStateChange
     this.onMoveLoopA = options.onMoveLoopA
     this.onMoveLoopB = options.onMoveLoopB
+    this.onConfirm = options.onConfirm
+
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
     this.beatWidth = this.config.beatWidth
@@ -1125,25 +1129,37 @@ export class PianoRollEditor {
     const wouldTrim = this.melody.some(
       (n) => n.startBeat + n.duration > newTotal,
     )
-    if (wouldTrim && !confirm('This will trim some notes. Continue?')) return
-    // Trim notes that extend beyond the new total
-    this.pushHistory()
-    this.melody = this.melody
-      .filter((n) => n.startBeat < newTotal)
-      .map((n) =>
-        n.startBeat + n.duration > newTotal
-          ? { ...n, duration: newTotal - n.startBeat }
-          : n,
-      )
-    this.totalBeats = newTotal
-    this.buildCanvases()
-    this.draw()
-    // BUGFIX: trimming bars deletes notes silently — emit so the
-    // app-level debouncedAutoSave persists the change. Without this
-    // fanout, "remove 4 bars" would visually shrink the timeline but
-    // leave stale full-length data in localStorage until another edit.
-    this.emitMelodyChange()
-    this.updateUndoRedoButtons()
+
+    const applyTrim = () => {
+      // Trim notes that extend beyond the new total
+      this.pushHistory()
+      this.melody = this.melody
+        .filter((n) => n.startBeat < newTotal)
+        .map((n) =>
+          n.startBeat + n.duration > newTotal
+            ? { ...n, duration: newTotal - n.startBeat }
+            : n,
+        )
+      this.totalBeats = newTotal
+      this.buildCanvases()
+      this.draw()
+      // BUGFIX: trimming bars deletes notes silently — emit so the
+      // app-level debouncedAutoSave persists the change. Without this
+      // fanout, "remove 4 bars" would visually shrink the timeline but
+      // leave stale full-length data in localStorage until another edit.
+      this.emitMelodyChange()
+      this.updateUndoRedoButtons()
+    }
+
+    if (wouldTrim) {
+      if (this.onConfirm) {
+        this.onConfirm('This will trim some notes. Continue?', applyTrim)
+      } else if (confirm('This will trim some notes. Continue?')) {
+        applyTrim()
+      }
+    } else {
+      applyTrim()
+    }
   }
 
   clearMelody(): void {
@@ -2441,7 +2457,10 @@ export class PianoRollEditor {
       ?.addEventListener('click', () => {
         const melody = this.getMelody()
         if (!melody.length) {
-          alert('No melody to export. Add some notes first.')
+          showNotification(
+            'No melody to export. Add some notes first.',
+            'warning',
+          )
           return
         }
         const timestamp = new Date()
@@ -2452,7 +2471,7 @@ export class PianoRollEditor {
           window as Window & { pianoRollAudioEngine?: AudioEngine }
         ).pianoRollAudioEngine
         if (!engine) {
-          alert('Audio engine not ready. Please try again.')
+          showNotification('Audio engine not ready. Please try again.', 'error')
           return
         }
         const instrumentSelect = container.querySelector(
