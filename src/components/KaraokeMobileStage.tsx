@@ -22,12 +22,13 @@ import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
-import { ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
+import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -66,8 +67,22 @@ export interface KaraokeMobileStageProps {
   duration: () => number
   onPlay: () => void
   onPause: () => void
-  onRestart: () => void
+  /** Seek the current song to its start (the back control's first press). */
+  onSeekToStart: () => void
   seekTo: (t: number) => void
+
+  // Song navigation — spans the active playlist/group or the whole library.
+  /** A previous item exists to step back to (drives the back-then-prev gesture). */
+  hasPrevItem: () => boolean
+  /** A next item exists (enables the next button). */
+  hasNextItem: () => boolean
+  /** Go to the previous item (playlist prev, or previous library song). */
+  onPrevItem: () => void
+  /** Go to the next item (playlist advance, or next library song). */
+  onNextItem: () => void
+  /** Autoplay: when on, the next item plays automatically at end-of-song. */
+  autoplayEnabled: () => boolean
+  onToggleAutoplay: () => void
 
   // Vocal pill
   vocal: () => { muted: boolean; volume: number }
@@ -172,11 +187,18 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     ),
   )
 
-  // Restart = explicit "take me back": clear any manual-scroll override and
-  // glide up immediately — the currentLineIdx effect alone can't cover a
-  // restart while paused (no RAF tick to change the index).
-  const handleRestart = (): void => {
-    props.onRestart()
+  // Back-to-beginning control (position-based, like a phone music player): a
+  // first press seeks the current song to its start; a second press while
+  // already near the start steps to the previous item. See resolveBackIntent.
+  // The seek path also clears any manual-scroll override and glides the sheet
+  // up immediately — the currentLineIdx effect alone can't cover a seek while
+  // paused (no RAF tick to change the index).
+  const handleBack = (): void => {
+    if (resolveBackIntent(props.elapsed(), props.hasPrevItem()) === 'prev') {
+      props.onPrevItem()
+      return
+    }
+    props.onSeekToStart()
     if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
     setUserScrolled(false)
     scrollLyricsToTop()
@@ -233,15 +255,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
   const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
 
+  // The library in display order — shared with StemMixer's prev/next stepping
+  // (zen-navigation.ts) so the song sheet and the transport agree on order.
   const librarySongs = createMemo(() =>
-    getAllUvrSessionsReactive()
-      .filter(
-        (s) =>
-          s.status === 'completed' &&
-          s.sessionId !== DEMO_SESSION_ID &&
-          (s.outputs !== undefined || s.stemMeta !== undefined),
-      )
-      .sort((a, b) => b.createdAt - a.createdAt),
+    orderedLibrarySessions(getAllUvrSessionsReactive(), DEMO_SESSION_ID),
   )
 
   const pickSession = (sessionId: string): void => {
@@ -307,6 +324,20 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </Show>
         </div>
         <Show when={props.onPickSession}>
+          <button
+            class={styles.autoplayBtn}
+            classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
+            onClick={() => props.onToggleAutoplay()}
+            aria-pressed={props.autoplayEnabled()}
+            title={
+              props.autoplayEnabled()
+                ? 'Autoplay is on — the next song plays automatically'
+                : 'Autoplay is off — turn on to keep playing song after song'
+            }
+            aria-label="Toggle autoplay"
+          >
+            <AutoplayIcon />
+          </button>
           <button
             class={styles.listBtn}
             onClick={() => setSheetOpen(true)}
@@ -469,9 +500,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         <div class={styles.transport}>
           <button
             class={styles.sideBtn}
-            onClick={handleRestart}
-            title="Restart"
-            aria-label="Restart the song"
+            onClick={handleBack}
+            title="Back to start (press again to go to the previous song)"
+            aria-label="Back to the start of the song"
           >
             <PrevIcon />
           </button>
@@ -488,8 +519,8 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </button>
           <button
             class={styles.sideBtn}
-            style={{ visibility: isPlaylistActive() ? 'visible' : 'hidden' }}
-            onClick={() => props.onPlaylistSkip()}
+            onClick={() => props.onNextItem()}
+            disabled={!props.hasNextItem()}
             title="Next song"
             aria-label="Next song"
           >

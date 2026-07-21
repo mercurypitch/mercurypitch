@@ -134,6 +134,24 @@ export const NextIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
+/** Autoplay — an infinity loop (keep playing, song after song). */
+export const AutoplayIcon: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={props.size ?? 18}
+    height={props.size ?? 18}
+    class={props.class}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M7 9a3 3 0 0 0 0 6c1.7 0 2.8-1.4 5-3s3.3-3 5-3a3 3 0 0 1 0 6c-1.7 0-2.8-1.4-5-3S8.7 9 7 9z" />
+  </svg>
+)
+
 /** More / overflow — three dots. */
 export const EllipsisIcon: Component<IconProps> = (props) => (
   <svg
