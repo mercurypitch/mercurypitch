@@ -117,13 +117,9 @@ function lockTimeFor(tl: DemoTimeline): number {
 const easeOutCubic = (p: number) => 1 - (1 - p) ** 3
 
 export const TaskDemo: Component<TaskDemoProps> = (props) => {
-  /* eslint-disable solid/reactivity -- kind and size are static per
-     instance: every call site passes a literal, and a different task's
-     demo is a remount (keyed <Show> branches), never a prop morph. */
   const kind = props.kind
   const dims = SIZES[props.size ?? 'stage']
   const isCard = (props.size ?? 'stage') === 'card'
-  /* eslint-enable solid/reactivity */
   const isActive = () => props.active?.() ?? true
   const tl = buildDemoTimeline(kind)
   // The guide cue (siren/hold) that plays alongside the animation — Glass's
