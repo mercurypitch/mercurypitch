@@ -454,17 +454,25 @@ body {
 .kn-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  /* minmax(0, …) not 1fr: a plain 1fr track is minmax(auto, 1fr), so a long
+     unbreakable library filename (min-content) forces the column — and the
+     page — wider than the viewport. minmax(0, 1fr) lets the column shrink so
+     the title truncates instead. */
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 1.25rem;
   padding: 0.5rem 1.5rem 1.25rem;
   align-items: start;
   min-height: 0;
+  min-width: 0;
 }
 
 .kn-rail {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  /* Let the rail (and its cards) shrink below their content so long song
+     names truncate instead of widening the column. */
+  min-width: 0;
 }
 
 /* Collapsed rail: a slim icon strip so the stage gets the full width. */
@@ -546,6 +554,7 @@ body {
   border-radius: 14px;
   padding: 1.1rem 1.2rem;
   backdrop-filter: blur(6px);
+  min-width: 0;
 }
 
 .kn-card--demo {
@@ -704,11 +713,13 @@ body {
 .kn-library {
   list-style: none;
   margin-top: 0.3rem;
+  padding-left: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   max-height: 14rem;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .kn-library-song {
@@ -716,6 +727,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
+  min-width: 0;
   text-align: left;
   padding: 0.5rem 0.6rem;
   border: none;
@@ -727,6 +739,7 @@ body {
 }
 
 .kn-library-title {
+  flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1065,7 +1078,7 @@ body {
 
 @media (max-width: 900px) {
   .kn-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 0.5rem 0.9rem 1rem;
   }
 

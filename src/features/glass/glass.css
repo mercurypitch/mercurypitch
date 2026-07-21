@@ -836,6 +836,10 @@ body {
 }
 @media (max-width: 879px) {
   /* Phones: the pane leads, the rail (FX + takes) tucks below it. */
+  .glass-stagegrid {
+    /* Single column that can't be widened by the takes strip's content. */
+    grid-template-columns: minmax(0, 1fr);
+  }
   .glass-stagegrid > .glass-rail {
     order: 2;
   }
@@ -850,6 +854,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* Grid child: allow it to shrink so the takes strip below can scroll
+     internally instead of widening the column past the viewport. */
+  min-width: 0;
 }
 
 /* The stage + its results overlay share one positioning box. */
@@ -1061,6 +1068,10 @@ body {
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
+    /* min-width:0 is what makes overflow-x scroll INSIDE the strip: without
+       it the flex item grows to fit the nowrap cards and shoves the page
+       sideways when a second take appears. */
+    min-width: 0;
     max-width: none;
     margin: 0;
     padding-bottom: 4px;
