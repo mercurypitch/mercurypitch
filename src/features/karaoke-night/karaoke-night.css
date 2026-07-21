@@ -831,6 +831,66 @@ body {
   vertical-align: middle;
 }
 
+/* Grouped library — a group header with its songs nested/indented under it. */
+.kn-library--grouped {
+  gap: 0.55rem;
+}
+
+.kn-library-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.kn-library-group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.1rem 0.2rem 0.05rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #cdbde6;
+}
+
+.kn-library-group-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kn-library-group--loose .kn-library-group-name {
+  color: #a89bc4;
+}
+
+.kn-library-group-count {
+  flex: none;
+  padding: 0.02rem 0.4rem;
+  border: 1px solid rgba(183, 154, 224, 0.3);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.1);
+  color: #cdbde6;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Nested song list — indented with a hairline rail to read as a hierarchy. */
+.kn-library-group-songs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  margin-left: 0.55rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid rgba(183, 154, 224, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 /* Playlist rows — a library row with a play glyph and a count tail. */
 .kn-playlist-row {
   display: flex;

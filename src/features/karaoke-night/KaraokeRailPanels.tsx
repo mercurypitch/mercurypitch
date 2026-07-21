@@ -7,10 +7,11 @@ import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-accept'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
-import { completeUvrSession, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
+import { completeUvrSession, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
 import { trackKaraoke } from './funnel'
 import { credits, refreshCredits, signedIn } from './karaoke-account'
+import { groupLibrarySongs } from './library-grouping'
 
 export interface KaraokeSong {
   sessionId: string
@@ -83,6 +84,12 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           (s.outputs !== undefined || s.stemMeta !== undefined),
       )
       .sort((a, b) => b.createdAt - a.createdAt),
+  )
+
+  // Once songs are organised into groups, fold the flat list into a
+  // group -> song hierarchy; with no non-empty group it stays a flat list.
+  const groupedLibrary = createMemo(() =>
+    groupLibrarySongs(librarySongs(), getGroupsReactive()),
   )
 
   const uploadSession = createMemo(() => {
@@ -228,6 +235,49 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     }
   }
 
+  // One library row — shared by the flat list and the grouped hierarchy so a
+  // song looks and behaves identically wherever it is nested.
+  type LibrarySong = ReturnType<typeof librarySongs>[number]
+  const songRow = (s: LibrarySong) => (
+    <li>
+      <button
+        class="kn-library-song"
+        classList={{
+          'kn-library-song--active': props.activeSessionId() === s.sessionId,
+          'kn-library-song--staging': stagingSessionId() === s.sessionId,
+        }}
+        disabled={stagingSessionId() !== null}
+        onClick={() => void singSession(s.sessionId, true)}
+        title={
+          stagingSessionId() === s.sessionId
+            ? 'Loading this song…'
+            : props.activeSessionId() === s.sessionId
+              ? 'On stage now'
+              : 'Sing this song'
+        }
+      >
+        <Show when={stagingSessionId() === s.sessionId}>
+          <span class="kn-song-spinner" aria-hidden="true" />
+        </Show>
+        <Show
+          when={
+            props.activeSessionId() === s.sessionId &&
+            stagingSessionId() !== s.sessionId
+          }
+        >
+          <span class="kn-eq" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </Show>
+        <span class="kn-library-title">
+          {s.originalFile?.name ?? s.sessionId}
+        </span>
+      </button>
+    </li>
+  )
+
   return (
     <>
       <section class="kn-card">
@@ -357,51 +407,51 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             Your library
             <span class="kn-count-pill">{librarySongs().length}</span>
           </p>
-          <ul class="kn-library">
-            <For each={librarySongs()}>
-              {(s) => (
-                <li>
-                  <button
-                    class="kn-library-song"
-                    classList={{
-                      'kn-library-song--active':
-                        props.activeSessionId() === s.sessionId,
-                      'kn-library-song--staging':
-                        stagingSessionId() === s.sessionId,
-                    }}
-                    disabled={stagingSessionId() !== null}
-                    onClick={() => void singSession(s.sessionId, true)}
-                    title={
-                      stagingSessionId() === s.sessionId
-                        ? 'Loading this song…'
-                        : props.activeSessionId() === s.sessionId
-                          ? 'On stage now'
-                          : 'Sing this song'
-                    }
-                  >
-                    <Show when={stagingSessionId() === s.sessionId}>
-                      <span class="kn-song-spinner" aria-hidden="true" />
-                    </Show>
-                    <Show
-                      when={
-                        props.activeSessionId() === s.sessionId &&
-                        stagingSessionId() !== s.sessionId
-                      }
-                    >
-                      <span class="kn-eq" aria-hidden="true">
-                        <i />
-                        <i />
-                        <i />
+          <Show
+            when={groupedLibrary().groups.length > 0}
+            fallback={
+              <ul class="kn-library">
+                <For each={librarySongs()}>{(s) => songRow(s)}</For>
+              </ul>
+            }
+          >
+            {/* Grouped view: a group header with its songs nested/indented
+                under it, then any loose songs under "Ungrouped". */}
+            <ul class="kn-library kn-library--grouped">
+              <For each={groupedLibrary().groups}>
+                {(g) => (
+                  <li class="kn-library-group">
+                    <p class="kn-library-group-head">
+                      <span class="kn-library-group-name" title={g.name}>
+                        {g.name}
                       </span>
-                    </Show>
-                    <span class="kn-library-title">
-                      {s.originalFile?.name ?? s.sessionId}
+                      <span class="kn-library-group-count">
+                        {g.songs.length}
+                      </span>
+                    </p>
+                    <ul class="kn-library-group-songs">
+                      <For each={g.songs}>{(s) => songRow(s)}</For>
+                    </ul>
+                  </li>
+                )}
+              </For>
+              <Show when={groupedLibrary().ungrouped.length > 0}>
+                <li class="kn-library-group kn-library-group--loose">
+                  <p class="kn-library-group-head">
+                    <span class="kn-library-group-name">Ungrouped</span>
+                    <span class="kn-library-group-count">
+                      {groupedLibrary().ungrouped.length}
                     </span>
-                  </button>
+                  </p>
+                  <ul class="kn-library-group-songs">
+                    <For each={groupedLibrary().ungrouped}>
+                      {(s) => songRow(s)}
+                    </For>
+                  </ul>
                 </li>
-              )}
-            </For>
-          </ul>
+              </Show>
+            </ul>
+          </Show>
         </section>
       </Show>
 
