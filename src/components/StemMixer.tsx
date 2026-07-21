@@ -5688,4 +5688,3 @@ export const StemMixerStyles: string = `
   opacity: 0.5;
   cursor: not-allowed;
 }`
-
