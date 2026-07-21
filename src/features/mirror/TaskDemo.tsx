@@ -117,6 +117,10 @@ function lockTimeFor(tl: DemoTimeline): number {
 const easeOutCubic = (p: number) => 1 - (1 - p) ** 3
 
 export const TaskDemo: Component<TaskDemoProps> = (props) => {
+  // `kind` and `size` are static for a given instance, so they are read once:
+  // HowItWorks renders one demo per reference-keyed step, and MirrorApp mounts
+  // this inside a <Show when={subPhase === 'intro'}> that leaves 'intro'
+  // between tasks — a new task is a fresh mount, never a prop morph.
   const kind = props.kind
   const dims = SIZES[props.size ?? 'stage']
   const isCard = (props.size ?? 'stage') === 'card'
