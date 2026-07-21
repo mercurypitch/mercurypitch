@@ -1141,6 +1141,7 @@ export const MirrorApp: Component = () => {
                 kind={session().phase as DemoKind}
                 size="stage"
                 label={`Animated demo: ${currentTask()?.instruction ?? ''}`}
+                getAudioContext={() => audioContext}
               />
               <button
                 class="mirror-cta mirror-cta-ready"
