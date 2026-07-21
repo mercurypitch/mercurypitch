@@ -58,3 +58,13 @@ across the hierarchy. Verified by `LIB-GROUP-6`.
 **Ubiquitous:** A song row shall behave identically whether shown flat or nested
 — same click-to-stage action, active/staging accents, spinner, and equalizer —
 and the library count pill shall continue to report the total song count.
+
+### REQ-KLG-009 — Confirmation modal for group deletion
+**WHEN** a user triggers deletion of a session group (via clicking the delete x button on a group header or tab), **THEN** the system shall display an accessible confirmation modal naming the group and stating that its member songs will be removed, without performing any deletion until confirmed. Cancel shall preserve the group and songs unchanged.
+
+### REQ-KLG-010 — Keyboard accessibility for deletion confirmation
+**WHILE** the group deletion confirmation modal is displayed, **THEN** the system shall enforce a focus trap, close the modal on `Escape`, and prevent silent confirmation on default `Enter` keypresses without explicit user confirmation.
+
+### REQ-KLG-011 — Durable deletion persistence
+**WHEN** a group deletion is confirmed, **THEN** the system shall await DB deletion of the group record and its member sessions/references before updating UI state, ensuring that a full page reload or store rehydration does not restore the deleted group or leave dangling references.
+

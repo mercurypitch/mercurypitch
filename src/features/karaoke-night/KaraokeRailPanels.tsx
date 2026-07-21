@@ -2,12 +2,14 @@
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { X } from '@/components/icons'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-accept'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
-import { completeUvrSession, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
+import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { DEMO_SESSION_ID } from './demo-song'
 import { trackKaraoke } from './funnel'
 import { credits, refreshCredits, signedIn } from './karaoke-account'
@@ -50,6 +52,11 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const [mode, setMode] = createSignal<UvrProcessingMode>(
     getUvrProcessingMode(),
   )
+  const [groupToDelete, setGroupToDelete] = createSignal<{
+    id: string
+    name: string
+    songCount: number
+  } | null>(null)
 
   // Server mode is only usable with a signed-in account (billing) and credits.
   const serverReady = () => signedIn() && (credits() ?? 0) > 0
@@ -428,6 +435,20 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                       <span class="kn-library-group-count">
                         {g.songs.length}
                       </span>
+                      <button
+                        class="kn-group-delete-btn"
+                        title={`Delete group ${g.name}`}
+                        data-testid={`group-delete-${g.id}`}
+                        onClick={() =>
+                          setGroupToDelete({
+                            id: g.id,
+                            name: g.name,
+                            songCount: g.songs.length,
+                          })
+                        }
+                      >
+                        <X />
+                      </button>
                     </p>
                     <ul class="kn-library-group-songs">
                       <For each={g.songs}>{(s) => songRow(s)}</For>
@@ -452,6 +473,33 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
               </Show>
             </ul>
           </Show>
+
+          <ConfirmDialog
+            open={groupToDelete() !== null}
+            title={`Delete "${groupToDelete()?.name ?? 'group'}"?`}
+            message={
+              <>
+                Are you sure you want to delete{' '}
+                <strong>{groupToDelete()?.name}</strong>?
+                {(groupToDelete()?.songCount ?? 0) > 0
+                  ? ` This will delete the group and its ${
+                      groupToDelete()?.songCount === 1
+                        ? '1 song'
+                        : `${groupToDelete()?.songCount} songs`
+                    }.`
+                  : ' This will delete the group.'}
+              </>
+            }
+            confirmLabel="Delete"
+            onConfirm={() => {
+              const target = groupToDelete()
+              if (target) {
+                setGroupToDelete(null)
+                void deleteGroupWithSessions(target.id)
+              }
+            }}
+            onCancel={() => setGroupToDelete(null)}
+          />
         </section>
       </Show>
 

@@ -339,21 +339,30 @@ export async function createGroup(name: string): Promise<SessionGroupRecord> {
 
 /** Delete a group. Sessions that belonged to it become ungrouped. */
 export async function deleteGroup(groupId: string): Promise<void> {
+  const cache = _groupsCache()
+  const group = cache.find((g) => g.id === groupId)
+  const sessionIdsToClear = new Set<string>(group?.sessionIds ?? [])
+
+  for (const session of getAllUvrSessions()) {
+    if (session.groupId === groupId) {
+      sessionIdsToClear.add(session.sessionId)
+    }
+  }
+
+  // Clear groupId from sessions in memory and persist durably
+  for (const sid of sessionIdsToClear) {
+    const session = getUvrSession(sid)
+    if (session) {
+      const updated = { ...session, groupId: undefined }
+      updateSessionCache(updated)
+      await upsertSessionRecord(updated)
+    }
+  }
+
+  // Delete the group itself from DB
   const db = await getDb()
   const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
   await repo.delete(groupId)
-
-  // Clear groupId from sessions that belonged to this group
-  const cache = _groupsCache()
-  const group = cache.find((g) => g.id === groupId)
-  if (group) {
-    for (const sid of group.sessionIds) {
-      const session = getUvrSession(sid)
-      if (session) {
-        upsertSessionInCache({ ...session, groupId: undefined })
-      }
-    }
-  }
 
   _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
   bumpGroups()
@@ -363,19 +372,34 @@ export async function deleteGroup(groupId: string): Promise<void> {
 export async function deleteGroupWithSessions(groupId: string): Promise<void> {
   const cache = _groupsCache()
   const group = cache.find((g) => g.id === groupId)
-  const sessionIds = group?.sessionIds ?? []
+  const sessionIdsToDelete = new Set<string>(group?.sessionIds ?? [])
 
-  // Delete each session in the group
-  for (const sid of sessionIds) {
-    deleteUvrSession(sid)
+  for (const session of getAllUvrSessions()) {
+    if (session.groupId === groupId) {
+      sessionIdsToDelete.add(session.sessionId)
+    }
   }
 
-  // Delete the group itself
+  // Remove group from cache first to avoid race conditions with removeSessionFromGroup
+  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
+  bumpGroups()
+
+  // Delete each session in the group from cache and DB
+  for (const sid of sessionIdsToDelete) {
+    removeSessionFromCache(sid)
+    void deleteLyricsFromDb(sid)
+    await deleteUvrSessionFromDb(sid)
+    if (currentUvrSession()?.sessionId === sid) {
+      setCurrentUvrSession(null)
+    }
+  }
+
+  // Delete the group itself from DB
   const db = await getDb()
   const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
   await repo.delete(groupId)
 
-  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
+  bumpSessions()
   bumpGroups()
 }
 
@@ -975,11 +999,12 @@ export function startUvrSession(
   fileName: string,
   fileSize: number,
   mimeType: string,
-  _mode: UvrMode = 'separate',
+  mode: UvrMode = 'separate',
   processingMode?: UvrProcessingMode,
   fileHash?: string,
   focus = true,
 ): string {
+  void mode
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
 

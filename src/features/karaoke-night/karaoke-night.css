@@ -891,6 +891,32 @@ body {
   letter-spacing: 0;
 }
 
+.kn-group-delete-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #a89bc4;
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 0.25rem;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.kn-group-delete-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+}
+
+.kn-group-delete-btn svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
 /* Nested song list — indented with a hairline rail to read as a hierarchy. */
 .kn-library-group-songs {
   list-style: none;
