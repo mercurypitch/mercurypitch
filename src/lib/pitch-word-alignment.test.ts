@@ -152,6 +152,17 @@ describe('filterWordSegments', () => {
     expect(filtered).toHaveLength(1)
     expect(filtered[0].text.trim()).toBe('word')
   })
+
+  it('removes zero-length and negative-duration segments', () => {
+    const segments: WhisperSegment[] = [
+      { text: 'zero', timestamp: [0.5, 0.5] },
+      { text: 'negative', timestamp: [1.0, 0.8] },
+      { text: 'valid', timestamp: [1.0, 1.5] },
+    ]
+    const filtered = filterWordSegments(segments)
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0].text).toBe('valid')
+  })
 })
 
 describe('alignPitchToWords — debugEntries', () => {
