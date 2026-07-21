@@ -117,25 +117,26 @@ function lockTimeFor(tl: DemoTimeline): number {
 const easeOutCubic = (p: number) => 1 - (1 - p) ** 3
 
 export const TaskDemo: Component<TaskDemoProps> = (props) => {
-  const kind = props.kind
-  const dims = SIZES[props.size ?? 'stage']
-  const isCard = (props.size ?? 'stage') === 'card'
+  const kind = () => props.kind
+  const size = () => props.size ?? 'stage'
+  const dims = SIZES[size()]
+  const isCard = size() === 'card'
   const isActive = () => props.active?.() ?? true
-  const tl = buildDemoTimeline(kind)
+  const tl = buildDemoTimeline(kind())
   // The guide cue (siren/hold) that plays alongside the animation — Glass's
   // decision 18: users should HEAR what to do, not just watch it.
   const cue = createDemoCue(
-    planDemoCue(kind, tl),
+    planDemoCue(kind(), tl),
     () => props.getAudioContext?.() ?? null,
   )
-  const stars = starsFor(kind, dims.w, dims.h)
-  const lockT = kind === 'match' ? lockTimeFor(tl) : Infinity
+  const stars = starsFor(kind(), dims.w, dims.h)
+  const lockT = kind() === 'match' ? lockTimeFor(tl) : Infinity
   const targetCents = hzToCents(tl.guide[0].f0)
   const sing = tl.segments.find((s) => s.kind === 'sing') ?? tl.segments[0]
   // Glides/hold map the sing window across the width; match maps the whole
   // loop so the listen beat visibly precedes the sung scoop.
-  const winStart = kind === 'match' ? 0 : sing.start
-  const winEnd = kind === 'match' ? tl.durationSec : sing.end
+  const winStart = kind() === 'match' ? 0 : sing.start
+  const winEnd = kind() === 'match' ? tl.durationSec : sing.end
 
   const [caption, setCaption] = createSignal<
     'listen' | 'ready' | 'sing' | 'rest'
@@ -169,7 +170,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
       y: yFor(cents),
       voiced: f.conf >= CONF_MIN,
       locked:
-        (kind === 'match' || kind === 'hold') &&
+        (kind() === 'match' || kind() === 'hold') &&
         Math.abs(foldCents(cents - targetCents)) <= HIT_TOLERANCE_CENTS,
     }
   })
@@ -216,8 +217,8 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
 
   /** Direction chevron near the start of a glide path. */
   function drawChevron(ctx: CanvasRenderingContext2D): void {
-    if (kind !== 'glide-up' && kind !== 'glide-down') return
-    const up = kind === 'glide-up'
+    if (kind() !== 'glide-up' && kind() !== 'glide-down') return
+    const up = kind() === 'glide-up'
     const x = xFor(winStart) + 10
     const y = yFor(hzToCents(tl.guide[0].f0)) + (up ? -18 : 18)
     ctx.strokeStyle = 'rgba(255, 233, 168, 0.75)'
@@ -369,7 +370,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     drawStars(ctx, loopT, still)
 
     let guideAlpha = 1
-    if (kind === 'match' && seg.kind === 'ready' && !still) {
+    if (kind() === 'match' && seg.kind === 'ready' && !still) {
       // Two count-in pulses on the target line before the sing beat.
       const p = (state.t - seg.start) / (seg.end - seg.start)
       guideAlpha = 0.55 + 0.45 * Math.abs(Math.sin(Math.PI * 2 * p))
@@ -377,7 +378,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
     drawGuide(ctx, guideAlpha)
     drawChevron(ctx)
 
-    if (kind === 'match' && seg.kind === 'listen' && !still) {
+    if (kind() === 'match' && seg.kind === 'listen' && !still) {
       const listen = tl.segments[0]
       drawListenPulse(ctx, state.t, listen.start, listen.end)
     }
@@ -388,19 +389,19 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
 
     const head = count > 0 ? voicePts[count - 1] : null
     if (head && head.voiced) {
-      if (kind === 'hold') {
+      if (kind() === 'hold') {
         const p = still
           ? 1
           : Math.min(1, (state.t - sing.start) / (sing.end - sing.start))
         drawHoldRing(ctx, head.x, head.y, p, fade)
       }
       drawHead(ctx, head.x, head.y, head.locked, still ? 0.9 : fade)
-      if (kind === 'match' && !still) {
+      if (kind() === 'match' && !still) {
         drawLockSparks(ctx, state.t, head.x, head.y)
       }
     }
 
-    if (kind === 'match') {
+    if (kind() === 'match') {
       // The static poster shows the completed, locked-on take — caption it
       // with the sing step, not the "Listen…" the loop happens to start on.
       setCaption(still ? 'sing' : seg.kind)
@@ -503,7 +504,7 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
         aria-label={props.label}
         style={{ 'max-width': `${dims.w}px` }}
       />
-      <Show when={kind === 'match'}>
+      <Show when={kind() === 'match'}>
         <div class="mirror-demo-caption" aria-hidden="true">
           {CAPTIONS[caption()]}
         </div>
