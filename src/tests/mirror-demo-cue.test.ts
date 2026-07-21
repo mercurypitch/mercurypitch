@@ -2,7 +2,7 @@
 // Requirements: docs/specs/mirror-demo-audio-cues.ears.md (MDA-*)
 
 import { describe, expect, it } from 'vitest'
-import { planDemoCue, playDemoCue } from '@/features/mirror/demo-cue'
+import { createDemoCue, planDemoCue, playDemoCue, } from '@/features/mirror/demo-cue'
 import { playSirenSweep } from '@/lib/demo-audio'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { DemoTimeline } from '@/lib/mirror/demo-timeline'
@@ -19,8 +19,10 @@ function singSeconds(tl: DemoTimeline): number {
   return sing.end - sing.start
 }
 
-/** A capturing fake AudioContext that records oscillator frequency automation. */
-function fakeContext() {
+/** A capturing fake AudioContext that records oscillator frequency automation,
+ *  oscillator stops, and resume() calls. `state` is fixed at construction. */
+function fakeContext(state: AudioContextState = 'running') {
+  const counters = { stops: 0, resumes: 0 }
   const oscillators: Array<{
     frequency: { value: number; setCalls: number[]; rampCalls: number[] }
   }> = []
@@ -33,8 +35,12 @@ function fakeContext() {
   })
   const ctx = {
     currentTime: 0,
-    state: 'running' as const,
+    state,
     destination: {},
+    resume: () => {
+      counters.resumes++
+      return Promise.resolve()
+    },
     createGain: () => ({
       gain: param(),
       connect: () => undefined,
@@ -57,13 +63,15 @@ function fakeContext() {
         },
         connect: () => undefined,
         start: () => undefined,
-        stop: () => undefined,
+        stop: () => {
+          counters.stops++
+        },
       }
       oscillators.push(osc)
       return osc
     },
   }
-  return { ctx: ctx as unknown as AudioContext, oscillators }
+  return { ctx: ctx as unknown as AudioContext, oscillators, counters }
 }
 
 describe('planDemoCue', () => {
@@ -162,5 +170,67 @@ describe('playDemoCue dispatch', () => {
     // A steady tone sets .value directly with no frequency ramp.
     expect(oscillators[0].frequency.value).toBeCloseTo(HOLD, 2)
     expect(oscillators[0].frequency.rampCalls).toHaveLength(0)
+  })
+})
+
+describe('createDemoCue lifecycle', () => {
+  const glidePlan = planDemoCue('glide-up', buildDemoTimeline('glide-up'))
+
+  it('MDA-7: plays once when shown, stops when hidden, replays on re-show', () => {
+    const { ctx, oscillators, counters } = fakeContext()
+    const cue = createDemoCue(glidePlan, () => ctx)
+
+    cue.sync(true)
+    expect(oscillators).toHaveLength(1) // started
+    cue.sync(true) // idempotent — no double-start
+    expect(oscillators).toHaveLength(1)
+
+    cue.sync(false)
+    expect(counters.stops).toBeGreaterThan(0) // stopped
+
+    cue.sync(true)
+    expect(oscillators).toHaveLength(2) // replayed on re-show
+  })
+
+  it('MDA-7: stop() releases the active cue', () => {
+    const { ctx, counters } = fakeContext()
+    const cue = createDemoCue(glidePlan, () => ctx)
+    cue.sync(true)
+    cue.stop()
+    expect(counters.stops).toBeGreaterThan(0)
+  })
+
+  it('MDA-4/8: never plays when there is no cue plan', () => {
+    const { ctx, oscillators } = fakeContext()
+    const cue = createDemoCue(null, () => ctx)
+    cue.sync(true)
+    expect(oscillators).toHaveLength(0)
+  })
+
+  it('MDA-8: stays silent with no context, and retries once one appears', () => {
+    let ctxRef: AudioContext | null = null
+    const cue = createDemoCue(glidePlan, () => ctxRef)
+
+    cue.sync(true) // no context yet → silent, and NOT latched as "playing"
+    // Now a context appears; the next sync must actually start the cue.
+    const live = fakeContext()
+    ctxRef = live.ctx
+    cue.sync(true)
+    expect(live.oscillators).toHaveLength(1)
+  })
+
+  it('MDA-8: stays silent for a closed context', () => {
+    const { ctx, oscillators } = fakeContext('closed')
+    const cue = createDemoCue(glidePlan, () => ctx)
+    cue.sync(true)
+    expect(oscillators).toHaveLength(0)
+  })
+
+  it('MDA-9: resumes a suspended context before scheduling the cue', () => {
+    const { ctx, oscillators, counters } = fakeContext('suspended')
+    const cue = createDemoCue(glidePlan, () => ctx)
+    cue.sync(true)
+    expect(counters.resumes).toBe(1)
+    expect(oscillators).toHaveLength(1)
   })
 })
