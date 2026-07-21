@@ -17,6 +17,7 @@
 // (sessions, badges, progress) stay attached to the same userId.
 
 import { sendEmailVerification, sendSignupWelcome } from './email'
+import { shouldTouchLastActive } from './last-active'
 
 export interface Env {
   DB: D1Database
@@ -190,22 +191,29 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   if (!payload) return null
 
   // Fail closed: the user must still exist, and a token whose version is below
-  // the stored tokenVersion was revoked (logout, etc.). A length mismatch is
-  // folded into the result rather than returned early.
+  // the stored tokenVersion was revoked (logout, etc.). A missing `v` claim is
+  // treated as version 0 so a single tokenVersion bump also revokes legacy
+  // tokens.
   const user = await env.DB.prepare('SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?')
     .bind(payload.sub)
     .first<{ tokenVersion: number; lastActiveAt: string | null }>()
   if (!user) return null
   if (user.tokenVersion > (payload.v ?? 0)) return null
 
-  // Throttled last-active touch: update at most once per 15 minutes so
-  // ongoing site visits are tracked without multiplying D1 writes.
-  const ACTIVE_THROTTLE_MS = 15 * 60 * 1000
-  const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0
-  if (Date.now() - lastActive > ACTIVE_THROTTLE_MS) {
-    void env.DB.prepare('UPDATE users SET lastActiveAt = ? WHERE id = ?')
-      .bind(new Date().toISOString(), payload.sub)
-      .run()
+  // Throttled last-active touch: at most one write per user per window (see
+  // shouldTouchLastActive), so ongoing visits are tracked without multiplying
+  // D1 writes. Awaited inside try/catch on purpose: a best-effort tracking
+  // write must never fail auth, and — since getAuth has no ExecutionContext to
+  // waitUntil() — must not be a dangling promise the runtime can cancel once
+  // the response is returned.
+  if (shouldTouchLastActive(user.lastActiveAt, Date.now())) {
+    try {
+      await env.DB.prepare('UPDATE users SET lastActiveAt = ? WHERE id = ?')
+        .bind(new Date().toISOString(), payload.sub)
+        .run()
+    } catch {
+      // Ignore: last-active tracking is best-effort.
+    }
   }
 
   return { userId: payload.sub, provider: payload.provider }
