@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS users (
   emailVerified BOOLEAN NOT NULL DEFAULT 0,
   passwordHash TEXT,
   lastLoginAt TEXT,
+  -- Updated on every authenticated API request (throttled to 15 min).
+  -- Unlike lastLoginAt (token issuance only), this tracks ongoing usage.
+  -- Admin-only — not exposed via publicUser() or /api/auth/me.
+  -- Existing DBs: see scripts/migrate-users-add-lastActiveAt.sql.
+  lastActiveAt TEXT,
   -- JWT revocation counter (see auth.ts): issued tokens carry `v`; logout
   -- increments this so older tokens fail the `getAuth` version check.
   -- Required by createUser/issueSession/getAuth — a fresh DB without it

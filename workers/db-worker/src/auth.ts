@@ -80,6 +80,7 @@ interface UserRow {
   emailVerified: number
   passwordHash: string | null
   lastLoginAt: string | null
+  lastActiveAt: string | null
   tokenVersion: number
 }
 
@@ -189,14 +190,23 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   if (!payload) return null
 
   // Fail closed: the user must still exist, and a token whose version is below
-  // the stored tokenVersion was revoked (logout, etc.). A missing `v` claim is
-  // treated as version 0 so a single tokenVersion bump also revokes legacy
-  // tokens.
-  const user = await env.DB.prepare('SELECT tokenVersion FROM users WHERE id = ?')
+  // the stored tokenVersion was revoked (logout, etc.). A length mismatch is
+  // folded into the result rather than returned early.
+  const user = await env.DB.prepare('SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?')
     .bind(payload.sub)
-    .first<{ tokenVersion: number }>()
+    .first<{ tokenVersion: number; lastActiveAt: string | null }>()
   if (!user) return null
   if (user.tokenVersion > (payload.v ?? 0)) return null
+
+  // Throttled last-active touch: update at most once per 15 minutes so
+  // ongoing site visits are tracked without multiplying D1 writes.
+  const ACTIVE_THROTTLE_MS = 15 * 60 * 1000
+  const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0
+  if (Date.now() - lastActive > ACTIVE_THROTTLE_MS) {
+    void env.DB.prepare('UPDATE users SET lastActiveAt = ? WHERE id = ?')
+      .bind(new Date().toISOString(), payload.sub)
+      .run()
+  }
 
   return { userId: payload.sub, provider: payload.provider }
 }
