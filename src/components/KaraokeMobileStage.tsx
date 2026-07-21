@@ -20,6 +20,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
+import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
 import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
@@ -29,6 +30,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
+import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -117,6 +119,15 @@ export interface KaraokeMobileStageProps {
   onUploadLyrics?: (result: LyricsUploadResult) => void
   lyricsSuggestion?: () => string
   lrclibSearchUrl?: () => string
+
+  /** LRCLIB search wiring. When present, the no-lyrics state shows the same
+      inline search + match list the studio uses (always visible, even with no
+      matches), with the manual uploader beneath it. Omit for a plain prompt. */
+  songMatches?: () => LyricsSearchMatch[]
+  songPickerQuery?: () => string
+  onSongPickerQuery?: (v: string) => void
+  onSongPickerRefine?: () => void
+  onSongPick?: (match: LyricsSearchMatch) => void
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -409,17 +420,50 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                 when={!props.lyricsLoading()}
                 fallback={<p>Finding the lyrics…</p>}
               >
-                <p>No synced lyrics for this song yet.</p>
-                <p class={styles.noLyricsSub}>
-                  The music still plays — sing it your way.
-                </p>
-                <Show when={props.onUploadLyrics}>
-                  <button
-                    class={styles.addLyricsBtn}
-                    onClick={() => setAddLyricsOpen(true)}
-                  >
-                    Add lyrics
-                  </button>
+                <Show
+                  when={props.songMatches !== undefined}
+                  fallback={
+                    <>
+                      <p>No synced lyrics for this song yet.</p>
+                      <p class={styles.noLyricsSub}>
+                        The music still plays — sing it your way.
+                      </p>
+                      <Show when={props.onUploadLyrics}>
+                        <button
+                          class={styles.addLyricsBtn}
+                          onClick={() => setAddLyricsOpen(true)}
+                        >
+                          Add lyrics
+                        </button>
+                      </Show>
+                    </>
+                  }
+                >
+                  <div class={styles.finder}>
+                    <div class={styles.finderHead}>
+                      <p>No synced lyrics yet</p>
+                      <p class={styles.noLyricsSub}>
+                        Find them on LRCLIB, or add your own.
+                      </p>
+                    </div>
+                    <LyricsSongPicker
+                      variant="inline"
+                      matches={props.songMatches!()}
+                      query={props.songPickerQuery?.() ?? ''}
+                      onQueryChange={(v) => props.onSongPickerQuery?.(v)}
+                      onPick={(m) => props.onSongPick?.(m)}
+                      onRefine={() => props.onSongPickerRefine?.()}
+                    />
+                    <Show when={props.onUploadLyrics}>
+                      <div class={styles.finderOr}>or add your own</div>
+                      <LyricsUploader
+                        compact
+                        suggestion={props.lyricsSuggestion?.()}
+                        searchUrl={props.lrclibSearchUrl?.()}
+                        onUpload={(result) => props.onUploadLyrics?.(result)}
+                      />
+                    </Show>
+                  </div>
                 </Show>
               </Show>
             </div>

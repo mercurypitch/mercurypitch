@@ -10,7 +10,7 @@ import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsContro
 import { computeRestProgress } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { MagnifyingGlass } from './icons'
+import { LyricsSongPicker } from './LyricsSongPicker'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
 
@@ -20,178 +20,6 @@ interface ParsedLyric {
   endTime: number
   words: string[]
   wordTimes?: number[]
-}
-
-interface SongPickerProps {
-  matches: LyricsSearchMatch[]
-  query: string
-  onQueryChange: (v: string) => void
-  onPick: (match: LyricsSearchMatch) => void
-  onRefine: () => void
-  onUploadFile: () => void
-  onPasteText?: (text: string, isLrc: boolean) => void
-  onCancel: () => void
-}
-
-const SongPicker = (p: SongPickerProps) => {
-  let inputRef: HTMLInputElement | undefined
-
-  const lrclibQueryUrl = () => {
-    const q = p.query?.trim()
-    if (!q) return 'https://lrclib.net'
-    return `https://lrclib.net/search/${encodeURIComponent(q)}`
-  }
-
-  onMount(() => {
-    const handleGlobalPaste = (e: ClipboardEvent) => {
-      // Don't intercept if user is typing in an input box
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return
-      }
-
-      const text = e.clipboardData?.getData('text')
-      if (text !== undefined && text !== '' && text.trim().length > 0) {
-        e.preventDefault()
-        const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
-        p.onPasteText?.(text, isLrc)
-      }
-    }
-
-    document.addEventListener('paste', handleGlobalPaste)
-    onCleanup(() => document.removeEventListener('paste', handleGlobalPaste))
-  })
-
-  return (
-    <div class="sm-song-picker">
-      <div class="sm-song-picker-header">Search Lyrics Online</div>
-      <div class="sm-song-picker-search">
-        <input
-          ref={inputRef}
-          type="text"
-          class="sm-song-picker-input"
-          value={p.query}
-          onInput={(e) => p.onQueryChange(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') p.onRefine()
-          }}
-          placeholder="Artist - Title"
-        />
-        <button
-          class="sm-song-picker-search-btn sm-btn sm-btn-secondary"
-          onClick={() => p.onRefine()}
-          title="Search"
-        >
-          Search
-        </button>
-        <Show when={p.onPasteText}>
-          <button
-            class="sm-song-picker-paste-btn sm-btn sm-btn-secondary"
-            onClick={() => {
-              void (async () => {
-                try {
-                  const text = await navigator.clipboard.readText()
-                  if (text && text.trim().length > 0) {
-                    const isLrc = /^\[\d{1,3}:\d{2}/.test(text.trim())
-                    p.onPasteText?.(text, isLrc)
-                  }
-                } catch (err) {
-                  console.warn('Clipboard paste failed', err)
-                  // If browser blocks the API, prompt them to use Ctrl+V
-                  import('@/stores/notifications-store').then(
-                    ({ showNotification }) => {
-                      showNotification(
-                        'Browser blocked clipboard access. Please press Ctrl+V to paste instead.',
-                        'warning',
-                      )
-                    },
-                  )
-                }
-              })()
-            }}
-            title="Paste lyrics from clipboard"
-          >
-            Paste
-          </button>
-        </Show>
-      </div>
-
-      <Show
-        when={p.matches.length > 0}
-        fallback={
-          <div class="sm-song-picker-no-results">
-            <span class="sm-song-picker-no-results-title">
-              No matching songs found
-            </span>
-            <span class="sm-song-picker-no-results-hint">
-              Try refining your search terms above or search on LRCLIB.
-            </span>
-            <a
-              class="sm-song-picker-lrclib-link"
-              href={lrclibQueryUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MagnifyingGlass />
-              Search on LRCLIB
-            </a>
-          </div>
-        }
-      >
-        <div
-          class="sm-song-picker-header-count"
-          style={{
-            'font-size': '0.75rem',
-            'font-weight': '500',
-            color: 'var(--fg-secondary, #8b949e)',
-            'margin-top': '0.25rem',
-          }}
-        >
-          Found {p.matches.length} matching songs:
-        </div>
-        <div class="sm-song-picker-list">
-          <For each={p.matches}>
-            {(m) => (
-              <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
-                <span class="sm-song-picker-artist">{m.artist}</span>
-                <span class="sm-song-picker-sep"> - </span>
-                <span class="sm-song-picker-title">{m.title}</span>
-                {m.syncedLyrics !== undefined && (
-                  <span class="sm-song-picker-badge">LRC</span>
-                )}
-              </button>
-            )}
-          </For>
-        </div>
-      </Show>
-
-      <div class="sm-song-picker-footer-actions">
-        <button
-          class="sm-btn sm-btn-secondary"
-          onClick={() => p.onCancel()}
-          style={{ 'font-size': '0.75rem', padding: '0.35rem 0.75rem' }}
-        >
-          Cancel
-        </button>
-        <button
-          class="sm-btn sm-btn-primary"
-          onClick={() => p.onUploadFile()}
-          style={{
-            'font-size': '0.75rem',
-            padding: '0.35rem 0.75rem',
-            gap: '0.35rem',
-          }}
-        >
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-          </svg>
-          Upload LRC / TXT File
-        </button>
-      </div>
-    </div>
-  )
 }
 
 export interface StemMixerLyricsPanelBodyProps {
@@ -1314,7 +1142,9 @@ export const StemMixerLyricsPanelBody: Component<
             />
           }
         >
-          <SongPicker
+          <LyricsSongPicker
+            variant="panel"
+            autoFocus
             matches={props.songMatches()}
             query={props.songPickerQuery()}
             onQueryChange={props.setSongPickerQuery}
