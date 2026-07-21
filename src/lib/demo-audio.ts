@@ -72,19 +72,20 @@ function envelope(
 }
 
 /**
- * "Like a siren": an exponential low→high sweep — the calibration glide's
- * audible example.
+ * "Like a siren": an exponential frequency sweep from `fromHz` to `toHz` — the
+ * calibration glide's audible example. Direction-agnostic, so `fromHz > toHz`
+ * sweeps downward (the Voice Mirror's glide-down cue). Defaults sweep low→high.
  */
 export function playSirenSweep(
   ctx: AudioContext,
-  { lowHz = 150, highHz = 640, seconds = 2.2 } = {},
+  { fromHz = 150, toHz = 640, seconds = 2.2 } = {},
 ): DemoSound {
   const { master, track, handle } = sound(ctx)
   const t = ctx.currentTime
   const osc = ctx.createOscillator()
   osc.type = 'sine'
-  osc.frequency.setValueAtTime(lowHz, t)
-  osc.frequency.exponentialRampToValueAtTime(highHz, t + seconds)
+  osc.frequency.setValueAtTime(fromHz, t)
+  osc.frequency.exponentialRampToValueAtTime(toHz, t + seconds)
   envelope(master.gain, t, seconds, DEMO_GAIN)
   osc.connect(master)
   osc.start(t)

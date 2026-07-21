@@ -64,6 +64,10 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
   // A tap pins only until that card's loop wraps; a hover pins until leave.
   let pinnedByTap = false
   let advancedAt = 0
+  // A best-effort context for the guide cues (siren/hold). The overview is
+  // reached by a tap, so sticky activation usually lets it run; if the browser
+  // keeps it suspended (strict autoplay), the cards simply stay silent.
+  let audioContext: AudioContext | null = null
 
   function advance(from: number): void {
     setSpotlight((from + 1) % STEPS.length)
@@ -73,6 +77,13 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
   onMount(() => {
     trackFunnel('howto_view')
     advancedAt = performance.now()
+    if (typeof AudioContext !== 'undefined') {
+      try {
+        audioContext = new AudioContext()
+      } catch {
+        audioContext = null
+      }
+    }
     // Watchdog: the cycle normally advances on the active card's loop end,
     // but that loop pauses when its canvas is offscreen (small viewports)
     // or under reduced motion — the story must keep stepping regardless.
@@ -87,7 +98,11 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
         advance(spotlight())
       }
     }, 1000)
-    onCleanup(() => clearInterval(watchdog))
+    onCleanup(() => {
+      clearInterval(watchdog)
+      void audioContext?.close().catch(() => undefined)
+      audioContext = null
+    })
   })
 
   function handleLoopEnd(index: number): void {
@@ -155,6 +170,7 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
                 label={`Animated demo: ${step.blurb}`}
                 active={() => activeIndex() === index()}
                 onLoopEnd={() => handleLoopEnd(index())}
+                getAudioContext={() => audioContext}
               />
               <p class="mirror-howto-blurb">{step.blurb}</p>
             </div>
