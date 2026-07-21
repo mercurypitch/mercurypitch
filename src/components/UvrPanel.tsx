@@ -1040,8 +1040,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       session?.outputs ? Object.keys(session.outputs) : 'none',
     )
     if (!session) {
-      console.log('[UvrPanel] session not found, falling back to results')
-      setCurrentView('results')
+      // A deep-link to a session that isn't here (deleted, another device, or
+      // the Karaoke Night demo, which is never a real session). Land on the
+      // upload home — an empty 'results' view just looks broken.
+      console.log('[UvrPanel] session not found, falling back to upload')
+      setCurrentView('upload')
       return
     }
     // Refresh outputs from API if we have an API session ID

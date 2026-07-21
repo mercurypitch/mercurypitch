@@ -273,7 +273,14 @@ export function KaraokeNightApp() {
             </button>
           </Show>
           <a
-            href={studioSessionUrl(activeSong()?.sessionId)}
+            href={studioSessionUrl(
+              // The demo/opener isn't a real library session, so a session
+              // deep-link would open an empty studio. Send it to the studio
+              // home instead.
+              activeSong()?.sessionId === DEMO_SESSION_ID
+                ? null
+                : activeSong()?.sessionId,
+            )}
             onClick={() => trackKaraoke('karaoke_cta_studio')}
           >
             Open the studio
