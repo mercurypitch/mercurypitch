@@ -1,5 +1,6 @@
-import { createSignal, lazy, onMount, Show, Suspense } from 'solid-js'
+import { createSignal, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
+import { studioSessionUrl } from '@/lib/karaoke-night-link'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
@@ -79,8 +80,122 @@ export function KaraokeNightApp() {
     }
   }
 
+  const updateSessionUrl = (sessionId: string | null, push = true) => {
+    try {
+      const currentParams = new URLSearchParams(window.location.search)
+      const currentSession = currentParams.get('session')
+      const targetSession = sessionId ?? null
+      if (currentSession !== targetSession) {
+        if (targetSession !== null) {
+          currentParams.set('session', targetSession)
+        } else {
+          currentParams.delete('session')
+        }
+        const searchStr = currentParams.toString()
+        const newUrl = `${window.location.pathname}${searchStr !== '' ? `?${searchStr}` : ''}${window.location.hash}`
+        if (push) {
+          window.history.pushState({ session: targetSession }, '', newUrl)
+        } else {
+          window.history.replaceState({ session: targetSession }, '', newUrl)
+        }
+      }
+    } catch {
+      /* history state unavailable */
+    }
+  }
+
+  const setSongWithUrl = (song: KaraokeSong | null, push = true) => {
+    setActiveSong(song)
+    updateSessionUrl(song?.sessionId ?? null, push)
+  }
+
+  const restoreFromUrl = async (
+    sessionId: string | null,
+    providedManifest?: DemoSongManifest | null,
+  ) => {
+    if (sessionId === null || sessionId === '') {
+      setActiveSong(null)
+      return
+    }
+    if (sessionId === DEMO_SESSION_ID) {
+      const m = providedManifest ?? (await loadDemoSong())
+      if (m !== null) setManifest(m)
+      if (demoIsPlayable(m)) {
+        const demoSong = m as DemoSongManifest
+        await seedDemoLyrics(demoSong)
+        setActiveSong({
+          sessionId: DEMO_SESSION_ID,
+          title: `${demoSong.title} — ${demoSong.artist}`,
+          stems: demoSong.stems,
+          autoPlay: false,
+        })
+      }
+      return
+    }
+
+    try {
+      const { initSessionStore, getUvrSession } =
+        await import('@/stores/uvr-store')
+      const { ensureSessionHydrated } =
+        await import('@/features/stem-mixer/karaoke-playlist-runner')
+      await initSessionStore()
+      const s = getUvrSession(sessionId)
+      if (!s) {
+        updateSessionUrl(null, false)
+        return
+      }
+      const hydrated = await ensureSessionHydrated(s)
+      const outputs = hydrated.outputs
+      if (
+        (outputs?.vocal ?? '') !== '' ||
+        (outputs?.instrumental ?? '') !== ''
+      ) {
+        setActiveSong({
+          sessionId,
+          title: s.originalFile?.name ?? 'Your song',
+          stems: {
+            vocal: outputs?.vocal,
+            instrumental: outputs?.instrumental,
+          },
+          autoPlay: false,
+        })
+      } else {
+        updateSessionUrl(null, false)
+      }
+    } catch {
+      updateSessionUrl(null, false)
+    }
+  }
+
   onMount(() => {
-    void loadDemoSong().then(setManifest)
+    const searchParams = new URLSearchParams(window.location.search)
+    const initialSession = searchParams.get('session')
+
+    void loadDemoSong().then((m) => {
+      setManifest(m)
+      if (initialSession === DEMO_SESSION_ID) {
+        void restoreFromUrl(DEMO_SESSION_ID, m)
+      }
+    })
+
+    if (
+      initialSession !== null &&
+      initialSession !== '' &&
+      initialSession !== DEMO_SESSION_ID
+    ) {
+      void restoreFromUrl(initialSession)
+    }
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search)
+      const sessionInUrl = params.get('session')
+      if (sessionInUrl !== (activeSong()?.sessionId ?? null)) {
+        void restoreFromUrl(sessionInUrl)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    onCleanup(() => window.removeEventListener('popstate', handlePopState))
   })
 
   const singDemo = () => {
@@ -92,12 +207,15 @@ export function KaraokeNightApp() {
       // The stage's lyrics controller reads the db on mount and starts an
       // online search when it finds nothing — so the seed must land first.
       await seedDemoLyrics(md)
-      setActiveSong({
-        sessionId: DEMO_SESSION_ID,
-        title: `${md.title} — ${md.artist}`,
-        stems: md.stems,
-        autoPlay: true,
-      })
+      setSongWithUrl(
+        {
+          sessionId: DEMO_SESSION_ID,
+          title: `${md.title} — ${md.artist}`,
+          stems: md.stems,
+          autoPlay: true,
+        },
+        true,
+      )
     })()
   }
 
@@ -155,7 +273,7 @@ export function KaraokeNightApp() {
             </button>
           </Show>
           <a
-            href="/#/karaoke"
+            href={studioSessionUrl(activeSong()?.sessionId)}
             onClick={() => trackKaraoke('karaoke_cta_studio')}
           >
             Open the studio
@@ -277,7 +395,7 @@ export function KaraokeNightApp() {
 
             <Suspense>
               <KaraokeRailPanels
-                onSing={setActiveSong}
+                onSing={(s) => setSongWithUrl(s, true)}
                 stageBusy={() => activeSong() !== null}
                 activeSessionId={() => activeSong()?.sessionId ?? null}
               />
@@ -328,8 +446,8 @@ export function KaraokeNightApp() {
                 >
                   <KaraokeStageHost
                     song={song}
-                    onExit={() => setActiveSong(null)}
-                    onSong={setActiveSong}
+                    onExit={() => setSongWithUrl(null, true)}
+                    onSong={(s) => setSongWithUrl(s, true)}
                   />
                 </Suspense>
               </div>
@@ -374,7 +492,7 @@ export function KaraokeNightApp() {
           nowhere on the standalone page. */}
       <Notifications />
       <Suspense>
-        <KaraokeNightRuntime onSong={setActiveSong} />
+        <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
       </Suspense>
     </div>
   )

@@ -15,7 +15,7 @@ import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/ste
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
-import { KARAOKE_NIGHT_PATH } from '@/lib/karaoke-night-link'
+import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
@@ -1410,7 +1410,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="uvr-view-tabs">
                 <a
                   class="view-tab"
-                  href={KARAOKE_NIGHT_PATH}
+                  href={
+                    mixerSessionId() !== ''
+                      ? karaokeNightSessionUrl(mixerSessionId())
+                      : currentUvrSession()?.sessionId !== undefined
+                        ? karaokeNightSessionUrl(currentUvrSession()!.sessionId)
+                        : KARAOKE_NIGHT_PATH
+                  }
                   title="Open Karaoke Night — the theatre stage for singing your songs and playlists"
                 >
                   <StageCurtains />
