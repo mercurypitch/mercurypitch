@@ -33,25 +33,45 @@ function resolveAdapter(): DatabaseAdapter {
   return new DexieAdapter()
 }
 
+const PROMPT_FLAG_KEY = 'mp.storage_persist_prompted.v1'
+
 /**
- * Ask the browser to make our storage persistent, so IndexedDB (including large
- * UVR stem blobs) is exempt from best-effort eviction under storage pressure.
- * Best-effort: some browsers only grant it after user engagement, and a denial
- * is fine — storage just stays evictable. Never throws.
+ * Request persistent storage with context. Called when the user initiates a
+ * heavy storage operation (like separating stems or saving a session), so the
+ * browser's storage permission dialog (if triggered) comes with an explanatory
+ * toast notification rather than popping unexpectedly on first load.
  */
-async function requestPersistentStorage(): Promise<void> {
+export async function ensurePersistentStorage(): Promise<boolean> {
   try {
     if (
       typeof navigator === 'undefined' ||
-      navigator.storage?.persist == null
+      navigator.storage?.persist == null ||
+      navigator.storage?.persisted == null
     ) {
-      return
+      return false
     }
-    if (await navigator.storage.persisted()) return
+
+    if (await navigator.storage.persisted()) return true
+
+    if (localStorage.getItem(PROMPT_FLAG_KEY) !== '1') {
+      try {
+        localStorage.setItem(PROMPT_FLAG_KEY, '1')
+        const { showNotification } =
+          await import('@/stores/notifications-store')
+        showNotification(
+          'To protect your separated audio stems from browser disk cleanups under low space, allow persistent storage when prompted.',
+          'info',
+        )
+      } catch {
+        // Non-fatal — storage or notification error
+      }
+    }
+
     const granted = await navigator.storage.persist()
     console.info('[db] persistent storage', granted ? 'granted' : 'denied')
+    return granted
   } catch {
-    // Non-fatal — storage stays best-effort.
+    return false
   }
 }
 
@@ -74,7 +94,6 @@ function deleteLegacyDatabases(): void {
 
 /** Create a new database adapter instance. Called once at app init. */
 export async function createDatabase(): Promise<DatabaseAdapter> {
-  void requestPersistentStorage()
   deleteLegacyDatabases()
   const adapter = resolveAdapter()
 

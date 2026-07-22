@@ -4,6 +4,7 @@
 //   • Local mode   → VocalSeparator (ONNX in Web Worker)
 // ============================================================
 
+import { ensurePersistentStorage } from '@/db'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
@@ -512,6 +513,7 @@ export async function runUvrPipeline(
   callbacks: ProcessingCallbacks,
   options: UvrPipelineOptions = {},
 ): Promise<void> {
+  void ensurePersistentStorage()
   if (mode === 'local') {
     await processLocal(file, sessionId, callbacks, options.signal)
   } else {
