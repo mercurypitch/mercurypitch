@@ -31,10 +31,15 @@ export interface WorkerCancelMessage {
   type: 'cancel'
 }
 
+export interface WorkerDestroyMessage {
+  type: 'destroy'
+}
+
 export type WorkerInMessage =
   | WorkerInitMessage
   | WorkerSeparateMessage
   | WorkerCancelMessage
+  | WorkerDestroyMessage
 
 export interface WorkerProgressMessage {
   type: 'progress'
@@ -149,6 +154,22 @@ async function loadModel(
       })
     }
   }
+
+  // Release any existing session before creating a new one to prevent memory leaks
+  if (session && 'release' in session) {
+    const s = session as unknown as { release: unknown }
+    if (typeof s.release === 'function') {
+      try {
+        s.release()
+      } catch (err) {
+        console.error(
+          '[vocal-separator] Failed to release previous session:',
+          err,
+        )
+      }
+    }
+  }
+  session = null
 
   try {
     session = await ort.InferenceSession.create(buffer, {
@@ -461,6 +482,23 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
 
     case 'cancel': {
       cancelled = true
+      break
+    }
+
+    case 'destroy': {
+      cancelled = true
+      if (session && 'release' in session) {
+        const s = session as unknown as { release: unknown }
+        if (typeof s.release === 'function') {
+          try {
+            s.release()
+          } catch (err) {
+            console.error('[vocal-separator] Failed to release session:', err)
+          }
+        }
+      }
+      session = null
+      self.close()
       break
     }
   }

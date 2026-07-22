@@ -2,7 +2,7 @@
 // Vocal Separator — Main-thread API wrapping the Web Worker
 // ============================================================
 
-import type { WorkerCancelMessage, WorkerInitMessage, WorkerOutMessage, WorkerSeparateMessage, } from '../workers/vocal-separator.worker'
+import type { WorkerCancelMessage, WorkerDestroyMessage, WorkerInitMessage, WorkerOutMessage, WorkerSeparateMessage, } from '../workers/vocal-separator.worker'
 
 export interface SeparateOptions {
   /** If true, returns instrumental instead of vocals as primary output. */
@@ -199,7 +199,15 @@ export class VocalSeparator {
   /** Terminate the worker and release all resources. */
   destroy(): void {
     if (this.worker) {
-      this.worker.terminate()
+      const w = this.worker
+      // Request graceful teardown so the worker can release the WebGPU ONNX session
+      const msg: WorkerDestroyMessage = { type: 'destroy' }
+      w.postMessage(msg)
+
+      // The worker will close itself after releasing resources, but we set a
+      // fallback timeout to forcefully terminate if it hangs
+      setTimeout(() => w.terminate(), 1000)
+
       this.worker = null
     }
     this._status = 'idle'
