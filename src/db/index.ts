@@ -59,8 +59,9 @@ export async function ensurePersistentStorage(): Promise<boolean> {
         const { showNotification } =
           await import('@/stores/notifications-store')
         showNotification(
-          'To protect your separated audio stems from browser disk cleanups under low space, allow persistent storage when prompted.',
+          'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.',
           'info',
+          { durationMs: 12000 },
         )
       } catch {
         // Non-fatal — storage or notification error

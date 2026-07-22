@@ -513,7 +513,6 @@ export async function runUvrPipeline(
   callbacks: ProcessingCallbacks,
   options: UvrPipelineOptions = {},
 ): Promise<void> {
-  void ensurePersistentStorage()
   if (mode === 'local') {
     await processLocal(file, sessionId, callbacks, options.signal)
   } else {
@@ -525,6 +524,8 @@ export async function runUvrPipeline(
       options.signal,
     )
   }
+  // After separation finishes and stems are saved, check/request storage persistence
+  void ensurePersistentStorage()
 }
 
 export function cancelUvrPipeline(
