@@ -5332,6 +5332,7 @@ export const StemMixerStyles: string = `
   padding: 1rem;
   min-height: 0;
   flex: 1;
+  overflow-y: auto;
 }
 
 .sm-song-picker--inline {
@@ -5344,12 +5345,14 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--fg-primary, #e6edf3);
+  flex-shrink: 0;
 }
 
 .sm-song-picker-search {
   display: flex;
   gap: 0.5rem;
   align-items: stretch;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-input {
@@ -5440,13 +5443,14 @@ export const StemMixerStyles: string = `
   letter-spacing: 0.02em;
   color: var(--fg-tertiary, #6e7681);
   padding: 0 0.15rem;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-list {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 120px;
+  min-height: 100px;
   overflow-y: auto;
   border: 1px solid var(--lyf-border);
   border-radius: 14px;
@@ -5573,6 +5577,7 @@ export const StemMixerStyles: string = `
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.15rem;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-footer-btn {
