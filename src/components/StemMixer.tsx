@@ -4389,8 +4389,10 @@ export const StemMixerStyles: string = `
   white-space: nowrap;
 }
 
-/* Let uploader fill remaining panel height so dropzone is fully visible */
-.sm-workspace-panel > .lu-root {
+/* Let uploader and lyrics song picker fill remaining panel height so they are fully visible */
+.sm-workspace-panel > .lu-root,
+.sm-workspace-panel > .sm-song-picker,
+.sm-perf-lyrics > .sm-song-picker {
   flex: 1;
   min-height: 0;
 }
@@ -5329,6 +5331,7 @@ export const StemMixerStyles: string = `
   gap: 0.7rem;
   padding: 1rem;
   min-height: 0;
+  flex: 1;
 }
 
 .sm-song-picker--inline {
@@ -5443,8 +5446,7 @@ export const StemMixerStyles: string = `
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 0;
-  max-height: 320px;
+  min-height: 120px;
   overflow-y: auto;
   border: 1px solid var(--lyf-border);
   border-radius: 14px;
