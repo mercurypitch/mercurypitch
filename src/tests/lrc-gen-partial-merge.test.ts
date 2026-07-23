@@ -7,7 +7,7 @@
 // original timings when the user only mapped a subset of lines.
 
 import { describe, expect, it } from 'vitest'
-import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from '@/features/stem-mixer/lrc-gen-engine'
+import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from '@/features/stem-mixer/lrc-gen-engine'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
 import type { WordTimingsMap } from '@/features/stem-mixer/types'
 
@@ -28,6 +28,74 @@ function makeCanonical(
     words: text.split(/\s+/).filter((w) => w.length > 0),
   }
 }
+
+describe('restoreTouchedLines', () => {
+  const lines = ['First', '~Rest~', 'Second', '', 'Third']
+
+  it('restores only valid explicitly persisted lyric rows', () => {
+    expect([
+      ...restoreTouchedLines({
+        savedTouchedLines: [0, 1, 2, 3, 5, -1, 2.5, '4'],
+        lines,
+        lineIdx: 0,
+        wordIdx: 0,
+      }),
+    ]).toEqual([0, 2])
+  })
+
+  it('reconstructs completed rows for legacy progress payloads', () => {
+    expect([
+      ...restoreTouchedLines({
+        savedTouchedLines: undefined,
+        lines,
+        lineIdx: 4,
+        wordIdx: 1,
+      }),
+    ]).toEqual([0, 2, 4])
+  })
+})
+
+describe('mapping recovery validation', () => {
+  it('restores null-filled JSON arrays as optional times', () => {
+    expect(restoreLineTimes([1, null, -1, '4', 5], 4)).toEqual([
+      1,
+      undefined,
+      undefined,
+      undefined,
+    ])
+  })
+
+  it('drops invalid timing-map lines while preserving sparse word positions', () => {
+    expect(
+      restoreWordTimingsMap({ 0: [1, null, 3], 4: [9], nope: [2], 1: [-1] }, 2),
+    ).toEqual({ 0: [1, undefined, 3] })
+  })
+
+  it('bounds and validates recovered marker curves', () => {
+    expect(
+      restoreWordSweepTimingsMap(
+        {
+          0: {
+            1: [
+              { time: 1, progress: 0 },
+              { time: -1, progress: 0.5 },
+              { time: 2, progress: 1 },
+            ],
+          },
+          3: { 0: [{ time: 5, progress: 0.5 }] },
+        },
+        2,
+      ),
+    ).toEqual({
+      0: {
+        1: [
+          { time: 1, progress: 0 },
+          { time: 2, progress: 1 },
+        ],
+      },
+    })
+  })
+})
 
 // ── mergePartialLineTimes ────────────────────────────────────────
 

@@ -12,7 +12,7 @@
 //
 // Tests: src/tests/lyrics-versions.test.ts
 
-import type { WordTimingsMap } from '@/features/stem-mixer/types'
+import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 
 export type LyricsVersionKind = 'imported' | 'edited' | 'auto-sync' | 'lrc-gen'
 
@@ -22,6 +22,8 @@ export interface LyricsVersion {
   kind: LyricsVersionKind
   text: string
   wordTimings?: WordTimingsMap
+  wordEndTimings?: WordTimingsMap
+  wordSweepTimings?: WordSweepTimingsMap
   /** Epoch ms; stamped by the caller (kept out of this pure module). */
   createdAt: number
 }
@@ -30,7 +32,7 @@ export const VERSION_LABELS: Record<LyricsVersionKind, string> = {
   imported: 'Original',
   edited: 'Edited',
   'auto-sync': 'Auto-sync',
-  'lrc-gen': 'Tapped',
+  'lrc-gen': 'Mapped',
 }
 
 /** Display order in the switcher (original first, then the derived ones). */

@@ -8,8 +8,147 @@
 //
 // Tests: src/tests/lrc-gen-partial-merge.test.ts
 
-import type { CanonicalLrcEntry, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { CanonicalLrcEntry, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 import { estimateUnmappedTimes } from '@/lib/lrc-generator'
+
+function isMappableLine(line: string | undefined): boolean {
+  const text = line?.trim()
+  return text !== undefined && text !== '' && text !== '~Rest~'
+}
+
+function isTime(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+/** Convert JSON's null-filled sparse arrays back to optional lyric times. */
+export function restoreLineTimes(
+  value: unknown,
+  lineCount: number,
+): (number | undefined)[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .slice(0, Math.max(0, lineCount))
+    .map((time) => (isTime(time) ? time : undefined))
+}
+
+/** Validate a line-indexed timing map recovered from localStorage. */
+export function restoreWordTimingsMap(
+  value: unknown,
+  lineCount: number,
+): WordTimingsMap {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {}
+  }
+  const restored: WordTimingsMap = {}
+  for (const [rawLineIdx, rawTimes] of Object.entries(value)) {
+    const lineIdx = Number(rawLineIdx)
+    if (
+      !Number.isInteger(lineIdx) ||
+      lineIdx < 0 ||
+      lineIdx >= lineCount ||
+      !Array.isArray(rawTimes)
+    ) {
+      continue
+    }
+    const times: number[] = []
+    for (let wordIdx = 0; wordIdx < rawTimes.length; wordIdx++) {
+      if (isTime(rawTimes[wordIdx])) times[wordIdx] = rawTimes[wordIdx]
+    }
+    if (times.length > 0) restored[lineIdx] = times
+  }
+  return restored
+}
+
+/** Validate compact marker curves recovered from localStorage. */
+export function restoreWordSweepTimingsMap(
+  value: unknown,
+  lineCount: number,
+): WordSweepTimingsMap {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {}
+  }
+  const restored: WordSweepTimingsMap = {}
+  for (const [rawLineIdx, rawWords] of Object.entries(value)) {
+    const lineIdx = Number(rawLineIdx)
+    if (
+      !Number.isInteger(lineIdx) ||
+      lineIdx < 0 ||
+      lineIdx >= lineCount ||
+      typeof rawWords !== 'object' ||
+      rawWords === null ||
+      Array.isArray(rawWords)
+    ) {
+      continue
+    }
+    const words: WordSweepTimingsMap[number] = {}
+    for (const [rawWordIdx, rawPoints] of Object.entries(rawWords)) {
+      const wordIdx = Number(rawWordIdx)
+      if (
+        !Number.isInteger(wordIdx) ||
+        wordIdx < 0 ||
+        !Array.isArray(rawPoints)
+      ) {
+        continue
+      }
+      const points = rawPoints
+        .slice(0, 512)
+        .filter((point): point is WordSweepPoint => {
+          if (typeof point !== 'object' || point === null) return false
+          const candidate = point as { time?: unknown; progress?: unknown }
+          return (
+            isTime(candidate.time) &&
+            typeof candidate.progress === 'number' &&
+            Number.isFinite(candidate.progress) &&
+            candidate.progress >= 0 &&
+            candidate.progress <= 1
+          )
+        })
+      if (points.length > 0) words[wordIdx] = points
+    }
+    if (Object.keys(words).length > 0) restored[lineIdx] = words
+  }
+  return restored
+}
+
+/**
+ * Restore the explicit set of lines changed by an interrupted mapping session.
+ *
+ * Older saved payloads did not include this set. For those, completed lines
+ * before the saved cursor are the safest recoverable approximation of the
+ * mapper's forward-only workflow.
+ */
+export function restoreTouchedLines(params: {
+  savedTouchedLines: unknown
+  lines: readonly string[]
+  lineIdx: number
+  wordIdx: number
+}): Set<number> {
+  const { savedTouchedLines, lines, lineIdx, wordIdx } = params
+  if (Array.isArray(savedTouchedLines)) {
+    return new Set(
+      savedTouchedLines.filter(
+        (index): index is number =>
+          typeof index === 'number' &&
+          Number.isInteger(index) &&
+          index >= 0 &&
+          index < lines.length &&
+          isMappableLine(lines[index]),
+      ),
+    )
+  }
+
+  const restored = new Set<number>()
+  const cursor = Number.isFinite(lineIdx)
+    ? Math.max(0, Math.min(lines.length, Math.trunc(lineIdx)))
+    : 0
+  for (let index = 0; index < cursor; index++) {
+    if (isMappableLine(lines[index])) restored.add(index)
+  }
+  if (wordIdx > 0 && cursor < lines.length && isMappableLine(lines[cursor])) {
+    restored.add(cursor)
+  }
+  return restored
+}
 
 /**
  * Merge partial LRC gen results with pre-existing timing data.

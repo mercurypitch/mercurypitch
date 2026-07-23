@@ -20,6 +20,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "lyrics:compare": "node scripts/compare-lrc-timing.mjs",
     "test:tours": "node scripts/walk-tours.mjs",
     "audit:mobile": "node scripts/audit-exercises-mobile.mjs",
     "serve": "pnpm dlx http-server dist -p 4173 -c-1",

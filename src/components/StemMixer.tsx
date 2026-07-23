@@ -276,6 +276,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let updateCurrentLineForAudio = () => {}
   let setCurrentLineIdxForAudio = (_idx: number) => {}
   let setUserScrolledForAudio = (_v: boolean) => {}
+  let lyricsMappingActiveForAudio = false
 
   // ── Audio controller ─────────────────────────────────────────
   const audio = useStemMixerAudioController({
@@ -294,6 +295,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     updateCurrentLine: () => updateCurrentLineForAudio(),
     setCurrentLineIdx: setCurrentLineIdxForAudio,
     setUserScrolled: setUserScrolledForAudio,
+    lyricsMappingActive: () => lyricsMappingActiveForAudio,
     micActive: mic.micActive,
     getMicAnalyserNode: mic.getMicAnalyserNode,
     getMicPitchDetector: mic.getMicPitchDetector,
@@ -573,6 +575,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenMode,
     lrcGenLineIdx,
     lrcGenWordIdx,
+    lrcGenInputMode,
+    setLrcGenInputMode,
+    lrcTimingOffsetMs,
+    setLrcTimingOffsetMs,
     blocks,
     blockInstances,
     blockMarkMode,
@@ -625,6 +631,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     startLrcGen,
     handleNextLine,
     handleNextWord,
+    handleMarkerSample,
+    handleRedoCurrentLine,
     handleLrcGenFinish,
     applyAutoWordSync,
     handleLrcGenReset,
@@ -664,7 +672,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     /* eslint-enable solid/reactivity */
     duration: audio.duration,
     playing: audio.playing,
-    elapsed: audio.elapsed,
+    elapsed: audio.audibleElapsed,
     seekToWithWindow: (t: number) => {
       audio.seekTo(t)
       audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
@@ -678,6 +686,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           alignPrefsKey: 'pitchperfect_kn_lyrics_align',
         }
       : {}),
+  })
+
+  createEffect(() => {
+    lyricsMappingActiveForAudio = lrcGenMode()
   })
 
   // Backfill holder refs that audio controller needs
@@ -1076,6 +1088,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenMode,
     lrcGenLineIdx,
     lrcGenWordIdx,
+    lrcGenInputMode,
+    setLrcGenInputMode,
+    lrcTimingOffsetMs,
+    setLrcTimingOffsetMs,
     blocks,
     blockInstances,
     blockMarkMode,
@@ -1094,6 +1110,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     hasMultipleSections,
     handleNextLine,
     handleNextWord,
+    handleMarkerSample,
+    handleRedoCurrentLine,
     handleLrcGenFinish,
     handleLrcGenReset,
     handleSaveEdits,
@@ -1120,8 +1138,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleSongPick,
     handleSongPickerRefine,
     playing: audio.playing,
-    elapsed: audio.elapsed,
+    elapsed: audio.audibleElapsed,
     handleSeekToTime: (t: number) => audio.seekTo(t),
+    playbackSpeed: audio.speed,
+    setPlaybackSpeed: audio.setSpeed,
     handlePlay: audio.handlePlay,
     handlePause: audio.handlePause,
     formatTime: canvas.formatTime,
@@ -1351,6 +1371,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       )
         return
 
+      if (lrcGenMode() && lrcGenInputMode() === 'tap') {
+        if (e.key === 'w' || e.key === 'W') {
+          e.preventDefault()
+          handleNextWord()
+          return
+        }
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault()
+          handleNextLine()
+          return
+        }
+      }
+
       if (e.code === 'Space') {
         e.preventDefault()
         if (audio.loading() || audio.loadError()) return
@@ -1499,6 +1532,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           loading={audio.loading}
           loadError={audio.loadError}
           elapsed={audio.elapsed}
+          lyricsElapsed={audio.audibleElapsed}
           duration={audio.duration}
           onPlay={audio.handlePlay}
           onPause={audio.handlePause}
@@ -1540,6 +1574,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         class="stem-mixer"
         classList={{
           'stem-mixer--focus': karaokeFocus(),
+          'stem-mixer--mapping': lrcGenMode(),
           [`stem-mixer--focus-docked-${karaokeToolbarPosition()}`]:
             karaokeFocus(),
         }}
@@ -2578,6 +2613,36 @@ export const StemMixerStyles: string = `
   box-shadow: 0 0 0 2px var(--accent, #58a6ff);
 }
 
+.stem-mixer--mapping
+  :is(
+    [data-panel-id='live'],
+    [data-panel-id='pitch'],
+    [data-panel-id='midi'],
+    [data-fixed-panel='live'],
+    [data-fixed-panel='pitch'],
+    [data-fixed-panel='midi']
+  )::after {
+  position: absolute;
+  z-index: 5;
+  inset: 1.95rem 0 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  content: 'Paused for smoother lyric mapping';
+  color: var(--fg-tertiary, #8b949e);
+  background:
+    linear-gradient(rgba(13, 17, 23, 0.9), rgba(13, 17, 23, 0.96)),
+    repeating-linear-gradient(
+      -18deg,
+      transparent 0 10px,
+      rgba(244, 211, 94, 0.04) 10px 11px
+    );
+  font: 600 0.68rem/1.4 monospace;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* Drag handle header */
 .sm-panel-header {
   display: flex;
@@ -3331,7 +3396,14 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-line-active .sm-lyrics-word-current {
-  /* container for the in-progress word */
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--accent-lighter, #79c0ff) 0 var(--word-progress, 0%),
+    var(--fg-secondary, #8b949e) var(--word-progress, 0%) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 .sm-lyrics-char-done {
@@ -3611,7 +3683,7 @@ export const StemMixerStyles: string = `
   margin-left: 0.15rem;
 }
 
-/* Lyrics version switcher (Original / Edited / Auto-sync / Tapped) */
+/* Lyrics version switcher (Original / Edited / Auto-sync / Mapped) */
 .sm-lyrics-version {
   position: relative;
   display: inline-flex;
@@ -4199,6 +4271,80 @@ export const StemMixerStyles: string = `
   flex-shrink: 0;
 }
 
+.sm-lyrics-gen-mode-switch {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.35rem;
+}
+
+.sm-lyrics-gen-mode-btn {
+  height: 1.45rem;
+  padding: 0 0.55rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--fg-tertiary, #8b949e);
+  font: 600 0.62rem/1 inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-mode-btn--active {
+  background: #f4d35e;
+  color: #17140a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+}
+
+.sm-lyrics-gen-speed,
+.sm-lyrics-gen-offset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  color: var(--fg-tertiary, #8b949e);
+  font-size: 0.58rem;
+}
+
+.sm-lyrics-gen-speed-select {
+  min-width: 5.6rem;
+  height: 1.45rem;
+  color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  font: 0.6rem/1 monospace;
+}
+
+.sm-lyrics-gen-offset input {
+  width: 3.2rem;
+  height: 1.45rem;
+  padding: 0 0.25rem;
+  color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  font: 0.6rem/1 monospace;
+}
+
+.sm-lyrics-gen-guidance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.42rem 0.65rem;
+  color: var(--fg-secondary, #8b949e);
+  background: rgba(244, 211, 94, 0.06);
+  border-bottom: 1px solid rgba(244, 211, 94, 0.18);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.sm-lyrics-gen-guidance-performance {
+  color: var(--fg-tertiary, #6e7681);
+  font-size: 0.58rem;
+  text-align: right;
+}
+
 .sm-lyrics-gen-nextword-btn {
   display: flex;
   align-items: center;
@@ -4238,6 +4384,22 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-gen-nextline-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--fg-tertiary, #484f58);
+}
+
+.sm-lyrics-gen-redo-btn {
+  height: 1.8rem;
+  padding: 0.2rem 0.7rem;
+  color: var(--fg-secondary, #8b949e);
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  font: 600 0.65rem/1 inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-redo-btn:hover {
   color: var(--fg-primary, #c9d1d9);
   border-color: var(--fg-tertiary, #484f58);
 }
@@ -4310,6 +4472,16 @@ export const StemMixerStyles: string = `
   color: var(--fg-primary, #c9d1d9);
 }
 
+.sm-lyrics-gen-line-marker-mode {
+  min-height: 4rem;
+  align-items: center;
+  padding-block: 0.55rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair !important;
+}
+
 .sm-lyrics-gen-line-future {
   color: var(--fg-tertiary, #484f58);
 }
@@ -4344,6 +4516,7 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   align-items: center;
   gap: 1px;
+  position: relative;
 }
 
 .sm-lyrics-gen-word-time {
@@ -4370,6 +4543,50 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.sm-lyrics-gen-word-marker {
+  min-height: 2.75rem;
+  min-width: 2rem;
+  justify-content: center;
+  padding: 0 0.12rem;
+}
+
+.sm-lyrics-gen-word-marker .sm-lyrics-gen-word-text {
+  position: relative;
+  z-index: 1;
+  padding: 0.08rem 0.06rem;
+}
+
+.sm-lyrics-gen-word-marker .sm-lyrics-gen-word-text::before {
+  position: absolute;
+  z-index: -1;
+  inset: 48% 0 5%;
+  width: var(--marker-progress, 0%);
+  content: '';
+  background: rgba(244, 211, 94, 0.68);
+  border-radius: 0.18rem 0.04rem 0.12rem 0.15rem;
+  box-shadow: 0 0 0.3rem rgba(244, 211, 94, 0.16);
+  transform: rotate(-0.8deg) skewX(-4deg);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.sm-lyrics-gen-word-current.sm-lyrics-gen-word-marker .sm-lyrics-gen-word-text {
+  color: var(--fg-primary, #f0f6fc);
+  text-decoration-color: #f4d35e;
+}
+
+.sm-lyrics-gen-word-done.sm-lyrics-gen-word-marker .sm-lyrics-gen-word-text::before {
+  width: 100%;
+  opacity: 0.48;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-lyrics-word,
+  .sm-lyrics-gen-line {
+    transition: none;
+  }
 }
 
 .sm-lyrics-gen-word-done .sm-lyrics-gen-word-text {

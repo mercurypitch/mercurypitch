@@ -1,6 +1,8 @@
 // ============================================================
 // Lyrics Service — fetch, parse, and sync lyrics
+import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import { IS_DEV } from './defaults'
+import { interpolateSweepProgress } from './lyric-sweep'
 import { estimateWordDuration } from './word-sync'
 
 export interface LrcLine {
@@ -514,6 +516,8 @@ export function computeActiveWord(
   endTime: number,
   wordTimes: number[] | undefined,
   elapsedTime: number,
+  wordEndTimes?: number[],
+  wordSweeps?: Record<number, WordSweepPoint[]>,
 ): { activeUpTo: number; charProgress: number; fraction: number } {
   if (words.length === 0)
     return { activeUpTo: -1, charProgress: 0, fraction: 0 }
@@ -530,9 +534,10 @@ export function computeActiveWord(
     if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0, fraction: 0 }
 
     const wordStart = wordTimes[wordIdx]
+    const nextWordStart = wordTimes[wordIdx + 1]
     let gap: number
-    if (wordIdx + 1 < wordTimes.length) {
-      gap = wordTimes[wordIdx + 1] - wordStart
+    if (nextWordStart !== undefined) {
+      gap = nextWordStart - wordStart
     } else {
       // Estimate last word's duration from the average of known word gaps,
       // rather than stretching it to endTime (which may include long rests).
@@ -543,16 +548,20 @@ export function computeActiveWord(
       gap =
         gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0.5
     }
-    // The sweep runs for the word's *sung* duration — the gap to the next
-    // word, capped by a syllable-based estimate. A held note or an in-line
-    // rest no longer smears the sweep across the silence: the word fills
-    // at a natural pace, then dwells fully lit until the next word starts.
-    // Floored at 150ms so machine-tight word gaps (auto-sync spacing on
-    // fast runs) still render a visible sweep instead of a flash.
-    const wordDuration = Math.max(
-      0.15,
-      Math.min(gap, estimateWordDuration(words[wordIdx])),
-    )
+    const mappedEnd = wordEndTimes?.[wordIdx]
+    const validMappedEnd =
+      mappedEnd !== undefined &&
+      Number.isFinite(mappedEnd) &&
+      mappedEnd > wordStart
+        ? Math.min(mappedEnd, nextWordStart ?? endTime)
+        : undefined
+    // Marker-authored words have an exact audible interval. Legacy onset-only
+    // LRC remains conservative: cap the inferred sweep so a pause after a word
+    // does not get mistaken for a very long vowel.
+    const wordDuration =
+      validMappedEnd !== undefined
+        ? Math.max(0.03, validMappedEnd - wordStart)
+        : Math.max(0.15, Math.min(gap, estimateWordDuration(words[wordIdx])))
     const elapsedInWord = elapsedTime - wordStart
 
     if (elapsedInWord >= wordDuration) {
@@ -562,7 +571,12 @@ export function computeActiveWord(
 
     const activeUpTo = wordIdx - 1
     const currentWord = words[wordIdx]
-    const fraction = Math.min(1, elapsedInWord / wordDuration)
+    const linearFraction = Math.min(1, elapsedInWord / wordDuration)
+    const fraction = interpolateSweepProgress(
+      wordSweeps?.[wordIdx],
+      elapsedTime,
+      linearFraction,
+    )
     const charProgress = Math.min(
       Math.floor(fraction * currentWord.length),
       currentWord.length,

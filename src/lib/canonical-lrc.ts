@@ -14,6 +14,7 @@ export const SECONDS_PER_REST_DOT = 5
 
 export function getRestDotCount(gapStart: number, gapEnd: number): number {
   if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd)) return 0
+  if (gapEnd <= gapStart) return 0
   return Math.max(1, Math.round((gapEnd - gapStart) / SECONDS_PER_REST_DOT))
 }
 
@@ -22,12 +23,11 @@ export function getRestDotCount(gapStart: number, gapEnd: number): number {
 function nextLineStart(
   lrcLines: LrcLine[],
   afterIndex: number,
-  fallback: number,
-): number {
+): number | undefined {
   for (let j = afterIndex + 1; j < lrcLines.length; j++) {
     if (lrcLines[j].text !== '~Rest~') return lrcLines[j].time
   }
-  return fallback
+  return undefined
 }
 
 /**
@@ -42,6 +42,7 @@ function nextLineStart(
  */
 export function buildCanonicalEntries(
   lrcLines: LrcLine[],
+  songDuration?: number,
 ): CanonicalLrcEntry[] {
   const result: CanonicalLrcEntry[] = []
 
@@ -75,7 +76,14 @@ export function buildCanonicalEntries(
     }
 
     if (line.text === '~Rest~') {
-      const gapEnd = nextLineStart(lrcLines, i, line.time)
+      const nextStart = nextLineStart(lrcLines, i)
+      const gapEnd =
+        nextStart ??
+        (songDuration !== undefined &&
+        Number.isFinite(songDuration) &&
+        songDuration > line.time
+          ? songDuration
+          : line.time)
       result.push({
         type: 'rest',
         lrcIndex: i,

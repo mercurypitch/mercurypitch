@@ -238,7 +238,7 @@ export const StemMixerFixedWorkspace: Component<
                         e.stopPropagation()
                         props.startLrcGen()
                       }}
-                      title="Generate LRC timings with playback"
+                      title="Map lyric timing with the marker or onset taps"
                     >
                       <svg viewBox="0 0 24 24" width="11" height="11">
                         <path
