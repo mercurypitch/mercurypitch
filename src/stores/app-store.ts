@@ -1287,6 +1287,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="analysis.subtabs"]',
     placement: 'bottom',
     requiredTab: TAB_ANALYSIS,
+    viewport: 'desktop',
   },
   {
     title: 'Vocal Analysis',
@@ -1296,6 +1297,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Vocal Analysis"]'],
+    viewport: 'desktop',
   },
   {
     title: 'History or live mic',
@@ -1305,6 +1307,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Vocal Analysis"]'],
+    viewport: 'desktop',
   },
   {
     title: 'Technique drills',
@@ -1314,6 +1317,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Vocal Analysis"]'],
+    viewport: 'desktop',
   },
   {
     title: 'Pitch Detection',
@@ -1323,6 +1327,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Pitch Detection"]'],
+    viewport: 'desktop',
   },
   {
     title: 'Pick a signal source',
@@ -1332,6 +1337,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'right',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Pitch Detection"]'],
+    viewport: 'desktop',
   },
   {
     title: 'Pitch Algorithms',
@@ -1341,6 +1347,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
     navigate: ['[aria-label="Pitch Algorithms"]'],
+    viewport: 'desktop',
   },
 ]
 
