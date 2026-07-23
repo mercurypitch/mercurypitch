@@ -55,8 +55,12 @@ export function useSingingBacking(deps: Deps): SingingBacking {
   // playNote ids for backing voices only, so pause/stop/seek can silence the
   // band without cutting the reference tone (which the runtime owns).
   const voiceIds = new Set<number>()
+  // Invalidates playNote promises that have not resolved when playback is
+  // paused, stopped, seeked, or replaced with a different backing set.
+  let voiceGeneration = 0
 
   const stopVoices = (): void => {
+    voiceGeneration += 1
     for (const id of voiceIds) deps.audioEngine.stopNote(id)
     voiceIds.clear()
   }
@@ -97,23 +101,20 @@ export function useSingingBacking(deps: Deps): SingingBacking {
         if (n.startBeat <= beat) {
           played.add(i)
           if (beat - n.startBeat < FRESH_WINDOW_BEATS && bps > 0) {
+            const generation = voiceGeneration
             void deps.audioEngine
-              .playNote(
+              .playNoteWithGain(
                 n.freq,
                 Math.max(50, (n.duration / bps) * 1000),
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
                 BACKING_VOICE_GAIN,
               )
               .then((id) => {
-                if (id !== undefined) voiceIds.add(id)
+                if (id === undefined) return
+                if (generation !== voiceGeneration) {
+                  deps.audioEngine.stopNote(id)
+                  return
+                }
+                voiceIds.add(id)
               })
           }
         }

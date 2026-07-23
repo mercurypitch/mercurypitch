@@ -6,6 +6,37 @@ import { afterEach, beforeEach as beforeEachFn, describe, expect, it, vi, } from
 import { AudioEngine } from '@/lib/audio-engine'
 import type { MelodyItem } from '@/types'
 
+interface MockAutomationEvent {
+  method:
+    | 'cancelAndHoldAtTime'
+    | 'cancelScheduledValues'
+    | 'exponentialRampToValueAtTime'
+    | 'linearRampToValueAtTime'
+    | 'setTargetAtTime'
+    | 'setValueAtTime'
+  args: number[]
+}
+
+function createAudioParamMock(initialValue = 0) {
+  const events: MockAutomationEvent[] = []
+  const record = (method: MockAutomationEvent['method']) =>
+    vi.fn((...args: number[]) => {
+      events.push({ method, args })
+    })
+
+  return {
+    value: initialValue,
+    valueOf: () => initialValue,
+    events,
+    setTargetAtTime: record('setTargetAtTime'),
+    cancelAndHoldAtTime: record('cancelAndHoldAtTime'),
+    cancelScheduledValues: record('cancelScheduledValues'),
+    setValueAtTime: record('setValueAtTime'),
+    linearRampToValueAtTime: record('linearRampToValueAtTime'),
+    exponentialRampToValueAtTime: record('exponentialRampToValueAtTime'),
+  }
+}
+
 // Mock browser APIs for test environment
 global.AudioContext = vi.fn().mockImplementation(function (this: object) {
   Object.assign(this, {
@@ -17,15 +48,7 @@ global.AudioContext = vi.fn().mockImplementation(function (this: object) {
     close: vi.fn().mockResolvedValue(undefined),
     createGain: vi.fn().mockImplementation(() => {
       const node = {
-        gain: {
-          value: 0,
-          valueOf: () => 0,
-          setTargetAtTime: vi.fn(),
-          cancelScheduledValues: vi.fn(),
-          setValueAtTime: vi.fn(),
-          linearRampToValueAtTime: vi.fn(),
-          exponentialRampToValueAtTime: vi.fn(),
-        },
+        gain: createAudioParamMock(),
         // Recorded downstream nodes so tests can assert the audio graph.
         connectedTo: [] as unknown[],
         connect: vi.fn(),
@@ -103,15 +126,7 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function (
     sampleRate: 44100,
     currentTime: 0,
     createGain: vi.fn().mockImplementation(() => ({
-      gain: {
-        value: 0,
-        valueOf: () => 0,
-        setTargetAtTime: vi.fn(),
-        cancelScheduledValues: vi.fn(),
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-        exponentialRampToValueAtTime: vi.fn(),
-      },
+      gain: createAudioParamMock(),
       connect: vi.fn(),
       disconnect: vi.fn(),
     })),
@@ -320,6 +335,90 @@ describe('AudioEngine', () => {
       engine.playNote(523, 100, 'slide-down')
       engine.playNote(659, 100, 'ease-in')
       engine.playNote(784, 100, 'ease-out')
+    })
+
+    it.each(['piano', 'strings'] as const)(
+      'keeps every %s automation event inside a short note',
+      async (instrument) => {
+        engine.setInstrument(instrument)
+        const noteId = await engine.playNote(440, 50)
+        const internals = engine as unknown as {
+          _activeVoices: Map<
+            number,
+            { gains: { gain: { events: MockAutomationEvent[] } }[] }
+          >
+        }
+        const events = internals._activeVoices.get(noteId!)!.gains[0].gain
+          .events
+        const timedEvents = events.filter(
+          (event) =>
+            event.method !== 'cancelAndHoldAtTime' &&
+            event.method !== 'cancelScheduledValues',
+        )
+
+        expect(timedEvents.length).toBeGreaterThan(2)
+        expect(timedEvents.every((event) => event.args[1] <= 0.05)).toBe(true)
+        expect(timedEvents.at(-1)).toEqual({
+          method: 'linearRampToValueAtTime',
+          args: [0, 0.05],
+        })
+      },
+    )
+
+    it('uses an audio-clock release and makes repeated stop idempotent', async () => {
+      const noteId = await engine.playNote(440, 5000)
+      const internals = engine as unknown as {
+        _activeVoices: Map<
+          number,
+          {
+            gains: {
+              gain: {
+                cancelAndHoldAtTime: ReturnType<typeof vi.fn>
+                linearRampToValueAtTime: ReturnType<typeof vi.fn>
+              }
+            }[]
+            oscillators: { stop: ReturnType<typeof vi.fn> }[]
+          }
+        >
+      }
+      const voice = internals._activeVoices.get(noteId!)!
+      const oscillatorStopsBefore = voice.oscillators[0].stop.mock.calls.length
+
+      engine.stopNote(noteId!)
+      engine.stopNote(noteId!)
+
+      expect(engine.getActiveVoices()).not.toContain(noteId)
+      expect(voice.gains[0].gain.cancelAndHoldAtTime).toHaveBeenCalledOnce()
+      expect(
+        voice.gains[0].gain.linearRampToValueAtTime,
+      ).toHaveBeenLastCalledWith(0, 0.075)
+      expect(voice.oscillators[0].stop).toHaveBeenCalledTimes(
+        oscillatorStopsBefore + 1,
+      )
+      expect(voice.oscillators[0].stop).toHaveBeenLastCalledWith(0.075)
+    })
+
+    it('cancels a note still awaiting AudioContext resume on stop', async () => {
+      let finishResume: () => void = () => {}
+      const resume = vi.spyOn(engine, 'resume').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishResume = resolve
+          }),
+      )
+
+      const pendingNote = engine.playNote(440, 1000)
+      await vi.waitFor(() => expect(resume).toHaveBeenCalledOnce())
+      engine.stopAllNotes()
+      finishResume()
+
+      await expect(pendingNote).resolves.toBeUndefined()
+      expect(engine.getActiveVoices()).toEqual(new Set())
+
+      resume.mockRestore()
+      const restartedNote = await engine.playNote(523.25, 1000)
+      expect(restartedNote).toBeDefined()
+      expect(engine.getActiveVoices()).toContain(restartedNote)
     })
   })
 

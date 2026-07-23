@@ -52,6 +52,7 @@ class MockGainNode {
     linearRampToValueAtTime: () => {},
     exponentialRampToValueAtTime: () => {},
     setTargetAtTime: () => {},
+    cancelAndHoldAtTime: () => {},
     cancelScheduledValues: () => {},
   }
   /** Recorded downstream nodes so tests can assert the audio graph. */
