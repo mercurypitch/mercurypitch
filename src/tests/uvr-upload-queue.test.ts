@@ -92,4 +92,78 @@ describe('UVR upload queue', () => {
     queue.remove(queue.items()[0].id)
     expect(queue.items().map((item) => item.file.name)).toEqual(['song-2.mp3'])
   })
+
+  it('unlocks after cancellation while the worker is still preparing', async () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(2))
+    queue.remove(queue.items()[0].id)
+
+    let announceStarted: () => void = () => undefined
+    const started = new Promise<void>((resolve) => {
+      announceStarted = resolve
+    })
+    let releasePreparation: () => void = () => undefined
+    const preparation = new Promise<void>((resolve) => {
+      releasePreparation = resolve
+    })
+
+    const run = queue.run(async (_item, context) => {
+      announceStarted()
+      await preparation
+      context.update({
+        status: 'processing',
+        progress: 75,
+        message: 'Late model update',
+      })
+      return { status: 'completed' }
+    })
+
+    await started
+    queue.cancelActive()
+    await run
+
+    expect(queue.isRunning()).toBe(false)
+    expect(queue.items()).toMatchObject([
+      { status: 'cancelled', message: 'Cancelled' },
+    ])
+
+    // Model initialization may still settle later. Its stale callbacks and
+    // outcome must not resurrect the cancelled row or lock a new batch.
+    releasePreparation()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(queue.items()[0]).toMatchObject({
+      status: 'cancelled',
+      message: 'Cancelled',
+    })
+
+    queue.clear()
+    expect(queue.enqueue(songs(1))).toEqual({ added: 1, overflow: 0 })
+    await queue.run(async () => ({ status: 'completed' }))
+    expect(queue.items()[0].status).toBe('completed')
+  })
+
+  it('lets a fully cancelled queue close during runner cleanup', async () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(1))
+
+    let announceStarted: () => void = () => undefined
+    const started = new Promise<void>((resolve) => {
+      announceStarted = resolve
+    })
+    const run = queue.run(async () => {
+      announceStarted()
+      await new Promise<void>(() => undefined)
+      return { status: 'completed' }
+    })
+
+    await started
+    queue.cancelActive()
+    expect(queue.isRunning()).toBe(true)
+    queue.clear()
+    expect(queue.items()).toEqual([])
+
+    await run
+    expect(queue.isRunning()).toBe(false)
+  })
 })

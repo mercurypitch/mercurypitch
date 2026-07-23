@@ -116,9 +116,13 @@ async function processLocal(
   file: File,
   sessionId: string,
   callbacks: ProcessingCallbacks,
+  signal?: AbortSignal,
 ): Promise<void> {
   const startTime = Date.now()
   const sep = await getSeparator()
+  if (signal?.aborted ?? false) {
+    throw new DOMException('Processing cancelled', 'AbortError')
+  }
 
   // Decode audio
   const ctx = new AudioContext()
@@ -127,6 +131,9 @@ async function processLocal(
     audioBuffer = await ctx.decodeAudioData(await file.arrayBuffer())
   } finally {
     ctx.close()
+  }
+  if (signal?.aborted ?? false) {
+    throw new DOMException('Processing cancelled', 'AbortError')
   }
 
   // Mono mixdown
@@ -295,6 +302,7 @@ async function pollAndPersistServer(
   apiSessionId: string,
   callbacks: ProcessingCallbacks,
   estimatedSecs?: number,
+  signal?: AbortSignal,
 ): Promise<void> {
   if (isServerPollActive(apiSessionId)) return
   renewServerPoll(apiSessionId)
@@ -387,7 +395,7 @@ async function pollAndPersistServer(
       },
       callbacks.onError,
       1000,
-      undefined,
+      signal,
       estimatedSecs,
     )
   } catch (err) {
@@ -407,6 +415,7 @@ async function processServer(
   sessionId: string,
   callbacks: ProcessingCallbacks,
   model?: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   // Server mode targets the metered RunPod GPU tier. The worker rejects an
   // unconfigured tier instead of falling through to unmetered container work.
@@ -414,6 +423,9 @@ async function processServer(
   const eta =
     SERVER_ETA_PROFILES[requestedModel] ?? SERVER_ETA_PROFILES.roformer
   const durationSecs = await audioDurationSecs(file)
+  if (signal?.aborted ?? false) {
+    throw new DOMException('Processing cancelled', 'AbortError')
+  }
   const estimatedSecs =
     durationSecs !== null
       ? Math.min(
@@ -422,11 +434,15 @@ async function processServer(
         )
       : undefined
 
-  const response = await processAudio(file, {
-    ...DEFAULT_PROCESS_REQUEST,
-    model: requestedModel,
-    provider: 'runpod',
-  })
+  const response = await processAudio(
+    file,
+    {
+      ...DEFAULT_PROCESS_REQUEST,
+      model: requestedModel,
+      provider: 'runpod',
+    },
+    signal,
+  )
 
   if (response.status !== 'processing') {
     throw new Error('Failed to start processing')
@@ -438,12 +454,18 @@ async function processServer(
   // stranding the job as unrecoverable and forcing a re-billed fresh
   // separation. Awaited so recovery is guaranteed once the job is submitted.
   await setUvrSessionApiIdDurable(sessionId, response.session_id)
+  if (signal?.aborted ?? false) {
+    await deleteSession(response.session_id).catch(() => undefined)
+    clearUvrSessionApiId(sessionId)
+    throw new DOMException('Processing cancelled', 'AbortError')
+  }
 
   await pollAndPersistServer(
     sessionId,
     response.session_id,
     callbacks,
     estimatedSecs,
+    signal,
   )
 }
 
@@ -479,6 +501,8 @@ export interface UvrPipelineOptions {
    *  'karaoke' | 'ensemble'). Omitted = the default request's model.
    *  Ignored in local mode (the on-device separator is MDX-only). */
   model?: string
+  /** Cancels model preparation, upload, or polling for queue-owned runs. */
+  signal?: AbortSignal
 }
 
 export async function runUvrPipeline(
@@ -489,9 +513,15 @@ export async function runUvrPipeline(
   options: UvrPipelineOptions = {},
 ): Promise<void> {
   if (mode === 'local') {
-    await processLocal(file, sessionId, callbacks)
+    await processLocal(file, sessionId, callbacks, options.signal)
   } else {
-    await processServer(file, sessionId, callbacks, options.model)
+    await processServer(
+      file,
+      sessionId,
+      callbacks,
+      options.model,
+      options.signal,
+    )
   }
 }
 

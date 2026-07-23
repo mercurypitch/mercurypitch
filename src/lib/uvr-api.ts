@@ -227,6 +227,7 @@ export async function listModels(): Promise<string[]> {
 export async function processAudio(
   file: File,
   options: ProcessRequest = DEFAULT_PROCESS_REQUEST,
+  signal?: AbortSignal,
 ): Promise<ProcessResponse> {
   const formData = new FormData()
   formData.append('file', file)
@@ -259,6 +260,7 @@ export async function processAudio(
     method: 'POST',
     headers,
     body: formData,
+    signal,
   })
 
   if (!response.ok) {

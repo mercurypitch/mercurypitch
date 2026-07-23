@@ -665,6 +665,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     onComplete?: () => void
     onError?: (message: string) => void
     cancelled?: () => boolean
+    signal?: AbortSignal
   }
 
   /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
@@ -884,6 +885,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         }),
         // Server jobs always run the single server quality (the pipeline's
         // default model, BS-RoFormer).
+        { signal: options.signal },
       )
     } catch (error) {
       if (outcome !== null) return outcome
@@ -998,6 +1000,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     })
 
     let serverCancelIssued = false
+    const cancelController = new AbortController()
     const cancelSubmittedServerJob = () => {
       if (processingMode !== 'server' || serverCancelIssued) return
       const apiSessionId = getUvrSession(sessionId)?.apiSessionId
@@ -1006,6 +1009,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       cancelUvrPipeline('server', apiSessionId)
     }
     context.onCancel(() => {
+      cancelController.abort()
       if (processingMode === 'local') cancelUvrPipeline('local')
       else cancelSubmittedServerJob()
       cancelUvrSession(sessionId, false)
@@ -1032,6 +1036,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           }
         },
         cancelled: context.cancelled,
+        signal: cancelController.signal,
       },
     )
 

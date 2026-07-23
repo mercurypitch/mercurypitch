@@ -78,9 +78,14 @@ export function createUvrUploadQueue(
   const [items, setItems] = createSignal<UvrUploadQueueItem[]>([])
   const [isRunning, setIsRunning] = createSignal(false)
 
-  let activeId: string | null = null
-  let activeCancel: (() => void) | null = null
-  let activeCancelled = false
+  interface ActiveQueueItem {
+    id: string
+    cancelled: boolean
+    cancelHandler: (() => void) | null
+    resolveCancellation: () => void
+  }
+
+  let active: ActiveQueueItem | null = null
 
   const updateItem = (
     itemId: string,
@@ -131,13 +136,22 @@ export function createUvrUploadQueue(
   }
 
   const cancelActive = () => {
-    if (activeId === null) return
-    activeCancelled = true
-    updateItem(activeId, {
+    const current = active
+    if (current === null || current.cancelled) return
+    current.cancelled = true
+    updateItem(current.id, {
       status: 'cancelled',
       message: 'Cancelled',
     })
-    activeCancel?.()
+    // Settle the queue even when the underlying browser inference or network
+    // request cannot acknowledge cancellation promptly. Its eventual result
+    // is observed and ignored below, so it cannot overwrite this terminal row.
+    current.resolveCancellation()
+    try {
+      current.cancelHandler?.()
+    } catch (error) {
+      console.error('[UvrUploadQueue] cancel handler failed:', error)
+    }
   }
 
   const clearFinished = () => {
@@ -148,7 +162,14 @@ export function createUvrUploadQueue(
   }
 
   const clear = () => {
-    if (isRunning()) return
+    // cancelActive marks the row terminal synchronously, while run() releases
+    // isRunning on the following microtask. Let Close dismiss that terminal
+    // panel immediately; a genuinely active/queued batch remains protected.
+    if (
+      isRunning() &&
+      items().some((item) => !isTerminalUploadQueueStatus(item.status))
+    )
+      return
     setItems([])
   }
 
@@ -160,9 +181,17 @@ export function createUvrUploadQueue(
         const next = items().find((item) => item.status === 'queued')
         if (next === undefined) break
 
-        activeId = next.id
-        activeCancel = null
-        activeCancelled = false
+        let resolveCancellation: () => void = () => undefined
+        const cancellation = new Promise<void>((resolve) => {
+          resolveCancellation = resolve
+        })
+        const activeItem: ActiveQueueItem = {
+          id: next.id,
+          cancelled: false,
+          cancelHandler: null,
+          resolveCancellation,
+        }
+        active = activeItem
         updateItem(next.id, {
           status: 'checking',
           progress: 0,
@@ -170,33 +199,51 @@ export function createUvrUploadQueue(
         })
 
         const context: UvrUploadQueueWorkerContext = {
-          update: (patch) => updateItem(next.id, patch),
-          onCancel: (handler) => {
-            activeCancel = handler
-            if (activeCancelled) handler()
+          update: (patch) => {
+            if (!activeItem.cancelled) updateItem(next.id, patch)
           },
-          cancelled: () => activeCancelled,
+          onCancel: (handler) => {
+            if (activeItem.cancelled) {
+              try {
+                handler()
+              } catch (error) {
+                console.error(
+                  '[UvrUploadQueue] late cancel handler failed:',
+                  error,
+                )
+              }
+            } else {
+              activeItem.cancelHandler = handler
+            }
+          },
+          cancelled: () => activeItem.cancelled,
         }
 
         try {
-          const outcome = await worker(next, context)
-          if (!activeCancelled) {
+          const workerResult = Promise.resolve()
+            .then(() => worker(next, context))
+            .then(
+              (outcome) => ({ kind: 'outcome' as const, outcome }),
+              (error: unknown) => ({ kind: 'error' as const, error }),
+            )
+          const result = await Promise.race([
+            workerResult,
+            cancellation.then(() => ({ kind: 'cancelled' as const })),
+          ])
+
+          if (result.kind === 'outcome' && !activeItem.cancelled) {
             updateItem(next.id, {
-              ...outcome,
-              progress: outcome.status === 'completed' ? 100 : undefined,
+              ...result.outcome,
+              progress: result.outcome.status === 'completed' ? 100 : undefined,
             })
-          }
-        } catch (error) {
-          if (!activeCancelled) {
+          } else if (result.kind === 'error' && !activeItem.cancelled) {
             updateItem(next.id, {
               status: 'error',
-              message: errorMessage(error),
+              message: errorMessage(result.error),
             })
           }
         } finally {
-          activeId = null
-          activeCancel = null
-          activeCancelled = false
+          if (active === activeItem) active = null
         }
       }
     } finally {

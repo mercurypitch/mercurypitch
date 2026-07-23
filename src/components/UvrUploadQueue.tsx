@@ -72,8 +72,28 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
   const terminalCount = () =>
     props.items().filter((item) => isTerminalUploadQueueStatus(item.status))
       .length
+  const cancelledCount = () =>
+    props.items().filter((item) => item.status === 'cancelled').length
+  const errorCount = () =>
+    props.items().filter((item) => item.status === 'error').length
   const allFinished = () =>
     props.items().length > 0 && terminalCount() === props.items().length
+  const finishedTitle = () => {
+    if (cancelledCount() === props.items().length) return 'Processing cancelled'
+    if (errorCount() > 0) {
+      return `${completedCount()} added · ${errorCount()} need attention`
+    }
+    return `${completedCount()} added to your library`
+  }
+  const finishedNote = () => {
+    if (cancelledCount() > 0) {
+      return 'Cancelled cleanly. Close this queue to choose new songs or processing options.'
+    }
+    if (errorCount() > 0) {
+      return 'Finished with errors. Successful songs are available in Recent Sessions.'
+    }
+    return 'Batch complete. Every successful song is ready in Recent Sessions.'
+  }
   const batchCost = () => {
     if (props.mode() !== 'server') return undefined
     const cost = props.costPerSong?.()
@@ -85,6 +105,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
       .findIndex(
         (item) => item.status === 'checking' || item.status === 'processing',
       )
+  const hasActiveItem = () => activeIndex() >= 0
   const overallProgress = () => {
     if (props.items().length === 0) return 0
     const total = props.items().reduce((sum, item) => {
@@ -110,10 +131,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
           <div>
             <p class="uvr-queue-kicker">Setlist queue</p>
             <h3>
-              <Show
-                when={!allFinished()}
-                fallback={`${completedCount()} added to your library`}
-              >
+              <Show when={!allFinished()} fallback={finishedTitle()}>
                 {props.running()
                   ? `Track ${Math.max(1, activeIndex() + 1)} of ${props.items().length}`
                   : `${props.items().length} song${props.items().length === 1 ? '' : 's'} ready`}
@@ -188,12 +206,9 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
       <div class="uvr-queue-footer">
         <div class="uvr-queue-footnote">
           <Show
-            when={props.running()}
+            when={props.running() && !allFinished()}
             fallback={
-              <Show
-                when={!allFinished()}
-                fallback="Batch complete. Every successful song is ready in Recent Sessions."
-              >
+              <Show when={!allFinished()} fallback={finishedNote()}>
                 Songs run one at a time. You can keep this tab in the
                 background.
               </Show>
@@ -204,7 +219,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
           </Show>
         </div>
         <div class="uvr-queue-actions">
-          <Show when={props.running()}>
+          <Show when={props.running() && hasActiveItem() && !allFinished()}>
             <button
               class="uvr-queue-button uvr-queue-button--danger"
               onClick={() => props.onCancel()}
@@ -231,12 +246,21 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
               </Show>
             </button>
           </Show>
-          <Show when={!props.running() && allFinished()}>
+          <Show when={allFinished()}>
             <button
               class="uvr-queue-button uvr-queue-button--primary"
               onClick={() => props.onClear()}
             >
-              <CheckCircle /> Done
+              <Show
+                when={cancelledCount() > 0 || errorCount() > 0}
+                fallback={
+                  <>
+                    <CheckCircle /> Done
+                  </>
+                }
+              >
+                <X /> Close
+              </Show>
             </button>
           </Show>
         </div>
