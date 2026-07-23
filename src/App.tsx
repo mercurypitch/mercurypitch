@@ -36,6 +36,11 @@ const SessionBrowser = lazy(async () =>
     default: m.SessionBrowser,
   })),
 )
+const AdminWeeklyPage = lazy(async () =>
+  import('@/features/challenges/AdminWeeklyPage').then((m) => ({
+    default: m.AdminWeeklyPage,
+  })),
+)
 const SessionEditor = lazy(async () =>
   import('@/components/SessionEditor').then((m) => ({
     default: m.SessionEditor,
@@ -79,7 +84,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -105,12 +110,14 @@ import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
 import { ExercisesPage } from '@/pages/ExercisesPage'
 import { GuitarPage } from '@/pages/GuitarPage'
+import HomePage from '@/pages/HomePage'
 import { JamPage } from '@/pages/JamPage'
 import { KaraokePage } from '@/pages/KaraokePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
+import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -710,6 +717,8 @@ const AppShell: Component<AppProps> = (props) => {
     handleBillingReturn,
     openSettingsSection,
     settingsSection,
+    openAdminWeekly: () => setShowAdminWeekly(true),
+    showAdminWeekly,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -2276,6 +2285,18 @@ const AppShell: Component<AppProps> = (props) => {
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
+              <Show when={activeTab() === TAB_HOME}>
+                <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
+                  <HomePage />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_PATH}>
+                <TabErrorBoundary tabName={tabLabel(TAB_PATH)}>
+                  <PathPage />
+                </TabErrorBoundary>
+              </Show>
+
               <Show when={activeTab() === TAB_SINGING}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
                   {/* Adaptive swap: purpose-built mobile stage on narrow
@@ -3004,6 +3025,12 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
             </div>
           </div>
+        </Show>
+
+        <Show when={showAdminWeekly()}>
+          <Suspense>
+            <AdminWeeklyPage onClose={() => setShowAdminWeekly(false)} />
+          </Suspense>
         </Show>
 
         <Notifications />

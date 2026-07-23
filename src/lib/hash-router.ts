@@ -2,7 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 import type { SettingsSection } from '@/stores/ui-store'
@@ -29,9 +29,12 @@ export type HashRoute =
   | { type: 'billing-return'; outcome: 'success' | 'cancel' }
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
+  | { type: 'admin-weekly' }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
+  TAB_HOME,
+  TAB_PATH,
   TAB_SINGING,
   TAB_PIANO,
   TAB_COMPOSE,
@@ -205,6 +208,11 @@ export function parseHash(rawHash: string): HashRoute {
     }
   }
 
+  // Match: /admin/weekly (owner-only weekly-challenge authoring)
+  if (hash === '/admin/weekly' || hash === '/admin') {
+    return { type: 'admin-weekly' }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -249,6 +257,8 @@ export function buildHash(route: HashRoute): string {
       return route.outcome === 'success' ? '/billing/success' : '/pricing'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
+    case 'admin-weekly':
+      return '/admin/weekly'
     case 'unknown':
       return '/'
   }

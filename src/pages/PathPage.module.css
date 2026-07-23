@@ -1,0 +1,599 @@
+/* ============================================================
+   The Ascent — a serpentine of celestial week-orbs climbing a
+   night sky. Deep indigo→cyan nebula, static CSS starfield (no
+   rAF), an organic light-trail (drawn in JS through the orbs'
+   real centres), floating uppercase labels, glass guidebook card.
+   Single committed cosmic theme — it is a place, not a document.
+   ============================================================ */
+
+.page {
+  --path-void: #0a0b18;
+  --path-indigo: #171a3a;
+  --path-cyan: #45d3e8;
+  --path-violet: #6d5efc;
+  --path-gold: #f0c674;
+  --path-ink: #eaecff;
+  --path-muted: #8f95c2;
+
+  /* Serpentine amplitude + row rhythm (scale with viewport). */
+  --amp: clamp(54px, 25vw, 132px);
+  --row: clamp(112px, 15vh, 150px);
+  /* Content padding, as tokens so the full-bleed backdrop can cancel them. */
+  --pad-x: 16px;
+  --pad-top: 26px;
+
+  position: relative;
+  isolation: isolate;
+  /* .main-content is a flex column with a definite height: without this
+     the page shrinks to the container and clips its lower orbs. Grow with
+     content and let .main-content scroll. */
+  flex-shrink: 0;
+  min-height: 100%;
+  padding: var(--pad-top) var(--pad-x) calc(52px + var(--tabbar-total, 0px));
+  color: var(--path-ink);
+  /* Deep space — the (darkened) nebula backdrop supplies any glow, so the
+     base stays flat-dark and the orbs read clearly against it. */
+  background: linear-gradient(180deg, #08091a 0%, #06060f 44%, #050508 100%);
+  overflow-x: clip;
+}
+
+/* Landscape mercury-glass backdrop (Voice Glass family). Fixed to the
+   viewport so the full 16:9 art fills big screens and content scrolls over
+   it; on phones it crops to the dark centre. The asset is co-located, so
+   Vite content-hashes it — the URL changes whenever the image does, which
+   busts the CDN/browser cache automatically. */
+.backdrop {
+  /* Sticky + negative margins = a fixed-feel cover that is CONTAINED to the
+     page (so it can never leak onto the top nav / sidebar the way
+     position:fixed can), shows the full landscape in the viewport, and
+     doesn't push content down.
+
+     The negative top/side margins cancel .page's padding so the cover reaches
+     every edge of main-content (no strip of dark base showing above or beside
+     it); the bottom margin restores --pad-top so the content below still
+     starts at the normal position. Over-extension is clipped by .page's
+     overflow-x:clip and .main-content's overflow. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  margin-top: calc(-1 * var(--pad-top));
+  margin-inline: calc(-1 * var(--pad-x));
+  margin-bottom: calc(var(--pad-top) - 100vh);
+  z-index: -1;
+  pointer-events: none;
+  background-image: url('./ascent-backdrop.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+/* Gentle dark veil at the top so the hero text stays legible over the
+   summit glow. */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    75% 42% at 50% -4%,
+    rgba(6, 7, 16, 0.6),
+    transparent 62%
+  );
+}
+
+/* The mercury-glass backdrop is now the single, full background — no separate
+   CSS starfield layer on top of it. */
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  /* Explicit column layout so no inherited/global rule (e.g. the app's
+     top-nav `header` flex-row) can squash the stacked hero content. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 34rem;
+  margin: 4px auto 8px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--path-cyan);
+  opacity: 0.85;
+}
+.title {
+  margin: 8px 0 0;
+  font-size: clamp(2rem, 8vw, 3.1rem);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  line-height: 1.02;
+  text-wrap: balance;
+  color: #f6f8ff;
+  text-shadow: 0 2px 30px rgba(109, 94, 252, 0.4);
+}
+.title em {
+  font-style: normal;
+  font-weight: 600;
+  background: linear-gradient(
+    120deg,
+    var(--path-gold),
+    var(--path-cyan) 55%,
+    var(--path-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.tagline {
+  margin: 12px auto 0;
+  max-width: 30rem;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c7cbef;
+}
+.progressLine {
+  margin: 14px auto 0;
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  color: #dfe2ff;
+  background: rgba(109, 94, 252, 0.16);
+  border: 1px solid rgba(150, 140, 255, 0.28);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+
+/* ── Graduation ───────────────────────────────────────────── */
+.graduation {
+  position: relative;
+  max-width: 30rem;
+  margin: 20px auto 4px;
+  padding: 20px 22px;
+  text-align: center;
+  border-radius: 20px;
+  background: linear-gradient(
+    160deg,
+    rgba(240, 198, 116, 0.16),
+    rgba(109, 94, 252, 0.1)
+  );
+  border: 1px solid rgba(240, 198, 116, 0.32);
+  box-shadow: 0 0 40px rgba(240, 198, 116, 0.18);
+}
+.graduation h2 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--path-gold);
+}
+.graduation p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #dbdefb;
+}
+
+/* ── The trail ────────────────────────────────────────────── */
+.trail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 40rem;
+  margin: 26px auto 0;
+}
+.trailSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.node {
+  position: relative;
+  z-index: 1;
+  min-height: var(--row);
+  display: grid;
+  place-items: center;
+}
+
+.orbBtn {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  line-height: 0;
+  transform: translateX(calc(var(--off, 0) * var(--amp)));
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.25s ease;
+  outline: none;
+}
+.orbBtn:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(10, 11, 24, 0.9),
+    0 0 0 5px var(--path-cyan);
+}
+.orbBtn:hover {
+  filter: brightness(1.08);
+}
+
+/* Floating uppercase label, in the gutter opposite the orb. */
+.label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: min(46%, 168px);
+  pointer-events: none;
+  line-height: 1.2;
+}
+.labelLeft {
+  left: 0;
+  text-align: right;
+}
+.labelRight {
+  right: 0;
+  text-align: left;
+}
+.week {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--path-muted);
+}
+.name {
+  margin-top: 2px;
+  font-size: clamp(13px, 3.6vw, 16px);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.nameDone {
+  color: var(--path-gold);
+  text-shadow: 0 0 16px rgba(240, 198, 116, 0.4);
+}
+.nameActive {
+  color: #d6f7ff;
+  text-shadow: 0 0 18px rgba(69, 211, 232, 0.5);
+}
+.nameAvail {
+  color: #cfc7ff;
+}
+.nameLocked {
+  color: #6b7099;
+}
+.status {
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--path-muted);
+}
+
+/* ── Guidebook card ───────────────────────────────────────── */
+.card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 30rem);
+  margin: 4px auto 18px;
+  padding: 20px 20px 22px;
+  border-radius: 22px;
+  background: linear-gradient(
+    165deg,
+    rgba(28, 31, 62, 0.9),
+    rgba(15, 17, 38, 0.92)
+  );
+  border: 1px solid rgba(140, 148, 220, 0.24);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 0 46px rgba(109, 94, 252, 0.14);
+  backdrop-filter: blur(14px);
+  animation: pathCardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pathCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--path-cyan);
+}
+.cardTitle {
+  margin: 6px 0 8px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f4f6ff;
+  text-wrap: balance;
+}
+.focus {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c9cdef;
+}
+
+/* Coach's voice — a highlighted tip under the focus copy. */
+.coachNote {
+  position: relative;
+  margin: 14px 0 0;
+  padding: 12px 14px 12px 40px;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.55;
+  color: #e7e9ff;
+  background: linear-gradient(
+    120deg,
+    rgba(69, 211, 232, 0.1),
+    rgba(109, 94, 252, 0.08)
+  );
+  border-left: 2px solid var(--path-cyan);
+  border-radius: 0 12px 12px 0;
+}
+.coachQuote {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  color: var(--path-cyan);
+  opacity: 0.85;
+}
+.goals {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.goals li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #dde0f8;
+}
+.goals li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--path-cyan);
+  box-shadow: 0 0 8px rgba(69, 211, 232, 0.7);
+}
+
+.minibar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.miniTrack {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.miniFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--path-violet), var(--path-cyan));
+  box-shadow: 0 0 12px rgba(69, 211, 232, 0.6);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.miniText {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #c7cbef;
+  white-space: nowrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.chip {
+  appearance: none;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  color: #e7eaff;
+  background: rgba(109, 94, 252, 0.16);
+  border: 1px solid rgba(150, 140, 255, 0.3);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.12s ease;
+}
+.chip:hover {
+  background: rgba(109, 94, 252, 0.28);
+  border-color: rgba(170, 160, 255, 0.5);
+}
+.chip:active {
+  transform: scale(0.96);
+}
+
+.cta {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 18px;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #0a0b18;
+  background: linear-gradient(120deg, var(--path-gold), var(--path-cyan) 60%);
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(69, 211, 232, 0.28);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+.cta:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 14px 38px rgba(69, 211, 232, 0.4);
+}
+.cta:active {
+  transform: translateY(1px) scale(0.99);
+}
+.replayNote {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--path-muted);
+}
+
+.resources {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(140, 148, 220, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.resHead {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--path-muted);
+}
+.resLink {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(140, 148, 220, 0.16);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.resLink:hover {
+  background: rgba(109, 94, 252, 0.14);
+  border-color: rgba(150, 140, 255, 0.34);
+}
+.resLink b {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef0ff;
+}
+.resLink span {
+  font-size: 11.5px;
+  color: var(--path-muted);
+}
+
+/* ── Dev toolbar (IS_DEV only) ────────────────────────────── */
+.devbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 30rem;
+  margin: 14px auto 0;
+  padding: 8px 12px;
+  border: 1px dashed rgba(150, 140, 255, 0.4);
+  border-radius: 12px;
+  background: rgba(12, 13, 26, 0.6);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--path-muted);
+}
+.devTag {
+  padding: 2px 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0a0b18;
+  background: var(--path-cyan);
+  border-radius: 5px;
+}
+.devToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: #cfd3f5;
+}
+.devbar button {
+  appearance: none;
+  padding: 4px 10px;
+  font: inherit;
+  color: #dfe2ff;
+  background: rgba(109, 94, 252, 0.18);
+  border: 1px solid rgba(150, 140, 255, 0.3);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.devbar button:hover {
+  background: rgba(109, 94, 252, 0.32);
+}
+
+/* ── Foot ─────────────────────────────────────────────────── */
+.foot {
+  max-width: 30rem;
+  margin: 30px auto 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #7b80a8;
+}
+
+/* ── Density tweak on wider screens ───────────────────────── */
+@media (min-width: 720px) {
+  .page {
+    --pad-top: 40px;
+  }
+  .node {
+    min-height: 156px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+  .orbBtn,
+  .miniFill {
+    transition: none;
+  }
+}

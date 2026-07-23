@@ -154,6 +154,9 @@ export function dismissWelcome(): void {
   setWelcomeSeen(APP_VERSION)
 }
 
+// ── Admin authoring overlay (#/admin/weekly) ────────────────────
+export const [showAdminWeekly, setShowAdminWeekly] = createSignal(false)
+
 // ── Onboarding survey (GH #97) ──────────────────────────────────
 // Shown once on real deployments after the welcome screen. A non-empty
 // stored value means the user has already seen (submitted or skipped) it,

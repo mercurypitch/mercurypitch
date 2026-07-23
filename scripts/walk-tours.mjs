@@ -52,6 +52,8 @@ const SECTION_TOURS = [
   'Settings: Display & Controls',
 ]
 const PAGE_TOURS = [
+  'Home',
+  'Path',
   'Guitar',
   'Piano',
   'Analysis',

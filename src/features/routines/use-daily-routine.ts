@@ -1,9 +1,13 @@
 import { createMemo, createSignal } from 'solid-js'
+import { pickApplyPhrase } from '@/data/apply-melodies'
 import { dailyRoutines, getRoutineById } from '@/data/routine-templates'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_WARMUP } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_STACCATO, EXERCISE_WARMUP, } from '@/features/exercises/types'
+import { activePathExercises, activePathWarmup, } from '@/features/path/path-progress'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
+import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
+import { setActiveTab, startExercise } from '@/stores/ui-store'
 import type { RoutineSegment, RoutineTemplate } from './types'
 
 const STORAGE_KEY = 'mp_daily_routine'
@@ -43,6 +47,98 @@ const [recentTemplateIds, setRecentTemplateIds] = createPersistedSignal<
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+/** 0-based day-of-year — the deterministic seed for today's generated session. */
+export function dayOfYear(d = new Date()): number {
+  const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 0)
+  const midnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  return Math.floor((midnight - startOfYear) / 86_400_000)
+}
+
+// The daily session's rotating pieces (deterministic by day-of-year so
+// "today" is stable across reloads and shared between the sidebar + Home).
+const WARMUP_PATTERNS = [
+  'ascending-scale',
+  'lip-trill',
+  'sirens',
+  'five-tone-descending',
+]
+const GROW_POOL: ExerciseType[] = [
+  EXERCISE_INTERVAL_TRAINER,
+  EXERCISE_SCALE_RUNNER,
+  EXERCISE_ARPEGGIO_JUMPER,
+  EXERCISE_PITCH_PURSUIT,
+  EXERCISE_STACCATO,
+  EXERCISE_DYNAMIC_SWELL,
+]
+const DEFAULT_REVIEW_EXERCISE: ExerciseType = EXERCISE_LONG_NOTE
+
+/** Guided-path theming: bias the session toward the active week. */
+export interface SessionTheme {
+  /** The week's bound exercises — the grow slot draws from these. */
+  pool: ExerciseType[]
+  /** Warm-up pattern override (null/undefined = default rotation). */
+  warmupPattern?: string | null
+}
+
+/**
+ * Build today's generated session: warm-up → review a weak spot → grow a
+ * skill → apply on a real (public-domain) phrase. Pure and deterministic given
+ * `dayIndex`; `weakType` steers the review slot when practice history has one;
+ * `theme` (the guided path's active week) steers the grow slot + warm-up.
+ */
+export function buildDailySession(
+  dayIndex: number,
+  weakType?: ExerciseType,
+  theme?: SessionTheme,
+): RoutineTemplate {
+  const warmup: RoutineSegment = {
+    type: 'warmup',
+    durationSec: 60,
+    config: {
+      pattern:
+        theme?.warmupPattern ??
+        WARMUP_PATTERNS[dayIndex % WARMUP_PATTERNS.length],
+    },
+  }
+
+  const reviewType = weakType ?? DEFAULT_REVIEW_EXERCISE
+  const review: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 150,
+    config: { exercise: reviewType },
+  }
+
+  // Grow a different skill than the one being reviewed — drawn from the
+  // path's themed pool when a week is active, else the default rotation.
+  const growPool =
+    theme !== undefined && theme.pool.length > 0 ? theme.pool : GROW_POOL
+  let growType = growPool[dayIndex % growPool.length]!
+  if (growType === reviewType && growPool.length > 1) {
+    growType = growPool[(dayIndex + 1) % growPool.length]!
+  }
+  const grow: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 150,
+    config: { exercise: growType },
+  }
+
+  const phrase = pickApplyPhrase(dayIndex)
+  const applyExercise: ExerciseType =
+    dayIndex % 2 === 0 ? EXERCISE_CALL_RESPONSE : EXERCISE_SIGHT_SINGING
+  const apply: RoutineSegment = {
+    type: 'exercise',
+    durationSec: 120,
+    config: { exercise: applyExercise, notes: phrase.notes },
+  }
+
+  return {
+    id: 'daily-session',
+    name: "Today's Session",
+    description: `Warm up, sharpen a weak spot, grow a skill, then sing ${phrase.name}.`,
+    segments: [warmup, review, grow, apply],
+  }
 }
 
 // Shared persisted signal so auto-advance can update it from outside the hook
@@ -144,6 +240,28 @@ export function loadSharedRoutine(routine: RoutineTemplate): boolean {
 }
 
 /**
+ * Launch a routine segment the way the Home session card does: exercise
+ * segments start their drill, warm-up/cool-down run the guided warmup with
+ * the segment's pattern, and challenge-prep jumps to the Challenges tab.
+ * Shared by the Home card and the guided path's week card.
+ */
+export function launchRoutineSegment(seg: RoutineSegment): void {
+  if (seg.type === 'challenge-prep') {
+    setActiveTab(TAB_CHALLENGES)
+    return
+  }
+  if (seg.type === 'warmup' || seg.type === 'cooldown') {
+    startExercise(EXERCISE_WARMUP, {
+      pattern: seg.config.pattern ?? seg.config.mode,
+    })
+    return
+  }
+  if (seg.config.exercise) {
+    startExercise(seg.config.exercise, { notes: seg.config.notes ?? [] })
+  }
+}
+
+/**
  * Auto-advance the daily routine if the completed exercise matches the
  * current segment. Call this after recording an exercise result.
  */
@@ -226,11 +344,28 @@ export function useDailyRoutine() {
 
   function generate(): RoutineTemplate {
     const prefs = routinePrefs()
-    const base = pickTemplate(prefs.focus)
+    // 'auto' (the default) builds today's generated 4-slot session; the
+    // handcrafted templates stay reachable via 'surprise' or an explicit id.
+    let base: RoutineTemplate
+    if (prefs.focus === 'auto') {
+      const report = generateWeaknessReport()
+      // When The Ascent is running, today's session leans into the active
+      // week's theme (grow pool + warm-up pattern).
+      const pool = activePathExercises()
+      const theme: SessionTheme | undefined =
+        pool !== null ? { pool, warmupPattern: activePathWarmup() } : undefined
+      base = buildDailySession(
+        dayOfYear(),
+        report.weakExercises[0]?.type,
+        theme,
+      )
+    } else {
+      base = pickTemplate(prefs.focus)
+      setRecentTemplateIds((prev) =>
+        [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
+      )
+    }
     const routine = applyLength(base, prefs.length)
-    setRecentTemplateIds((prev) =>
-      [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
-    )
     setPersisted({
       templateId: routine.id,
       date: todayStr(),
