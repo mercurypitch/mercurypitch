@@ -20,6 +20,20 @@ describe('Whisper Hygiene — Segment Filtering (REQ-WSP-001, REQ-WSP-002)', () 
     expect(filtered[0].text).toBe('valid segment')
   })
 
+  it('drops non-finite, negative, and malformed timestamp tuples', () => {
+    const segments = [
+      { text: 'infinite', timestamp: [0, Number.POSITIVE_INFINITY] },
+      { text: 'nan', timestamp: [0, Number.NaN] },
+      { text: 'negative', timestamp: [-1, 1] },
+      { text: 'extra', timestamp: [0, 1, 2] },
+      { text: 'valid', timestamp: [0, 1] },
+    ] as unknown as WhisperSegment[]
+
+    expect(filterWordSegments(segments).map((segment) => segment.text)).toEqual(
+      ['valid'],
+    )
+  })
+
   it('drops empty and filler segments', () => {
     const segments: WhisperSegment[] = [
       { text: '   ', timestamp: [0, 1] },
@@ -33,6 +47,14 @@ describe('Whisper Hygiene — Segment Filtering (REQ-WSP-001, REQ-WSP-002)', () 
     expect(filtered[0].text).toBe('actual lyrics')
   })
 
+  it('strips embedded noise tags while retaining sung text', () => {
+    const filtered = filterWordSegments([
+      { text: '[Music] hello (laughter) world', timestamp: [0, 2] },
+    ])
+
+    expect(filtered).toEqual([{ text: 'hello world', timestamp: [0, 2] }])
+  })
+
   it('deduplicates overlapping segments while dropping invalid timestamps', () => {
     const segments: WhisperSegment[] = [
       { text: 'invalid', timestamp: [1, 1] },
@@ -44,6 +66,20 @@ describe('Whisper Hygiene — Segment Filtering (REQ-WSP-001, REQ-WSP-002)', () 
     expect(deduped).toHaveLength(2)
     expect(deduped[0].text).toBe('first')
     expect(deduped[1].text).toBe('second')
+  })
+
+  it('compares overlap against the previous accepted segment', () => {
+    const segments: WhisperSegment[] = [
+      { text: 'malformed', timestamp: [100, 100] },
+      { text: 'first', timestamp: [0, 5] },
+      { text: 'nested overlap', timestamp: [1, 3] },
+      { text: 'still overlaps first', timestamp: [3.1, 4.9] },
+      { text: 'second', timestamp: [5.1, 8] },
+    ]
+
+    expect(
+      deduplicateWhisperSegments(segments).map((segment) => segment.text),
+    ).toEqual(['first', 'second'])
   })
 
   it('skips zero-length segments during multi-word splitting', () => {
@@ -78,7 +114,7 @@ describe('Whisper Match Quality Evaluation (REQ-WSP-003)', () => {
       { text: 'Is this fantasy', timestamp: [5, 9] },
     ]
     const score = evaluateWhisperMatchQuality(whisper, lrcLines)
-    expect(score).toBeGreaterThan(0.5)
+    expect(score).toBeGreaterThan(0.4)
   })
 
   it('returns 0.0 for completely hallucinated/unmatched text', () => {
@@ -95,6 +131,42 @@ describe('Whisper Match Quality Evaluation (REQ-WSP-003)', () => {
     expect(
       evaluateWhisperMatchQuality([{ text: 'hello', timestamp: [0, 1] }], []),
     ).toBe(0.0)
+  })
+
+  it('does not let repeated common words inflate match quality', () => {
+    const score = evaluateWhisperMatchQuality(
+      [{ text: 'love love love love love', timestamp: [0, 2] }],
+      [{ time: 0, text: 'Love will find a way' }],
+    )
+
+    expect(score).toBeLessThan(MIN_WHISPER_MATCH_QUALITY)
+  })
+
+  it('uses sequence evidence instead of treating reordered words as a match', () => {
+    const score = evaluateWhisperMatchQuality(
+      [{ text: 'delta gamma beta alpha', timestamp: [0, 2] }],
+      [{ time: 0, text: 'alpha beta gamma delta' }],
+    )
+
+    expect(score).toBeLessThan(MIN_WHISPER_MATCH_QUALITY)
+  })
+
+  it('matches Unicode lyrics without dropping accented letters', () => {
+    const score = evaluateWhisperMatchQuality(
+      [{ text: 'Cuvaj mi mjesto u srcu', timestamp: [0, 3] }],
+      [{ time: 0, text: 'Čuvaj mi mjesto u srcu!' }],
+    )
+
+    expect(score).toBe(1)
+  })
+
+  it('tolerates apostrophe differences in contractions', () => {
+    const score = evaluateWhisperMatchQuality(
+      [{ text: 'dont stop believing', timestamp: [0, 3] }],
+      [{ time: 0, text: "Don't stop believing" }],
+    )
+
+    expect(score).toBe(1)
   })
 })
 
@@ -169,5 +241,24 @@ describe('Alignment Segment Selection (REQ-WSP-004, REQ-WSP-005)', () => {
     const result = selectAlignmentSegments([], [])
     expect(result.wordSource).toBe('none')
     expect(result.segments).toHaveLength(0)
+  })
+
+  it('excludes explicit rest sentinels from line-only alignment', () => {
+    const result = selectAlignmentSegments(
+      [],
+      [
+        { time: 0, text: 'First line' },
+        { time: 5, text: '~Rest~' },
+        { time: 10, text: 'Second line' },
+      ],
+    )
+
+    expect(result.wordSource).toBe('lrc-line')
+    expect(result.segments.map((segment) => segment.text)).toEqual([
+      'First',
+      'line',
+      'Second',
+      'line',
+    ])
   })
 })

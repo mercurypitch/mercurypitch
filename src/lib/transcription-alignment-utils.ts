@@ -51,15 +51,16 @@ export function chunkAudioForWhisper(
 export function deduplicateWhisperSegments(
   segments: WhisperSegment[],
 ): WhisperSegment[] {
-  return segments.filter((seg, i) => {
-    if (!isValidSegmentTimestamp(seg.timestamp)) {
-      return false
-    }
-    if (i === 0) return true
-    const prevEnd = segments[i - 1].timestamp[1]
-    const mid = (seg.timestamp[0] + seg.timestamp[1]) / 2
-    return mid > prevEnd
-  })
+  const deduplicated: WhisperSegment[] = []
+  let previousAcceptedEnd = Number.NEGATIVE_INFINITY
+  for (const segment of segments) {
+    if (!isValidSegmentTimestamp(segment.timestamp)) continue
+    const midpoint = (segment.timestamp[0] + segment.timestamp[1]) / 2
+    if (midpoint <= previousAcceptedEnd) continue
+    deduplicated.push(segment)
+    previousAcceptedEnd = segment.timestamp[1]
+  }
+  return deduplicated
 }
 
 // ── Whisper Match Quality & Source Selection ───────────────────
@@ -67,6 +68,7 @@ export function deduplicateWhisperSegments(
 export type WordSourceKind = 'lrc-word' | 'whisper' | 'lrc-line' | 'none'
 
 export type LrcInputEntry = {
+  type?: 'line' | 'rest'
   time: number
   text?: string
   words?: string[]
@@ -83,12 +85,45 @@ export interface AlignmentSegmentSelection {
 /** Minimum match quality threshold (0-1) required to prefer Whisper over line-only LRC */
 export const MIN_WHISPER_MATCH_QUALITY = 0.25
 
-function normalizeText(text: string): string {
-  return text
+function tokenizeLyrics(text: string): string[] {
+  const normalized = text
+    .normalize('NFKD')
     .toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/\p{M}+/gu, '')
+  return (normalized.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu) ?? []).map(
+    (token) => token.replace(/['’]/g, ''),
+  )
+}
+
+function multisetDice(left: string[], right: string[]): number {
+  if (left.length === 0 || right.length === 0) return 0
+  const remaining = new Map<string, number>()
+  for (const token of right) {
+    remaining.set(token, (remaining.get(token) ?? 0) + 1)
+  }
+  let matches = 0
+  for (const token of left) {
+    const count = remaining.get(token) ?? 0
+    if (count === 0) continue
+    matches++
+    remaining.set(token, count - 1)
+  }
+  return (2 * matches) / (left.length + right.length)
+}
+
+function adjacentPairs(tokens: string[]): string[] {
+  const pairs: string[] = []
+  for (let index = 1; index < tokens.length; index++) {
+    pairs.push(`${tokens[index - 1]}\u0000${tokens[index]}`)
+  }
+  return pairs
+}
+
+function isLyricEntry(entry: LrcInputEntry): boolean {
+  if (entry.type === 'rest' || entry.text?.trim() === '~Rest~') return false
+  const text =
+    entry.text ?? (entry.words !== undefined ? entry.words.join(' ') : '')
+  return tokenizeLyrics(text).length > 0
 }
 
 /**
@@ -100,31 +135,29 @@ export function evaluateWhisperMatchQuality(
 ): number {
   if (whisperSegments.length === 0 || lrcLines.length === 0) return 0
 
-  const whisperText = whisperSegments.map((s) => s.text).join(' ')
-  const lrcText = lrcLines
-    .map((l) => l.text ?? (l.words !== undefined ? l.words.join(' ') : ''))
-    .join(' ')
-
-  const whisperNorm = normalizeText(whisperText)
-  const lrcNorm = normalizeText(lrcText)
-
-  if (whisperNorm.length === 0 || lrcNorm.length === 0) return 0
-
-  const whisperWords = whisperNorm.split(' ').filter(Boolean)
-  const lrcWords = lrcNorm.split(' ').filter(Boolean)
+  const whisperWords = tokenizeLyrics(
+    whisperSegments.map((segment) => segment.text).join(' '),
+  )
+  const lrcWords = tokenizeLyrics(
+    lrcLines
+      .map((l) => l.text ?? (l.words !== undefined ? l.words.join(' ') : ''))
+      .join(' '),
+  )
 
   if (whisperWords.length === 0 || lrcWords.length === 0) return 0
 
-  const lrcSet = new Set(lrcWords)
-  let overlapMatches = 0
-  for (const w of whisperWords) {
-    if (lrcSet.has(w)) overlapMatches++
-  }
-
-  const overlapRatio =
-    overlapMatches / Math.max(whisperWords.length, lrcWords.length)
-
-  return Math.min(1, Math.max(0, overlapRatio))
+  const wordOverlap = multisetDice(whisperWords, lrcWords)
+  const whisperPairs = adjacentPairs(whisperWords)
+  const lrcPairs = adjacentPairs(lrcWords)
+  const sequenceOverlap =
+    whisperPairs.length > 0 && lrcPairs.length > 0
+      ? multisetDice(whisperPairs, lrcPairs)
+      : wordOverlap
+  // Token overlap establishes that the same vocabulary is present; adjacent
+  // pairs then strongly reward the lyric order. The small floor keeps very
+  // short transcriptions comparable without allowing a reordered word bag to
+  // masquerade as a good match.
+  return wordOverlap * (0.1 + sequenceOverlap * 0.9)
 }
 
 /**
@@ -141,12 +174,15 @@ export function selectAlignmentSegments(
   lrcLines: LrcInputEntry[],
 ): AlignmentSegmentSelection {
   const sanitizedWhisper = filterWordSegments(whisperSegments)
-  const lrcHasWordTimes = lrcLines.some((e) => (e.wordTimes?.length ?? 0) > 0)
+  const lyricLines = lrcLines.filter(isLyricEntry)
+  const lrcHasWordTimes = lyricLines.some(
+    (entry) => (entry.wordTimes?.length ?? 0) > 0,
+  )
 
   let lrcSegments: WhisperSegment[] = []
-  if (lrcLines.length > 0) {
+  if (lyricLines.length > 0) {
     if (lrcHasWordTimes) {
-      const wordEntries: LrcWordEntry[] = lrcLines.map((e) => ({
+      const wordEntries: LrcWordEntry[] = lyricLines.map((e) => ({
         time: e.time,
         endTime: e.endTime,
         words:
@@ -158,7 +194,7 @@ export function selectAlignmentSegments(
       }))
       lrcSegments = lrcEntriesToSegments(wordEntries)
     } else {
-      const lineEntries: LrcLine[] = lrcLines.map((e) => ({
+      const lineEntries: LrcLine[] = lyricLines.map((e) => ({
         time: e.time,
         text: e.text ?? (e.words !== undefined ? e.words.join(' ') : ''),
       }))
@@ -182,7 +218,10 @@ export function selectAlignmentSegments(
         wordSource: 'lrc-line',
       }
     }
-    const matchQuality = evaluateWhisperMatchQuality(sanitizedWhisper, lrcLines)
+    const matchQuality = evaluateWhisperMatchQuality(
+      sanitizedWhisper,
+      lyricLines,
+    )
     if (matchQuality < MIN_WHISPER_MATCH_QUALITY) {
       return {
         segments: lrcSegments,
