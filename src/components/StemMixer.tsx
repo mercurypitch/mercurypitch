@@ -22,10 +22,9 @@ import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { lrcEntriesToSegments } from '@/lib/pitch-word-alignment'
 import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
-import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
@@ -906,22 +905,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Word-window source priority: word-timed LRC (user taps / enhanced LRC)
-    // beats whisper — whisper hallucinates words and timestamps on sung
-    // vocals, while tapped timings are deliberate. Whisper still beats
-    // line-only LRC, whose even word spread is a rough guess. Both sources
-    // are read unconditionally so the memo tracks them.
+    // beats whisper. Whisper beats line-only LRC provided Whisper match quality
+    // is acceptable (>= 0.25); otherwise line-only LRC is preferred.
     const lrc = canonicalLrcLines()
-    const lrcSegments = lrc.length > 0 ? lrcEntriesToSegments(lrc) : []
-    const lrcHasWordTimes = lrc.some((e) => (e.wordTimes?.length ?? 0) > 0)
-    let segments = wsSegs
-    let wordSource = 'whisper'
-    if (lrcHasWordTimes && lrcSegments.length > 0) {
-      segments = lrcSegments
-      wordSource = 'lrc-word'
-    } else if (segments.length === 0 && lrcSegments.length > 0) {
-      segments = lrcSegments
-      wordSource = 'lrc-line'
-    }
+    const { segments, wordSource } = selectAlignmentSegments(wsSegs, lrc)
 
     if (segments.length === 0) {
       console.log(

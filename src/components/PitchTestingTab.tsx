@@ -24,9 +24,9 @@ import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { alignPitchToWords, filterWordSegments, lrcLinesToSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
+import { alignPitchToWords, filterWordSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
 import { freqToMidi } from '@/lib/scale-data'
-import { formatAlignmentDebugLog, logAlignmentComparison, } from '@/lib/transcription-alignment-utils'
+import { formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
@@ -264,14 +264,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       }
     }
 
-    // Prefer whisper segments; fall back to LRC word timings
-    let segments = whisperSegments()
-    if (segments.length === 0) {
-      const lrc = track?.lrcLines
-      if (lrc && lrc.length > 0) {
-        segments = lrcLinesToSegments(lrc)
-      }
-    }
+    // Select alignment segments using source priority & Whisper match quality check
+    const wsSegs = whisperSegments()
+    const lrc = track?.lrcLines ?? []
+    const { segments } = selectAlignmentSegments(wsSegs, lrc)
 
     if (segments.length === 0) {
       return {

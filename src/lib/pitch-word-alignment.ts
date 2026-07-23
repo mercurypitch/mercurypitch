@@ -232,6 +232,22 @@ export function alignPitchToWords(
 }
 
 /**
+ * Returns true if timestamp is a valid 2-tuple where end > start.
+ */
+export function isValidSegmentTimestamp(timestamp: unknown): boolean {
+  if (!Array.isArray(timestamp) || timestamp.length !== 2) return false
+  const [start, end] = timestamp
+  return (
+    typeof start === 'number' &&
+    typeof end === 'number' &&
+    Number.isFinite(start) &&
+    Number.isFinite(end) &&
+    start >= 0 &&
+    end > start
+  )
+}
+
+/**
  * Split multi-word whisper segments into individual word segments
  * with evenly-distributed timestamps. Single-word segments pass through unchanged.
  * This handles whisper-tiny returning line-level chunks instead of word-level.
@@ -241,19 +257,22 @@ export function splitMultiWordSegments(
 ): WhisperSegment[] {
   const result: WhisperSegment[] = []
   for (const seg of segments) {
+    if (!isValidSegmentTimestamp(seg.timestamp)) {
+      continue
+    }
     const words = seg.text.trim().split(/\s+/).filter(Boolean)
     if (words.length <= 1) {
       result.push(seg)
-      continue
-    }
-    const [start, end] = seg.timestamp
-    const duration = Math.max(0.001, end - start)
-    const perWord = duration / words.length
-    for (let i = 0; i < words.length; i++) {
-      result.push({
-        text: words[i],
-        timestamp: [start + i * perWord, start + (i + 1) * perWord],
-      })
+    } else {
+      const [start, end] = seg.timestamp
+      const duration = end - start
+      const perWord = duration / words.length
+      for (let i = 0; i < words.length; i++) {
+        result.push({
+          text: words[i],
+          timestamp: [start + i * perWord, start + (i + 1) * perWord],
+        })
+      }
     }
   }
   return result
@@ -261,18 +280,33 @@ export function splitMultiWordSegments(
 
 /**
  * Filter segments to only those containing actual words,
- * stripping empty/filler entries.
+ * stripping empty/filler entries and zero-length/inverted timestamp segments.
  */
 export function filterWordSegments(
   segments: WhisperSegment[],
 ): WhisperSegment[] {
-  // Matches bracketed/parenthesized tags like [Music], (laughing),
-  // punctuation-only strings, and unicode music symbols
-  const FILLER_PATTERN = /^\[.*\]$|^\(.*\)$|^[.,;:!?…♪~\-–—]+$|^$/
-  return segments.filter((s) => {
-    const text = s.text.trim()
-    return text.length > 0 && !FILLER_PATTERN.test(text)
-  })
+  const wholeNoiseTag = /^(?:\[.*\]|\(.*\)|<.*>)$/u
+  const embeddedNoiseTag =
+    /(?:\[|\(|<)\s*(?:music|instrumental|applause|laugh(?:ter|ing)?|noise|silence|inaudible|blank[_ ]audio|cough(?:ing)?|breath(?:ing)?)\s*(?:\]|\)|>)/giu
+  const punctuationOnly = /^[\p{P}\p{S}\s]+$/u
+  const filtered: WhisperSegment[] = []
+
+  for (const segment of segments) {
+    if (!isValidSegmentTimestamp(segment.timestamp)) continue
+    const text = segment.text
+      .replace(embeddedNoiseTag, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (
+      text.length === 0 ||
+      wholeNoiseTag.test(text) ||
+      punctuationOnly.test(text)
+    ) {
+      continue
+    }
+    filtered.push(text === segment.text ? segment : { ...segment, text })
+  }
+  return filtered
 }
 
 /**
