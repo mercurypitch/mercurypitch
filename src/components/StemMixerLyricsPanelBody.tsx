@@ -129,6 +129,8 @@ export interface StemMixerLyricsPanelBodyProps {
   // Audio
   playing: Accessor<boolean>
   elapsed: Accessor<number>
+  playbackSpeed: Accessor<number>
+  setPlaybackSpeed: (speed: number) => void
   handlePlay: () => void
   handlePause: () => void
 
@@ -228,6 +230,56 @@ export const StemMixerLyricsPanelBody: Component<
     setMarkerVisual(target)
   }
 
+  const sendMarkerPath = (target: MarkerTarget, phase: 'move' | 'end') => {
+    const previous = latestMarkerTarget
+    if (
+      previous !== null &&
+      previous.lineIdx === target.lineIdx &&
+      target.wordIdx < previous.wordIdx
+    ) {
+      return
+    }
+
+    if (
+      previous !== null &&
+      previous.lineIdx === target.lineIdx &&
+      target.wordIdx > previous.wordIdx
+    ) {
+      // Preserve every crossed word even when the browser coalesces a very fast
+      // drag into one pointer event. Intermediate words close at this frame's
+      // timestamp; only the final target needs the exact horizontal position.
+      props.handleMarkerSample(
+        previous.lineIdx,
+        previous.wordIdx,
+        previous.progress,
+        latestElapsed,
+        'move',
+      )
+      for (
+        let wordIdx = previous.wordIdx + 1;
+        wordIdx < target.wordIdx;
+        wordIdx++
+      ) {
+        props.handleMarkerSample(
+          target.lineIdx,
+          wordIdx,
+          1,
+          latestElapsed,
+          'move',
+        )
+      }
+    }
+
+    updateMarkerVisual(target)
+    props.handleMarkerSample(
+      target.lineIdx,
+      target.wordIdx,
+      target.progress,
+      latestElapsed,
+      phase,
+    )
+  }
+
   const startMarkerGesture = (e: PointerEvent) => {
     if (props.lrcGenInputMode() !== 'marker') return
     const target = markerTargetAt(e.clientX, e.clientY)
@@ -254,32 +306,10 @@ export const StemMixerLyricsPanelBody: Component<
     e.preventDefault()
     const samples =
       typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e]
-    for (const sample of samples) {
-      const target = markerTargetAt(sample.clientX, sample.clientY)
-      if (!target || target.lineIdx !== props.lrcGenLineIdx()) continue
-      const previous = latestMarkerTarget
-      if (
-        previous !== null &&
-        (previous.lineIdx !== target.lineIdx ||
-          previous.wordIdx !== target.wordIdx)
-      ) {
-        props.handleMarkerSample(
-          previous.lineIdx,
-          previous.wordIdx,
-          previous.progress,
-          latestElapsed,
-          'move',
-        )
-      }
-      updateMarkerVisual(target)
-      props.handleMarkerSample(
-        target.lineIdx,
-        target.wordIdx,
-        target.progress,
-        latestElapsed,
-        'move',
-      )
-    }
+    const sample = samples.at(-1) ?? e
+    const target = markerTargetAt(sample.clientX, sample.clientY)
+    if (!target || target.lineIdx !== props.lrcGenLineIdx()) return
+    sendMarkerPath(target, 'move')
   }
 
   const endMarkerGesture = (e: PointerEvent) => {
@@ -289,20 +319,8 @@ export const StemMixerLyricsPanelBody: Component<
     const target =
       markerTargetAt(e.clientX, e.clientY) ?? latestMarkerTarget ?? undefined
     if (target) {
-      props.handleMarkerSample(
-        target.lineIdx,
-        target.wordIdx,
-        target.progress,
-        latestElapsed,
-        'move',
-      )
-      props.handleMarkerSample(
-        target.lineIdx,
-        target.wordIdx,
-        target.progress,
-        latestElapsed,
-        'end',
-      )
+      sendMarkerPath(target, 'move')
+      sendMarkerPath(target, 'end')
     }
     if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
       ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
@@ -533,6 +551,22 @@ export const StemMixerLyricsPanelBody: Component<
                 Tap
               </button>
             </div>
+            <label class="sm-lyrics-gen-speed">
+              <span>Speed</span>
+              <SafeSelect
+                class="sm-lyrics-gen-speed-select"
+                value={String(props.playbackSpeed())}
+                onChange={(e) =>
+                  props.setPlaybackSpeed(Number(e.currentTarget.value))
+                }
+                aria-label="Mapping playback speed"
+              >
+                <option value="1">1x natural</option>
+                <option value="0.85">0.85x</option>
+                <option value="0.75">0.75x precise</option>
+                <option value="0.5">0.5x</option>
+              </SafeSelect>
+            </label>
             <label class="sm-lyrics-gen-offset">
               <span>Reaction</span>
               <input
@@ -605,9 +639,9 @@ export const StemMixerLyricsPanelBody: Component<
             <button
               class="sm-lyrics-gen-reset-btn"
               onClick={() => props.handleLrcGenReset()}
-              title="Reset all timings"
+              title="Restore the lyrics and timings from before this mapping session"
             >
-              Reset
+              Discard changes
             </button>
           </div>
           <div class="sm-lyrics-gen-guidance" role="note">
@@ -625,6 +659,11 @@ export const StemMixerLyricsPanelBody: Component<
               through the text as it is sung. Hold still on long vowels and lift
               at a pause or after the final sound.
             </Show>
+            <span class="sm-lyrics-gen-guidance-performance">
+              Pitch and live monitors pause for smoother input; the vocal
+              overview stays active. Discard changes restores your pre-mapping
+              snapshot.
+            </span>
           </div>
         </Show>
 
@@ -748,12 +787,14 @@ export const StemMixerLyricsPanelBody: Component<
                         ? item.line
                         : item.words.map((word: string, wi: number) => {
                             const progress = () => {
-                              const live = markerVisual()
-                              if (
-                                live?.lineIdx === item.index &&
-                                live.wordIdx === wi
-                              ) {
-                                return live.progress
+                              if (item.activeWordIdx === wi) {
+                                const live = markerVisual()
+                                if (
+                                  live?.lineIdx === item.index &&
+                                  live.wordIdx === wi
+                                ) {
+                                  return live.progress
+                                }
                               }
                               const points = item.wordSweeps?.[wi]
                               return points?.[points.length - 1]?.progress ?? 0

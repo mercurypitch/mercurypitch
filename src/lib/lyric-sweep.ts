@@ -2,7 +2,7 @@
 // Lyric sweep timing — pure helpers for marker-authored karaoke curves
 // ============================================================
 
-import type { LyricsTimingExtension, WordSweepPoint, } from '@/features/stem-mixer/types'
+import type { LyricsTimingExtension, WordSweepPoint, WordSweepTimingsMap, } from '@/features/stem-mixer/types'
 
 const roundMillis = (value: number): number => Math.round(value * 1000) / 1000
 const clampProgress = (value: number): number => Math.max(0, Math.min(1, value))
@@ -14,7 +14,7 @@ const clampProgress = (value: number): number => Math.max(0, Math.min(1, value))
  * encode a dwell: the marker can sit on a vowel while playback keeps moving.
  */
 export function appendSweepPoint(
-  points: readonly WordSweepPoint[],
+  points: WordSweepPoint[],
   time: number,
   progress: number,
 ): WordSweepPoint[] {
@@ -27,18 +27,16 @@ export function appendSweepPoint(
   const next = { time: roundedTime, progress: nextProgress }
 
   if (!last) return [next]
-  if (roundedTime < last.time) return [...points]
+  if (roundedTime < last.time) return points
 
   if (roundedTime === last.time) {
     if (nextProgress > last.progress) return [...points, next]
-    const copy = [...points]
-    copy[copy.length - 1] = next
-    return copy
+    return points
   }
 
   const timeDelta = roundedTime - last.time
   const progressDelta = nextProgress - last.progress
-  if (timeDelta < 0.1 && progressDelta < 0.015) return [...points]
+  if (timeDelta < 0.1 && progressDelta < 0.015) return points
 
   const result = [...points, next]
   // A pathological multi-minute hold should not grow without bound. Preserve
@@ -48,6 +46,43 @@ export function appendSweepPoint(
     (_point, index) =>
       index === 0 || index === result.length - 1 || index % 2 === 0,
   )
+}
+
+/** Start one word without cloning unrelated song lines or words. */
+export function beginWordSweep(
+  timings: WordSweepTimingsMap,
+  lineIdx: number,
+  wordIdx: number,
+  time: number,
+): WordSweepTimingsMap {
+  return {
+    ...timings,
+    [lineIdx]: {
+      ...(timings[lineIdx] ?? {}),
+      [wordIdx]: [{ time, progress: 0 }],
+    },
+  }
+}
+
+/** Append one sample with structural sharing outside the active word. */
+export function appendWordSweepSample(
+  timings: WordSweepTimingsMap,
+  lineIdx: number,
+  wordIdx: number,
+  time: number,
+  progress: number,
+): WordSweepTimingsMap {
+  const previousLine = timings[lineIdx] ?? {}
+  const previousPoints = previousLine[wordIdx] ?? []
+  const nextPoints = appendSweepPoint(previousPoints, time, progress)
+  if (nextPoints === previousPoints) return timings
+  return {
+    ...timings,
+    [lineIdx]: {
+      ...previousLine,
+      [wordIdx]: nextPoints,
+    },
+  }
 }
 
 /** Resolve highlight position at `elapsed` from a marker-authored curve. */

@@ -56,23 +56,28 @@ Document all requirements for the lyrics panel in StemMixer: lyrics loading (API
 
 ### LRC Gen Mode
 
-| ID          | Description                                                                                                                                  | Priority |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| REQ-UV-039  | `startLrcGen` SHALL seed gen state from existing wordTimings, mapping LRC-indexed keys to correct canonical positions                        | High     |
-| REQ-UV-040  | `startLrcGen` SHALL restore saved progress from localStorage when available (lineIdx, wordIdx, lineTimes, wordTimings)                       | Medium   |
-| REQ-UV-041  | System SHALL allow resuming gen mode by clicking any lyric line to set it as the current position                                            | Medium   |
-| REQ-UV-042  | `handleLrcGenFinish` SHALL produce LRC output with timestamps at correct LRC indices, skipping synthetic rests                               | High     |
-| REQ-UV-043  | On partial gen (not all lines touched), untouched lines SHALL retain their pre-gen timestamps                                                | High     |
-| REQ-UV-044  | `handleLrcGenReset` (Cancel) SHALL restore all pre-gen state (wordTimings, lrcLines, rawLyricsText, lyricsLines, lyricsSource)               | High     |
-| REQ-UV-045  | System SHALL handle edge cases: empty LRC, single line, all rests, gap exactly at threshold, very large gaps                                 | High     |
-| REQ-LYR-001 | WHEN the marker first enters the current word, the system SHALL record that instant as the word's first audible onset                        | High     |
-| REQ-LYR-002 | WHILE the marker remains at the same position during playback, the system SHALL preserve the dwell as part of the intra-word curve           | High     |
-| REQ-LYR-003 | WHEN the marker crosses into the next word or is released, the system SHALL close the previous word's audible interval                       | High     |
-| REQ-LYR-004 | WHEN the final word is released, the system SHALL close its interval and finish or advance without requiring a synthetic next-word event     | High     |
-| REQ-LYR-005 | The system SHALL prevent backwards pointer motion from reversing an authored karaoke sweep                                                   | High     |
-| REQ-LYR-006 | The system SHALL expose a 0–500 ms reaction correction and apply it consistently to marker and tap inputs                                    | Medium   |
-| REQ-LYR-007 | The system SHALL retain Tap mode and its keyboard controls as an alternative to pointer mapping                                              | Medium   |
-| REQ-LYR-008 | The system SHALL preserve explicit word ends and marker curves when saving, switching versions, exporting, and re-importing MercuryPitch LRC | High     |
+| ID          | Description                                                                                                                                       | Priority |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| REQ-UV-039  | `startLrcGen` SHALL seed gen state from existing wordTimings, mapping LRC-indexed keys to correct canonical positions                             | High     |
+| REQ-UV-040  | `startLrcGen` SHALL restore saved progress from localStorage when available (lineIdx, wordIdx, lineTimes, wordTimings)                            | Medium   |
+| REQ-UV-041  | System SHALL allow resuming gen mode by clicking any lyric line to set it as the current position                                                 | Medium   |
+| REQ-UV-042  | `handleLrcGenFinish` SHALL produce LRC output with timestamps at correct LRC indices, skipping synthetic rests                                    | High     |
+| REQ-UV-043  | On partial gen (not all lines touched), untouched lines SHALL retain their pre-gen timestamps                                                     | High     |
+| REQ-UV-044  | `handleLrcGenReset` (Cancel) SHALL restore all pre-gen state (wordTimings, lrcLines, rawLyricsText, lyricsLines, lyricsSource)                    | High     |
+| REQ-UV-045  | System SHALL handle edge cases: empty LRC, single line, all rests, gap exactly at threshold, very large gaps                                      | High     |
+| REQ-LYR-001 | WHEN the marker first enters the current word, the system SHALL record that instant as the word's first audible onset                             | High     |
+| REQ-LYR-002 | WHILE the marker remains at the same position during playback, the system SHALL preserve the dwell as part of the intra-word curve                | High     |
+| REQ-LYR-003 | WHEN the marker crosses into the next word or is released, the system SHALL close the previous word's audible interval                            | High     |
+| REQ-LYR-004 | WHEN the final word is released, the system SHALL close its interval and finish or advance without requiring a synthetic next-word event          | High     |
+| REQ-LYR-005 | The system SHALL prevent backwards pointer motion from reversing an authored karaoke sweep                                                        | High     |
+| REQ-LYR-006 | The system SHALL expose a 0–500 ms reaction correction and apply it consistently to marker and tap inputs                                         | Medium   |
+| REQ-LYR-007 | The system SHALL retain Tap mode and its keyboard controls as an alternative to pointer mapping                                                   | Medium   |
+| REQ-LYR-008 | The system SHALL preserve explicit word ends and marker curves when saving, switching versions, exporting, and re-importing MercuryPitch LRC      | High     |
+| REQ-LYR-011 | WHILE marker input changes one word, the system SHALL retain references for unrelated lines and words instead of cloning the complete timing map  | High     |
+| REQ-LYR-012 | WHEN pointer events are coalesced across multiple words, the system SHALL preserve every crossed intermediate word                                | High     |
+| REQ-LYR-013 | WHILE lyric mapping is active, the system SHALL pause pitch, MIDI, live-waveform, FFT, and mic-comparison work while retaining the vocal overview | High     |
+| REQ-LYR-014 | WHEN the user discards mapping changes, the system SHALL restore the complete snapshot captured before mapping began                              | High     |
+| REQ-LYR-015 | The mapper SHALL preserve the current playback speed on entry and offer explicit speed choices including 1x and 0.75x                             | Medium   |
 
 ### Block Management
 
@@ -117,6 +122,8 @@ Document all requirements for the lyrics panel in StemMixer: lyrics loading (API
 10. A marker sweep can encode a long held vowel without stretching a following pause
 11. Download and re-import preserve the exact marker curve
 12. Lyric visuals follow the audible output clock without changing scoring or transport timing
+13. Long mapping sessions do not make unrelated lyric rows or inactive monitors update from every pointer sample
+14. Discard changes restores the complete state captured when mapping opened
 
 ## NON-FUNCTIONAL REQUIREMENTS
 
@@ -136,15 +143,17 @@ Document all requirements for the lyrics panel in StemMixer: lyrics loading (API
 
 | Version | Date       | Changes                                                                                                                      |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1.2     | 2026-07-23 | Added long-session performance isolation, explicit mapping speeds, and pre-session discard behavior                          |
 | 1.1     | 2026-07-23 | Added direct marker mapping, exact word intervals, intra-word dwell curves, reaction correction, and output-aligned playback |
 | 1.0     | 2025-05-29 | Initial spec created during LRC gen audit                                                                                    |
 
 ## TEST COVERAGE
 
-| Test File                             | Tests | REQs Covered                                                                                                           |
-| ------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/tests/lyrics-service.test.ts`    | 82    | REQ-UV-029, REQ-UV-030, REQ-UV-033                                                                                     |
-| `src/tests/lrc-generator.test.ts`     | 30    | REQ-UV-042, REQ-UV-043                                                                                                 |
-| `src/tests/canonical-lrc-gen.test.ts` | 34    | REQ-UV-028, REQ-UV-031, REQ-UV-032, REQ-UV-034, REQ-UV-035, REQ-UV-039, REQ-UV-040, REQ-UV-042, REQ-UV-043, REQ-UV-045 |
-| `src/tests/lyrics-scroll.test.ts`     | 10    | REQ-UV-053, REQ-UV-054, REQ-UV-055                                                                                     |
-| `src/tests/lyric-sweep.test.ts`       | 4     | REQ-LYR-002, REQ-LYR-005, REQ-LYR-008                                                                                  |
+| Test File                                   | Tests | REQs Covered                                                                                                           |
+| ------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/tests/lyrics-service.test.ts`          | 82    | REQ-UV-029, REQ-UV-030, REQ-UV-033                                                                                     |
+| `src/tests/lrc-generator.test.ts`           | 30    | REQ-UV-042, REQ-UV-043                                                                                                 |
+| `src/tests/canonical-lrc-gen.test.ts`       | 34    | REQ-UV-028, REQ-UV-031, REQ-UV-032, REQ-UV-034, REQ-UV-035, REQ-UV-039, REQ-UV-040, REQ-UV-042, REQ-UV-043, REQ-UV-045 |
+| `src/tests/lyrics-scroll.test.ts`           | 10    | REQ-UV-053, REQ-UV-054, REQ-UV-055                                                                                     |
+| `src/tests/lyric-sweep.test.ts`             | 6     | REQ-LYR-002, REQ-LYR-005, REQ-LYR-008, REQ-LYR-011                                                                     |
+| `src/tests/lyric-marker-controller.test.ts` | 2     | REQ-LYR-001, REQ-LYR-003, REQ-LYR-004, REQ-LYR-014                                                                     |

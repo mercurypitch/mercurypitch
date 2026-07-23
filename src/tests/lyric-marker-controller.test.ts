@@ -44,4 +44,40 @@ describe('lyric marker controller', () => {
 
       dispose()
     }))
+
+  it('restores the complete pre-mapping snapshot when changes are discarded', () =>
+    createRoot((dispose) => {
+      const original =
+        '[00:01.00] first [00:02.00]line\n[00:05.00] second [00:06.00]line'
+      const controller = useStemMixerLyricsController({
+        sessionId: 'marker-discard-test',
+        songTitle: 'Marker discard test',
+        duration: () => 20,
+        playing: () => true,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+
+      controller.handleLyricsUpload({
+        text: original,
+        format: 'lrc',
+        filename: 'discard-test.lrc',
+      })
+      controller.setLrcTimingOffsetMs(0)
+      controller.startLrcGen()
+      controller.handleMarkerSample(0, 0, 0, 3, 'start')
+      controller.handleMarkerSample(0, 0, 1, 4, 'end')
+
+      expect(controller.lrcGenMode()).toBe(true)
+      expect(controller.lrcGenWordTimings()[0]).toBeDefined()
+
+      controller.handleLrcGenReset()
+
+      expect(controller.lrcGenMode()).toBe(false)
+      expect(controller.rawLyricsText()).toBe(original)
+      expect(controller.canonicalLrcLines()[0].wordTimes).toEqual([1, 2])
+      expect(controller.wordEndTimings()).toEqual({})
+      expect(controller.wordSweepTimings()).toEqual({})
+      dispose()
+    }))
 })

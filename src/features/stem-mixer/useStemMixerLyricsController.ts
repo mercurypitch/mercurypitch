@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type LyricsAlign = 'left' | 'center' | 'right'
@@ -13,7 +13,7 @@ import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
-import { appendSweepPoint } from '@/lib/lyric-sweep'
+import { appendWordSweepSample, beginWordSweep } from '@/lib/lyric-sweep'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
@@ -1294,9 +1294,26 @@ export function useStemMixerLyricsController(
 
   // ── LRC gen helpers ───────────────────────────────────────────────
 
+  let cachedGenCanonical: CanonicalLrcEntry[] | null = null
+  let cachedGenLines: string[] = []
+  const genWordsCache = new Map<string, string[]>()
   const getGenLines = (): string[] => {
-    if (lrcLines().length > 0) return canonicalLrcLines().map((e) => e.text)
+    if (lrcLines().length > 0) {
+      const canonical = canonicalLrcLines()
+      if (canonical !== cachedGenCanonical) {
+        cachedGenCanonical = canonical
+        cachedGenLines = canonical.map((entry) => entry.text)
+      }
+      return cachedGenLines
+    }
     return lyricsLines()
+  }
+  const getGenWords = (line: string): string[] => {
+    const cached = genWordsCache.get(line)
+    if (cached !== undefined) return cached
+    const words = line.split(/\s+/).filter((word) => word.length > 0)
+    genWordsCache.set(line, words)
+    return words
   }
 
   const isTemplateMappedInGen = (blockId: string): boolean => {
@@ -1408,25 +1425,56 @@ export function useStemMixerLyricsController(
 
   // ── LRC gen persistence ───────────────────────────────────────────
 
-  const saveLrcGenProgress = () => {
+  interface LrcGenProgressPayload {
+    lineTimes: (number | undefined)[]
+    wordTimings: WordTimingsMap
+    wordEndTimings: WordTimingsMap
+    wordSweepTimings: WordSweepTimingsMap
+    lineIdx: number
+    wordIdx: number
+    inputMode: LrcGenInputMode
+    timestamp: number
+  }
+
+  let pendingGenProgress: LrcGenProgressPayload | null = null
+  let genProgressTimer: ReturnType<typeof setTimeout> | undefined
+
+  const flushLrcGenProgress = () => {
+    const payload = pendingGenProgress
+    pendingGenProgress = null
+    genProgressTimer = undefined
+    if (payload === null) return
     try {
-      const payload = {
-        lineTimes: lrcGenLineTimes(),
-        wordTimings: lrcGenWordTimings(),
-        wordEndTimings: lrcGenWordEndTimings(),
-        wordSweepTimings: lrcGenWordSweepTimings(),
-        lineIdx: lrcGenLineIdx(),
-        wordIdx: lrcGenWordIdx(),
-        inputMode: lrcGenInputMode(),
-        timestamp: Date.now(),
-      }
       localStorage.setItem(genKey(), JSON.stringify(payload))
     } catch {
       /* storage full */
     }
   }
 
+  const saveLrcGenProgress = () => {
+    // Signal values are immutable references. Capturing them here is O(1);
+    // serialization and the synchronous localStorage write happen at most once
+    // per short burst instead of blocking every fast word transition.
+    pendingGenProgress = {
+      lineTimes: lrcGenLineTimes(),
+      wordTimings: lrcGenWordTimings(),
+      wordEndTimings: lrcGenWordEndTimings(),
+      wordSweepTimings: lrcGenWordSweepTimings(),
+      lineIdx: lrcGenLineIdx(),
+      wordIdx: lrcGenWordIdx(),
+      inputMode: lrcGenInputMode(),
+      timestamp: Date.now(),
+    }
+    if (genProgressTimer !== undefined) return
+    genProgressTimer = setTimeout(flushLrcGenProgress, 1500)
+  }
+
   const clearLrcGenProgress = () => {
+    pendingGenProgress = null
+    if (genProgressTimer !== undefined) {
+      clearTimeout(genProgressTimer)
+      genProgressTimer = undefined
+    }
     try {
       localStorage.removeItem(genKey())
     } catch {
@@ -1659,9 +1707,7 @@ export function useStemMixerLyricsController(
     }
 
     const t = tapTime()
-    const words = lines[lineIdx]
-      .split(/\s+/)
-      .filter((w: string) => w.length > 0)
+    const words = getGenWords(lines[lineIdx])
     const wordIdx = lrcGenWordIdx()
 
     if (wordIdx === 0) {
@@ -1696,13 +1742,9 @@ export function useStemMixerLyricsController(
     }
 
     setLrcGenWordTimings((prev) => {
-      const next: WordTimingsMap = {}
-      for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
-      if (next[lineIdx] === undefined) next[lineIdx] = []
-      const arr = [...next[lineIdx]]
+      const arr = [...(prev[lineIdx] ?? [])]
       arr[wordIdx] = t
-      next[lineIdx] = arr
-      return next
+      return { ...prev, [lineIdx]: arr }
     })
 
     if (wordIdx + 1 >= words.length) {
@@ -1735,22 +1777,17 @@ export function useStemMixerLyricsController(
       })
     }
     setLrcGenWordTimings((prev) => {
-      const next = structuredClone(prev)
-      next[lineIdx] = [...(next[lineIdx] ?? [])]
-      next[lineIdx][wordIdx] = time
-      return next
+      const line = [...(prev[lineIdx] ?? [])]
+      line[wordIdx] = time
+      return { ...prev, [lineIdx]: line }
     })
     setLrcGenWordEndTimings((prev) => {
-      const next = structuredClone(prev)
-      next[lineIdx] = [...(next[lineIdx] ?? [])]
-      delete next[lineIdx][wordIdx]
-      return next
+      const line = [...(prev[lineIdx] ?? [])]
+      delete line[wordIdx]
+      return { ...prev, [lineIdx]: line }
     })
     setLrcGenWordSweepTimings((prev) => {
-      const next = structuredClone(prev)
-      next[lineIdx] = { ...(next[lineIdx] ?? {}) }
-      next[lineIdx][wordIdx] = [{ time, progress: 0 }]
-      return next
+      return beginWordSweep(prev, lineIdx, wordIdx, time)
     })
   }
 
@@ -1761,23 +1798,15 @@ export function useStemMixerLyricsController(
     progress: number,
   ) => {
     setLrcGenWordSweepTimings((prev) => {
-      const next = structuredClone(prev)
-      next[lineIdx] = { ...(next[lineIdx] ?? {}) }
-      next[lineIdx][wordIdx] = appendSweepPoint(
-        next[lineIdx][wordIdx] ?? [],
-        time,
-        progress,
-      )
-      return next
+      return appendWordSweepSample(prev, lineIdx, wordIdx, time, progress)
     })
   }
 
   const closeMarkerWord = (lineIdx: number, wordIdx: number, time: number) => {
     setLrcGenWordEndTimings((prev) => {
-      const next = structuredClone(prev)
-      next[lineIdx] = [...(next[lineIdx] ?? [])]
-      next[lineIdx][wordIdx] = time
-      return next
+      const line = [...(prev[lineIdx] ?? [])]
+      line[wordIdx] = time
+      return { ...prev, [lineIdx]: line }
     })
     appendMarkerSweep(lineIdx, wordIdx, time, 1)
   }
@@ -1822,9 +1851,7 @@ export function useStemMixerLyricsController(
     if (!lrcGenMode() || lrcGenInputMode() !== 'marker') return
     if (lineIdx !== lrcGenLineIdx()) return
     const lines = getGenLines()
-    const words = lines[lineIdx]
-      ?.split(/\s+/)
-      .filter((word: string) => word.length > 0)
+    const words = getGenWords(lines[lineIdx] ?? '')
     if (words.length === 0) return
 
     const currentWord = lrcGenWordIdx()
@@ -1908,8 +1935,11 @@ export function useStemMixerLyricsController(
     const lines = getGenLines()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
-    const wordEnds = lrcGenWordEndTimings()
-    const wordSweeps = lrcGenWordSweepTimings()
+    // Sweep samples update at pointer frequency. They are not needed to rebuild
+    // every lyric row; read their latest values only when another generator
+    // state change (word/line transition) already requires a view update.
+    const wordEnds = untrack(lrcGenWordEndTimings)
+    const wordSweeps = untrack(lrcGenWordSweepTimings)
 
     // Guard: if no lines were mapped, treat as cancel
     if (touchedLines.size === 0 && lrcGenLineIdx() < lines.length) {
@@ -2412,10 +2442,14 @@ export function useStemMixerLyricsController(
     const curWord = lrcGenWordIdx()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
-    const wordEnds = lrcGenWordEndTimings()
-    const wordSweeps = lrcGenWordSweepTimings()
+    // Pointer samples can arrive at display frequency. The active marker uses
+    // markerVisual for live progress, so rebuilding every song row here would
+    // only create redundant work. Word/line transitions still rerun this memo
+    // and pick up the latest completed timing data.
+    const wordEnds = untrack(lrcGenWordEndTimings)
+    const wordSweeps = untrack(lrcGenWordSweepTimings)
     return lines.map((line: string, i: number) => {
-      const words = line.split(/\s+/).filter((w: string) => w.length > 0)
+      const words = getGenWords(line)
       const blockForLine = getBlockForLine(i)
       const isPlaceholder =
         blockForLine !== null &&
@@ -2572,6 +2606,7 @@ export function useStemMixerLyricsController(
   // ── Cleanup ───────────────────────────────────────────────────────
 
   onCleanup(() => {
+    if (pendingGenProgress !== null) flushLrcGenProgress()
     if (lyricsScrollContainer) {
       lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
       lyricsScrollContainer = null

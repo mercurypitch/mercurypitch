@@ -66,6 +66,8 @@ export interface StemMixerAudioDeps {
   updateCurrentLine: () => void
   setCurrentLineIdx: (idx: number) => void
   setUserScrolled: (v: boolean) => void
+  /** Plain snapshot accessor: true while the lyric mapper owns interaction. */
+  lyricsMappingActive?: () => boolean
 
   // Mic comparison (for RAF tick) — simplified in Phase 5a
   micActive: Accessor<boolean>
@@ -217,6 +219,8 @@ export const useStemMixerAudioController = (
   let playbackSpeed = 1.0
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
+  let mappingWasActive = false
+  let lastMappingWaveformDrawAt = -Infinity
 
   // ── Live pitch smoothing ─────────────────────────────────────
   // Raw per-frame detection flickers (single-frame octave/harmonic errors,
@@ -736,9 +740,21 @@ export const useStemMixerAudioController = (
         Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
       setAudibleElapsed(Math.min(audibleTime, duration()))
 
-      // Pitch detection from vocal analyser (median + octave-corrected)
+      const mappingActive = deps.lyricsMappingActive?.() === true
+      if (mappingActive && !mappingWasActive) {
+        // Mapping only needs the vocal waveform. Stop the pitch/scoring history
+        // at the boundary so its stale tail cannot leak into the next session.
+        setCurrentPitch(null)
+        deps.setMicPitch(null)
+        resetSmoothers()
+      }
+      mappingWasActive = mappingActive
+
+      // Pitch detection from vocal analyser (median + octave-corrected). This
+      // is intentionally suspended while mapping lyrics: FFTs, pitch tracking,
+      // mic comparison, and history allocation compete with pointer input.
       let stemFreq = 0
-      if (vocalAnalyser && deps.vocal().buffer) {
+      if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
         const timeData = new Float32Array(PITCH_FFT_SIZE)
         vocalAnalyser.getFloatTimeDomainData(timeData)
         const raw = pitchDetector!.detect(timeData)
@@ -762,7 +778,7 @@ export const useStemMixerAudioController = (
       // Mic pitch detection (same smoothing), judged by the compare engine —
       // octave-agnostic, transition-graced, note-aggregated (see
       // pitch-compare-engine.ts).
-      if (deps.micActive()) {
+      if (!mappingActive && deps.micActive()) {
         const micAnalyser = deps.getMicAnalyserNode()
         if (micAnalyser) {
           // Buffer size follows the global setting (mic analyser fftSize), so
@@ -789,37 +805,46 @@ export const useStemMixerAudioController = (
         }
       }
 
-      // Continuous-scroll time window (skip while user is touch-panning)
-      if (deps.canvas.isUserPanning?.() === true) {
-        activeAnchor = (elapsedTime - windowStart()) / windowDuration()
-        isRecentering = false
-      } else {
-        // Detect external changes to windowStart (like click-to-seek)
-        const expectedStart = elapsedTime - activeAnchor * windowDuration()
-        if (Math.abs(windowStart() - expectedStart) > 0.05) {
+      // The pitch and MIDI windows are not drawn during mapping, so avoid their
+      // per-frame reactive scroll updates as well.
+      if (!mappingActive) {
+        // Continuous-scroll time window (skip while user is touch-panning)
+        if (deps.canvas.isUserPanning?.() === true) {
           activeAnchor = (elapsedTime - windowStart()) / windowDuration()
-          isRecentering = activeAnchor > 0.85 || activeAnchor < 0.15
-        }
-
-        // Gently pull the playhead back to 30% if we entered the danger zone
-        if (isRecentering) {
-          activeAnchor += (deps.PITCH_WINDOW_FILL_RATIO - activeAnchor) * 0.05
-          if (Math.abs(activeAnchor - deps.PITCH_WINDOW_FILL_RATIO) < 0.01) {
-            activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
-            isRecentering = false
+          isRecentering = false
+        } else {
+          // Detect external changes to windowStart (like click-to-seek)
+          const expectedStart = elapsedTime - activeAnchor * windowDuration()
+          if (Math.abs(windowStart() - expectedStart) > 0.05) {
+            activeAnchor = (elapsedTime - windowStart()) / windowDuration()
+            isRecentering = activeAnchor > 0.85 || activeAnchor < 0.15
           }
-        }
 
-        const newStart = elapsedTime - activeAnchor * windowDuration()
-        setWindowStart(Math.max(0, newStart))
+          // Gently pull the playhead back to 30% if we entered the danger zone
+          if (isRecentering) {
+            activeAnchor += (deps.PITCH_WINDOW_FILL_RATIO - activeAnchor) * 0.05
+            if (Math.abs(activeAnchor - deps.PITCH_WINDOW_FILL_RATIO) < 0.01) {
+              activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
+              isRecentering = false
+            }
+          }
+
+          const newStart = elapsedTime - activeAnchor * windowDuration()
+          setWindowStart(Math.max(0, newStart))
+        }
       }
 
       const { canvas } = deps
-      canvas.syncCanvasSizes()
-      canvas.drawWaveformOverview()
-      canvas.drawPitchCanvas()
-      canvas.drawMidiCanvas()
-      canvas.drawLiveWaveform()
+      if (!mappingActive || now - lastMappingWaveformDrawAt >= 1 / 30) {
+        canvas.syncCanvasSizes()
+        canvas.drawWaveformOverview()
+        lastMappingWaveformDrawAt = now
+      }
+      if (!mappingActive) {
+        canvas.drawPitchCanvas()
+        canvas.drawMidiCanvas()
+        canvas.drawLiveWaveform()
+      }
       deps.updateCurrentLine()
 
       // End detection is meaningless until the buffers report a real duration.
