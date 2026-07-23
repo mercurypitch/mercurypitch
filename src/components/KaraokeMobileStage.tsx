@@ -473,14 +473,14 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         >
           <For each={lines()}>
             {([idx, entry]) => {
-              const isCurrent = idx === props.currentLineIdx()
+              const isCurrent = () => idx === props.currentLineIdx()
               const isRest = entry.words.length === 0
               return (
                 <p
                   ref={(el) => lineEls.set(idx, el)}
                   classList={{
                     [styles.line]: true,
-                    [styles.current]: isCurrent,
+                    [styles.current]: isCurrent(),
                     [styles.past]: idx < props.currentLineIdx(),
                   }}
                   onClick={() => seekToLine(idx)}
@@ -494,6 +494,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                         style={{
                           'justify-content': 'flex-start',
                           'margin-top': '0.5rem',
+                          '--accent': '#ffffff',
                         }}
                       >
                         {(() => {
@@ -543,7 +544,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                       </div>
                     }
                   >
-                    <Show when={isCurrent} fallback={entry.words.join(' ')}>
+                    <Show when={isCurrent()} fallback={entry.words.join(' ')}>
                       <For each={entry.words}>
                         {(word, i) => (
                           <span
