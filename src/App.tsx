@@ -2211,6 +2211,7 @@ const AppShell: Component<AppProps> = (props) => {
                   <button
                     class="header-melody-context"
                     onClick={() => {
+                      setSidebarCollapsed(false)
                       setSidebarOpen(true)
                       applyPersistedValue('sidebar-character-open', 'true')
                     }}

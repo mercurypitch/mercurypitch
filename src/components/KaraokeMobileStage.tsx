@@ -474,7 +474,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <For each={lines()}>
             {([idx, entry]) => {
               const isCurrent = idx === props.currentLineIdx()
-              const isRest = entry.words[0] === '[rest]'
+              const isRest = entry.words.length === 0
               return (
                 <p
                   ref={(el) => lineEls.set(idx, el)}
@@ -504,7 +504,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                             Math.floor(gapDuration / 5),
                             8,
                           )
-                          if (dotCount <= 0) return null
+                          if (dotCount <= 0 || isNaN(dotCount)) return null
 
                           const progress = computeRestProgress(
                             gapStart,

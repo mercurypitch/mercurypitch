@@ -12,6 +12,10 @@ import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, getUvrSession, importUvrSession, } from '@/stores/app-store'
 import { createPlaylistWithItems, getPlaylist, } from '@/stores/karaoke-playlist-store'
 
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-z0-9_-]/gi, '_')
+}
+
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
   version: 1
@@ -290,7 +294,7 @@ export async function exportSession(
     // safe filename
     const rawName = session.originalFile?.name ?? sessionId
     const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
-    const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
+    const safeName = sanitizeFilename(nameWithoutExt)
     const hqPrefix = session.processingMode === 'server' ? 'MC_HQ' : 'MC'
     a.download = `${hqPrefix}_Session_${safeName}.zip`
     a.click()
@@ -317,7 +321,7 @@ export async function exportAllSessions(
       const session = sessions[i]
       const rawName = session.originalFile?.name ?? session.sessionId
       const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
-      const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
+      const safeName = sanitizeFilename(nameWithoutExt)
       const prefix = `${safeName}_${session.sessionId.substring(0, 8)}/`
 
       // Report sub-progress within each session (0-90% range)
@@ -385,7 +389,7 @@ export async function exportGroup(
       const session = sessions[i]
       const rawName = session.originalFile?.name ?? session.sessionId
       const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
-      const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
+      const safeName = sanitizeFilename(nameWithoutExt)
       const dirPrefix = `${prefix}${safeName}_${session.sessionId.substring(0, 8)}/`
       const sessionBase = (i / sessions.length) * 90
       const sessionRange = 90 / sessions.length
@@ -479,7 +483,7 @@ export async function buildKaraokePlaylistZip(
     const s = sessionList[i]
     const rawName = s.originalFile?.name ?? s.sessionId
     const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
-    const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
+    const safeName = sanitizeFilename(nameWithoutExt)
     const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
     const base = (i / sessionList.length) * 90
     const range = 90 / Math.max(1, sessionList.length)
@@ -527,7 +531,7 @@ export async function exportKaraokePlaylists(
     a.href = url
     const nameSlug =
       playlists.length === 1
-        ? playlists[0].name.replace(/[^a-z0-9_-]/gi, '_')
+        ? sanitizeFilename(playlists[0].name)
         : `${playlists.length}_playlists`
     a.download = `MC_Karaoke_${nameSlug}.zip`
     a.click()
