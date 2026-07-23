@@ -771,6 +771,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     showNotification,
   })
 
+  const closePitchTools = (): void => {
+    pitchAnalysis.setPanelOpen(false)
+    pitchAnalysis.setEditMode(false)
+    pitchAnalysis.setSelectedNoteId(null)
+  }
+
   // ── Canvas controller ──────────────────────────────────────────
   const [showNoteLabels, setShowNoteLabels] = createPersistedSignal<boolean>(
     'pitchperfect_show_note_labels',
@@ -1643,14 +1649,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </button>
               </Show>
               <button
+                type="button"
                 class="sm-btn sm-btn-secondary"
                 data-tour="mixer.playlist"
                 classList={{ 'sm-btn--active': playlistSidebarOpen() }}
                 onClick={() => {
-                  if (!playlistSidebarOpen()) {
-                    pitchAnalysis.setPanelOpen(false)
+                  const opening = !playlistSidebarOpen()
+                  if (opening) {
+                    closePitchTools()
                   }
-                  setPlaylistSidebarOpen((prev) => !prev)
+                  setPlaylistSidebarOpen(opening)
                 }}
                 title="Karaoke playlists"
                 style={{ gap: '0.4rem' }}
@@ -1659,13 +1667,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               </button>
               <Show when={props.preset !== 'performance'}>
                 <button
+                  type="button"
                   class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
                   classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
                   onClick={() => {
-                    if (!pitchAnalysis.panelOpen()) {
+                    const opening = !pitchAnalysis.panelOpen()
+                    if (opening) {
                       setPlaylistSidebarOpen(false)
+                      pitchAnalysis.setEditMode(false)
+                      pitchAnalysis.setSelectedNoteId(null)
                     }
-                    pitchAnalysis.setPanelOpen((prev) => !prev)
+                    pitchAnalysis.setPanelOpen(opening)
                   }}
                   title="Pitch Analysis & Settings"
                   style={{ gap: '0.4rem' }}
@@ -2064,7 +2076,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             !pitchAnalysis.editMode()
           }
         >
-          <div class="sm-playlist-sidebar-wrap">
+          <div class="sm-left-rail-wrap">
             <StemMixerPitchAnalysisPanel
               algorithm={pitchAnalysis.algorithm()}
               setAlgorithm={pitchAnalysis.setAlgorithm}
@@ -2133,14 +2145,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               hasEdits={pitchAnalysis.hasEdits()}
               pitchView={pitchAnalysis.pitchView()}
               setPitchView={pitchAnalysis.setPitchView}
-              onClose={() => pitchAnalysis.setPanelOpen(false)}
+              onClose={closePitchTools}
             />
           </div>
         </Show>
 
         {/* ── Karaoke playlist ─────────────────────────────────── */}
         <Show when={playlistSidebarOpen()}>
-          <div class="sm-playlist-sidebar-wrap">
+          <div class="sm-left-rail-wrap">
             <KaraokePlaylistSidebar
               onClose={() => setPlaylistSidebarOpen(false)}
             />
@@ -2407,23 +2419,30 @@ export const StemMixerStyles: string = `
   max-width: 40ch;
 }
 
-/* Karaoke playlist sidebar (slides in from the left) */
-.sm-playlist-sidebar-wrap {
+/* Shared left rail for playlists and pitch tools. Animate position rather
+   than transform so native selects remain reliable on iOS Safari. */
+.sm-left-rail-wrap {
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
   z-index: 30;
-  animation: sm-playlist-slide-in 0.2s ease-out;
+  animation: sm-left-rail-in 0.18s ease-out;
 }
-@keyframes sm-playlist-slide-in {
+@keyframes sm-left-rail-in {
   from {
-    transform: translateX(-100%);
+    left: -380px;
     opacity: 0.4;
   }
   to {
-    transform: none;
+    left: 0;
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-left-rail-wrap {
+    animation: none;
   }
 }
 

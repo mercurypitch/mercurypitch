@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Settings, X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { AnalysisAlgorithm } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
@@ -62,6 +62,10 @@ export const StemMixerPitchAnalysisPanel: Component<
   // While the cleanup slider is dragged, fade the panel so the pitch view it
   // overlaps stays visible — the user can judge how much cleanup looks right.
   const [previewing, setPreviewing] = createSignal(false)
+  const panelId = createUniqueId()
+  const titleId = `${panelId}-title`
+  const controlId = (name: string): string => `${panelId}-${name}`
+
   // Escape closes the panel.
   const onKey = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') props.onClose()
@@ -70,22 +74,22 @@ export const StemMixerPitchAnalysisPanel: Component<
   onCleanup(() => window.removeEventListener('keydown', onKey))
 
   return (
-    <div
-      class={styles.sidebar}
-      style={{
-        opacity: previewing() ? '0.2' : '1',
-        transition: 'opacity 0.12s ease',
-      }}
+    <aside
+      class={`${styles.sidebar} ${previewing() ? styles.previewing : ''}`}
+      aria-labelledby={titleId}
     >
       <div class={styles.header}>
-        <h3 class={styles.title}>
-          <Settings />
+        <h3 id={titleId} class={styles.title}>
+          <span class={styles.titleIcon} aria-hidden="true">
+            <Settings />
+          </span>
           Vocal Pitch Settings
         </h3>
         <button
+          type="button"
           class={styles.iconBtn}
-          title="Close"
-          aria-label="Close"
+          title="Close pitch settings"
+          aria-label="Close pitch settings"
           onClick={() => props.onClose()}
         >
           <X />
@@ -98,10 +102,11 @@ export const StemMixerPitchAnalysisPanel: Component<
           <h4 class={styles.cardTitle}>Denoising Engine</h4>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('algorithm')}>
               <span>Algorithm</span>
             </label>
             <SafeSelect
+              id={controlId('algorithm')}
               class={styles.select}
               value={props.algorithm}
               onChange={(e) =>
@@ -117,11 +122,12 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('buffer-size')}>
               <span>Buffer Size</span>
               <span class={styles.value}>{props.bufferSize}</span>
             </label>
             <input
+              id={controlId('buffer-size')}
               type="range"
               class={styles.range}
               min="512"
@@ -136,11 +142,12 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('sensitivity')}>
               <span>Sensitivity</span>
               <span class={styles.value}>{props.sensitivity}</span>
             </label>
             <input
+              id={controlId('sensitivity')}
               type="range"
               class={styles.range}
               min="1"
@@ -155,11 +162,12 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('min-confidence')}>
               <span>Min Confidence</span>
               <span class={styles.value}>{props.minConfidence.toFixed(2)}</span>
             </label>
             <input
+              id={controlId('min-confidence')}
               type="range"
               class={styles.range}
               min="0"
@@ -174,11 +182,12 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('min-amplitude')}>
               <span>Min Amplitude</span>
               <span class={styles.value}>{props.minAmplitude.toFixed(3)}</span>
             </label>
             <input
+              id={controlId('min-amplitude')}
               type="range"
               class={styles.range}
               min="0.001"
@@ -193,9 +202,11 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <button
+            type="button"
             class={styles.btnPrimary}
             onClick={() => props.runAnalysis()}
             disabled={props.isAnalyzing}
+            aria-busy={props.isAnalyzing}
             style={{ 'margin-top': '0.3rem' }}
           >
             {props.isAnalyzing
@@ -206,8 +217,8 @@ export const StemMixerPitchAnalysisPanel: Component<
 
         {/* ── Section 2: Vocal Cleanup & Key Snapping ──────── */}
         <div
-          class={styles.card}
-          style={{ opacity: props.contourReady ? '1' : '0.6' }}
+          class={`${styles.card} ${props.contourReady ? '' : styles.cardDisabled}`}
+          aria-disabled={!props.contourReady}
         >
           <div class={styles.cardTitle}>
             <span>Vocal Cleanup</span>
@@ -222,13 +233,14 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('cleanup-amount')}>
               <span>Cleanup Amount</span>
               <span class={styles.value}>
                 {Math.round(props.cleanupAmount * 100)}%
               </span>
             </label>
             <input
+              id={controlId('cleanup-amount')}
               type="range"
               class={styles.range}
               min="0"
@@ -239,18 +251,23 @@ export const StemMixerPitchAnalysisPanel: Component<
               onInput={(e) =>
                 props.setCleanupAmount(Number(e.currentTarget.value) / 100)
               }
-              onPointerDown={() => setPreviewing(true)}
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setPreviewing(true)
+              }}
               onPointerUp={() => setPreviewing(false)}
               onPointerCancel={() => setPreviewing(false)}
+              onLostPointerCapture={() => setPreviewing(false)}
               onBlur={() => setPreviewing(false)}
             />
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('song-key')}>
               <span>Key</span>
             </label>
             <SafeSelect
+              id={controlId('song-key')}
               class={styles.select}
               value={props.songKey}
               disabled={!props.contourReady}
@@ -263,10 +280,11 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('song-scale')}>
               <span>Scale</span>
             </label>
             <SafeSelect
+              id={controlId('song-scale')}
               class={styles.select}
               value={props.songScale}
               disabled={!props.contourReady}
@@ -279,10 +297,11 @@ export const StemMixerPitchAnalysisPanel: Component<
           </div>
 
           <div class={styles.controlGroup}>
-            <label class={styles.label}>
+            <label class={styles.label} for={controlId('song-bpm')}>
               <span>Tempo (BPM)</span>
             </label>
             <input
+              id={controlId('song-bpm')}
               type="number"
               class={styles.input}
               min="40"
@@ -304,20 +323,26 @@ export const StemMixerPitchAnalysisPanel: Component<
 
         {/* ── Section 3: Manual Note Editing ─────────────────── */}
         <div
-          class={styles.card}
-          style={{ opacity: props.canEdit ? '1' : '0.6' }}
+          class={`${styles.card} ${props.canEdit ? '' : styles.cardDisabled}`}
+          aria-disabled={!props.canEdit}
         >
           <h4 class={styles.cardTitle}>Note Editing</h4>
           <button
+            type="button"
             class={`${styles.btnSecondary} ${props.editMode ? styles.btnActive : ''}`}
             disabled={!props.canEdit}
+            aria-pressed={props.editMode}
             onClick={() => props.onToggleEditMode()}
           >
             {props.editMode ? 'Editing notes…' : 'Edit notes'}
           </button>
 
           <Show when={props.hasEdits}>
-            <div class={styles.btnGroup}>
+            <div
+              class={styles.btnGroup}
+              role="group"
+              aria-label="Pitch edit comparison"
+            >
               <For
                 each={
                   [
@@ -329,7 +354,9 @@ export const StemMixerPitchAnalysisPanel: Component<
               >
                 {([value, label]) => (
                   <button
+                    type="button"
                     class={`${styles.btnSecondary} ${props.pitchView === value ? styles.btnActive : ''}`}
+                    aria-pressed={props.pitchView === value}
                     onClick={() => props.setPitchView(value)}
                   >
                     {label}
@@ -349,15 +376,23 @@ export const StemMixerPitchAnalysisPanel: Component<
         {/* ── Section 4: Pitch Display Mode ─────────────────── */}
         <div class={styles.card}>
           <h4 class={styles.cardTitle}>Canvas Pitch Mode</h4>
-          <div class={styles.btnGroup}>
+          <div
+            class={styles.btnGroup}
+            role="group"
+            aria-label="Canvas pitch mode"
+          >
             <button
+              type="button"
               class={`${styles.btnSecondary} ${props.pitchSourceMode === 'realtime' ? styles.btnActive : ''}`}
+              aria-pressed={props.pitchSourceMode === 'realtime'}
               onClick={() => props.setPitchSourceMode('realtime')}
             >
               Realtime
             </button>
             <button
+              type="button"
               class={`${styles.btnSecondary} ${props.pitchSourceMode === 'offline' ? styles.btnActive : ''}`}
+              aria-pressed={props.pitchSourceMode === 'offline'}
               onClick={() => props.setPitchSourceMode('offline')}
             >
               Offline Denoised
@@ -366,11 +401,11 @@ export const StemMixerPitchAnalysisPanel: Component<
         </div>
 
         {/* ── Info footer ────────────────────────────────────── */}
-        <p class={styles.hint} style={{ 'margin-top': '0.2rem' }}>
+        <p class={`${styles.hint} ${styles.footerHint}`}>
           Offline denoising analyzes the vocal track ahead of time to eliminate
           octave jumps, noise artifacts, and smooth note contours.
         </p>
       </div>
-    </div>
+    </aside>
   )
 }
