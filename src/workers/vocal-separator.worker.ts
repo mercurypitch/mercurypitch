@@ -31,10 +31,15 @@ export interface WorkerCancelMessage {
   type: 'cancel'
 }
 
+export interface WorkerDestroyMessage {
+  type: 'destroy'
+}
+
 export type WorkerInMessage =
   | WorkerInitMessage
   | WorkerSeparateMessage
   | WorkerCancelMessage
+  | WorkerDestroyMessage
 
 export interface WorkerProgressMessage {
   type: 'progress'
@@ -88,6 +93,7 @@ const ZERO_BINS = 3 // zero first N frequency bins before ONNX
 let session: InferenceSession | null = null
 let ort: typeof OrtModule | null = null
 let cancelled = false
+let destroying = false
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -95,6 +101,30 @@ let cancelled = false
 
 let activeProviders: string[] = []
 let currentModelPath = ''
+
+async function releaseSession(
+  sessionToRelease: InferenceSession | null,
+): Promise<void> {
+  if (!sessionToRelease) return
+
+  try {
+    await sessionToRelease.release()
+  } catch (err) {
+    console.error('[vocal-separator] Failed to release session:', err)
+  }
+}
+
+async function releaseActiveSession(): Promise<void> {
+  const activeSession = session
+  session = null
+  await releaseSession(activeSession)
+}
+
+function assertWorkerActive(): void {
+  if (destroying) {
+    throw new DOMException('Vocal separator worker is closing', 'AbortError')
+  }
+}
 
 async function loadModel(
   modelPath: string,
@@ -150,6 +180,10 @@ async function loadModel(
     }
   }
 
+  assertWorkerActive()
+  await releaseActiveSession()
+  assertWorkerActive()
+
   try {
     session = await ort.InferenceSession.create(buffer, {
       executionProviders: activeProviders,
@@ -159,6 +193,7 @@ async function loadModel(
     })
   } catch (err) {
     if (activeProviders.includes('webgpu')) {
+      assertWorkerActive()
       console.warn(
         '[vocal-separator] WebGPU session creation failed, falling back to WASM...',
         err,
@@ -173,6 +208,11 @@ async function loadModel(
     } else {
       throw err
     }
+  }
+
+  if (destroying) {
+    await releaseActiveSession()
+    assertWorkerActive()
   }
 }
 
@@ -461,6 +501,14 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
 
     case 'cancel': {
       cancelled = true
+      break
+    }
+
+    case 'destroy': {
+      cancelled = true
+      destroying = true
+      await releaseActiveSession()
+      self.close()
       break
     }
   }
