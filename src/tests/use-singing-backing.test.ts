@@ -16,7 +16,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 describe('useSingingBacking', () => {
   let emitBeat: (beat: number) => void
-  let playNote: ReturnType<typeof vi.fn>
+  let playNoteWithGain: ReturnType<typeof vi.fn>
   let stopNote: ReturnType<typeof vi.fn>
   let setIsPlaying: (v: boolean) => void
   let dispose: () => void
@@ -25,7 +25,7 @@ describe('useSingingBacking', () => {
 
   const setup = (opts?: { bpm?: number; playing?: boolean }) => {
     nextVoiceId = 100
-    playNote = vi.fn(() => Promise.resolve(nextVoiceId++))
+    playNoteWithGain = vi.fn(() => Promise.resolve(nextVoiceId++))
     stopNote = vi.fn()
 
     let beatHandler: ((e: { beat: number }) => void) | undefined
@@ -39,7 +39,10 @@ describe('useSingingBacking', () => {
     } as unknown as PlaybackRuntime
     emitBeat = (beat) => beatHandler?.({ beat })
 
-    const audioEngine = { playNote, stopNote } as unknown as AudioEngine
+    const audioEngine = {
+      playNoteWithGain,
+      stopNote,
+    } as unknown as AudioEngine
 
     createRoot((d) => {
       dispose = d
@@ -69,10 +72,10 @@ describe('useSingingBacking', () => {
     setup({ bpm: 60 }) // 1 beat = 1000ms
     api.setBacking(notes)
     emitBeat(0.5) // before any note
-    expect(playNote).not.toHaveBeenCalled()
+    expect(playNoteWithGain).not.toHaveBeenCalled()
     emitBeat(1) // crosses note @ beat 1
-    expect(playNote).toHaveBeenCalledTimes(1)
-    expect(playNote).toHaveBeenCalledWith(220, 1000) // duration 1 beat @ 60bpm
+    expect(playNoteWithGain).toHaveBeenCalledTimes(1)
+    expect(playNoteWithGain).toHaveBeenCalledWith(220, 1000, 0.55) // duration 1 beat @ 60bpm
     await flush()
   })
 
@@ -81,7 +84,7 @@ describe('useSingingBacking', () => {
     api.setBacking(notes)
     emitBeat(1)
     emitBeat(2)
-    expect(playNote).not.toHaveBeenCalled()
+    expect(playNoteWithGain).not.toHaveBeenCalled()
   })
 
   it('stops its own voices when playback pauses, leaving stopNote scoped', async () => {
@@ -90,7 +93,7 @@ describe('useSingingBacking', () => {
     emitBeat(1)
     emitBeat(2)
     await flush() // let the two playNote ids get tracked
-    expect(playNote).toHaveBeenCalledTimes(2)
+    expect(playNoteWithGain).toHaveBeenCalledTimes(2)
     setIsPlaying(false)
     await flush() // let the isPlaying effect run
     expect(stopNote).toHaveBeenCalledTimes(2)
@@ -102,10 +105,10 @@ describe('useSingingBacking', () => {
     api.setBacking(notes)
     emitBeat(0)
     emitBeat(5) // jump > 1.5 beats → seek; notes @1 and @2 marked past silently
-    expect(playNote).not.toHaveBeenCalled()
+    expect(playNoteWithGain).not.toHaveBeenCalled()
     emitBeat(6) // now crosses note @ beat 6 normally
-    expect(playNote).toHaveBeenCalledTimes(1)
-    expect(playNote).toHaveBeenCalledWith(440, 1000)
+    expect(playNoteWithGain).toHaveBeenCalledTimes(1)
+    expect(playNoteWithGain).toHaveBeenCalledWith(440, 1000, 0.55)
     await flush()
   })
 
@@ -115,7 +118,7 @@ describe('useSingingBacking', () => {
     emitBeat(1)
     emitBeat(2)
     await flush()
-    expect(playNote).toHaveBeenCalledTimes(2)
+    expect(playNoteWithGain).toHaveBeenCalledTimes(2)
     emitBeat(0.5) // backward → seek: stop voices, re-mark
     expect(stopNote).toHaveBeenCalledTimes(2)
   })
@@ -125,12 +128,12 @@ describe('useSingingBacking', () => {
     api.setBacking(notes)
     emitBeat(1)
     await flush()
-    expect(playNote).toHaveBeenCalledTimes(1)
+    expect(playNoteWithGain).toHaveBeenCalledTimes(1)
     api.setBacking([{ freq: 550, startBeat: 0.5, duration: 1 }])
     expect(stopNote).toHaveBeenCalledTimes(1) // silenced the first voice
-    playNote.mockClear()
+    playNoteWithGain.mockClear()
     emitBeat(0.6) // fresh baseline crosses the new note → it fires
-    expect(playNote).toHaveBeenCalledWith(550, 1000)
+    expect(playNoteWithGain).toHaveBeenCalledWith(550, 1000, 0.55)
     await flush()
   })
 
@@ -138,7 +141,27 @@ describe('useSingingBacking', () => {
     setup({ bpm: 120 }) // 1 beat = 500ms
     api.setBacking([{ freq: 220, startBeat: 1, duration: 2 }])
     emitBeat(1)
-    expect(playNote).toHaveBeenCalledWith(220, 1000) // 2 beats @120bpm = 1000ms
+    expect(playNoteWithGain).toHaveBeenCalledWith(220, 1000, 0.55) // 2 beats @120bpm = 1000ms
     await flush()
+  })
+
+  it('stops a voice whose async creation resolves after pause', async () => {
+    let resolveVoice: (id: number) => void = () => {}
+    setup()
+    const pendingVoice = new Promise<number>((resolve) => {
+      resolveVoice = resolve
+    })
+    playNoteWithGain.mockReturnValueOnce(pendingVoice)
+    api.setBacking(notes)
+    emitBeat(1)
+
+    setIsPlaying(false)
+    await flush()
+    expect(stopNote).not.toHaveBeenCalled()
+
+    resolveVoice(777)
+    await flush()
+    expect(stopNote).toHaveBeenCalledOnce()
+    expect(stopNote).toHaveBeenCalledWith(777)
   })
 })

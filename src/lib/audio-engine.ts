@@ -82,6 +82,15 @@ export const CHARACTER_PROFILES: Record<
   },
 }
 
+interface ActiveVoice {
+  oscillators: (OscillatorNode | AudioBufferSourceNode)[]
+  gains: GainNode[]
+  stopTime: number
+  lfos?: OscillatorNode[]
+  lfoGains?: GainNode[]
+  autoStopTimer?: ReturnType<typeof setTimeout>
+}
+
 export class AudioEngine {
   audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
@@ -116,18 +125,16 @@ export class AudioEngine {
   private _timeData = new Float32Array(0)
   private _playbackTimeData = new Float32Array(0)
   private _frequencyByteData = new Uint8Array(0)
-  private _activeVoices = new Map<
-    number,
-    {
-      oscillators: (OscillatorNode | AudioBufferSourceNode)[]
-      gains: GainNode[]
-      stopTime: number
-      lfos?: OscillatorNode[]
-      lfoGains?: GainNode[]
-    }
-  >()
+  private _activeVoices = new Map<number, ActiveVoice>()
+  /**
+   * Invalidates playNote calls that are still awaiting AudioContext startup
+   * when a transport stop happens.
+   */
+  private playNoteGeneration = 0
   /** Simultaneous playNote voices allowed before the oldest is stolen. */
   private static readonly MAX_POLY_VOICES = 24
+  /** Manual pause/stop release. Long enough to avoid a step, short enough to feel immediate. */
+  private static readonly NOTE_RELEASE_SECONDS = 0.075
 
   // BPM state (used for timing calculations)
   private _bpm = 120
@@ -143,6 +150,13 @@ export class AudioEngine {
   private reverbSendGain: GainNode | null = null
   private reverbReturnGain: GainNode | null = null
   private currentReverbWetness = 0.3
+
+  // Soft limiter on the polyphonic synth bus. Dense songs stack 10-24 voices
+  // whose summed amplitude far exceeds 1.0 — without this the sum hard-clips
+  // at the destination and every overlap crackles. Scoped to the note bus
+  // (mainGain): the metronome and UVR stem playback are already level-managed
+  // and must not be pumped by other voices.
+  private noteBusLimiter: DynamicsCompressorNode | null = null
 
   // UVR Vocal Separation
   private uvrProcessor: UvrProcessor = new UvrProcessor()
@@ -197,12 +211,26 @@ export class AudioEngine {
       this.uvrOutput = this.audioCtx.createGain()
       this.uvrOutput.gain.value = 1.0
 
-      // Main flow: mainGain → uvrOutput (UVR processing)
-      this.mainGain.connect(this.uvrOutput)
+      // Limiter (fast attack, high ratio = brick-wall-ish) between the note
+      // bus and everything downstream, so polyphony can't clip the output.
+      if (typeof this.audioCtx.createDynamicsCompressor === 'function') {
+        this.noteBusLimiter = this.audioCtx.createDynamicsCompressor()
+        this.noteBusLimiter.threshold.value = -10
+        this.noteBusLimiter.knee.value = 6
+        this.noteBusLimiter.ratio.value = 20
+        this.noteBusLimiter.attack.value = 0.003
+        this.noteBusLimiter.release.value = 0.25
+      }
+      const noteBusOut = this.noteBusLimiter ?? this.mainGain
+
+      // Main flow: mainGain → limiter → uvrOutput (UVR processing)
+      if (this.noteBusLimiter) this.mainGain.connect(this.noteBusLimiter)
+      noteBusOut.connect(this.uvrOutput)
       // Playback analyser: connects to uvrOutput for visualization
       this.uvrOutput.connect(this.playbackAnalyser)
-      // Wet send for reverb: mainGain → reverbSendGain (separate from UVR)
-      this.mainGain.connect(this.reverbSendGain)
+      // Wet send for reverb: limited note bus → reverbSendGain (separate
+      // from UVR)
+      noteBusOut.connect(this.reverbSendGain)
 
       // Metronome/precount bypasses mainGain so click volume is
       // independent of the note volume slider.
@@ -1118,21 +1146,27 @@ export class AudioEngine {
     /** Per-voice loudness scale (0..1, default 1) on top of master volume. */
     gain?: number,
   ): Promise<number | undefined> {
+    const generation = this.playNoteGeneration
     await this.init()
     await this.resume()
-    if (!this.audioCtx || !this.mainGain) return undefined
+    if (
+      generation !== this.playNoteGeneration ||
+      !this.audioCtx ||
+      !this.mainGain
+    ) {
+      return undefined
+    }
 
     // Dense multi-track songs (the play-along games fire a voice per note,
     // across every audible track) can stack far more simultaneous voices
     // than anything musically useful — steal the oldest so oscillator count
-    // and CPU stay bounded. The map preserves insertion order; the immediate
-    // delete matters because stopNote defers its own map removal past the
-    // release, which would otherwise make every following note over-steal.
+    // and CPU stay bounded. The map preserves insertion order; stopNote
+    // removes a voice from the active map immediately while its audio-clock
+    // release finishes in the background.
     while (this._activeVoices.size >= AudioEngine.MAX_POLY_VOICES) {
       const oldest = this._activeVoices.keys().next().value
       if (oldest === undefined) break
       this.stopNote(oldest)
-      this._activeVoices.delete(oldest)
     }
 
     const now = this.audioCtx.currentTime
@@ -1186,20 +1220,21 @@ export class AudioEngine {
     voiceVolumeGain.connect(this.mainGain)
 
     // Store voice reference (with optional LFOs)
-    this._activeVoices.set(noteId, {
+    const voice: ActiveVoice = {
       oscillators: allOscillators,
       gains: [mainGain, voiceVolumeGain],
       stopTime: now + durationMs / 1000,
       lfos,
       lfoGains,
-    })
+    }
+    this._activeVoices.set(noteId, voice)
 
     // Auto-stop after duration. Plucked instruments get extra tail time so
     // their natural Karplus-Strong decay rings out past the note boundary
     // (the release envelope in _createVoice has already faded them by then).
     if (durationMs) {
       const tailMs = this._isPluckedInstrument() ? 1500 : 0
-      setTimeout(() => {
+      voice.autoStopTimer = setTimeout(() => {
         this.stopNote(noteId)
       }, durationMs + tailMs)
     }
@@ -1215,6 +1250,19 @@ export class AudioEngine {
     frequency: number,
     durationMs: number,
     gain = 0.45,
+  ): Promise<number | undefined> {
+    return this.playNoteWithGain(frequency, durationMs, gain)
+  }
+
+  /**
+   * Play an unprocessed note at an explicit per-voice level.
+   * Keeps callers that only need loudness from passing an error-prone run of
+   * optional effect arguments.
+   */
+  async playNoteWithGain(
+    frequency: number,
+    durationMs: number,
+    gain: number,
   ): Promise<number | undefined> {
     return this.playNote(
       frequency,
@@ -1317,17 +1365,7 @@ export class AudioEngine {
           oscillatorsToStart.push(osc)
           allOscillators.push(osc)
         })
-        // Piano has its own envelope — smooth attack, decay, sustain
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack)
-        mainGain.gain.exponentialRampToValueAtTime(
-          0.4,
-          now + this.adsrAttack + this.adsrDecay,
-        )
-        mainGain.gain.setValueAtTime(
-          0.3,
-          now + this.adsrAttack + this.adsrDecay + 0.1,
-        )
+        this._schedulePianoEnvelope(mainGain.gain, now, dur)
         hasCustomEnvelope = true
         break
       }
@@ -1346,11 +1384,11 @@ export class AudioEngine {
           oscillatorsToStart.push(osc)
           allOscillators.push(osc)
         })
-        // Smooth attack to prevent click at note start, hold, then release
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015)
-        mainGain.gain.setValueAtTime(0.7, Math.max(now, now + dur - 0.1))
-        mainGain.gain.linearRampToValueAtTime(0, now + dur)
+        this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          peak: 0.7,
+          attack: 0.015,
+          release: 0.1,
+        })
         hasCustomEnvelope = true
         break
       }
@@ -1370,11 +1408,11 @@ export class AudioEngine {
           oscillatorsToStart.push(osc)
           allOscillators.push(osc)
         })
-        // Slow fade in/out for strings feel
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.6, now + 0.1)
-        mainGain.gain.setValueAtTime(0.6, Math.max(now, now + dur - 0.1))
-        mainGain.gain.linearRampToValueAtTime(0, now + dur)
+        this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          peak: 0.6,
+          attack: 0.1,
+          release: 0.1,
+        })
         hasCustomEnvelope = true
         break
       }
@@ -1399,11 +1437,11 @@ export class AudioEngine {
         gain2.connect(mainGain)
         oscillatorsToStart.push(osc2)
         allOscillators.push(osc2)
-        // Smooth attack to prevent click, sustain at 70%, then release
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(1.0, now + 0.015)
-        mainGain.gain.setValueAtTime(1.0, Math.max(now, now + dur - 0.1))
-        mainGain.gain.linearRampToValueAtTime(0, now + dur)
+        this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          peak: 1,
+          attack: 0.015,
+          release: 0.1,
+        })
         hasCustomEnvelope = true
         break
       }
@@ -1439,10 +1477,11 @@ export class AudioEngine {
         osc.connect(mainGain)
         oscillatorsToStart.push(osc)
         allOscillators.push(osc)
-        mainGain.gain.setValueAtTime(0, now)
-        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015)
-        mainGain.gain.setValueAtTime(0.7, Math.max(now, now + dur - 0.05))
-        mainGain.gain.linearRampToValueAtTime(0, now + dur)
+        this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          peak: 0.7,
+          attack: 0.015,
+          release: 0.05,
+        })
         hasCustomEnvelope = true
         break
       }
@@ -1541,6 +1580,67 @@ export class AudioEngine {
       lfoGains,
       hasCustomEnvelope,
     }
+  }
+
+  /**
+   * Schedule a click-free attack/hold/release whose events always fit inside
+   * the note. Capping each phase matters for the 50ms notes produced by dense
+   * imported MIDI; fixed 100ms attacks otherwise continue after note-off.
+   */
+  private _scheduleSustainEnvelope(
+    param: AudioParam,
+    now: number,
+    duration: number,
+    options: { peak: number; attack: number; release: number },
+  ): void {
+    const safeDuration = Math.max(0.001, duration)
+    const releaseDuration = Math.min(options.release, safeDuration * 0.4)
+    const attackDuration = Math.min(
+      options.attack,
+      safeDuration - releaseDuration,
+    )
+    const attackEnd = now + attackDuration
+    const releaseStart = now + safeDuration - releaseDuration
+    const noteEnd = now + safeDuration
+
+    param.setValueAtTime(0, now)
+    param.linearRampToValueAtTime(options.peak, attackEnd)
+    if (releaseStart > attackEnd) {
+      param.setValueAtTime(options.peak, releaseStart)
+    }
+    param.linearRampToValueAtTime(0, noteEnd)
+  }
+
+  /**
+   * Piano needs attack and decay character, but the phase lengths must shrink
+   * for short notes so no later automation can reopen the gain after release.
+   */
+  private _schedulePianoEnvelope(
+    param: AudioParam,
+    now: number,
+    duration: number,
+  ): void {
+    const safeDuration = Math.max(0.001, duration)
+    const releaseDuration = Math.min(0.06, safeDuration * 0.35)
+    const releaseStart = now + safeDuration - releaseDuration
+    const attackDuration = Math.min(this.adsrAttack, safeDuration * 0.2)
+    const attackEnd = now + attackDuration
+    const decayDuration = Math.min(
+      this.adsrDecay,
+      Math.max(0, releaseStart - attackEnd),
+    )
+    const decayEnd = attackEnd + decayDuration
+    const noteEnd = now + safeDuration
+
+    param.setValueAtTime(0, now)
+    param.linearRampToValueAtTime(0.8, attackEnd)
+    if (decayEnd > attackEnd) {
+      param.exponentialRampToValueAtTime(0.4, decayEnd)
+    }
+    if (releaseStart > decayEnd) {
+      param.linearRampToValueAtTime(0.3, releaseStart)
+    }
+    param.linearRampToValueAtTime(0, noteEnd)
   }
 
   /**
@@ -1707,61 +1807,91 @@ export class AudioEngine {
   stopNote(noteId: number): void {
     const voice = this._activeVoices.get(noteId)
     if (!voice) return
+    // A voice is no longer active as soon as release begins. This makes
+    // repeated stop calls idempotent and keeps polyphony accounting honest
+    // while the tail finishes.
+    this._activeVoices.delete(noteId)
+    if (voice.autoStopTimer !== undefined) {
+      clearTimeout(voice.autoStopTimer)
+      voice.autoStopTimer = undefined
+    }
 
     const ctx = this.audioCtx
     if (!ctx) return
 
     const now = ctx.currentTime
+    const stopTime = now + AudioEngine.NOTE_RELEASE_SECONDS
 
     // Release envelope (GH #130 fix: guard for voices with no/null gains, e.g. metronome)
     const firstGain = voice.gains[0]
     if (firstGain != null) {
       try {
-        firstGain.gain.cancelScheduledValues(now)
-        firstGain.gain.setValueAtTime(firstGain.gain.value, now)
-        firstGain.gain.linearRampToValueAtTime(0, now + 0.1)
+        if (typeof firstGain.gain.cancelAndHoldAtTime === 'function') {
+          firstGain.gain.cancelAndHoldAtTime(now)
+        } else {
+          firstGain.gain.cancelScheduledValues(now)
+          firstGain.gain.setValueAtTime(firstGain.gain.value, now)
+        }
+        firstGain.gain.linearRampToValueAtTime(0, stopTime)
       } catch {
         /* gain may be disconnected */
       }
     }
 
-    // Stop oscillators and LFOs after release
-    setTimeout(() => {
-      for (const osc of voice.oscillators) {
-        try {
-          osc.stop()
-          osc.disconnect()
-        } catch {
-          /* already stopped */
-        }
+    // Schedule source stops on the audio clock. A delayed JavaScript cleanup
+    // timer can no longer turn note-off into an abrupt waveform cut.
+    for (const osc of voice.oscillators) {
+      try {
+        osc.stop(stopTime)
+      } catch {
+        /* already stopped */
       }
-      ;(voice.lfos || []).forEach((lfo) => {
-        try {
-          lfo.stop()
-          lfo.disconnect()
-        } catch {
-          /* already stopped */
+    }
+    for (const lfo of voice.lfos ?? []) {
+      try {
+        lfo.stop(stopTime)
+      } catch {
+        /* already stopped */
+      }
+    }
+
+    // Disconnect only after the audio-clock release has completed.
+    setTimeout(
+      () => {
+        for (const osc of voice.oscillators) {
+          try {
+            osc.disconnect()
+          } catch {
+            /* already stopped */
+          }
         }
-      })
-      ;(voice.lfoGains || []).forEach((g) => {
-        try {
-          g.disconnect()
-        } catch {
-          /* already stopped */
-        }
-      })
-      // Only disconnect if gains exist (GH #130 fix)
-      for (const g of voice.gains) {
-        if (g != null) {
+        ;(voice.lfos || []).forEach((lfo) => {
+          try {
+            lfo.disconnect()
+          } catch {
+            /* already stopped */
+          }
+        })
+        ;(voice.lfoGains || []).forEach((g) => {
           try {
             g.disconnect()
           } catch {
             /* already stopped */
           }
+        })
+        // Only disconnect if gains exist (GH #130 fix)
+        for (const g of voice.gains) {
+          if (g != null) {
+            try {
+              g.disconnect()
+            } catch {
+              /* already stopped */
+            }
+          }
         }
-      }
-      this._activeVoices.delete(noteId)
-    }, 150)
+      },
+      Math.ceil(AudioEngine.NOTE_RELEASE_SECONDS * 1000) + 25,
+    )
   }
 
   /**
@@ -1775,7 +1905,9 @@ export class AudioEngine {
    * Stop all active notes.
    */
   stopAllNotes(): void {
-    for (const noteId of this._activeVoices.keys()) {
+    // Also cancel playNote calls still awaiting AudioContext init/resume.
+    this.playNoteGeneration += 1
+    for (const noteId of [...this._activeVoices.keys()]) {
       this.stopNote(noteId)
     }
   }
@@ -1803,12 +1935,14 @@ export class AudioEngine {
   destroy(): void {
     this.stopMic()
     this.stopTone()
+    this.stopAllNotes()
     if (this.audioCtx) {
       this.audioCtx.close()
       this.audioCtx = null
     }
     this.metronomeGain = null
     this.mainGain = null
+    this.noteBusLimiter = null
     this.reverbNode = null
     this.reverbSendGain = null
     this.reverbReturnGain = null
