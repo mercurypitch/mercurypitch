@@ -13,6 +13,7 @@ import { PianoRollEditor } from '@/lib/piano-roll'
 import { useConfirm } from '@/lib/use-confirm'
 import { gridLinesVisible } from '@/stores/settings-store'
 import type { MelodyItem, ScaleDegree } from '@/types'
+import { AlertTriangle } from './icons'
 import styles from './PianoRollCanvas.module.css'
 
 interface PianoRollCanvasProps {
@@ -84,7 +85,13 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       onMoveLoopA: (beat) => props.onMoveLoopA?.(beat),
       onMoveLoopB: (beat) => props.onMoveLoopB?.(beat),
       onConfirm: (message, accept) =>
-        confirm.request({ title: 'Confirm', message, onConfirm: accept }),
+        confirm.request({
+          title: 'Trim notes?',
+          message,
+          confirmLabel: 'Trim notes',
+          confirmIcon: <AlertTriangle />,
+          onConfirm: accept,
+        }),
     })
     editor.setMelody(props.melody())
     editor.setScale(props.scale())

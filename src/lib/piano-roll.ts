@@ -1153,9 +1153,15 @@ export class PianoRollEditor {
 
     if (wouldTrim) {
       if (this.onConfirm) {
-        this.onConfirm('This will trim some notes. Continue?', applyTrim)
-      } else if (confirm('This will trim some notes. Continue?')) {
-        applyTrim()
+        this.onConfirm(
+          `Reducing the song to ${newTotal} beats will shorten or remove notes after that point.`,
+          applyTrim,
+        )
+      } else {
+        showNotification(
+          'Could not open the trim confirmation. Your notes were not changed.',
+          'warning',
+        )
       }
     } else {
       applyTrim()
