@@ -72,7 +72,7 @@
   transition: background 0.15s;
 }
 
-.cancel:hover {
+.cancel:hover:not(:disabled) {
   background: var(--bg-hover);
 }
 
@@ -91,11 +91,30 @@
   transition: opacity 0.15s;
 }
 
-.delete:hover {
+.delete:hover:not(:disabled) {
   opacity: 0.85;
+}
+
+.cancel:disabled,
+.delete:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.cancel:focus-visible,
+.delete:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
 }
 
 .delete svg {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .dialog {
+    animation: none;
+  }
 }

@@ -1,8 +1,5 @@
-// ============================================================
-// Karaoke Group Delete & Persistence Tests
-// ============================================================
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, } from '@/db'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 const adapter = new InMemoryAdapter()
@@ -11,91 +8,225 @@ vi.mock('@/db', () => ({
   getDb: async () => adapter,
 }))
 
-import { createGroup, deleteGroup, deleteGroupWithSessions, getAllUvrSessions, getGroupsReactive, getUvrSession, initGroupStore, initSessionStore, startUvrSession, } from '@/stores/uvr-store'
+const loadStore = () => import('@/stores/uvr-store')
 
 beforeEach(async () => {
-  await adapter.destroy()
   vi.restoreAllMocks()
+  vi.resetModules()
+  await adapter.destroy()
+  let now = 10_000
+  vi.spyOn(Date, 'now').mockImplementation(() => now++)
 })
 
-describe('Karaoke Group Delete & Persistence', () => {
-  it('deleteGroup ungroups sessions and persists deletion across reloads', async () => {
-    // 1. Initialize stores and create a group + session
+describe('karaoke group deletion persistence', () => {
+  it('ungroups canonical members and persists the deletion across initialization', async () => {
+    const {
+      addSessionToGroup,
+      createGroup,
+      deleteGroup,
+      getGroupsReactive,
+      getUvrSession,
+      initGroupStore,
+      initSessionStore,
+      startUvrSession,
+    } = await loadStore()
     const group = await createGroup('Rock Ballads')
-    const sid = startUvrSession(
+    const sessionId = startUvrSession(
       'song1.mp3',
-      1000,
-      'audio/mp3',
+      1_000,
+      'audio/mpeg',
       'separate',
       'local',
     )
+    await addSessionToGroup(sessionId, group.id)
 
-    // Add session to group
-    const { addSessionToGroup } = await import('@/stores/uvr-store')
-    await addSessionToGroup(sid, group.id)
-
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(true)
-    expect(getUvrSession(sid)?.groupId).toBe(group.id)
-
-    // 2. Delete the group (ungrouping sessions)
     await deleteGroup(group.id)
 
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(false)
-    expect(getUvrSession(sid)?.groupId).toBeUndefined()
+    expect(getGroupsReactive()).not.toContainEqual(
+      expect.objectContaining({ id: group.id }),
+    )
+    expect(getUvrSession(sessionId)?.groupId).toBeUndefined()
 
-    // 3. Simulate full page reload (re-run initGroupStore and initSessionStore)
     await initGroupStore()
     await initSessionStore()
-
-    // Verify group is still gone and session remains ungrouped
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(false)
-    const reloadedSession = getAllUvrSessions().find((s) => s.sessionId === sid)
-    expect(reloadedSession?.groupId).toBeUndefined()
+    expect(getGroupsReactive()).not.toContainEqual(
+      expect.objectContaining({ id: group.id }),
+    )
+    expect(getUvrSession(sessionId)?.groupId).toBeUndefined()
   })
 
-  it('deleteGroupWithSessions removes group and all member sessions durably across reloads', async () => {
-    // 1. Create group + 2 sessions
+  it('atomically removes canonical members and all dependent records', async () => {
+    const {
+      addSessionToGroup,
+      createGroup,
+      deleteGroupWithSessions,
+      getGroupsReactive,
+      getUvrSession,
+      initGroupStore,
+      initSessionStore,
+      startUvrSession,
+    } = await loadStore()
     const group = await createGroup('Pop Hits')
-    const s1 = startUvrSession(
-      'pop1.mp3',
-      2000,
-      'audio/mp3',
+    const sessionId = startUvrSession(
+      'pop.mp3',
+      2_000,
+      'audio/mpeg',
       'separate',
       'local',
     )
-    const s2 = startUvrSession(
-      'pop2.mp3',
-      3000,
-      'audio/mp3',
-      'separate',
-      'local',
-    )
+    await addSessionToGroup(sessionId, group.id)
 
-    const { addSessionToGroup } = await import('@/stores/uvr-store')
-    await addSessionToGroup(s1, group.id)
-    await addSessionToGroup(s2, group.id)
+    await adapter.getRepository<UvrStemBlob>('uvrStemBlobs').create({
+      sessionId,
+      stemType: 'vocal',
+      mimeType: 'audio/wav',
+      data: new ArrayBuffer(4),
+      size: 4,
+      fileName: 'vocal.wav',
+    })
+    await adapter
+      .getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+      .create({ sessionId, fingerprintJson: '{}' })
+    await adapter.getRepository<UvrSessionLyrics>('uvrSessionLyrics').create({
+      sessionId,
+      text: 'hello',
+      format: 'txt',
+      filename: 'lyrics.txt',
+    })
 
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(true)
-    expect(getAllUvrSessions().some((s) => s.sessionId === s1)).toBe(true)
-
-    // 2. Delete group with sessions
     await deleteGroupWithSessions(group.id)
 
-    // In-memory verification
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(false)
-    expect(getAllUvrSessions().some((s) => s.sessionId === s1)).toBe(false)
-    expect(getAllUvrSessions().some((s) => s.sessionId === s2)).toBe(false)
+    expect(getUvrSession(sessionId)).toBeUndefined()
+    expect(getGroupsReactive()).not.toContainEqual(
+      expect.objectContaining({ id: group.id }),
+    )
+    expect(
+      await adapter
+        .getRepository<UvrStemBlob>('uvrStemBlobs')
+        .findAll({ where: { sessionId } }),
+    ).toHaveLength(0)
+    expect(
+      await adapter
+        .getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+        .findAll({ where: { sessionId } }),
+    ).toHaveLength(0)
+    expect(
+      await adapter
+        .getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+        .findAll({ where: { sessionId } }),
+    ).toHaveLength(0)
 
-    // 3. Verify DB record for group is deleted
-    const repo = adapter.getRepository('sessionGroups')
-    const dbGroup = await repo.findById(group.id)
-    expect(dbGroup).toBeNull()
-
-    // 4. Simulate page reload / rehydration
     await initGroupStore()
     await initSessionStore()
+    expect(getUvrSession(sessionId)).toBeUndefined()
+    expect(getGroupsReactive()).not.toContainEqual(
+      expect.objectContaining({ id: group.id }),
+    )
+  })
 
-    expect(getGroupsReactive().some((g) => g.id === group.id)).toBe(false)
-    expect(getAllUvrSessions().some((s) => s.sessionId === s1)).toBe(false)
+  it('serializes concurrent assignments to the same group index', async () => {
+    const {
+      addSessionToGroup,
+      createGroup,
+      getGroupsReactive,
+      startUvrSession,
+    } = await loadStore()
+    const group = await createGroup('Duets')
+    const first = startUvrSession(
+      'first.mp3',
+      1_000,
+      'audio/mpeg',
+      'separate',
+      'local',
+    )
+    const second = startUvrSession(
+      'second.mp3',
+      1_000,
+      'audio/mpeg',
+      'separate',
+      'local',
+    )
+
+    await Promise.all([
+      addSessionToGroup(first, group.id),
+      addSessionToGroup(second, group.id),
+    ])
+
+    const cachedGroup = getGroupsReactive().find(
+      (candidate) => candidate.id === group.id,
+    )
+    expect(cachedGroup?.sessionIds).toEqual([first, second])
+    const persistedGroup = await adapter
+      .getRepository<SessionGroupRecord>('sessionGroups')
+      .findById(group.id)
+    expect(persistedGroup?.sessionIds).toEqual([first, second])
+  })
+
+  it('does not delete a session referenced only by a stale group index', async () => {
+    const {
+      addSessionToGroup,
+      createGroup,
+      deleteGroupWithSessions,
+      getGroupsReactive,
+      getUvrSession,
+      startUvrSession,
+    } = await loadStore()
+    const staleGroup = await createGroup('Old group')
+    const canonicalGroup = await createGroup('Current group')
+    const sessionId = startUvrSession(
+      'moved.mp3',
+      1_000,
+      'audio/mpeg',
+      'separate',
+      'local',
+    )
+    await addSessionToGroup(sessionId, canonicalGroup.id)
+
+    getGroupsReactive()
+      .find((group) => group.id === staleGroup.id)
+      ?.sessionIds.push(sessionId)
+
+    await deleteGroupWithSessions(staleGroup.id)
+
+    expect(getUvrSession(sessionId)?.groupId).toBe(canonicalGroup.id)
+    expect(
+      await adapter
+        .getRepository<UvrSessionRecord>('uvrSessions')
+        .findAll({ where: { appSessionId: sessionId } }),
+    ).toHaveLength(1)
+  })
+
+  it('rejects a failed durable delete without hiding the group or songs', async () => {
+    const {
+      addSessionToGroup,
+      createGroup,
+      deleteGroupWithSessions,
+      getGroupsReactive,
+      getUvrSession,
+      startUvrSession,
+    } = await loadStore()
+    const group = await createGroup('Keep on failure')
+    const sessionId = startUvrSession(
+      'safe.mp3',
+      1_000,
+      'audio/mpeg',
+      'separate',
+      'local',
+    )
+    await addSessionToGroup(sessionId, group.id)
+
+    const sessionRepo = adapter.getRepository<UvrSessionRecord>('uvrSessions')
+    vi.spyOn(sessionRepo, 'delete').mockRejectedValue(
+      new Error('storage unavailable'),
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    await expect(deleteGroupWithSessions(group.id)).rejects.toThrow(
+      'Could not delete',
+    )
+    expect(getUvrSession(sessionId)?.groupId).toBe(group.id)
+    expect(getGroupsReactive()).toContainEqual(
+      expect.objectContaining({ id: group.id }),
+    )
   })
 })

@@ -128,6 +128,15 @@ export class HybridAdapter implements DatabaseAdapter {
     return fn(this)
   }
 
+  /** Run a transaction wholly against local storage. UVR/session-group data
+   * never touches the cloud adapter, so multi-table destructive operations can
+   * retain Dexie's all-or-nothing guarantees in hybrid deployments. */
+  async transactionLocal<R>(
+    fn: (db: DatabaseAdapter) => Promise<R>,
+  ): Promise<R> {
+    return this.local.transaction(fn)
+  }
+
   async destroy(): Promise<void> {
     this.guarded.clear()
     await this.cloud.destroy()

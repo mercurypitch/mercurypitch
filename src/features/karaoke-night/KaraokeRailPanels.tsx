@@ -2,8 +2,9 @@
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { X } from '@/components/icons'
+import type { GroupDeleteTarget } from '@/components/GroupDeleteConfirmDialog'
+import { GroupDeleteConfirmDialog } from '@/components/GroupDeleteConfirmDialog'
+import { Trash2 } from '@/components/icons'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-accept'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -52,11 +53,24 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   const [mode, setMode] = createSignal<UvrProcessingMode>(
     getUvrProcessingMode(),
   )
-  const [groupToDelete, setGroupToDelete] = createSignal<{
-    id: string
-    name: string
-    songCount: number
-  } | null>(null)
+  const [groupToDelete, setGroupToDelete] =
+    createSignal<GroupDeleteTarget | null>(null)
+  const [deletingGroup, setDeletingGroup] = createSignal(false)
+
+  const confirmDeleteGroup = (): void => {
+    const target = groupToDelete()
+    if (target === null || deletingGroup()) return
+    setDeletingGroup(true)
+    void deleteGroupWithSessions(target.id)
+      .then(() => setGroupToDelete(null))
+      .catch(() => {
+        showNotification(
+          'Could not delete the group. Your songs are still available.',
+          'error',
+        )
+      })
+      .finally(() => setDeletingGroup(false))
+  }
 
   // Server mode is only usable with a signed-in account (billing) and credits.
   const serverReady = () => signedIn() && (credits() ?? 0) > 0
@@ -436,8 +450,10 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                         {g.songs.length}
                       </span>
                       <button
+                        type="button"
                         class="kn-group-delete-btn"
                         title={`Delete group ${g.name}`}
+                        aria-label={`Delete group ${g.name}`}
                         data-testid={`group-delete-${g.id}`}
                         onClick={() =>
                           setGroupToDelete({
@@ -447,7 +463,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                           })
                         }
                       >
-                        <X />
+                        <Trash2 />
                       </button>
                     </p>
                     <ul class="kn-library-group-songs">
@@ -474,30 +490,10 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             </ul>
           </Show>
 
-          <ConfirmDialog
-            open={groupToDelete() !== null}
-            title={`Delete "${groupToDelete()?.name ?? 'group'}"?`}
-            message={
-              <>
-                Are you sure you want to delete{' '}
-                <strong>{groupToDelete()?.name}</strong>?
-                {(groupToDelete()?.songCount ?? 0) > 0
-                  ? ` This will delete the group and its ${
-                      groupToDelete()?.songCount === 1
-                        ? '1 song'
-                        : `${groupToDelete()?.songCount} songs`
-                    }.`
-                  : ' This will delete the group.'}
-              </>
-            }
-            confirmLabel="Delete"
-            onConfirm={() => {
-              const target = groupToDelete()
-              if (target) {
-                setGroupToDelete(null)
-                void deleteGroupWithSessions(target.id)
-              }
-            }}
+          <GroupDeleteConfirmDialog
+            target={groupToDelete()}
+            busy={deletingGroup()}
+            onConfirm={confirmDeleteGroup}
             onCancel={() => setGroupToDelete(null)}
           />
         </section>

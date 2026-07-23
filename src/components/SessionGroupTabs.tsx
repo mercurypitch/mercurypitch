@@ -6,7 +6,9 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { SessionGroupRecord } from '@/db'
 import { createGroup, deleteGroupWithSessions, getGroupsReactive, renameGroup, } from '@/stores/app-store'
-import { ConfirmDialog } from './ConfirmDialog'
+import { showNotification } from '@/stores/notifications-store'
+import type { GroupDeleteTarget } from './GroupDeleteConfirmDialog'
+import { GroupDeleteConfirmDialog } from './GroupDeleteConfirmDialog'
 import { CheckSmall, DeleteGroup, FilePlus, Pencil, X } from './icons'
 import styles from './SessionGroupTabs.module.css'
 
@@ -21,7 +23,8 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
   const [editName, setEditName] = createSignal('')
   const [contextGroupId, setContextGroupId] = createSignal<string | null>(null)
   const [groupToDelete, setGroupToDelete] =
-    createSignal<SessionGroupRecord | null>(null)
+    createSignal<GroupDeleteTarget | null>(null)
+  const [deletingGroup, setDeletingGroup] = createSignal(false)
 
   let addInputRef: HTMLInputElement | undefined
   let editInputRef: HTMLInputElement | undefined
@@ -48,17 +51,31 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
 
   const promptDelete = (group: SessionGroupRecord) => {
     setContextGroupId(null)
-    setGroupToDelete(group)
+    setGroupToDelete({
+      id: group.id,
+      name: group.name,
+      songCount: group.sessionIds.length,
+    })
   }
 
-  const confirmDelete = async () => {
+  const confirmDelete = (): void => {
     const target = groupToDelete()
-    if (!target) return
-    setGroupToDelete(null)
-    await deleteGroupWithSessions(target.id)
-    if (props.activeGroupId === target.id) {
-      props.onSelectGroup(null)
-    }
+    if (target === null || deletingGroup()) return
+    const wasActive = props.activeGroupId === target.id
+    const selectGroup = props.onSelectGroup
+    setDeletingGroup(true)
+    void deleteGroupWithSessions(target.id)
+      .then(() => {
+        if (wasActive) selectGroup(null)
+        setGroupToDelete(null)
+      })
+      .catch(() => {
+        showNotification(
+          'Could not delete the group. Your songs are still available.',
+          'error',
+        )
+      })
+      .finally(() => setDeletingGroup(false))
   }
 
   const startRename = (group: SessionGroupRecord) => {
@@ -72,24 +89,11 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
       class={styles.sessionGroupTabs}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <ConfirmDialog
-        open={groupToDelete() !== null}
+      <GroupDeleteConfirmDialog
+        target={groupToDelete()}
+        busy={deletingGroup()}
         onCancel={() => setGroupToDelete(null)}
-        onConfirm={() => void confirmDelete()}
-        title="Delete group"
-        message={
-          <>
-            Are you sure you want to delete{' '}
-            <strong>{groupToDelete()?.name}</strong>?
-            {(groupToDelete()?.sessionIds.length ?? 0) > 0
-              ? ` This will delete the group and its ${
-                  (groupToDelete()?.sessionIds.length ?? 0) === 1
-                    ? '1 song'
-                    : `${groupToDelete()?.sessionIds.length ?? 0} songs`
-                }.`
-              : ' This will delete the group.'}
-          </>
-        }
+        onConfirm={confirmDelete}
       />
 
       {/* "All" tab */}
@@ -135,6 +139,7 @@ export const SessionGroupTabs: Component<SessionGroupTabsProps> = (props) => {
                     </span>
                   </button>
                   <button
+                    type="button"
                     class={styles.sessionGroupTabDeleteBtn}
                     onClick={(e) => {
                       e.stopPropagation()

@@ -896,25 +896,34 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: #a89bc4;
   cursor: pointer;
-  padding: 0.15rem;
-  border-radius: 0.25rem;
+  padding: 0;
+  border-radius: 0.4rem;
   transition:
     color 0.15s,
-    background 0.15s;
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .kn-group-delete-btn:hover {
   color: #ff6b6b;
   background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.24);
+}
+
+.kn-group-delete-btn:focus-visible {
+  outline: 2px solid #b79ae0;
+  outline-offset: 2px;
 }
 
 .kn-group-delete-btn svg {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 /* Nested song list — indented with a hairline rail to read as a hierarchy. */

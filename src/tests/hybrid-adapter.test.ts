@@ -66,6 +66,18 @@ describe('HybridAdapter', () => {
     expect(CLOUD_ENTITIES.has('leaderboardEntries')).toBe(false)
   })
 
+  it('delegates local-only transactions to the local adapter', async () => {
+    const cloud = stubAdapter()
+    const local = stubAdapter()
+    const hybrid = new HybridAdapter(cloud, local)
+    const operation = vi.fn(async () => 'saved')
+
+    await expect(hybrid.transactionLocal(operation)).resolves.toBe('saved')
+    expect(local.transaction).toHaveBeenCalledOnce()
+    expect(cloud.transaction).not.toHaveBeenCalled()
+    expect(operation).toHaveBeenCalledWith(local)
+  })
+
   it('destroys both adapters', async () => {
     const cloud = stubAdapter()
     const local = stubAdapter()

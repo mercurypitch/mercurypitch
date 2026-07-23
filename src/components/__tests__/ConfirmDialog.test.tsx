@@ -119,6 +119,34 @@ describe('ConfirmDialog', () => {
     expect(screen.queryByTestId('trash-icon')).toBeNull()
   })
 
+  it('locks dismissal and duplicate confirmation while busy', () => {
+    const onConfirm = vi.fn()
+    const onCancel = vi.fn()
+    const { container } = render(() => (
+      <ConfirmDialog
+        {...baseProps}
+        open={true}
+        busy={true}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    ))
+    const dialog = screen.getByRole('alertdialog')
+    const confirm = screen.getByTestId('confirm-delete')
+    const cancel = screen.getByTestId('confirm-cancel')
+
+    expect(dialog).toHaveAttribute('aria-busy', 'true')
+    expect(confirm).toBeDisabled()
+    expect(cancel).toBeDisabled()
+
+    fireEvent.click(confirm)
+    fireEvent.click(cancel)
+    fireEvent.click(container.querySelector('[data-testid="confirm-overlay"]')!)
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
   it('reactively opens and closes', () => {
     const [open, setOpen] = createSignal(false)
     render(() => <ConfirmDialog {...baseProps} open={open()} />)

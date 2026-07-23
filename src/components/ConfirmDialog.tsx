@@ -17,6 +17,8 @@ interface ConfirmDialogProps {
   message: JSX.Element
   /** Confirm button label. Defaults to "Delete". */
   confirmLabel?: string
+  /** Prevent dismissal and duplicate submissions while work is in progress. */
+  busy?: boolean
   /** Icon on the confirm button. Defaults to a trash can (delete actions).
    *  Pass a different icon for non-delete confirms (e.g. replace/overwrite). */
   confirmIcon?: JSX.Element
@@ -29,9 +31,13 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   const titleId = createUniqueId()
   const bodyId = createUniqueId()
 
+  const cancel = (): void => {
+    if (props.busy !== true) props.onCancel()
+  }
+
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
-    onClose: () => props.onCancel(),
+    onClose: cancel,
   })
 
   return (
@@ -39,7 +45,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
       <div
         class={styles.overlay}
         data-testid="confirm-overlay"
-        onClick={() => props.onCancel()}
+        onClick={cancel}
       >
         <div
           ref={dialogRef}
@@ -48,21 +54,26 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={bodyId}
+          aria-busy={props.busy === true ? true : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <h4 id={titleId}>{props.title}</h4>
           <p id={bodyId}>{props.message}</p>
           <div class={styles.actions}>
             <button
+              type="button"
               class={styles.cancel}
               data-testid="confirm-cancel"
-              onClick={() => props.onCancel()}
+              disabled={props.busy}
+              onClick={cancel}
             >
               Cancel
             </button>
             <button
+              type="button"
               class={styles.delete}
               data-testid="confirm-delete"
+              disabled={props.busy}
               onClick={() => props.onConfirm()}
             >
               {props.confirmIcon ?? <Trash2 />} {props.confirmLabel ?? 'Delete'}
