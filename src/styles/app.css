@@ -1711,6 +1711,18 @@ input:checked + .settings-slider:before {
   background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
   overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+button.header-melody-context:hover {
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+button.header-melody-context:active {
+  transform: scale(0.98);
 }
 .header-melody-avatar {
   width: 20px;

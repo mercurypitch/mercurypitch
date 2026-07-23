@@ -98,6 +98,7 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
+import { applyPersistedValue } from '@/lib/storage'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
@@ -2207,12 +2208,16 @@ const AppShell: Component<AppProps> = (props) => {
                     guide character on Singing). Own class (not .subtitle) so it
                     stays visible on mobile. */}
                 {(ctx) => (
-                  <div
+                  <button
                     class="header-melody-context"
+                    onClick={() => {
+                      setSidebarOpen(true)
+                      applyPersistedValue('sidebar-character-open', 'true')
+                    }}
                     title={
                       ctx.character != null
-                        ? `Now loaded: ${ctx.name} · ${ctx.character}`
-                        : `Now loaded: ${ctx.name}`
+                        ? `Now loaded: ${ctx.name} · ${ctx.character} (Click to change)`
+                        : `Now loaded: ${ctx.name} (Click to change)`
                     }
                   >
                     <Show
@@ -2232,7 +2237,7 @@ const AppShell: Component<AppProps> = (props) => {
                     <Show when={ctx.character != null}>
                       <span class="header-melody-char">{ctx.character}</span>
                     </Show>
-                  </div>
+                  </button>
                 )}
               </Show>
             </div>
