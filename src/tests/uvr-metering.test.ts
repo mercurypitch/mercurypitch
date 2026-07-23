@@ -4,15 +4,21 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MeteringConfig } from '@/lib/uvr-metering'
-import { debitForJob, getMeteringConfig, refundJob } from '@/lib/uvr-metering'
+import { admitUvrJob, debitForJob, getMeteringConfig, refundJob, } from '@/lib/uvr-metering'
 
 const CFG: MeteringConfig = { baseUrl: 'https://db.test' }
 const KEYED: MeteringConfig = { baseUrl: 'https://db.test', serviceKey: 'svc' }
 
-function mockFetch(body: unknown, ok = true, status = 200) {
+function mockFetch(
+  body: unknown,
+  ok = true,
+  status = 200,
+  headers: Record<string, string> = {},
+) {
   return vi.spyOn(global, 'fetch').mockResolvedValue({
     ok,
     status,
+    headers: new Headers(headers),
     json: () => Promise.resolve(body),
   } as Response)
 }
@@ -87,16 +93,61 @@ describe('debitForJob', () => {
     })
   })
 
-  it('fails open on server errors', async () => {
+  it('fails closed on server errors', async () => {
     mockFetch({ error: 'boom' }, false, 500)
     const verdict = await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')
-    expect(verdict.allowed).toBe(true)
+    expect(verdict.allowed).toBe(false)
+    expect(verdict.status).toBe(500)
   })
 
-  it('fails open when the db-worker is unreachable', async () => {
+  it('fails closed when the db-worker is unreachable', async () => {
     vi.spyOn(global, 'fetch').mockRejectedValue(new Error('down'))
     const verdict = await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')
-    expect(verdict.allowed).toBe(true)
+    expect(verdict).toMatchObject({
+      allowed: false,
+      error: 'Server processing billing is unavailable',
+    })
+  })
+})
+
+describe('admitUvrJob', () => {
+  it('checks auth, tier and model before dispatch', async () => {
+    const spy = mockFetch({ allowed: true, cost: 1, balance: 9 })
+    const verdict = await admitUvrJob(CFG, 'Bearer tok', 'gpu', 'roformer')
+    expect(verdict).toMatchObject({
+      allowed: true,
+      required: 1,
+      balance: 9,
+    })
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://db.test/api/billing/uvr-admit')
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer tok',
+    )
+    expect(JSON.parse(init.body as string)).toEqual({
+      tier: 'gpu',
+      model: 'roformer',
+    })
+  })
+
+  it('forwards a 429 retry window', async () => {
+    mockFetch({ error: 'Too many server separations' }, false, 429, {
+      'Retry-After': '37',
+    })
+    expect(await admitUvrJob(CFG, 'Bearer tok', 'gpu')).toEqual({
+      allowed: false,
+      status: 429,
+      error: 'Too many server separations',
+      retryAfter: 37,
+    })
+  })
+
+  it('fails closed when admission cannot be reached', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('down'))
+    expect(await admitUvrJob(CFG, 'Bearer tok', 'gpu')).toMatchObject({
+      allowed: false,
+      error: 'Server processing protection is unavailable',
+    })
   })
 })
 

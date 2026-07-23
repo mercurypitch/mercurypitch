@@ -7,12 +7,14 @@ import { batch, createEffect, createResource, createSignal, For, lazy, on, onCle
 import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
-import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
+import type { SessionZipInspection } from '@/db/services/session-export-service'
+import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
+import { formatFileSize } from '@/lib/audio-accept'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
@@ -24,6 +26,8 @@ import { createPersistedSignal } from '@/lib/storage'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
+import { createUvrUploadQueue, isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
@@ -31,8 +35,8 @@ import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
-import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Music, Search, Settings, SingMic, StageCurtains, Trash2, X, Zap, } from './icons'
+import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -98,6 +102,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     localStorage.getItem('pitchperfect_stem_denoise') !== 'false',
   )
   const [_onError, setOnError] = createSignal('')
+  const uploadQueue = createUvrUploadQueue()
+  const [activeQueueMode, setActiveQueueMode] =
+    createSignal<UvrProcessingMode>('local')
 
   // Error handling
   const showError = (message: string) => {
@@ -170,7 +177,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // server job with no persisted RunPod id). A recoverable server job survives
   // reload now — auto-resume re-attaches and re-fetches it — so no scary prompt.
   createEffect(() => {
-    const busy = getAllUvrSessionsReactive().some((s) => {
+    const sessionBusy = getAllUvrSessionsReactive().some((s) => {
       if (s.status === 'finalizing') return true
       const recoverableServer =
         s.processingMode === 'server' &&
@@ -181,7 +188,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         !recoverableServer
       )
     })
-    if (!busy) return
+    const queueBusy =
+      uploadQueue.isRunning() ||
+      uploadQueue.items().some((item) => item.status === 'queued')
+    if (!sessionBusy && !queueBusy) return
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ''
@@ -206,12 +216,55 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     true,
   )
   const [importFiles, setImportFiles] = createSignal<File[]>([])
+  const [importInspections, setImportInspections] = createSignal<
+    { file: File; inspection: SessionZipInspection }[]
+  >([])
+  const [importInspecting, setImportInspecting] = createSignal(false)
   const [showImportGroupSelect, setShowImportGroupSelect] = createSignal(false)
   const [importTargetGroupId, setImportTargetGroupId] = createSignal<
     string | null
   >(null)
   const [newImportGroupName, setNewImportGroupName] = createSignal('')
   const [importGroupCreating, setImportGroupCreating] = createSignal(false)
+  let importInspectionGeneration = 0
+
+  const importSessionCount = () =>
+    importInspections().reduce(
+      (sum, item) => sum + item.inspection.sessionCount,
+      0,
+    )
+  const importPlaylistCount = () =>
+    importInspections().reduce(
+      (sum, item) => sum + item.inspection.playlistCount,
+      0,
+    )
+  const importGroupCount = () =>
+    importInspections().reduce(
+      (sum, item) => sum + item.inspection.groupCount,
+      0,
+    )
+  const importInvalidCount = () =>
+    importInspections().filter((item) => !item.inspection.valid).length
+  const importHasKaraokeManifest = () =>
+    importInspections().some((item) => item.inspection.hasKaraokeManifest)
+
+  const closeImportModal = () => {
+    importInspectionGeneration++
+    setShowImportGroupSelect(false)
+    setImportFiles([])
+    setImportInspections([])
+    setImportInspecting(false)
+    setNewImportGroupName('')
+  }
+
+  createEffect(() => {
+    if (!showImportGroupSelect()) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isImporting()) closeImportModal()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    onCleanup(() => window.removeEventListener('keydown', onKeyDown))
+  })
 
   const handleExportAll = async () => {
     if (isExporting()) return
@@ -233,9 +286,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (isImporting()) return
     const zips = files.filter(isZipFile)
     if (zips.length === 0) return
+    const generation = ++importInspectionGeneration
     setImportFiles(zips)
+    setImportInspections([])
+    setImportInspecting(true)
     setImportTargetGroupId(null)
+    setNewImportGroupName('')
     setShowImportGroupSelect(true)
+    void (async () => {
+      const previews: { file: File; inspection: SessionZipInspection }[] = []
+      for (const file of zips) {
+        const inspection = await inspectSessionZip(file)
+        if (generation !== importInspectionGeneration) return
+        previews.push({ file, inspection })
+        setImportInspections([...previews])
+      }
+      if (generation === importInspectionGeneration) setImportInspecting(false)
+    })()
   }
 
   const handleImportZip = (e: Event) => {
@@ -246,8 +313,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleConfirmImport = async () => {
-    const files = importFiles()
-    if (files.length === 0) return
+    const files = importInspections()
+      .filter((item) => item.inspection.valid)
+      .map((item) => item.file)
+    if (files.length === 0 || importInspecting() || importSessionCount() === 0)
+      return
 
     setShowImportGroupSelect(false)
     setIsImporting(true)
@@ -259,7 +329,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     )
     try {
       let imported = 0
-      let failed = 0
+      let failed = importInvalidCount()
       for (const file of files) {
         try {
           imported += await importSessionsFromZip(
@@ -286,6 +356,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     } finally {
       setIsImporting(false)
       setImportFiles([])
+      setImportInspections([])
     }
   }
 
@@ -333,7 +404,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   const handleCreateImportGroup = async () => {
     const name = newImportGroupName().trim()
-    if (name === '') return
+    if (name === '' || importInspecting() || importSessionCount() === 0) return
     setImportGroupCreating(true)
     try {
       const group = await createGroup(name)
@@ -543,79 +614,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     })
   })
 
-  const handleFileSelect = async (file: File) => {
-    setSelectedFile(file)
-
-    // Compute file hash for dedup
-    const hash = await computeFileHash(file)
-
-    // Check localStorage first for a completed session with this hash
-    const existing = getUvrSessionByHash(hash)
-    if (existing) {
-      const hydrated = await ensureHydrated(existing)
-      setCurrentUvrSession(hydrated)
-      setCurrentView('results')
-      showNotification(
-        'This file was already processed — loaded existing stems.',
-        'info',
-      )
-      return
-    }
-
-    // Check IndexedDB for persisted sessions with this hash
-    const dbMatch = await findSessionByFileHash(hash)
-    if (dbMatch) {
-      const stored = getUvrSession(dbMatch.sessionId)
-      if (stored && stored.status === 'completed') {
-        const hydrated = await ensureHydrated(stored)
-        setCurrentUvrSession(hydrated)
-        setCurrentView('results')
-        showNotification(
-          'This file was already processed — loaded existing stems.',
-          'info',
-        )
-        return
-      }
-    }
-
-    // Same file with a server job STILL IN FLIGHT (reconcile leaves a
-    // recoverable job 'processing' with its apiSessionId, and auto-resume is
-    // likely already re-attaching): don't pay for a duplicate — attach to the
-    // existing one. Deliberately NOT for 'error'/'interrupted': a genuinely
-    // failed job would just re-surface its error, so re-uploading there means
-    // "start over". The explicit "Fetch my stems" button re-attaches an errored
-    // job when the user asks for it.
-    const inFlight = getAllUvrSessions().find(
-      (s) =>
-        s.fileHash === hash &&
-        s.processingMode === 'server' &&
-        s.apiSessionId !== undefined &&
-        s.apiSessionId !== '' &&
-        (s.status === 'processing' || s.status === 'finalizing'),
-    )
-    if (inFlight) {
-      showNotification(
-        'Reconnecting to your in-progress separation — no extra credit.',
-        'info',
-      )
-      void handleResumeServer(inFlight.sessionId, { focus: true })
-      return
-    }
-
-    const mode = getUvrProcessingMode()
-    if (mode === 'server' && !requireServerAuth()) return
-    const sessionId = startUvrSession(
-      file.name,
-      file.size,
-      file.type,
-      'separate',
-      mode,
-      hash,
-    )
-    setCurrentView('processing')
-    handleProcessStart(sessionId, mode)
-  }
-
   // Live credit balance for the karaoke header pill; re-fetches whenever
   // billing-store's balanceVersion bumps (checkout returns, finished jobs).
   const [billingMe] = createResource(
@@ -691,6 +689,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       : 'Browser processing hit an unexpected error. Reload the page and try again, or switch to Cloud Server mode.'
   }
 
+  interface PipelineUiOptions {
+    focus?: boolean
+    onProgress?: (progress: number) => void
+    onComplete?: () => void
+    onError?: (message: string) => void
+  }
+
   /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
    *  separation (handleProcessStart) and a reload/foreground re-attach
    *  (handleResumeServer). The view only jumps to results / raises a toast when
@@ -700,9 +705,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     sessionId: string,
     fileName: string,
     processingMode: UvrProcessingMode,
+    options: PipelineUiOptions = {},
   ): ProcessingCallbacks => ({
-    onProgress: () => {
+    onProgress: (progress) => {
       // Progress is written inside the pipeline via updateUvrSessionProgress.
+      options.onProgress?.(progress)
     },
     onComplete: async (result) => {
       const persisted = await completeUvrSession(
@@ -722,13 +729,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setTimeout(() => {
         void indexStemFingerprint(sessionId, fileName)
       }, 500)
-      if (currentUvrSession()?.sessionId === sessionId)
+      options.onComplete?.()
+      if (
+        (options.focus ?? true) &&
+        currentUvrSession()?.sessionId === sessionId
+      )
         setCurrentView('results')
     },
     onError: (rawMessage) => {
       const message = humanizeProcessingError(rawMessage, processingMode)
       setErrorUvrSession(sessionId, message)
-      if (currentUvrSession()?.sessionId === sessionId) {
+      options.onError?.(message)
+      if (
+        (options.focus ?? true) &&
+        currentUvrSession()?.sessionId === sessionId
+      ) {
         if (!notifyServerBillingError(message)) showError(message)
       }
       if (processingMode === 'server') refreshBalance()
@@ -813,8 +828,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const handleProcessStart = async (
     sessionId: string,
     mode?: UvrProcessingMode,
-  ) => {
-    let file = selectedFile()
+    fileOverride?: File,
+    options: PipelineUiOptions = {},
+  ): Promise<{ status: 'completed' | 'error'; message?: string }> => {
+    let file = fileOverride ?? selectedFile()
     if (!file) {
       // Retry path: original file is no longer in memory, load from IndexedDB
       file = await getOriginalFileBlob(sessionId)
@@ -835,8 +852,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const msg = 'File lost from memory. Please start a new session.'
       console.error(msg)
       setErrorUvrSession(sessionId, msg)
-      showNotification(msg, 'warning')
-      return
+      if (options.focus ?? true) showNotification(msg, 'warning')
+      options.onError?.(msg)
+      return { status: 'error', message: msg }
     }
 
     const processingMode = mode ?? getUvrProcessingMode()
@@ -845,10 +863,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // hold the separated stems, so a paid job doesn't run only to fail to save
     // at the end. Stems decode to WAV (~10-12x an MP3), plus the stored original.
     if (!(await hasRoomFor(file.size * 12))) {
-      showNotification(
-        'Low on storage — the separated stems may not save. Free up space to be safe.',
-        'warning',
-      )
+      if (options.focus ?? true) {
+        showNotification(
+          'Low on storage — the separated stems may not save. Free up space to be safe.',
+          'warning',
+        )
+      }
     }
 
     // Set session to processing status (immutable update via store API)
@@ -863,26 +883,234 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setCurrentUvrSession(updated)
     }
 
+    let outcome: { status: 'completed' | 'error'; message?: string } | null =
+      null
     try {
       await runUvrPipeline(
         file,
         sessionId,
         processingMode,
-        buildPipelineCallbacks(sessionId, file.name, processingMode),
+        buildPipelineCallbacks(sessionId, file.name, processingMode, {
+          ...options,
+          onComplete: () => {
+            outcome = { status: 'completed' }
+            options.onComplete?.()
+          },
+          onError: (message) => {
+            outcome = { status: 'error', message }
+            options.onError?.(message)
+          },
+        }),
         // Server jobs always run the single server quality (the pipeline's
         // default model, BS-RoFormer).
       )
     } catch (error) {
+      if (outcome !== null) return outcome
       console.error('Processing error:', error)
       const message = humanizeProcessingError(
         error instanceof Error ? error.message : 'Processing failed',
         processingMode,
       )
       setErrorUvrSession(sessionId, message)
-      if (!notifyServerBillingError(message)) {
+      options.onError?.(message)
+      if ((options.focus ?? true) && !notifyServerBillingError(message)) {
         showNotification(message, 'error')
       }
+      return { status: 'error', message }
     }
+    return outcome ?? { status: 'completed' }
+  }
+
+  const enqueueAudioFiles = (files: File[]) => {
+    if (
+      uploadQueue.items().length > 0 &&
+      uploadQueue
+        .items()
+        .every((item) => isTerminalUploadQueueStatus(item.status))
+    ) {
+      uploadQueue.clear()
+    }
+    const { added, overflow } = uploadQueue.enqueue(files)
+    if (overflow > 0) {
+      showNotification(
+        `The setlist holds ${MAX_UVR_UPLOAD_QUEUE_ITEMS} songs. ${overflow} ${overflow === 1 ? 'file was' : 'files were'} left out.`,
+        'warning',
+      )
+    } else if (added > 1) {
+      showNotification(
+        `${added} songs added. Review the setlist, then start the batch.`,
+        'success',
+      )
+    }
+  }
+
+  const processQueuedFile = async (
+    item: ReturnType<typeof uploadQueue.items>[number],
+    context: UvrUploadQueueWorkerContext,
+    processingMode: UvrProcessingMode,
+  ) => {
+    context.update({ message: 'Checking your library…' })
+    const hash = await computeFileHash(item.file)
+    if (context.cancelled()) return { status: 'cancelled' as const }
+
+    const existing = getUvrSessionByHash(hash)
+    if (existing !== undefined) {
+      return {
+        status: 'skipped' as const,
+        sessionId: existing.sessionId,
+        message: 'Existing stems kept',
+      }
+    }
+
+    const dbMatch = await findSessionByFileHash(hash)
+    if (dbMatch !== null) {
+      const stored = getUvrSession(dbMatch.sessionId)
+      if (stored?.status === 'completed') {
+        return {
+          status: 'skipped' as const,
+          sessionId: stored.sessionId,
+          message: 'Existing stems kept',
+        }
+      }
+    }
+
+    // A recoverable server job for the same file may be running in another
+    // tab or may have been re-attached after a reload. Never submit a duplicate
+    // paid job; leave the existing session to its own poll loop.
+    const inFlight = getAllUvrSessions().find(
+      (session) =>
+        session.fileHash === hash &&
+        session.processingMode === 'server' &&
+        session.apiSessionId !== undefined &&
+        session.apiSessionId !== '' &&
+        (session.status === 'processing' || session.status === 'finalizing'),
+    )
+    if (inFlight !== undefined) {
+      return {
+        status: 'skipped' as const,
+        sessionId: inFlight.sessionId,
+        message: 'Already separating',
+      }
+    }
+
+    if (context.cancelled()) return { status: 'cancelled' as const }
+    const sessionId = startUvrSession(
+      item.file.name,
+      item.file.size,
+      item.file.type,
+      'separate',
+      processingMode,
+      hash,
+    )
+    context.update({
+      status: 'processing',
+      sessionId,
+      message:
+        processingMode === 'server'
+          ? 'Studio separation starting…'
+          : 'Preparing on-device model…',
+    })
+
+    let serverCancelIssued = false
+    const cancelSubmittedServerJob = () => {
+      if (processingMode !== 'server' || serverCancelIssued) return
+      const apiSessionId = getUvrSession(sessionId)?.apiSessionId
+      if (apiSessionId === undefined || apiSessionId === '') return
+      serverCancelIssued = true
+      cancelUvrPipeline('server', apiSessionId)
+    }
+    context.onCancel(() => {
+      if (processingMode === 'local') cancelUvrPipeline('local')
+      else cancelSubmittedServerJob()
+      cancelUvrSession(sessionId)
+    })
+
+    const result = await handleProcessStart(
+      sessionId,
+      processingMode,
+      item.file,
+      {
+        focus: false,
+        onProgress: (progress) => {
+          if (context.cancelled()) cancelSubmittedServerJob()
+          else {
+            context.update({
+              progress,
+              message:
+                progress > 0
+                  ? `${Math.round(progress)}% separated`
+                  : processingMode === 'server'
+                    ? 'Waiting for a studio worker…'
+                    : 'Loading the separator…',
+            })
+          }
+        },
+      },
+    )
+
+    if (context.cancelled()) {
+      cancelSubmittedServerJob()
+      return { status: 'cancelled' as const, sessionId }
+    }
+    if (result.status === 'error') {
+      return {
+        status: 'error' as const,
+        sessionId,
+        message: result.message ?? 'Separation failed',
+      }
+    }
+    return {
+      status: 'completed' as const,
+      sessionId,
+      message: 'Stems saved',
+    }
+  }
+
+  const startUploadQueue = async () => {
+    const processingMode = uvrProcessingMode()
+    if (processingMode === 'server' && !requireServerAuth()) return
+
+    const activeSession = allSessions().some(
+      (item) =>
+        item.status === 'uploading' ||
+        item.status === 'processing' ||
+        item.status === 'finalizing',
+    )
+    if (activeSession) {
+      showNotification(
+        'Another separation is still active. Let it finish before starting this setlist.',
+        'info',
+      )
+      return
+    }
+
+    if (processingMode === 'server') {
+      const balance = billingMe()?.creditBalance
+      const cost = songCost()
+      const songs = uploadQueue
+        .items()
+        .filter((item) => item.status === 'queued').length
+      if (
+        balance !== undefined &&
+        cost !== undefined &&
+        songs * cost > balance
+      ) {
+        showActionNotification(
+          `This setlist may use ${songs * cost} credits, but your balance is ${balance}. Remove songs or add credits before starting.`,
+          'warning',
+          {
+            label: 'Get credits',
+            onClick: () => openSettingsSection('credits'),
+          },
+        )
+        return
+      }
+    }
+
+    setActiveQueueMode(processingMode)
+    await uploadQueue.run((item, context) =>
+      untrack(() => processQueuedFile(item, context, processingMode)),
+    )
   }
 
   /** Re-run a completed browser separation on the cloud GPU, feeding it the
@@ -892,10 +1120,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const handleRerunHq = async (
     sessionId: string,
     target: 'same' | 'new',
+    isAnotherSessionProcessing: boolean,
   ): Promise<void> => {
     const s = getUvrSession(sessionId)
     if (!s) return
-    if (allSessions().some((x) => x.status === 'processing')) {
+    if (isAnotherSessionProcessing) {
       showNotification(
         'A separation is already running — wait for it to finish first.',
         'info',
@@ -1338,6 +1567,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     onClick={() => {
                       if (requireServerAuth()) setUvrProcessingMode('server')
                     }}
+                    disabled={uploadQueue.isRunning()}
                     data-testid="uvr-mode-server"
                   >
                     Server
@@ -1347,6 +1577,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
                     title="Processing: Browser"
                     onClick={() => setUvrProcessingMode('local')}
+                    disabled={uploadQueue.isRunning()}
                   >
                     Browser
                   </button>
@@ -1357,6 +1588,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         classList={{ active: !uvrForceWebGpu() }}
                         onClick={() => handleForceWebGpuToggle(false)}
                         title="Use CPU (WASM) for vocal separation"
+                        disabled={uploadQueue.isRunning()}
                         data-testid="uvr-device-cpu"
                       >
                         <Cpu />
@@ -1367,6 +1599,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         classList={{ active: uvrForceWebGpu() }}
                         onClick={() => handleForceWebGpuToggle(true)}
                         title="Use GPU (WebGPU) for vocal separation"
+                        disabled={uploadQueue.isRunning()}
                         data-testid="uvr-device-gpu"
                       >
                         <Zap />
@@ -1502,16 +1735,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
 
               <UvrUploadControl
-                onFileSelect={(file) => {
-                  void handleFileSelect(file)
-                }}
+                onFilesSelect={enqueueAudioFiles}
                 onImportZips={startZipImport}
-                onFileReady={(file) => setSelectedFile(file)}
-                onProcessStart={(file) => {
-                  void handleProcessStart(file)
-                }}
-                processing={session()?.status === 'processing'}
-                disabled={allSessions().some((s) => s.status === 'processing')}
+                disabled={
+                  uploadQueue.isRunning() ||
+                  allSessions().some(
+                    (item) =>
+                      item.status === 'uploading' ||
+                      item.status === 'processing' ||
+                      item.status === 'finalizing',
+                  )
+                }
                 maxSize={
                   uvrProcessingMode() === 'server'
                     ? SERVER_MAX_UPLOAD_BYTES
@@ -1524,8 +1758,33 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 }
               />
 
+              <Show when={uploadQueue.items().length > 0}>
+                <UvrUploadQueue
+                  items={uploadQueue.items}
+                  running={uploadQueue.isRunning}
+                  mode={() =>
+                    uploadQueue.isRunning()
+                      ? activeQueueMode()
+                      : uvrProcessingMode()
+                  }
+                  costPerSong={songCost}
+                  onStart={() => void startUploadQueue()}
+                  onRemove={uploadQueue.remove}
+                  onCancel={uploadQueue.cancelActive}
+                  onClear={uploadQueue.clear}
+                />
+              </Show>
+
               <UvrStemUploadControl
-                disabled={allSessions().some((s) => s.status === 'processing')}
+                disabled={
+                  uploadQueue.isRunning() ||
+                  allSessions().some(
+                    (item) =>
+                      item.status === 'uploading' ||
+                      item.status === 'processing' ||
+                      item.status === 'finalizing',
+                  )
+                }
               />
 
               <div class="upload-divider">
@@ -1720,7 +1979,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void indexStemFingerprint(sessionId, fileName)
                         }}
                         onRerunHq={(sessionId, target) => {
-                          void handleRerunHq(sessionId, target)
+                          const isAnotherSessionProcessing = allSessions().some(
+                            (candidate) => candidate.status === 'processing',
+                          )
+                          void handleRerunHq(
+                            sessionId,
+                            target,
+                            isAnotherSessionProcessing,
+                          )
                         }}
                       />
                     )}
@@ -1996,97 +2262,272 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* Import Group Selection Modal */}
         <Show when={showImportGroupSelect()}>
-          <div
-            class="delete-all-overlay"
-            onClick={() => {
-              setShowImportGroupSelect(false)
-              setImportFiles([])
-            }}
-          >
-            <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-              <h4>Import to Group</h4>
-              <p>
-                {importFiles().length > 1
-                  ? `Importing ${importFiles().length} ZIP files. `
-                  : ''}
-                Choose a target group for the imported sessions, or leave
-                ungrouped.
-              </p>
-              <ul class="import-zip-file-list">
-                <For each={importFiles()}>{(f) => <li>{f.name}</li>}</For>
-              </ul>
-              <div
-                class="session-group-assign-menu"
-                style="position: static; box-shadow: none; margin-bottom: 0.75rem;"
-              >
+          <div class="uvr-import-overlay" onClick={closeImportModal}>
+            <div
+              class="uvr-import-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="uvr-import-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header class="uvr-import-head">
+                <span class="uvr-import-head-icon" aria-hidden="true">
+                  <ImportFile />
+                </span>
+                <div>
+                  <p class="uvr-import-kicker">Session archive</p>
+                  <h4 id="uvr-import-title">Review your import</h4>
+                  <p>
+                    Check what is inside, then choose where the new sessions
+                    should live.
+                  </p>
+                </div>
                 <button
-                  class="session-group-assign-item"
-                  classList={{
-                    'session-group-assign-item--active':
-                      importTargetGroupId() === null,
-                  }}
-                  onClick={() => setImportTargetGroupId(null)}
+                  class="uvr-import-close"
+                  onClick={closeImportModal}
+                  aria-label="Close session import"
                 >
-                  No group
+                  <X />
                 </button>
-                <For each={getGroupsReactive()}>
-                  {(group) => (
-                    <button
-                      class="session-group-assign-item"
-                      classList={{
-                        'session-group-assign-item--active':
-                          importTargetGroupId() === group.id,
-                      }}
-                      onClick={() => setImportTargetGroupId(group.id)}
-                    >
-                      {group.name}
-                      <span class="session-group-assign-item-count">
-                        {group.sessionIds.length}
+              </header>
+
+              <div class="uvr-import-metrics" aria-live="polite">
+                <div class="uvr-import-metric uvr-import-metric--primary">
+                  <strong>
+                    {importInspecting() ? '—' : importSessionCount()}
+                  </strong>
+                  <span>
+                    {importInspecting()
+                      ? 'Scanning sessions'
+                      : `session${importSessionCount() === 1 ? '' : 's'} found`}
+                  </span>
+                </div>
+                <div class="uvr-import-metric">
+                  <strong>{importFiles().length}</strong>
+                  <span>
+                    ZIP {importFiles().length === 1 ? 'archive' : 'archives'}
+                  </span>
+                </div>
+                <Show when={importPlaylistCount() > 0}>
+                  <div class="uvr-import-metric">
+                    <strong>{importPlaylistCount()}</strong>
+                    <span>
+                      karaoke playlist
+                      {importPlaylistCount() === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </Show>
+                <Show when={importGroupCount() > 0}>
+                  <div class="uvr-import-metric">
+                    <strong>{importGroupCount()}</strong>
+                    <span>
+                      saved group{importGroupCount() === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </Show>
+              </div>
+
+              <div class="uvr-import-body">
+                <section class="uvr-import-pane">
+                  <div class="uvr-import-pane-head">
+                    <div>
+                      <p class="uvr-import-step">Archive contents</p>
+                      <h5>Files to unpack</h5>
+                    </div>
+                    <Show when={importInspecting()}>
+                      <span class="uvr-import-scanning">
+                        <Loader2 /> Reading manifests
                       </span>
+                    </Show>
+                  </div>
+                  <ul class="uvr-import-file-list">
+                    <For each={importFiles()}>
+                      {(file) => {
+                        const inspection = () =>
+                          importInspections().find((item) => item.file === file)
+                            ?.inspection
+                        return (
+                          <li
+                            classList={{
+                              'uvr-import-file--invalid':
+                                inspection()?.valid === false,
+                            }}
+                          >
+                            <span class="uvr-import-file-status">
+                              <Show
+                                when={inspection() !== undefined}
+                                fallback={<Loader2 />}
+                              >
+                                <Show
+                                  when={inspection()?.valid === true}
+                                  fallback={<XCircle />}
+                                >
+                                  <CheckCircle />
+                                </Show>
+                              </Show>
+                            </span>
+                            <div class="uvr-import-file-copy">
+                              <strong title={file.name}>{file.name}</strong>
+                              <span>
+                                {formatFileSize(file.size)}
+                                <Show when={inspection() !== undefined}>
+                                  {' · '}
+                                  <Show
+                                    when={inspection()?.valid === true}
+                                    fallback={
+                                      inspection()?.error ??
+                                      'Archive is not importable'
+                                    }
+                                  >
+                                    {inspection()?.sessionCount} session
+                                    {inspection()?.sessionCount === 1
+                                      ? ''
+                                      : 's'}
+                                    <Show
+                                      when={
+                                        inspection()?.error !== undefined &&
+                                        inspection()?.error !== ''
+                                      }
+                                    >
+                                      {` · ${inspection()?.error}`}
+                                    </Show>
+                                  </Show>
+                                </Show>
+                              </span>
+                            </div>
+                          </li>
+                        )
+                      }}
+                    </For>
+                  </ul>
+                </section>
+
+                <section class="uvr-import-pane">
+                  <div class="uvr-import-pane-head">
+                    <div>
+                      <p class="uvr-import-step">Destination</p>
+                      <h5>Choose a library group</h5>
+                    </div>
+                  </div>
+                  <div class="uvr-import-destinations">
+                    <button
+                      class="uvr-import-destination"
+                      classList={{
+                        'uvr-import-destination--active':
+                          importTargetGroupId() === null,
+                      }}
+                      onClick={() => setImportTargetGroupId(null)}
+                    >
+                      <span class="uvr-import-destination-icon">
+                        <Music />
+                      </span>
+                      <span>
+                        <strong>Leave ungrouped</strong>
+                        <small>Add directly to Recent Sessions</small>
+                      </span>
+                      <CheckCircle />
                     </button>
-                  )}
-                </For>
+                    <For each={getGroupsReactive()}>
+                      {(group) => (
+                        <button
+                          class="uvr-import-destination"
+                          classList={{
+                            'uvr-import-destination--active':
+                              importTargetGroupId() === group.id,
+                          }}
+                          onClick={() => setImportTargetGroupId(group.id)}
+                        >
+                          <span class="uvr-import-destination-icon">
+                            <ExportGroup />
+                          </span>
+                          <span>
+                            <strong>{group.name}</strong>
+                            <small>
+                              {group.sessionIds.length} existing session
+                              {group.sessionIds.length === 1 ? '' : 's'}
+                            </small>
+                          </span>
+                          <CheckCircle />
+                        </button>
+                      )}
+                    </For>
+                  </div>
+
+                  <div class="uvr-import-new-group">
+                    <label for="uvr-import-group-name">
+                      Create a new group
+                    </label>
+                    <div>
+                      <input
+                        id="uvr-import-group-name"
+                        type="text"
+                        placeholder="e.g. Friday rehearsal"
+                        value={newImportGroupName()}
+                        onInput={(event) =>
+                          setNewImportGroupName(event.currentTarget.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter')
+                            void handleCreateImportGroup()
+                        }}
+                      />
+                      <button
+                        onClick={() => void handleCreateImportGroup()}
+                        disabled={
+                          importGroupCreating() ||
+                          importInspecting() ||
+                          newImportGroupName().trim() === '' ||
+                          importSessionCount() === 0
+                        }
+                      >
+                        <Plus />
+                        {importGroupCreating()
+                          ? 'Creating…'
+                          : 'Create & import'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Show when={importHasKaraokeManifest()}>
+                    <p class="uvr-import-manifest-note">
+                      Karaoke archives restore their saved playlists and groups
+                      automatically. Your destination applies to regular session
+                      archives in this import.
+                    </p>
+                  </Show>
+                </section>
               </div>
-              <div class="session-group-assign-new">
-                <input
-                  type="text"
-                  class="session-group-assign-new-input"
-                  placeholder="Or create a new group..."
-                  value={newImportGroupName()}
-                  onInput={(e) => setNewImportGroupName(e.currentTarget.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') void handleCreateImportGroup()
-                  }}
-                />
+
+              <Show when={importInvalidCount() > 0}>
+                <p class="uvr-import-warning">
+                  {importInvalidCount()} unreadable{' '}
+                  {importInvalidCount() === 1
+                    ? 'archive will'
+                    : 'archives will'}{' '}
+                  be skipped.
+                </p>
+              </Show>
+
+              <footer class="uvr-import-actions">
                 <button
-                  class="session-group-assign-new-btn"
-                  onClick={() => void handleCreateImportGroup()}
-                  disabled={importGroupCreating()}
-                >
-                  {importGroupCreating() ? 'Creating...' : 'Create & import'}
-                </button>
-              </div>
-              <div class="delete-all-actions">
-                <button
-                  class="delete-all-cancel"
-                  onClick={() => {
-                    setShowImportGroupSelect(false)
-                    setImportFiles([])
-                  }}
+                  class="uvr-import-button uvr-import-button--secondary"
+                  onClick={closeImportModal}
                 >
                   Cancel
                 </button>
                 <button
-                  class="delete-all-confirm"
+                  class="uvr-import-button uvr-import-button--primary"
                   onClick={() => void handleConfirmImport()}
+                  disabled={importInspecting() || importSessionCount() === 0}
                 >
-                  Import
-                  {importFiles().length > 1
-                    ? ` ${importFiles().length} ZIPs`
-                    : ''}
-                  {importTargetGroupId() != null ? ' to group' : ''}
+                  <ImportFile />
+                  <Show when={!importInspecting()} fallback="Reading archives…">
+                    Import {importSessionCount()} session
+                    {importSessionCount() === 1 ? '' : 's'}
+                    {importTargetGroupId() !== null ? ' to group' : ''}
+                  </Show>
                 </button>
-              </div>
+              </footer>
             </div>
           </div>
         </Show>

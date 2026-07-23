@@ -8,9 +8,9 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
-import { debitForJob, refundJob } from './uvr-metering'
+import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 
 // base64 inflates ~33%; RunPod's /run input cap is ~10 MB, so only inline
 // audio up to this raw size. Larger uploads (up to RUNPOD_MAX_UPLOAD_BYTES)
@@ -108,10 +108,14 @@ async function serveStemFromR2(
   })
 }
 
-function json(body: unknown, status = 200): Response {
+function json(
+  body: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   })
 }
 
@@ -367,6 +371,35 @@ async function startRunpodJob(
     )
   }
 
+  // Protect paid dispatch BEFORE reading a multi-MB body into base64, staging
+  // it in R2, or creating a RunPod job. The db-worker checks auth, credits and
+  // both the burst + hourly user limits. Any admission outage fails closed.
+  if (meter !== null) {
+    const admission = await admitUvrJob(
+      meter,
+      request.headers.get('Authorization'),
+      tier,
+      model ?? RUNPOD_DEFAULT_MODEL,
+    )
+    if (!admission.allowed) {
+      const status = admission.status ?? 503
+      const headers: Record<string, string> = {}
+      if (admission.retryAfter !== undefined) {
+        headers['Retry-After'] = String(admission.retryAfter)
+      }
+      return json(
+        {
+          error:
+            admission.error ?? 'Server processing protection is unavailable',
+          required: admission.required,
+          balance: admission.balance,
+        },
+        status,
+        headers,
+      )
+    }
+  }
+
   // Three input transports, cheapest first:
   //   ≤7 MB  → inline base64 in the job payload (no R2 round-trip)
   //   >7 MB  → stream to R2 under `input/`, pass the key (handler downloads
@@ -435,16 +468,24 @@ async function startRunpodJob(
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)
+      // A transport failure can hide a successful debit response. The refund
+      // endpoint is idempotent and safely no-ops when no debit exists, so this
+      // best-effort compensation prevents a cancelled job from remaining
+      // charged when the response was lost after the ledger commit.
+      await refundJob(meter, sessionId)
       console.warn(
         `[runpod] ${sessionId} cancelled: debit refused (balance ${verdict.balance ?? '?'}, required ${verdict.required ?? '?'})`,
       )
       return json(
         {
-          error: verdict.error ?? 'Insufficient credits',
+          error: verdict.error ?? 'Server processing billing is unavailable',
           required: verdict.required,
           balance: verdict.balance,
         },
-        402,
+        verdict.status ?? 503,
+        verdict.retryAfter !== undefined
+          ? { 'Retry-After': String(verdict.retryAfter) }
+          : {},
       )
     }
   }

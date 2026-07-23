@@ -1,6 +1,6 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
-import { getRunpodConfig } from './lib/runpod'
+import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
 import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
@@ -36,9 +36,9 @@ export interface Env {
   RUNPOD_ENDPOINT_ID_CPU?: string
   /** Optional RunPod API base override (defaults to https://api.runpod.ai/v2). */
   RUNPOD_BASE_URL?: string
-  /** db-worker base URL — enables credit metering of RunPod jobs (debit on
-   *  accept, refund on failure). Per-env var in wrangler.jsonc; while a
-   *  tier's credit cost is unset in pricingPlans, debits no-op. */
+  /** db-worker base URL — required for RunPod admission, rate limits, and
+   *  credit metering (debit on accept, refund on failure). Per-env var in
+   *  wrangler.jsonc; new paid jobs fail closed while it is unset. */
   DB_API_URL?: string
   /** Shared secret for service-to-service billing refunds; the SAME value
    *  is set on the db-worker. `wrangler secret put BILLING_SERVICE_KEY`.
@@ -111,13 +111,32 @@ export default {
       // and falls through to the container — default behavior is unchanged.
       const runpod = getRunpodConfig(env)
       if (runpod) {
+        const meter = getMeteringConfig(env)
+        // A configured GPU without its billing/admission service is an unsafe
+        // state: accepting jobs would bypass both credits and rate limits.
+        // Refuse new RunPod work, while keeping status/output reads available
+        // so already-paid jobs remain recoverable.
+        if (
+          method === 'POST' &&
+          url.pathname === '/api/uvr/process' &&
+          requestedRunpodTier(request, url) !== null &&
+          meter === null
+        ) {
+          return json(
+            {
+              error:
+                'Server processing protection is unavailable. Use Browser mode instead.',
+            },
+            503,
+          )
+        }
         try {
           const handled = await handleRunpodRequest(
             request,
             url,
             method,
             runpod,
-            getMeteringConfig(env),
+            meter,
             // R2Bucket's overloaded put() doesn't structurally match the
             // bridge's minimal interface; the runtime shape is compatible.
             (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,

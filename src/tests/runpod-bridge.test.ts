@@ -548,6 +548,24 @@ describe('handleRunpodRequest — metering', () => {
     return calls
   }
 
+  it('refuses admission before creating a RunPod job', async () => {
+    const calls = mockRoutes({
+      '/api/billing/uvr-admit': {
+        body: { error: 'Too many server separations' },
+        status: 429,
+      },
+      '/run': { body: { id: 'must-not-run' } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      file: smallFile(),
+    })
+
+    const response = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+    expect(response?.status).toBe(429)
+    expect(calls.some((call) => call.url.includes('/run'))).toBe(false)
+  })
+
   it('debits the accepted job with the forwarded Authorization', async () => {
     const calls = mockRoutes({
       '/run': { body: { id: 'job-1' } },
@@ -601,6 +619,7 @@ describe('handleRunpodRequest — metering', () => {
         status: 402,
       },
       '/cancel/': { body: {} },
+      '/api/billing/refund': { body: { refunded: 0 } },
     })
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
@@ -613,6 +632,7 @@ describe('handleRunpodRequest — metering', () => {
     expect(body.error).toBe('Insufficient credits')
     expect(body.balance).toBe(0)
     expect(calls.some((c) => c.url.includes('/cancel/job-1'))).toBe(true)
+    expect(calls.some((c) => c.url.includes('/api/billing/refund'))).toBe(true)
   })
 
   it('does not meter when metering is off (null)', async () => {

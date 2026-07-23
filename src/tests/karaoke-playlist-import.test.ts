@@ -8,6 +8,7 @@
 // Audio/lyrics blobs are intentionally absent (the in-memory DB returns null),
 // so this exercises the metadata round-trip without real stems.
 
+import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it, vi } from 'vitest'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
@@ -27,7 +28,7 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
   }
 }
 
-import { buildKaraokePlaylistZip, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
+import { buildKaraokePlaylistZip, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, importUvrSession, } from '@/stores/app-store'
 import { addItem, createPlaylist, getPlaylistsReactive, setPlaylistPlayMode, setPlaylistShuffleOrder, } from '@/stores/karaoke-playlist-store'
@@ -75,6 +76,13 @@ describe('karaoke playlist export → import round-trip', () => {
     // Export → import.
     const blob = await buildKaraokePlaylistZip([pl.id])
     expect(blob).not.toBeNull()
+    expect(await inspectSessionZip(blob!)).toMatchObject({
+      sessionCount: 3,
+      playlistCount: 1,
+      groupCount: 1,
+      hasKaraokeManifest: true,
+      valid: true,
+    })
     const count = await importSessionsFromZip(blob!)
     expect(count).toBe(3) // s1, s2 (via group) + s3 (standalone)
 
@@ -138,5 +146,41 @@ describe('isZipFile', () => {
     expect(isZipFile(make('song.mp3', 'audio/mpeg'))).toBe(false)
     expect(isZipFile(make('song.wav', 'audio/wav'))).toBe(false)
     expect(isZipFile(make('zip-tips.txt', 'text/plain'))).toBe(false)
+  })
+})
+
+describe('inspectSessionZip', () => {
+  it('counts only sessions that the importer can actually add', async () => {
+    const valid = {
+      version: 1,
+      session: makeSession('valid', 'Valid Song'),
+      lyrics: null,
+    }
+    const zip = zipSync({
+      'one/session.json': strToU8(JSON.stringify(valid)),
+      'two/session.json': strToU8('{broken json'),
+    })
+
+    const result = await inspectSessionZip(
+      new Blob([zip], { type: 'application/zip' }),
+    )
+
+    expect(result).toMatchObject({
+      sessionCount: 1,
+      invalidSessionCount: 1,
+      valid: true,
+      error: '1 invalid session entry will be skipped',
+    })
+  })
+
+  it('reports an unreadable file without throwing', async () => {
+    const result = await inspectSessionZip(
+      new Blob(['not-a-zip'], { type: 'application/zip' }),
+    )
+    expect(result).toMatchObject({
+      sessionCount: 0,
+      valid: false,
+      error: 'ZIP could not be read',
+    })
   })
 })

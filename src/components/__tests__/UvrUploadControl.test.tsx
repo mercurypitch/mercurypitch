@@ -1,360 +1,154 @@
-// ============================================================
-// UVR Upload Control Component Tests
-// ============================================================
-
 import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { notifications, setNotifications } from '@/stores/notifications-store'
 import { UvrUploadControl } from '../UvrUploadControl'
 
-// Mock icons
 vi.mock('../icons', () => ({
   FileUpload: () => <span data-testid="file-upload-icon">FileUpload</span>,
-  ImportFile: () => <span data-testid="import-file-icon">ImportFile</span>,
   MusicNote: () => <span data-testid="music-note-icon">MusicNote</span>,
 }))
 
-describe('UvrUploadControl Component', () => {
+function file(name: string, type = 'audio/mpeg', size?: number): File {
+  const result = new File(['audio'], name, { type })
+  if (size !== undefined) Object.defineProperty(result, 'size', { value: size })
+  return result
+}
+
+function selectFiles(files: File[]) {
+  const input = document.getElementById('uvr-file-input') as HTMLInputElement
+  Object.defineProperty(input, 'files', { value: files, configurable: true })
+  fireEvent.change(input)
+}
+
+describe('UvrUploadControl', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setNotifications([])
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('presents a multi-song drop zone and concrete format limits', () => {
+    render(() => <UvrUploadControl />)
+    expect(screen.getByText('Add songs to your setlist')).toBeInTheDocument()
+    expect(screen.getByText(/Drop MP3, WAV or FLAC/i)).toBeInTheDocument()
+    expect(screen.getByText(/Up to 15 at once/i)).toBeInTheDocument()
+    expect(screen.getByText('MP3')).toBeInTheDocument()
+    expect(screen.getByText('WAV')).toBeInTheDocument()
+    expect(screen.getByText('FLAC')).toBeInTheDocument()
+
+    const input = document.getElementById('uvr-file-input') as HTMLInputElement
+    expect(input.multiple).toBe(true)
   })
 
-  const createMockFile = (
-    name: string,
-    size: number,
-    type: string = 'text/plain',
-  ): File => {
-    const blob = new Blob(['x'.repeat(size)], { type })
-    return new File([blob], name, { type })
-  }
-
-  /** Create a mock file without allocating real content for large sizes */
-  const createMockFileCheap = (
-    name: string,
-    size: number,
-    type: string = 'audio/mpeg',
-  ): File => {
-    const file = new File(['x'], name, { type })
-    Object.defineProperty(file, 'size', { value: size })
-    return file
-  }
-
-  const defaultProps = {
-    onFileSelect: vi.fn(),
-    onProcessStart: vi.fn(),
-    processing: false,
-    isDragging: false,
-  }
-
-  /** Simulate file selection via the hidden input element */
-  const selectFileViaInput = (file: File) => {
-    const fileInput = document.getElementById(
-      'uvr-file-input',
-    ) as HTMLInputElement | null
-    if (!fileInput) return
-
-    Object.defineProperty(fileInput, 'files', {
-      value: [file],
-      writable: false,
-    })
-    fireEvent.input(fileInput)
-    fireEvent.change(fileInput)
-  }
-
-  describe('Initial Rendering', () => {
-    it('renders upload header with icon and title', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      expect(screen.getByText('Select a Song')).toBeInTheDocument()
-      expect(screen.getByTestId('music-note-icon')).toBeInTheDocument()
-    })
-
-    it('renders upload zone with drop instruction', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      expect(
-        screen.getByText(/Drag & drop an audio file here/i),
-      ).toBeInTheDocument()
-      expect(screen.getByText(/browse/i)).toBeInTheDocument()
-    })
-
-    it('displays supported formats', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      expect(screen.getByText('MP3')).toBeInTheDocument()
-      expect(screen.getByText('WAV')).toBeInTheDocument()
-      expect(screen.getByText('FLAC')).toBeInTheDocument()
-    })
-
-    it('shows file upload icon in empty state', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      expect(screen.getByTestId('file-upload-icon')).toBeInTheDocument()
-    })
+  it('passes every valid selected song in its original order', () => {
+    const onFilesSelect = vi.fn()
+    render(() => <UvrUploadControl onFilesSelect={onFilesSelect} />)
+    const files = [
+      file('one.mp3'),
+      file('two.wav', 'audio/wav'),
+      file('three.flac', 'audio/flac'),
+    ]
+    selectFiles(files)
+    expect(onFilesSelect).toHaveBeenCalledWith(files)
   })
 
-  describe('File Validation', () => {
-    it('calls onFileSelect with valid file', () => {
-      const testFile = createMockFile('test.mp3', 1024, 'audio/mpeg')
-      render(() => <UvrUploadControl {...defaultProps} />)
+  it('accepts multiple dropped songs and keeps the drag affordance stable', async () => {
+    const onFilesSelect = vi.fn()
+    render(() => <UvrUploadControl onFilesSelect={onFilesSelect} />)
+    const zone = document.querySelector('.upload-zone') as HTMLElement
+    const files = [file('one.mp3'), file('two.wav', 'audio/wav')]
 
-      selectFileViaInput(testFile)
+    zone.dispatchEvent(
+      new Event('dragover', { bubbles: true, cancelable: true }),
+    )
+    await vi.waitFor(() => expect(zone).toHaveClass('dragging'))
+    fireEvent.drop(zone, {
+      dataTransfer: { files },
+      preventDefault: vi.fn(),
+    } as unknown as DragEvent)
 
-      expect(defaultProps.onFileSelect).toHaveBeenCalledWith(testFile)
-    })
-
-    it('shows a notification for a file larger than 100MB', () => {
-      setNotifications([])
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      // Use cheap file to avoid allocating 100MB+ in memory
-      const largeFile = createMockFileCheap('large.mp3', 101 * 1024 * 1024)
-      selectFileViaInput(largeFile)
-
-      const toast = notifications().find((n) =>
-        n.message.includes('File too large'),
-      )
-      expect(toast).toBeDefined()
-      expect(toast?.action?.label).toBe('OK')
-    })
-
-    it('shows a notification for an invalid file type', () => {
-      setNotifications([])
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      const invalidFile = createMockFile('test.pdf', 1024, 'application/pdf')
-      selectFileViaInput(invalidFile)
-
-      expect(
-        notifications().some((n) => n.message.includes('Invalid file type')),
-      ).toBe(true)
-    })
+    expect(zone).not.toHaveClass('dragging')
+    expect(onFilesSelect).toHaveBeenCalledWith(files)
   })
 
-  describe('Drag and Drop', () => {
-    it('highlights zone when dragging over', async () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
+  it('accepts valid songs while aggregating oversized and unsupported files', () => {
+    const onFilesSelect = vi.fn()
+    render(() => (
+      <UvrUploadControl
+        onFilesSelect={onFilesSelect}
+        maxSize={7 * 1024 * 1024}
+        maxSizeNote="Cloud GPU upload limit — for larger files use Browser mode"
+      />
+    ))
+    const valid = file('good.mp3')
+    selectFiles([
+      valid,
+      file('large.wav', 'audio/wav', 8 * 1024 * 1024),
+      file('notes.pdf', 'application/pdf'),
+    ])
 
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
-      expect(uploadZone).toBeTruthy()
-      fireEvent.dragEnter(uploadZone)
-
-      expect(uploadZone).toHaveClass('dragging')
-    })
-
-    it('clears highlight when leaving zone', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
-      expect(uploadZone).toBeTruthy()
-      fireEvent.dragEnter(uploadZone)
-      fireEvent.dragLeave(uploadZone)
-
-      expect(uploadZone).not.toHaveClass('dragging')
-    })
-
-    it('calls onFileSelect with dropped file', () => {
-      const testFile = new File(['test'], 'test.wav', { type: 'audio/wav' })
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      const uploadZone = document.querySelector('.upload-zone') as HTMLElement
-      expect(uploadZone).toBeTruthy()
-
-      const mockEvent = {
-        dataTransfer: { files: [testFile] },
-        preventDefault: vi.fn(),
-      }
-
-      fireEvent.drop(uploadZone, mockEvent as unknown as DragEvent)
-
-      expect(defaultProps.onFileSelect).toHaveBeenCalledWith(testFile)
-    })
+    expect(onFilesSelect).toHaveBeenCalledWith([valid])
+    expect(
+      notifications().some((item) => item.message.includes('over the 7 MB')),
+    ).toBe(true)
+    expect(
+      notifications().some((item) => item.message.includes('unsupported file')),
+    ).toBe(true)
   })
 
-  describe('File Selection', () => {
-    it('opens file input when browse is clicked', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
+  it('routes ZIP drops to session import instead of the audio queue', () => {
+    const onFilesSelect = vi.fn()
+    const onImportZips = vi.fn()
+    render(() => (
+      <UvrUploadControl
+        onFilesSelect={onFilesSelect}
+        onImportZips={onImportZips}
+      />
+    ))
+    const archive = file('sessions.zip', 'application/zip')
+    const zone = document.querySelector('.upload-zone') as HTMLElement
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [archive] },
+      preventDefault: vi.fn(),
+    } as unknown as DragEvent)
 
-      const browseLink = screen.getByText(/browse/i)
-      fireEvent.click(browseLink)
-
-      const fileInput = document.getElementById(
-        'uvr-file-input',
-      ) as HTMLInputElement | null
-      expect(fileInput).toBeTruthy()
-    })
-
-    it('shows file info after selection', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
-
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      selectFileViaInput(testFile)
-
-      expect(screen.getByText('song.mp3')).toBeInTheDocument()
-      expect(screen.getByText(/4.88 MB/)).toBeInTheDocument()
-    })
-
-    it('shows processing indicator when file selected and processing', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
-
-      render(() => <UvrUploadControl {...defaultProps} processing={true} />)
-      selectFileViaInput(testFile)
-
-      expect(screen.getByText('Processing...')).toBeInTheDocument()
-    })
+    expect(onImportZips).toHaveBeenCalledWith([archive])
+    expect(onFilesSelect).not.toHaveBeenCalled()
   })
 
-  describe('Clear File', () => {
-    it('clears selected file when change button clicked', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
+  it('splits a mixed drop between the session importer and audio queue', () => {
+    const onFilesSelect = vi.fn()
+    const onImportZips = vi.fn()
+    render(() => (
+      <UvrUploadControl
+        onFilesSelect={onFilesSelect}
+        onImportZips={onImportZips}
+      />
+    ))
+    const archive = file('sessions.zip', 'application/zip')
+    const song = file('song.wav', 'audio/wav')
+    const zone = document.querySelector('.upload-zone') as HTMLElement
 
-      render(() => <UvrUploadControl {...defaultProps} />)
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [archive, song] },
+      preventDefault: vi.fn(),
+    } as unknown as DragEvent)
 
-      selectFileViaInput(testFile)
-
-      expect(screen.getByText('song.mp3')).toBeInTheDocument()
-
-      const changeButton = screen.getByText('Change File')
-      fireEvent.click(changeButton)
-
-      expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
-    })
+    expect(onImportZips).toHaveBeenCalledWith([archive])
+    expect(onFilesSelect).toHaveBeenCalledWith([song])
   })
 
-  describe('Process Button', () => {
-    it('calls onProcessStart when clicked', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
-
-      render(() => <UvrUploadControl {...defaultProps} />)
-      selectFileViaInput(testFile)
-
-      const processButton = screen.getByText('Process')
-      fireEvent.click(processButton)
-
-      expect(defaultProps.onProcessStart).toHaveBeenCalled()
-    })
-
-    it('is not visible when no file selected', () => {
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      // Button only renders after a file is selected
-      expect(screen.queryByText('Process')).not.toBeInTheDocument()
-    })
-
-    it('replaces button with processing indicator when processing', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
-
-      render(() => <UvrUploadControl {...defaultProps} processing={true} />)
-      selectFileViaInput(testFile)
-
-      const processButton = screen.queryByText('Process')
-      expect(processButton).not.toBeInTheDocument()
-    })
-
-    it('is enabled when file is selected and not processing', () => {
-      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
-
-      render(() => <UvrUploadControl {...defaultProps} />)
-      selectFileViaInput(testFile)
-
-      const processButton = screen.getByText('Process')
-      expect(processButton).not.toBeDisabled()
-    })
-  })
-
-  describe('File Size Formatting', () => {
-    it('formats small files in KB when >= 1024 bytes', () => {
-      // Use audio/mpeg type to pass validation
-      const testFile = createMockFile('small.mp3', 1024, 'audio/mpeg')
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      selectFileViaInput(testFile)
-
-      // 1024 bytes = 1 KB
-      expect(screen.getByText(/1 KB/)).toBeInTheDocument()
-    })
-
-    it('formats medium files in KB', () => {
-      const testFile = createMockFile('medium.mp3', 1024 * 500, 'audio/mpeg')
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      selectFileViaInput(testFile)
-
-      // 1024 * 500 = 512000 bytes = 500 KB
-      expect(screen.getByText(/500 KB/)).toBeInTheDocument()
-    })
-
-    it('formats large files in MB', () => {
-      // Use cheap mock to avoid allocating 50MB in memory
-      const testFile = createMockFileCheap('large.mp3', 1024 * 1024 * 50)
-      render(() => <UvrUploadControl {...defaultProps} />)
-
-      selectFileViaInput(testFile)
-
-      expect(screen.getByText(/50 MB/)).toBeInTheDocument()
-    })
-  })
-
-  describe('Processing Props', () => {
-    it('passes maxSize prop', () => {
-      render(() => (
-        <UvrUploadControl {...defaultProps} maxSize={50 * 1024 * 1024} />
-      ))
-
-      expect(screen.getByText(/50 MB/i)).toBeInTheDocument()
-    })
-
-    it('shows the mode-aware cap on the size pill (server = 7 MB)', () => {
-      render(() => (
-        <UvrUploadControl
-          {...defaultProps}
-          maxSize={7 * 1024 * 1024}
-          maxSizeNote="Cloud GPU upload limit — for larger files use Browser mode"
-        />
-      ))
-      const pill = screen.getByTestId('uvr-max-size-pill')
-      expect(pill.textContent).toContain('7 MB')
-      expect(pill.getAttribute('title')).toContain('Cloud GPU')
-    })
-
-    it('appends the size note to the too-large notification', () => {
-      setNotifications([])
-      render(() => (
-        <UvrUploadControl
-          {...defaultProps}
-          maxSize={7 * 1024 * 1024}
-          maxSizeNote="Cloud GPU upload limit — for larger files use Browser mode"
-        />
-      ))
-      const big = new File([new Uint8Array(8 * 1024 * 1024)], 'big.mp3', {
-        type: 'audio/mpeg',
-      })
-      selectFileViaInput(big)
-      expect(
-        notifications().some((n) =>
-          n.message.includes('Cloud GPU upload limit'),
-        ),
-      ).toBe(true)
-    })
-
-    it('passes allowedTypes prop to file input accept attribute', () => {
-      render(() => (
-        <UvrUploadControl
-          {...defaultProps}
-          allowedTypes={['audio/aac', 'audio/ogg']}
-        />
-      ))
-
-      const input = document.getElementById(
-        'uvr-file-input',
-      ) as HTMLInputElement
-      expect(input).not.toBeNull()
-      expect(input.accept).toBe('audio/aac,audio/ogg')
-    })
+  it('exposes the selected mode limit and accepted types', () => {
+    render(() => (
+      <UvrUploadControl
+        maxSize={50 * 1024 * 1024}
+        maxSizeNote="Cloud GPU limit"
+        allowedTypes={['audio/aac', '.aac']}
+      />
+    ))
+    const input = document.getElementById('uvr-file-input') as HTMLInputElement
+    expect(input.accept).toBe('audio/aac,.aac')
+    const limit = screen.getByTestId('uvr-max-size-pill')
+    expect(limit).toHaveTextContent('50 MB')
+    expect(limit).toHaveAttribute('title', 'Cloud GPU limit')
   })
 })
