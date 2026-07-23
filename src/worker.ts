@@ -84,6 +84,32 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+async function serveStaticAsset(request: Request, env: Env): Promise<Response> {
+  const response = await env.ASSETS.fetch(request)
+  const { pathname } = new URL(request.url)
+  const contentType = response.headers.get('Content-Type') ?? ''
+
+  // In SPA mode the asset binding returns index.html for unknown paths. That
+  // is correct for navigations, but a stale hashed chunk must be a real 404:
+  // serving HTML with status 200 makes browsers report an opaque JavaScript
+  // MIME error and can cache the shell under the chunk URL.
+  if (
+    pathname.startsWith('/assets/') &&
+    contentType.toLowerCase().includes('text/html')
+  ) {
+    return new Response(request.method === 'HEAD' ? null : 'Asset not found', {
+      status: 404,
+      headers: {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  }
+
+  return response
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -256,6 +282,6 @@ export default {
     // Referrer-Policy, HSTS) are applied to asset/document responses via
     // public/_headers — the Cloudflare assets runtime serves these directly and
     // bypasses the Worker, so headers set here would not reach the browser.
-    return env.ASSETS.fetch(request)
+    return serveStaticAsset(request, env)
   },
 }
