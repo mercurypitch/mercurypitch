@@ -43,9 +43,14 @@ function processReq(
   const fd = new FormData()
   if (opts.file !== undefined) fd.append('file', opts.file)
   for (const [k, v] of Object.entries(opts.fields ?? {})) fd.append(k, v)
+  const headers = new Headers(opts.headers ?? {})
+  const model = opts.fields?.model
+  if (model !== undefined && !headers.has('X-UVR-Model')) {
+    headers.set('X-UVR-Model', model)
+  }
   const request = {
-    headers: new Headers(opts.headers ?? {}),
-    formData: () => Promise.resolve(fd),
+    headers,
+    formData: vi.fn(() => Promise.resolve(fd)),
   } as unknown as Request
   return { request, url }
 }
@@ -223,6 +228,33 @@ describe('handleRunpodRequest — process', () => {
       mockBucket(),
     )
     expect(res?.status).toBe(413)
+  })
+
+  it('rejects an oversized multipart body before parsing it', async () => {
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: {
+        'x-uvr-provider': 'runpod',
+        'content-length': String(51 * 1024 * 1024),
+      },
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(413)
+    expect(request.formData).not.toHaveBeenCalled()
+  })
+
+  it('rejects a form model that differs from the admitted model', async () => {
+    const spy = mockFetchOnce({ id: 'must-not-run' })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: {
+        'x-uvr-provider': 'runpod',
+        'x-uvr-model': 'roformer',
+      },
+      file: smallFile(),
+      fields: { model: 'mdx' },
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(400)
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it('streams a >7 MB file to R2 and passes audio_s3_key (not base64)', async () => {
@@ -563,6 +595,7 @@ describe('handleRunpodRequest — metering', () => {
 
     const response = await handleRunpodRequest(request, url, 'POST', CFG, METER)
     expect(response?.status).toBe(429)
+    expect(request.formData).not.toHaveBeenCalled()
     expect(calls.some((call) => call.url.includes('/run'))).toBe(false)
   })
 

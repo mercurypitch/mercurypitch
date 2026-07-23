@@ -112,7 +112,7 @@ import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
-import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
+import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -124,6 +124,7 @@ import { getSession, setSelectedMelodyIds, templateToSession, userSession, } fro
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { openSettingsSection, settingsSection } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
+import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -285,6 +286,36 @@ const AppShell: Component<AppProps> = (props) => {
     }
     window.addEventListener('keydown', onSidebarKeydown)
     onCleanup(() => window.removeEventListener('keydown', onSidebarKeydown))
+  })
+
+  // The Karaoke panel unmounts on an internal tab change, but its app-lifetime
+  // queue intentionally keeps running. Keep reload protection at this shell
+  // level so queued File objects cannot be lost while another tab is visible.
+  createEffect(() => {
+    const sessionBusy = getAllUvrSessionsReactive().some((session) => {
+      if (session.status === 'finalizing') return true
+      const recoverableServer =
+        session.processingMode === 'server' &&
+        session.apiSessionId !== undefined &&
+        session.apiSessionId !== ''
+      return (
+        (session.status === 'processing' || session.status === 'uploading') &&
+        !recoverableServer
+      )
+    })
+    const queueBusy =
+      uvrUploadQueue.isRunning() ||
+      uvrUploadQueue.items().some((item) => item.status === 'queued')
+    if (!sessionBusy && !queueBusy) return
+
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    onCleanup(() =>
+      window.removeEventListener('beforeunload', warnBeforeUnload),
+    )
   })
 
   // Sync audio engine instrument when switching tabs

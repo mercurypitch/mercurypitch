@@ -72,8 +72,8 @@ export interface ProcessRequest {
   stems?: string[]
   cpu_profile?: 'high' | 'mid' | 'low'
   /** Server-tier opt-in (X-UVR-Provider): 'runpod' = GPU (default server
-   *  tier), 'runpod-cpu' = cheaper tier. When RunPod isn't configured on the
-   *  worker, the request falls through to the container path unchanged. */
+   *  tier), 'runpod-cpu' = cheaper tier. The worker rejects unconfigured or
+   *  headerless server processing instead of using unmetered compute. */
   provider?: 'runpod' | 'runpod-cpu'
 }
 
@@ -247,6 +247,12 @@ export async function processAudio(
   const headers: Record<string, string> = { ...authHeaders() }
   if (options.provider !== undefined) {
     headers['X-UVR-Provider'] = options.provider
+  }
+  if (options.model !== undefined) {
+    // The worker admits/quotes the job before buffering the multipart body.
+    // Repeating the model in a header lets it do that safely; the bridge
+    // rejects a form/header mismatch before dispatch.
+    headers['X-UVR-Model'] = options.model
   }
 
   const response = await fetch(`${API_BASE}/process`, {

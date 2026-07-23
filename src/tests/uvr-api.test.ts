@@ -376,6 +376,9 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
     expect((init.headers as Record<string, string>)['X-UVR-Provider']).toBe(
       'runpod',
     )
+    expect((init.headers as Record<string, string>)['X-UVR-Model']).toBe(
+      'roformer',
+    )
   })
 
   it('omits the header without a provider', async () => {

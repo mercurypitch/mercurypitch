@@ -564,7 +564,6 @@ async function importOneSession(
     // Drop the source groupId — group membership is re-established by the
     // caller (targetGroupId) or by the karaoke manifest, never the stale id.
     groupId: undefined,
-    ...(targetGroupId !== undefined ? { groupId: targetGroupId } : {}),
   }
 
   // 1. Process original file
@@ -623,6 +622,11 @@ async function importOneSession(
   }
   // 6. Save session to app-store
   importUvrSession(newSession)
+  if (targetGroupId !== undefined) {
+    // Keep both sides of the group relationship consistent. Setting groupId on
+    // the session alone leaves the group's count/index empty and breaks moves.
+    await addSessionToGroup(newSessionId, targetGroupId)
+  }
 
   return { oldSessionId, newSessionId }
 }

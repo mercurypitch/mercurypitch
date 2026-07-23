@@ -7,7 +7,7 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb, getOriginalFileBlob, } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
-import { addSessionToGroup, createGroup, deleteUvrSession, getGroupsReactive, getUvrSession, removeSessionFromGroup, } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
@@ -31,7 +31,10 @@ interface SessionResultProps {
 }
 
 export const UvrSessionResult: Component<SessionResultProps> = (props) => {
-  const session = () => getUvrSession(props.sessionId)
+  const session = () =>
+    getAllUvrSessionsReactive().find(
+      (candidate) => candidate.sessionId === props.sessionId,
+    )
   const vocalFingerprinted = createMemo(() =>
     hasStemFingerprint(props.sessionId),
   )
@@ -83,21 +86,33 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const handleGroupChange = async (groupId: string) => {
     setShowGroupSelect(false)
-    await addSessionToGroup(props.sessionId, groupId)
+    try {
+      await addSessionToGroup(props.sessionId, groupId)
+    } catch {
+      showNotification('Could not change the session group.', 'error')
+    }
   }
 
   const handleCreateAndAssign = async () => {
     const name = newGroupName().trim()
     if (!name) return
-    const group = await createGroup(name)
-    await addSessionToGroup(props.sessionId, group.id)
-    setNewGroupName('')
-    setShowGroupSelect(false)
+    try {
+      const group = await createGroup(name)
+      await addSessionToGroup(props.sessionId, group.id)
+      setNewGroupName('')
+      setShowGroupSelect(false)
+    } catch {
+      showNotification('Could not create and assign the group.', 'error')
+    }
   }
 
   const handleRemoveFromGroup = async () => {
     setShowGroupSelect(false)
-    removeSessionFromGroup(props.sessionId)
+    try {
+      await removeSessionFromGroup(props.sessionId)
+    } catch {
+      showNotification('Could not remove the session from its group.', 'error')
+    }
   }
 
   const formatDate = (timestamp: number): string => {

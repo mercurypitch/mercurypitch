@@ -408,9 +408,8 @@ async function processServer(
   callbacks: ProcessingCallbacks,
   model?: string,
 ): Promise<void> {
-  // Server mode targets the RunPod GPU tier; when RunPod isn't configured
-  // on the worker the request falls through to the CPU container, so the
-  // opt-in header is always safe to send.
+  // Server mode targets the metered RunPod GPU tier. The worker rejects an
+  // unconfigured tier instead of falling through to unmetered container work.
   const requestedModel = model ?? DEFAULT_PROCESS_REQUEST.model ?? 'roformer'
   const eta =
     SERVER_ETA_PROFILES[requestedModel] ?? SERVER_ETA_PROFILES.roformer

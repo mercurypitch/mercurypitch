@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { durableWrite } from '@/db/durable-write'
@@ -215,6 +215,117 @@ function bumpGroups() {
   setGroupsVersion((v) => v + 1)
 }
 
+function sameIds(left: string[], right: string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  )
+}
+
+/**
+ * Persist one session's canonical group assignment and the denormalized group
+ * indexes as a single store operation.
+ *
+ * A session belongs to at most one group. Keeping this invariant here prevents
+ * callers (ZIP import, result cards, playlist editing) from updating only one
+ * side and leaving counts/filtering out of sync.
+ */
+async function persistSessionGroupMembership(
+  sessionId: string,
+  groupId: string | undefined,
+): Promise<void> {
+  const session = getUvrSession(sessionId)
+  if (!session) return
+
+  const groups = _groupsCache()
+  if (
+    groupId !== undefined &&
+    !groups.some((candidate) => candidate.id === groupId)
+  ) {
+    throw new Error('Session group no longer exists')
+  }
+
+  const nextGroups = groups.map((group) => {
+    const withoutSession = group.sessionIds.filter((id) => id !== sessionId)
+    const sessionIds =
+      group.id === groupId ? [...withoutSession, sessionId] : withoutSession
+    return sameIds(group.sessionIds, sessionIds)
+      ? group
+      : { ...group, sessionIds }
+  })
+  const changedGroups = nextGroups.filter(
+    (group, index) => group !== groups[index],
+  )
+  const nextSession =
+    session.groupId === groupId ? session : { ...session, groupId }
+
+  if (nextSession === session && changedGroups.length === 0) return
+
+  // The session's groupId is canonical. Persist it first; if a later group
+  // index write is interrupted, startup reconciliation rebuilds the index from
+  // the session records instead of losing the assignment.
+  if (nextSession !== session && !(await persistSessionDurable(nextSession))) {
+    throw new Error('Could not save the session group')
+  }
+
+  const persistedGroups = new Map<string, SessionGroupRecord>()
+  if (changedGroups.length > 0) {
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    for (const group of changedGroups) {
+      const write = await durableWrite(
+        `persist session group ${group.id}`,
+        () =>
+          repo.update(group.id, {
+            sessionIds: group.sessionIds,
+          } as Partial<SessionGroupRecord>),
+      )
+      if (!write.ok || write.value === undefined) {
+        throw new Error('Could not save the session group')
+      }
+      persistedGroups.set(group.id, write.value)
+    }
+  }
+
+  if (nextSession !== session) {
+    updateSessionCache(nextSession)
+    setCurrentSessionIfActive(nextSession)
+  }
+  if (changedGroups.length > 0) {
+    _setGroupsCache(
+      nextGroups.map((group) => persistedGroups.get(group.id) ?? group),
+    )
+    bumpGroups()
+  }
+}
+
+const sessionGroupWriteChains = new Map<string, Promise<void>>()
+
+/** Serialize the complete two-sided write for each session. Without this, two
+ * rapid moves can persist session.groupId in order but race the group indexes,
+ * leaving the first move's index as the final state. */
+async function setSessionGroupMembership(
+  sessionId: string,
+  groupId: string | undefined,
+): Promise<void> {
+  const previous = sessionGroupWriteChains.get(sessionId) ?? Promise.resolve()
+  const persist = () =>
+    untrack(() => persistSessionGroupMembership(sessionId, groupId))
+  const next = previous.then(
+    () => persist(),
+    () => persist(),
+  )
+  const tracked = next.catch(() => undefined)
+  sessionGroupWriteChains.set(sessionId, tracked)
+  try {
+    await next
+  } finally {
+    if (sessionGroupWriteChains.get(sessionId) === tracked) {
+      sessionGroupWriteChains.delete(sessionId)
+    }
+  }
+}
+
 /** Create a new session group. Returns the persisted record (async -- DB generates the ID). */
 export async function createGroup(name: string): Promise<SessionGroupRecord> {
   const db = await getDb()
@@ -287,60 +398,42 @@ export async function addSessionToGroup(
   sessionId: string,
   groupId: string,
 ): Promise<void> {
-  const db = await getDb()
-  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-  const group = await repo.findById(groupId)
-  if (!group || group.sessionIds.includes(sessionId)) return
-
-  const updated = await repo.update(groupId, {
-    sessionIds: [...group.sessionIds, sessionId],
-  } as Partial<SessionGroupRecord>)
-  _setGroupsCache((prev) => prev.map((g) => (g.id === groupId ? updated : g)))
-  bumpGroups()
-
-  const session = getUvrSession(sessionId)
-  if (session) {
-    upsertSessionInCache({ ...session, groupId })
-  }
+  await setSessionGroupMembership(sessionId, groupId)
 }
 
 /** Remove a session from whichever group it belongs to. */
-export function removeSessionFromGroup(sessionId: string): void {
+export async function removeSessionFromGroup(sessionId: string): Promise<void> {
+  await setSessionGroupMembership(sessionId, undefined)
+}
+
+/** Remove a soon-to-be-deleted session from group indexes without writing the
+ * session itself back to storage. */
+function removeDeletedSessionFromGroupIndexes(sessionId: string): void {
   const groups = _groupsCache()
-  let changed = false
-  const updated = groups.map((g) => {
-    if (g.sessionIds.includes(sessionId)) {
-      changed = true
-      return {
-        ...g,
-        sessionIds: g.sessionIds.filter((id) => id !== sessionId),
-        updatedAt: new Date().toISOString(),
-      }
-    }
-    return g
+  const nextGroups = groups.map((group) => {
+    const sessionIds = group.sessionIds.filter((id) => id !== sessionId)
+    return sameIds(group.sessionIds, sessionIds)
+      ? group
+      : { ...group, sessionIds }
   })
-  if (!changed) return
+  const changedGroups = nextGroups.filter(
+    (group, index) => group !== groups[index],
+  )
+  if (changedGroups.length === 0) return
 
-  _setGroupsCache(updated)
+  _setGroupsCache(nextGroups)
   bumpGroups()
-
-  // Fire-and-forget persist each changed group
   void (async () => {
     const db = await getDb()
     const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-    for (const g of updated) {
-      if (groups.find((og) => og.id === g.id)?.sessionIds !== g.sessionIds) {
-        await repo.update(g.id, {
-          sessionIds: g.sessionIds,
-        } as Partial<SessionGroupRecord>)
-      }
+    for (const group of changedGroups) {
+      await durableWrite(`remove deleted session from group ${group.id}`, () =>
+        repo.update(group.id, {
+          sessionIds: group.sessionIds,
+        } as Partial<SessionGroupRecord>),
+      )
     }
   })()
-
-  const session = getUvrSession(sessionId)
-  if (session?.groupId != null) {
-    upsertSessionInCache({ ...session, groupId: undefined })
-  }
 }
 
 /** Get all groups (non-reactive). */
@@ -355,6 +448,126 @@ export function getGroupsReactive(): SessionGroupRecord[] {
 }
 
 let _groupStoreReady = false
+let groupMembershipReconcilePromise: Promise<void> | null = null
+
+/**
+ * Repair legacy/partial group writes once both caches are hydrated.
+ *
+ * session.groupId is canonical when it references an existing group. For old
+ * records that only have a group.sessionIds entry, preserve that assignment
+ * and backfill groupId. Then rebuild every group's ordered member index.
+ */
+async function reconcileGroupMembershipIfReady(): Promise<void> {
+  if (!_groupStoreReady || !_sessionStoreReady) return
+  if (groupMembershipReconcilePromise !== null) {
+    await groupMembershipReconcilePromise
+    return
+  }
+
+  const reconcile = async () => {
+    const groups = _groupsCache()
+    const sessions = getAllUvrSessions()
+    const validGroupIds = new Set(groups.map((group) => group.id))
+    const listedGroupBySession = new Map<string, string>()
+    for (const group of groups) {
+      for (const sessionId of group.sessionIds) {
+        if (!listedGroupBySession.has(sessionId)) {
+          listedGroupBySession.set(sessionId, group.id)
+        }
+      }
+    }
+
+    const repairedSessions = sessions.map((session) => {
+      const canonical =
+        session.groupId !== undefined && validGroupIds.has(session.groupId)
+          ? session.groupId
+          : listedGroupBySession.get(session.sessionId)
+      return canonical === session.groupId
+        ? session
+        : { ...session, groupId: canonical }
+    })
+    const repairedById = new Map(
+      repairedSessions.map((session) => [session.sessionId, session]),
+    )
+    const repairedGroups = groups.map((group) => {
+      const assigned = repairedSessions
+        .filter((session) => session.groupId === group.id)
+        .map((session) => session.sessionId)
+      const assignedSet = new Set(assigned)
+      const retainedOrder = group.sessionIds.filter(
+        (sessionId) =>
+          assignedSet.has(sessionId) && repairedById.has(sessionId),
+      )
+      const retainedSet = new Set(retainedOrder)
+      const sessionIds = [
+        ...retainedOrder,
+        ...assigned.filter((sessionId) => !retainedSet.has(sessionId)),
+      ]
+      return sameIds(group.sessionIds, sessionIds)
+        ? group
+        : { ...group, sessionIds }
+    })
+
+    for (let index = 0; index < sessions.length; index++) {
+      const repaired = repairedSessions[index]
+      if (
+        repaired !== sessions[index] &&
+        !(await persistSessionDurable(repaired))
+      ) {
+        console.error(
+          `[SessionStore] failed to repair group for ${repaired.sessionId}`,
+        )
+      }
+    }
+
+    const db = await getDb()
+    const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
+    const persistedGroups = new Map<string, SessionGroupRecord>()
+    for (let index = 0; index < groups.length; index++) {
+      const repaired = repairedGroups[index]
+      if (repaired === groups[index]) continue
+      const write = await durableWrite(
+        `repair session group ${repaired.id}`,
+        () =>
+          repo.update(repaired.id, {
+            sessionIds: repaired.sessionIds,
+          } as Partial<SessionGroupRecord>),
+      )
+      if (write.ok && write.value !== undefined) {
+        persistedGroups.set(repaired.id, write.value)
+      }
+    }
+
+    const sessionChanged = repairedSessions.some(
+      (session, index) => session !== sessions[index],
+    )
+    if (sessionChanged) {
+      _setSessionsCache(repairedSessions)
+      bumpSessions()
+      const current = currentUvrSession()
+      if (current !== null) {
+        setCurrentUvrSession(repairedById.get(current.sessionId) ?? current)
+      }
+    }
+
+    const groupsChanged = repairedGroups.some(
+      (group, index) => group !== groups[index],
+    )
+    if (groupsChanged) {
+      _setGroupsCache(
+        repairedGroups.map((group) => persistedGroups.get(group.id) ?? group),
+      )
+      bumpGroups()
+    }
+  }
+
+  groupMembershipReconcilePromise = reconcile()
+  try {
+    await groupMembershipReconcilePromise
+  } finally {
+    groupMembershipReconcilePromise = null
+  }
+}
 
 /** Load groups from IndexedDB into the in-memory cache. Call once at startup. */
 export async function initGroupStore(): Promise<void> {
@@ -369,6 +582,7 @@ export async function initGroupStore(): Promise<void> {
     _setGroupsCache([])
   }
   _groupStoreReady = true
+  await reconcileGroupMembershipIfReady()
 }
 
 // ── DB helpers ──────────────────────────────────────────────────────
@@ -611,6 +825,7 @@ export async function initSessionStore(): Promise<void> {
 
   _sessionStoreReady = true
   setSessionStoreReady(true)
+  await reconcileGroupMembershipIfReady()
 
   // Run stale-session cleanup on the loaded cache
   cleanupStaleUvrSessions()
@@ -763,6 +978,7 @@ export function startUvrSession(
   _mode: UvrMode = 'separate',
   processingMode?: UvrProcessingMode,
   fileHash?: string,
+  focus = true,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -778,7 +994,7 @@ export function startUvrSession(
   }
 
   upsertSessionInCache(newSession)
-  setCurrentUvrSession(newSession)
+  if (focus) setCurrentUvrSession(newSession)
   return sessionId
 }
 
@@ -956,12 +1172,12 @@ export function setErrorUvrSession(sessionId: string, error: string): void {
 }
 
 /** Cancel UVR session */
-export function cancelUvrSession(sessionId: string): void {
+export function cancelUvrSession(sessionId: string, focus = true): void {
   const session = getUvrSession(sessionId)
   if (session) {
     const updated: UvrSession = { ...session, status: 'cancelled' }
     upsertSessionInCache(updated)
-    setCurrentUvrSession(updated)
+    if (focus) setCurrentUvrSession(updated)
   }
 }
 
@@ -984,12 +1200,11 @@ export function retryUvrSession(sessionId: string): void {
 
 /** Delete UVR session */
 export function deleteUvrSession(sessionId: string): void {
+  removeDeletedSessionFromGroupIndexes(sessionId)
   const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
   updateCacheAndPersist(sessions)
   // Clean up associated lyrics from DB
   void deleteLyricsFromDb(sessionId)
-  // Remove from any group
-  removeSessionFromGroup(sessionId)
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
   }
@@ -1099,7 +1314,11 @@ export function importUvrSession(session: UvrSession): void {
   // Ensure we don't accidentally duplicate
   const exists = currentSessions.some((s) => s.sessionId === session.sessionId)
   if (!exists) {
-    updateCacheAndPersist([session, ...currentSessions])
+    // Persist only the imported session through the per-session write chain.
+    // A group assignment may immediately follow; serializing both writes keeps
+    // the later groupId from being overwritten by a whole-library save racing
+    // in the background.
+    upsertSessionInCache(session)
   }
 }
 

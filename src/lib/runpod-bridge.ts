@@ -335,21 +335,12 @@ async function startRunpodJob(
   meter: MeteringConfig | null,
   bucket: UvrInputBucket | null,
 ): Promise<Response> {
-  const form = await request.formData()
-  const file = form.get('file')
-  if (!(file instanceof File)) {
-    return json({ error: 'No file provided' }, 400)
-  }
-
-  const model = coerceFormString(form.get('model'))
-  // Allowlist before spending anything: an unknown model would only fail
-  // inside the (billable) RunPod job, and an open passthrough would let a
-  // crafted request make the worker download arbitrary weights on our GPU
-  // time. Absent model = handler default; unknown = loud 400.
-  if (
-    model !== undefined &&
-    !(RUNPOD_ALLOWED_MODELS as readonly string[]).includes(model)
-  ) {
+  const modelHeader = request.headers.get('X-UVR-Model')
+  const declaredModel =
+    modelHeader !== null && modelHeader.trim() !== ''
+      ? modelHeader.trim()
+      : RUNPOD_DEFAULT_MODEL
+  if (!(RUNPOD_ALLOWED_MODELS as readonly string[]).includes(declaredModel)) {
     return json(
       {
         error: `Unknown model (use one of: ${RUNPOD_ALLOWED_MODELS.join(', ')})`,
@@ -357,12 +348,12 @@ async function startRunpodJob(
       400,
     )
   }
-  const outputFormat = coerceFormString(form.get('output_format'))
-  const audioUrl = coerceFormString(form.get('audio_url'))
-  const stems = parseStems(form.get('stems'))
 
-  // Hard cap first, whatever the transport.
-  if (audioUrl === undefined && file.size > RUNPOD_MAX_UPLOAD_BYTES) {
+  // Reject an obviously oversized multipart request before formData() buffers
+  // it. Allow bounded room for multipart headers and the small option fields.
+  const contentLength = Number(request.headers.get('Content-Length'))
+  const maxMultipartBytes = RUNPOD_MAX_UPLOAD_BYTES + 512 * 1024
+  if (Number.isFinite(contentLength) && contentLength > maxMultipartBytes) {
     return json(
       {
         error: `File too large (max ${RUNPOD_MAX_UPLOAD_BYTES / (1024 * 1024)} MB for server processing).`,
@@ -371,15 +362,15 @@ async function startRunpodJob(
     )
   }
 
-  // Protect paid dispatch BEFORE reading a multi-MB body into base64, staging
-  // it in R2, or creating a RunPod job. The db-worker checks auth, credits and
-  // both the burst + hourly user limits. Any admission outage fails closed.
+  // Protect paid dispatch before consuming/buffering the multipart body. The
+  // declared model is repeated in the form and checked below, so a caller
+  // cannot quote a cheap model here and submit a more expensive one later.
   if (meter !== null) {
     const admission = await admitUvrJob(
       meter,
       request.headers.get('Authorization'),
       tier,
-      model ?? RUNPOD_DEFAULT_MODEL,
+      declaredModel,
     )
     if (!admission.allowed) {
       const status = admission.status ?? 503
@@ -398,6 +389,49 @@ async function startRunpodJob(
         headers,
       )
     }
+  }
+
+  const form = await request.formData()
+  const file = form.get('file')
+  if (!(file instanceof File)) {
+    return json({ error: 'No file provided' }, 400)
+  }
+
+  const model = coerceFormString(form.get('model'))
+  const effectiveModel = model ?? RUNPOD_DEFAULT_MODEL
+  // Allowlist before spending anything: an unknown model would only fail
+  // inside the (billable) RunPod job, and an open passthrough would let a
+  // crafted request make the worker download arbitrary weights on our GPU
+  // time. Absent model = handler default; unknown = loud 400.
+  if (
+    model !== undefined &&
+    !(RUNPOD_ALLOWED_MODELS as readonly string[]).includes(model)
+  ) {
+    return json(
+      {
+        error: `Unknown model (use one of: ${RUNPOD_ALLOWED_MODELS.join(', ')})`,
+      },
+      400,
+    )
+  }
+  if (effectiveModel !== declaredModel) {
+    return json(
+      { error: 'The declared processing model does not match the upload.' },
+      400,
+    )
+  }
+  const outputFormat = coerceFormString(form.get('output_format'))
+  const audioUrl = coerceFormString(form.get('audio_url'))
+  const stems = parseStems(form.get('stems'))
+
+  // Hard cap first, whatever the transport.
+  if (audioUrl === undefined && file.size > RUNPOD_MAX_UPLOAD_BYTES) {
+    return json(
+      {
+        error: `File too large (max ${RUNPOD_MAX_UPLOAD_BYTES / (1024 * 1024)} MB for server processing).`,
+      },
+      413,
+    )
   }
 
   // Three input transports, cheapest first:

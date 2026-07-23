@@ -27,7 +27,7 @@ import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } fr
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
-import { createUvrUploadQueue, isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
+import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
@@ -35,6 +35,7 @@ import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
+import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 
@@ -102,9 +103,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     localStorage.getItem('pitchperfect_stem_denoise') !== 'false',
   )
   const [_onError, setOnError] = createSignal('')
-  const uploadQueue = createUvrUploadQueue()
-  const [activeQueueMode, setActiveQueueMode] =
-    createSignal<UvrProcessingMode>('local')
+  const uploadQueue = uvrUploadQueue
 
   // Error handling
   const showError = (message: string) => {
@@ -172,39 +171,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Warn on an accidental reload only when it would actually lose work:
-  // stems mid-write ('finalizing'), or a job we can't re-attach to (local, or a
-  // server job with no persisted RunPod id). A recoverable server job survives
-  // reload now — auto-resume re-attaches and re-fetches it — so no scary prompt.
-  createEffect(() => {
-    const sessionBusy = getAllUvrSessionsReactive().some((s) => {
-      if (s.status === 'finalizing') return true
-      const recoverableServer =
-        s.processingMode === 'server' &&
-        s.apiSessionId !== undefined &&
-        s.apiSessionId !== ''
-      return (
-        (s.status === 'processing' || s.status === 'uploading') &&
-        !recoverableServer
-      )
-    })
-    const queueBusy =
-      uploadQueue.isRunning() ||
-      uploadQueue.items().some((item) => item.status === 'queued')
-    if (!sessionBusy && !queueBusy) return
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-      e.returnValue = ''
-    }
-    window.addEventListener('beforeunload', handler)
-    onCleanup(() => window.removeEventListener('beforeunload', handler))
-  })
-
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
   const [midiExportProgress, setMidiExportProgress] = createSignal(0)
-  const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
   const [isExporting, setIsExporting] = createSignal(false)
   const [exportProgress, setExportProgress] = createSignal(0)
@@ -694,6 +664,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     onProgress?: (progress: number) => void
     onComplete?: () => void
     onError?: (message: string) => void
+    cancelled?: () => boolean
   }
 
   /** Shared completion/error glue for a UVR pipeline run — used by both a fresh
@@ -737,6 +708,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         setCurrentView('results')
     },
     onError: (rawMessage) => {
+      if (options.cancelled?.() === true) {
+        cancelUvrSession(sessionId, options.focus ?? true)
+        if (processingMode === 'server') refreshBalance()
+        return
+      }
       const message = humanizeProcessingError(rawMessage, processingMode)
       setErrorUvrSession(sessionId, message)
       options.onError?.(message)
@@ -830,8 +806,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     mode?: UvrProcessingMode,
     fileOverride?: File,
     options: PipelineUiOptions = {},
-  ): Promise<{ status: 'completed' | 'error'; message?: string }> => {
-    let file = fileOverride ?? selectedFile()
+  ): Promise<{
+    status: 'completed' | 'error' | 'cancelled'
+    message?: string
+  }> => {
+    let file: File | null = fileOverride ?? null
     if (!file) {
       // Retry path: original file is no longer in memory, load from IndexedDB
       file = await getOriginalFileBlob(sessionId)
@@ -880,11 +859,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           s.sessionId === sessionId ? updated : s,
         ),
       )
-      setCurrentUvrSession(updated)
+      if (options.focus ?? true) setCurrentUvrSession(updated)
     }
 
-    let outcome: { status: 'completed' | 'error'; message?: string } | null =
-      null
+    let outcome: {
+      status: 'completed' | 'error' | 'cancelled'
+      message?: string
+    } | null = null
     try {
       await runUvrPipeline(
         file,
@@ -906,6 +887,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       )
     } catch (error) {
       if (outcome !== null) return outcome
+      if (options.cancelled?.() === true) {
+        cancelUvrSession(sessionId, options.focus ?? true)
+        return { status: 'cancelled' }
+      }
       console.error('Processing error:', error)
       const message = humanizeProcessingError(
         error instanceof Error ? error.message : 'Processing failed',
@@ -1001,6 +986,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       'separate',
       processingMode,
       hash,
+      false,
     )
     context.update({
       status: 'processing',
@@ -1022,7 +1008,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     context.onCancel(() => {
       if (processingMode === 'local') cancelUvrPipeline('local')
       else cancelSubmittedServerJob()
-      cancelUvrSession(sessionId)
+      cancelUvrSession(sessionId, false)
     })
 
     const result = await handleProcessStart(
@@ -1045,6 +1031,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             })
           }
         },
+        cancelled: context.cancelled,
       },
     )
 
@@ -1107,7 +1094,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       }
     }
 
-    setActiveQueueMode(processingMode)
+    setActiveUvrUploadQueueMode(processingMode)
     await uploadQueue.run((item, context) =>
       untrack(() => processQueuedFile(item, context, processingMode)),
     )
@@ -1149,10 +1136,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
 
     if (target === 'same') {
-      // Clear any stale upload selection: handleProcessStart prefers
-      // selectedFile() over the stored original, and the original is already
-      // persisted under THIS session — let the fallback re-read it.
-      setSelectedFile(null)
       // Stamp server mode BEFORE starting: a mid-run reload re-attaches only
       // to sessions with processingMode 'server' (see handleResumeServer).
       saveAllUvrSessions(
@@ -1170,9 +1153,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setCurrentView('processing')
       await handleProcessStart(sessionId, 'server')
     } else {
-      // New sibling session: hand the original over as the "selected file" so
-      // handleProcessStart persists it under the new session id too.
-      setSelectedFile(orig)
       const newId = startUvrSession(
         orig.name,
         orig.size,
@@ -1182,7 +1162,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         s.fileHash,
       )
       setCurrentView('processing')
-      await handleProcessStart(newId, 'server')
+      await handleProcessStart(newId, 'server', orig)
     }
   }
 
@@ -1764,7 +1744,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   running={uploadQueue.isRunning}
                   mode={() =>
                     uploadQueue.isRunning()
-                      ? activeQueueMode()
+                      ? activeUvrUploadQueueMode()
                       : uvrProcessingMode()
                   }
                   costPerSong={songCost}
