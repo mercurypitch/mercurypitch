@@ -5,9 +5,23 @@
 import { getDb } from '@/db'
 import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite } from '@/db/durable-write'
-import type { SessionGroupRecord, UvrSessionRecord, UvrStemBlob, } from '@/db/entities'
+import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import type { DatabaseAdapter } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
+
+interface LocalTransactionAdapter extends DatabaseAdapter {
+  transactionLocal: DatabaseAdapter['transaction']
+}
+
+function supportsLocalTransactions(
+  db: DatabaseAdapter,
+): db is LocalTransactionAdapter {
+  return (
+    typeof (db as Partial<LocalTransactionAdapter>).transactionLocal ===
+    'function'
+  )
+}
 
 // ── Stem Blob Operations ─────────────────────────────────────────
 
@@ -202,7 +216,6 @@ export async function hydrateStemUrls(
 
 // ── Stem Fingerprint Operations ─────────────────────────────────
 
-import type { UvrStemFingerprint } from '@/db/entities'
 import type { MelodyFingerprint } from '@/lib/shazam/types'
 
 export async function saveStemFingerprintData(
@@ -389,6 +402,88 @@ export async function deleteUvrSessionFromDb(
     return true
   } catch (err) {
     console.error('[UvrService] deleteUvrSessionFromDb failed:', err)
+    return false
+  }
+}
+
+/**
+ * Delete a session group and, optionally, every canonical member in one local
+ * database transaction. Keeping the group record, sessions, blobs,
+ * fingerprints, and lyrics in the same boundary prevents a reload from
+ * exposing a partially deleted group after a storage failure.
+ */
+export async function deleteSessionGroupFromDb(
+  groupId: string,
+  sessionIds: string[],
+  deleteSessions: boolean,
+): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const deleteRecords = async (
+      transactionDb: DatabaseAdapter,
+    ): Promise<void> => {
+      const groupRepo =
+        transactionDb.getRepository<SessionGroupRecord>('sessionGroups')
+      const sessionRepo =
+        transactionDb.getRepository<UvrSessionRecord>('uvrSessions')
+
+      if (!deleteSessions) {
+        const records = await sessionRepo.findAll({
+          where: { groupId } as Record<string, unknown>,
+        })
+        for (const record of records) {
+          await sessionRepo.update(record.id, { groupId: undefined })
+        }
+        await groupRepo.delete(groupId)
+        return
+      }
+
+      const blobRepo = transactionDb.getRepository<UvrStemBlob>('uvrStemBlobs')
+      const fingerprintRepo = transactionDb.getRepository<UvrStemFingerprint>(
+        'uvrStemFingerprints',
+      )
+      const lyricsRepo =
+        transactionDb.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+
+      const canonicalSessionIds = new Set(sessionIds)
+      const persistedMembers = await sessionRepo.findAll({
+        where: { groupId } as Record<string, unknown>,
+      })
+      for (const member of persistedMembers) {
+        canonicalSessionIds.add(member.appSessionId)
+      }
+
+      for (const sessionId of canonicalSessionIds) {
+        const blobs = await blobRepo.findAll({ where: { sessionId } })
+        for (const blob of blobs) await blobRepo.delete(blob.id)
+
+        const fingerprints = await fingerprintRepo.findAll({
+          where: { sessionId },
+        })
+        for (const fingerprint of fingerprints) {
+          await fingerprintRepo.delete(fingerprint.id)
+        }
+
+        const lyrics = await lyricsRepo.findAll({ where: { sessionId } })
+        for (const entry of lyrics) await lyricsRepo.delete(entry.id)
+
+        const sessions = await sessionRepo.findAll({
+          where: { appSessionId: sessionId },
+        })
+        for (const session of sessions) await sessionRepo.delete(session.id)
+      }
+
+      await groupRepo.delete(groupId)
+    }
+
+    if (supportsLocalTransactions(db)) {
+      await db.transactionLocal(deleteRecords)
+    } else {
+      await db.transaction(deleteRecords)
+    }
+    return true
+  } catch (err) {
+    console.error('[UvrService] deleteSessionGroupFromDb failed:', err)
     return false
   }
 }

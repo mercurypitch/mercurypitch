@@ -4,7 +4,7 @@ import { getDb } from '@/db'
 import { durableWrite } from '@/db/durable-write'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -198,6 +198,11 @@ export const [currentUvrSession, setCurrentUvrSession] =
 
 const [_sessionsCache, _setSessionsCache] = createSignal<UvrSession[]>([])
 
+// Tombstones prevent already-queued background writes from recreating records
+// after a user has durably deleted their group or sessions.
+const deletedGroupIds = new Set<string>()
+const deletedSessionIds = new Set<string>()
+
 /** Reactive version counter -- bumped on every session mutation */
 const [sessionsVersion, setSessionsVersion] = createSignal(0)
 
@@ -299,31 +304,33 @@ async function persistSessionGroupMembership(
   }
 }
 
-const sessionGroupWriteChains = new Map<string, Promise<void>>()
+let groupMutationWriteChain: Promise<void> = Promise.resolve()
 
-/** Serialize the complete two-sided write for each session. Without this, two
- * rapid moves can persist session.groupId in order but race the group indexes,
- * leaving the first move's index as the final state. */
+/**
+ * Group membership indexes are shared records, so mutations for different
+ * sessions must also be serialized. A per-session chain still allowed two
+ * simultaneous assignments to overwrite each other's group index.
+ */
+async function serializeGroupMutation<T>(
+  mutation: () => Promise<T>,
+): Promise<T> {
+  const previous = groupMutationWriteChain
+  const next = previous.then(mutation, mutation)
+  groupMutationWriteChain = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
+
+/** Serialize the complete two-sided write across the shared group index. */
 async function setSessionGroupMembership(
   sessionId: string,
   groupId: string | undefined,
 ): Promise<void> {
-  const previous = sessionGroupWriteChains.get(sessionId) ?? Promise.resolve()
-  const persist = () =>
-    untrack(() => persistSessionGroupMembership(sessionId, groupId))
-  const next = previous.then(
-    () => persist(),
-    () => persist(),
+  await serializeGroupMutation(() =>
+    untrack(() => persistSessionGroupMembership(sessionId, groupId)),
   )
-  const tracked = next.catch(() => undefined)
-  sessionGroupWriteChains.set(sessionId, tracked)
-  try {
-    await next
-  } finally {
-    if (sessionGroupWriteChains.get(sessionId) === tracked) {
-      sessionGroupWriteChains.delete(sessionId)
-    }
-  }
 }
 
 /** Create a new session group. Returns the persisted record (async -- DB generates the ID). */
@@ -339,44 +346,68 @@ export async function createGroup(name: string): Promise<SessionGroupRecord> {
 
 /** Delete a group. Sessions that belonged to it become ungrouped. */
 export async function deleteGroup(groupId: string): Promise<void> {
-  const db = await getDb()
-  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-  await repo.delete(groupId)
+  await serializeGroupMutation(async () => {
+    const sessionsToUngroup = untrack(() =>
+      getAllUvrSessions().filter((session) => session.groupId === groupId),
+    )
+    deletedGroupIds.add(groupId)
+    await waitForSessionWrites(
+      sessionsToUngroup.map((session) => session.sessionId),
+    )
 
-  // Clear groupId from sessions that belonged to this group
-  const cache = _groupsCache()
-  const group = cache.find((g) => g.id === groupId)
-  if (group) {
-    for (const sid of group.sessionIds) {
-      const session = getUvrSession(sid)
-      if (session) {
-        upsertSessionInCache({ ...session, groupId: undefined })
-      }
+    const deleted = await deleteSessionGroupFromDb(
+      groupId,
+      sessionsToUngroup.map((session) => session.sessionId),
+      false,
+    )
+    if (!deleted) {
+      deletedGroupIds.delete(groupId)
+      throw new Error('Could not delete the session group')
     }
-  }
 
-  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
-  bumpGroups()
+    for (const session of sessionsToUngroup) {
+      const updated = { ...session, groupId: undefined }
+      updateSessionCache(updated)
+      setCurrentSessionIfActive(updated)
+    }
+    _setGroupsCache((prev) => prev.filter((group) => group.id !== groupId))
+    bumpGroups()
+  })
 }
 
 /** Delete a group and all sessions within it. */
 export async function deleteGroupWithSessions(groupId: string): Promise<void> {
-  const cache = _groupsCache()
-  const group = cache.find((g) => g.id === groupId)
-  const sessionIds = group?.sessionIds ?? []
+  await serializeGroupMutation(async () => {
+    // The session's groupId is canonical. A stale denormalized group index
+    // must never cause an unrelated session to be deleted.
+    const sessionsToDelete = untrack(() =>
+      getAllUvrSessions().filter((session) => session.groupId === groupId),
+    )
+    const sessionIds = sessionsToDelete.map((session) => session.sessionId)
 
-  // Delete each session in the group
-  for (const sid of sessionIds) {
-    deleteUvrSession(sid)
-  }
+    deletedGroupIds.add(groupId)
+    for (const sessionId of sessionIds) deletedSessionIds.add(sessionId)
+    await waitForSessionWrites(sessionIds)
 
-  // Delete the group itself
-  const db = await getDb()
-  const repo = db.getRepository<SessionGroupRecord>('sessionGroups')
-  await repo.delete(groupId)
+    const deleted = await deleteSessionGroupFromDb(groupId, sessionIds, true)
+    if (!deleted) {
+      deletedGroupIds.delete(groupId)
+      for (const sessionId of sessionIds) deletedSessionIds.delete(sessionId)
+      throw new Error('Could not delete the session group and its songs')
+    }
 
-  _setGroupsCache((prev) => prev.filter((g) => g.id !== groupId))
-  bumpGroups()
+    const deletedIds = new Set(sessionIds)
+    _setSessionsCache((prev) =>
+      prev.filter((session) => !deletedIds.has(session.sessionId)),
+    )
+    _setGroupsCache((prev) => prev.filter((group) => group.id !== groupId))
+    const current = untrack(currentUvrSession)
+    if (current !== null && deletedIds.has(current.sessionId)) {
+      setCurrentUvrSession(null)
+    }
+    bumpSessions()
+    bumpGroups()
+  })
 }
 
 /** Rename a group. */
@@ -654,20 +685,35 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
 // create). Serializing per session id keeps upsert genuinely idempotent.
 const sessionWriteChains = new Map<string, Promise<void>>()
 
+async function waitForSessionWrites(sessionIds: string[]): Promise<void> {
+  await Promise.all(
+    sessionIds.map(
+      (sessionId) => sessionWriteChains.get(sessionId) ?? Promise.resolve(),
+    ),
+  )
+}
+
 /** Raw upsert of one session record — throws on failure. Serialized per
  *  session id so concurrent writes for the same session run in order. */
 function upsertSessionRecord(session: UvrSession): Promise<void> {
   const run = async (): Promise<void> => {
+    if (deletedSessionIds.has(session.sessionId)) return
+    const durableSession =
+      session.groupId !== undefined && deletedGroupIds.has(session.groupId)
+        ? { ...session, groupId: undefined }
+        : session
     const db = await getDb()
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
     const existing = await repo.findAll({
-      where: { appSessionId: session.sessionId } as Record<string, unknown>,
+      where: {
+        appSessionId: durableSession.sessionId,
+      } as Record<string, unknown>,
       limit: 1,
     })
     if (existing.length > 0) {
-      await repo.update(existing[0].id, sessionToDbRecord(session))
+      await repo.update(existing[0].id, sessionToDbRecord(durableSession))
     } else {
-      await repo.create(sessionToDbRecord(session))
+      await repo.create(sessionToDbRecord(durableSession))
     }
   }
   // Run after whatever is already queued for this session (success or failure).
