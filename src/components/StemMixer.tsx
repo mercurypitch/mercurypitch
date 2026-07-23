@@ -3124,6 +3124,7 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-rest-dot {
+  box-sizing: border-box;
   width: 0.55em;
   height: 0.55em;
   border-radius: 50%;

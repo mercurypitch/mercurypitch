@@ -288,11 +288,11 @@ export async function exportSession(
     const a = document.createElement('a')
     a.href = url
     // safe filename
-    const safeName = (session.originalFile?.name ?? sessionId).replace(
-      /[^a-z0-9_-]/gi,
-      '_',
-    )
-    a.download = `MercuryPitch_Session_${safeName}.zip`
+    const rawName = session.originalFile?.name ?? sessionId
+    const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+    const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
+    const hqPrefix = session.processingMode === 'server' ? 'MC_HQ' : 'MC'
+    a.download = `${hqPrefix}_Session_${safeName}.zip`
     a.click()
     URL.revokeObjectURL(url)
     onProgress?.(100)
@@ -315,9 +315,9 @@ export async function exportAllSessions(
     let allZippable: fflate.Zippable = {}
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i]
-      const safeName = (
-        session.originalFile?.name ?? session.sessionId
-      ).replace(/[^a-z0-9_-]/gi, '_')
+      const rawName = session.originalFile?.name ?? session.sessionId
+      const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+      const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
       const prefix = `${safeName}_${session.sessionId.substring(0, 8)}/`
 
       // Report sub-progress within each session (0-90% range)
@@ -356,7 +356,7 @@ export async function exportAllSessions(
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `MercuryPitch_All_Sessions.zip`
+    a.download = `MC_All_Sessions.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
@@ -383,9 +383,9 @@ export async function exportGroup(
     let allZippable: fflate.Zippable = {}
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i]
-      const safeName = (
-        session.originalFile?.name ?? session.sessionId
-      ).replace(/[^a-z0-9_-]/gi, '_')
+      const rawName = session.originalFile?.name ?? session.sessionId
+      const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+      const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
       const dirPrefix = `${prefix}${safeName}_${session.sessionId.substring(0, 8)}/`
       const sessionBase = (i / sessions.length) * 90
       const sessionRange = 90 / sessions.length
@@ -414,7 +414,7 @@ export async function exportGroup(
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `MercuryPitch_Group_${groupId.substring(0, 8)}.zip`
+    a.download = `MC_Group_${groupId.substring(0, 8)}.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
@@ -477,10 +477,9 @@ export async function buildKaraokePlaylistZip(
   let allZippable: fflate.Zippable = {}
   for (let i = 0; i < sessionList.length; i++) {
     const s = sessionList[i]
-    const safeName = (s.originalFile?.name ?? s.sessionId).replace(
-      /[^a-z0-9_-]/gi,
-      '_',
-    )
+    const rawName = s.originalFile?.name ?? s.sessionId
+    const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+    const safeName = nameWithoutExt.replace(/[^a-z0-9_-]/gi, '_')
     const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
     const base = (i / sessionList.length) * 90
     const range = 90 / Math.max(1, sessionList.length)
@@ -530,7 +529,7 @@ export async function exportKaraokePlaylists(
       playlists.length === 1
         ? playlists[0].name.replace(/[^a-z0-9_-]/gi, '_')
         : `${playlists.length}_playlists`
-    a.download = `MercuryPitch_Karaoke_${nameSlug}.zip`
+    a.download = `MC_Karaoke_${nameSlug}.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {

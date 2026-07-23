@@ -132,7 +132,7 @@ describe('isZipFile', () => {
   const make = (name: string, type: string) => new File([''], name, { type })
 
   it('detects ZIPs by extension regardless of MIME', () => {
-    expect(isZipFile(make('MercuryPitch_Session_song.zip', ''))).toBe(true)
+    expect(isZipFile(make('MC_Session_song.zip', ''))).toBe(true)
     expect(isZipFile(make('EXPORT.ZIP', 'application/octet-stream'))).toBe(true)
   })
 
