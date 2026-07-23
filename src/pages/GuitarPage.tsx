@@ -32,6 +32,7 @@ import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { activeTab, showNotification } from '@/stores'
+import { melodyStore } from '@/stores/melody-store'
 import { saveMidiSong } from '@/stores/saved-midi-songs-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
@@ -160,7 +161,19 @@ export function GuitarPage(props: GuitarPageProps) {
       },
     ),
   )
-
+  createEffect(
+    on(
+      () => melodyStore.getCurrentMelody()?.id,
+      () => {
+        const melody = melodyStore.getCurrentMelody()
+        if (melody != null && melody.items.length > 0) {
+          const items = melodyToGuitarItems(melody.items)
+          guitar.loadSong(items, melody.name, melody.bpm, [], [], null)
+        }
+      },
+      { defer: true },
+    ),
+  )
   // Feed detected notes into the riff tracker when recording.
   //
   // Driven off the articulation counter, not detectedMidi(): detectedMidi

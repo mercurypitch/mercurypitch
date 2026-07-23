@@ -19,6 +19,7 @@ import { isNarrow } from '@/lib/use-viewport'
 import { showNotification } from '@/stores'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { selectedSongName } from '@/stores/falling-notes-store'
+import { melodyStore } from '@/stores/melody-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
 
@@ -95,7 +96,19 @@ export function PianoPage(props: PianoPageProps) {
       },
     ),
   )
-
+  createEffect(
+    on(
+      () => melodyStore.getCurrentMelody()?.id,
+      () => {
+        const melody = melodyStore.getCurrentMelody()
+        if (melody != null && melody.items.length > 0) {
+          const notes = melodyToFallingNotes(melody.items)
+          fallingNotes.loadSong(notes, melody.name, melody.bpm, [], [], null)
+        }
+      },
+      { defer: true },
+    ),
+  )
   const picker = useMidiSongPicker<FallingNote>({
     currentSong: () => fallingNotes.currentSong(),
     fromMelodyItems: melodyToFallingNotes,

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, For, on, onMount, Show } from 'solid-js'
 import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
@@ -14,6 +14,7 @@ import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
+import { targetFocusEvent } from '@/stores/ui-store'
 import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
 import styles from './LibraryTab.module.css'
 
@@ -270,8 +271,29 @@ export const LibraryTab: Component = () => {
     library()
   })
 
+  let containerRef!: HTMLDivElement
+  createEffect(
+    on(
+      targetFocusEvent,
+      (e) => {
+        if (e?.ids.includes('sidebar-library') === true) {
+          if (containerRef !== undefined) {
+            containerRef.classList.remove('target-focus-flash')
+            void containerRef.offsetWidth // force reflow
+            containerRef.classList.add('target-focus-flash')
+          }
+        }
+      },
+      { defer: true },
+    ),
+  )
+
   return (
-    <div class={styles.libraryTab} data-tour="singing.library">
+    <div
+      ref={containerRef}
+      class={styles.libraryTab}
+      data-tour="singing.library"
+    >
       <div class={styles.tabHeader}>
         <h3>Library</h3>
         <div class={styles.tabActions}>

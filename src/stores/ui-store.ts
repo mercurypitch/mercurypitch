@@ -228,3 +228,14 @@ export function showCelebration(data: CelebrationData): void {
 export function dismissCelebration(): void {
   setCelebrationData(null)
 }
+
+// ── UI Target Focus Animation ──────────────────────────────────
+export const [targetFocusEvent, setTargetFocusEvent] = createSignal<{
+  ids: string[]
+  timestamp: number
+} | null>(null)
+
+export function triggerTargetFocus(id: string | string[]): void {
+  const ids = Array.isArray(id) ? id : [id]
+  setTargetFocusEvent({ ids, timestamp: Date.now() })
+}

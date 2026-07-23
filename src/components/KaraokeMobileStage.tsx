@@ -507,18 +507,19 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                           )
                           if (dotCount <= 0 || isNaN(dotCount)) return null
 
-                          const progress = computeRestProgress(
-                            gapStart,
-                            gapEnd,
-                            dotCount,
-                            props.elapsed(),
-                          )
+                          const progress = () =>
+                            computeRestProgress(
+                              gapStart,
+                              gapEnd,
+                              dotCount,
+                              props.elapsed(),
+                            )
 
                           return (
                             <For each={Array.from({ length: dotCount })}>
                               {(_, i) => {
                                 const fill = () => {
-                                  const p = progress
+                                  const p = progress()
                                   if (i() < p.filledDots) return 1
                                   if (i() === p.filledDots)
                                     return p.currentDotFrac

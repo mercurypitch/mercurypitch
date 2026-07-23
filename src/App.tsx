@@ -123,7 +123,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { openSettingsSection, settingsSection } from '@/stores/ui-store'
+import { openSettingsSection, settingsSection, triggerTargetFocus, } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -2214,6 +2214,10 @@ const AppShell: Component<AppProps> = (props) => {
                       setSidebarCollapsed(false)
                       setSidebarOpen(true)
                       applyPersistedValue('sidebar-character-open', 'true')
+                      triggerTargetFocus([
+                        'sidebar-character',
+                        'sidebar-library',
+                      ])
                     }}
                     title={
                       ctx.character != null

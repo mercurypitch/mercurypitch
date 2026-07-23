@@ -3133,7 +3133,7 @@ export const StemMixerStyles: string = `
     var(--accent, #58a6ff) var(--fill, 0%),
     var(--bg-tertiary, rgba(255, 255, 255, 0.15)) var(--fill, 0%)
   );
-  box-shadow: inset 0 0 0 1px var(--border, rgba(255, 255, 255, 0.2));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
   transition: background 0.12s linear;
 }
 
