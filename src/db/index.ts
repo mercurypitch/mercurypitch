@@ -33,49 +33,6 @@ function resolveAdapter(): DatabaseAdapter {
   return new DexieAdapter()
 }
 
-const PROMPT_FLAG_KEY = 'mp.storage_persist_prompted.v1'
-
-/**
- * Request persistent storage with context. Called when the user initiates a
- * heavy storage operation (like separating stems or saving a session), so the
- * browser's storage permission dialog (if triggered) comes with an explanatory
- * toast notification rather than popping unexpectedly on first load.
- */
-export async function ensurePersistentStorage(): Promise<boolean> {
-  try {
-    if (
-      typeof navigator === 'undefined' ||
-      navigator.storage?.persist == null ||
-      navigator.storage?.persisted == null
-    ) {
-      return false
-    }
-
-    if (await navigator.storage.persisted()) return true
-
-    if (localStorage.getItem(PROMPT_FLAG_KEY) !== '1') {
-      try {
-        localStorage.setItem(PROMPT_FLAG_KEY, '1')
-        const { showNotification } =
-          await import('@/stores/notifications-store')
-        showNotification(
-          'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.',
-          'info',
-          { durationMs: 12000 },
-        )
-      } catch {
-        // Non-fatal — storage or notification error
-      }
-    }
-
-    const granted = await navigator.storage.persist()
-    console.info('[db] persistent storage', granted ? 'granted' : 'denied')
-    return granted
-  } catch {
-    return false
-  }
-}
-
 /**
  * One-time removal of the orphaned pre-rename 'PitchPerfectDB' IndexedDB
  * database. Nothing references it (the app uses 'MercuryPitchDB'); it only
@@ -130,6 +87,8 @@ export async function resetDatabase(): Promise<DatabaseAdapter> {
   dbPromise = null
   return createDatabase()
 }
+
+export { ensurePersistentStorage } from './persistent-storage'
 
 /** Re-export types for convenience. */
 export type {

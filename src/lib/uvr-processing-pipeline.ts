@@ -4,7 +4,7 @@
 //   • Local mode   → VocalSeparator (ONNX in Web Worker)
 // ============================================================
 
-import { ensurePersistentStorage } from '@/db'
+import { ensurePersistentStorage } from '@/db/persistent-storage'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
@@ -524,7 +524,7 @@ export async function runUvrPipeline(
       options.signal,
     )
   }
-  // After separation finishes and stems are saved, check/request storage persistence
+  // Request eviction protection only after stems have been saved successfully.
   void ensurePersistentStorage()
 }
 

@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { destroyPipeline, runUvrPipeline } from '@/lib/uvr-processing-pipeline'
 
+const persistenceMocks = vi.hoisted(() => ({
+  ensurePersistentStorage: vi.fn(),
+}))
+
+vi.mock('@/db/persistent-storage', () => persistenceMocks)
+
 class MockWorker {
   static instances: MockWorker[] = []
 
@@ -20,6 +26,7 @@ class MockWorker {
 
 beforeEach(() => {
   MockWorker.instances = []
+  persistenceMocks.ensurePersistentStorage.mockReset()
   vi.stubGlobal('Worker', MockWorker)
 })
 
@@ -58,5 +65,6 @@ describe('UVR pipeline cancellation during model preparation', () => {
           (message as { type?: string } | undefined)?.type === 'separate',
       ),
     ).toBe(false)
+    expect(persistenceMocks.ensurePersistentStorage).not.toHaveBeenCalled()
   })
 })
