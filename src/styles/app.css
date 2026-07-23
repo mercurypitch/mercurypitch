@@ -2782,19 +2782,29 @@ input[type='range'] {
 
 @keyframes target-focus-pulse {
   0% {
-    background-color: var(
-      --flash-color,
-      hsla(var(--primary-hue, 210), 100%, 50%, 0.15)
-    );
-    box-shadow: 0 0 0 0
-      var(--flash-shadow, hsla(var(--primary-hue, 210), 100%, 50%, 0.4));
+    background-color: transparent;
+    box-shadow: 0 0 0 0 hsla(var(--primary-hue, 210), 100%, 50%, 0);
   }
-  30% {
+  15% {
     background-color: var(
       --flash-color-peak,
-      hsla(var(--primary-hue, 210), 100%, 50%, 0.25)
+      hsla(var(--primary-hue, 210), 100%, 50%, 0.28)
     );
-    box-shadow: 0 0 0 6px hsla(var(--primary-hue, 210), 100%, 50%, 0);
+    box-shadow: 0 0 0 8px hsla(var(--primary-hue, 210), 100%, 50%, 0.35);
+  }
+  35% {
+    background-color: var(
+      --flash-color,
+      hsla(var(--primary-hue, 210), 100%, 50%, 0.12)
+    );
+    box-shadow: 0 0 0 2px hsla(var(--primary-hue, 210), 100%, 50%, 0.1);
+  }
+  55% {
+    background-color: var(
+      --flash-color-peak,
+      hsla(var(--primary-hue, 210), 100%, 50%, 0.22)
+    );
+    box-shadow: 0 0 0 6px hsla(var(--primary-hue, 210), 100%, 50%, 0.2);
   }
   100% {
     background-color: transparent;
@@ -2803,6 +2813,6 @@ input[type='range'] {
 }
 
 .target-focus-flash {
-  animation: target-focus-pulse 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: target-focus-pulse 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   border-radius: inherit;
 }
