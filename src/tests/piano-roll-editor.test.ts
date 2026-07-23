@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PianoRollEditor } from '../lib/piano-roll'
+import { downloadMIDI, PianoRollEditor } from '../lib/piano-roll'
+
+const notificationMocks = vi.hoisted(() => ({
+  showNotification: vi.fn(),
+}))
+
+vi.mock('@/stores/notifications-store', () => notificationMocks)
 
 describe('PianoRollEditor', () => {
   let container: HTMLElement
   let editor: PianoRollEditor
 
   beforeEach(() => {
+    notificationMocks.showNotification.mockReset()
     // Mock canvas context for jsdom
     HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
       clearRect: vi.fn(),
@@ -59,6 +66,69 @@ describe('PianoRollEditor', () => {
     editor.setMelody(melody)
     expect(editor.getMelody()).toHaveLength(1)
     expect(editor.getMelody()[0].note?.midi).toBe(60)
+  })
+
+  it('defers destructive beat trimming until the user confirms', () => {
+    let acceptTrim: (() => void) | undefined
+    const onMelodyChange = vi.fn()
+    const guardedEditor = new PianoRollEditor({
+      container,
+      scale: [],
+      bpm: 120,
+      totalBeats: 16,
+      onMelodyChange,
+      onConfirm: (message, accept) => {
+        expect(message).toContain('12 beats')
+        acceptTrim = accept
+      },
+    })
+    guardedEditor.setMelody([
+      {
+        id: 1,
+        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        startBeat: 11,
+        duration: 4,
+      },
+    ])
+
+    guardedEditor.removeBeats(4)
+
+    expect(guardedEditor.getMelody()[0].duration).toBe(4)
+    expect(onMelodyChange).not.toHaveBeenCalled()
+
+    acceptTrim?.()
+
+    expect(guardedEditor.getMelody()[0].duration).toBe(1)
+    expect(onMelodyChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('never falls back to a native confirmation dialog', () => {
+    const nativeConfirm = vi.spyOn(window, 'confirm')
+    editor.setMelody([
+      {
+        id: 1,
+        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        startBeat: 15,
+        duration: 1,
+      },
+    ])
+
+    editor.removeBeats(4)
+
+    expect(nativeConfirm).not.toHaveBeenCalled()
+    expect(editor.getMelody()).toHaveLength(1)
+    expect(notificationMocks.showNotification).toHaveBeenCalledWith(
+      expect.stringContaining('not changed'),
+      'warning',
+    )
+  })
+
+  it('uses an in-app warning when there is no melody to export', () => {
+    expect(downloadMIDI([], 120, 'empty.mid')).toBe(false)
+    expect(notificationMocks.showNotification).toHaveBeenCalledWith(
+      'No melody to export. Add some notes first.',
+      'warning',
+    )
   })
 
   it('shifts octave and transposes notes', () => {

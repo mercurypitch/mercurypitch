@@ -5,12 +5,15 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import './PianoRollEditor.css'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
+import { useConfirm } from '@/lib/use-confirm'
 import { gridLinesVisible } from '@/stores/settings-store'
 import type { MelodyItem, ScaleDegree } from '@/types'
+import { AlertTriangle } from './icons'
 import styles from './PianoRollCanvas.module.css'
 
 interface PianoRollCanvasProps {
@@ -58,6 +61,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   let containerRef: HTMLDivElement | undefined
   let editor: PianoRollEditor | null = null
   let audioEngine: AudioEngine | null = null
+  const confirm = useConfirm()
 
   onMount(() => {
     if (!containerRef) return
@@ -80,6 +84,14 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       onPlaybackStateChange: props.onPlaybackStateChange,
       onMoveLoopA: (beat) => props.onMoveLoopA?.(beat),
       onMoveLoopB: (beat) => props.onMoveLoopB?.(beat),
+      onConfirm: (message, accept) =>
+        confirm.request({
+          title: 'Trim notes?',
+          message,
+          confirmLabel: 'Trim notes',
+          confirmIcon: <AlertTriangle />,
+          onConfirm: accept,
+        }),
     })
     editor.setMelody(props.melody())
     editor.setScale(props.scale())
@@ -232,6 +244,15 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
         ref={containerRef}
         class={styles.pianoRollContainer}
         data-tour="compose.piano-roll"
+      />
+      <ConfirmDialog
+        open={confirm.pending() !== null}
+        title={confirm.pending()?.title ?? ''}
+        message={confirm.pending()?.message ?? ''}
+        confirmLabel={confirm.pending()?.confirmLabel}
+        confirmIcon={confirm.pending()?.confirmIcon}
+        onConfirm={confirm.accept}
+        onCancel={confirm.cancel}
       />
     </div>
   )
