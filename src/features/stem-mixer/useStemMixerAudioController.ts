@@ -117,6 +117,8 @@ export interface StemMixerAudioController {
   midiPhase: Accessor<'detecting' | 'synthesizing' | 'rendering'>
   playing: Accessor<boolean>
   elapsed: Accessor<number>
+  /** Song position that has reached the output device, for lyric visuals. */
+  audibleElapsed: Accessor<number>
   duration: Accessor<number>
   currentPitch: Accessor<DetectedPitch | null>
 
@@ -185,6 +187,7 @@ export const useStemMixerAudioController = (
   >('detecting')
   const [playing, setPlayingLocal] = createSignal(false)
   const [elapsed, setElapsed] = createSignal(0)
+  const [audibleElapsed, setAudibleElapsed] = createSignal(0)
   const [duration, setDuration] = createSignal(0)
   const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(
     null,
@@ -620,6 +623,7 @@ export const useStemMixerAudioController = (
     disconnectSources()
     setPlayingLocal(false)
     setElapsed(0)
+    setAudibleElapsed(0)
     setCurrentPitch(null)
     pitchHistory = []
     deps.resetMicPitchHistory()
@@ -642,6 +646,7 @@ export const useStemMixerAudioController = (
     disconnectSources()
     setPlayingLocal(false)
     setElapsed(0)
+    setAudibleElapsed(0)
     setCurrentPitch(null)
     pitchHistory = []
     pitchDetector?.resetHistory()
@@ -660,6 +665,7 @@ export const useStemMixerAudioController = (
   const seekTo = (time: number) => {
     pauseOffset = Math.min(time, duration())
     setElapsed(pauseOffset)
+    setAudibleElapsed(pauseOffset)
 
     // Track whether this seek lands outside the active loop region
     if (
@@ -705,6 +711,30 @@ export const useStemMixerAudioController = (
       const elapsedTime =
         bufferPlayStart + (now - wallPlayStart) * playbackSpeed
       setElapsed(Math.min(elapsedTime, duration()))
+
+      // AudioContext.currentTime describes the rendering timeline, which can
+      // lead what the listener actually hears by the device output latency.
+      // Drive lyrics from the output timestamp when the browser exposes it.
+      let audibleContextTime = now
+      try {
+        const output = audioCtx.getOutputTimestamp()
+        const outputContextTime = output.contextTime
+        if (
+          outputContextTime !== undefined &&
+          Number.isFinite(outputContextTime) &&
+          outputContextTime > 0
+        ) {
+          audibleContextTime = outputContextTime
+        } else {
+          audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
+        }
+      } catch {
+        audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
+      }
+      const audibleTime =
+        bufferPlayStart +
+        Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
+      setAudibleElapsed(Math.min(audibleTime, duration()))
 
       // Pitch detection from vocal analyser (median + octave-corrected)
       let stemFreq = 0
@@ -895,6 +925,7 @@ export const useStemMixerAudioController = (
     midiPhase,
     playing,
     elapsed,
+    audibleElapsed,
     duration,
     currentPitch,
     windowStart,

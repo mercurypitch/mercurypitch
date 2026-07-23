@@ -4,6 +4,28 @@
 
 export type WordTimingsMap = Record<number, number[]>
 
+export interface WordSweepPoint {
+  /** Absolute song time in seconds. */
+  time: number
+  /** Visual position through the word, from 0 (first glyph) to 1 (last). */
+  progress: number
+}
+
+/** Per line, then per word, a time-to-highlight-position curve. */
+export type WordSweepTimingsMap = Record<
+  number,
+  Record<number, WordSweepPoint[]>
+>
+
+export interface LyricsTimingExtension {
+  /** Exact audible end of each word. Uses the same line/word indices as starts. */
+  wordEndTimings: WordTimingsMap
+  /** Optional non-linear marker path for held and segmented vowels. */
+  wordSweepTimings: WordSweepTimingsMap
+}
+
+export type LrcGenInputMode = 'marker' | 'tap'
+
 export interface LyricsBlock {
   id: string
   label: string
@@ -66,6 +88,8 @@ export interface GenViewLine {
   isFuture: boolean
   lineTime: number | undefined
   wordTimes: number[]
+  wordEndTimes: number[]
+  wordSweeps: Record<number, WordSweepPoint[]>
   activeWordIdx: number
   blockInfo: BlockInfo | null
   blockLabel: string | undefined

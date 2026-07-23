@@ -30,6 +30,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
 import { RestCountdownDots } from '@/components/RestCountdownDots'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
+import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
@@ -57,6 +58,8 @@ interface ParsedLine {
   words: string[]
   key: string
   wordTimes?: number[]
+  wordEndTimes?: number[]
+  wordSweeps?: Record<number, WordSweepPoint[]>
 }
 
 export interface KaraokeMobileStageProps {
@@ -68,6 +71,8 @@ export interface KaraokeMobileStageProps {
   loading: () => boolean
   loadError: () => string
   elapsed: () => number
+  /** Output-device-aligned position used only for lyric highlighting. */
+  lyricsElapsed?: () => number
   duration: () => number
   onPlay: () => void
   onPause: () => void
@@ -103,6 +108,8 @@ export interface KaraokeMobileStageProps {
     endTime: number,
     wordTimes: number[] | undefined,
     elapsedTime: number,
+    wordEndTimes?: number[],
+    wordSweeps?: Record<number, WordSweepPoint[]>,
   ) => { activeUpTo: number; charProgress: number; fraction: number }
   onLineClick: (idx: number) => void
 
@@ -226,7 +233,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       entry.time,
       entry.endTime,
       entry.wordTimes,
-      props.elapsed(),
+      props.lyricsElapsed?.() ?? props.elapsed(),
+      entry.wordEndTimes,
+      entry.wordSweeps,
     )
   })
 

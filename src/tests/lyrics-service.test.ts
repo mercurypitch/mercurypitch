@@ -731,6 +731,34 @@ describe('computeActiveWord — per-word timings', () => {
     expect(result.activeUpTo).toBe(1) // first 2 words fully highlighted
     expect(result.charProgress).toBeGreaterThan(0)
   })
+
+  it('uses an explicit word end instead of the short English duration estimate', () => {
+    const result = computeActiveWord(
+      ['glory', 'now'],
+      10,
+      16,
+      [10, 15],
+      13,
+      [14.5, 15.8],
+    )
+
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.fraction).toBeCloseTo(3 / 4.5)
+  })
+
+  it('replays a marker dwell inside a long vowel', () => {
+    const result = computeActiveWord(['glory'], 10, 15, [10], 12, [14], {
+      0: [
+        { time: 10, progress: 0 },
+        { time: 11, progress: 0.4 },
+        { time: 13, progress: 0.4 },
+        { time: 14, progress: 1 },
+      ],
+    })
+
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.fraction).toBeCloseTo(0.4)
+  })
 })
 
 // ── computeActiveWord — Even-Division Fallback ──────────────────
