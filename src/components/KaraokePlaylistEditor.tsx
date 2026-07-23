@@ -10,6 +10,7 @@ import { createSignal, For, Show } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { createPersistedSignal } from '@/lib/storage'
 import { addItem, getPlaylistsReactive, removeItem, reorderItems, setItemShuffleWithinGroup, setItemSinger, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { showNotification } from '@/stores/notifications-store'
 import { addSessionToGroup, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/uvr-store'
 import { CheckSmall, ChevronDown, ChevronUp, Play, X } from './icons'
 import styles from './KaraokePlaylistSidebar.module.css'
@@ -97,8 +98,12 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
     groupInfo(gid)?.sessionIds.includes(sid) ?? false
 
   const toggleSessionInGroup = (gid: string, sid: string) => {
-    if (sessionInGroup(gid, sid)) removeSessionFromGroup(sid)
-    else void addSessionToGroup(sid, gid)
+    const change = sessionInGroup(gid, sid)
+      ? removeSessionFromGroup(sid)
+      : addSessionToGroup(sid, gid)
+    void change.catch(() =>
+      showNotification('Could not update the session group.', 'error'),
+    )
   }
 
   // Resolve the active song-target, ignoring a stale group no longer present.

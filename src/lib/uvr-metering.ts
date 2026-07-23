@@ -7,10 +7,10 @@
 // paid jobs"). The jobRef is the `rp_<tier>_<id>` session id, so debit and
 // refund stay idempotent per job with no session store.
 //
-// Dormant by default, in layers: without DB_API_URL there is no metering at
-// all; with it, debits still no-op while a tier's credit cost is unset in
-// pricingPlans; and refunds are skipped without BILLING_SERVICE_KEY. So the
-// env can be wired ahead of pricing decisions without changing behavior.
+// Paid dispatch fails closed: the main worker requires DB_API_URL, admission
+// requires an active non-zero tier price, and an accepted RunPod job must debit
+// successfully or it is cancelled. Refunds remain best-effort and require
+// BILLING_SERVICE_KEY.
 
 import type { RunpodTier } from './runpod'
 
@@ -39,14 +39,83 @@ export function getMeteringConfig(env: MeteringEnvLike): MeteringConfig | null {
 }
 
 export interface DebitVerdict {
-  /** False only when the db-worker explicitly refused (402 insufficient
-   *  credits). Transport/server errors fail OPEN — a billing outage should
-   *  degrade to unmetered jobs, not break separation for paying users. */
+  /** False when billing cannot authorize the spend. Paid GPU dispatch fails
+   *  closed: a billing outage must never degrade into unmetered jobs. */
   allowed: boolean
   status?: number
   error?: string
   required?: number
   balance?: number
+  retryAfter?: number
+}
+
+async function readMeteringError(
+  response: Response,
+  fallback: string,
+): Promise<Pick<DebitVerdict, 'error' | 'required' | 'balance'>> {
+  const body = (await response.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >
+  const result: Pick<DebitVerdict, 'error' | 'required' | 'balance'> = {
+    error: typeof body.error === 'string' ? body.error : fallback,
+  }
+  if (typeof body.required === 'number') result.required = body.required
+  if (typeof body.balance === 'number') result.balance = body.balance
+  return result
+}
+
+/** Authenticate, rate-limit, and quote a paid job before any RunPod/R2 spend.
+ *  Unlike the post-submit debit, this has no jobRef because no job exists yet. */
+export async function admitUvrJob(
+  cfg: MeteringConfig,
+  authorization: string | null,
+  tier: RunpodTier,
+  model?: string,
+): Promise<DebitVerdict> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (authorization !== null && authorization !== '') {
+    headers.Authorization = authorization
+  }
+  try {
+    const response = await fetch(`${cfg.baseUrl}/api/billing/uvr-admit`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(model !== undefined ? { tier, model } : { tier }),
+    })
+    if (!response.ok) {
+      const error = await readMeteringError(
+        response,
+        'Server processing protection is unavailable',
+      )
+      const verdict: DebitVerdict = {
+        allowed: false,
+        status: response.status,
+        ...error,
+      }
+      const retryAfter = Number(response.headers?.get('Retry-After'))
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        verdict.retryAfter = retryAfter
+      }
+      return verdict
+    }
+    const body = (await response.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >
+    const verdict: DebitVerdict = { allowed: true, status: response.status }
+    if (typeof body.cost === 'number') verdict.required = body.cost
+    if (typeof body.balance === 'number') verdict.balance = body.balance
+    return verdict
+  } catch (error) {
+    console.error('[metering] UVR admission unreachable:', error)
+    return {
+      allowed: false,
+      error: 'Server processing protection is unavailable',
+    }
+  }
 }
 
 /** Debit the tier's credit cost for a job, forwarding the caller's app JWT
@@ -75,24 +144,21 @@ export async function debitForJob(
         model !== undefined ? { tier, jobRef, model } : { tier, jobRef },
       ),
     })
-    if (res.status === 402) {
-      const body = (await res.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-      >
+    if (!res.ok) {
+      const error = await readMeteringError(
+        res,
+        'Server processing billing is unavailable',
+      )
       const verdict: DebitVerdict = {
         allowed: false,
-        status: 402,
-        error:
-          typeof body.error === 'string' ? body.error : 'Insufficient credits',
+        status: res.status,
+        ...error,
       }
-      if (typeof body.required === 'number') verdict.required = body.required
-      if (typeof body.balance === 'number') verdict.balance = body.balance
+      const retryAfter = Number(res.headers?.get('Retry-After'))
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        verdict.retryAfter = retryAfter
+      }
       return verdict
-    }
-    if (!res.ok) {
-      console.error(`[metering] ${jobRef} debit failed:`, res.status)
-      return { allowed: true, status: res.status }
     }
     // Log the outcome — the ledger row is the durable audit; this is the
     // tail-time breadcrumb next to the job's other [runpod] lines.
@@ -110,7 +176,10 @@ export async function debitForJob(
     return { allowed: true, status: res.status }
   } catch (err) {
     console.error(`[metering] ${jobRef} debit unreachable:`, err)
-    return { allowed: true }
+    return {
+      allowed: false,
+      error: 'Server processing billing is unavailable',
+    }
   }
 }
 

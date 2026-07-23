@@ -29,3 +29,16 @@ export const AUDIO_UPLOAD_ALLOWED_TYPES: string[] = [
 
 /** Ready-to-use `accept` attribute string (comma-joined). */
 export const AUDIO_UPLOAD_ACCEPT = AUDIO_UPLOAD_ALLOWED_TYPES.join(',')
+
+/** Compact human-readable size label used by upload controls and queue rows. */
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  const unit = 1024
+  const labels = ['Bytes', 'KB', 'MB', 'GB']
+  const index = Math.min(
+    labels.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(unit)),
+  )
+  const value = bytes / Math.pow(unit, index)
+  return `${Math.round(value * 100) / 100} ${labels[index]}`
+}

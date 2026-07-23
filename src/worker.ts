@@ -1,6 +1,6 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
-import { getRunpodConfig } from './lib/runpod'
+import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
 import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
@@ -11,10 +11,9 @@ export { ContainerProxy }
 export { UvrContainer } from './uvr-container'
 
 // Cloudflare Worker entry point for MercuryPitch
-// Proxies /api/uvr/* to the UVR Docker container.
-// Optionally dispatches /api/uvr/* to a RunPod serverless GPU endpoint when
-//   RUNPOD_API_KEY + RUNPOD_ENDPOINT_ID are set and the request opts in
-//   (off by default — the container path is unchanged until configured).
+// Routes new paid processing to RunPod and keeps legacy container sessions
+// readable. A process request must explicitly select RunPod so it cannot fall
+// through to unmetered compute.
 // Handles /api/share/* for share link shortening (KV-backed).
 // Static assets are served by Cloudflare's assets feature.
 
@@ -36,9 +35,9 @@ export interface Env {
   RUNPOD_ENDPOINT_ID_CPU?: string
   /** Optional RunPod API base override (defaults to https://api.runpod.ai/v2). */
   RUNPOD_BASE_URL?: string
-  /** db-worker base URL — enables credit metering of RunPod jobs (debit on
-   *  accept, refund on failure). Per-env var in wrangler.jsonc; while a
-   *  tier's credit cost is unset in pricingPlans, debits no-op. */
+  /** db-worker base URL — required for RunPod admission, rate limits, and
+   *  credit metering (debit on accept, refund on failure). Per-env var in
+   *  wrangler.jsonc; new paid jobs fail closed while it is unset. */
   DB_API_URL?: string
   /** Shared secret for service-to-service billing refunds; the SAME value
    *  is set on the db-worker. `wrangler secret put BILLING_SERVICE_KEY`.
@@ -106,23 +105,67 @@ export default {
         }
       }
 
+      // New processing is RunPod-only and must always pass the paid admission
+      // gate below. A missing/unknown provider used to fall through to the
+      // unmetered container, letting any app JWT bypass credits and rate limits.
+      const isProcessRequest =
+        method === 'POST' && url.pathname === '/api/uvr/process'
+      const requestedTier = isProcessRequest
+        ? requestedRunpodTier(request, url)
+        : null
+      if (isProcessRequest && requestedTier === null) {
+        return json(
+          {
+            error:
+              'Choose Server mode for cloud processing or Browser mode for on-device processing.',
+          },
+          400,
+        )
+      }
+
       // When RunPod is configured, dispatch eligible requests to it (opted-in
-      // /process, or any rp_-prefixed session id). Anything else returns null
-      // and falls through to the container — default behavior is unchanged.
+      // /process, or any rp_-prefixed session id). Legacy container session
+      // reads still fall through below.
       const runpod = getRunpodConfig(env)
       if (runpod) {
+        const meter = getMeteringConfig(env)
+        // A configured GPU without its billing/admission service is an unsafe
+        // state: accepting jobs would bypass both credits and rate limits.
+        // Refuse new RunPod work, while keeping status/output reads available
+        // so already-paid jobs remain recoverable.
+        if (isProcessRequest && requestedTier !== null && meter === null) {
+          return json(
+            {
+              error:
+                'Server processing protection is unavailable. Use Browser mode instead.',
+            },
+            503,
+          )
+        }
         try {
           const handled = await handleRunpodRequest(
             request,
             url,
             method,
             runpod,
-            getMeteringConfig(env),
+            meter,
             // R2Bucket's overloaded put() doesn't structurally match the
             // bridge's minimal interface; the runtime shape is compatible.
             (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
           )
           if (handled !== null) return handled
+          // A valid process request can still be unhandled when the selected
+          // tier has no endpoint. Never let that configuration gap fall
+          // through to the legacy, unmetered container.
+          if (isProcessRequest) {
+            return json(
+              {
+                error:
+                  'The selected server processing tier is not available right now. Use Browser mode instead.',
+              },
+              503,
+            )
+          }
         } catch (err) {
           console.error('[worker] runpod error:', err)
           return json(

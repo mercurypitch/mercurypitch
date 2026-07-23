@@ -8,6 +8,7 @@
 // Audio/lyrics blobs are intentionally absent (the in-memory DB returns null),
 // so this exercises the metadata round-trip without real stems.
 
+import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it, vi } from 'vitest'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
@@ -27,7 +28,8 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
   }
 }
 
-import { buildKaraokePlaylistZip, importSessionsFromZip, isZipFile, } from '@/db/services/session-export-service'
+import type { SessionGroupRecord, UvrSessionRecord } from '@/db'
+import { buildKaraokePlaylistZip, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, importUvrSession, } from '@/stores/app-store'
 import { addItem, createPlaylist, getPlaylistsReactive, setPlaylistPlayMode, setPlaylistShuffleOrder, } from '@/stores/karaoke-playlist-store'
@@ -75,6 +77,13 @@ describe('karaoke playlist export → import round-trip', () => {
     // Export → import.
     const blob = await buildKaraokePlaylistZip([pl.id])
     expect(blob).not.toBeNull()
+    expect(await inspectSessionZip(blob!)).toMatchObject({
+      sessionCount: 3,
+      playlistCount: 1,
+      groupCount: 1,
+      hasKaraokeManifest: true,
+      valid: true,
+    })
     const count = await importSessionsFromZip(blob!)
     expect(count).toBe(3) // s1, s2 (via group) + s3 (standalone)
 
@@ -140,3 +149,136 @@ describe('isZipFile', () => {
     expect(isZipFile(make('zip-tips.txt', 'text/plain'))).toBe(false)
   })
 })
+
+describe('inspectSessionZip', () => {
+  it('counts only sessions that the importer can actually add', async () => {
+    const valid = {
+      version: 1,
+      session: makeSession('valid', 'Valid Song'),
+      lyrics: null,
+    }
+    const zip = zipSync({
+      'one/session.json': strToU8(JSON.stringify(valid)),
+      'two/session.json': strToU8('{broken json'),
+    })
+
+    const result = await inspectSessionZip(
+      new Blob([zip], { type: 'application/zip' }),
+    )
+
+    expect(result).toMatchObject({
+      sessionCount: 1,
+      invalidSessionCount: 1,
+      valid: true,
+      error: '1 invalid session entry will be skipped',
+    })
+  })
+
+  it('reports an unreadable file without throwing', async () => {
+    const result = await inspectSessionZip(
+      new Blob(['not-a-zip'], { type: 'application/zip' }),
+    )
+    expect(result).toMatchObject({
+      sessionCount: 0,
+      valid: false,
+      error: 'ZIP could not be read',
+    })
+  })
+})
+
+describe('plain session ZIP group assignment', () => {
+  it('keeps imported membership, moves and persisted indexes consistent', async () => {
+    const beforeSessionIds = new Set(
+      getAllUvrSessions().map((session) => session.sessionId),
+    )
+    const target = await createGroup('Test import target')
+    const zip = zipSync({
+      'one/session.json': strToU8(
+        JSON.stringify({
+          version: 1,
+          session: makeSession('plain-1', 'Plain One'),
+        }),
+      ),
+      'two/session.json': strToU8(
+        JSON.stringify({
+          version: 1,
+          session: makeSession('plain-2', 'Plain Two'),
+        }),
+      ),
+      'three/session.json': strToU8(
+        JSON.stringify({
+          version: 1,
+          session: makeSession('plain-3', 'Plain Three'),
+        }),
+      ),
+    })
+
+    expect(
+      await importSessionsFromZip(
+        new Blob([zip], { type: 'application/zip' }),
+        target.id,
+      ),
+    ).toBe(3)
+
+    const imported = getAllUvrSessions().filter(
+      (session) => !beforeSessionIds.has(session.sessionId),
+    )
+    expect(imported).toHaveLength(3)
+    expect(imported.every((session) => session.groupId === target.id)).toBe(
+      true,
+    )
+    expect(
+      getGroupsReactive().find((group) => group.id === target.id)?.sessionIds,
+    ).toEqual(imported.map((session) => session.sessionId))
+
+    const destination = await createGroup('Moved destination')
+    const moved = imported[0]
+    await addSessionToGroup(moved.sessionId, destination.id)
+
+    expect(getUvrSessionGroupId(moved.sessionId)).toBe(destination.id)
+    expect(
+      getGroupsReactive().find((group) => group.id === target.id)?.sessionIds,
+    ).toEqual(imported.slice(1).map((session) => session.sessionId))
+    expect(
+      getGroupsReactive().find((group) => group.id === destination.id)
+        ?.sessionIds,
+    ).toEqual([moved.sessionId])
+
+    const groupRepo = adapter.getRepository<SessionGroupRecord>('sessionGroups')
+    expect((await groupRepo.findById(target.id))?.sessionIds).toEqual(
+      imported.slice(1).map((session) => session.sessionId),
+    )
+    expect((await groupRepo.findById(destination.id))?.sessionIds).toEqual([
+      moved.sessionId,
+    ])
+
+    const sessionRepo = adapter.getRepository<UvrSessionRecord>('uvrSessions')
+    const persisted = await sessionRepo.findAll({
+      where: { appSessionId: moved.sessionId },
+      limit: 1,
+    })
+    expect(persisted[0]?.groupId).toBe(destination.id)
+
+    const rapidFirst = await createGroup('Rapid move first')
+    const rapidLast = await createGroup('Rapid move last')
+    await Promise.all([
+      addSessionToGroup(moved.sessionId, rapidFirst.id),
+      addSessionToGroup(moved.sessionId, rapidLast.id),
+    ])
+
+    expect(getUvrSessionGroupId(moved.sessionId)).toBe(rapidLast.id)
+    expect(
+      getGroupsReactive().find((group) => group.id === rapidFirst.id)
+        ?.sessionIds,
+    ).toEqual([])
+    expect(
+      getGroupsReactive().find((group) => group.id === rapidLast.id)
+        ?.sessionIds,
+    ).toEqual([moved.sessionId])
+  })
+})
+
+function getUvrSessionGroupId(sessionId: string): string | undefined {
+  return getAllUvrSessions().find((session) => session.sessionId === sessionId)
+    ?.groupId
+}

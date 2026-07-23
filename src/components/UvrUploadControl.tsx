@@ -3,17 +3,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
 import { isZipFile } from '@/db/services/session-export-service'
-import { AUDIO_UPLOAD_ALLOWED_TYPES } from '@/lib/audio-accept'
+import { AUDIO_UPLOAD_ALLOWED_TYPES, formatFileSize } from '@/lib/audio-accept'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
-import { FileUpload, ImportFile, MusicNote } from './icons'
+import { FileUpload, MusicNote } from './icons'
 
 interface UploadControlProps {
-  onFileSelect?: (file: File) => void
-  onFileReady?: (file: File) => void
-  onProcessStart?: (sessionId: string) => void
+  onFilesSelect?: (files: File[]) => void
   /** Called when the user drops/picks exported session ZIP(s) — routes them
    *  to the session import flow instead of audio processing. */
   onImportZips?: (files: File[]) => void
@@ -22,63 +19,51 @@ interface UploadControlProps {
    *  explain the smaller cloud-GPU limit and point at Browser mode. */
   maxSizeNote?: string
   allowedTypes?: string[]
-  processing?: boolean
   disabled?: boolean
 }
 
 export const UvrUploadControl: Component<UploadControlProps> = (props) => {
-  const [isDragging, setIsDragging] = createSignal(false)
-  const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
-
   const maxSize = () => props.maxSize ?? 100 * 1024 * 1024 // 100MB default
   const allowedTypes = () => props.allowedTypes || AUDIO_UPLOAD_ALLOWED_TYPES
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
+  const acceptsAudio = (file: File): boolean => {
+    const mimeType = file.type.toLowerCase()
+    const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
+    return (
+      allowedTypes().includes(mimeType) || allowedTypes().includes(extension)
+    )
   }
 
-  const handleFileSelect = (file: File) => {
+  const handleFilesSelect = (files: File[]) => {
     if (props.disabled === true) return
 
-    // Validate file size
-    if (file.size > maxSize()) {
+    const oversized = files.filter(
+      (file) => acceptsAudio(file) && file.size > maxSize(),
+    )
+    const invalid = files.filter((file) => !acceptsAudio(file))
+    const accepted = files.filter(
+      (file) => acceptsAudio(file) && file.size <= maxSize(),
+    )
+
+    if (oversized.length > 0) {
       const note =
         props.maxSizeNote !== undefined ? ` ${props.maxSizeNote}.` : ''
       showActionNotification(
-        `File too large! Maximum size: ${formatFileSize(maxSize())}.${note}`,
+        `${oversized.length} ${oversized.length === 1 ? 'song is' : 'songs are'} over the ${formatFileSize(maxSize())} limit.${note}`,
         'warning',
         { label: 'OK', onClick: () => {} },
       )
-      return
     }
 
-    // Validate file type
-    const mimeType = file.type.toLowerCase()
-    const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
-
-    if (
-      !allowedTypes().includes(mimeType) &&
-      !allowedTypes().includes(extension)
-    ) {
+    if (invalid.length > 0) {
       showActionNotification(
-        'Invalid file type. Please upload MP3, WAV or FLAC files.',
+        `${invalid.length} unsupported ${invalid.length === 1 ? 'file was' : 'files were'} skipped. Choose MP3, WAV or FLAC audio.`,
         'warning',
         { label: 'OK', onClick: () => {} },
       )
-      return
     }
 
-    setSelectedFile(file)
-    if (props.onFileSelect) {
-      props.onFileSelect(file)
-    }
-    if (props.onFileReady) {
-      props.onFileReady(file)
-    }
+    if (accepted.length > 0) props.onFilesSelect?.(accepted)
   }
 
   // dragenter/dragleave fire for every child element crossed inside the
@@ -86,68 +71,57 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   // highlight used to flicker off after the first child crossing.
   let dragDepth = 0
 
-  const handleDragEnter = () => {
+  const setDragActive = (event: DragEvent, active: boolean) => {
+    const element = event.currentTarget as HTMLElement | null
+    element?.classList.toggle('dragging', active)
+  }
+
+  const handleDragEnter = (event: DragEvent) => {
     if (props.disabled === true) return
     dragDepth++
-    setIsDragging(true)
+    setDragActive(event, true)
   }
 
-  const handleDragLeave = () => {
+  const handleDragOver = (event: DragEvent) => {
+    event.preventDefault()
+    if (props.disabled === true) return
+    if (dragDepth === 0) dragDepth = 1
+    setDragActive(event, true)
+  }
+
+  const handleDragLeave = (event: DragEvent) => {
     dragDepth = Math.max(0, dragDepth - 1)
-    if (dragDepth === 0) setIsDragging(false)
+    if (dragDepth === 0) setDragActive(event, false)
   }
 
-  /** Session ZIP exports go to the import flow, not audio processing.
-   *  Returns true when the files were consumed as ZIPs. Imports are DB-only,
-   *  so they bypass the `disabled` (another-session-processing) guard. */
-  const routeZipsToImport = (files: File[]): boolean => {
-    if (props.onImportZips === undefined) return false
+  /** Route session ZIP exports to the import flow and return any remaining
+   *  audio candidates. Imports are DB-only, so they bypass the `disabled`
+   *  (another-session-processing) guard. */
+  const routeZipsToImport = (files: File[]): File[] => {
+    if (props.onImportZips === undefined) return files
     const zips = files.filter(isZipFile)
-    if (zips.length === 0) return false
-    props.onImportZips(zips)
-    return true
+    if (zips.length > 0) props.onImportZips(zips)
+    return files.filter((file) => !isZipFile(file))
   }
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     dragDepth = 0
-    setIsDragging(false)
+    setDragActive(e, false)
 
     const files = e.dataTransfer?.files
     if (!files || files.length === 0) return
-    if (routeZipsToImport([...files])) return
+    const audioFiles = routeZipsToImport([...files])
     if (props.disabled === true) return
-    handleFileSelect(files[0])
+    handleFilesSelect(audioFiles)
   }
 
   const handleFileInput = (e: Event) => {
     const input = e.currentTarget as HTMLInputElement
     if (input.files && input.files.length > 0) {
-      if (routeZipsToImport([...input.files])) {
-        input.value = ''
-        return
-      }
-      handleFileSelect(input.files[0])
-    }
-  }
-
-  const handleClear = () => {
-    if (props.disabled === true) return
-    setSelectedFile(null)
-    const fileInput = document.getElementById(
-      'uvr-file-input',
-    ) as HTMLInputElement | null
-    if (fileInput) fileInput.value = ''
-  }
-
-  const handleProcess = () => {
-    if (props.disabled === true) return
-    if (selectedFile()) {
-      // Generate session ID
-      const sessionId = `session-${Date.now()}`
-      if (props.onProcessStart) {
-        props.onProcessStart(sessionId)
-      }
+      const audioFiles = routeZipsToImport([...input.files])
+      if (audioFiles.length > 0) handleFilesSelect(audioFiles)
+      input.value = ''
     }
   }
 
@@ -159,17 +133,17 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
         <div class="upload-icon-wrapper">
           <MusicNote />
         </div>
-        <h3>Select a Song</h3>
+        <h3>Add songs to your setlist</h3>
         <p class="upload-subtitle">
-          Upload an audio file to separate vocals and instruments
+          Build a setlist and separate every song in order
         </p>
       </div>
 
       {/* Upload Zone */}
       <label
-        class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled === true ? 'disabled' : ''}`}
+        class={`upload-zone ${props.disabled === true ? 'disabled' : ''}`}
         onDragEnter={handleDragEnter}
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         for="uvr-file-input"
@@ -178,66 +152,22 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           id="uvr-file-input"
           type="file"
           accept={allowedTypes().join(',')}
+          multiple
           onChange={handleFileInput}
           class="file-input"
           disabled={props.disabled}
         />
 
-        <Show when={!selectedFile()}>
-          <div class="upload-content">
-            <div class="upload-icon">
-              <FileUpload />
-            </div>
-            <p class="upload-text">
-              Drag & drop an audio file here, or{' '}
-              <span class="upload-text-highlight">click to browse</span>
-            </p>
+        <div class="upload-content">
+          <div class="upload-icon">
+            <FileUpload />
           </div>
-        </Show>
-
-        <Show when={selectedFile()}>
-          <div class="file-info">
-            <div class="file-preview">
-              <div class="file-icon">
-                <MusicNote />
-              </div>
-              <div class="file-details">
-                <p class="file-name">{selectedFile()?.name ?? 'Unknown'}</p>
-                <p class="file-meta">
-                  {formatFileSize(selectedFile()?.size ?? 0)} •
-                  {selectedFile()?.type ?? 'Unknown type'}
-                </p>
-              </div>
-            </div>
-
-            <Show when={props.processing}>
-              <div class="processing-indicator">
-                <div class="pulse-spinner" />
-                <span>Processing...</span>
-              </div>
-            </Show>
-
-            <Show when={!(props.processing ?? false)}>
-              <div class="upload-actions">
-                <button
-                  class="upload-btn upload-btn-secondary"
-                  onClick={handleClear}
-                  disabled={props.disabled}
-                >
-                  Change File
-                </button>
-                <button
-                  class="upload-btn upload-btn-primary"
-                  onClick={handleProcess}
-                  disabled={!selectedFile() || props.disabled}
-                >
-                  <ImportFile />
-                  Process
-                </button>
-              </div>
-            </Show>
-          </div>
-        </Show>
+          <p class="upload-text">Drop MP3, WAV or FLAC songs here</p>
+          <p class="upload-hint">
+            Up to 15 at once, or{' '}
+            <span class="upload-text-highlight">choose files</span>
+          </p>
+        </div>
       </label>
 
       {/* Supported Formats */}

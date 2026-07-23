@@ -402,6 +402,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
   // 60/min per IP is roomy for humans and cheap to spam-bound.
   'mirror-event': { max: 60, windowMs: 60_000 },
+  // Paid UVR dispatch: the client runs one song at a time, so three starts in
+  // one minute leaves ample room for retries while stopping a loop or multiple
+  // tabs from rapidly burning GPU spend. The sustained cap mirrors the
+  // 15-song upload queue and bounds any one account to one full batch/hour.
+  'uvr-process-burst': { max: 3, windowMs: 60_000 },
+  'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
 }
 
 export async function checkRateLimit(

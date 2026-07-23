@@ -6,6 +6,7 @@
 //   POST /api/billing/checkout  — auth; { planId } → Stripe Checkout url
 //   GET  /api/billing/portal    — auth; Stripe Customer Portal url
 //   POST /api/billing/webhook   — Stripe; signature-verified, idempotent
+//   POST /api/billing/uvr-admit — auth; pre-dispatch credit + rate-limit gate
 //   POST /api/billing/debit     — auth; meter a server UVR job (idempotent)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
 //
@@ -21,7 +22,7 @@
 // billing-core.ts so they're unit-testable without the worker runtime.
 
 import type { Env } from './auth'
-import { getAuth } from './auth'
+import { checkRateLimit, getAuth } from './auth'
 import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
 import {
@@ -403,6 +404,90 @@ interface DebitBody {
 
 const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
 
+async function getUvrQuote(
+  env: Env,
+  userId: string,
+  tier: 'gpu' | 'cpu',
+  model?: string,
+): Promise<{ cost: number; balance: number }> {
+  const plan = await env.DB.prepare(
+    'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
+  )
+    .bind(UVR_TIER_PLAN_IDS[tier])
+    .first<{ credits: number | null }>()
+  const cost = uvrJobCost(plan?.credits ?? 0, model)
+  const ledger = await env.DB.prepare(
+    'SELECT delta FROM creditLedger WHERE userId = ?',
+  )
+    .bind(userId)
+    .all<{ delta: number }>()
+  return { cost, balance: creditBalance(ledger.results) }
+}
+
+/** Fail-closed admission gate for paid UVR dispatch.
+ *
+ * Runs before the main worker stages an input or creates a RunPod job. Two
+ * atomic D1 counters bound bursts and sustained starts per authenticated user;
+ * the quote check avoids starting a job that cannot be paid for. The later
+ * debit remains authoritative and atomic against concurrent requests. */
+async function handleUvrAdmission(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: Pick<DebitBody, 'tier' | 'model'>
+  try {
+    body = await request.json<Pick<DebitBody, 'tier' | 'model'>>()
+  } catch {
+    return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  if (!isUvrTier(body.tier)) {
+    return respond({ error: 'tier must be "gpu" or "cpu"' }, { status: 400 })
+  }
+  if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
+    return respond({ error: 'Invalid model' }, { status: 400 })
+  }
+
+  const rateKey = `user:${auth.userId}`
+  for (const bucket of ['uvr-process-burst', 'uvr-process-hour'] as const) {
+    const limit = await checkRateLimit(env.DB, rateKey, bucket)
+    if (!limit.allowed) {
+      const retryAfter = limit.retryAfter ?? 60
+      return respond(
+        {
+          error: `Too many server separations. Try again in ${retryAfter} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(retryAfter) },
+        },
+      )
+    }
+  }
+
+  const quote = await getUvrQuote(env, auth.userId, body.tier, body.model)
+  if (quote.cost <= 0) {
+    return respond(
+      { error: 'Server processing metering is unavailable' },
+      { status: 503 },
+    )
+  }
+  if (quote.balance < quote.cost) {
+    return respond(
+      {
+        error: 'Not enough credits',
+        required: quote.cost,
+        balance: quote.balance,
+      },
+      { status: 402 },
+    )
+  }
+  return respond({ allowed: true, ...quote })
+}
+
 /** Debit a server-side separation job against the user's credit balance.
  *
  *  Called by the main worker when a RunPod job is accepted (jobRef = the
@@ -433,19 +518,12 @@ async function handleDebit(
     return respond({ error: 'Invalid model' }, { status: 400 })
   }
 
-  const plan = await env.DB.prepare(
-    'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
+  const { cost, balance } = await getUvrQuote(
+    env,
+    auth.userId,
+    body.tier,
+    body.model,
   )
-    .bind(UVR_TIER_PLAN_IDS[body.tier])
-    .first<{ credits: number | null }>()
-  const cost = uvrJobCost(plan?.credits ?? 0, body.model)
-
-  const ledger = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE userId = ?',
-  )
-    .bind(auth.userId)
-    .all<{ delta: number }>()
-  const balance = creditBalance(ledger.results)
 
   if (cost <= 0) {
     // Tier not metered yet — nothing to charge.
@@ -736,6 +814,9 @@ export async function handleBilling(
   }
   if (route === 'webhook' && method === 'POST') {
     return handleWebhook(request, env, respond)
+  }
+  if (route === 'uvr-admit' && method === 'POST') {
+    return handleUvrAdmission(request, env, respond)
   }
   if (route === 'debit' && method === 'POST') {
     return handleDebit(request, env, respond)

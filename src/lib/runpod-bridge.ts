@@ -8,9 +8,9 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
-import { debitForJob, refundJob } from './uvr-metering'
+import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 
 // base64 inflates ~33%; RunPod's /run input cap is ~10 MB, so only inline
 // audio up to this raw size. Larger uploads (up to RUNPOD_MAX_UPLOAD_BYTES)
@@ -108,10 +108,14 @@ async function serveStemFromR2(
   })
 }
 
-function json(body: unknown, status = 200): Response {
+function json(
+  body: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   })
 }
 
@@ -331,6 +335,62 @@ async function startRunpodJob(
   meter: MeteringConfig | null,
   bucket: UvrInputBucket | null,
 ): Promise<Response> {
+  const modelHeader = request.headers.get('X-UVR-Model')
+  const declaredModel =
+    modelHeader !== null && modelHeader.trim() !== ''
+      ? modelHeader.trim()
+      : RUNPOD_DEFAULT_MODEL
+  if (!(RUNPOD_ALLOWED_MODELS as readonly string[]).includes(declaredModel)) {
+    return json(
+      {
+        error: `Unknown model (use one of: ${RUNPOD_ALLOWED_MODELS.join(', ')})`,
+      },
+      400,
+    )
+  }
+
+  // Reject an obviously oversized multipart request before formData() buffers
+  // it. Allow bounded room for multipart headers and the small option fields.
+  const contentLength = Number(request.headers.get('Content-Length'))
+  const maxMultipartBytes = RUNPOD_MAX_UPLOAD_BYTES + 512 * 1024
+  if (Number.isFinite(contentLength) && contentLength > maxMultipartBytes) {
+    return json(
+      {
+        error: `File too large (max ${RUNPOD_MAX_UPLOAD_BYTES / (1024 * 1024)} MB for server processing).`,
+      },
+      413,
+    )
+  }
+
+  // Protect paid dispatch before consuming/buffering the multipart body. The
+  // declared model is repeated in the form and checked below, so a caller
+  // cannot quote a cheap model here and submit a more expensive one later.
+  if (meter !== null) {
+    const admission = await admitUvrJob(
+      meter,
+      request.headers.get('Authorization'),
+      tier,
+      declaredModel,
+    )
+    if (!admission.allowed) {
+      const status = admission.status ?? 503
+      const headers: Record<string, string> = {}
+      if (admission.retryAfter !== undefined) {
+        headers['Retry-After'] = String(admission.retryAfter)
+      }
+      return json(
+        {
+          error:
+            admission.error ?? 'Server processing protection is unavailable',
+          required: admission.required,
+          balance: admission.balance,
+        },
+        status,
+        headers,
+      )
+    }
+  }
+
   const form = await request.formData()
   const file = form.get('file')
   if (!(file instanceof File)) {
@@ -338,6 +398,7 @@ async function startRunpodJob(
   }
 
   const model = coerceFormString(form.get('model'))
+  const effectiveModel = model ?? RUNPOD_DEFAULT_MODEL
   // Allowlist before spending anything: an unknown model would only fail
   // inside the (billable) RunPod job, and an open passthrough would let a
   // crafted request make the worker download arbitrary weights on our GPU
@@ -350,6 +411,12 @@ async function startRunpodJob(
       {
         error: `Unknown model (use one of: ${RUNPOD_ALLOWED_MODELS.join(', ')})`,
       },
+      400,
+    )
+  }
+  if (effectiveModel !== declaredModel) {
+    return json(
+      { error: 'The declared processing model does not match the upload.' },
       400,
     )
   }
@@ -435,16 +502,24 @@ async function startRunpodJob(
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)
+      // A transport failure can hide a successful debit response. The refund
+      // endpoint is idempotent and safely no-ops when no debit exists, so this
+      // best-effort compensation prevents a cancelled job from remaining
+      // charged when the response was lost after the ledger commit.
+      await refundJob(meter, sessionId)
       console.warn(
         `[runpod] ${sessionId} cancelled: debit refused (balance ${verdict.balance ?? '?'}, required ${verdict.required ?? '?'})`,
       )
       return json(
         {
-          error: verdict.error ?? 'Insufficient credits',
+          error: verdict.error ?? 'Server processing billing is unavailable',
           required: verdict.required,
           balance: verdict.balance,
         },
-        402,
+        verdict.status ?? 503,
+        verdict.retryAfter !== undefined
+          ? { 'Retry-After': String(verdict.retryAfter) }
+          : {},
       )
     }
   }

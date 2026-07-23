@@ -51,6 +51,129 @@ export function isZipFile(file: File): boolean {
   )
 }
 
+export interface SessionZipInspection {
+  sessionCount: number
+  invalidSessionCount: number
+  playlistCount: number
+  groupCount: number
+  hasKaraokeManifest: boolean
+  valid: boolean
+  error?: string
+}
+
+/** Read only the small manifest JSON entries needed to preview an import.
+ *
+ * The filter is important: session archives can contain hundreds of MB of
+ * audio, and a count should not inflate/decompress every stem before the user
+ * has even confirmed the import. */
+export async function inspectSessionZip(
+  zipBlob: Blob,
+): Promise<SessionZipInspection> {
+  try {
+    const buffer = await zipBlob.arrayBuffer()
+    const unzipped = fflate.unzipSync(new Uint8Array(buffer), {
+      filter: (entry) =>
+        entry.name.endsWith('session.json') || entry.name === 'karaoke.json',
+    })
+    const sessionPaths = Object.keys(unzipped).filter((path) =>
+      path.endsWith('session.json'),
+    )
+    let sessionCount = 0
+    let invalidSessionCount = 0
+    for (const path of sessionPaths) {
+      try {
+        const payload = JSON.parse(
+          fflate.strFromU8(unzipped[path]),
+        ) as Partial<ImportPayload>
+        if (
+          payload.version === 1 &&
+          payload.session !== undefined &&
+          payload.session !== null
+        ) {
+          sessionCount++
+        } else {
+          invalidSessionCount++
+        }
+      } catch {
+        invalidSessionCount++
+      }
+    }
+    if (sessionCount === 0) {
+      return {
+        sessionCount: 0,
+        invalidSessionCount,
+        playlistCount: 0,
+        groupCount: 0,
+        hasKaraokeManifest: false,
+        valid: false,
+        error:
+          invalidSessionCount > 0
+            ? 'No valid MercuryPitch sessions found'
+            : 'No MercuryPitch sessions found',
+      }
+    }
+
+    const invalidSessionWarning =
+      invalidSessionCount > 0
+        ? `${invalidSessionCount} invalid session ${invalidSessionCount === 1 ? 'entry' : 'entries'} will be skipped`
+        : undefined
+    const manifestBytes = unzipped['karaoke.json']
+    if (manifestBytes === undefined) {
+      return {
+        sessionCount,
+        invalidSessionCount,
+        playlistCount: 0,
+        groupCount: 0,
+        hasKaraokeManifest: false,
+        valid: true,
+        error: invalidSessionWarning,
+      }
+    }
+
+    try {
+      const manifest = JSON.parse(
+        fflate.strFromU8(manifestBytes),
+      ) as Partial<KaraokeManifest>
+      return {
+        sessionCount,
+        invalidSessionCount,
+        playlistCount: Array.isArray(manifest.playlists)
+          ? manifest.playlists.length
+          : 0,
+        groupCount: Array.isArray(manifest.groups) ? manifest.groups.length : 0,
+        hasKaraokeManifest: true,
+        valid: true,
+        error: invalidSessionWarning,
+      }
+    } catch {
+      return {
+        sessionCount,
+        invalidSessionCount,
+        playlistCount: 0,
+        groupCount: 0,
+        hasKaraokeManifest: true,
+        valid: true,
+        error: [
+          invalidSessionWarning,
+          'Playlist details could not be previewed',
+        ]
+          .filter((message) => message !== undefined)
+          .join(' · '),
+      }
+    }
+  } catch {
+    return {
+      sessionCount: 0,
+      invalidSessionCount: 0,
+      playlistCount: 0,
+      groupCount: 0,
+      hasKaraokeManifest: false,
+      valid: false,
+      error: 'ZIP could not be read',
+    }
+  }
+}
+
 /**
  * Helper to fetch a Blob as Uint8Array
  */
@@ -441,7 +564,6 @@ async function importOneSession(
     // Drop the source groupId — group membership is re-established by the
     // caller (targetGroupId) or by the karaoke manifest, never the stale id.
     groupId: undefined,
-    ...(targetGroupId !== undefined ? { groupId: targetGroupId } : {}),
   }
 
   // 1. Process original file
@@ -500,6 +622,11 @@ async function importOneSession(
   }
   // 6. Save session to app-store
   importUvrSession(newSession)
+  if (targetGroupId !== undefined) {
+    // Keep both sides of the group relationship consistent. Setting groupId on
+    // the session alone leaves the group's count/index empty and breaks moves.
+    await addSessionToGroup(newSessionId, targetGroupId)
+  }
 
   return { oldSessionId, newSessionId }
 }

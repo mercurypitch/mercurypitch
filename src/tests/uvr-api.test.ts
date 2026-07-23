@@ -366,16 +366,25 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
   it('sends X-UVR-Provider when a provider is requested', async () => {
     const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
     const file = new File([new Uint8Array([1])], 'song.mp3')
-    const res = await processAudio(file, {
-      ...DEFAULT_PROCESS_REQUEST,
-      provider: 'runpod',
-    })
+    const controller = new AbortController()
+    const res = await processAudio(
+      file,
+      {
+        ...DEFAULT_PROCESS_REQUEST,
+        provider: 'runpod',
+      },
+      controller.signal,
+    )
     expect(res.session_id).toBe('rp_gpu_job-1')
     const [url, init] = spy.mock.calls[0] as [string, RequestInit]
     expect(String(url).endsWith('/process')).toBe(true)
     expect((init.headers as Record<string, string>)['X-UVR-Provider']).toBe(
       'runpod',
     )
+    expect((init.headers as Record<string, string>)['X-UVR-Model']).toBe(
+      'roformer',
+    )
+    expect(init.signal).toBe(controller.signal)
   })
 
   it('omits the header without a provider', async () => {
