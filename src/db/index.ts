@@ -34,28 +34,6 @@ function resolveAdapter(): DatabaseAdapter {
 }
 
 /**
- * Ask the browser to make our storage persistent, so IndexedDB (including large
- * UVR stem blobs) is exempt from best-effort eviction under storage pressure.
- * Best-effort: some browsers only grant it after user engagement, and a denial
- * is fine — storage just stays evictable. Never throws.
- */
-async function requestPersistentStorage(): Promise<void> {
-  try {
-    if (
-      typeof navigator === 'undefined' ||
-      navigator.storage?.persist == null
-    ) {
-      return
-    }
-    if (await navigator.storage.persisted()) return
-    const granted = await navigator.storage.persist()
-    console.info('[db] persistent storage', granted ? 'granted' : 'denied')
-  } catch {
-    // Non-fatal — storage stays best-effort.
-  }
-}
-
-/**
  * One-time removal of the orphaned pre-rename 'PitchPerfectDB' IndexedDB
  * database. Nothing references it (the app uses 'MercuryPitchDB'); it only
  * clutters the storage inspector and confuses users. Guarded so it runs once.
@@ -74,7 +52,6 @@ function deleteLegacyDatabases(): void {
 
 /** Create a new database adapter instance. Called once at app init. */
 export async function createDatabase(): Promise<DatabaseAdapter> {
-  void requestPersistentStorage()
   deleteLegacyDatabases()
   const adapter = resolveAdapter()
 
@@ -110,6 +87,8 @@ export async function resetDatabase(): Promise<DatabaseAdapter> {
   dbPromise = null
   return createDatabase()
 }
+
+export { ensurePersistentStorage } from './persistent-storage'
 
 /** Re-export types for convenience. */
 export type {
