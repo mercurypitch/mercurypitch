@@ -4389,10 +4389,22 @@ export const StemMixerStyles: string = `
   white-space: nowrap;
 }
 
-/* Let uploader fill remaining panel height so dropzone is fully visible */
-.sm-workspace-panel > .lu-root {
+/* Let uploader and lyrics picker fill the panel with one deliberate scroll area. */
+.sm-workspace-panel > .lu-root,
+.sm-workspace-panel > .sm-song-picker,
+.sm-perf-lyrics > .sm-song-picker {
   flex: 1;
   min-height: 0;
+}
+
+.sm-workspace-panel > .sm-song-picker,
+.sm-perf-lyrics > .sm-song-picker {
+  overflow: hidden;
+}
+
+.sm-workspace-panel > .sm-song-picker .sm-song-picker-list,
+.sm-perf-lyrics > .sm-song-picker .sm-song-picker-list {
+  max-height: none;
 }
 
 /* Column toggle */
@@ -5341,12 +5353,14 @@ export const StemMixerStyles: string = `
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--fg-primary, #e6edf3);
+  flex-shrink: 0;
 }
 
 .sm-song-picker-search {
   display: flex;
   gap: 0.5rem;
   align-items: stretch;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-input {
@@ -5437,6 +5451,7 @@ export const StemMixerStyles: string = `
   letter-spacing: 0.02em;
   color: var(--fg-tertiary, #6e7681);
   padding: 0 0.15rem;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-list {
@@ -5571,6 +5586,7 @@ export const StemMixerStyles: string = `
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.15rem;
+  flex-shrink: 0;
 }
 
 .sm-song-picker-footer-btn {
