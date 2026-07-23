@@ -28,8 +28,10 @@ import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
+import { RestCountdownDots } from '@/components/RestCountdownDots'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
+import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -471,46 +473,65 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           }
         >
           <For each={lines()}>
-            {([idx, entry]) => (
-              <p
-                ref={(el) => lineEls.set(idx, el)}
-                classList={{
-                  [styles.line]: true,
-                  [styles.current]: idx === props.currentLineIdx(),
-                  [styles.past]: idx < props.currentLineIdx(),
-                }}
-                onClick={() => seekToLine(idx)}
-              >
-                <Show
-                  when={idx === props.currentLineIdx()}
-                  fallback={entry.words.join(' ')}
+            {([idx, entry]) => {
+              const isCurrent = () => idx === props.currentLineIdx()
+              const isRest = entry.words.length === 0
+              return (
+                <p
+                  ref={(el) => lineEls.set(idx, el)}
+                  classList={{
+                    [styles.line]: true,
+                    [styles.current]: isCurrent(),
+                    [styles.past]: idx < props.currentLineIdx(),
+                  }}
+                  onClick={() => seekToLine(idx)}
                 >
-                  <For each={entry.words}>
-                    {(word, i) => (
-                      <span
-                        classList={{
-                          [styles.word]: true,
-                          [styles.wordSung]: i() <= activeWord().activeUpTo,
-                          [styles.wordActive]:
-                            i() === activeWord().activeUpTo + 1 &&
-                            activeWord().fraction > 0,
+                  <Show
+                    when={!isRest}
+                    fallback={
+                      <RestCountdownDots
+                        dotCount={getRestDotCount(entry.time, entry.endTime)}
+                        elapsed={props.elapsed}
+                        gapEnd={entry.endTime}
+                        gapStart={entry.time}
+                        onSeek={props.seekTo}
+                        style={{
+                          'justify-content': 'flex-start',
+                          'margin-top': '0.5rem',
+                          '--accent': '#ffffff',
                         }}
-                        style={
-                          i() === activeWord().activeUpTo + 1
-                            ? {
-                                '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
-                              }
-                            : undefined
-                        }
-                      >
-                        {word}
-                        {i() < entry.words.length - 1 ? ' ' : ''}
-                      </span>
-                    )}
-                  </For>
-                </Show>
-              </p>
-            )}
+                      />
+                    }
+                  >
+                    <Show when={isCurrent()} fallback={entry.words.join(' ')}>
+                      <For each={entry.words}>
+                        {(word, i) => (
+                          <span
+                            classList={{
+                              [styles.word]: true,
+                              [styles.wordSung]: i() <= activeWord().activeUpTo,
+                              [styles.wordActive]:
+                                i() === activeWord().activeUpTo + 1 &&
+                                activeWord().fraction > 0,
+                            }}
+                            style={
+                              i() === activeWord().activeUpTo + 1
+                                ? {
+                                    '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
+                                  }
+                                : undefined
+                            }
+                          >
+                            {word}
+                            {i() < entry.words.length - 1 ? ' ' : ''}
+                          </span>
+                        )}
+                      </For>
+                    </Show>
+                  </Show>
+                </p>
+              )
+            }}
           </For>
         </Show>
       </div>

@@ -21,6 +21,7 @@ import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
 import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { defaultScoreTrack } from '@/lib/midi-song'
@@ -32,6 +33,7 @@ import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { activeTab, showNotification } from '@/stores'
+import { melodyStore } from '@/stores/melody-store'
 import { saveMidiSong } from '@/stores/saved-midi-songs-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
@@ -160,7 +162,10 @@ export function GuitarPage(props: GuitarPageProps) {
       },
     ),
   )
-
+  useLibraryMelodySelection(melodyStore.getCurrentMelody, (melody) => {
+    const items = melodyToGuitarItems(melody.items)
+    guitar.loadSong(items, melody.name, melody.bpm, [], [], null)
+  })
   // Feed detected notes into the riff tracker when recording.
   //
   // Driven off the articulation counter, not detectedMidi(): detectedMidi

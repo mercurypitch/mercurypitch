@@ -12,6 +12,25 @@ import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, getUvrSession, importUvrSession, } from '@/stores/app-store'
 import { createPlaylistWithItems, getPlaylist, } from '@/stores/karaoke-playlist-store'
 
+export function getSafeSessionName(session: {
+  originalFile?: { name: string }
+  sessionId: string
+}): string {
+  const rawName = session.originalFile?.name ?? session.sessionId
+  const nameWithoutExt = rawName.replace(/\.[^/.]+$/, '')
+  // Some browsers/servers replace '.' with '_' for extensions, strip lingering _mp3
+  const cleanedName = nameWithoutExt.replace(
+    /_(mp3|wav|flac|ogg|m4a|aac)$/i,
+    '',
+  )
+  const safeName = cleanedName.replace(/[^a-z0-9_-]/gi, '_')
+  return /[a-z0-9]/i.test(safeName) ? safeName : session.sessionId
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-z0-9_-]/gi, '_')
+}
+
 // Types for the JSON payload stored inside the ZIP
 interface ExportPayload {
   version: 1
@@ -288,11 +307,9 @@ export async function exportSession(
     const a = document.createElement('a')
     a.href = url
     // safe filename
-    const safeName = (session.originalFile?.name ?? sessionId).replace(
-      /[^a-z0-9_-]/gi,
-      '_',
-    )
-    a.download = `MercuryPitch_Session_${safeName}.zip`
+    const safeName = getSafeSessionName(session)
+    const hqPrefix = session.processingMode === 'server' ? 'MC_HQ' : 'MC'
+    a.download = `${hqPrefix}_Session_${safeName}.zip`
     a.click()
     URL.revokeObjectURL(url)
     onProgress?.(100)
@@ -315,9 +332,7 @@ export async function exportAllSessions(
     let allZippable: fflate.Zippable = {}
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i]
-      const safeName = (
-        session.originalFile?.name ?? session.sessionId
-      ).replace(/[^a-z0-9_-]/gi, '_')
+      const safeName = getSafeSessionName(session)
       const prefix = `${safeName}_${session.sessionId.substring(0, 8)}/`
 
       // Report sub-progress within each session (0-90% range)
@@ -356,7 +371,7 @@ export async function exportAllSessions(
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `MercuryPitch_All_Sessions.zip`
+    a.download = `MC_All_Sessions.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
@@ -383,9 +398,7 @@ export async function exportGroup(
     let allZippable: fflate.Zippable = {}
     for (let i = 0; i < sessions.length; i++) {
       const session = sessions[i]
-      const safeName = (
-        session.originalFile?.name ?? session.sessionId
-      ).replace(/[^a-z0-9_-]/gi, '_')
+      const safeName = getSafeSessionName(session)
       const dirPrefix = `${prefix}${safeName}_${session.sessionId.substring(0, 8)}/`
       const sessionBase = (i / sessions.length) * 90
       const sessionRange = 90 / sessions.length
@@ -414,7 +427,7 @@ export async function exportGroup(
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `MercuryPitch_Group_${groupId.substring(0, 8)}.zip`
+    a.download = `MC_Group_${groupId.substring(0, 8)}.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {
@@ -477,10 +490,7 @@ export async function buildKaraokePlaylistZip(
   let allZippable: fflate.Zippable = {}
   for (let i = 0; i < sessionList.length; i++) {
     const s = sessionList[i]
-    const safeName = (s.originalFile?.name ?? s.sessionId).replace(
-      /[^a-z0-9_-]/gi,
-      '_',
-    )
+    const safeName = getSafeSessionName(s)
     const dirPrefix = `sessions/${safeName}_${s.sessionId.substring(0, 8)}/`
     const base = (i / sessionList.length) * 90
     const range = 90 / Math.max(1, sessionList.length)
@@ -528,9 +538,9 @@ export async function exportKaraokePlaylists(
     a.href = url
     const nameSlug =
       playlists.length === 1
-        ? playlists[0].name.replace(/[^a-z0-9_-]/gi, '_')
+        ? sanitizeFilename(playlists[0].name)
         : `${playlists.length}_playlists`
-    a.download = `MercuryPitch_Karaoke_${nameSlug}.zip`
+    a.download = `MC_Karaoke_${nameSlug}.zip`
     a.click()
     URL.revokeObjectURL(url)
   } catch (err) {

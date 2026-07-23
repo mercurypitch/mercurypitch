@@ -9,6 +9,7 @@ import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatus
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { midiToNoteName } from '@/lib/note-utils'
@@ -19,6 +20,7 @@ import { isNarrow } from '@/lib/use-viewport'
 import { showNotification } from '@/stores'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { selectedSongName } from '@/stores/falling-notes-store'
+import { melodyStore } from '@/stores/melody-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
 
@@ -95,7 +97,10 @@ export function PianoPage(props: PianoPageProps) {
       },
     ),
   )
-
+  useLibraryMelodySelection(melodyStore.getCurrentMelody, (melody) => {
+    const notes = melodyToFallingNotes(melody.items)
+    fallingNotes.loadSong(notes, melody.name, melody.bpm, [], [], null)
+  })
   const picker = useMidiSongPicker<FallingNote>({
     currentSong: () => fallingNotes.currentSong(),
     fromMelodyItems: melodyToFallingNotes,

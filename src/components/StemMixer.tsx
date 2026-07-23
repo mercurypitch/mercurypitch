@@ -1128,6 +1128,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleSongPickerRefine,
     playing: audio.playing,
     elapsed: audio.elapsed,
+    handleSeekToTime: (t: number) => audio.seekTo(t),
     handlePlay: audio.handlePlay,
     handlePause: audio.handlePause,
     formatTime: canvas.formatTime,
@@ -3116,20 +3117,36 @@ export const StemMixerStyles: string = `
 .sm-lyrics-rest-dots {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(8 * 0.55em + 7 * 0.4em);
   gap: 0.4em;
 }
 
 .sm-lyrics-rest-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  box-sizing: border-box;
   width: 0.55em;
   height: 0.55em;
+  padding: 0;
   border-radius: 50%;
   background: linear-gradient(
     to right,
     var(--accent, #58a6ff) var(--fill, 0%),
     var(--bg-tertiary, rgba(255, 255, 255, 0.15)) var(--fill, 0%)
   );
-  box-shadow: inset 0 0 0 1px var(--border, rgba(255, 255, 255, 0.2));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
   transition: background 0.12s linear;
+}
+
+.sm-lyrics-rest-dot--interactive {
+  cursor: pointer;
+}
+
+.sm-lyrics-rest-dot--interactive:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
 }
 
 .sm-lyrics-time {

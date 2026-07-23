@@ -97,7 +97,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
-import { storageGet } from '@/lib/storage'
+import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
@@ -122,7 +122,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { openSettingsSection, settingsSection } from '@/stores/ui-store'
+import { openSettingsSection, settingsSection, triggerTargetFocus, } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -2203,16 +2203,30 @@ const AppShell: Component<AppProps> = (props) => {
                 fallback={<p class="subtitle">Voice Pitch Practice</p>}
                 keyed
               >
-                {/* Dynamic practice context — each tab's loaded song (plus the
-                    guide character on Singing). Own class (not .subtitle) so it
+                {/* Dynamic practice context — opens the sidebar controls for
+                    the active song/character. Own class (not .subtitle) so it
                     stays visible on mobile. */}
                 {(ctx) => (
-                  <div
+                  <button
+                    type="button"
                     class="header-melody-context"
+                    onClick={() => {
+                      setSidebarCollapsed(false)
+                      setSidebarOpen(true)
+                      if (ctx.tab === TAB_SINGING) {
+                        applyPersistedValue('sidebar-character-open', 'true')
+                        triggerTargetFocus([
+                          'sidebar-character',
+                          'sidebar-library',
+                        ])
+                      } else {
+                        triggerTargetFocus('sidebar-library')
+                      }
+                    }}
                     title={
                       ctx.character != null
-                        ? `Now loaded: ${ctx.name} · ${ctx.character}`
-                        : `Now loaded: ${ctx.name}`
+                        ? `Now loaded: ${ctx.name} · ${ctx.character} (Click to change)`
+                        : `Now loaded: ${ctx.name} (Click to change)`
                     }
                   >
                     <Show
@@ -2232,7 +2246,7 @@ const AppShell: Component<AppProps> = (props) => {
                     <Show when={ctx.character != null}>
                       <span class="header-melody-char">{ctx.character}</span>
                     </Show>
-                  </div>
+                  </button>
                 )}
               </Show>
             </div>

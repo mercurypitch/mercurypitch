@@ -29,7 +29,7 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
 }
 
 import type { SessionGroupRecord, UvrSessionRecord } from '@/db'
-import { buildKaraokePlaylistZip, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
+import { buildKaraokePlaylistZip, getSafeSessionName, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, getAllUvrSessions, getGroupsReactive, importUvrSession, } from '@/stores/app-store'
 import { addItem, createPlaylist, getPlaylistsReactive, setPlaylistPlayMode, setPlaylistShuffleOrder, } from '@/stores/karaoke-playlist-store'
@@ -132,7 +132,7 @@ describe('isZipFile', () => {
   const make = (name: string, type: string) => new File([''], name, { type })
 
   it('detects ZIPs by extension regardless of MIME', () => {
-    expect(isZipFile(make('MercuryPitch_Session_song.zip', ''))).toBe(true)
+    expect(isZipFile(make('MC_Session_song.zip', ''))).toBe(true)
     expect(isZipFile(make('EXPORT.ZIP', 'application/octet-stream'))).toBe(true)
   })
 
@@ -147,6 +147,33 @@ describe('isZipFile', () => {
     expect(isZipFile(make('song.mp3', 'audio/mpeg'))).toBe(false)
     expect(isZipFile(make('song.wav', 'audio/wav'))).toBe(false)
     expect(isZipFile(make('zip-tips.txt', 'text/plain'))).toBe(false)
+  })
+})
+
+describe('getSafeSessionName', () => {
+  it('removes audio extensions and replaces unsafe filename characters', () => {
+    expect(
+      getSafeSessionName({
+        sessionId: 'session-1',
+        originalFile: { name: 'My Song (Live).MP3' },
+      }),
+    ).toBe('My_Song__Live_')
+  })
+
+  it('handles legacy underscore extensions and missing original files', () => {
+    expect(
+      getSafeSessionName({
+        sessionId: 'session-2',
+        originalFile: { name: 'Studio Take_wav' },
+      }),
+    ).toBe('Studio_Take')
+    expect(getSafeSessionName({ sessionId: 'session-3' })).toBe('session-3')
+    expect(
+      getSafeSessionName({
+        sessionId: 'session-4',
+        originalFile: { name: '🎵.mp3' },
+      }),
+    ).toBe('session-4')
   })
 })
 

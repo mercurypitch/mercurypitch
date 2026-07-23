@@ -1,7 +1,8 @@
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import type { CharacterName } from '@/stores/settings-store'
 import { CHARACTER_INFO, selectedCharacter, setSelectedCharacter, } from '@/stores/settings-store'
+import { targetFocusEvent } from '@/stores/ui-store'
 import styles from './CharacterIcons.module.css'
 
 interface CharacterIconsProps {
@@ -42,9 +43,26 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
     onCleanup(() => document.removeEventListener('click', close))
   })
 
+  let gridRef!: HTMLDivElement
+  createEffect(
+    on(
+      targetFocusEvent,
+      (e) => {
+        if (e?.ids.includes('sidebar-character') === true) {
+          if (gridRef !== undefined) {
+            gridRef.classList.remove('target-focus-flash')
+            void gridRef.offsetWidth // force reflow
+            gridRef.classList.add('target-focus-flash')
+          }
+        }
+      },
+      { defer: true },
+    ),
+  )
+
   return (
     <>
-      <div id="character-icons" class={styles.grid}>
+      <div id="character-icons" ref={gridRef} class={styles.grid}>
         <For each={characters}>
           {(name) => (
             <div class={styles.cell}>
