@@ -735,6 +735,20 @@ describe('Rest gap metric (word-level)', () => {
     expect(explicit?.gapEnd).toBeCloseTo(50, 1)
     expect(explicit?.dotCount).toBe(5)
   })
+
+  it('sizes a trailing explicit rest to the remaining song duration', () => {
+    const entries = buildCanonicalEntries(
+      parseLrcFile(`[00:10.00]Last sung line
+[00:15.00]~Rest~`),
+      30,
+    )
+    const rest = entries.at(-1)
+
+    expect(rest?.type).toBe('rest')
+    expect(rest?.gapStart).toBe(15)
+    expect(rest?.gapEnd).toBe(30)
+    expect(rest?.dotCount).toBe(3)
+  })
 })
 
 describe('computeRestProgress', () => {
@@ -794,6 +808,11 @@ describe('getRestDotCount', () => {
   it('rejects non-finite timing without producing an invalid array length', () => {
     expect(getRestDotCount(Number.NaN, 30)).toBe(0)
     expect(getRestDotCount(10, Number.POSITIVE_INFINITY)).toBe(0)
+  })
+
+  it('does not create a dot for a zero-length or backwards rest', () => {
+    expect(getRestDotCount(10, 10)).toBe(0)
+    expect(getRestDotCount(10, 5)).toBe(0)
   })
 })
 

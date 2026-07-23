@@ -2264,7 +2264,7 @@ export function useStemMixerLyricsController(
   const canonicalLrcLines = createMemo<CanonicalLrcEntry[]>(() => {
     const lrc = lrcLines()
     if (lrc.length === 0) return []
-    const base = buildCanonicalEntries(lrc)
+    const base = buildCanonicalEntries(lrc, deps.duration())
     // Delay rests that follow a repeated block until all passes are sung.
     const bl = blocks()
     const bi = blockInstances()
@@ -2390,15 +2390,26 @@ export function useStemMixerLyricsController(
 
     if (lrc.length > 0) {
       const canonical = canonicalLrcLines()
-      return canonical.map((entry) => ({
-        text: entry.text,
-        isBlank: false,
-        isRest: entry.type === 'rest',
-        lyricsIndex: entry.canonicalIndex,
-        restGapStart: entry.gapStart,
-        restGapEnd: entry.gapEnd,
-        restDotCount: entry.dotCount,
-      }))
+      return canonical.flatMap((entry) => {
+        const isRest = entry.type === 'rest'
+        const gapStart = entry.gapStart ?? entry.time
+        const gapEnd = entry.gapEnd ?? entry.time
+        // A zero-length explicit sentinel does not describe an actual pause.
+        // Keep it in canonical data for round-tripping, but never place it
+        // between visible lyric lines.
+        if (isRest && gapEnd <= gapStart) return []
+        return [
+          {
+            text: entry.text,
+            isBlank: false,
+            isRest,
+            lyricsIndex: entry.canonicalIndex,
+            restGapStart: entry.gapStart,
+            restGapEnd: entry.gapEnd,
+            restDotCount: entry.dotCount,
+          },
+        ]
+      })
     }
     if (!raw || ll.length === 0) return []
 
@@ -2438,6 +2449,7 @@ export function useStemMixerLyricsController(
 
   const genViewData = createMemo(() => {
     const lines = getGenLines()
+    const canonical = lrcLines().length > 0 ? canonicalLrcLines() : undefined
     const curLine = lrcGenLineIdx()
     const curWord = lrcGenWordIdx()
     const lineTimes = lrcGenLineTimes()
@@ -2450,6 +2462,7 @@ export function useStemMixerLyricsController(
     const wordSweeps = untrack(lrcGenWordSweepTimings)
     return lines.map((line: string, i: number) => {
       const words = getGenWords(line)
+      const entry = canonical?.[i]
       const blockForLine = getBlockForLine(i)
       const isPlaceholder =
         blockForLine !== null &&
@@ -2462,6 +2475,10 @@ export function useStemMixerLyricsController(
         index: i,
         line,
         words,
+        isRest: entry?.type === 'rest' || line.trim() === '~Rest~',
+        restGapStart: entry?.gapStart,
+        restGapEnd: entry?.gapEnd,
+        restDotCount: entry?.dotCount,
         isCurrent: i === curLine,
         isDone: i < curLine,
         isFuture: i > curLine,

@@ -80,4 +80,33 @@ describe('lyric marker controller', () => {
       expect(controller.wordSweepTimings()).toEqual({})
       dispose()
     }))
+
+  it('keeps zero-length rest sentinels out of visible lyric rows', () =>
+    createRoot((dispose) => {
+      const controller = useStemMixerLyricsController({
+        sessionId: 'marker-zero-rest-test',
+        songTitle: 'Zero rest test',
+        duration: () => 30,
+        playing: () => false,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+
+      controller.handleLyricsUpload({
+        text: `[00:01.00]Before
+[00:10.00]~Rest~
+[00:10.00]After`,
+        format: 'lrc',
+        filename: 'zero-rest-test.lrc',
+      })
+
+      expect(
+        controller.canonicalLrcLines().some((line) => line.type === 'rest'),
+      ).toBe(true)
+      expect(controller.displayLines().map((line) => line.text)).toEqual([
+        'Before',
+        'After',
+      ])
+      dispose()
+    }))
 })

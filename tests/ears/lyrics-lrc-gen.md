@@ -107,6 +107,7 @@ Document all requirements for the lyrics panel in StemMixer: lyrics loading (API
 | REQ-UV-057  | System SHALL support adjusting lyrics font size and column layout                                                                               | Low      |
 | REQ-LYR-009 | WHILE audio is playing, lyric highlighting SHALL use the output-device-aligned audio clock when available and fall back safely when unavailable | High     |
 | REQ-LYR-010 | WHEN explicit word ends and marker curves exist, playback SHALL use them instead of an inferred syllable duration                               | High     |
+| REQ-LYR-016 | Visible rest entries SHALL use countdown dots; zero-length rest sentinels SHALL be omitted instead of displaying the internal `~Rest~` text     | High     |
 
 ## SUCCESS CRITERIA
 
@@ -124,6 +125,7 @@ Document all requirements for the lyrics panel in StemMixer: lyrics loading (API
 12. Lyric visuals follow the audible output clock without changing scoring or transport timing
 13. Long mapping sessions do not make unrelated lyric rows or inactive monitors update from every pointer sample
 14. Discard changes restores the complete state captured when mapping opened
+15. Internal `~Rest~` sentinels never appear between visible lyric lines
 
 ## NON-FUNCTIONAL REQUIREMENTS
 

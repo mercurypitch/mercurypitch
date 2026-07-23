@@ -83,6 +83,10 @@ export interface GenViewLine {
   index: number
   line: string
   words: string[]
+  isRest: boolean
+  restGapStart?: number
+  restGapEnd?: number
+  restDotCount?: number
   isCurrent: boolean
   isDone: boolean
   isFuture: boolean

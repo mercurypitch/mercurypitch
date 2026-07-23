@@ -743,6 +743,28 @@ export const StemMixerLyricsPanelBody: Component<
                 }
 
                 const item = row.item
+                if (item.isRest) {
+                  const gapStart = item.restGapStart ?? 0
+                  const gapEnd = item.restGapEnd ?? gapStart
+                  const dotCount = item.restDotCount ?? 0
+                  if (dotCount <= 0 || gapEnd <= gapStart) return null
+                  return (
+                    <div class="sm-lyrics-gen-line sm-lyrics-gen-line-rest">
+                      <span class="sm-lyrics-gen-line-time">
+                        {props.formatTimeMs(gapStart)}
+                      </span>
+                      <span class="sm-lyrics-gen-line-text">
+                        <RestCountdownDots
+                          dotCount={dotCount}
+                          elapsed={props.elapsed}
+                          gapEnd={gapEnd}
+                          gapStart={gapStart}
+                          onSeek={props.handleSeekToTime}
+                        />
+                      </span>
+                    </div>
+                  )
+                }
                 return (
                   <div
                     class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}`}
@@ -1217,8 +1239,16 @@ export const StemMixerLyricsPanelBody: Component<
                               : 'flex-start',
                       }}
                     >
-                      <span class="sm-lyrics-rest-pulse" />
-                      <span class="sm-lyrics-rest-label">~Rest~</span>
+                      <span
+                        class="sm-lyrics-rest-dots"
+                        aria-label="Rest"
+                        role="img"
+                      >
+                        <span
+                          class="sm-lyrics-rest-dot"
+                          style={{ '--fill': '0%' }}
+                        />
+                      </span>
                     </div>
                   )
                 }
