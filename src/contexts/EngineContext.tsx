@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js'
 import { createContext, createEffect, createSignal, onCleanup, useContext, } from 'solid-js'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
+import { installAudioUnlock } from '@/lib/audio-unlock'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { storageGet } from '@/lib/storage'
@@ -23,6 +24,9 @@ export function EngineProvider(props: { children: JSX.Element }) {
   const [ready, setReady] = createSignal(false)
 
   const audioEngine = new AudioEngine()
+  const uninstallAudioUnlock = installAudioUnlock(() =>
+    audioEngine.getAudioContext(),
+  )
 
   // Initialize from storage/stores
   const savedVol = parseInt(storageGet('pp_volume', '80')!, 10)
@@ -114,6 +118,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
   setReady(true)
 
   onCleanup(() => {
+    uninstallAudioUnlock()
     playbackRuntime.destroy()
     practiceEngine.destroy()
     audioEngine.destroy()

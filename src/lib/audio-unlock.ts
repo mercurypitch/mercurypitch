@@ -26,6 +26,12 @@
 let silentEl: HTMLAudioElement | null = null
 let sessionPrimed = false
 
+interface AudioActivationTarget {
+  getAudioContext: () => AudioContext | null
+  init: () => Promise<void>
+  resume: () => Promise<void>
+}
+
 /** Object URL for ~0.1s of silence as a 8kHz mono 16-bit WAV — built in
  *  code so there's no risk of a corrupt hand-typed data URI. */
 function silentWavUrl(): string {
@@ -79,22 +85,68 @@ export function unlockAudio(ctx?: AudioContext | null): void {
 }
 
 /**
+ * Initialize WebAudio and promote it to iOS's audible playback session while
+ * the caller is still inside the user's Play/Resume gesture. AudioEngine.init
+ * creates its context synchronously before its first await, so getAudioContext
+ * can immediately hand that context to unlockAudio.
+ */
+export async function activateAudioPlayback(
+  target: AudioActivationTarget,
+): Promise<void> {
+  const initialization = target.init()
+  unlockAudio(target.getAudioContext())
+  await initialization
+  await target.resume()
+}
+
+async function recoverAfterBackground(ctx: AudioContext): Promise<void> {
+  if (ctx.state === 'closed') return
+
+  try {
+    if (ctx.state === 'running') {
+      // WebKit can keep reporting "running" after an interruption while its
+      // output remains silent. Cycling the context rebinds the output session.
+      await ctx.suspend()
+      await ctx.resume()
+      return
+    }
+    await ctx.resume()
+  } catch {
+    /* retried on the next user gesture */
+  }
+}
+
+/**
  * Arm document-level unlock: every tap re-checks the context (cheap no-op
- * once running + primed), and visibility changes re-resume a context iOS
- * suspended in the background. Returns an uninstaller.
+ * once running + primed), and visibility changes recover a context iOS
+ * suspended or interrupted in the background. Returns an uninstaller.
  */
 export function installAudioUnlock(
   getCtx: () => AudioContext | null,
 ): () => void {
+  let wasBackgrounded = document.visibilityState !== 'visible'
+
   const onGesture = (): void => {
     const ctx = getCtx()
     if (sessionPrimed && (ctx === null || ctx.state === 'running')) return
     unlockAudio(ctx)
   }
   const onVisible = (): void => {
-    if (document.visibilityState !== 'visible') return
+    if (document.visibilityState !== 'visible') {
+      wasBackgrounded = true
+      return
+    }
+
     const ctx = getCtx()
-    if (ctx && ctx.state !== 'running') {
+    if (!ctx) {
+      wasBackgrounded = false
+      return
+    }
+
+    if (wasBackgrounded) {
+      wasBackgrounded = false
+      void recoverAfterBackground(ctx)
+    } else if (ctx.state !== 'running' && ctx.state !== 'closed') {
       void ctx.resume().catch(() => {
         /* retried on the next gesture */
       })
