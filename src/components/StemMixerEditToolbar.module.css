@@ -135,8 +135,25 @@
   background: #2ea043;
 }
 
+.segment button:focus-visible,
+.iconBtn:focus-visible,
+.textBtn:focus-visible,
+.done:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
 .hint {
   color: #8b949e;
   font-size: 11px;
   padding: 0 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment button,
+  .iconBtn,
+  .textBtn,
+  .done {
+    transition: none;
+  }
 }

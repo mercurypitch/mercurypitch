@@ -43,13 +43,23 @@ export const StemMixerEditToolbar: Component<StemMixerEditToolbarProps> = (
   onCleanup(() => window.removeEventListener('keydown', onKey))
 
   return (
-    <div class={styles.bar} data-testid="stem-edit-toolbar" role="toolbar">
-      <div class={styles.segment}>
+    <div
+      class={styles.bar}
+      data-testid="stem-edit-toolbar"
+      role="toolbar"
+      aria-label="Pitch note editing"
+    >
+      <div
+        class={styles.segment}
+        role="group"
+        aria-label="Pitch comparison view"
+      >
         <For each={VIEWS}>
           {([value, label]) => (
             <button
               type="button"
               classList={{ [styles.active]: props.pitchView === value }}
+              aria-pressed={props.pitchView === value}
               onClick={() => props.setPitchView(value)}
             >
               {label}

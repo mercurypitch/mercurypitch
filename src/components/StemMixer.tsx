@@ -771,6 +771,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     showNotification,
   })
 
+  const closePitchTools = (): void => {
+    pitchAnalysis.setPanelOpen(false)
+    pitchAnalysis.setEditMode(false)
+    pitchAnalysis.setSelectedNoteId(null)
+  }
+
   // ── Canvas controller ──────────────────────────────────────────
   const [showNoteLabels, setShowNoteLabels] = createPersistedSignal<boolean>(
     'pitchperfect_show_note_labels',
@@ -1643,10 +1649,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </button>
               </Show>
               <button
+                type="button"
                 class="sm-btn sm-btn-secondary"
                 data-tour="mixer.playlist"
                 classList={{ 'sm-btn--active': playlistSidebarOpen() }}
-                onClick={() => setPlaylistSidebarOpen((prev) => !prev)}
+                onClick={() => {
+                  const opening = !playlistSidebarOpen()
+                  if (opening) {
+                    closePitchTools()
+                  }
+                  setPlaylistSidebarOpen(opening)
+                }}
                 title="Karaoke playlists"
                 style={{ gap: '0.4rem' }}
               >
@@ -1654,8 +1667,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               </button>
               <Show when={props.preset !== 'performance'}>
                 <button
+                  type="button"
                   class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                  onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+                  classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
+                  onClick={() => {
+                    const opening = !pitchAnalysis.panelOpen()
+                    if (opening) {
+                      setPlaylistSidebarOpen(false)
+                      pitchAnalysis.setEditMode(false)
+                      pitchAnalysis.setSelectedNoteId(null)
+                    }
+                    pitchAnalysis.setPanelOpen(opening)
+                  }}
                   title="Pitch Analysis & Settings"
                   style={{ gap: '0.4rem' }}
                 >
@@ -2053,81 +2076,83 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             !pitchAnalysis.editMode()
           }
         >
-          <StemMixerPitchAnalysisPanel
-            algorithm={pitchAnalysis.algorithm()}
-            setAlgorithm={pitchAnalysis.setAlgorithm}
-            bufferSize={pitchAnalysis.bufferSize()}
-            setBufferSize={pitchAnalysis.setBufferSize}
-            sensitivity={pitchAnalysis.sensitivity()}
-            setSensitivity={pitchAnalysis.setSensitivity}
-            minConfidence={pitchAnalysis.minConfidence()}
-            setMinConfidence={pitchAnalysis.setMinConfidence}
-            minAmplitude={pitchAnalysis.minAmplitude()}
-            setMinAmplitude={pitchAnalysis.setMinAmplitude}
-            isAnalyzing={pitchAnalysis.isAnalyzing()}
-            progress={pitchAnalysis.progress()}
-            pitchSourceMode={pitchAnalysis.pitchSourceMode()}
-            setPitchSourceMode={(mode) => {
-              pitchAnalysis.setPitchSourceMode(mode)
-              canvas.queueCanvasRedraw()
-            }}
-            runAnalysis={() => {
-              void pitchAnalysis.runAnalysis().then(() => {
-                // After re-analysis with new settings, auto re-run whisper
-                // transcription so alignment stays in sync
-                if (whisper.segments().length > 0) {
-                  showNotification(
-                    'Re-running transcription with updated pitch...',
-                    'info',
-                  )
-                  whisper.startTranscription()
-                }
-              })
-            }}
-            cleanupAmount={pitchAnalysis.cleanupAmount()}
-            setCleanupAmount={(n) => {
-              pitchAnalysis.setCleanupAmount(n)
-              canvas.queueCanvasRedraw()
-            }}
-            songKey={pitchAnalysis.songKey()}
-            setSongKey={(k) => {
-              pitchAnalysis.setSongKey(k)
-              canvas.queueCanvasRedraw()
-            }}
-            songScale={pitchAnalysis.songScale()}
-            setSongScale={(s) => {
-              pitchAnalysis.setSongScale(s)
-              canvas.queueCanvasRedraw()
-            }}
-            songBpm={pitchAnalysis.songBpm()}
-            setSongBpm={(b) => {
-              pitchAnalysis.setSongBpm(b)
-              canvas.queueCanvasRedraw()
-            }}
-            contourReady={pitchAnalysis.contourReady()}
-            detectedKeyLabel={(() => {
-              const k = pitchAnalysis.detectedKey()
-              return k !== null
-                ? `${k.keyName} ${k.scaleType === 'major' ? 'major' : 'minor'}`
-                : ''
-            })()}
-            keyRegionCount={pitchAnalysis.keyRegions().length}
-            editMode={pitchAnalysis.editMode()}
-            onToggleEditMode={() => {
-              pitchAnalysis.setEditMode((v) => !v)
-              pitchAnalysis.setSelectedNoteId(null)
-            }}
-            canEdit={pitchAnalysis.editableNotes().length > 0}
-            hasEdits={pitchAnalysis.hasEdits()}
-            pitchView={pitchAnalysis.pitchView()}
-            setPitchView={pitchAnalysis.setPitchView}
-            onClose={() => pitchAnalysis.setPanelOpen(false)}
-          />
+          <div class="sm-left-rail-wrap">
+            <StemMixerPitchAnalysisPanel
+              algorithm={pitchAnalysis.algorithm()}
+              setAlgorithm={pitchAnalysis.setAlgorithm}
+              bufferSize={pitchAnalysis.bufferSize()}
+              setBufferSize={pitchAnalysis.setBufferSize}
+              sensitivity={pitchAnalysis.sensitivity()}
+              setSensitivity={pitchAnalysis.setSensitivity}
+              minConfidence={pitchAnalysis.minConfidence()}
+              setMinConfidence={pitchAnalysis.setMinConfidence}
+              minAmplitude={pitchAnalysis.minAmplitude()}
+              setMinAmplitude={pitchAnalysis.setMinAmplitude}
+              isAnalyzing={pitchAnalysis.isAnalyzing()}
+              progress={pitchAnalysis.progress()}
+              pitchSourceMode={pitchAnalysis.pitchSourceMode()}
+              setPitchSourceMode={(mode) => {
+                pitchAnalysis.setPitchSourceMode(mode)
+                canvas.queueCanvasRedraw()
+              }}
+              runAnalysis={() => {
+                void pitchAnalysis.runAnalysis().then(() => {
+                  // After re-analysis with new settings, auto re-run whisper
+                  // transcription so alignment stays in sync
+                  if (whisper.segments().length > 0) {
+                    showNotification(
+                      'Re-running transcription with updated pitch...',
+                      'info',
+                    )
+                    whisper.startTranscription()
+                  }
+                })
+              }}
+              cleanupAmount={pitchAnalysis.cleanupAmount()}
+              setCleanupAmount={(n) => {
+                pitchAnalysis.setCleanupAmount(n)
+                canvas.queueCanvasRedraw()
+              }}
+              songKey={pitchAnalysis.songKey()}
+              setSongKey={(k) => {
+                pitchAnalysis.setSongKey(k)
+                canvas.queueCanvasRedraw()
+              }}
+              songScale={pitchAnalysis.songScale()}
+              setSongScale={(s) => {
+                pitchAnalysis.setSongScale(s)
+                canvas.queueCanvasRedraw()
+              }}
+              songBpm={pitchAnalysis.songBpm()}
+              setSongBpm={(b) => {
+                pitchAnalysis.setSongBpm(b)
+                canvas.queueCanvasRedraw()
+              }}
+              contourReady={pitchAnalysis.contourReady()}
+              detectedKeyLabel={(() => {
+                const k = pitchAnalysis.detectedKey()
+                return k !== null
+                  ? `${k.keyName} ${k.scaleType === 'major' ? 'major' : 'minor'}`
+                  : ''
+              })()}
+              keyRegionCount={pitchAnalysis.keyRegions().length}
+              editMode={pitchAnalysis.editMode()}
+              onToggleEditMode={() => {
+                pitchAnalysis.setEditMode((v) => !v)
+                pitchAnalysis.setSelectedNoteId(null)
+              }}
+              canEdit={pitchAnalysis.editableNotes().length > 0}
+              hasEdits={pitchAnalysis.hasEdits()}
+              pitchView={pitchAnalysis.pitchView()}
+              setPitchView={pitchAnalysis.setPitchView}
+              onClose={closePitchTools}
+            />
+          </div>
         </Show>
 
         {/* ── Karaoke playlist ─────────────────────────────────── */}
         <Show when={playlistSidebarOpen()}>
-          <div class="sm-playlist-sidebar-wrap">
+          <div class="sm-left-rail-wrap">
             <KaraokePlaylistSidebar
               onClose={() => setPlaylistSidebarOpen(false)}
             />
@@ -2394,23 +2419,30 @@ export const StemMixerStyles: string = `
   max-width: 40ch;
 }
 
-/* Karaoke playlist sidebar (slides in from the left) */
-.sm-playlist-sidebar-wrap {
+/* Shared left rail for playlists and pitch tools. Animate position rather
+   than transform so native selects remain reliable on iOS Safari. */
+.sm-left-rail-wrap {
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
   z-index: 30;
-  animation: sm-playlist-slide-in 0.2s ease-out;
+  animation: sm-left-rail-in 0.18s ease-out;
 }
-@keyframes sm-playlist-slide-in {
+@keyframes sm-left-rail-in {
   from {
-    transform: translateX(-100%);
+    left: -380px;
     opacity: 0.4;
   }
   to {
-    transform: none;
+    left: 0;
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-left-rail-wrap {
+    animation: none;
   }
 }
 
@@ -5674,76 +5706,4 @@ export const StemMixerStyles: string = `
 .sm-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Pitch Analysis Panel (Debug Modal) */
-.sm-pitch-analysis-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--bg-tertiary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  width: 400px;
-  max-width: 90vw;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.sm-pitch-analysis-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border, #30363d);
-  padding-bottom: 0.75rem;
-}
-
-.sm-pitch-analysis-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-pitch-analysis-body {
-  display: flex;
-  flex-direction: column;
-}
-
-.sm-pitch-analysis-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.sm-pitch-analysis-controls label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  color: var(--fg-primary, #c9d1d9);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.sm-pitch-analysis-controls select {
-  background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-  border-radius: 0.25rem;
-  padding: 0.4rem;
-  outline: none;
-}
-
-.sm-pitch-analysis-info {
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--fg-muted, #8b949e);
-  margin-top: 1rem;
-}
-
-`
+}`
