@@ -3,6 +3,7 @@ import { createEffect, createMemo, createSignal } from 'solid-js'
 import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -148,6 +149,11 @@ export function usePlaybackController(
   const editorIsPlaying = createMemo(() => editorPlaybackState() === 'playing')
   const editorIsPaused = createMemo(() => editorPlaybackState() === 'paused')
 
+  const activateAudio = (): Promise<void> =>
+    activateAudioPlayback(audioEngine).catch((error: unknown) => {
+      console.error('Audio activation failed:', error)
+    })
+
   // Subscribe to PlaybackRuntime beat events so currentBeat (and the
   // playhead position) actually advance during playback. Without this,
   // the playhead stays at 0% the entire time.
@@ -237,7 +243,7 @@ export function usePlaybackController(
     setActiveNoteIndices(new Set<number>())
     melodyStore.setCurrentNoteIndex(-1)
 
-    audioEngine.resume()
+    void activateAudio()
 
     let forcedDurationBeats: number | undefined
 
@@ -384,6 +390,7 @@ export function usePlaybackController(
 
   const handleResume = () => {
     if (!isPaused()) return
+    void activateAudio()
     playbackRuntime.resume()
     setIsPlaying(true)
     setIsPaused(false)
@@ -469,8 +476,7 @@ export function usePlaybackController(
     setCurrentNoteIndex(-1)
     setActiveNoteIndices(new Set<number>())
 
-    if (!audioEngine.getIsInitialized()) await audioEngine.init()
-    await audioEngine.resume()
+    await activateAudio()
 
     if (isRecording()) {
       playbackRuntime.setMelody([])
@@ -499,6 +505,7 @@ export function usePlaybackController(
   }
 
   const handleEditorResume = () => {
+    void activateAudio()
     playbackRuntime.resume()
     setEditorPlaybackState('playing')
   }
