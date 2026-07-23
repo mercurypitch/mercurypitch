@@ -1,26 +1,121 @@
-/* The one and only scroller: bounded so a long song scrolls inside the
-   sheet instead of growing the page. Hosts can tighten the cap via
-   --sheet-max-h (e.g. the split strip); in flex-column hosts the
-   flex/min-height pair lets it fill the available canvas area instead. */
+.frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 220px;
+  overflow: hidden;
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, #0b1018);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 51px;
+  padding: 8px 13px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 62%, transparent);
+}
+
+.scoreIdentity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.scoreIdentity > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.scoreIcon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.scoreIcon svg,
+.emptyMark svg {
+  width: 15px;
+  height: 15px;
+}
+
+.kicker {
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.scoreTitle {
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.modeHint {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one and only scroller. The notation is rendered at its measured SVG
+   size, so interaction coordinates remain exact at every viewport width. */
 .sheetScroll {
   position: relative;
-  width: 100%;
+  display: flex;
+  align-items: safe center;
   flex: 1 1 auto;
-  overflow: auto;
-  padding: 12px 8px;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-  min-height: 200px;
+  width: 100%;
+  min-height: 180px;
   max-height: var(--sheet-max-h, 72vh);
+  overflow: auto;
+  padding: 14px 10px 18px;
+  background-color: #111722;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 28px 28px;
+  scrollbar-color: color-mix(in srgb, var(--accent) 34%, var(--border))
+    transparent;
+  scrollbar-width: thin;
 }
 
 /* Inner canvas: sized exactly to the rendered SVG so the overlay maps 1:1. */
 .sheetInner {
   position: relative;
-  margin: 0 auto;
-  /* VexFlow ink inherits this so notation follows the active theme. */
-  color: var(--text-primary, #e6edf3);
+  flex: 0 0 auto;
+  margin-inline: auto;
+  color: #dce5f0;
 }
 
 .vexHost {
@@ -32,42 +127,41 @@
   display: block;
 }
 
-/* Belt-and-suspenders theme override for any glyphs that keep a hard fill. */
 .vexHost svg :global(text) {
   fill: currentColor;
   font-family: var(--font-sans, inherit);
 }
 
-/* Playback cursor — a thin vertical line sweeping the staff. */
 .playCursor {
   position: absolute;
+  z-index: 3;
   width: 2px;
   margin-left: -1px;
-  background: var(--accent, #58a6ff);
   pointer-events: none;
+  background: var(--accent, #58a6ff);
+  border-radius: 2px;
   opacity: 0.55;
-  border-radius: 1px;
-  z-index: 3;
 }
 
 .playCursorActive {
   opacity: 1;
-  box-shadow: 0 0 6px var(--accent-glow, rgba(88, 166, 255, 0.5));
+  box-shadow:
+    0 0 7px color-mix(in srgb, var(--accent) 75%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
-/* Translucent column over the note currently sounding (Guitar-Pro style). */
 .noteHighlight {
   position: absolute;
-  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
-  border-radius: 3px;
-  pointer-events: none;
   z-index: 2;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 5px;
   transition:
     left 0.05s linear,
     width 0.05s linear;
 }
 
-/* Transparent hit layer on top: handles seek + note entry. */
 .clickLayer {
   position: absolute;
   inset: 0;
@@ -77,4 +171,67 @@
 
 .clickLayerEdit {
   cursor: crosshair;
+}
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 210px;
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.errorState {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #111722;
+}
+
+.emptyState strong {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.emptyState > span:last-child {
+  max-width: 360px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.emptyMark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 2px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 11px;
+}
+
+@media (max-width: 640px) {
+  .header {
+    min-height: 46px;
+    padding-inline: 10px;
+  }
+
+  .modeHint {
+    display: none;
+  }
+
+  .sheetScroll {
+    padding-inline: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .noteHighlight {
+    transition: none;
+  }
 }

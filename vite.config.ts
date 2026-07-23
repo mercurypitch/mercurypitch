@@ -212,6 +212,10 @@ export default defineConfig({
             // vendor must never be dragged in BY the gpu backend.
             if (id.includes('typegpu') || id.includes('wgpu-matrix'))
               return 'vendor-gpu'
+            // VexFlow is only needed after a user opens a notation surface.
+            // Keep its engraving/font payload out of the initial app vendor
+            // chunk so adding sheet music does not tax every first visit.
+            if (id.includes('vexflow')) return 'vendor-vexflow'
             // solid-js gets its own chunk so the standalone mirror entry
             // (which uses nothing else from node_modules) doesn't drag the
             // whole app vendor bundle onto mobile 4G.

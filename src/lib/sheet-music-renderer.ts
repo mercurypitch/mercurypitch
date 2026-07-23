@@ -8,7 +8,7 @@
 // staff. The renderer never mutates the melody — editing is the caller's job.
 // ============================================================
 
-import { Barline, Beam, Dot, Formatter, Renderer, Stave, StaveNote, StaveTie, Voice, } from 'vexflow'
+import { Accidental, Barline, Beam, Dot, Formatter, Renderer, Stave, StaveNote, StaveTie, Voice, } from 'vexflow'
 import { KEY_SIGNATURES } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
@@ -31,40 +31,51 @@ const DUR_BUCKETS: Array<DurOpt & { beats: number }> = [
 ]
 
 const EPS = 0.005
+const MIN_DURATION = 0.125
 
-function quantizeDuration(beats: number): DurOpt[] {
+/** Multiplier for a written duration with zero, one, or two augmentation dots. */
+function dotMultiplier(dots: number): number {
+  return 2 - 1 / 2 ** Math.max(0, dots)
+}
+
+function snapBeatValue(beats: number): number {
+  return Math.max(0, Math.round(beats / MIN_DURATION) * MIN_DURATION)
+}
+
+/**
+ * Split a beat length into standard written durations. Input is snapped to
+ * the renderer's 1/32-note resolution so malformed or imported fractional
+ * values cannot make the decomposition loop overshoot indefinitely.
+ */
+export function quantizeNotationDuration(beats: number): DurOpt[] {
   if (beats <= 0) return [{ code: '16', dots: 0 }]
   const results: DurOpt[] = []
-  let remaining = beats
+  let remaining = Math.max(1, Math.round(beats / MIN_DURATION)) * MIN_DURATION
   while (remaining > EPS) {
-    let bestCode = 'q'
-    let bestDots = 0
-    let bestErr = Infinity
+    let best: DurOpt | null = null
+    let bestBeats = 0
     for (const b of DUR_BUCKETS) {
       for (const d of [0, 1, 2]) {
-        const v = b.beats * (1 + d * 0.5)
-        if (v > remaining + 0.02) continue
-        const err = Math.abs(remaining - v)
-        if (err < bestErr) {
-          bestCode = b.code
-          bestDots = d
-          bestErr = err
+        const value = b.beats * dotMultiplier(d)
+        if (value <= remaining + EPS && value > bestBeats) {
+          best = { code: b.code, dots: d }
+          bestBeats = value
         }
       }
     }
-    const bucket =
-      DUR_BUCKETS.find((b) => b.code === bestCode) ?? DUR_BUCKETS[2]
-    results.push({ code: bestCode, dots: bestDots })
-    remaining -= bucket.beats * (1 + bestDots * 0.5)
+    if (best === null) {
+      best = { code: '32', dots: 0 }
+      bestBeats = MIN_DURATION
+    }
+    results.push(best)
+    remaining = Math.max(0, remaining - bestBeats)
   }
   return results.length > 0 ? results : [{ code: 'q', dots: 0 }]
 }
 
-function durBeats(code: string, dots: number): number {
+export function notationDurationBeats(code: string, dots: number): number {
   const b = DUR_BUCKETS.find((d) => d.code === code)
-  let v = b?.beats ?? 1
-  for (let i = 0; i < dots; i++) v *= 1.5
-  return v
+  return (b?.beats ?? 1) * dotMultiplier(dots)
 }
 
 // ---------------------------------------------------------------------------
@@ -128,16 +139,33 @@ const RELATIVE_MAJOR: Record<string, string> = {
   Eb: 'Gb',
 }
 
-function keySigSpec(key: string, scaleType: string): string {
-  const nk = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase()
+const ENHARMONIC_MAJOR: Record<string, string> = {
+  'A#': 'Bb',
+  'D#': 'Eb',
+  'G#': 'Ab',
+  'C#': 'Db',
+  Cb: 'B',
+  'B#': 'C',
+}
+
+function normalizeKeyName(key: string): string {
+  const ascii = key.trim().replace('♯', '#').replace('♭', 'b')
+  if (ascii.length === 0) return 'C'
+  return ascii.charAt(0).toUpperCase() + ascii.slice(1).toLowerCase()
+}
+
+/**
+ * Return the actual VexFlow key name, not a string of accidental glyphs.
+ * Minor scales inherit the signature of their relative major.
+ */
+export function notationKeySignature(key: string, scaleType: string): string {
+  const normalized = normalizeKeyName(key)
   const isMinor = scaleType.toLowerCase().includes('minor')
-  const lookup = isMinor ? (RELATIVE_MAJOR[nk] ?? nk) : nk
-  const sig = KEY_SIGNATURES[lookup]
-  if (sig === undefined) return 'C'
-  const n = sig.sharps - sig.flats
-  if (n > 0) return Array(n).fill('#').join('')
-  if (n < 0) return Array(-n).fill('b').join('')
-  return 'C'
+  const relative = isMinor
+    ? (RELATIVE_MAJOR[normalized] ?? normalized)
+    : normalized
+  const signature = ENHARMONIC_MAJOR[relative] ?? relative
+  return KEY_SIGNATURES[signature] === undefined ? 'C' : signature
 }
 
 // ---------------------------------------------------------------------------
@@ -159,10 +187,10 @@ function chooseClef(midis: number[]): 'treble' | 'bass' {
 // ---------------------------------------------------------------------------
 
 interface Cell {
-  /** null for a rest */
-  midi: number | null
-  /** source MelodyItem id, or null for a synthesised rest */
-  melodyId: number | null
+  /** null for a rest; one or more pitches for a note/chord */
+  midis: number[] | null
+  /** source MelodyItem ids, parallel to `midis`; null for a rest */
+  melodyIds: number[] | null
   code: string
   dots: number
   beats: number
@@ -183,9 +211,7 @@ function melodyToMeasures(
   const measures: Cell[][] = []
   if (!melody.length) return { measures, totalBeats: 0 }
 
-  const sorted = [...melody]
-    .filter((m) => m.isRest !== true)
-    .sort((a, b) => a.startBeat - b.startBeat)
+  const sorted = [...melody].sort((a, b) => a.startBeat - b.startBeat)
 
   let curMeasure: Cell[] = []
   let measurePos = 0 // beats filled in the current measure
@@ -204,22 +230,22 @@ function melodyToMeasures(
 
   /** Emit one note (or rest) of `totalBeats`, split across barlines + tied. */
   const emit = (
-    midi: number | null,
-    melodyId: number | null,
+    midis: number[] | null,
+    melodyIds: number[] | null,
     totalBeats: number,
     startAt: number,
   ): void => {
-    let remaining = totalBeats
+    let remaining = snapBeatValue(totalBeats)
     let pieceStart = startAt
     const pieces: Cell[] = []
     while (remaining > EPS) {
       const room = spaceLeft(measurePos, pieces, beatsPerBar)
       const take = Math.min(remaining, room)
-      for (const d of quantizeDuration(take)) {
-        const beats = durBeats(d.code, d.dots)
+      for (const d of quantizeNotationDuration(take)) {
+        const beats = notationDurationBeats(d.code, d.dots)
         pieces.push({
-          midi,
-          melodyId,
+          midis,
+          melodyIds,
           code: d.code,
           dots: d.dots,
           beats,
@@ -231,18 +257,53 @@ function melodyToMeasures(
       remaining -= take
     }
     // Tie note pieces together (rests never tie).
-    if (midi !== null) {
+    if (midis !== null) {
       for (let i = 0; i < pieces.length - 1; i++) pieces[i].tieToNext = true
     }
     for (const p of pieces) pushCell(p)
   }
 
   let cursor = 0
-  for (const item of sorted) {
-    const gap = item.startBeat - cursor
+  for (let i = 0; i < sorted.length; i++) {
+    const item = sorted[i]
+    const itemStart = snapBeatValue(item.startBeat)
+    const itemEnd = snapBeatValue(item.startBeat + item.duration)
+    const gap = itemStart - cursor
     if (gap > 0.01) emit(null, null, gap, cursor)
-    emit(item.note.midi, item.id ?? null, item.duration, item.startBeat)
-    cursor = Math.max(cursor, item.startBeat + item.duration)
+
+    const chordItems = [item]
+    if (item.isRest !== true) {
+      while (i + 1 < sorted.length) {
+        const next = sorted[i + 1]
+        const sameRange =
+          next.isRest !== true &&
+          Math.abs(snapBeatValue(next.startBeat) - itemStart) < EPS &&
+          Math.abs(snapBeatValue(next.startBeat + next.duration) - itemEnd) <
+            EPS
+        if (!sameRange) break
+        chordItems.push(next)
+        i++
+      }
+    }
+
+    // Exact simultaneous notes become a chord. More complex overlapping
+    // voices retain the earlier voice and render only the uncovered tail
+    // rather than shifting material later and falsifying its beat position.
+    const renderedStart = Math.max(cursor, itemStart)
+    const renderedDuration = itemEnd - renderedStart
+    if (renderedDuration > EPS) {
+      emit(
+        item.isRest === true
+          ? null
+          : chordItems.map((chordItem) => chordItem.note.midi),
+        item.isRest === true
+          ? null
+          : chordItems.map((chordItem) => chordItem.id),
+        renderedDuration,
+        renderedStart,
+      )
+      cursor = itemEnd
+    }
   }
 
   // Pad and flush the final (possibly incomplete) measure with rests.
@@ -250,11 +311,11 @@ function melodyToMeasures(
     const fill = beatsPerBar - measurePos
     if (fill > EPS) {
       let start = absBeat
-      for (const d of quantizeDuration(fill)) {
-        const beats = durBeats(d.code, d.dots)
+      for (const d of quantizeNotationDuration(fill)) {
+        const beats = notationDurationBeats(d.code, d.dots)
         curMeasure.push({
-          midi: null,
-          melodyId: null,
+          midis: null,
+          melodyIds: null,
           code: d.code,
           dots: d.dots,
           beats,
@@ -357,24 +418,29 @@ function makeStaveNote(
   useFlats: boolean,
 ): StaveNote {
   const dur = `${cell.code}${cell.dots > 0 ? 'd'.repeat(cell.dots) : ''}`
-  if (cell.midi === null) {
-    return new StaveNote({ type: 'r', duration: dur, keys: ['b/4'] })
+  const note =
+    cell.midis === null
+      ? new StaveNote({ type: 'r', duration: dur, keys: ['b/4'] })
+      : new StaveNote({
+          keys: cell.midis.map((midi) => midiToVFKey(midi, useFlats)),
+          duration: dur,
+          clef,
+          autoStem: true,
+        })
+  const keyCount = cell.midis?.length ?? 1
+  for (let keyIndex = 0; keyIndex < keyCount; keyIndex++) {
+    for (let dot = 0; dot < cell.dots; dot++) {
+      note.addModifier(new Dot(), keyIndex)
+    }
   }
-  const note = new StaveNote({
-    keys: [midiToVFKey(cell.midi, useFlats)],
-    duration: dur,
-    clef,
-    autoStem: true,
-  })
-  for (let d = 0; d < cell.dots; d++) note.addModifier(new Dot(), 0)
   return note
 }
 
 export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   const { container, melody, key, scaleType } = input
-  const beatsPerBar = input.beatsPerBar ?? 4
-  const measuresPerRow = input.measuresPerRow ?? 4
-  const canvasW = Math.round(input.width ?? DEFAULT_W)
+  const beatsPerBar = Math.max(1, Math.round(input.beatsPerBar ?? 4))
+  const measuresPerRow = Math.max(1, Math.round(input.measuresPerRow ?? 4))
+  const canvasW = Math.max(360, Math.round(input.width ?? DEFAULT_W))
   container.innerHTML = ''
 
   const empty: SheetLayout = {
@@ -388,17 +454,15 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   }
 
   if (!melody.length) {
-    container.textContent = '(empty)'
     return empty
   }
 
   const clef = chooseClef(melody.map((m) => m.note.midi))
-  const keySig = keySigSpec(key, scaleType)
-  const useFlats = keySig.startsWith('b')
+  const keySig = notationKeySignature(key, scaleType)
+  const useFlats = (KEY_SIGNATURES[keySig]?.flats ?? 0) > 0
 
   const { measures, totalBeats } = melodyToMeasures(melody, beatsPerBar)
   if (!measures.length) {
-    container.textContent = '(empty)'
     return { ...empty, totalBeats }
   }
 
@@ -422,7 +486,9 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   ctx.setStrokeStyle(ink)
 
   const rowWidth = canvasW - MARGIN * 2
-  const keySigW = keySig === 'C' ? 0 : keySig.length * 12 + 8
+  const signature = KEY_SIGNATURES[keySig]
+  const accidentalCount = (signature?.sharps ?? 0) + (signature?.flats ?? 0)
+  const keySigW = accidentalCount === 0 ? 0 : accidentalCount * 10 + 8
 
   const noteBoxes: SheetNoteBox[] = []
   const systemBoxes: SheetSystemBox[] = []
@@ -431,8 +497,18 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   const tiePairs: Array<{
     from: StaveNote
     to: StaveNote
+    fromIndex: number
+    toIndex: number
     sameRow: boolean
   }> = []
+  const pendingTies = new Map<
+    number,
+    {
+      note: StaveNote
+      noteIndex: number
+      systemIndex: number
+    }
+  >()
 
   const beams: Beam[] = []
   let measureBeatCursor = 0
@@ -480,6 +556,7 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
       })
       voice.setStrict(false)
       voice.addTickables(notes)
+      Accidental.applyAccidentals([voice], keySig)
 
       // Beam runs of eighths/shorter within the measure.
       try {
@@ -506,7 +583,9 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
       }
       rowNoteEndX = noteEndX
 
-      // Per-note boxes + tie linkage.
+      // Per-note boxes + tie linkage. `pendingTie` intentionally spans
+      // measures and systems; notes are only tied when they came from the
+      // same source MelodyItem.
       for (let i = 0; i < cells.length; i++) {
         const cell = cells[i]
         const sn = notes[i]
@@ -522,21 +601,50 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
         } catch {
           // fall back to measure-centred estimate
         }
-        noteBoxes.push({
-          startBeat: cell.startBeat,
-          endBeat: cell.startBeat + cell.beats,
-          x: nx,
-          y: ny,
-          width: nw,
-          isRest: cell.midi === null,
-          midi: cell.midi,
-          melodyId: cell.melodyId,
-          systemIndex,
-        })
-        if (cell.tieToNext) {
-          const next = notes[i + 1] as StaveNote | undefined
-          if (next !== undefined) {
-            tiePairs.push({ from: sn, to: next, sameRow: true })
+        if (cell.midis === null || cell.melodyIds === null) {
+          noteBoxes.push({
+            startBeat: cell.startBeat,
+            endBeat: cell.startBeat + cell.beats,
+            x: nx,
+            y: ny,
+            width: nw,
+            isRest: true,
+            midi: null,
+            melodyId: null,
+            systemIndex,
+          })
+          continue
+        }
+
+        const noteYs = sn.getYs()
+        for (let noteIndex = 0; noteIndex < cell.midis.length; noteIndex++) {
+          const melodyId = cell.melodyIds[noteIndex] ?? null
+          noteBoxes.push({
+            startBeat: cell.startBeat,
+            endBeat: cell.startBeat + cell.beats,
+            x: nx,
+            y: noteYs[noteIndex] ?? ny,
+            width: nw,
+            isRest: false,
+            midi: cell.midis[noteIndex],
+            melodyId,
+            systemIndex,
+          })
+          if (melodyId === null) continue
+          const pending = pendingTies.get(melodyId)
+          if (pending !== undefined) {
+            tiePairs.push({
+              from: pending.note,
+              to: sn,
+              fromIndex: pending.noteIndex,
+              toIndex: noteIndex,
+              sameRow: pending.systemIndex === systemIndex,
+            })
+          }
+          if (cell.tieToNext) {
+            pendingTies.set(melodyId, { note: sn, noteIndex, systemIndex })
+          } else {
+            pendingTies.delete(melodyId)
           }
         }
       }
@@ -559,19 +667,31 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
     })
   }
 
-  // Draw beams + same-row ties.
+  // Draw beams + ties. At a system break VexFlow draws two partial ties so
+  // the continuation remains explicit instead of silently disappearing.
   for (const b of beams) b.setContext(ctx).draw()
   for (const t of tiePairs) {
-    if (!t.sameRow) continue
     try {
-      new StaveTie({
-        firstNote: t.from,
-        lastNote: t.to,
-        firstIndexes: [0],
-        lastIndexes: [0],
-      })
-        .setContext(ctx)
-        .draw()
+      if (t.sameRow) {
+        new StaveTie({
+          firstNote: t.from,
+          lastNote: t.to,
+          firstIndexes: [t.fromIndex],
+          lastIndexes: [t.toIndex],
+        })
+          .setContext(ctx)
+          .draw()
+      } else {
+        new StaveTie({
+          firstNote: t.from,
+          firstIndexes: [t.fromIndex],
+        })
+          .setContext(ctx)
+          .draw()
+        new StaveTie({ lastNote: t.to, lastIndexes: [t.toIndex] })
+          .setContext(ctx)
+          .draw()
+      }
     } catch {
       // ignore tie draw failures (edge cases at line breaks)
     }

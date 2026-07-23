@@ -10,7 +10,7 @@ import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { MusicBoard, SlidersHorizontal } from '@/components/icons'
+import { Music, MusicBoard, SlidersHorizontal, Split } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -19,10 +19,10 @@ import type { PianoRollEditorApi } from '@/components/PianoRollCanvas'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import PitchAccuracyHeatmap from '@/components/PitchAccuracyHeatmap'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PracticeViewToolbar } from '@/components/PracticeViewToolbar'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import statusBarStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
-import { SheetMusicView } from '@/components/SheetMusicView'
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
@@ -40,6 +40,11 @@ const SessionBrowser = lazy(async () =>
 const SessionEditor = lazy(async () =>
   import('@/components/SessionEditor').then((m) => ({
     default: m.SessionEditor,
+  })),
+)
+const SheetMusicView = lazy(async () =>
+  import('@/components/SheetMusicView').then((m) => ({
+    default: m.SheetMusicView,
   })),
 )
 import './styles/guitar-practice.css'
@@ -123,7 +128,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { openSettingsSection, settingsSection, triggerTargetFocus, } from '@/stores/ui-store'
+import { openSettingsSection, setSingingSheetView, settingsSection, singingSheetView, triggerTargetFocus, } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -142,8 +147,6 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 // Tab type
 // ============================================================
-
-export type EditorView = 'piano-roll' | 'sheet-music' | 'session-editor'
 
 interface AppProps {
   onMounted?: () => void
@@ -1245,6 +1248,11 @@ const AppShell: Component<AppProps> = (props) => {
     if (currentMelody === null) return
     showNotification('Melody saved!', 'success')
   }, 500)
+
+  const updateComposeMelody = (melody: MelodyItem[]): void => {
+    melodyStore.setMelody(melody)
+    debouncedAutoSave()
+  }
 
   // If the active tab gets filtered out (scope/UI-mode change, or a deep link
   // into a hidden tab), land on the scope's home tab instead of a blank shell.
@@ -2416,24 +2424,111 @@ const AppShell: Component<AppProps> = (props) => {
                         />
                       </div>
 
-                      <div id="canvas-container" ref={singingDropZone.bind}>
-                        {/* Below the top-docked control bar, in the empty band
-                          above the notes — matches the Piano/Guitar hint
-                          placement. Centring it on the status bar occluded
-                          the song timeline. */}
-                        <MicInsightHint
-                          message={micInsights.message}
-                          insight={micInsights.insight}
-                          style={{
-                            position: 'absolute',
-                            top: '68px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            'z-index': '6',
-                            'white-space': 'nowrap',
-                          }}
-                        />
-                        {renderSingingCanvas()}
+                      <PracticeViewToolbar
+                        context="Vocal guide"
+                        sheetActive={singingSheetView}
+                        onViewChange={setSingingSheetView}
+                      />
+
+                      <div class={styles.singingWorkspace}>
+                        <div
+                          id="canvas-container"
+                          class={styles.singingStage}
+                          ref={singingDropZone.bind}
+                        >
+                          <Show when={!singingSheetView()}>
+                            {/* Below the top-docked control bar, in the empty
+                              band above the notes. */}
+                            <MicInsightHint
+                              message={micInsights.message}
+                              insight={micInsights.insight}
+                              style={{
+                                position: 'absolute',
+                                top: '68px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                'z-index': '6',
+                                'white-space': 'nowrap',
+                              }}
+                            />
+                          </Show>
+                          <Show
+                            when={!singingSheetView()}
+                            fallback={
+                              <div class={styles.singingSheetSurface}>
+                                <Suspense
+                                  fallback={
+                                    <div class="sheet-loading">
+                                      Preparing notation…
+                                    </div>
+                                  }
+                                >
+                                  <SheetMusicView
+                                    melody={activePlaybackItems}
+                                    musicKey={keyNameSignal}
+                                    scaleType={scaleTypeSignal}
+                                    currentBeat={currentBeat}
+                                    isPlaying={isPlaying}
+                                    onSeek={handleLoopSeek}
+                                  />
+                                </Suspense>
+                              </div>
+                            }
+                          >
+                            {renderSingingCanvas()}
+                          </Show>
+                          <Show when={singingDropZone.isDragOver()}>
+                            <div class={statusBarStyles.dropOverlay}>
+                              <span class={statusBarStyles.dropLabel}>
+                                Drop MIDI to load as melody
+                              </span>
+                            </div>
+                          </Show>
+                          <ControlOverlay defaultDock="top">
+                            <SingingControlBar
+                              isPlaying={isPlaying}
+                              isPaused={isPaused}
+                              onPlay={handlePracticePlay}
+                              onPause={handlePause}
+                              onResume={handleResume}
+                              onStop={() => void handleStop()}
+                              volume={savedVol}
+                              onVolumeChange={(vol) => {
+                                setSavedVol(vol)
+                                audioEngine?.setVolume(vol / 100)
+                              }}
+                              speed={playbackSpeed()}
+                              onSpeedChange={setPlaybackSpeed}
+                              metronomeEnabled={() => metronomeEnabled()}
+                              onMetronomeToggle={() =>
+                                setMetronomeEnabled(
+                                  metronomeEnabled() === false,
+                                )
+                              }
+                              playMode={() => playMode()}
+                              playModeChange={handlePracticeModeChange}
+                              practiceCycles={() => repeatCycles()}
+                              onCyclesChange={setRepeatCycles}
+                              currentCycle={() => currentRepeat()}
+                              practiceSubMode={() => practiceSubMode()}
+                              onPracticeSubModeChange={setPracticeSubMode}
+                              spacedRestMode={spacedRestMode}
+                              onSpacedRestModeChange={setSpacedRestMode}
+                              isCountingIn={() => isCountingIn()}
+                              countInBeat={() => countInBeat()}
+                              onMicToggle={() => {
+                                void handleMicToggle()
+                              }}
+                              loopEnabled={loopEnabled}
+                              loopA={loopA}
+                              loopB={loopB}
+                              onSetLoopA={handleSetLoopA}
+                              onSetLoopB={handleSetLoopB}
+                              onToggleLoop={handleToggleLoop}
+                              onClearLoop={handleClearLoop}
+                            />
+                          </ControlOverlay>
+                        </div>
                         <SingingCanvasHud
                           noteResults={noteResults}
                           pitch={currentPitch}
@@ -2441,55 +2536,6 @@ const AppShell: Component<AppProps> = (props) => {
                           liveScore={liveScore}
                           isPlaying={isPlaying}
                         />
-                        <Show when={singingDropZone.isDragOver()}>
-                          <div class={statusBarStyles.dropOverlay}>
-                            <span class={statusBarStyles.dropLabel}>
-                              Drop MIDI to load as melody
-                            </span>
-                          </div>
-                        </Show>
-                        <ControlOverlay defaultDock="top">
-                          <SingingControlBar
-                            isPlaying={isPlaying}
-                            isPaused={isPaused}
-                            onPlay={handlePracticePlay}
-                            onPause={handlePause}
-                            onResume={handleResume}
-                            onStop={() => void handleStop()}
-                            volume={savedVol}
-                            onVolumeChange={(vol) => {
-                              setSavedVol(vol)
-                              audioEngine?.setVolume(vol / 100)
-                            }}
-                            speed={playbackSpeed()}
-                            onSpeedChange={setPlaybackSpeed}
-                            metronomeEnabled={() => metronomeEnabled()}
-                            onMetronomeToggle={() =>
-                              setMetronomeEnabled(metronomeEnabled() === false)
-                            }
-                            playMode={() => playMode()}
-                            playModeChange={handlePracticeModeChange}
-                            practiceCycles={() => repeatCycles()}
-                            onCyclesChange={setRepeatCycles}
-                            currentCycle={() => currentRepeat()}
-                            practiceSubMode={() => practiceSubMode()}
-                            onPracticeSubModeChange={setPracticeSubMode}
-                            spacedRestMode={spacedRestMode}
-                            onSpacedRestModeChange={setSpacedRestMode}
-                            isCountingIn={() => isCountingIn()}
-                            countInBeat={() => countInBeat()}
-                            onMicToggle={() => {
-                              void handleMicToggle()
-                            }}
-                            loopEnabled={loopEnabled}
-                            loopA={loopA}
-                            loopB={loopB}
-                            onSetLoopA={handleSetLoopA}
-                            onSetLoopB={handleSetLoopB}
-                            onToggleLoop={handleToggleLoop}
-                            onClearLoop={handleClearLoop}
-                          />
-                        </ControlOverlay>
                       </div>
 
                       <PitchAccuracyHeatmap
@@ -2566,7 +2612,21 @@ const AppShell: Component<AppProps> = (props) => {
                           onClick={() => setEditorView('sheet-music')}
                           title="Sheet Music"
                         >
-                          <MusicBoard /> Sheet Music
+                          <Music /> Sheet Music
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class={styles.editorTab}
+                          classList={{
+                            [styles.editorTabActive]: editorView() === 'split',
+                          }}
+                          aria-selected={editorView() === 'split'}
+                          data-testid="view-split"
+                          onClick={() => setEditorView('split')}
+                          title="Split piano roll and sheet music"
+                        >
+                          <Split /> Split
                         </button>
                         <button
                           type="button"
@@ -2642,11 +2702,22 @@ const AppShell: Component<AppProps> = (props) => {
 
                   <Show when={editorView() === 'sheet-music'}>
                     <div class={styles.sheetMusicEditorContainer}>
-                      <SheetMusicView
-                        melody={() => melodyStore.items()}
-                        key={keyNameSignal}
-                        scaleType={scaleTypeSignal}
-                      />
+                      <Suspense
+                        fallback={
+                          <div class="sheet-loading">Preparing notation…</div>
+                        }
+                      >
+                        <SheetMusicView
+                          melody={() => melodyStore.items()}
+                          musicKey={keyNameSignal}
+                          scaleType={scaleTypeSignal}
+                          currentBeat={currentBeat}
+                          isPlaying={editorIsPlaying}
+                          onSeek={handleLoopSeek}
+                          scale={() => melodyStore.currentScale()}
+                          onMelodyChange={updateComposeMelody}
+                        />
+                      </Suspense>
                     </div>
                   </Show>
 
@@ -2654,7 +2725,11 @@ const AppShell: Component<AppProps> = (props) => {
                   on its internal ruler/grid canvases via
                   drawRulerWithPlayhead / drawGridWithPlayhead.  See
                   PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
-                  <Show when={editorView() === 'piano-roll'}>
+                  <Show
+                    when={
+                      editorView() === 'piano-roll' || editorView() === 'split'
+                    }
+                  >
                     <div style={{ position: 'relative' }}>
                       <Show when={recording.pendingTake() !== null}>
                         <ComposeTakeReview
@@ -2688,10 +2763,7 @@ const AppShell: Component<AppProps> = (props) => {
                         isScrolling={() => false}
                         targetPitch={() => null}
                         noteAccuracyMap={() => new Map()}
-                        onMelodyChange={(melody) => {
-                          debouncedAutoSave()
-                          melodyStore.setMelody(melody)
-                        }}
+                        onMelodyChange={updateComposeMelody}
                         onInstrumentChange={(instrument) => {
                           // Update three things at once:
                           //   1. App's primary AudioEngine (used during practice
@@ -2720,6 +2792,31 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine?.getWaveformData() ?? null
                         }
                       />
+                      <Show when={editorView() === 'split'}>
+                        <div
+                          class={styles.sheetSplitStrip}
+                          data-testid="sheet-split-strip"
+                        >
+                          <Suspense
+                            fallback={
+                              <div class="sheet-loading">
+                                Preparing notation…
+                              </div>
+                            }
+                          >
+                            <SheetMusicView
+                              melody={() => melodyStore.items()}
+                              musicKey={keyNameSignal}
+                              scaleType={scaleTypeSignal}
+                              currentBeat={currentBeat}
+                              isPlaying={editorIsPlaying}
+                              onSeek={handleLoopSeek}
+                              scale={() => melodyStore.currentScale()}
+                              onMelodyChange={updateComposeMelody}
+                            />
+                          </Suspense>
+                        </div>
+                      </Show>
                     </div>
                   </Show>
                 </TabErrorBoundary>

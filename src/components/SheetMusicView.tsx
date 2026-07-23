@@ -9,8 +9,9 @@
 // width, no CSS scaling), so screen clicks are layout coordinates directly.
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { Music } from '@/components/icons'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { SheetLayout } from '@/lib/sheet-music-renderer'
 import { beatToCursor, noteBoxAt, renderSheetMusic, staffYToMidi, systemAtY, xToBeat, } from '@/lib/sheet-music-renderer'
@@ -34,7 +35,7 @@ interface SheetMusicViewProps {
   /** length in beats of a newly placed note (default 1) */
   noteDuration?: () => number
   /** compact top toolbar area (e.g. a length picker) rendered above the staff */
-  toolbar?: () => unknown
+  toolbar?: () => JSX.Element
   /** optional data-tour hook for the container */
   dataTour?: string
 }
@@ -59,24 +60,36 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   let vexRef: HTMLDivElement | undefined
 
   const [layout, setLayout] = createSignal<SheetLayout | null>(null)
+  const [renderError, setRenderError] = createSignal<string | null>(null)
   const editable = (): boolean => typeof props.onMelodyChange === 'function'
 
   const measureWidth = (): number => {
     const w = scrollRef?.clientWidth ?? 960
-    return Math.max(480, Math.min(1400, w - 4))
+    return Math.max(360, Math.min(1400, w - 4))
   }
 
   const draw = (): void => {
     if (!vexRef) return
-    const l = renderSheetMusic({
-      container: vexRef,
-      melody: props.melody(),
-      key: props.musicKey(),
-      scaleType: props.scaleType(),
-      beatsPerBar: props.beatsPerBar,
-      width: measureWidth(),
-    })
-    setLayout(l)
+    try {
+      const l = renderSheetMusic({
+        container: vexRef,
+        melody: props.melody(),
+        key: props.musicKey(),
+        scaleType: props.scaleType(),
+        beatsPerBar: props.beatsPerBar,
+        width: measureWidth(),
+      })
+      setLayout(l)
+      setRenderError(null)
+    } catch (error) {
+      vexRef.replaceChildren()
+      setLayout(null)
+      setRenderError(
+        error instanceof Error
+          ? error.message
+          : 'The score could not be drawn.',
+      )
+    }
   }
 
   // Redraw on any content change. createEffect runs once on mount.
@@ -268,49 +281,102 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   })
 
   return (
-    <div ref={scrollRef} class={styles.sheetScroll} data-tour={props.dataTour}>
-      {props.toolbar?.() as never}
-      <div
-        ref={innerRef}
-        class={styles.sheetInner}
-        style={{
-          width: `${layout()?.width ?? measureWidth()}px`,
-          height: `${layout()?.height ?? 200}px`,
-        }}
-      >
-        <div ref={vexRef} class={styles.vexHost} />
+    <section class={styles.frame} data-tour={props.dataTour}>
+      <header class={styles.header}>
+        <div class={styles.scoreIdentity}>
+          <span class={styles.scoreIcon} aria-hidden="true">
+            <Music />
+          </span>
+          <span>
+            <span class={styles.kicker}>Live score</span>
+            <strong class={styles.scoreTitle}>
+              {props.musicKey()} {props.scaleType().replaceAll('-', ' ')}
+            </strong>
+          </span>
+        </div>
+        <span class={styles.modeHint}>
+          {editable()
+            ? 'Click to add · right-click to remove'
+            : props.isPlaying?.() === true
+              ? 'Following playback'
+              : 'Click the staff to seek'}
+        </span>
+      </header>
 
-        {hl() && (
+      {props.toolbar?.()}
+
+      <div ref={scrollRef} class={styles.sheetScroll}>
+        <Show
+          when={props.melody().length > 0}
+          fallback={
+            <div class={styles.emptyState} role="status">
+              <span class={styles.emptyMark} aria-hidden="true">
+                <Music />
+              </span>
+              <strong>No melody to notate yet</strong>
+              <span>
+                Load a melody or add notes in Compose to build the score.
+              </span>
+            </div>
+          }
+        >
           <div
-            class={styles.noteHighlight}
+            ref={innerRef}
+            class={styles.sheetInner}
             style={{
-              left: `${hl()!.x}px`,
-              top: `${hl()!.y}px`,
-              width: `${hl()!.w}px`,
-              height: `${hl()!.h}px`,
+              width: `${layout()?.width ?? measureWidth()}px`,
+              height: `${layout()?.height ?? 200}px`,
             }}
-          />
-        )}
+          >
+            <div ref={vexRef} class={styles.vexHost} />
 
-        {cursorX() !== null && (
-          <div
-            class={styles.playCursor}
-            classList={{ [styles.playCursorActive]: props.isPlaying?.() }}
-            style={{
-              left: `${cursorX()!}px`,
-              top: `${cursorTop()}px`,
-              height: `${cursorH()}px`,
-            }}
-          />
-        )}
+            {hl() && (
+              <div
+                class={styles.noteHighlight}
+                style={{
+                  left: `${hl()!.x}px`,
+                  top: `${hl()!.y}px`,
+                  width: `${hl()!.w}px`,
+                  height: `${hl()!.h}px`,
+                }}
+              />
+            )}
 
-        <div
-          class={styles.clickLayer}
-          classList={{ [styles.clickLayerEdit]: editable() }}
-          onClick={handleClick}
-          onContextMenu={handleContextMenu}
-        />
+            {cursorX() !== null && (
+              <div
+                class={styles.playCursor}
+                classList={{ [styles.playCursorActive]: props.isPlaying?.() }}
+                style={{
+                  left: `${cursorX()!}px`,
+                  top: `${cursorTop()}px`,
+                  height: `${cursorH()}px`,
+                }}
+              />
+            )}
+
+            <div
+              class={styles.clickLayer}
+              classList={{ [styles.clickLayerEdit]: editable() }}
+              onClick={handleClick}
+              onContextMenu={handleContextMenu}
+            />
+          </div>
+          <Show when={renderError()}>
+            {(message) => (
+              <div
+                class={`${styles.emptyState} ${styles.errorState}`}
+                role="alert"
+              >
+                <span class={styles.emptyMark} aria-hidden="true">
+                  <Music />
+                </span>
+                <strong>Notation unavailable</strong>
+                <span>{message()}</span>
+              </div>
+            )}
+          </Show>
+        </Show>
       </div>
-    </div>
+    </section>
   )
 }

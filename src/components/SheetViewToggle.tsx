@@ -1,5 +1,5 @@
 // ============================================================
-// SheetViewToggle — compact Notes / Sheet switch for a canvas surface
+// SheetViewToggle — in-flow Melody / Notation segmented control
 // ============================================================
 
 import type { Component } from 'solid-js'
@@ -16,33 +16,31 @@ export const SheetViewToggle: Component<SheetViewToggleProps> = (props) => {
   return (
     <div
       class={styles.toggle}
-      role="tablist"
+      role="group"
       aria-label="Visualization view"
       data-tour="view.sheet-toggle"
     >
       <button
         type="button"
-        role="tab"
         class={styles.btn}
         classList={{ [styles.btnActive]: !props.active() }}
-        aria-selected={!props.active()}
-        title="Notes view"
+        aria-pressed={!props.active()}
+        title="Show the scrolling melody guide"
         onClick={() => props.onToggle(false)}
       >
         <MusicBoard />
-        <span class={styles.label}>Notes</span>
+        <span class={styles.label}>Melody</span>
       </button>
       <button
         type="button"
-        role="tab"
         class={styles.btn}
         classList={{ [styles.btnActive]: props.active() }}
-        aria-selected={props.active()}
-        title="Sheet music view"
+        aria-pressed={props.active()}
+        title="Show standard music notation"
         onClick={() => props.onToggle(true)}
       >
         <Music />
-        <span class={styles.label}>Sheet</span>
+        <span class={styles.label}>Notation</span>
       </button>
     </div>
   )
