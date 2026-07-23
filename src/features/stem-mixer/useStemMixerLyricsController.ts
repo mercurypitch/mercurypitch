@@ -12,13 +12,15 @@ import { deleteLyricsFromDb, loadLyricsFromDb, saveLyricsToDb, } from '@/db/serv
 import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
+import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
+import { appendSweepPoint } from '@/lib/lyric-sweep'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from './lrc-gen-engine'
-import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
+import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
 
@@ -67,15 +69,23 @@ export interface StemMixerLyricsController {
   setEditMode: Setter<boolean>
   wordTimings: () => WordTimingsMap
   setWordTimings: Setter<WordTimingsMap>
+  wordEndTimings: () => WordTimingsMap
+  wordSweepTimings: () => WordSweepTimingsMap
   editBuffer: () => WordTimingsMap
   setEditBuffer: Setter<WordTimingsMap>
   editPopover: () => EditPopover | null
   setEditPopover: Setter<EditPopover | null>
   lrcGenMode: () => boolean
+  lrcGenInputMode: () => LrcGenInputMode
+  setLrcGenInputMode: Setter<LrcGenInputMode>
+  lrcTimingOffsetMs: () => number
+  setLrcTimingOffsetMs: Setter<number>
   lrcGenLineIdx: () => number
   lrcGenWordIdx: () => number
   lrcGenLineTimes: () => (number | undefined)[]
   lrcGenWordTimings: () => WordTimingsMap
+  lrcGenWordEndTimings: () => WordTimingsMap
+  lrcGenWordSweepTimings: () => WordSweepTimingsMap
   setLrcGenLineTimes: Setter<(number | undefined)[]>
   setLrcGenWordTimings: Setter<WordTimingsMap>
   blocks: () => LyricsBlock[]
@@ -112,6 +122,8 @@ export interface StemMixerLyricsController {
       words: string[]
       key: string
       wordTimes?: number[]
+      wordEndTimes?: number[]
+      wordSweeps?: Record<number, WordSweepPoint[]>
     }
   >
   blockStarts: () => Map<number, BlockStartsInfo>
@@ -136,6 +148,8 @@ export interface StemMixerLyricsController {
     endTime: number,
     wordTimes: number[] | undefined,
     elapsedTime: number,
+    wordEndTimes?: number[],
+    wordSweeps?: Record<number, WordSweepPoint[]>,
   ) => { activeUpTo: number; charProgress: number; fraction: number }
 
   // Actions — lyric line click
@@ -165,6 +179,14 @@ export interface StemMixerLyricsController {
   startLrcGen: () => void
   handleNextLine: () => void
   handleNextWord: () => void
+  handleMarkerSample: (
+    lineIdx: number,
+    wordIdx: number,
+    progress: number,
+    elapsedTime: number,
+    phase: 'start' | 'move' | 'end',
+  ) => void
+  handleRedoCurrentLine: () => void
   handleLrcGenFinish: () => void
   applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
   handleLrcGenReset: () => void
@@ -286,6 +308,9 @@ export function useStemMixerLyricsController(
   )
   const [editMode, setEditMode] = createSignal(false)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
+  const [wordEndTimings, setWordEndTimings] = createSignal<WordTimingsMap>({})
+  const [wordSweepTimings, setWordSweepTimings] =
+    createSignal<WordSweepTimingsMap>({})
   // Saved lyric mappings (Original / Edited / Auto-sync / Tapped) the user can
   // switch between — see src/lib/lyrics-versions.ts.
   const [lyricsVersions, setLyricsVersions] = createSignal<LyricsVersion[]>([])
@@ -294,6 +319,22 @@ export function useStemMixerLyricsController(
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
   const [editPopover, setEditPopover] = createSignal<EditPopover | null>(null)
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
+  const [lrcGenInputMode, setLrcGenInputMode] =
+    createSignal<LrcGenInputMode>('marker')
+  const [lrcTimingOffsetMs, setPersistedLrcTimingOffsetMs] =
+    createPersistedSignal<number>('pitchperfect_lyrics_timing_offset_ms', 180)
+  const clampTimingOffset = (value: number) => Math.max(0, Math.min(500, value))
+  let timingOffsetSec = clampTimingOffset(lrcTimingOffsetMs()) / 1000
+  const setLrcTimingOffsetMs: Setter<number> = (value) => {
+    const resolved =
+      typeof value === 'function' ? value(lrcTimingOffsetMs()) : value
+    const clamped = clampTimingOffset(resolved)
+    timingOffsetSec = clamped / 1000
+    return setPersistedLrcTimingOffsetMs(clamped)
+  }
+  createEffect(() => {
+    timingOffsetSec = clampTimingOffset(lrcTimingOffsetMs()) / 1000
+  })
   const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
   const [lrcGenWordIdx, setLrcGenWordIdx] = createSignal(0)
   const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<
@@ -301,6 +342,10 @@ export function useStemMixerLyricsController(
   >([])
   const [lrcGenWordTimings, setLrcGenWordTimings] =
     createSignal<WordTimingsMap>({})
+  const [lrcGenWordEndTimings, setLrcGenWordEndTimings] =
+    createSignal<WordTimingsMap>({})
+  const [lrcGenWordSweepTimings, setLrcGenWordSweepTimings] =
+    createSignal<WordSweepTimingsMap>({})
   const [blocks, setBlocks] = createSignal<LyricsBlock[]>([])
   const [blockInstances, setBlockInstances] = createSignal<BlockInstancesMap>(
     {},
@@ -344,6 +389,8 @@ export function useStemMixerLyricsController(
   // Snapshot of pre-gen LRC state so Cancel can restore
   let preGenSnapshot: {
     wordTimings: WordTimingsMap
+    wordEndTimings: WordTimingsMap
+    wordSweepTimings: WordSweepTimingsMap
     lrcLines: LrcLine[]
     rawLyricsText: string
     lyricsLines: string[]
@@ -370,6 +417,7 @@ export function useStemMixerLyricsController(
      *  active. Omit for saves that don't change the mapping (font size,
      *  block edits) — those keep the existing versions untouched. */
     versionKind?: LyricsVersionKind,
+    timingExtension?: LyricsTimingExtension,
   ) => {
     let versions = lyricsVersions()
     let activeKind = activeVersionKind()
@@ -382,6 +430,16 @@ export function useStemMixerLyricsController(
         kind: versionKind,
         text,
         wordTimings: wt && Object.keys(wt).length > 0 ? wt : undefined,
+        wordEndTimings:
+          timingExtension &&
+          Object.keys(timingExtension.wordEndTimings).length > 0
+            ? timingExtension.wordEndTimings
+            : undefined,
+        wordSweepTimings:
+          timingExtension &&
+          Object.keys(timingExtension.wordSweepTimings).length > 0
+            ? timingExtension.wordSweepTimings
+            : undefined,
         createdAt: Date.now(),
       })
       activeKind = versionKind
@@ -426,6 +484,8 @@ export function useStemMixerLyricsController(
       setLrcLines([])
     }
     setWordTimings(version.wordTimings ?? {})
+    setWordEndTimings(version.wordEndTimings ?? {})
+    setWordSweepTimings(version.wordSweepTimings ?? {})
     setEditMode(false)
     // Blocks/repeats belong to a specific mapping — reset on switch.
     setBlocks([])
@@ -520,6 +580,8 @@ export function useStemMixerLyricsController(
     setLrcLines([])
     setLyricsLines([])
     setWordTimings({})
+    setWordEndTimings({})
+    setWordSweepTimings({})
     setBlocks([])
     setBlockInstances({})
     setBlockMarkMode(false)
@@ -531,6 +593,8 @@ export function useStemMixerLyricsController(
     setEditMode(false)
     setEditBuffer({})
     setLrcGenMode(false)
+    setLrcGenWordEndTimings({})
+    setLrcGenWordSweepTimings({})
     setCurrentLineIdx(-1)
     setShowSongPicker(false)
     setSongMatches([])
@@ -593,6 +657,9 @@ export function useStemMixerLyricsController(
   // ── Lyrics loading ───────────────────────────────────────────────
 
   const applyLyricsResult = (result: LyricsSearchResult, title: string) => {
+    setWordTimings({})
+    setWordEndTimings({})
+    setWordSweepTimings({})
     setRawLyricsText(result.text)
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
@@ -694,7 +761,9 @@ export function useStemMixerLyricsController(
       const cache = _lyricsCache()
       const hadVersions =
         cache?.versions !== undefined && cache.versions.length > 0
-      hydrateVersions(cache)
+      const activeVersion = hydrateVersions(cache)
+      setWordEndTimings(activeVersion?.wordEndTimings ?? {})
+      setWordSweepTimings(activeVersion?.wordSweepTimings ?? {})
       if (!hadVersions && lyricsVersions().length > 0) {
         persistLyrics(
           persisted.text,
@@ -764,6 +833,11 @@ export function useStemMixerLyricsController(
   const handleLyricsUpload = (result: LyricsUploadResult) => {
     setBlocks([])
     setBlockInstances({})
+    const timingExtension =
+      result.format === 'lrc' ? parseLrcTimingMetadata(result.text) : null
+    setWordTimings({})
+    setWordEndTimings(timingExtension?.wordEndTimings ?? {})
+    setWordSweepTimings(timingExtension?.wordSweepTimings ?? {})
     setRawLyricsText(result.text)
     persistLyrics(
       result.text,
@@ -772,6 +846,7 @@ export function useStemMixerLyricsController(
       undefined,
       undefined,
       'imported',
+      timingExtension ?? undefined,
     )
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
@@ -1016,6 +1091,10 @@ export function useStemMixerLyricsController(
   const handleSaveEdits = () => {
     const merged = { ...wordTimings(), ...editBuffer() }
     setWordTimings(merged)
+    // Start edits invalidate marker-authored ends/curves. The previous mapped
+    // version remains available in the version menu.
+    setWordEndTimings({})
+    setWordSweepTimings({})
 
     const filename = loadPersistedLyrics()?.filename ?? 'edited.lrc'
     const canonical = canonicalLrcLines()
@@ -1245,6 +1324,8 @@ export function useStemMixerLyricsController(
 
     const tplLineCount = tplEnd - tplStart
     const templateWordTimes = lrcGenWordTimings()
+    const templateWordEnds = lrcGenWordEndTimings()
+    const templateWordSweeps = lrcGenWordSweepTimings()
 
     for (let j = 0; j < tplLineCount; j++) touchedLines.add(instStart + j)
     setLrcGenLineTimes((prev) => {
@@ -1275,6 +1356,38 @@ export function useStemMixerLyricsController(
       }
       return next
     })
+    setLrcGenWordEndTimings((prev) => {
+      const next = structuredClone(prev)
+      for (let j = 0; j < tplLineCount; j++) {
+        const ends = templateWordEnds[tplStart + j]
+        if (ends?.length) {
+          next[instStart + j] = ends.map(
+            (time) =>
+              Math.round((instanceStartTime + time - tplBlockStart) * 1000) /
+              1000,
+          )
+        }
+      }
+      return next
+    })
+    setLrcGenWordSweepTimings((prev) => {
+      const next = structuredClone(prev)
+      for (let j = 0; j < tplLineCount; j++) {
+        if (!(tplStart + j in templateWordSweeps)) continue
+        const sweeps = templateWordSweeps[tplStart + j]
+        next[instStart + j] = {}
+        for (const [wordIdx, points] of Object.entries(sweeps)) {
+          next[instStart + j][+wordIdx] = points.map((point) => ({
+            ...point,
+            time:
+              Math.round(
+                (instanceStartTime + point.time - tplBlockStart) * 1000,
+              ) / 1000,
+          }))
+        }
+      }
+      return next
+    })
   }
 
   const expandAllBlockInstances = () => {
@@ -1300,8 +1413,11 @@ export function useStemMixerLyricsController(
       const payload = {
         lineTimes: lrcGenLineTimes(),
         wordTimings: lrcGenWordTimings(),
+        wordEndTimings: lrcGenWordEndTimings(),
+        wordSweepTimings: lrcGenWordSweepTimings(),
         lineIdx: lrcGenLineIdx(),
         wordIdx: lrcGenWordIdx(),
+        inputMode: lrcGenInputMode(),
         timestamp: Date.now(),
       }
       localStorage.setItem(genKey(), JSON.stringify(payload))
@@ -1327,6 +1443,8 @@ export function useStemMixerLyricsController(
     // Snapshot current LRC state so Cancel can restore it
     preGenSnapshot = {
       wordTimings: structuredClone(wordTimings()),
+      wordEndTimings: structuredClone(wordEndTimings()),
+      wordSweepTimings: structuredClone(wordSweepTimings()),
       lrcLines: structuredClone(lrcLines()),
       rawLyricsText: rawLyricsText(),
       lyricsLines: structuredClone(lyricsLines()),
@@ -1347,6 +1465,25 @@ export function useStemMixerLyricsController(
             data.wordTimings !== null
           ) {
             setLrcGenWordTimings(data.wordTimings as Record<number, number[]>)
+          }
+          if (
+            typeof data.wordEndTimings === 'object' &&
+            data.wordEndTimings !== null
+          ) {
+            setLrcGenWordEndTimings(
+              data.wordEndTimings as Record<number, number[]>,
+            )
+          }
+          if (
+            typeof data.wordSweepTimings === 'object' &&
+            data.wordSweepTimings !== null
+          ) {
+            setLrcGenWordSweepTimings(
+              data.wordSweepTimings as WordSweepTimingsMap,
+            )
+          }
+          if (data.inputMode === 'marker' || data.inputMode === 'tap') {
+            setLrcGenInputMode(data.inputMode)
           }
           resumeLineIdx = Math.min((data.lineIdx as number) ?? 0, lines.length)
           resumeWordIdx = (data.wordIdx as number) ?? 0
@@ -1393,6 +1530,21 @@ export function useStemMixerLyricsController(
         setLrcGenLineTimes([])
         setLrcGenWordTimings({})
       }
+
+      const mappedEnds: WordTimingsMap = {}
+      for (const [lrcIdx, ends] of Object.entries(wordEndTimings())) {
+        const canonicalIdx = lrcToCanonical.get(+lrcIdx)
+        if (canonicalIdx !== undefined) mappedEnds[canonicalIdx] = [...ends]
+      }
+      const mappedSweeps: WordSweepTimingsMap = {}
+      for (const [lrcIdx, sweeps] of Object.entries(wordSweepTimings())) {
+        const canonicalIdx = lrcToCanonical.get(+lrcIdx)
+        if (canonicalIdx !== undefined) {
+          mappedSweeps[canonicalIdx] = structuredClone(sweeps)
+        }
+      }
+      setLrcGenWordEndTimings(mappedEnds)
+      setLrcGenWordSweepTimings(mappedSweeps)
     }
 
     setLrcGenLineIdx(resumeLineIdx)
@@ -1419,13 +1571,11 @@ export function useStemMixerLyricsController(
     saveLrcGenProgress()
   }
 
-  // Taps land ~180ms after the sung sound (human audio→motor latency), so
-  // every gen-mode stamp subtracts it — otherwise the whole map trails the
-  // singer. A per-user metronome calibration can replace the constant later
-  // (docs/plans/lyrics-word-sync.md).
-  const TAP_LATENCY_SEC = 0.18
-  const tapTime = () =>
-    Math.max(0, Math.round((deps.elapsed() - TAP_LATENCY_SEC) * 1000) / 1000)
+  // The correction is visible and user-adjustable in the mapper. Positive
+  // values compensate audio-to-motor reaction time by moving marks earlier.
+  const correctedTime = (elapsedTime: number) =>
+    Math.max(0, Math.round((elapsedTime - timingOffsetSec) * 1000) / 1000)
+  const tapTime = () => correctedTime(deps.elapsed())
 
   const handleNextLine = () => {
     const t = tapTime()
@@ -1571,6 +1721,186 @@ export function useStemMixerLyricsController(
     }
   }
 
+  const setMarkerWordStart = (
+    lineIdx: number,
+    wordIdx: number,
+    time: number,
+  ) => {
+    touchedLines.add(lineIdx)
+    if (wordIdx === 0) {
+      setLrcGenLineTimes((prev) => {
+        const next = [...prev]
+        next[lineIdx] = time
+        return next
+      })
+    }
+    setLrcGenWordTimings((prev) => {
+      const next = structuredClone(prev)
+      next[lineIdx] = [...(next[lineIdx] ?? [])]
+      next[lineIdx][wordIdx] = time
+      return next
+    })
+    setLrcGenWordEndTimings((prev) => {
+      const next = structuredClone(prev)
+      next[lineIdx] = [...(next[lineIdx] ?? [])]
+      delete next[lineIdx][wordIdx]
+      return next
+    })
+    setLrcGenWordSweepTimings((prev) => {
+      const next = structuredClone(prev)
+      next[lineIdx] = { ...(next[lineIdx] ?? {}) }
+      next[lineIdx][wordIdx] = [{ time, progress: 0 }]
+      return next
+    })
+  }
+
+  const appendMarkerSweep = (
+    lineIdx: number,
+    wordIdx: number,
+    time: number,
+    progress: number,
+  ) => {
+    setLrcGenWordSweepTimings((prev) => {
+      const next = structuredClone(prev)
+      next[lineIdx] = { ...(next[lineIdx] ?? {}) }
+      next[lineIdx][wordIdx] = appendSweepPoint(
+        next[lineIdx][wordIdx] ?? [],
+        time,
+        progress,
+      )
+      return next
+    })
+  }
+
+  const closeMarkerWord = (lineIdx: number, wordIdx: number, time: number) => {
+    setLrcGenWordEndTimings((prev) => {
+      const next = structuredClone(prev)
+      next[lineIdx] = [...(next[lineIdx] ?? [])]
+      next[lineIdx][wordIdx] = time
+      return next
+    })
+    appendMarkerSweep(lineIdx, wordIdx, time, 1)
+  }
+
+  const advanceAfterMarkerLine = (lineIdx: number, lines: string[]) => {
+    if (lineIdx + 1 >= lines.length) {
+      setLrcGenLineIdx(lines.length)
+      setLrcGenWordIdx(0)
+      handleLrcGenFinish()
+      return
+    }
+    let nextLine = lineIdx + 1
+    while (
+      nextLine < lines.length &&
+      (!lines[nextLine].trim() || lines[nextLine].trim() === '~Rest~')
+    ) {
+      nextLine++
+    }
+    if (nextLine >= lines.length) {
+      setLrcGenLineIdx(lines.length)
+      setLrcGenWordIdx(0)
+      handleLrcGenFinish()
+      return
+    }
+    setLrcGenLineIdx(nextLine)
+    setLrcGenWordIdx(0)
+    saveLrcGenProgress()
+  }
+
+  /**
+   * Record the direct marker path. Entering a word stamps its onset, moving
+   * within it records the highlight curve, and leaving/releasing at its end
+   * closes the audible interval. The mapper advances only forward.
+   */
+  const handleMarkerSample = (
+    lineIdx: number,
+    wordIdx: number,
+    progress: number,
+    elapsedTime: number,
+    phase: 'start' | 'move' | 'end',
+  ) => {
+    if (!lrcGenMode() || lrcGenInputMode() !== 'marker') return
+    if (lineIdx !== lrcGenLineIdx()) return
+    const lines = getGenLines()
+    const words = lines[lineIdx]
+      ?.split(/\s+/)
+      .filter((word: string) => word.length > 0)
+    if (words.length === 0) return
+
+    const currentWord = lrcGenWordIdx()
+    if (wordIdx < currentWord || wordIdx > currentWord + 1) return
+    const time = correctedTime(elapsedTime)
+    const safeProgress = Math.max(0, Math.min(1, progress))
+
+    if (wordIdx === currentWord + 1) {
+      closeMarkerWord(lineIdx, currentWord, time)
+      setMarkerWordStart(lineIdx, wordIdx, time)
+      setLrcGenWordIdx(wordIdx)
+      appendMarkerSweep(lineIdx, wordIdx, time, safeProgress)
+      saveLrcGenProgress()
+      return
+    }
+
+    const hasStart = lrcGenWordTimings()[lineIdx]?.[wordIdx] !== undefined
+    if (phase === 'start' || !hasStart) {
+      setMarkerWordStart(lineIdx, wordIdx, time)
+    }
+    appendMarkerSweep(lineIdx, wordIdx, time, safeProgress)
+
+    if (phase !== 'end') return
+    closeMarkerWord(lineIdx, wordIdx, time)
+    if (wordIdx + 1 < words.length) {
+      // A lift at the word's right edge represents a real pause. The next
+      // gesture will stamp the following word when its first sound arrives.
+      setLrcGenWordIdx(wordIdx + 1)
+      saveLrcGenProgress()
+      return
+    }
+    advanceAfterMarkerLine(lineIdx, lines)
+  }
+
+  const handleRedoCurrentLine = () => {
+    const lines = getGenLines()
+    let lineIdx = Math.min(lrcGenLineIdx(), lines.length - 1)
+    if (lrcGenWordIdx() === 0 && lineIdx > 0) lineIdx--
+    while (
+      lineIdx > 0 &&
+      (!lines[lineIdx].trim() || lines[lineIdx].trim() === '~Rest~')
+    ) {
+      lineIdx--
+    }
+    if (lineIdx < 0 || !lines[lineIdx]?.trim()) return
+
+    touchedLines.delete(lineIdx)
+    setLrcGenLineTimes((prev) => {
+      const next = [...prev]
+      delete next[lineIdx]
+      return next
+    })
+    setLrcGenWordTimings((prev) => {
+      const next = structuredClone(prev)
+      delete next[lineIdx]
+      return next
+    })
+    setLrcGenWordEndTimings((prev) => {
+      const next = structuredClone(prev)
+      delete next[lineIdx]
+      return next
+    })
+    setLrcGenWordSweepTimings((prev) => {
+      const next = structuredClone(prev)
+      delete next[lineIdx]
+      return next
+    })
+    setLrcGenLineIdx(lineIdx)
+    setLrcGenWordIdx(0)
+
+    const originalTime =
+      canonicalLrcLines()[lineIdx]?.time ?? lrcGenLineTimes()[lineIdx] ?? 0
+    deps.seekToWithWindow(Math.max(0, originalTime - 1.5))
+    saveLrcGenProgress()
+  }
+
   const handleLrcGenFinish = () => {
     expandAllBlockInstances()
 
@@ -1578,6 +1908,8 @@ export function useStemMixerLyricsController(
     const lines = getGenLines()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
+    const wordEnds = lrcGenWordEndTimings()
+    const wordSweeps = lrcGenWordSweepTimings()
 
     // Guard: if no lines were mapped, treat as cancel
     if (touchedLines.size === 0 && lrcGenLineIdx() < lines.length) {
@@ -1600,15 +1932,37 @@ export function useStemMixerLyricsController(
           return m
         })()
       : undefined
+    const origEndsCanon: WordTimingsMap = {}
+    for (const [lrcIdx, ends] of Object.entries(
+      preGenSnapshot?.wordEndTimings ?? {},
+    )) {
+      const canonicalIdx = lrcToCanon.get(+lrcIdx)
+      if (canonicalIdx !== undefined) {
+        origEndsCanon[canonicalIdx] = [...ends]
+      }
+    }
+    const origSweepsCanon: WordSweepTimingsMap = {}
+    for (const [lrcIdx, sweeps] of Object.entries(
+      preGenSnapshot?.wordSweepTimings ?? {},
+    )) {
+      const canonicalIdx = lrcToCanon.get(+lrcIdx)
+      if (canonicalIdx !== undefined) {
+        origSweepsCanon[canonicalIdx] = structuredClone(sweeps)
+      }
+    }
 
     const allMapped = lrcGenLineIdx() >= lines.length
 
     let finalTimes: (number | undefined)[]
     let mergedWordTimesCanon: WordTimingsMap
+    let mergedWordEndsCanon: WordTimingsMap
+    let mergedWordSweepsCanon: WordSweepTimingsMap
 
     if (allMapped) {
       finalTimes = lineTimes.slice()
       mergedWordTimesCanon = wordTimes
+      mergedWordEndsCanon = wordEnds
+      mergedWordSweepsCanon = wordSweeps
     } else {
       // Partial merge: only update explicitly touched lines, preserve
       // original timings for untouched lines (from word timings or canonical
@@ -1629,6 +1983,22 @@ export function useStemMixerLyricsController(
         origWtCanon,
         wordTimes,
       )
+      mergedWordEndsCanon = mergePartialWordTimings(
+        touchedLines,
+        origEndsCanon,
+        wordEnds,
+      )
+      mergedWordSweepsCanon = {}
+      for (const [lineIdx, sweeps] of Object.entries(origSweepsCanon)) {
+        if (!touchedLines.has(+lineIdx)) {
+          mergedWordSweepsCanon[+lineIdx] = structuredClone(sweeps)
+        }
+      }
+      for (const [lineIdx, sweeps] of Object.entries(wordSweeps)) {
+        if (touchedLines.has(+lineIdx)) {
+          mergedWordSweepsCanon[+lineIdx] = structuredClone(sweeps)
+        }
+      }
 
       // Fill gaps: interpolate between touched lines
       finalTimes = interpolateGaps(finalTimes, touchedLines, deps.duration())
@@ -1659,6 +2029,8 @@ export function useStemMixerLyricsController(
 
     let lrcText: string
     let mergedWordTimes: WordTimingsMap
+    const mergedWordEnds: WordTimingsMap = {}
+    const mergedWordSweeps: WordSweepTimingsMap = {}
 
     if (canonical.length > 0) {
       // LRC source: build from canonical entries with correct indices
@@ -1668,6 +2040,12 @@ export function useStemMixerLyricsController(
         const ci = entry.canonicalIndex
         const wts = mergedWordTimesCanon[ci]
         if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
+        const ends = mergedWordEndsCanon[ci]
+        if (ends !== undefined) mergedWordEnds[entry.lrcIndex] = ends
+        const sweeps = mergedWordSweepsCanon[ci]
+        if (sweeps !== undefined) {
+          mergedWordSweeps[entry.lrcIndex] = sweeps
+        }
       }
 
       const rawLinesForText = finalTimes.map((t) => t ?? 0)
@@ -1680,6 +2058,8 @@ export function useStemMixerLyricsController(
       // Plain text source: canonical is empty, build LRC directly from lines.
       // Use word-level output for lines with word timings, line-level for the rest.
       mergedWordTimes = { ...mergedWordTimesCanon }
+      Object.assign(mergedWordEnds, mergedWordEndsCanon)
+      Object.assign(mergedWordSweeps, mergedWordSweepsCanon)
 
       lrcText = lines
         .map((line, i) => {
@@ -1721,11 +2101,17 @@ export function useStemMixerLyricsController(
       mergedWordTimes,
       snapshotOriginalText,
       'lrc-gen',
+      {
+        wordEndTimings: mergedWordEnds,
+        wordSweepTimings: mergedWordSweeps,
+      },
     )
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
     setLyricsLines([])
     setWordTimings(mergedWordTimes)
+    setWordEndTimings(mergedWordEnds)
+    setWordSweepTimings(mergedWordSweeps)
 
     // Reset gen state fully
     setLrcGenMode(false)
@@ -1733,6 +2119,8 @@ export function useStemMixerLyricsController(
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
     setLrcGenWordTimings({})
+    setLrcGenWordEndTimings({})
+    setLrcGenWordSweepTimings({})
     touchedLines = new Set()
     clearLrcGenProgress()
     preGenSnapshot = null
@@ -1770,6 +2158,8 @@ export function useStemMixerLyricsController(
     const lrcText = buildLrcTextFromCanonical(canonical, undefined, auto)
     if (!lrcText.trim()) return { linesSynced: 0 }
     const persisted = loadPersistedLyrics()
+    setWordEndTimings({})
+    setWordSweepTimings({})
     persistLyrics(
       lrcText,
       'lrc',
@@ -1788,6 +2178,8 @@ export function useStemMixerLyricsController(
     // Cancel: restore pre-gen LRC state, don't touch anything
     if (preGenSnapshot) {
       setWordTimings(preGenSnapshot.wordTimings)
+      setWordEndTimings(preGenSnapshot.wordEndTimings)
+      setWordSweepTimings(preGenSnapshot.wordSweepTimings)
       setLrcLines(preGenSnapshot.lrcLines)
       setRawLyricsText(preGenSnapshot.rawLyricsText)
       setLyricsLines(preGenSnapshot.lyricsLines)
@@ -1798,7 +2190,10 @@ export function useStemMixerLyricsController(
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
     setLrcGenWordTimings({})
+    setLrcGenWordEndTimings({})
+    setLrcGenWordSweepTimings({})
     setLrcGenMode(false)
+    touchedLines = new Set()
     clearLrcGenProgress()
   }
 
@@ -1816,6 +2211,10 @@ export function useStemMixerLyricsController(
     }
 
     if (!lrcText.trim()) return
+    lrcText = withLrcTimingMetadata(lrcText, {
+      wordEndTimings: wordEndTimings(),
+      wordSweepTimings: wordSweepTimings(),
+    })
 
     const blob = new Blob([lrcText], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -1869,6 +2268,8 @@ export function useStemMixerLyricsController(
         words: string[]
         key: string
         wordTimes?: number[]
+        wordEndTimes?: number[]
+        wordSweeps?: Record<number, WordSweepPoint[]>
       }
     >()
 
@@ -1895,6 +2296,12 @@ export function useStemMixerLyricsController(
           endTime,
           words: entry.words,
           wordTimes: entry.wordTimes,
+          wordEndTimes:
+            entry.lrcIndex >= 0 ? wordEndTimings()[entry.lrcIndex] : undefined,
+          wordSweeps:
+            entry.lrcIndex >= 0
+              ? wordSweepTimings()[entry.lrcIndex]
+              : undefined,
         })
       })
       return map
@@ -2005,6 +2412,8 @@ export function useStemMixerLyricsController(
     const curWord = lrcGenWordIdx()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
+    const wordEnds = lrcGenWordEndTimings()
+    const wordSweeps = lrcGenWordSweepTimings()
     return lines.map((line: string, i: number) => {
       const words = line.split(/\s+/).filter((w: string) => w.length > 0)
       const blockForLine = getBlockForLine(i)
@@ -2024,6 +2433,8 @@ export function useStemMixerLyricsController(
         isFuture: i > curLine,
         lineTime: lineTimes[i],
         wordTimes: wordTimes[i],
+        wordEndTimes: wordEnds[i],
+        wordSweeps: wordSweeps[i] ?? {},
         activeWordIdx: i === curLine ? curWord : -1,
         blockInfo: blockForLine,
         blockLabel: block?.label,
@@ -2201,15 +2612,23 @@ export function useStemMixerLyricsController(
     setEditMode,
     wordTimings,
     setWordTimings,
+    wordEndTimings,
+    wordSweepTimings,
     editBuffer,
     setEditBuffer,
     editPopover,
     setEditPopover,
     lrcGenMode,
+    lrcGenInputMode,
+    setLrcGenInputMode,
+    lrcTimingOffsetMs,
+    setLrcTimingOffsetMs,
     lrcGenLineIdx,
     lrcGenWordIdx,
     lrcGenLineTimes,
     lrcGenWordTimings,
+    lrcGenWordEndTimings,
+    lrcGenWordSweepTimings,
     setLrcGenLineTimes,
     setLrcGenWordTimings,
     blocks,
@@ -2277,6 +2696,8 @@ export function useStemMixerLyricsController(
     startLrcGen,
     handleNextLine,
     handleNextWord,
+    handleMarkerSample,
+    handleRedoCurrentLine,
     handleLrcGenFinish,
     applyAutoWordSync,
     handleLrcGenReset,

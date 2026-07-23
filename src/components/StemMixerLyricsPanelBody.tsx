@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Accessor, Component, Setter } from 'solid-js'
-import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
@@ -20,6 +20,8 @@ interface ParsedLyric {
   endTime: number
   words: string[]
   wordTimes?: number[]
+  wordEndTimes?: number[]
+  wordSweeps?: Record<number, WordSweepPoint[]>
 }
 
 export interface StemMixerLyricsPanelBodyProps {
@@ -47,6 +49,10 @@ export interface StemMixerLyricsPanelBodyProps {
   lrcGenMode: Accessor<boolean>
   lrcGenLineIdx: Accessor<number>
   lrcGenWordIdx: Accessor<number>
+  lrcGenInputMode: Accessor<LrcGenInputMode>
+  setLrcGenInputMode: Setter<LrcGenInputMode>
+  lrcTimingOffsetMs: Accessor<number>
+  setLrcTimingOffsetMs: Setter<number>
   blocks: Accessor<LyricsBlock[]>
   blockInstances: Accessor<BlockInstancesMap>
   blockMarkMode: Accessor<boolean>
@@ -73,6 +79,14 @@ export interface StemMixerLyricsPanelBodyProps {
   // Actions
   handleNextLine: () => void
   handleNextWord: () => void
+  handleMarkerSample: (
+    lineIdx: number,
+    wordIdx: number,
+    progress: number,
+    elapsedTime: number,
+    phase: 'start' | 'move' | 'end',
+  ) => void
+  handleRedoCurrentLine: () => void
   handleLrcGenFinish: () => void
   handleLrcGenReset: () => void
   handleSaveEdits: () => void
@@ -107,7 +121,9 @@ export interface StemMixerLyricsPanelBodyProps {
     endTime: number,
     wordTimes: number[] | undefined,
     elapsed: number,
-  ) => { activeUpTo: number; charProgress: number }
+    wordEndTimes?: number[],
+    wordSweeps?: Record<number, WordSweepPoint[]>,
+  ) => { activeUpTo: number; charProgress: number; fraction: number }
   getGenLines: () => string[]
 
   // Audio
@@ -143,6 +159,157 @@ export const StemMixerLyricsPanelBody: Component<
   StemMixerLyricsPanelBodyProps
 > = (props) => {
   const sfx = () => props.idSuffix ?? ''
+
+  interface MarkerTarget {
+    lineIdx: number
+    wordIdx: number
+    progress: number
+  }
+
+  const [markerVisual, setMarkerVisual] = createSignal<MarkerTarget | null>(
+    null,
+  )
+  let markerPointerId: number | null = null
+  let latestMarkerTarget: MarkerTarget | null = null
+  let latestElapsed = 0
+
+  // Pointer callbacks read a plain clock snapshot so reactive values never
+  // escape the component's tracked root.
+  createEffect(() => {
+    latestElapsed = props.elapsed()
+  })
+
+  const markerTargetAt = (
+    clientX: number,
+    clientY: number,
+  ): MarkerTarget | null => {
+    let wordEl = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>('[data-marker-word]')
+    if (!wordEl) {
+      const candidates = [
+        ...document.querySelectorAll<HTMLElement>(
+          '.sm-lyrics-gen-line-current [data-marker-word]',
+        ),
+      ]
+      wordEl =
+        candidates
+          .filter((candidate) => {
+            const rect = candidate.getBoundingClientRect()
+            return clientY >= rect.top - 24 && clientY <= rect.bottom + 24
+          })
+          .sort((a, b) => {
+            const distance = (candidate: HTMLElement) => {
+              const rect = candidate.getBoundingClientRect()
+              if (clientX < rect.left) return rect.left - clientX
+              if (clientX > rect.right) return clientX - rect.right
+              return 0
+            }
+            return distance(a) - distance(b)
+          })[0] ?? undefined
+    }
+    if (wordEl === undefined) return null
+    const lineIdx = Number(wordEl.dataset.markerLine)
+    const wordIdx = Number(wordEl.dataset.markerWord)
+    if (!Number.isInteger(lineIdx) || !Number.isInteger(wordIdx)) return null
+    const rect =
+      wordEl
+        .querySelector<HTMLElement>('.sm-lyrics-gen-word-text')
+        ?.getBoundingClientRect() ?? wordEl.getBoundingClientRect()
+    const progress =
+      rect.width > 0
+        ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+        : 0
+    return { lineIdx, wordIdx, progress }
+  }
+
+  const updateMarkerVisual = (target: MarkerTarget | null) => {
+    latestMarkerTarget = target
+    setMarkerVisual(target)
+  }
+
+  const startMarkerGesture = (e: PointerEvent) => {
+    if (props.lrcGenInputMode() !== 'marker') return
+    const target = markerTargetAt(e.clientX, e.clientY)
+    if (!target || target.lineIdx !== props.lrcGenLineIdx()) return
+    if (target.wordIdx !== props.lrcGenWordIdx()) return
+
+    e.preventDefault()
+    e.stopPropagation()
+    markerPointerId = e.pointerId
+    updateMarkerVisual(target)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    if (!props.playing()) props.handlePlay()
+    props.handleMarkerSample(
+      target.lineIdx,
+      target.wordIdx,
+      target.progress,
+      latestElapsed,
+      'start',
+    )
+  }
+
+  const moveMarkerGesture = (e: PointerEvent) => {
+    if (markerPointerId !== e.pointerId) return
+    e.preventDefault()
+    const samples =
+      typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e]
+    for (const sample of samples) {
+      const target = markerTargetAt(sample.clientX, sample.clientY)
+      if (!target || target.lineIdx !== props.lrcGenLineIdx()) continue
+      const previous = latestMarkerTarget
+      if (
+        previous !== null &&
+        (previous.lineIdx !== target.lineIdx ||
+          previous.wordIdx !== target.wordIdx)
+      ) {
+        props.handleMarkerSample(
+          previous.lineIdx,
+          previous.wordIdx,
+          previous.progress,
+          latestElapsed,
+          'move',
+        )
+      }
+      updateMarkerVisual(target)
+      props.handleMarkerSample(
+        target.lineIdx,
+        target.wordIdx,
+        target.progress,
+        latestElapsed,
+        'move',
+      )
+    }
+  }
+
+  const endMarkerGesture = (e: PointerEvent) => {
+    if (markerPointerId !== e.pointerId) return
+    e.preventDefault()
+    e.stopPropagation()
+    const target =
+      markerTargetAt(e.clientX, e.clientY) ?? latestMarkerTarget ?? undefined
+    if (target) {
+      props.handleMarkerSample(
+        target.lineIdx,
+        target.wordIdx,
+        target.progress,
+        latestElapsed,
+        'move',
+      )
+      props.handleMarkerSample(
+        target.lineIdx,
+        target.wordIdx,
+        target.progress,
+        latestElapsed,
+        'end',
+      )
+    }
+    if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    }
+    markerPointerId = null
+    updateMarkerVisual(null)
+  }
 
   // Pinch-to-zoom font size state
   let lyricsLinesRef: HTMLDivElement | undefined
@@ -229,7 +396,8 @@ export const StemMixerLyricsPanelBody: Component<
     if (wordTimes && wordTimes.length > 0 && wordTimes[wi] !== undefined) {
       wordStart = wordTimes[wi]
       wordEnd =
-        wi + 1 < wordTimes.length ? wordTimes[wi + 1] : parsedLyric.endTime
+        parsedLyric.wordEndTimes?.[wi] ??
+        (wi + 1 < wordTimes.length ? wordTimes[wi + 1] : parsedLyric.endTime)
     } else {
       const wordCount = parsedLyric.words.length
       const duration = parsedLyric.endTime - parsedLyric.time
@@ -337,6 +505,54 @@ export const StemMixerLyricsPanelBody: Component<
                 return null
               })()}
             </span>
+            <div
+              class="sm-lyrics-gen-mode-switch"
+              role="group"
+              aria-label="Lyric mapping input"
+            >
+              <button
+                classList={{
+                  'sm-lyrics-gen-mode-btn': true,
+                  'sm-lyrics-gen-mode-btn--active':
+                    props.lrcGenInputMode() === 'marker',
+                }}
+                aria-pressed={props.lrcGenInputMode() === 'marker'}
+                onClick={() => props.setLrcGenInputMode('marker')}
+              >
+                Marker
+              </button>
+              <button
+                classList={{
+                  'sm-lyrics-gen-mode-btn': true,
+                  'sm-lyrics-gen-mode-btn--active':
+                    props.lrcGenInputMode() === 'tap',
+                }}
+                aria-pressed={props.lrcGenInputMode() === 'tap'}
+                onClick={() => props.setLrcGenInputMode('tap')}
+              >
+                Tap
+              </button>
+            </div>
+            <label class="sm-lyrics-gen-offset">
+              <span>Reaction</span>
+              <input
+                type="number"
+                min="0"
+                max="500"
+                step="10"
+                value={props.lrcTimingOffsetMs()}
+                onChange={(e) => {
+                  const value = Number(e.currentTarget.value)
+                  props.setLrcTimingOffsetMs(
+                    Number.isFinite(value)
+                      ? Math.max(0, Math.min(500, value))
+                      : 0,
+                  )
+                }}
+                aria-label="Reaction correction in milliseconds"
+              />
+              <span>ms</span>
+            </label>
             {(() => {
               const idx = props.lrcGenLineIdx()
               const lines = props.getGenLines()
@@ -356,19 +572,28 @@ export const StemMixerLyricsPanelBody: Component<
               }
               return null
             })()}
+            <Show when={props.lrcGenInputMode() === 'tap'}>
+              <button
+                class="sm-lyrics-gen-nextword-btn"
+                onClick={() => props.handleNextWord()}
+                title="Stamp the next word onset [W]"
+              >
+                Next Word
+              </button>
+              <button
+                class="sm-lyrics-gen-nextline-btn"
+                onClick={() => props.handleNextLine()}
+                title="Stamp the next line onset [L]"
+              >
+                Next Line
+              </button>
+            </Show>
             <button
-              class="sm-lyrics-gen-nextword-btn"
-              onClick={() => props.handleNextWord()}
-              title="Mark next word time [W]"
+              class="sm-lyrics-gen-redo-btn"
+              onClick={() => props.handleRedoCurrentLine()}
+              title="Clear and replay the current line"
             >
-              Next Word
-            </button>
-            <button
-              class="sm-lyrics-gen-nextline-btn"
-              onClick={() => props.handleNextLine()}
-              title="Mark next line time [L]"
-            >
-              Next Line
+              Redo line
             </button>
             <button
               class="sm-lyrics-gen-finish-btn"
@@ -384,6 +609,22 @@ export const StemMixerLyricsPanelBody: Component<
             >
               Reset
             </button>
+          </div>
+          <div class="sm-lyrics-gen-guidance" role="note">
+            <Show
+              when={props.lrcGenInputMode() === 'marker'}
+              fallback={
+                <>
+                  Tap at the first audible sound of each word, not after the
+                  singer finishes it. Use Next Line only to skip the remaining
+                  words.
+                </>
+              }
+            >
+              Press the highlighted word when its first sound begins, then drag
+              through the text as it is sung. Hold still on long vowels and lift
+              at a pause or after the final sound.
+            </Show>
           </div>
         </Show>
 
@@ -465,7 +706,7 @@ export const StemMixerLyricsPanelBody: Component<
                 const item = row.item
                 return (
                   <div
-                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`}
+                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}`}
                     style={
                       item.blockInfo?.isTemplate === true
                         ? {
@@ -476,7 +717,26 @@ export const StemMixerLyricsPanelBody: Component<
                           }
                         : { cursor: 'pointer' }
                     }
-                    onClick={() => props.handleLyricLineClick(item.index)}
+                    onPointerDown={(e) => {
+                      if (item.isCurrent) startMarkerGesture(e)
+                    }}
+                    onPointerMove={(e) => {
+                      if (item.isCurrent) moveMarkerGesture(e)
+                    }}
+                    onPointerUp={(e) => {
+                      if (item.isCurrent) endMarkerGesture(e)
+                    }}
+                    onPointerCancel={(e) => {
+                      if (item.isCurrent) endMarkerGesture(e)
+                    }}
+                    onClick={() => {
+                      if (
+                        !item.isCurrent ||
+                        props.lrcGenInputMode() !== 'marker'
+                      ) {
+                        props.handleLyricLineClick(item.index)
+                      }
+                    }}
                   >
                     <span class="sm-lyrics-gen-line-time">
                       {item.lineTime !== undefined
@@ -486,29 +746,57 @@ export const StemMixerLyricsPanelBody: Component<
                     <span class="sm-lyrics-gen-line-text">
                       {item.words.length === 0
                         ? item.line
-                        : item.words.map((word: string, wi: number) => (
-                            <span
-                              class={`sm-lyrics-gen-word${
-                                item.activeWordIdx === wi
-                                  ? ' sm-lyrics-gen-word-current'
-                                  : ''
-                              }${
-                                item.activeWordIdx >= 0 &&
-                                wi < item.activeWordIdx
-                                  ? ' sm-lyrics-gen-word-done'
-                                  : ''
-                              }`}
-                            >
-                              <span class="sm-lyrics-gen-word-time">
-                                {item.wordTimes?.[wi] !== undefined
-                                  ? props.formatTimeMs(item.wordTimes[wi])
-                                  : ''}
+                        : item.words.map((word: string, wi: number) => {
+                            const progress = () => {
+                              const live = markerVisual()
+                              if (
+                                live?.lineIdx === item.index &&
+                                live.wordIdx === wi
+                              ) {
+                                return live.progress
+                              }
+                              const points = item.wordSweeps?.[wi]
+                              return points?.[points.length - 1]?.progress ?? 0
+                            }
+                            return (
+                              <span
+                                class={`sm-lyrics-gen-word${
+                                  item.activeWordIdx === wi
+                                    ? ' sm-lyrics-gen-word-current'
+                                    : ''
+                                }${
+                                  item.activeWordIdx >= 0 &&
+                                  wi < item.activeWordIdx
+                                    ? ' sm-lyrics-gen-word-done'
+                                    : ''
+                                }${
+                                  item.isCurrent &&
+                                  props.lrcGenInputMode() === 'marker'
+                                    ? ' sm-lyrics-gen-word-marker'
+                                    : ''
+                                }`}
+                                data-marker-line={item.index}
+                                data-marker-word={wi}
+                                aria-current={
+                                  item.activeWordIdx === wi ? 'true' : undefined
+                                }
+                                style={{
+                                  '--marker-progress': `${(
+                                    progress() * 100
+                                  ).toFixed(1)}%`,
+                                }}
+                              >
+                                <span class="sm-lyrics-gen-word-time">
+                                  {item.wordTimes?.[wi] !== undefined
+                                    ? props.formatTimeMs(item.wordTimes[wi])
+                                    : ''}
+                                </span>
+                                <span class="sm-lyrics-gen-word-text">
+                                  {word}
+                                </span>
                               </span>
-                              <span class="sm-lyrics-gen-word-text">
-                                {word}
-                              </span>
-                            </span>
-                          ))}
+                            )
+                          })}
                     </span>
                   </div>
                 )
@@ -928,8 +1216,10 @@ export const StemMixerLyricsPanelBody: Component<
                         parsedLyric.endTime,
                         parsedLyric.wordTimes,
                         props.elapsed(),
+                        parsedLyric.wordEndTimes,
+                        parsedLyric.wordSweeps,
                       )
-                    : { activeUpTo: -1, charProgress: 0 }
+                    : { activeUpTo: -1, charProgress: 0, fraction: 0 }
 
                 return (
                   <>
@@ -1065,24 +1355,21 @@ export const StemMixerLyricsPanelBody: Component<
                             }
                             if (
                               wi === activeWordInfo().activeUpTo + 1 &&
-                              activeWordInfo().charProgress > 0
+                              activeWordInfo().fraction > 0
                             ) {
                               return (
                                 <>
                                   <span class="sm-lyrics-word-with-note">
                                     {noteLabel}
-                                    <span class="sm-lyrics-word sm-lyrics-word-current">
-                                      <span class="sm-lyrics-char-done">
-                                        {word.slice(
-                                          0,
-                                          activeWordInfo().charProgress,
-                                        )}
-                                      </span>
-                                      <span class="sm-lyrics-char-remaining">
-                                        {word.slice(
-                                          activeWordInfo().charProgress,
-                                        )}
-                                      </span>
+                                    <span
+                                      class="sm-lyrics-word sm-lyrics-word-current"
+                                      style={{
+                                        '--word-progress': `${(
+                                          activeWordInfo().fraction * 100
+                                        ).toFixed(1)}%`,
+                                      }}
+                                    >
+                                      {word}
                                     </span>
                                   </span>{' '}
                                 </>
