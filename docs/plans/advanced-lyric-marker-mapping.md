@@ -20,6 +20,35 @@ This makes the timing contract visible and direct:
 Tap mode remains available as an accessible, keyboard-friendly fallback. In
 that mode, `W` records the next word onset and `L` skips the rest of the line.
 
+## Syllables and sub-word timing
+
+Marker playback is not a discrete English syllable tokenizer. Legacy
+onset-only LRC still uses an English syllable estimate to avoid stretching a
+word across a long pause, but marker-authored timing records a continuous
+sub-word curve. Dragging through part of a word, dwelling on a vowel, and then
+continuing produces the syllable-like visual effect without inventing phoneme
+boundaries that the singer may not follow.
+
+This is deliberate: melisma and pronunciation can divide the same written word
+differently in different performances. Exact syllable labels can be added as a
+separate editing layer later; the marker curve already preserves their audible
+timing.
+
+## Long-session performance
+
+Mapping mode keeps the vocal waveform overview active at 30 fps, but pauses
+live-waveform, pitch, MIDI, FFT, and mic-comparison work. Pointer input updates
+only the active line and word, samples only the latest browser-coalesced pointer
+position, and fills any crossed intermediate words so a fast drag remains
+complete. Recovery snapshots are serialized at most once per short burst.
+
+Playback speed is no longer changed automatically. The mapper exposes 1x,
+0.85x, 0.75x, and 0.5x choices; 1x preserves the natural vocal sound, while
+0.75x remains available for dense phrases.
+
+`Discard changes` restores the complete lyric/timing snapshot captured before
+the mapper opened. `Redo line` remains the targeted correction for one line.
+
 ## Why this model
 
 Common karaoke formats model active text as timed intervals or syllable
