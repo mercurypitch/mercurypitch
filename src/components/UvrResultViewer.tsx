@@ -6,8 +6,10 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { getUvrSession } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { Clock, Download, Headphones, Midi, MusicBoard, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { UvrSessionActions } from './UvrSessionActions'
 
 interface StemMeta {
   duration?: number
@@ -25,6 +27,7 @@ interface ResultViewerProps {
   processingTime?: number
   sessionId?: string
   originalFileName?: string
+  disabled?: boolean
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
   onStartMix?: (selectedStems: string[]) => void
   onOpenMixer?: (sessionId: string) => void
@@ -32,12 +35,18 @@ interface ResultViewerProps {
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => void
   onClose?: () => void
+  onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
 }
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   const [shareToast, setShareToast] = createSignal('')
   const [midiDownloading, setMidiDownloading] = createSignal(false)
   const [midiDownloadProgress, setMidiDownloadProgress] = createSignal(0)
+
+  const session = () =>
+    props.sessionId !== undefined && props.sessionId !== ''
+      ? getUvrSession(props.sessionId)
+      : undefined
 
   const formatDuration = (secs?: number): string => {
     if (secs === undefined || secs <= 0) return ''
@@ -253,6 +262,17 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           </Show>
         </div>
         <div class="rv-header-right">
+          <Show when={props.sessionId}>
+            {(sessionId) => (
+              <UvrSessionActions
+                sessionId={sessionId()}
+                session={session()}
+                originalFileName={props.originalFileName}
+                disabled={props.disabled}
+                onRerunHq={props.onRerunHq}
+              />
+            )}
+          </Show>
           <button
             class="rv-share-btn"
             onClick={() => {

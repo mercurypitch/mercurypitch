@@ -1175,6 +1175,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  const hasActiveSeparation = (): boolean =>
+    allSessions().some((candidate) => candidate.status === 'processing')
+
   const handleExport = async (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => {
@@ -1968,13 +1971,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           void indexStemFingerprint(sessionId, fileName)
                         }}
                         onRerunHq={(sessionId, target) => {
-                          const isAnotherSessionProcessing = allSessions().some(
-                            (candidate) => candidate.status === 'processing',
-                          )
                           void handleRerunHq(
                             sessionId,
                             target,
-                            isAnotherSessionProcessing,
+                            hasActiveSeparation(),
                           )
                         }}
                       />
@@ -2122,6 +2122,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     }}
                     onExport={(type) => {
                       void handleExport(type)
+                    }}
+                    onRerunHq={(sessionId, target) => {
+                      void handleRerunHq(
+                        sessionId,
+                        target,
+                        hasActiveSeparation(),
+                      )
                     }}
                   />
                 )}
