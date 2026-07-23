@@ -93,6 +93,7 @@ const ZERO_BINS = 3 // zero first N frequency bins before ONNX
 let session: InferenceSession | null = null
 let ort: typeof OrtModule | null = null
 let cancelled = false
+let destroying = false
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,6 +101,30 @@ let cancelled = false
 
 let activeProviders: string[] = []
 let currentModelPath = ''
+
+async function releaseSession(
+  sessionToRelease: InferenceSession | null,
+): Promise<void> {
+  if (!sessionToRelease) return
+
+  try {
+    await sessionToRelease.release()
+  } catch (err) {
+    console.error('[vocal-separator] Failed to release session:', err)
+  }
+}
+
+async function releaseActiveSession(): Promise<void> {
+  const activeSession = session
+  session = null
+  await releaseSession(activeSession)
+}
+
+function assertWorkerActive(): void {
+  if (destroying) {
+    throw new DOMException('Vocal separator worker is closing', 'AbortError')
+  }
+}
 
 async function loadModel(
   modelPath: string,
@@ -155,21 +180,9 @@ async function loadModel(
     }
   }
 
-  // Release any existing session before creating a new one to prevent memory leaks
-  if (session && 'release' in session) {
-    const s = session as unknown as { release: unknown }
-    if (typeof s.release === 'function') {
-      try {
-        s.release()
-      } catch (err) {
-        console.error(
-          '[vocal-separator] Failed to release previous session:',
-          err,
-        )
-      }
-    }
-  }
-  session = null
+  assertWorkerActive()
+  await releaseActiveSession()
+  assertWorkerActive()
 
   try {
     session = await ort.InferenceSession.create(buffer, {
@@ -180,6 +193,7 @@ async function loadModel(
     })
   } catch (err) {
     if (activeProviders.includes('webgpu')) {
+      assertWorkerActive()
       console.warn(
         '[vocal-separator] WebGPU session creation failed, falling back to WASM...',
         err,
@@ -194,6 +208,11 @@ async function loadModel(
     } else {
       throw err
     }
+  }
+
+  if (destroying) {
+    await releaseActiveSession()
+    assertWorkerActive()
   }
 }
 
@@ -487,17 +506,8 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
 
     case 'destroy': {
       cancelled = true
-      if (session && 'release' in session) {
-        const s = session as unknown as { release: unknown }
-        if (typeof s.release === 'function') {
-          try {
-            s.release()
-          } catch (err) {
-            console.error('[vocal-separator] Failed to release session:', err)
-          }
-        }
-      }
-      session = null
+      destroying = true
+      await releaseActiveSession()
       self.close()
       break
     }

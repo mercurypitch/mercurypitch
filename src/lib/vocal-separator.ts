@@ -29,6 +29,7 @@ export class VocalSeparator {
   private _error: string | null = null
   private _provider: string | null = null
   private readyResolve: (() => void) | null = null
+  private readyReject: ((reason?: unknown) => void) | null = null
   private readyPromise: Promise<void> | null = null
   private pendingRequest: {
     resolve: (result: SeparationResult) => void
@@ -81,6 +82,7 @@ export class VocalSeparator {
         if (this.readyResolve) {
           this.readyResolve()
           this.readyResolve = null
+          this.readyReject = null
         }
         break
       }
@@ -123,6 +125,7 @@ export class VocalSeparator {
           if (this.readyResolve) {
             this.readyResolve() // resolve anyway to unblock, error is stored
             this.readyResolve = null
+            this.readyReject = null
           }
         }
         break
@@ -140,8 +143,9 @@ export class VocalSeparator {
 
     this._status = 'initializing'
     this._error = null
-    this.readyPromise = new Promise((resolve) => {
+    this.readyPromise = new Promise((resolve, reject) => {
       this.readyResolve = resolve
+      this.readyReject = reject
     })
 
     const msg: WorkerInitMessage = { type: 'init', modelPath, forceWebGpu }
@@ -198,15 +202,23 @@ export class VocalSeparator {
 
   /** Terminate the worker and release all resources. */
   destroy(): void {
+    const abortError = new DOMException(
+      'Vocal separator was destroyed',
+      'AbortError',
+    )
+
+    this.readyReject?.(abortError)
+    this.pendingRequest?.reject(abortError)
+
     if (this.worker) {
-      const w = this.worker
+      const worker = this.worker
       // Request graceful teardown so the worker can release the WebGPU ONNX session
       const msg: WorkerDestroyMessage = { type: 'destroy' }
-      w.postMessage(msg)
+      worker.postMessage(msg)
 
       // The worker will close itself after releasing resources, but we set a
       // fallback timeout to forcefully terminate if it hangs
-      setTimeout(() => w.terminate(), 1000)
+      setTimeout(() => worker.terminate(), 1000)
 
       this.worker = null
     }
@@ -214,6 +226,7 @@ export class VocalSeparator {
     this._error = null
     this.pendingRequest = null
     this.readyResolve = null
+    this.readyReject = null
     this.readyPromise = null
   }
 }
