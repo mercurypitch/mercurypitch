@@ -5,12 +5,13 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
-import { deleteUvrSessionFromDb, getOriginalFileBlob, } from '@/db/services/uvr-service'
+import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
-import type { UvrSession, UvrStatus } from '@/types/uvr'
+import type { UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { UvrSessionActions } from './UvrSessionActions'
 
 interface SessionResultProps {
   sessionId: string
@@ -42,8 +43,6 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const [toastMessage, setToastMessage] = createSignal('')
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
   const [reindexing, setReindexing] = createSignal(false)
-  const [downloadingOriginal, setDownloadingOriginal] = createSignal(false)
-  const [showHqMenu, setShowHqMenu] = createSignal(false)
   const [showGroupSelect, setShowGroupSelect] = createSignal(false)
   const [newGroupName, setNewGroupName] = createSignal('')
 
@@ -198,53 +197,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     setTimeout(() => setReindexing(false), 3000)
   }
 
-  // Download the original uploaded mix. We keep it in IndexedDB for the retry
-  // path (see UvrPanel.handleProcessStart), so users who deleted their local
-  // copy can pull it back — e.g. to re-run a higher-quality server separation.
-  const handleDownloadOriginal = async (e: Event) => {
-    e.stopPropagation()
-    if (downloadingOriginal()) return
-    setDownloadingOriginal(true)
-    try {
-      const file = await getOriginalFileBlob(props.sessionId)
-      if (!file) {
-        showNotification(
-          "The original file isn't stored for this session.",
-          'warning',
-        )
-        return
-      }
-      const url = URL.createObjectURL(file)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = session()?.originalFile?.name ?? file.name
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (err) {
-      console.error('[UvrSessionResult] original download failed:', err)
-      showNotification('Could not read the original file.', 'error')
-    } finally {
-      setDownloadingOriginal(false)
-    }
-  }
-
   const hasSelection = () => selectedStems().size > 0
-
-  // HQ re-run makes sense only for a finished browser separation that still
-  // has its original upload to feed the cloud GPU. Manual-stem sessions have
-  // no full mix, and server sessions already ran the HQ model.
-  const canRerunHq = () => {
-    const s = session()
-    return (
-      s?.status === 'completed' &&
-      s.processingMode === 'local' &&
-      s.provider !== 'manual' &&
-      s.originalFile != null &&
-      props.onRerunHq !== undefined
-    )
-  }
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
@@ -416,7 +369,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </span>
         <span class="status-time">
           {(() => {
-            const s = session() as UvrSession | null
+            const s = session()
             return s?.processingTime !== undefined
               ? `${Math.round(s.processingTime / 1000)}s`
               : ''
@@ -772,72 +725,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 <SlidersHorizontal /> Mix
               </button>
             </Show>
-            <Show
-              when={
-                session()?.status === 'completed' && session()?.originalFile
-              }
-            >
-              <button
-                class="session-result-btn"
-                disabled={props.disabled === true || downloadingOriginal()}
-                onClick={(e) => void handleDownloadOriginal(e)}
-                title="Download the original uploaded file (full mix)"
-              >
-                <Download /> Original
-              </button>
-            </Show>
-            <Show when={canRerunHq()}>
-              <div class="session-hq-rerun">
-                <button
-                  class="session-result-btn session-result-btn-hq"
-                  disabled={props.disabled}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowHqMenu(!showHqMenu())
-                  }}
-                  title="Re-run this song on the cloud GPU for higher-quality stems"
-                >
-                  <Zap /> HQ
-                  <span
-                    class="session-hq-rerun-chevron"
-                    classList={{ open: showHqMenu() }}
-                  >
-                    <ChevronDown size={12} />
-                  </span>
-                </button>
-                <Show when={showHqMenu()}>
-                  <div class="session-hq-rerun-menu">
-                    <button
-                      class="session-hq-rerun-item"
-                      onClick={() => {
-                        setShowHqMenu(false)
-                        props.onRerunHq?.(props.sessionId, 'same')
-                      }}
-                    >
-                      Upgrade this session
-                      <span class="session-hq-rerun-item-note">
-                        Replaces these stems with cloud HQ stems
-                      </span>
-                    </button>
-                    <button
-                      class="session-hq-rerun-item"
-                      onClick={() => {
-                        setShowHqMenu(false)
-                        props.onRerunHq?.(props.sessionId, 'new')
-                      }}
-                    >
-                      New session to compare
-                      <span class="session-hq-rerun-item-note">
-                        Keeps this one — the HQ result arrives separately
-                      </span>
-                    </button>
-                    <div class="session-hq-rerun-hint">
-                      Runs on the cloud GPU — uses credits
-                    </div>
-                  </div>
-                </Show>
-              </div>
-            </Show>
+            <UvrSessionActions
+              sessionId={props.sessionId}
+              session={session()}
+              disabled={props.disabled}
+              onRerunHq={props.onRerunHq}
+            />
           </Show>
           <Show when={session()?.status === 'error' && session()?.originalFile}>
             <button

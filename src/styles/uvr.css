@@ -3136,6 +3136,10 @@
   animation: assign-menu-in 0.12s ease;
 }
 
+.session-hq-rerun-menu[hidden] {
+  display: none;
+}
+
 .session-hq-rerun-item {
   display: flex;
   flex-direction: column;
@@ -3155,6 +3159,12 @@
 
 .session-hq-rerun-item:hover {
   background: rgba(245, 158, 11, 0.1);
+}
+
+.session-result-btn:focus-visible,
+.session-hq-rerun-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .session-hq-rerun-item-note {
@@ -3428,6 +3438,14 @@
   bottom: auto;
   margin-top: 4px;
   margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-hq-rerun-chevron,
+  .session-hq-rerun-menu {
+    animation: none;
+    transition: none;
+  }
 }
 
 .rv-share-btn {
