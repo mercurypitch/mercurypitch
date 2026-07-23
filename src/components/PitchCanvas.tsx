@@ -1057,13 +1057,34 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const h = canvasRef.clientHeight
 
     ctx.clearRect(0, 0, w, h)
-    ctx.fillStyle = '#0d1117'
+    const stageGradient = ctx.createLinearGradient(0, 0, 0, h)
+    stageGradient.addColorStop(0, '#111927')
+    stageGradient.addColorStop(0.52, '#0d141f')
+    stageGradient.addColorStop(1, '#0a1019')
+    ctx.fillStyle = stageGradient
     ctx.fillRect(0, 0, w, h)
 
     ctx.save()
     // Sliding window translation is handled per-element via beatToX.
     // Do not apply a global translation here, as it conflicts with beatToX
     // and causes immediate scrolling instead of respecting WINDOW_FILL_RATIO.
+
+    const scale = props.scale()
+    const melody = props.melody()
+
+    // Quiet pitch lanes give the stage the same technical, editable feel as
+    // the vocal-cleanup view without competing with notes or live feedback.
+    const laneYs = scale
+      .map((note) => freqToY(note.freq, h))
+      .sort((a, b) => a - b)
+    for (let i = 0; i < laneYs.length; i++) {
+      const y = laneYs[i]
+      const top = i === 0 ? 0 : (laneYs[i - 1] + y) / 2
+      const bottom = i === laneYs.length - 1 ? h : (y + laneYs[i + 1]) / 2
+      ctx.fillStyle =
+        i % 2 === 0 ? 'rgba(88,166,255,0.018)' : 'rgba(255,255,255,0.008)'
+      ctx.fillRect(0, top, w, Math.max(0, bottom - top))
+    }
 
     if (props.getWaveform) {
       if (micWaveVisible()) {
@@ -1105,14 +1126,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    const scale = props.scale()
-    const melody = props.melody()
-
     for (const note of scale) {
       const y = freqToY(note.freq, h)
 
       if (gridLinesVisible()) {
-        ctx.strokeStyle = 'rgba(48,54,61,0.7)'
+        ctx.strokeStyle = 'rgba(91,111,139,0.3)'
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(0, y)
@@ -1120,8 +1138,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.stroke()
       }
 
-      ctx.fillStyle = '#484f58'
-      ctx.font = '10px sans-serif'
+      ctx.fillStyle = 'rgba(172,188,208,0.58)'
+      ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace'
       ctx.textAlign = 'right'
       ctx.fillText(note.name + note.octave, w - 6, y - 3)
     }

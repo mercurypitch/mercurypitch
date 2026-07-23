@@ -1,21 +1,17 @@
 // ============================================================
-// SingingCanvasHud — floating glass overlays anchored to the
-// singing canvas (like the Guitar 3D HUD). The live accuracy score
-// and the recent-session scoreboard sit top-right; the pitch monitor
-// docks bottom-left, mirroring the Guitar 3D input monitor. All three
-// replace the old right-sidebar panels.
+// SingingCanvasHud — in-flow performance rail beside the singing stage.
 //
 // Accuracy visibility follows the `showStats` toggle; the pitch monitor
 // follows `showPitchDisplay`. The session scoreboard shows whenever there
-// is session history (it moved off the sidebar — see AppSidebar).
+// is session history. Keeping these cards outside the canvas prevents them
+// from obscuring melody lanes, notation, or the view switch.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { MascotState } from '@/components/Mascot'
 import { MascotDock } from '@/components/MascotDock'
-import { isNarrow } from '@/lib/use-viewport'
-import { sessionResults, setSingingHudMobileOpen, showMascot, showPitchDisplay, showStats, singingHudMobileOpen, } from '@/stores'
+import { sessionResults, showMascot, showPitchDisplay, showStats, } from '@/stores'
 import { getBandRating } from '@/stores/settings-store'
 import type { NoteResult, PitchResult } from '@/types'
 import { PitchDisplay } from './PitchDisplay'
@@ -36,14 +32,9 @@ interface SingingCanvasHudProps {
 }
 
 export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
-  // The sessions scoreboard is history, not live feedback — auto-collapse it
-  // during playback so the melody has room. The live HUDs stay but dim (see
-  // the `dimmed` class) so the melody beneath reads through.
+  // The sessions scoreboard is history, not live feedback, so it collapses
+  // during playback while the two live monitor cards remain available.
   const showSessions = () => sessionResults().length > 0 && !props.isPlaying()
-  // On narrow screens the cards crowd the canvas, so they're hidden by default
-  // and the user opts in via the toggle. Wider screens are unchanged.
-  const cardsShown = () => !isNarrow() || singingHudMobileOpen()
-
   // Merc reacts to your singing: idle at rest, sings on pitch, celebrates a
   // perfect note, cheers you on when you're off, and grooves during playback.
   const mascotState = (): MascotState => {
@@ -64,44 +55,27 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
         <MascotDock state={mascotState} energy={mascotEnergy} />
       </Show>
 
-      <Show when={isNarrow()}>
-        <button
-          type="button"
-          class={styles.mobileToggle}
-          classList={{ [styles.mobileToggleOpen]: singingHudMobileOpen() }}
-          data-testid="singing-hud-mobile-toggle"
-          title={
-            singingHudMobileOpen() ? 'Hide stats & pitch' : 'Show stats & pitch'
-          }
-          aria-label={
-            singingHudMobileOpen() ? 'Hide stats & pitch' : 'Show stats & pitch'
-          }
-          aria-pressed={singingHudMobileOpen()}
-          onClick={() => setSingingHudMobileOpen(!singingHudMobileOpen())}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="currentColor"
+      <aside
+        class={styles.performanceRail}
+        data-testid="singing-canvas-hud"
+        aria-label="Live performance monitor"
+      >
+        <header class={styles.railHeader}>
+          <span
+            class={styles.liveIndicator}
+            classList={{ [styles.liveIndicatorActive]: props.isPlaying() }}
             aria-hidden="true"
-          >
-            <rect x="3" y="12" width="4" height="9" rx="1" />
-            <rect x="10" y="7" width="4" height="14" rx="1" />
-            <rect x="17" y="3" width="4" height="18" rx="1" />
-          </svg>
-        </button>
-      </Show>
+          />
+          <span>
+            <span class={styles.railKicker}>Performance</span>
+            <strong>{props.isPlaying() ? 'Listening live' : 'Monitor'}</strong>
+          </span>
+        </header>
 
-      <Show when={(showStats() || showSessions()) && cardsShown()}>
-        <div
-          class={styles.accuracyHud}
-          classList={{ [styles.dimmed]: props.isPlaying() }}
-          data-testid="singing-canvas-hud"
-        >
+        <div class={styles.cards}>
           <Show when={showStats()}>
             <div class={styles.card} data-testid="hud-accuracy">
-              <div class={styles.cardTitle}>Accuracy</div>
+              <div class={styles.cardTitle}>Pitch accuracy</div>
               <StatsBars noteResults={props.noteResults} />
               <div class={styles.scoreRow} data-testid="score-display">
                 <span class={styles.scoreLabel} data-testid="score-label">
@@ -111,6 +85,16 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
                   {props.liveScore() !== null ? `${props.liveScore()}%` : '--'}
                 </span>
               </div>
+            </div>
+          </Show>
+
+          <Show when={showPitchDisplay()}>
+            <div class={styles.card} data-testid="hud-pitch">
+              <div class={styles.cardTitle}>Input monitor</div>
+              <PitchDisplay
+                pitch={props.pitch}
+                targetNote={props.targetNoteName}
+              />
             </div>
           </Show>
 
@@ -156,22 +140,22 @@ export const SingingCanvasHud: Component<SingingCanvasHudProps> = (props) => {
               </div>
             </div>
           </Show>
-        </div>
-      </Show>
 
-      <Show when={showPitchDisplay() && cardsShown()}>
-        <div
-          class={styles.pitchHud}
-          classList={{ [styles.dimmed]: props.isPlaying() }}
-        >
-          <div class={styles.card} data-testid="hud-pitch">
-            <PitchDisplay
-              pitch={props.pitch}
-              targetNote={props.targetNoteName}
-            />
-          </div>
+          <Show when={!showStats() && !showPitchDisplay() && !showSessions()}>
+            <div class={styles.emptyRail}>
+              Performance cards are hidden in Display settings.
+            </div>
+          </Show>
         </div>
-      </Show>
+        <footer class={styles.railFooter}>
+          <span>
+            {props.isPlaying() ? 'Tracking pitch' : 'Ready for input'}
+          </span>
+          <span class={styles.railValue}>
+            {props.liveScore() === null ? '--' : `${props.liveScore()}%`}
+          </span>
+        </footer>
+      </aside>
     </>
   )
 }

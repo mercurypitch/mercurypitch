@@ -1,215 +1,251 @@
-/* ============================================================
-   SingingCanvasHud — floating glass overlays in the singing
-   canvas corner. Mirrors the Guitar 3D HUD aesthetic (frosted
-   translucent cards, soft shadow, hairline border) but stays
-   theme-adaptive by deriving its surface from --bg-card.
-   ============================================================ */
-
-/* Live accuracy score + session scoreboard — top-right. Offset further from
-   the right edge so it clears the canvas's note-name labels (drawn at w-6). */
-.accuracyHud {
-  position: absolute;
-  top: 12px;
-  right: 40px;
-  z-index: 6;
-  /* Accuracy + sessions sit side by side (wraps on a narrow canvas) so the
-     top-right stack stays short. */
+.performanceRail {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: flex-start;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg-secondary) 88%, #0c1119);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 13px;
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.railHeader {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  width: auto;
-  max-width: 64%;
-  /* Display-only HUD — let canvas drags / clicks pass straight through. */
-  pointer-events: none;
-  transition: opacity 0.35s ease;
-}
-.accuracyHud > .card {
-  width: 184px;
+  min-height: 48px;
+  padding: 9px 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
-/* Playback running: fade the display HUDs hard so the melody beneath gets
-   visual priority. Restores when paused / stopped. */
-.dimmed {
-  opacity: 0.26;
+.railHeader > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
-/* Pitch monitor — bottom-left, mirroring the Guitar 3D input monitor. */
-.pitchHud {
-  position: absolute;
-  /* Sit above the canvas's 22px beat-ruler so it isn't occluded. */
-  bottom: 30px;
-  left: 12px;
-  z-index: 6;
-  width: 200px;
-  max-width: 44%;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
+.railHeader strong {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.railKicker {
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.56rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.liveIndicator {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  background: var(--text-muted);
+  border: 2px solid color-mix(in srgb, var(--text-muted) 18%, transparent);
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.liveIndicatorActive {
+  background: var(--green);
+  border-color: color-mix(in srgb, var(--green) 20%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--green) 55%, transparent);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+.cards {
+  display: flex;
+  min-height: 0;
+  overflow: auto;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  scrollbar-color: color-mix(in srgb, var(--accent) 25%, var(--border))
+    transparent;
+  scrollbar-width: thin;
 }
 
 .card {
-  /* Frosted glass. Solid fallback first for engines without color-mix. */
-  background: var(--bg-card);
-  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-  backdrop-filter: blur(12px) saturate(135%);
-  -webkit-backdrop-filter: blur(12px) saturate(135%);
-  border: 1px solid var(--border);
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-  border-radius: 12px;
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: 8px 11px;
+  padding: 9px 10px;
   user-select: none;
-  animation: hudIn 180ms ease both;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
-@keyframes hudIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Card header — matches the muted, upper-cased labels used elsewhere. */
 .cardTitle {
-  font-size: 0.62rem;
-  font-weight: 700;
+  margin: 0 0 7px;
   color: var(--text-muted);
+  font-size: 0.59rem;
+  font-weight: 750;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin: 0 0 5px;
 }
 
-/* Live score row under the accuracy bars. */
 .scoreRow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
-  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
 }
 
 .scoreLabel {
-  font-size: 0.66rem;
-  font-weight: 600;
   color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .scoreValue {
+  color: var(--text-primary);
   font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
   font-weight: 800;
   line-height: 1;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
 }
 
-/* The pitch monitor brings its own card chrome for the sidebar; strip it
-   so it blends into the glass card instead of nesting a second panel. */
 .card :global(#pitch-reference) {
+  padding: 0;
   background: transparent;
   border: none;
   border-radius: 0;
-  padding: 0;
 }
 
-/* Recent-session scoreboard (top-right, under the accuracy card). Caps at a
-   handful of rows and scrolls if there are more. The list re-enables pointer
-   events so it can be scrolled, while the rest of the HUD stays pass-through. */
 .sessionList {
   display: flex;
+  max-height: 156px;
+  overflow-y: auto;
   flex-direction: column;
   gap: 3px;
-  max-height: 148px;
-  overflow-y: auto;
-  pointer-events: auto;
   scrollbar-width: thin;
 }
+
 .sessionRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 3px 7px;
+  padding: 4px 6px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
+
 .sessionName {
-  color: var(--text-secondary);
-  white-space: nowrap;
   overflow: hidden;
+  color: var(--text-secondary);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-/* Scoped to .card so the weight beats the legacy global .session-history-score
-   (font-weight:600) marker class kept on the same span for e2e selectors. */
+
 .card .sessionScore {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
+
 .scoreHigh {
   color: var(--green);
 }
+
 .scoreMid {
   color: var(--yellow);
 }
+
 .scoreLow {
   color: var(--red);
 }
 
-/* Mobile reveal toggle — on narrow screens the cards are hidden by default;
-   this small glass button (top-right) reveals/hides them. Only rendered on
-   narrow screens (see SingingCanvasHud). */
-.mobileToggle {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 7;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 30px;
-  border-radius: 9px;
-  color: var(--text-secondary);
-  background: var(--bg-card);
-  background: color-mix(in srgb, var(--bg-card) 80%, transparent);
-  backdrop-filter: blur(12px) saturate(135%);
-  -webkit-backdrop-filter: blur(12px) saturate(135%);
-  border: 1px solid var(--border);
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-.mobileToggleOpen {
-  color: var(--accent);
+.emptyRail {
+  padding: 18px 10px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
-/* Narrow screens: when revealed, drop the top-right cluster below the toggle
-   and cap widths so the cards don't overflow. */
-@media (max-width: 768px) {
-  .accuracyHud {
-    top: 50px;
-    right: 12px;
-    max-width: 78%;
+.railFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 35px;
+  padding: 7px 10px;
+  color: var(--text-muted);
+  border-top: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  font-size: 0.62rem;
+}
+
+.railValue {
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.69rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 0.7;
   }
-  .accuracyHud > .card {
-    width: 160px;
+
+  50% {
+    opacity: 1;
   }
-  .pitchHud {
-    width: auto;
-    max-width: 62%;
+}
+
+@media (max-width: 1180px) {
+  .performanceRail {
+    flex-direction: row;
+  }
+
+  .railHeader {
+    width: 142px;
+    flex: 0 0 auto;
+    border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-bottom: none;
+  }
+
+  .cards {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-direction: row;
+  }
+
+  .card {
+    width: 190px;
+    flex: 0 0 auto;
+  }
+
+  .railFooter {
+    width: 115px;
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveIndicatorActive {
+    animation: none;
   }
 }

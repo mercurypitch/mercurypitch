@@ -996,6 +996,31 @@ input:checked + .settings-slider:before {
   position: relative;
 }
 
+.practice-sheet-surface {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  padding: 58px 8px 8px;
+  background: #0d131d;
+}
+
+.sheet-loading {
+  display: grid;
+  flex: 1;
+  min-height: 160px;
+  place-items: center;
+  color: var(--text-muted);
+  background: #0d131d;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .leaderboard-header-content h2,
 .challenges-header-content h2 {
   font-size: 1.1rem;
