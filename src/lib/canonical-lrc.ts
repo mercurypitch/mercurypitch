@@ -12,7 +12,8 @@ export const REST_THRESHOLD_SEC = 20
 /** Each rest countdown dot represents this many seconds. */
 export const SECONDS_PER_REST_DOT = 5
 
-function restDotCount(gapStart: number, gapEnd: number): number {
+export function getRestDotCount(gapStart: number, gapEnd: number): number {
+  if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd)) return 0
   return Math.max(1, Math.round((gapEnd - gapStart) / SECONDS_PER_REST_DOT))
 }
 
@@ -68,7 +69,7 @@ export function buildCanonicalEntries(
           words: [],
           gapStart,
           gapEnd,
-          dotCount: restDotCount(gapStart, gapEnd),
+          dotCount: getRestDotCount(gapStart, gapEnd),
         })
       }
     }
@@ -84,7 +85,7 @@ export function buildCanonicalEntries(
         words: [],
         gapStart: line.time,
         gapEnd,
-        dotCount: restDotCount(line.time, gapEnd),
+        dotCount: getRestDotCount(line.time, gapEnd),
       })
       // The explicit rest itself marks the silence — measure the next gap from
       // it, and suppress a redundant synthetic rest right after it.
@@ -254,7 +255,7 @@ export function applyRepeatBlocks(
       ...entry,
       time: newGapStart,
       gapStart: newGapStart,
-      dotCount: restDotCount(newGapStart, gapEnd),
+      dotCount: getRestDotCount(newGapStart, gapEnd),
     }
   })
 }

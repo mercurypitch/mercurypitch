@@ -1699,8 +1699,8 @@ input:checked + .settings-slider:before {
 }
 
 /* Dynamic header context pill: each practice tab's loaded song (plus the
-   guide character on Singing). A non-interactive status indicator. Own class
-   (not .subtitle) so it stays visible on mobile. */
+   guide character on Singing). Own class (not .subtitle) so it stays visible
+   on mobile. */
 .header-melody-context {
   display: inline-flex;
   align-items: center;
@@ -1712,7 +1712,6 @@ input:checked + .settings-slider:before {
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
   overflow: hidden;
   cursor: pointer;
-  outline: none;
   font-family: inherit;
   transition: all 0.15s ease;
   text-align: left;
@@ -1723,6 +1722,10 @@ button.header-melody-context:hover {
 }
 button.header-melody-context:active {
   transform: scale(0.98);
+}
+button.header-melody-context:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .header-melody-avatar {
   width: 20px;
@@ -2788,23 +2791,29 @@ input[type='range'] {
   15% {
     background-color: var(
       --flash-color-peak,
-      hsla(var(--primary-hue, 210), 100%, 50%, 0.28)
+      hsla(var(--primary-hue, 210), 100%, 50%, 0.16)
     );
-    box-shadow: 0 0 0 8px hsla(var(--primary-hue, 210), 100%, 50%, 0.35);
+    box-shadow:
+      0 0 0 2px hsla(var(--primary-hue, 210), 100%, 58%, 0.55),
+      0 0 24px hsla(var(--primary-hue, 210), 100%, 50%, 0.22);
   }
   35% {
     background-color: var(
       --flash-color,
       hsla(var(--primary-hue, 210), 100%, 50%, 0.12)
     );
-    box-shadow: 0 0 0 2px hsla(var(--primary-hue, 210), 100%, 50%, 0.1);
+    box-shadow:
+      0 0 0 1px hsla(var(--primary-hue, 210), 100%, 58%, 0.18),
+      0 0 12px hsla(var(--primary-hue, 210), 100%, 50%, 0.08);
   }
   55% {
     background-color: var(
       --flash-color-peak,
-      hsla(var(--primary-hue, 210), 100%, 50%, 0.22)
+      hsla(var(--primary-hue, 210), 100%, 50%, 0.12)
     );
-    box-shadow: 0 0 0 6px hsla(var(--primary-hue, 210), 100%, 50%, 0.2);
+    box-shadow:
+      0 0 0 2px hsla(var(--primary-hue, 210), 100%, 58%, 0.4),
+      0 0 18px hsla(var(--primary-hue, 210), 100%, 50%, 0.15);
   }
   100% {
     background-color: transparent;
@@ -2815,4 +2824,12 @@ input[type='range'] {
 .target-focus-flash {
   animation: target-focus-pulse 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target-focus-flash {
+    animation: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }

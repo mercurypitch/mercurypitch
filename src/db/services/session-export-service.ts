@@ -23,10 +23,10 @@ export function getSafeSessionName(session: {
     /_(mp3|wav|flac|ogg|m4a|aac)$/i,
     '',
   )
-  return cleanedName.replace(/[^a-z0-9_-]/gi, '_')
+  const safeName = cleanedName.replace(/[^a-z0-9_-]/gi, '_')
+  return /[a-z0-9]/i.test(safeName) ? safeName : session.sessionId
 }
 
-// Kept for backward compatibility/other uses
 function sanitizeFilename(name: string): string {
   return name.replace(/[^a-z0-9_-]/gi, '_')
 }
@@ -635,10 +635,6 @@ async function importOneSession(
   if (targetGroupId !== undefined) {
     // Keep both sides of the group relationship consistent. Setting groupId on
     // the session alone leaves the group's count/index empty and breaks moves.
-    await addSessionToGroup(newSessionId, targetGroupId)
-  }
-
-  if (targetGroupId !== undefined) {
     await addSessionToGroup(newSessionId, targetGroupId)
   }
 

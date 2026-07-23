@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
-import { applyRepeatBlocks, buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, selectActiveItem, } from '@/lib/canonical-lrc'
+import { applyRepeatBlocks, buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, getRestDotCount, selectActiveItem, } from '@/lib/canonical-lrc'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyrics-service'
 
@@ -782,6 +782,18 @@ describe('computeRestProgress', () => {
       filledDots: 0,
       currentDotFrac: 0,
     })
+  })
+})
+
+describe('getRestDotCount', () => {
+  it('uses the shared five-second cadence and rounds partial intervals', () => {
+    expect(getRestDotCount(10, 30)).toBe(4)
+    expect(getRestDotCount(10, 33)).toBe(5)
+  })
+
+  it('rejects non-finite timing without producing an invalid array length', () => {
+    expect(getRestDotCount(Number.NaN, 30)).toBe(0)
+    expect(getRestDotCount(10, Number.POSITIVE_INFINITY)).toBe(0)
   })
 })
 

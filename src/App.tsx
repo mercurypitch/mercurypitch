@@ -97,8 +97,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
-import { storageGet } from '@/lib/storage'
-import { applyPersistedValue } from '@/lib/storage'
+import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
@@ -2204,20 +2203,25 @@ const AppShell: Component<AppProps> = (props) => {
                 fallback={<p class="subtitle">Voice Pitch Practice</p>}
                 keyed
               >
-                {/* Dynamic practice context — each tab's loaded song (plus the
-                    guide character on Singing). Own class (not .subtitle) so it
+                {/* Dynamic practice context — opens the sidebar controls for
+                    the active song/character. Own class (not .subtitle) so it
                     stays visible on mobile. */}
                 {(ctx) => (
                   <button
+                    type="button"
                     class="header-melody-context"
                     onClick={() => {
                       setSidebarCollapsed(false)
                       setSidebarOpen(true)
-                      applyPersistedValue('sidebar-character-open', 'true')
-                      triggerTargetFocus([
-                        'sidebar-character',
-                        'sidebar-library',
-                      ])
+                      if (ctx.tab === TAB_SINGING) {
+                        applyPersistedValue('sidebar-character-open', 'true')
+                        triggerTargetFocus([
+                          'sidebar-character',
+                          'sidebar-library',
+                        ])
+                      } else {
+                        triggerTargetFocus('sidebar-library')
+                      }
                     }}
                     title={
                       ctx.character != null

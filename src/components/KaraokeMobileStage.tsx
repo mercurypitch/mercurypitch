@@ -28,9 +28,10 @@ import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
+import { RestCountdownDots } from '@/components/RestCountdownDots'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
-import { computeRestProgress } from '@/lib/canonical-lrc'
+import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -488,61 +489,18 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                   <Show
                     when={!isRest}
                     fallback={
-                      <div
-                        class="sm-lyrics-rest-dots"
-                        aria-hidden="true"
+                      <RestCountdownDots
+                        dotCount={getRestDotCount(entry.time, entry.endTime)}
+                        elapsed={props.elapsed}
+                        gapEnd={entry.endTime}
+                        gapStart={entry.time}
+                        onSeek={props.seekTo}
                         style={{
                           'justify-content': 'flex-start',
                           'margin-top': '0.5rem',
                           '--accent': '#ffffff',
                         }}
-                      >
-                        {(() => {
-                          const gapStart = entry.time
-                          const gapEnd = entry.endTime
-                          const gapDuration = gapEnd - gapStart
-                          const dotCount = Math.min(
-                            Math.floor(gapDuration / 5),
-                            8,
-                          )
-                          if (dotCount <= 0 || isNaN(dotCount)) return null
-
-                          const progress = () =>
-                            computeRestProgress(
-                              gapStart,
-                              gapEnd,
-                              dotCount,
-                              props.elapsed(),
-                            )
-
-                          return (
-                            <For each={Array.from({ length: dotCount })}>
-                              {(_, i) => {
-                                const fill = () => {
-                                  const p = progress()
-                                  if (i() < p.filledDots) return 1
-                                  if (i() === p.filledDots)
-                                    return p.currentDotFrac
-                                  return 0
-                                }
-                                return (
-                                  <span
-                                    class="sm-lyrics-rest-dot"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      props.seekTo(gapStart + i() * 5)
-                                    }}
-                                    style={{
-                                      '--fill': `${Math.round(fill() * 100)}%`,
-                                      cursor: 'pointer',
-                                    }}
-                                  />
-                                )
-                              }}
-                            </For>
-                          )
-                        })()}
-                      </div>
+                      />
                     }
                   >
                     <Show when={isCurrent()} fallback={entry.words.join(' ')}>

@@ -3124,9 +3124,12 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-rest-dot {
+  display: inline-block;
+  flex: 0 0 auto;
   box-sizing: border-box;
   width: 0.55em;
   height: 0.55em;
+  padding: 0;
   border-radius: 50%;
   background: linear-gradient(
     to right,
@@ -3135,6 +3138,15 @@ export const StemMixerStyles: string = `
   );
   border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
   transition: background 0.12s linear;
+}
+
+.sm-lyrics-rest-dot--interactive {
+  cursor: pointer;
+}
+
+.sm-lyrics-rest-dot--interactive:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
 }
 
 .sm-lyrics-time {

@@ -166,3 +166,35 @@ describe('KaraokeMobileStage autoplay toggle (REQ-ZEN-006/007)', () => {
     )
   })
 })
+
+describe('KaraokeMobileStage rest countdown', () => {
+  it('renders accessible rest dots and seeks to the selected interval once', () => {
+    const seekTo = vi.fn()
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          currentLineIdx: () => 0,
+          parsedLyrics: () =>
+            new Map([
+              [
+                0,
+                {
+                  key: 'rest-0',
+                  time: 10,
+                  endTime: 33,
+                  words: [],
+                },
+              ],
+            ]),
+          seekTo,
+        }),
+      ),
+    )
+
+    const dots = screen.getAllByRole('button', { name: /Seek to/ })
+    expect(dots).toHaveLength(5)
+    fireEvent.click(dots[2])
+    expect(seekTo).toHaveBeenCalledTimes(1)
+    expect(seekTo).toHaveBeenCalledWith(20)
+  })
+})
