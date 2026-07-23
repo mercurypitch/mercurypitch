@@ -1128,6 +1128,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleSongPickerRefine,
     playing: audio.playing,
     elapsed: audio.elapsed,
+    handleSeekToTime: (t: number) => audio.seekTo(t),
     handlePlay: audio.handlePlay,
     handlePause: audio.handlePause,
     formatTime: canvas.formatTime,
@@ -3116,6 +3117,9 @@ export const StemMixerStyles: string = `
 .sm-lyrics-rest-dots {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(8 * 0.55em + 7 * 0.4em);
   gap: 0.4em;
 }
 

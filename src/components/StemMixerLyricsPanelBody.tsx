@@ -7,7 +7,7 @@ import { createEffect, For, on, onCleanup, onMount, Show } from 'solid-js'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
-import { computeRestProgress } from '@/lib/canonical-lrc'
+import { computeRestProgress, SECONDS_PER_REST_DOT } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { LyricsSongPicker } from './LyricsSongPicker'
@@ -58,6 +58,7 @@ export interface StemMixerLyricsPanelBodyProps {
   blockEditTarget: Accessor<string | null>
   setBlockEditTarget: Setter<string | null>
   currentLineIdx: Accessor<number>
+  handleSeekToTime?: (time: number) => void
   lyricsLines: Accessor<string[]>
   lrcLines: Accessor<{ text: string; time: number }[]>
 
@@ -884,8 +885,16 @@ export const StemMixerLyricsPanelBody: Component<
                               return (
                                 <span
                                   class="sm-lyrics-rest-dot"
+                                  onClick={() =>
+                                    props.handleSeekToTime?.(
+                                      gapStart + i() * SECONDS_PER_REST_DOT,
+                                    )
+                                  }
                                   style={{
                                     '--fill': `${Math.round(fill() * 100)}%`,
+                                    cursor: props.handleSeekToTime
+                                      ? 'pointer'
+                                      : 'default',
                                   }}
                                 />
                               )
