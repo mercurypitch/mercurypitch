@@ -439,6 +439,19 @@ describe('AudioEngine', () => {
       await engine.resume()
       // Should not error
     })
+
+    it('recovers WebKit interrupted audio contexts', async () => {
+      const context = engine.getAudioContext()
+      expect(context).not.toBeNull()
+      Object.defineProperty(context, 'state', {
+        configurable: true,
+        value: 'interrupted',
+      })
+
+      await engine.resume()
+
+      expect(context!.resume).toHaveBeenCalledOnce()
+    })
   })
 
   describe('destroy', () => {
