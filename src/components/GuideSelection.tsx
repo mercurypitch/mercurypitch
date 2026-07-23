@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, For, onCleanup, Show } from 'solid-js'
 import { startMixerTourIfReady } from '@/features/tours/startMixerTour'
-import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, } from '@/stores/app-store'
+import { getIncompleteGuideSections, GUIDE_SECTIONS, hasPageTour, isGuideSectionCompleted, PAGE_TOUR_CATALOG, startPageTour, } from '@/stores/app-store'
 import type { ActiveTab } from '@/types'
 import styles from './GuideSelection.module.css'
 
@@ -27,6 +27,8 @@ interface GuideSelectionProps {
 
 export const GuideSelection: Component<GuideSelectionProps> = (props) => {
   const incomplete = () => getIncompleteGuideSections()
+  const availablePageTours = () =>
+    PAGE_TOUR_CATALOG.filter((item) => hasPageTour(item.tab))
 
   // Always start the tour BEFORE closing this dialog: the deferred onboarding
   // survey fires the moment no tour surface is open, and Solid effects run
@@ -169,7 +171,7 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
           {/* Per-page interactive tours */}
           <div class={styles.guideSectionsList}>
             <h3>Per-page tours</h3>
-            <For each={PAGE_TOUR_CATALOG}>
+            <For each={availablePageTours()}>
               {(item) => (
                 <button
                   class={styles.guideSectionItem}
