@@ -18,10 +18,14 @@ const META_RE = /^\[x-mp-timing:([A-Za-z0-9+/=]+)\]\s*$/m
 
 function isNumberArrayMap(value: unknown): value is WordTimingsMap {
   if (typeof value !== 'object' || value === null) return false
-  return Object.values(value).every(
-    (line) =>
+  return Object.entries(value).every(
+    ([key, line]) =>
+      /^\d+$/.test(key) &&
       Array.isArray(line) &&
-      line.every((item) => typeof item === 'number' && Number.isFinite(item)),
+      line.every(
+        (item) =>
+          typeof item === 'number' && Number.isFinite(item) && item >= 0,
+      ),
   )
 }
 
@@ -31,6 +35,7 @@ function isSweepPoint(value: unknown): value is WordSweepPoint {
   return (
     typeof point.time === 'number' &&
     Number.isFinite(point.time) &&
+    point.time >= 0 &&
     typeof point.progress === 'number' &&
     Number.isFinite(point.progress) &&
     point.progress >= 0 &&
@@ -40,12 +45,16 @@ function isSweepPoint(value: unknown): value is WordSweepPoint {
 
 function isSweepMap(value: unknown): value is WordSweepTimingsMap {
   if (typeof value !== 'object' || value === null) return false
-  return Object.values(value).every(
-    (line) =>
+  return Object.entries(value).every(
+    ([lineKey, line]) =>
+      /^\d+$/.test(lineKey) &&
       typeof line === 'object' &&
       line !== null &&
-      Object.values(line).every(
-        (points) => Array.isArray(points) && points.every(isSweepPoint),
+      Object.entries(line).every(
+        ([wordKey, points]) =>
+          /^\d+$/.test(wordKey) &&
+          Array.isArray(points) &&
+          points.every(isSweepPoint),
       ),
   )
 }

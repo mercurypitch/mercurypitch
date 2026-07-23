@@ -83,4 +83,17 @@ describe('MercuryPitch LRC timing metadata', () => {
       ),
     ).toBeNull()
   })
+
+  it('rejects negative times and non-numeric timing keys', () => {
+    const encoded = btoa(
+      JSON.stringify({
+        v: 1,
+        ends: { line: [-1] },
+        sweeps: {},
+      }),
+    )
+    expect(
+      parseLrcTimingMetadata(`[x-mp-timing:${encoded}]\n[00:01.00]Valid`),
+    ).toBeNull()
+  })
 })

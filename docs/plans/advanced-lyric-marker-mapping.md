@@ -42,9 +42,10 @@ only the active line and word, samples only the latest browser-coalesced pointer
 position, and fills any crossed intermediate words so a fast drag remains
 complete. Recovery snapshots are serialized at most once per short burst.
 
-Playback speed is no longer changed automatically. The mapper exposes 1x,
-0.85x, 0.75x, and 0.5x choices; 1x preserves the natural vocal sound, while
-0.75x remains available for dense phrases.
+Playback speed is no longer changed automatically. The mapper and main
+transport share the same 0.5x–2x choices, including 0.85x for light slowdown
+and 0.75x for dense phrases. The current selection stays unchanged when the
+mapper opens.
 
 `Discard changes` restores the complete lyric/timing snapshot captured before
 the mapper opened. `Redo line` remains the targeted correction for one line.
@@ -88,7 +89,7 @@ Use the supplied Iron Maiden “Como Estais Amigos” LRC directory as a manual
 reference without committing copyrighted lyric content:
 
 1. Import `Iron Maiden - Como Estais Amigos - 2015 Remaster_WordTiming.lrc`.
-2. Enter the mapper; playback starts at 0.75x unless it was already slower.
+2. Select 0.75x, enter the mapper, and confirm the selected speed is preserved.
 3. Remap a fast phrase, a phrase with a long held vowel, the phrase before the
    long break, and the final line.
 4. Finish, download, then re-import the result.

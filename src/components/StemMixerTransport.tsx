@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
+import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 
 type DockPos = 'top' | 'bottom' | 'left' | 'right'
 /** [side, arrow-path, label] for the click-to-dock compass. */
@@ -550,13 +551,11 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             }}
             title="Playback speed"
           >
-            <option value="0.5">0.5x</option>
-            <option value="0.75">0.75x</option>
-            <option value="1">1x</option>
-            <option value="1.2">1.2x</option>
-            <option value="1.5">1.5x</option>
-            <option value="1.75">1.75x</option>
-            <option value="2">2x</option>
+            <For each={STEM_MIXER_PLAYBACK_SPEEDS}>
+              {(speed) => (
+                <option value={speed}>{formatPlaybackSpeed(speed)}</option>
+              )}
+            </For>
           </select>
 
           {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}

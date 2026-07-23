@@ -32,7 +32,7 @@ export const VERSION_LABELS: Record<LyricsVersionKind, string> = {
   imported: 'Original',
   edited: 'Edited',
   'auto-sync': 'Auto-sync',
-  'lrc-gen': 'Tapped',
+  'lrc-gen': 'Mapped',
 }
 
 /** Display order in the switcher (original first, then the derived ones). */

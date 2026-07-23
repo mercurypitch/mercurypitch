@@ -13,6 +13,7 @@ import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
 import { createOctaveCorrector } from '@/lib/pitch-pipeline/octave-corrector'
 import { createRunningMedian } from '@/lib/pitch-pipeline/running-median'
+import { getPitchWindowResumeState } from '@/lib/pitch-window'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { PitchNote } from './types'
@@ -748,6 +749,17 @@ export const useStemMixerAudioController = (
         deps.setMicPitch(null)
         resetSmoothers()
       }
+      const mappingJustEnded = !mappingActive && mappingWasActive
+      if (mappingJustEnded) {
+        const resume = getPitchWindowResumeState(
+          elapsedTime,
+          windowDuration(),
+          deps.PITCH_WINDOW_FILL_RATIO,
+        )
+        activeAnchor = resume.anchor
+        isRecentering = false
+        setWindowStart(resume.windowStart)
+      }
       mappingWasActive = mappingActive
 
       // Pitch detection from vocal analyser (median + octave-corrected). This
@@ -807,7 +819,7 @@ export const useStemMixerAudioController = (
 
       // The pitch and MIDI windows are not drawn during mapping, so avoid their
       // per-frame reactive scroll updates as well.
-      if (!mappingActive) {
+      if (!mappingActive && !mappingJustEnded) {
         // Continuous-scroll time window (skip while user is touch-panning)
         if (deps.canvas.isUserPanning?.() === true) {
           activeAnchor = (elapsedTime - windowStart()) / windowDuration()

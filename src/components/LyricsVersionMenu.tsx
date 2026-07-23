@@ -1,7 +1,7 @@
 // ============================================================
 // LyricsVersionMenu — switch between saved lyric mappings
 // ============================================================
-// Header dropdown listing the Original / Edited / Auto-sync / Tapped
+// Header dropdown listing the Original / Edited / Auto-sync / Mapped
 // mappings (see src/lib/lyrics-versions.ts). Only shown when two or more
 // versions exist — with a single mapping there's nothing to switch.
 

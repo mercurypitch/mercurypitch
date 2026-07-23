@@ -8,7 +8,9 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import { buildForwardMarkerPath } from '@/lib/marker-path'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 import { LyricsSongPicker } from './LyricsSongPicker'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -173,6 +175,7 @@ export const StemMixerLyricsPanelBody: Component<
   )
   let markerPointerId: number | null = null
   let latestMarkerTarget: MarkerTarget | null = null
+  let latestMarkerElapsed: number | null = null
   let latestElapsed = 0
 
   // Pointer callbacks read a plain clock snapshot so reactive values never
@@ -240,44 +243,35 @@ export const StemMixerLyricsPanelBody: Component<
       return
     }
 
-    if (
-      previous !== null &&
-      previous.lineIdx === target.lineIdx &&
-      target.wordIdx > previous.wordIdx
-    ) {
-      // Preserve every crossed word even when the browser coalesces a very fast
-      // drag into one pointer event. Intermediate words close at this frame's
-      // timestamp; only the final target needs the exact horizontal position.
-      props.handleMarkerSample(
-        previous.lineIdx,
-        previous.wordIdx,
-        previous.progress,
+    if (previous !== null && latestMarkerElapsed !== null) {
+      const samples = buildForwardMarkerPath(
+        previous,
+        target,
+        latestMarkerElapsed,
         latestElapsed,
-        'move',
       )
-      for (
-        let wordIdx = previous.wordIdx + 1;
-        wordIdx < target.wordIdx;
-        wordIdx++
-      ) {
+      for (const [index, sample] of samples.entries()) {
         props.handleMarkerSample(
-          target.lineIdx,
-          wordIdx,
-          1,
-          latestElapsed,
-          'move',
+          sample.target.lineIdx,
+          sample.target.wordIdx,
+          sample.target.progress,
+          sample.elapsed,
+          index === samples.length - 1 ? phase : 'move',
         )
       }
+      latestMarkerElapsed = samples.at(-1)?.elapsed ?? latestElapsed
+    } else {
+      props.handleMarkerSample(
+        target.lineIdx,
+        target.wordIdx,
+        target.progress,
+        latestElapsed,
+        phase,
+      )
+      latestMarkerElapsed = latestElapsed
     }
 
     updateMarkerVisual(target)
-    props.handleMarkerSample(
-      target.lineIdx,
-      target.wordIdx,
-      target.progress,
-      latestElapsed,
-      phase,
-    )
   }
 
   const startMarkerGesture = (e: PointerEvent) => {
@@ -290,6 +284,7 @@ export const StemMixerLyricsPanelBody: Component<
     e.stopPropagation()
     markerPointerId = e.pointerId
     updateMarkerVisual(target)
+    latestMarkerElapsed = latestElapsed
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     if (!props.playing()) props.handlePlay()
     props.handleMarkerSample(
@@ -327,6 +322,7 @@ export const StemMixerLyricsPanelBody: Component<
     }
     markerPointerId = null
     updateMarkerVisual(null)
+    latestMarkerElapsed = null
   }
 
   // Pinch-to-zoom font size state
@@ -561,10 +557,11 @@ export const StemMixerLyricsPanelBody: Component<
                 }
                 aria-label="Mapping playback speed"
               >
-                <option value="1">1x natural</option>
-                <option value="0.85">0.85x</option>
-                <option value="0.75">0.75x precise</option>
-                <option value="0.5">0.5x</option>
+                <For each={STEM_MIXER_PLAYBACK_SPEEDS}>
+                  {(speed) => (
+                    <option value={speed}>{formatPlaybackSpeed(speed)}</option>
+                  )}
+                </For>
               </SafeSelect>
             </label>
             <label class="sm-lyrics-gen-offset">
@@ -720,9 +717,15 @@ export const StemMixerLyricsPanelBody: Component<
               {(row) => {
                 if (row.type === 'placeholder') {
                   const { item, bi, block, total } = row
+                  const instance =
+                    props.blockInstances()[bi!.blockId]?.[bi!.instanceIdx]
                   return (
                     <div
                       class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
+                      data-lyrics-index={item.index}
+                      data-lyrics-end-index={
+                        (instance?.[1] ?? item.index + 1) - 1
+                      }
                       style={{
                         '--block-color': props.getBlockColor(bi!.blockId),
                         cursor: 'pointer',
@@ -749,7 +752,10 @@ export const StemMixerLyricsPanelBody: Component<
                   const dotCount = item.restDotCount ?? 0
                   if (dotCount <= 0 || gapEnd <= gapStart) return null
                   return (
-                    <div class="sm-lyrics-gen-line sm-lyrics-gen-line-rest">
+                    <div
+                      class="sm-lyrics-gen-line sm-lyrics-gen-line-rest"
+                      data-lyrics-index={item.index}
+                    >
                       <span class="sm-lyrics-gen-line-time">
                         {props.formatTimeMs(gapStart)}
                       </span>
@@ -768,6 +774,7 @@ export const StemMixerLyricsPanelBody: Component<
                 return (
                   <div
                     class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}`}
+                    data-lyrics-index={item.index}
                     style={
                       item.blockInfo?.isTemplate === true
                         ? {
@@ -1205,6 +1212,7 @@ export const StemMixerLyricsPanelBody: Component<
                     return (
                       <div
                         class="sm-lyrics-rest"
+                        data-lyrics-index={dl.lyricsIndex}
                         classList={{ 'sm-lyrics-rest--active': active() }}
                         style={{
                           'font-size': `${props.lyricsFontSize()}rem`,
@@ -1229,6 +1237,7 @@ export const StemMixerLyricsPanelBody: Component<
                   return (
                     <div
                       class="sm-lyrics-rest"
+                      data-lyrics-index={dl.lyricsIndex}
                       style={{
                         'font-size': `${props.lyricsFontSize()}rem`,
                         'justify-content':
@@ -1334,6 +1343,7 @@ export const StemMixerLyricsPanelBody: Component<
                     )}
                     <span
                       class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine() ? ' sm-lyrics-line--blocked' : ''}${blockForLine() && !blockForLine()!.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${props.blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected() ? ' sm-lyrics-line-mark-selected' : ''}${isLoopA() ? ' sm-lyrics-line--loop-a' : ''}${isLoopB() ? ' sm-lyrics-line--loop-b' : ''}${isLoopRange() ? ' sm-lyrics-line--loop-range' : ''}`}
+                      data-lyrics-index={idx}
                       style={
                         blockColor() !== undefined
                           ? { '--block-color': blockColor() }

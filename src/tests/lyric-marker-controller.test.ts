@@ -3,6 +3,82 @@ import { describe, expect, it } from 'vitest'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 
 describe('lyric marker controller', () => {
+  it('clears stale recovery data when replacement lyrics are imported', () =>
+    createRoot((dispose) => {
+      const sessionId = 'marker-replacement-test'
+      const key = `lyrics_gen_v1_${sessionId}`
+      localStorage.setItem(key, '{"lineTimes":[99],"lineIdx":1}')
+      const controller = useStemMixerLyricsController({
+        sessionId,
+        songTitle: 'Replacement test',
+        duration: () => 20,
+        playing: () => false,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+
+      controller.handleLyricsUpload({
+        text: '[00:01.00]Replacement',
+        format: 'lrc',
+        filename: 'replacement.lrc',
+      })
+
+      expect(localStorage.getItem(key)).toBeNull()
+      dispose()
+    }))
+
+  it('preserves earlier work after resuming and partially finishing', () =>
+    createRoot((dispose) => {
+      const sessionId = 'marker-resume-test'
+      const original = `[00:01.00]Alpha
+[00:05.00]Beta
+[00:09.00]Gamma`
+      const controller = useStemMixerLyricsController({
+        sessionId,
+        songTitle: 'Marker resume test',
+        duration: () => 20,
+        playing: () => true,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+      controller.handleLyricsUpload({
+        text: original,
+        format: 'lrc',
+        filename: 'resume-test.lrc',
+      })
+      localStorage.setItem(
+        `lyrics_gen_v1_${sessionId}`,
+        JSON.stringify({
+          lineTimes: [2],
+          wordTimings: { 0: [2] },
+          wordEndTimings: { 0: [3] },
+          wordSweepTimings: {},
+          lineIdx: 1,
+          wordIdx: 0,
+          inputMode: 'marker',
+          touchedLines: [0],
+          timestamp: Date.now(),
+        }),
+      )
+      controller.setLrcTimingOffsetMs(0)
+      controller.startLrcGen()
+
+      expect(controller.lrcGenLineIdx()).toBe(1)
+      controller.handleMarkerSample(1, 0, 0, 6, 'start')
+      controller.handleMarkerSample(1, 0, 1, 7, 'end')
+      controller.handleLrcGenFinish()
+
+      expect(controller.lrcGenMode()).toBe(false)
+      expect(controller.canonicalLrcLines().map((line) => line.time)).toEqual([
+        2, 6, 9,
+      ])
+      expect(controller.wordTimings()[0]).toEqual([2])
+      expect(controller.wordTimings()[1]).toEqual([6])
+
+      localStorage.removeItem(`lyrics_gen_v1_${sessionId}`)
+      dispose()
+    }))
+
   it('records onset, dwell, release, and the final word without a next click', () =>
     createRoot((dispose) => {
       const controller = useStemMixerLyricsController({
@@ -42,6 +118,33 @@ describe('lyric marker controller', () => {
         ]),
       )
 
+      dispose()
+    }))
+
+  it('keeps crossed words positive when reaction correction clamps at zero', () =>
+    createRoot((dispose) => {
+      const controller = useStemMixerLyricsController({
+        sessionId: 'marker-zero-boundary-test',
+        songTitle: 'Marker zero boundary test',
+        duration: () => 10,
+        playing: () => true,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+      controller.handleLyricsUpload({
+        text: '[00:01.00]one [00:02.00]two',
+        format: 'lrc',
+        filename: 'zero-boundary.lrc',
+      })
+      controller.setLrcTimingOffsetMs(180)
+      controller.startLrcGen()
+
+      controller.handleMarkerSample(0, 0, 0, 0.05, 'start')
+      controller.handleMarkerSample(0, 1, 0.5, 0.05, 'move')
+
+      expect(controller.lrcGenWordTimings()[0]).toEqual([0, 0.001])
+      expect(controller.lrcGenWordEndTimings()[0]?.[0]).toBe(0.001)
+      controller.handleLrcGenReset()
       dispose()
     }))
 

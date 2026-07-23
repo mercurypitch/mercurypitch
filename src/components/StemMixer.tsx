@@ -3683,7 +3683,7 @@ export const StemMixerStyles: string = `
   margin-left: 0.15rem;
 }
 
-/* Lyrics version switcher (Original / Edited / Auto-sync / Tapped) */
+/* Lyrics version switcher (Original / Edited / Auto-sync / Mapped) */
 .sm-lyrics-version {
   position: relative;
   display: inline-flex;

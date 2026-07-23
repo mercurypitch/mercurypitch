@@ -14,12 +14,13 @@ import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } fro
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
 import { appendWordSweepSample, beginWordSweep } from '@/lib/lyric-sweep'
+import { findLyricsRow } from '@/lib/lyrics-row'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
 import { autoTimeLineWords } from '@/lib/word-sync'
-import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, } from './lrc-gen-engine'
+import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -525,6 +526,7 @@ export function useStemMixerLyricsController(
     if (kind === activeVersionKind()) return
     const version = findVersion(lyricsVersions(), kind)
     if (version === undefined) return
+    clearLrcGenProgress()
     applyVersionToLive(version)
     setActiveVersionKind(kind)
     const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
@@ -570,11 +572,7 @@ export function useStemMixerLyricsController(
    *  song title so a fresh search is one tap). There is no undo. */
   const clearLyrics = (): void => {
     void deleteLyricsFromDb(deps.sessionId)
-    try {
-      localStorage.removeItem(genKey())
-    } catch {
-      /* ignore — best-effort cleanup of the LRC-gen scratch state */
-    }
+    clearLrcGenProgress()
     _setLyricsCache(null)
     setRawLyricsText('')
     setLrcLines([])
@@ -593,8 +591,14 @@ export function useStemMixerLyricsController(
     setEditMode(false)
     setEditBuffer({})
     setLrcGenMode(false)
+    setLrcGenLineIdx(0)
+    setLrcGenWordIdx(0)
+    setLrcGenLineTimes([])
+    setLrcGenWordTimings({})
     setLrcGenWordEndTimings({})
     setLrcGenWordSweepTimings({})
+    touchedLines = new Set()
+    preGenSnapshot = null
     setCurrentLineIdx(-1)
     setShowSongPicker(false)
     setSongMatches([])
@@ -657,6 +661,7 @@ export function useStemMixerLyricsController(
   // ── Lyrics loading ───────────────────────────────────────────────
 
   const applyLyricsResult = (result: LyricsSearchResult, title: string) => {
+    clearLrcGenProgress()
     setWordTimings({})
     setWordEndTimings({})
     setWordSweepTimings({})
@@ -831,6 +836,7 @@ export function useStemMixerLyricsController(
   }
 
   const handleLyricsUpload = (result: LyricsUploadResult) => {
+    clearLrcGenProgress()
     setBlocks([])
     setBlockInstances({})
     const timingExtension =
@@ -953,9 +959,8 @@ export function useStemMixerLyricsController(
       LYRICS_CONTAINER_SELECTOR,
     ) as HTMLElement | null
     if (!container) return
-    const lines = container.querySelectorAll('.sm-lyrics-line')
-    if (idx < lines.length) {
-      const line = lines[idx] as HTMLElement
+    const line = findLyricsRow(container, idx)
+    if (line !== null) {
       const containerRect = container.getBoundingClientRect()
       const lineRect = line.getBoundingClientRect()
       const scrollTarget =
@@ -1315,6 +1320,16 @@ export function useStemMixerLyricsController(
     genWordsCache.set(line, words)
     return words
   }
+  const getGenProgressIdentity = (): string => {
+    const text =
+      rawLyricsText() || (lrcLines().length > 0 ? '' : lyricsLines().join('\n'))
+    let hash = 2166136261
+    for (let index = 0; index < text.length; index++) {
+      hash ^= text.charCodeAt(index)
+      hash = Math.imul(hash, 16777619)
+    }
+    return `${text.length}:${hash >>> 0}`
+  }
 
   const isTemplateMappedInGen = (blockId: string): boolean => {
     const block = getBlockById(blockId)
@@ -1433,6 +1448,8 @@ export function useStemMixerLyricsController(
     lineIdx: number
     wordIdx: number
     inputMode: LrcGenInputMode
+    touchedLines: number[]
+    lyricsIdentity: string
     timestamp: number
   }
 
@@ -1463,6 +1480,8 @@ export function useStemMixerLyricsController(
       lineIdx: lrcGenLineIdx(),
       wordIdx: lrcGenWordIdx(),
       inputMode: lrcGenInputMode(),
+      touchedLines: [...touchedLines].sort((a, b) => a - b),
+      lyricsIdentity: getGenProgressIdentity(),
       timestamp: Date.now(),
     }
     if (genProgressTimer !== undefined) return
@@ -1506,35 +1525,43 @@ export function useStemMixerLyricsController(
       const saved = localStorage.getItem(genKey())
       if (saved !== null) {
         const data: Record<string, unknown> = JSON.parse(saved)
-        if (Array.isArray(data.lineTimes) && data.lineTimes.length > 0) {
-          setLrcGenLineTimes(data.lineTimes)
-          if (
-            typeof data.wordTimings === 'object' &&
-            data.wordTimings !== null
-          ) {
-            setLrcGenWordTimings(data.wordTimings as Record<number, number[]>)
-          }
-          if (
-            typeof data.wordEndTimings === 'object' &&
-            data.wordEndTimings !== null
-          ) {
-            setLrcGenWordEndTimings(
-              data.wordEndTimings as Record<number, number[]>,
-            )
-          }
-          if (
-            typeof data.wordSweepTimings === 'object' &&
-            data.wordSweepTimings !== null
-          ) {
-            setLrcGenWordSweepTimings(
-              data.wordSweepTimings as WordSweepTimingsMap,
-            )
-          }
+        const belongsToCurrentLyrics =
+          data.lyricsIdentity === undefined ||
+          data.lyricsIdentity === getGenProgressIdentity()
+        if (
+          belongsToCurrentLyrics &&
+          Array.isArray(data.lineTimes) &&
+          data.lineTimes.length > 0
+        ) {
+          setLrcGenLineTimes(restoreLineTimes(data.lineTimes, lines.length))
+          setLrcGenWordTimings(
+            restoreWordTimingsMap(data.wordTimings, lines.length),
+          )
+          setLrcGenWordEndTimings(
+            restoreWordTimingsMap(data.wordEndTimings, lines.length),
+          )
+          setLrcGenWordSweepTimings(
+            restoreWordSweepTimingsMap(data.wordSweepTimings, lines.length),
+          )
           if (data.inputMode === 'marker' || data.inputMode === 'tap') {
             setLrcGenInputMode(data.inputMode)
           }
-          resumeLineIdx = Math.min((data.lineIdx as number) ?? 0, lines.length)
-          resumeWordIdx = (data.wordIdx as number) ?? 0
+          resumeLineIdx =
+            typeof data.lineIdx === 'number' && Number.isInteger(data.lineIdx)
+              ? Math.max(0, Math.min(data.lineIdx, lines.length))
+              : 0
+          resumeWordIdx =
+            typeof data.wordIdx === 'number' &&
+            Number.isInteger(data.wordIdx) &&
+            data.wordIdx >= 0
+              ? data.wordIdx
+              : 0
+          touchedLines = restoreTouchedLines({
+            savedTouchedLines: data.touchedLines,
+            lines,
+            lineIdx: resumeLineIdx,
+            wordIdx: resumeWordIdx,
+          })
         }
       }
     } catch {
@@ -1802,13 +1829,20 @@ export function useStemMixerLyricsController(
     })
   }
 
-  const closeMarkerWord = (lineIdx: number, wordIdx: number, time: number) => {
+  const closeMarkerWord = (
+    lineIdx: number,
+    wordIdx: number,
+    time: number,
+  ): number => {
+    const start = lrcGenWordTimings()[lineIdx]?.[wordIdx]
+    const end = start === undefined ? time : Math.max(time, start + 0.001)
     setLrcGenWordEndTimings((prev) => {
       const line = [...(prev[lineIdx] ?? [])]
-      line[wordIdx] = time
+      line[wordIdx] = end
       return { ...prev, [lineIdx]: line }
     })
-    appendMarkerSweep(lineIdx, wordIdx, time, 1)
+    appendMarkerSweep(lineIdx, wordIdx, end, 1)
+    return end
   }
 
   const advanceAfterMarkerLine = (lineIdx: number, lines: string[]) => {
@@ -1860,10 +1894,10 @@ export function useStemMixerLyricsController(
     const safeProgress = Math.max(0, Math.min(1, progress))
 
     if (wordIdx === currentWord + 1) {
-      closeMarkerWord(lineIdx, currentWord, time)
-      setMarkerWordStart(lineIdx, wordIdx, time)
+      const boundary = closeMarkerWord(lineIdx, currentWord, time)
+      setMarkerWordStart(lineIdx, wordIdx, boundary)
       setLrcGenWordIdx(wordIdx)
-      appendMarkerSweep(lineIdx, wordIdx, time, safeProgress)
+      appendMarkerSweep(lineIdx, wordIdx, boundary, safeProgress)
       saveLrcGenProgress()
       return
     }
@@ -1891,8 +1925,8 @@ export function useStemMixerLyricsController(
     let lineIdx = Math.min(lrcGenLineIdx(), lines.length - 1)
     if (lrcGenWordIdx() === 0 && lineIdx > 0) lineIdx--
     while (
-      lineIdx > 0 &&
-      (!lines[lineIdx].trim() || lines[lineIdx].trim() === '~Rest~')
+      lineIdx >= 0 &&
+      (!lines[lineIdx]?.trim() || lines[lineIdx].trim() === '~Rest~')
     ) {
       lineIdx--
     }
@@ -2516,9 +2550,8 @@ export function useStemMixerLyricsController(
       if (!container) return
       const idx = currentLineIdx()
       if (idx < 0) return
-      const lines = container.querySelectorAll('.sm-lyrics-line')
-      if (idx < lines.length) {
-        const activeLine = lines[idx] as HTMLElement
+      const activeLine = findLyricsRow(container, idx)
+      if (activeLine !== null) {
         const containerRect = container.getBoundingClientRect()
         const lineRect = activeLine.getBoundingClientRect()
         if (lineRect.top - containerRect.top < containerRect.height * 0.6) {
@@ -2564,9 +2597,8 @@ export function useStemMixerLyricsController(
       LYRICS_CONTAINER_SELECTOR,
     ) as HTMLElement | null
     if (!container) return
-    const lines = container.querySelectorAll('.sm-lyrics-line')
-    if (idx < lines.length) {
-      const activeLine = lines[idx] as HTMLElement
+    const activeLine = findLyricsRow(container, idx)
+    if (activeLine !== null) {
       const containerRect = container.getBoundingClientRect()
       const lineRect = activeLine.getBoundingClientRect()
       const thresholdBottom = containerRect.top + containerRect.height * 0.57
@@ -2601,9 +2633,8 @@ export function useStemMixerLyricsController(
       '.sm-lyrics-gen-lines',
     ) as HTMLElement | null
     if (!container) return
-    const lineEls = container.querySelectorAll('.sm-lyrics-gen-line')
-    if (idx < lineEls.length) {
-      const activeLine = lineEls[idx] as HTMLElement
+    const activeLine = findLyricsRow(container, idx)
+    if (activeLine !== null) {
       const containerRect = container.getBoundingClientRect()
       const lineRect = activeLine.getBoundingClientRect()
       const thresholdBottom = containerRect.top + containerRect.height * 0.6
