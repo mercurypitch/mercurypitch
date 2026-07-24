@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   closeExport: vi.fn(),
   createPlaylist: vi.fn(),
   deletePlaylist: vi.fn(),
+  getPlaylists: vi.fn(),
   renamePlaylist: vi.fn(),
   startPlaylist: vi.fn(),
 }))
@@ -38,7 +39,7 @@ vi.mock('../playlist-export-controller', () => ({
 vi.mock('@/stores/karaoke-playlist-store', () => ({
   createPlaylist: mocks.createPlaylist,
   deletePlaylist: mocks.deletePlaylist,
-  getPlaylistsReactive: () => [playlist],
+  getPlaylistsReactive: mocks.getPlaylists,
   renamePlaylist: mocks.renamePlaylist,
   startPlaylist: mocks.startPlaylist,
 }))
@@ -51,9 +52,16 @@ vi.mock('../KaraokePlaylistEditor', () => ({
   KaraokePlaylistEditor: () => <div>Playlist editor</div>,
 }))
 
-describe('KaraokePlaylistGallery export action', () => {
+describe('KaraokePlaylistGallery', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.getPlaylists.mockReturnValue([playlist])
+    mocks.createPlaylist.mockResolvedValue({
+      ...playlist,
+      id: 'playlist-2',
+      name: 'New Playlist',
+      items: [],
+    })
     localStorage.clear()
   })
 
@@ -75,5 +83,27 @@ describe('KaraokePlaylistGallery export action', () => {
       playlistName: 'Friday Set',
       songCount: 1,
     })
+  })
+
+  it('keeps playlist creation available when a set already exists', () => {
+    render(() => <KaraokePlaylistGallery />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Create another playlist' }),
+    )
+
+    expect(mocks.createPlaylist).toHaveBeenCalledWith('New Playlist')
+  })
+
+  it('uses the existing empty-state action without duplicating the header action', () => {
+    mocks.getPlaylists.mockReturnValue([])
+    render(() => <KaraokePlaylistGallery />)
+
+    expect(
+      screen.getByRole('button', { name: 'Create playlist' }),
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Create another playlist' }),
+    ).toBeNull()
   })
 })

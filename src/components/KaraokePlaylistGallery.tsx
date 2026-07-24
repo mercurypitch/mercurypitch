@@ -84,15 +84,34 @@ export const KaraokePlaylistGallery: Component = () => {
 
   return (
     <div class={styles.gallery}>
-      <button class={styles.sectionHeader} onClick={() => setOpen(!open())}>
-        <span class={styles.sectionTitle}>
-          Karaoke Playlists
-          <span class={styles.badge}>{playlists().length}</span>
-        </span>
-        <Show when={open()} fallback={<ChevronDown size={18} />}>
-          <ChevronUp />
+      <div class={styles.sectionHeader}>
+        <button
+          type="button"
+          class={styles.sectionToggle}
+          aria-expanded={open()}
+          onClick={() => setOpen(!open())}
+        >
+          <span class={styles.sectionTitle}>
+            Karaoke Playlists
+            <span class={styles.badge}>{playlists().length}</span>
+          </span>
+          <Show when={open()} fallback={<ChevronDown size={18} />}>
+            <ChevronUp />
+          </Show>
+        </button>
+        <Show when={hasPlaylists()}>
+          <button
+            type="button"
+            class={styles.createPlaylistBtn}
+            aria-label="Create another playlist"
+            title="Create another playlist"
+            onClick={handleCreate}
+          >
+            <Plus size={14} />
+            <span>New</span>
+          </button>
         </Show>
-      </button>
+      </div>
 
       <Show when={open()}>
         <Show
