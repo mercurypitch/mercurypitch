@@ -24,12 +24,19 @@ export const [notifications, setNotifications] = createSignal<Notification[]>(
 
 let _notifId = 0
 
-interface NotificationOptions {
+export interface NotificationOptions {
   /** Replace any existing notification on this channel (see `Notification.channel`). */
   channel?: string
-  /** How long the toast stays up (default 3000 ms). Use for messages the
-   *  user genuinely needs time to read (e.g. billing anomalies). */
+  /** Override how long the toast stays visible. Defaults are intentionally
+   *  longer for warnings and errors so important feedback is not missed. */
   durationMs?: number
+}
+
+const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
+  info: 6000,
+  success: 6000,
+  warning: 9000,
+  error: 10000,
 }
 
 /** Append a notification, first evicting any prior toast sharing its channel. */
@@ -50,7 +57,10 @@ export function showNotification(
 ): void {
   const id = ++_notifId
   pushNotification({ id, message, type, channel: opts?.channel })
-  setTimeout(() => removeNotification(id), opts?.durationMs ?? 3000)
+  setTimeout(
+    () => removeNotification(id),
+    opts?.durationMs ?? DEFAULT_DURATION_MS[type],
+  )
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */
@@ -62,7 +72,7 @@ export function showActionNotification(
 ): number {
   const id = ++_notifId
   pushNotification({ id, message, type, action, channel: opts?.channel })
-  setTimeout(() => removeNotification(id), 6000)
+  setTimeout(() => removeNotification(id), opts?.durationMs ?? 10000)
   return id
 }
 

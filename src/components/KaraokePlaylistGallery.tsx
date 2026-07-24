@@ -6,16 +6,16 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { KaraokePlaylistRecord } from '@/db'
-import { exportKaraokePlaylists } from '@/db/services/session-export-service'
 import { karaokeNightPlaylistUrl } from '@/lib/karaoke-night-link'
 import { createPersistedSignal } from '@/lib/storage'
 import { createPlaylist, deletePlaylist, getPlaylistsReactive, renamePlaylist, startPlaylist, } from '@/stores/karaoke-playlist-store'
-import { showNotification } from '@/stores/notifications-store'
 import { getGroupsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
-import { CheckSmall, ChevronDown, ChevronUp, Download, Pencil, Play, Playlist, Plus, SlidersHorizontal, StageCurtains, Trash2, X, } from './icons'
+import { CheckSmall, ChevronDown, ChevronUp, Download, Loader2, Pencil, Play, Playlist, Plus, SlidersHorizontal, StageCurtains, Trash2, X, } from './icons'
 import { KaraokePlaylistEditor } from './KaraokePlaylistEditor'
 import styles from './KaraokePlaylistGallery.module.css'
+import { createPlaylistExportController } from './playlist-export-controller'
+import { PlaylistExportDialog } from './PlaylistExportDialog'
 
 export const KaraokePlaylistGallery: Component = () => {
   const playlists = () => getPlaylistsReactive()
@@ -25,7 +25,8 @@ export const KaraokePlaylistGallery: Component = () => {
   )
   const [editingId, setEditingId] = createSignal<string | null>(null)
   const [editName, setEditName] = createSignal('')
-  const [exportingId, setExportingId] = createSignal<string | null>(null)
+  const playlistExport = createPlaylistExportController()
+  const exportTask = playlistExport.task
   // Which card has the full editor expanded below it.
   const [expandedId, setExpandedId] = createSignal<string | null>(null)
   // Playlist queued for deletion (drives the confirm modal).
@@ -38,15 +39,6 @@ export const KaraokePlaylistGallery: Component = () => {
     setPendingDelete(null)
   }
 
-  const handleExport = (id: string) => {
-    if (exportingId() !== null) return
-    setExportingId(id)
-    void exportKaraokePlaylists([id])
-      .then(() => showNotification('Karaoke playlist exported', 'success'))
-      .catch(() => showNotification('Export failed', 'error'))
-      .finally(() => setExportingId(null))
-  }
-
   const groupSize = (gid: string) =>
     getGroupsReactive().find((g) => g.id === gid)?.sessionIds.length ?? 0
 
@@ -56,6 +48,14 @@ export const KaraokePlaylistGallery: Component = () => {
       (n, it) => n + (it.kind === 'group' ? groupSize(it.refId) : 1),
       0,
     )
+
+  const handleExport = (playlist: KaraokePlaylistRecord) => {
+    void playlistExport.start({
+      playlistId: playlist.id,
+      playlistName: playlist.name,
+      songCount: songCount(playlist),
+    })
+  }
 
   const singerNames = (pl: KaraokePlaylistRecord) => {
     const names = new Set<string>()
@@ -84,15 +84,34 @@ export const KaraokePlaylistGallery: Component = () => {
 
   return (
     <div class={styles.gallery}>
-      <button class={styles.sectionHeader} onClick={() => setOpen(!open())}>
-        <span class={styles.sectionTitle}>
-          Karaoke Playlists
-          <span class={styles.badge}>{playlists().length}</span>
-        </span>
-        <Show when={open()} fallback={<ChevronDown size={18} />}>
-          <ChevronUp />
+      <div class={styles.sectionHeader}>
+        <button
+          type="button"
+          class={styles.sectionToggle}
+          aria-expanded={open()}
+          onClick={() => setOpen(!open())}
+        >
+          <span class={styles.sectionTitle}>
+            Karaoke Playlists
+            <span class={styles.badge}>{playlists().length}</span>
+          </span>
+          <Show when={open()} fallback={<ChevronDown size={18} />}>
+            <ChevronUp />
+          </Show>
+        </button>
+        <Show when={hasPlaylists()}>
+          <button
+            type="button"
+            class={styles.createPlaylistBtn}
+            aria-label="Create another playlist"
+            title="Create another playlist"
+            onClick={handleCreate}
+          >
+            <Plus size={14} />
+            <span>New</span>
+          </button>
         </Show>
-      </button>
+      </div>
 
       <Show when={open()}>
         <Show
@@ -184,13 +203,33 @@ export const KaraokePlaylistGallery: Component = () => {
                             </button>
                             <button
                               class={styles.iconBtn}
-                              title="Export this playlist + its songs (singers, groups) to a ZIP"
-                              disabled={
-                                pl.items.length === 0 || exportingId() !== null
+                              title={
+                                exportTask()?.playlistId === pl.id
+                                  ? 'Exporting playlist…'
+                                  : 'Export this playlist + its songs (singers, groups) to a ZIP'
                               }
-                              onClick={() => handleExport(pl.id)}
+                              aria-label={
+                                exportTask()?.playlistId === pl.id
+                                  ? `Exporting ${pl.name}`
+                                  : `Export ${pl.name}`
+                              }
+                              aria-busy={
+                                exportTask()?.playlistId === pl.id &&
+                                exportTask()?.status === 'running'
+                                  ? true
+                                  : undefined
+                              }
+                              disabled={
+                                pl.items.length === 0 || exportTask() !== null
+                              }
+                              onClick={() => handleExport(pl)}
                             >
-                              <Download />
+                              <Show
+                                when={exportTask()?.playlistId === pl.id}
+                                fallback={<Download />}
+                              >
+                                <Loader2 />
+                              </Show>
                             </button>
                             <button
                               class={styles.iconBtn}
@@ -267,6 +306,14 @@ export const KaraokePlaylistGallery: Component = () => {
         }
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+      <PlaylistExportDialog
+        open={exportTask() !== null}
+        playlistName={exportTask()?.playlistName ?? ''}
+        songCount={exportTask()?.songCount ?? 0}
+        progress={exportTask()?.progress ?? 0}
+        status={exportTask()?.status ?? 'running'}
+        onClose={playlistExport.close}
       />
     </div>
   )
