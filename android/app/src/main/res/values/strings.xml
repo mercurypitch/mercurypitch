@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Break Glass</string>
+    <string name="title_activity_main">Break Glass</string>
+    <string name="package_name">com.mercurypitch.glass</string>
+    <string name="custom_url_scheme">com.mercurypitch.glass</string>
+</resources>

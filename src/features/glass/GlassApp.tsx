@@ -22,7 +22,7 @@ import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, 
 import type { DemoSound } from '@/lib/demo-audio'
 import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
 import { formatGlassDelta, loadGlassBaseline, saveGlassBaseline, } from '@/lib/glass/baseline'
-import { GLASS_CONFIG } from '@/lib/glass/config'
+import { GLASS_CONFIG, type GlassConfig } from '@/lib/glass/config'
 import { computeShatterTimeline } from '@/lib/glass/fracture'
 import type { RepMetrics } from '@/lib/glass/metrics'
 import { computeEpicness, computeRepMetrics, lockWindowMeanAbs, } from '@/lib/glass/metrics'
@@ -124,7 +124,7 @@ const IDLE_READOUT: LiveReadout = {
   lockRun: 0,
 }
 
-export const GlassApp: Component = () => {
+export const GlassApp: Component<{ config?: GlassConfig }> = (props) => {
   const [session, setSession] = createSignal<GlassSessionState>(
     initialSessionState(),
   )
@@ -962,7 +962,7 @@ export const GlassApp: Component = () => {
         GLASS_CONFIG.calibration.glideSeconds,
       )
       if (!alive()) return
-      const cal = computeTarget(frames)
+      const cal = computeTarget(frames, props.config ?? GLASS_CONFIG)
       const next = dispatch({
         type: 'calibrate-done',
         ok: cal.ok,

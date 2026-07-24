@@ -1,0 +1,142 @@
+/* Break Glass Pro paywall — MercuryPitch palette (dark canvas, Signal Blue).
+   Plain global CSS (imported by Paywall.tsx), matching glass.css's approach. */
+
+.pw-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-bottom)) 16px;
+  background: color-mix(in oklab, #05070c 78%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: pw-fade 160ms ease-out;
+}
+
+.pw-card {
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid #21262d;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #0d1117 0%, #090c10 100%);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 55%);
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+  color: #e6edf3;
+  animation: pw-rise 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.pw-title {
+  margin: 0 0 4px;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.pw-title span {
+  background: linear-gradient(90deg, #58a6ff, #bc8cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pw-sub {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #9aa4af;
+}
+
+.pw-packages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pw-buy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  background: #161b22;
+  color: #e6edf3;
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.pw-buy:hover:not(:disabled) {
+  border-color: #58a6ff;
+  transform: translateY(-1px);
+}
+
+.pw-buy:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.pw-buy-title {
+  font-weight: 600;
+}
+
+.pw-buy-price {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+  color: #58a6ff;
+}
+
+.pw-loading {
+  padding: 24px 0;
+  text-align: center;
+  color: #9aa4af;
+}
+
+.pw-restore,
+.pw-close {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: #9aa4af;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pw-restore {
+  margin-top: 4px;
+  text-decoration: underline;
+}
+
+.pw-close {
+  margin-top: 2px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+@keyframes pw-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pw-rise {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-overlay,
+  .pw-card {
+    animation: none;
+  }
+}

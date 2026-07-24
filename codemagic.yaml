@@ -1,0 +1,101 @@
+# ============================================================
+# Codemagic CI — Break Glass (MercuryPitch, RevenueCat Shipaton 2026)
+# ============================================================
+#
+# Builds the offline web bundle (pnpm build:native), cap-syncs it into the
+# native projects, and produces signed store artifacts — no Mac required.
+#
+# Configure these in the Codemagic UI (they are credentials, not code):
+#   - Variable group `revenuecat`  → VITE_RC_IOS_KEY, VITE_RC_ANDROID_KEY
+#   - Variable group `google_play` → GCLOUD_SERVICE_ACCOUNT_CREDENTIALS (JSON)
+#   - Android → Signing: upload keystore as `break_glass_keystore`
+#   - Integrations → App Store Connect: add API key as `break_glass_asc`
+#   - Wire android/app/build.gradle signingConfig to the CM_* keystore vars
+#     (Codemagic injects CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD /
+#      CM_KEY_ALIAS / CM_KEY_PASSWORD) — see docs/shipaton-native.md.
+
+definitions:
+  scripts:
+    - &install_deps
+      name: Install dependencies (pnpm)
+      script: |
+        corepack enable
+        corepack prepare pnpm@11.12.0 --activate
+        pnpm install --frozen-lockfile
+    - &write_env
+      name: Write RevenueCat keys into .env.native.local
+      script: |
+        printf 'VITE_RC_IOS_KEY=%s\nVITE_RC_ANDROID_KEY=%s\n' \
+          "$VITE_RC_IOS_KEY" "$VITE_RC_ANDROID_KEY" > .env.native.local
+    - &build_web
+      name: Build offline web bundle + cap sync
+      script: |
+        pnpm build:native
+        npx cap sync
+
+workflows:
+  android:
+    name: Break Glass — Android
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      groups:
+        - revenuecat
+        - google_play
+      android_signing:
+        - break_glass_keystore
+      vars:
+        PACKAGE_NAME: com.mercurypitch.glass
+      node: 22
+    scripts:
+      - *install_deps
+      - *write_env
+      - *build_web
+      - name: Build release AAB
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        # Start on `internal`; the first-app 12-tester/14-day closed test and
+        # the promotion to production are driven from the Play Console.
+        track: internal
+        submit_as_draft: true
+
+  ios:
+    name: Break Glass — iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: break_glass_asc
+    environment:
+      groups:
+        - revenuecat
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mercurypitch.glass
+      node: 22
+      xcode: latest
+    scripts:
+      - *install_deps
+      - *write_env
+      - *build_web
+      # Capacitor 8 uses Swift Package Manager (no CocoaPods); `cap sync` above
+      # resolves the plugin packages, and xcodebuild resolves SPM on build.
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
