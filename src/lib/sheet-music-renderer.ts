@@ -405,12 +405,28 @@ export interface SheetMusicRenderInput {
   measuresPerRow?: number
   /** total render width in px (default 960); the overlay maps 1:1 to this */
   width?: number
+  /** Optional engraving palette. The defaults target the view's dark score. */
+  palette?: Partial<SheetMusicPalette>
+}
+
+export interface SheetMusicPalette {
+  /** Foreground notation: notes, stems, beams, ledger lines, rests and ties. */
+  notation: string
+  /** Musical structure: clef, key signature and time signature. */
+  symbols: string
+  /** Background structure: staff lines, barlines and measure numbers. */
+  staff: string
 }
 
 const DEFAULT_W = 960
 const MARGIN = 20
 const ROW_H = 130
 const TOP_PAD = 24
+export const DEFAULT_SHEET_MUSIC_PALETTE: Readonly<SheetMusicPalette> = {
+  notation: '#f4f8ff',
+  symbols: '#c4d1e0',
+  staff: '#71839a',
+}
 
 function makeStaveNote(
   cell: Cell,
@@ -438,6 +454,22 @@ function makeStaveNote(
 
 export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   const { container, melody, key, scaleType } = input
+  const palette: SheetMusicPalette = {
+    ...DEFAULT_SHEET_MUSIC_PALETTE,
+    ...input.palette,
+  }
+  const notationStyle = {
+    fillStyle: palette.notation,
+    strokeStyle: palette.notation,
+  }
+  const symbolStyle = {
+    fillStyle: palette.symbols,
+    strokeStyle: palette.symbols,
+  }
+  const staffStyle = {
+    fillStyle: palette.staff,
+    strokeStyle: palette.staff,
+  }
   const beatsPerBar = Math.max(1, Math.round(input.beatsPerBar ?? 4))
   const measuresPerRow = Math.max(1, Math.round(input.measuresPerRow ?? 4))
   const canvasW = Math.max(360, Math.round(input.width ?? DEFAULT_W))
@@ -479,11 +511,11 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   renderer.resize(canvasW, totalH)
   const ctx = renderer.getContext()
 
-  // Ink follows the active theme (container inherits --text-primary), so the
-  // notation stays legible in both light and dark themes.
-  const ink = window.getComputedStyle(container).color || '#e6edf3'
-  ctx.setFillStyle(ink)
-  ctx.setStrokeStyle(ink)
+  // VexFlow has black defaults for stems and #444 ledger lines. Set an
+  // explicit engraving palette on each element below so every primitive has
+  // the same foreground hierarchy on the permanently dark score surface.
+  ctx.setFillStyle(palette.notation)
+  ctx.setStrokeStyle(palette.notation)
 
   const rowWidth = canvasW - MARGIN * 2
   const signature = KEY_SIGNATURES[keySig]
@@ -545,6 +577,12 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
       if (r === rows.length - 1 && m === rowMeasures.length - 1) {
         stave.setEndBarType(Barline.type.END)
       }
+      stave.setStyle(staffStyle)
+      for (const modifier of stave.getModifiers()) {
+        modifier.setStyle(
+          modifier.getCategory() === 'Barline' ? staffStyle : symbolStyle,
+        )
+      }
       stave.setContext(ctx)
 
       const measureBeats = cells.reduce((a, c) => a + c.beats, 0)
@@ -560,12 +598,22 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
 
       // Beam runs of eighths/shorter within the measure.
       try {
-        beams.push(...Beam.generateBeams(notes))
+        const generatedBeams = Beam.generateBeams(notes)
+        for (const beam of generatedBeams) beam.setStyle(notationStyle)
+        beams.push(...generatedBeams)
       } catch {
         // Beaming is cosmetic; ignore failures on odd groupings.
       }
+      // StaveNote.setStyle reaches noteheads, stems, flags and modifiers.
+      // Ledger lines are drawn outside that child tree and need their own ink.
+      // Apply both after accidental + beam generation because those steps may
+      // add or rebuild child elements.
+      for (const note of notes) {
+        note.setStyle(notationStyle)
+        note.setLedgerLineStyle(notationStyle)
+      }
 
-      stave.draw()
+      stave.drawWithStyle()
       const noteStartX = stave.getNoteStartX()
       const noteEndX = stave.getNoteEndX()
       new Formatter()
@@ -670,27 +718,28 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
   // Draw beams + ties. At a system break VexFlow draws two partial ties so
   // the continuation remains explicit instead of silently disappearing.
   for (const b of beams) b.setContext(ctx).draw()
+  const drawTie = (tie: StaveTie): void => {
+    tie.setStyle(notationStyle).setContext(ctx).draw()
+  }
   for (const t of tiePairs) {
     try {
       if (t.sameRow) {
-        new StaveTie({
-          firstNote: t.from,
-          lastNote: t.to,
-          firstIndexes: [t.fromIndex],
-          lastIndexes: [t.toIndex],
-        })
-          .setContext(ctx)
-          .draw()
+        drawTie(
+          new StaveTie({
+            firstNote: t.from,
+            lastNote: t.to,
+            firstIndexes: [t.fromIndex],
+            lastIndexes: [t.toIndex],
+          }),
+        )
       } else {
-        new StaveTie({
-          firstNote: t.from,
-          firstIndexes: [t.fromIndex],
-        })
-          .setContext(ctx)
-          .draw()
-        new StaveTie({ lastNote: t.to, lastIndexes: [t.toIndex] })
-          .setContext(ctx)
-          .draw()
+        drawTie(
+          new StaveTie({
+            firstNote: t.from,
+            firstIndexes: [t.fromIndex],
+          }),
+        )
+        drawTie(new StaveTie({ lastNote: t.to, lastIndexes: [t.toIndex] }))
       }
     } catch {
       // ignore tie draw failures (edge cases at line breaks)

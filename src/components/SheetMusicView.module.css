@@ -100,11 +100,19 @@
   max-height: var(--sheet-max-h, 72vh);
   overflow: auto;
   padding: 14px 10px 18px;
-  background-color: #111722;
+  background-color: #111925;
   background-image:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(88, 166, 255, 0.055),
+      transparent 52%
+    ),
     linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-size:
+    100% 100%,
+    28px 28px,
+    28px 28px;
   scrollbar-color: color-mix(in srgb, var(--accent) 34%, var(--border))
     transparent;
   scrollbar-width: thin;
@@ -115,7 +123,7 @@
   position: relative;
   flex: 0 0 auto;
   margin-inline: auto;
-  color: #dce5f0;
+  color: #f4f8ff;
 }
 
 .vexHost {
@@ -128,7 +136,7 @@
 }
 
 .vexHost svg :global(text) {
-  fill: currentColor;
+  fill: inherit;
   font-family: var(--font-sans, inherit);
 }
 
