@@ -20,7 +20,7 @@ vi.mock('@/db/services/session-pitch-analysis-service', () => ({
   loadPitchAnalysisFromDb: mocks.loadPitchAnalysis,
 }))
 
-import { AnalysisMobileOverview } from '@/components/AnalysisMobileOverview'
+import { AnalysisMobileOverview, loadMobileAnalysis, } from '@/components/AnalysisMobileOverview'
 
 describe('AnalysisMobileOverview', () => {
   beforeEach(() => {
@@ -88,5 +88,15 @@ describe('AnalysisMobileOverview', () => {
 
     expect(mocks.setActiveTab).toHaveBeenCalledWith('karaoke')
     expect(mocks.loadPitchAnalysis).not.toHaveBeenCalled()
+  })
+
+  it('turns a pitch-cache failure into a recoverable load result', async () => {
+    const load = vi.fn().mockRejectedValue(new Error('IndexedDB failed'))
+
+    await expect(loadMobileAnalysis('session-1', load)).resolves.toEqual({
+      data: null,
+      failed: true,
+    })
+    expect(load).toHaveBeenCalledWith('session-1')
   })
 })

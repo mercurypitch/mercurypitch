@@ -10,12 +10,17 @@ import { setActiveTab } from '@/stores'
 import { currentUvrSession } from '@/stores/uvr-store'
 import styles from './AnalysisMobileOverview.module.css'
 
-type AnalysisLoadState = 'empty' | 'loading' | 'ready'
-
 interface VoiceprintBar {
   x: number
   y: number
   width: number
+}
+
+type AnalysisLoadState = 'empty' | 'loading' | 'ready' | 'error'
+
+interface AnalysisLoadResult {
+  data: SessionPitchData | null
+  failed: boolean
 }
 
 function formatBytes(bytes: number): string {
@@ -78,6 +83,19 @@ function buildVoiceprint(data: SessionPitchData | null): VoiceprintBar[] {
   return bars
 }
 
+export async function loadMobileAnalysis(
+  sessionId: string,
+  load: (
+    id: string,
+  ) => Promise<SessionPitchData | null> = loadPitchAnalysisFromDb,
+): Promise<AnalysisLoadResult> {
+  try {
+    return { data: await load(sessionId), failed: false }
+  } catch {
+    return { data: null, failed: true }
+  }
+}
+
 export const AnalysisMobileOverview: Component = () => {
   const [analysisData, setAnalysisData] = createSignal<SessionPitchData | null>(
     null,
@@ -85,8 +103,7 @@ export const AnalysisMobileOverview: Component = () => {
   const [loadState, setLoadState] = createSignal<AnalysisLoadState>('empty')
   let loadVersion = 0
 
-  createEffect(() => {
-    const sessionId = currentUvrSession()?.sessionId ?? null
+  const loadAnalysis = (sessionId: string | null): void => {
     const version = ++loadVersion
     setAnalysisData(null)
 
@@ -96,13 +113,14 @@ export const AnalysisMobileOverview: Component = () => {
     }
 
     setLoadState('loading')
-    void loadPitchAnalysisFromDb(sessionId).then((data) => {
+    void loadMobileAnalysis(sessionId).then((result) => {
       if (version !== loadVersion) return
-      setAnalysisData(data)
-      setLoadState('ready')
+      setAnalysisData(result.data)
+      setLoadState(result.failed ? 'error' : 'ready')
     })
-  })
+  }
 
+  createEffect(() => loadAnalysis(currentUvrSession()?.sessionId ?? null))
   onCleanup(() => {
     loadVersion++
   })
@@ -248,105 +266,129 @@ export const AnalysisMobileOverview: Component = () => {
                 }
               >
                 <Show
-                  when={summary()}
+                  when={loadState() !== 'error'}
                   fallback={
                     <div class={styles.analysisEmpty}>
                       <p class={styles.analysisEmptyTitle}>
-                        No cached pitch map yet
+                        Pitch map unavailable
                       </p>
                       <p>
-                        In Karaoke, open this song’s pitch tools and run Analyze
-                        vocal. The compact result will be available here next
-                        time you visit.
+                        MercuryPitch could not read this session’s saved
+                        analysis. Try loading it again.
                       </p>
                       <button
                         type="button"
                         class={styles.secondaryAction}
-                        onClick={openKaraoke}
+                        onClick={() =>
+                          loadAnalysis(currentUvrSession()?.sessionId ?? null)
+                        }
                       >
-                        Open pitch tools
+                        Try again
                       </button>
                     </div>
                   }
                 >
-                  {(facts) => (
-                    <>
-                      <div class={styles.voiceprint}>
-                        <div class={styles.voiceprintLabel}>
-                          <span>Detected melody</span>
-                          <span>{facts().coveragePercent}% voiced</span>
-                        </div>
-                        <svg
-                          viewBox="0 0 100 42"
-                          preserveAspectRatio="none"
-                          role="img"
-                          aria-label={`Detected pitch map from ${facts().lowNote} to ${facts().highNote}`}
+                  <Show
+                    when={summary()}
+                    fallback={
+                      <div class={styles.analysisEmpty}>
+                        <p class={styles.analysisEmptyTitle}>
+                          No cached pitch map yet
+                        </p>
+                        <p>
+                          In Karaoke, open this song’s pitch tools and run
+                          Analyze vocal. The compact result will be available
+                          here next time you visit.
+                        </p>
+                        <button
+                          type="button"
+                          class={styles.secondaryAction}
+                          onClick={openKaraoke}
                         >
-                          <defs>
-                            <linearGradient
-                              id="mobile-voiceprint-gradient"
-                              x1="0"
-                              x2="1"
-                            >
-                              <stop offset="0" stop-color="#69e3c2" />
-                              <stop offset=".52" stop-color="#8f82ff" />
-                              <stop offset="1" stop-color="#ec77c5" />
-                            </linearGradient>
-                          </defs>
-                          <For each={voiceprint()}>
-                            {(bar) => (
-                              <rect
-                                x={bar.x}
-                                y={bar.y}
-                                width={bar.width}
-                                height="3.2"
-                                rx="1.6"
-                                fill="url(#mobile-voiceprint-gradient)"
-                              />
-                            )}
-                          </For>
-                        </svg>
-                        <div class={styles.rangeLabels}>
-                          <span>{facts().lowNote}</span>
-                          <span>{facts().rangeSemitones} semitone span</span>
-                          <span>{facts().highNote}</span>
-                        </div>
+                          Open pitch tools
+                        </button>
                       </div>
+                    }
+                  >
+                    {(facts) => (
+                      <>
+                        <div class={styles.voiceprint}>
+                          <div class={styles.voiceprintLabel}>
+                            <span>Detected melody</span>
+                            <span>{facts().coveragePercent}% voiced</span>
+                          </div>
+                          <svg
+                            viewBox="0 0 100 42"
+                            preserveAspectRatio="none"
+                            role="img"
+                            aria-label={`Detected pitch map from ${facts().lowNote} to ${facts().highNote}`}
+                          >
+                            <defs>
+                              <linearGradient
+                                id="mobile-voiceprint-gradient"
+                                x1="0"
+                                x2="1"
+                              >
+                                <stop offset="0" stop-color="#69e3c2" />
+                                <stop offset=".52" stop-color="#8f82ff" />
+                                <stop offset="1" stop-color="#ec77c5" />
+                              </linearGradient>
+                            </defs>
+                            <For each={voiceprint()}>
+                              {(bar) => (
+                                <rect
+                                  x={bar.x}
+                                  y={bar.y}
+                                  width={bar.width}
+                                  height="3.2"
+                                  rx="1.6"
+                                  fill="url(#mobile-voiceprint-gradient)"
+                                />
+                              )}
+                            </For>
+                          </svg>
+                          <div class={styles.rangeLabels}>
+                            <span>{facts().lowNote}</span>
+                            <span>{facts().rangeSemitones} semitone span</span>
+                            <span>{facts().highNote}</span>
+                          </div>
+                        </div>
 
-                      <dl class={styles.metrics}>
-                        <div>
-                          <dt>Clean notes</dt>
-                          <dd>{facts().cleanedNoteCount}</dd>
-                        </div>
-                        <div>
-                          <dt>Voiced time</dt>
-                          <dd>{formatSeconds(facts().voicedSeconds)}</dd>
-                        </div>
-                        <div>
-                          <dt>Detected key</dt>
-                          <dd>{facts().keyLabel}</dd>
-                        </div>
-                        <div>
-                          <dt>Key regions</dt>
-                          <dd>{facts().keyRegionCount}</dd>
-                        </div>
-                      </dl>
+                        <dl class={styles.metrics}>
+                          <div>
+                            <dt>Clean notes</dt>
+                            <dd>{facts().cleanedNoteCount}</dd>
+                          </div>
+                          <div>
+                            <dt>Voiced time</dt>
+                            <dd>{formatSeconds(facts().voicedSeconds)}</dd>
+                          </div>
+                          <div>
+                            <dt>Detected key</dt>
+                            <dd>{facts().keyLabel}</dd>
+                          </div>
+                          <div>
+                            <dt>Key regions</dt>
+                            <dd>{facts().keyRegionCount}</dd>
+                          </div>
+                        </dl>
 
-                      <div class={styles.passSummary}>
-                        <CheckCircle />
-                        <div>
-                          <strong>Cleanup pass complete</strong>
-                          <p>
-                            {facts().rawNoteCount} raw fragments became{' '}
-                            {facts().cleanedNoteCount} stable notes
-                            {facts().manualEditCount > 0
-                              ? `, with ${facts().manualEditCount} saved manual edits.`
-                              : '.'}
-                          </p>
+                        <div class={styles.passSummary}>
+                          <CheckCircle />
+                          <div>
+                            <strong>Cleanup pass complete</strong>
+                            <p>
+                              {facts().rawNoteCount} raw fragments became{' '}
+                              {facts().cleanedNoteCount} stable notes
+                              {facts().manualEditCount > 0
+                                ? `, with ${facts().manualEditCount} saved manual edits.`
+                                : '.'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </Show>
                 </Show>
               </Show>
             </section>
