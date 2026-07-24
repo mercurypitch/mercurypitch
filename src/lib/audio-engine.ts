@@ -340,11 +340,12 @@ export class AudioEngine {
     this.uvrProcessor.setSettings(settings)
   }
 
-  /** Resume audio context if suspended (needed after user gesture) */
+  /** Resume a suspended or WebKit-interrupted context after a user gesture. */
   async resume(): Promise<void> {
-    if (this.audioCtx?.state === 'suspended') {
-      await this.audioCtx.resume()
-    }
+    if (!this.audioCtx) return
+    if (this.audioCtx.state === 'running' || this.audioCtx.state === 'closed')
+      return
+    await this.audioCtx.resume()
   }
 
   /** Get the AudioContext */
