@@ -1,10 +1,10 @@
 import type { Accessor, Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { For, Match, Show, Switch } from 'solid-js'
 import { formatFileSize } from '@/lib/audio-accept'
 import type { UvrUploadQueueItem, UvrUploadQueueStatus, } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode } from '@/stores/app-store'
-import { CheckCircle, Clock, Cpu, Loader2, MusicNote, Trash2, X, XCircle, Zap, } from './icons'
+import { CheckCircle, Clock, Cpu, Loader2, MusicNote, SkipForward, Trash2, X, XCircle, Zap, } from './icons'
 
 interface UvrUploadQueueProps {
   items: Accessor<UvrUploadQueueItem[]>
@@ -13,6 +13,8 @@ interface UvrUploadQueueProps {
   costPerSong?: Accessor<number | undefined>
   onStart: () => void
   onRemove: (itemId: string) => void
+  onSkip: (itemId: string) => void
+  onSkipRemaining: () => void
   onCancel: () => void
   onClear: () => void
 }
@@ -23,6 +25,7 @@ const statusLabel: Record<UvrUploadQueueStatus, string> = {
   processing: 'Separating',
   completed: 'In your library',
   skipped: 'Already in library',
+  omitted: 'Skipped',
   error: 'Needs attention',
   cancelled: 'Cancelled',
 }
@@ -32,30 +35,24 @@ function StatusIcon(props: { status: UvrUploadQueueStatus }) {
     <span
       class={`uvr-queue-status-icon uvr-queue-status-icon--${props.status}`}
     >
-      <Show
-        when={props.status === 'checking' || props.status === 'processing'}
-        fallback={
-          <Show
-            when={props.status === 'completed'}
-            fallback={
-              <Show
-                when={props.status === 'error' || props.status === 'cancelled'}
-                fallback={
-                  <Show when={props.status === 'skipped'} fallback={<Clock />}>
-                    <CheckCircle />
-                  </Show>
-                }
-              >
-                <XCircle />
-              </Show>
-            }
-          >
-            <CheckCircle />
-          </Show>
-        }
-      >
-        <Loader2 />
-      </Show>
+      <Switch fallback={<Clock />}>
+        <Match
+          when={props.status === 'checking' || props.status === 'processing'}
+        >
+          <Loader2 />
+        </Match>
+        <Match
+          when={props.status === 'completed' || props.status === 'skipped'}
+        >
+          <CheckCircle />
+        </Match>
+        <Match when={props.status === 'omitted'}>
+          <SkipForward />
+        </Match>
+        <Match when={props.status === 'error' || props.status === 'cancelled'}>
+          <XCircle />
+        </Match>
+      </Switch>
     </span>
   )
 }
@@ -74,18 +71,26 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
       .length
   const cancelledCount = () =>
     props.items().filter((item) => item.status === 'cancelled').length
+  const omittedCount = () =>
+    props.items().filter((item) => item.status === 'omitted').length
   const errorCount = () =>
     props.items().filter((item) => item.status === 'error').length
   const allFinished = () =>
     props.items().length > 0 && terminalCount() === props.items().length
   const finishedTitle = () => {
     if (cancelledCount() === props.items().length) return 'Processing cancelled'
-    if (errorCount() > 0) {
-      return `${completedCount()} added · ${errorCount()} need attention`
-    }
+    if (omittedCount() === props.items().length) return 'Queue skipped'
+    const summary = [`${completedCount()} added`]
+    if (omittedCount() > 0) summary.push(`${omittedCount()} skipped`)
+    if (cancelledCount() > 0) summary.push(`${cancelledCount()} cancelled`)
+    if (errorCount() > 0) summary.push(`${errorCount()} need attention`)
+    if (summary.length > 1) return summary.join(' · ')
     return `${completedCount()} added to your library`
   }
   const finishedNote = () => {
+    if (omittedCount() > 0 && cancelledCount() === 0 && errorCount() === 0) {
+      return 'Stopped after the current song. Skipped songs were not processed.'
+    }
     if (cancelledCount() > 0) {
       return 'Cancelled cleanly. Close this queue to choose new songs or processing options.'
     }
@@ -112,6 +117,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
       if (
         item.status === 'completed' ||
         item.status === 'skipped' ||
+        item.status === 'omitted' ||
         item.status === 'error' ||
         item.status === 'cancelled'
       )
@@ -188,15 +194,30 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
                   </div>
                 </Show>
               </div>
-              <Show when={item.status === 'queued' && !props.running()}>
-                <button
-                  class="uvr-queue-row-action"
-                  onClick={() => props.onRemove(item.id)}
-                  aria-label={`Remove ${item.file.name} from queue`}
-                  title="Remove from queue"
+              <Show when={item.status === 'queued'}>
+                <Show
+                  when={props.running()}
+                  fallback={
+                    <button
+                      class="uvr-queue-row-action"
+                      onClick={() => props.onRemove(item.id)}
+                      aria-label={`Remove ${item.file.name} from queue`}
+                      title="Remove from queue"
+                    >
+                      <X />
+                    </button>
+                  }
                 >
-                  <X />
-                </button>
+                  <button
+                    class="uvr-queue-row-action uvr-queue-row-action--skip"
+                    onClick={() => props.onSkip(item.id)}
+                    aria-label={`Skip ${item.file.name}`}
+                    title="Skip this song"
+                  >
+                    <SkipForward />
+                    <span>Skip</span>
+                  </button>
+                </Show>
               </Show>
             </li>
           )}
@@ -215,14 +236,29 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
             }
           >
             <span class="uvr-queue-live-dot" aria-hidden="true" />
-            {queuedCount()} still waiting
+            <Show
+              when={queuedCount() > 0}
+              fallback="Finishing the current song · no songs waiting"
+            >
+              {queuedCount()} still waiting
+            </Show>
           </Show>
         </div>
         <div class="uvr-queue-actions">
           <Show when={props.running() && hasActiveItem() && !allFinished()}>
+            <Show when={queuedCount() > 0}>
+              <button
+                class="uvr-queue-button uvr-queue-button--stop"
+                onClick={() => props.onSkipRemaining()}
+                title="Let this song finish and skip every waiting song"
+              >
+                <SkipForward /> Stop after current
+              </button>
+            </Show>
             <button
               class="uvr-queue-button uvr-queue-button--danger"
               onClick={() => props.onCancel()}
+              title="Cancel this song, then continue with the next waiting song"
             >
               <X /> Cancel current
             </button>
