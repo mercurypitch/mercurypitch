@@ -10,7 +10,9 @@ import { For, onCleanup, onMount } from 'solid-js'
 import { CheckSmall, Merge, RotateCcw, Split, Trash2 } from '@/components/icons'
 import styles from './StemMixerEditToolbar.module.css'
 
-interface StemMixerEditToolbarProps {
+export interface StemMixerEditToolbarProps {
+  embedded?: boolean
+  showDone?: boolean
   pitchView: 'edited' | 'original' | 'both'
   setPitchView: (v: 'edited' | 'original' | 'both') => void
   hasEdits: boolean
@@ -45,6 +47,7 @@ export const StemMixerEditToolbar: Component<StemMixerEditToolbarProps> = (
   return (
     <div
       class={styles.bar}
+      classList={{ [styles.embedded]: props.embedded === true }}
       data-testid="stem-edit-toolbar"
       role="toolbar"
       aria-label="Pitch note editing"
@@ -129,14 +132,16 @@ export const StemMixerEditToolbar: Component<StemMixerEditToolbarProps> = (
         {props.hasSelection ? 'Drag to move / resize / retune' : 'Click a note'}
       </span>
 
-      <button
-        type="button"
-        class={styles.done}
-        title="Done editing"
-        onClick={() => props.onDone()}
-      >
-        <CheckSmall size={15} /> Done
-      </button>
+      {props.showDone !== false && (
+        <button
+          type="button"
+          class={styles.done}
+          title="Done editing"
+          onClick={() => props.onDone()}
+        >
+          <CheckSmall size={15} /> Done
+        </button>
+      )}
     </div>
   )
 }

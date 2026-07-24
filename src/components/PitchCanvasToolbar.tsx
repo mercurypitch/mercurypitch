@@ -4,6 +4,7 @@
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { Show } from 'solid-js'
+import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 
 export interface PitchCanvasToolbarProps {
   showNoteLabels: Accessor<boolean>
@@ -110,7 +111,7 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
           title={
             props.showMicLine?.() === true
               ? 'Hide your mic pitch line'
-              : 'Show your mic pitch line (red)'
+              : 'Show your mic pitch line (violet)'
           }
         >
           <svg
@@ -118,7 +119,7 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
             height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#ff6b8a"
+            stroke={PITCH_VISUAL_COLORS.singer}
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -135,14 +136,14 @@ export const PitchCanvasToolbar: Component<PitchCanvasToolbarProps> = (
           title={
             props.showUserNoteLabels?.() === true
               ? 'Hide the notes you sang'
-              : 'Show the notes you sang on your outlines'
+              : 'Show labels on your violet note layer'
           }
         >
           <svg
             width="12"
             height="12"
             viewBox="0 0 24 24"
-            fill="#ff6b8a"
+            fill={PITCH_VISUAL_COLORS.singer}
             stroke="none"
           >
             <ellipse cx="7" cy="19" rx="4" ry="3" />

@@ -13,6 +13,8 @@ import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
+import type { PitchCanvasScale } from './pitch-canvas-visuals'
+import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
 import type { EditableNote } from './pitch-edit-model'
 import type { PitchNote } from './types'
 
@@ -379,69 +381,102 @@ export const useStemMixerCanvasController = (
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) return
+    if (h <= 0 || w <= 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-    // Background comes from .sm-canvas CSS (var(--bg-primary)) so the
-    // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
 
     if (!deps.vocal().buffer) {
-      ctx.fillStyle = '#484f58'
-      ctx.font = '12px monospace'
+      ctx.fillStyle = '#6f7a8e'
+      ctx.font = '12px ui-monospace, monospace'
       ctx.textAlign = 'center'
       ctx.fillText('No vocal stem — pitch display unavailable', w / 2, h / 2)
       ctx.textAlign = 'start'
       return
     }
 
-    const notes = [
-      'C',
-      'C#',
-      'D',
-      'D#',
-      'E',
-      'F',
-      'F#',
-      'G',
-      'G#',
-      'A',
-      'A#',
-      'B',
-    ]
-    const rowH = h / 13
-    ctx.strokeStyle = '#21262d'
-    ctx.lineWidth = 0.5
-    for (let i = 0; i <= 13; i++) {
-      const y = i * rowH
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(w, y)
-      ctx.stroke()
-    }
-
-    ctx.fillStyle = '#484f58'
-    ctx.font = '9px monospace'
-    for (let i = 0; i < 12; i++) {
-      const note = notes[11 - i]
-      // Align the lane label with the row its pills occupy. Pills/dots/lines
-      // are placed at `(11 - pitchClass) * rowH` (no extra row), so the label
-      // must not add one either — otherwise a natural A appears one lane up in
-      // the row labelled "A#".
-      ctx.fillText(note, 3, i * rowH + rowH * 0.65)
-    }
+    const pitchHistory = deps.getPitchHistory()
+    const micHistory = deps.getMicPitchHistory()
+    const editable = deps.editableNotes?.() ?? []
+    const editor = deps.editMode?.() === true
+    const scaleValues =
+      editable.length > 0
+        ? editable.map((note) => note.midi)
+        : [...pitchHistory, ...micHistory].map((note) =>
+            freqToMidi(note.frequency),
+          )
+    const scale = createPitchCanvasScale(editor, scaleValues)
+    const rowH = h / scale.rowCount
+    const midiToY = (midi: number): number =>
+      midiToPitchCanvasRow(midi, scale) * rowH + rowH * 0.5
 
     const winStart = deps.windowStart()
-    const winEnd = winStart + deps.windowDuration()
     const winDur = deps.windowDuration()
+    if (winDur <= 0) return
+    const winEnd = winStart + winDur
+
+    // Pitch lanes become a true octave-aware piano roll in Pitch Studio.
+    for (let row = 0; row < scale.rowCount; row++) {
+      const midi = scale.octaveAware ? scale.maxMidi - row : 11 - row
+      const note = midiToNote(midi)
+      if (note.name.includes('#')) {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.025)'
+        ctx.fillRect(0, row * rowH, w, rowH)
+      }
+      ctx.strokeStyle =
+        scale.octaveAware && note.name === 'C' ? '#344056' : '#202838'
+      ctx.lineWidth = note.name === 'C' ? 0.9 : 0.55
+      ctx.beginPath()
+      ctx.moveTo(0, row * rowH)
+      ctx.lineTo(w, row * rowH)
+      ctx.stroke()
+
+      const showLabel = !scale.octaveAware || rowH >= 15 || note.name === 'C'
+      if (showLabel) {
+        ctx.fillStyle =
+          scale.octaveAware && note.name === 'C' ? '#93a4bd' : '#5f6c80'
+        ctx.font = `${note.name === 'C' ? '600 ' : ''}9px ui-monospace, monospace`
+        ctx.fillText(
+          scale.octaveAware ? `${note.name}${note.octave}` : note.name,
+          5,
+          row * rowH + Math.min(rowH * 0.68, rowH - 2),
+        )
+      }
+    }
+    ctx.strokeStyle = '#202838'
+    ctx.beginPath()
+    ctx.moveTo(0, h - 0.5)
+    ctx.lineTo(w, h - 0.5)
+    ctx.stroke()
+
+    // Vertical ruler uses musical-editor density rather than arbitrary pixels.
+    const timeSteps = [0.5, 1, 2, 5, 10, 15, 30, 60]
+    const targetStep = winDur / Math.max(5, Math.floor(w / 130))
+    const timeStep =
+      timeSteps.find((candidate) => candidate >= targetStep) ??
+      timeSteps[timeSteps.length - 1]
+    const firstGuide = Math.ceil(winStart / timeStep) * timeStep
+    ctx.font = '9px ui-monospace, monospace'
+    for (let time = firstGuide; time <= winEnd; time += timeStep) {
+      const x = ((time - winStart) / winDur) * w
+      ctx.strokeStyle = 'rgba(96, 116, 145, 0.2)'
+      ctx.lineWidth = 0.6
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, h)
+      ctx.stroke()
+      if (editor) {
+        ctx.fillStyle = '#66758b'
+        ctx.fillText(`${time.toFixed(timeStep < 1 ? 1 : 0)}s`, x + 4, 12)
+      }
+    }
 
     const toDetections = (history: PitchNote[]): PitchDetection[] =>
-      history.map((p) => ({
-        midi: freqToMidi(p.frequency),
-        noteName: p.noteName,
-        timeSec: p.time,
+      history.map((pitch) => ({
+        midi: freqToMidi(pitch.frequency),
+        noteName: pitch.noteName,
+        timeSec: pitch.time,
       }))
 
     const drawPill = (
@@ -449,145 +484,154 @@ export const useStemMixerCanvasController = (
       x2: number,
       y: number,
       pillH: number,
-      r: number,
-    ) => {
+      radius: number,
+    ): void => {
       const pillW = Math.max(x2 - x1, 3)
       ctx.beginPath()
-      ctx.moveTo(x1 + r, y)
-      ctx.lineTo(x1 + pillW - r, y)
-      ctx.arcTo(x1 + pillW, y, x1 + pillW, y + r, r)
-      ctx.lineTo(x1 + pillW, y + pillH - r)
-      ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - r, y + pillH, r)
-      ctx.lineTo(x1 + r, y + pillH)
-      ctx.arcTo(x1, y + pillH, x1, y + pillH - r, r)
-      ctx.lineTo(x1, y + r)
-      ctx.arcTo(x1, y, x1 + r, y, r)
+      ctx.moveTo(x1 + radius, y)
+      ctx.lineTo(x1 + pillW - radius, y)
+      ctx.arcTo(x1 + pillW, y, x1 + pillW, y + radius, radius)
+      ctx.lineTo(x1 + pillW, y + pillH - radius)
+      ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - radius, y + pillH, radius)
+      ctx.lineTo(x1 + radius, y + pillH)
+      ctx.arcTo(x1, y + pillH, x1, y + pillH - radius, radius)
+      ctx.lineTo(x1, y + radius)
+      ctx.arcTo(x1, y, x1 + radius, y, radius)
       ctx.closePath()
     }
 
     const drawMergedNotes = (
       merged: MergedNote[],
       fillStyle: string,
-      strokeStyle?: string,
+      strokeStyle: string,
       userNotes = false,
-    ) => {
-      for (const n of merged) {
-        if (n.endSec < winStart || n.startSec > winEnd) continue
-        const noteIdx = notes.indexOf(n.noteName.replace(/\d/g, ''))
-        if (noteIdx < 0) continue
-        const x1 = Math.max(0, ((n.startSec - winStart) / winDur) * w)
-        const x2 = Math.min(w, ((n.endSec - winStart) / winDur) * w)
-        const y = (11 - noteIdx) * rowH + rowH * 0.16
+    ): void => {
+      for (const note of merged) {
+        if (note.endSec < winStart || note.startSec > winEnd) continue
+        const x1 = Math.max(0, ((note.startSec - winStart) / winDur) * w)
+        const x2 = Math.min(w, ((note.endSec - winStart) / winDur) * w)
+        const y = midiToY(note.midi) - rowH * 0.34
         const pillH = rowH * 0.68
-        const r = Math.min(pillH / 2, 3)
+        const radius = Math.min(pillH / 2, editor ? 5 : 3)
         const pillW = Math.max(x2 - x1, 3)
-        drawPill(x1, x2, y, pillH, r)
+        drawPill(x1, x2, y, pillH, radius)
         ctx.fillStyle = fillStyle
         ctx.fill()
-        if (strokeStyle !== undefined) {
-          ctx.strokeStyle = strokeStyle
-          ctx.lineWidth = 1.5
-          ctx.setLineDash([3, 3])
-          ctx.stroke()
-          ctx.setLineDash([])
-        }
-        // Label the note the user actually sang, just above their red outline.
+        ctx.strokeStyle = strokeStyle
+        ctx.lineWidth = userNotes ? 1.6 : 1.2
+        ctx.stroke()
+
+        const pitch = midiToNote(note.midi)
+        const noteLabel = scale.octaveAware
+          ? `${pitch.name}${pitch.octave}`
+          : note.noteName
         if (userNotes && deps.showUserNoteLabels() && pillW > 14) {
-          ctx.fillStyle = '#ff8fa3'
-          ctx.font = 'bold 8px monospace'
+          ctx.fillStyle = PITCH_VISUAL_COLORS.singerBright
+          ctx.font = '700 8px ui-monospace, monospace'
           ctx.textAlign = 'left'
-          ctx.fillText(n.noteName, x1 + 2, Math.max(7, y - 2))
+          ctx.fillText(noteLabel, x1 + 2, Math.max(9, y - 3))
           ctx.textAlign = 'start'
         }
-        if (pillW > 24) {
-          const showNotes = deps.showNoteLabels()
-          const showLyrics = deps.showLyricLabels()
-          const baseY = y + pillH / 2 + 3
+        if (pillW <= 24) continue
 
-          if (showNotes) {
-            ctx.fillStyle = '#fff'
-            ctx.font = 'bold 9px monospace'
+        const showNotes = deps.showNoteLabels() || editor
+        const showLyrics = deps.showLyricLabels()
+        const baseY = y + pillH / 2 + 3
+        if (showNotes) {
+          ctx.fillStyle = '#fff8eb'
+          ctx.font = '700 9px ui-monospace, monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(noteLabel, x1 + pillW / 2, baseY)
+          ctx.textAlign = 'start'
+        }
+
+        if (showLyrics) {
+          const words = deps
+            .alignedWords()
+            .filter(
+              (word) =>
+                word.midi != null &&
+                word.startSec < note.endSec &&
+                word.endSec > note.startSec,
+            )
+          if (words.length > 0) {
+            const wordText = words
+              .map((word) => word.word)
+              .join(' ')
+              .slice(0, 20)
+            ctx.font = '7px ui-monospace, monospace'
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.72)'
             ctx.textAlign = 'center'
-            ctx.fillText(n.noteName, x1 + pillW / 2, baseY)
+            ctx.fillText(
+              wordText,
+              x1 + pillW / 2,
+              showNotes ? baseY + 10 : baseY,
+            )
             ctx.textAlign = 'start'
-          }
-
-          // Draw aligned word
-          if (showLyrics) {
-            const words = deps
-              .alignedWords()
-              .filter(
-                (w) =>
-                  w.midi != null &&
-                  w.startSec < n.endSec &&
-                  w.endSec > n.startSec,
-              )
-            if (words.length > 0) {
-              const wordText = words
-                .map((w) => w.word)
-                .join(' ')
-                .slice(0, 20)
-              ctx.font = '7px monospace'
-              ctx.fillStyle = 'rgba(255,255,255,0.7)'
-              ctx.textAlign = 'center'
-              const finalY = showNotes ? baseY + 10 : baseY
-              ctx.fillText(wordText, x1 + pillW / 2, finalY)
-              ctx.textAlign = 'start'
-            }
           }
         }
       }
     }
 
-    const vocalPills = mergeConsecutiveNotes(
-      toDetections(deps.getPitchHistory()),
+    const vocalPills = mergeConsecutiveNotes(toDetections(pitchHistory))
+    drawMergedNotes(
+      vocalPills,
+      PITCH_VISUAL_COLORS.referenceFill,
+      PITCH_VISUAL_COLORS.referenceBright,
     )
-    drawMergedNotes(vocalPills, 'rgba(245, 158, 11, 0.5)')
 
-    const micHistory = deps.getMicPitchHistory()
     if (deps.micActive() && micHistory.length > 0) {
       const micPills = mergeConsecutiveNotes(toDetections(micHistory))
-      drawMergedNotes(micPills, 'transparent', '#ff6b8a', true)
+      drawMergedNotes(
+        micPills,
+        PITCH_VISUAL_COLORS.singerFill,
+        PITCH_VISUAL_COLORS.singerBright,
+        true,
+      )
     }
 
-    // Continuous red line tracking the user's live mic pitch (togglable),
-    // overlaid on the vocal-stem line so the user can follow how closely they
-    // match. Breaks across silent gaps and octave jumps so it doesn't draw
-    // misleading vertical streaks.
+    // The singer owns one visual language: violet notes plus a continuous
+    // violet trace. Silence and implausible jumps break the trace cleanly.
     if (deps.showMicLine() && deps.micActive() && micHistory.length > 1) {
-      ctx.strokeStyle = 'rgba(255, 107, 138, 0.9)'
-      ctx.lineWidth = 1.5
+      ctx.save()
+      ctx.strokeStyle = PITCH_VISUAL_COLORS.singer
+      ctx.shadowColor = PITCH_VISUAL_COLORS.singer
+      ctx.shadowBlur = 5
+      ctx.lineWidth = editor ? 2.2 : 1.8
       ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
       ctx.beginPath()
       let drawing = false
       let prevTime = 0
       let prevY = 0
-      for (const p of micHistory) {
-        if (p.frequency <= 0 || p.time < winStart || p.time > winEnd) {
+      for (const pitch of micHistory) {
+        if (
+          pitch.frequency <= 0 ||
+          pitch.time < winStart ||
+          pitch.time > winEnd
+        ) {
           drawing = false
           continue
         }
-        const x = ((p.time - winStart) / winDur) * w
-        const pc = ((freqToMidi(p.frequency) % 12) + 12) % 12
-        const y = (11 - pc) * rowH + rowH * 0.5
-        const gap = p.time - prevTime > 0.18
-        const jump = Math.abs(y - prevY) > rowH * 6
+        const x = ((pitch.time - winStart) / winDur) * w
+        const y = midiToY(freqToMidi(pitch.frequency))
+        const gap = pitch.time - prevTime > 0.18
+        const jump = Math.abs(y - prevY) > rowH * 8
         if (!drawing || gap || jump) {
           ctx.moveTo(x, y)
           drawing = true
         } else {
           ctx.lineTo(x, y)
         }
-        prevTime = p.time
+        prevTime = pitch.time
         prevY = y
       }
       ctx.stroke()
+      ctx.restore()
     }
 
-    // Diff bars — vertical sung↔reference connectors. Debug visual: useful
-    // for inspecting the scoring, noisy while actually singing, so gated
-    // behind an off-by-default toolbar toggle.
-    const pitchHistory = deps.getPitchHistory()
+    // Optional accuracy connectors retain their score colors; their vertical
+    // endpoints now follow the same octave-aware geometry as the notes.
     const TOLERANCE_CENTS = 50
     if (
       deps.showScoreDiffBars() &&
@@ -595,41 +639,28 @@ export const useStemMixerCanvasController = (
       pitchHistory.length > 0 &&
       micHistory.length > 0
     ) {
-      let vi = 0
-      let mi = 0
+      let vocalIndex = 0
+      let micIndex = 0
       let lastDiffX = -999
-      while (vi < pitchHistory.length && mi < micHistory.length) {
-        const vt = pitchHistory[vi].time
-        const mt = micHistory[mi].time
-
-        if (Math.abs(vt - mt) < 0.06) {
-          const vocalNoteIdx = notes.indexOf(
-            pitchHistory[vi].noteName.replace(/\d/g, ''),
-          )
-          const micNoteIdx = notes.indexOf(
-            micHistory[mi].noteName.replace(/\d/g, ''),
-          )
+      while (vocalIndex < pitchHistory.length && micIndex < micHistory.length) {
+        const vocal = pitchHistory[vocalIndex]
+        const singer = micHistory[micIndex]
+        if (Math.abs(vocal.time - singer.time) < 0.06) {
           if (
-            vocalNoteIdx >= 0 &&
-            micNoteIdx >= 0 &&
-            vt >= winStart &&
-            vt <= winEnd
+            vocal.time >= winStart &&
+            vocal.time <= winEnd &&
+            vocal.frequency > 0 &&
+            singer.frequency > 0
           ) {
-            const x = ((vt - winStart) / winDur) * w
+            const x = ((vocal.time - winStart) / winDur) * w
             if (x - lastDiffX > 3) {
               lastDiffX = x
-              const vocalY = (11 - vocalNoteIdx) * rowH + rowH * 0.5
-              const micY = (11 - micNoteIdx) * rowH + rowH * 0.5
-              // Octave-agnostic, matching the scoring: the lanes are pitch
-              // classes, so an octave-down singer should read as green here.
+              const vocalY = midiToY(freqToMidi(vocal.frequency))
+              const micY = midiToY(freqToMidi(singer.frequency))
               const centsOff = foldCentsToOctave(
-                1200 *
-                  Math.log2(
-                    micHistory[mi].frequency / pitchHistory[vi].frequency,
-                  ),
+                1200 * Math.log2(singer.frequency / vocal.frequency),
               )
               const absOff = Math.abs(centsOff)
-
               ctx.strokeStyle =
                 absOff <= TOLERANCE_CENTS
                   ? 'rgba(96, 208, 128, 0.55)'
@@ -643,93 +674,99 @@ export const useStemMixerCanvasController = (
               ctx.stroke()
             }
           }
-          vi++
-          mi++
-        } else if (vt < mt) {
-          vi++
+          vocalIndex++
+          micIndex++
+        } else if (vocal.time < singer.time) {
+          vocalIndex++
         } else {
-          mi++
+          micIndex++
         }
       }
     }
 
-    // Current pitch highlight
-    const cp = deps.currentPitch()
-    if (cp && cp.frequency > 0) {
-      const elapsedTime = deps.elapsed()
-      const noteIdx = notes.indexOf(cp.noteName.replace(/\d/g, ''))
-      if (noteIdx >= 0 && elapsedTime >= winStart && elapsedTime <= winEnd) {
-        const x = ((elapsedTime - winStart) / winDur) * w
-        const y = (11 - noteIdx) * rowH + rowH * 0.5
-
-        ctx.shadowColor = '#f59e0b'
-        ctx.shadowBlur = 12
-        ctx.fillStyle = '#f59e0b'
-        ctx.beginPath()
-        ctx.arc(x, y, 6, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.shadowBlur = 0
-
-        ctx.fillStyle = '#fff'
-        ctx.font = 'bold 11px monospace'
-        ctx.fillText(
-          `${cp.noteName}${cp.octave}`,
-          Math.min(x + 10, w - 40),
-          y + 4,
-        )
-      }
+    const current = deps.currentPitch()
+    const elapsedTime = deps.elapsed()
+    if (
+      current &&
+      current.frequency > 0 &&
+      elapsedTime >= winStart &&
+      elapsedTime <= winEnd
+    ) {
+      const x = ((elapsedTime - winStart) / winDur) * w
+      const y = midiToY(freqToMidi(current.frequency))
+      ctx.shadowColor = PITCH_VISUAL_COLORS.reference
+      ctx.shadowBlur = 14
+      ctx.fillStyle = PITCH_VISUAL_COLORS.reference
+      ctx.beginPath()
+      ctx.arc(x, y, editor ? 6.5 : 5.5, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.shadowBlur = 0
+      ctx.fillStyle = '#fff8eb'
+      ctx.font = '700 11px ui-monospace, monospace'
+      ctx.fillText(
+        `${current.noteName}${current.octave}`,
+        Math.min(x + 10, w - 42),
+        y + 4,
+      )
     }
 
-    // 'Both' view: ghost the original (algorithm) notes behind the edited ones.
     if (deps.pitchView?.() === 'both') {
-      const base = deps.baseNotes?.() ?? []
       ctx.save()
-      ctx.strokeStyle = 'rgba(160,160,170,0.55)'
+      ctx.strokeStyle = 'rgba(178, 190, 208, 0.58)'
       ctx.lineWidth = 1
-      ctx.setLineDash([2, 2])
-      for (const note of base) {
+      ctx.setLineDash([3, 3])
+      for (const note of deps.baseNotes?.() ?? []) {
         if (note.endBeat < winStart || note.startBeat > winEnd) continue
-        const pc = ((note.midi % 12) + 12) % 12
         const x1 = Math.max(0, ((note.startBeat - winStart) / winDur) * w)
         const x2 = Math.min(w, ((note.endBeat - winStart) / winDur) * w)
-        const yTop = (11 - pc) * rowH + rowH * 0.16
+        const yTop = midiToY(note.midi) - rowH * 0.34
         ctx.strokeRect(x1, yTop, Math.max(2, x2 - x1), rowH * 0.68)
       }
       ctx.restore()
     }
 
-    // Edit mode: outline every editable note (subtle) and the selected one
-    // (bright) so the user can see what's selectable / selected.
-    if (deps.editMode?.() === true) {
-      const selId = deps.selectedNoteId?.() ?? null
-      const editable = deps.editableNotes?.() ?? []
+    if (editor) {
+      const selectedId = deps.selectedNoteId?.() ?? null
       for (const note of editable) {
         if (note.endBeat < winStart || note.startBeat > winEnd) continue
-        const pc = ((note.midi % 12) + 12) % 12
         const x1 = Math.max(0, ((note.startBeat - winStart) / winDur) * w)
         const x2 = Math.min(w, ((note.endBeat - winStart) / winDur) * w)
-        const yTop = (11 - pc) * rowH + rowH * 0.12
-        const selected = note.id === selId
-        ctx.strokeStyle = selected ? '#f59e0b' : 'rgba(245,158,11,0.4)'
+        const yTop = midiToY(note.midi) - rowH * 0.39
+        const selected = note.id === selectedId
+        ctx.strokeStyle = selected
+          ? PITCH_VISUAL_COLORS.selection
+          : 'rgba(255, 193, 90, 0.58)'
         ctx.lineWidth = selected ? 2 : 1
-        ctx.setLineDash(selected ? [] : [3, 2])
-        ctx.strokeRect(x1, yTop, Math.max(2, x2 - x1), rowH * 0.76)
+        ctx.setLineDash(selected ? [] : [4, 3])
+        ctx.strokeRect(x1, yTop, Math.max(2, x2 - x1), rowH * 0.78)
         ctx.setLineDash([])
+        if (selected) {
+          ctx.fillStyle = PITCH_VISUAL_COLORS.selection
+          ctx.fillRect(x1 - 2, yTop + rowH * 0.19, 4, rowH * 0.4)
+          ctx.fillRect(x2 - 2, yTop + rowH * 0.19, 4, rowH * 0.4)
+        }
       }
     }
 
-    // Playhead
-    const elapsedTime = deps.elapsed()
     if (elapsedTime >= winStart && elapsedTime <= winEnd) {
-      const px = ((elapsedTime - winStart) / winDur) * w
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 4])
+      const x = ((elapsedTime - winStart) / winDur) * w
+      ctx.save()
+      ctx.strokeStyle = PITCH_VISUAL_COLORS.playhead
+      ctx.shadowColor = PITCH_VISUAL_COLORS.playhead
+      ctx.shadowBlur = editor ? 8 : 4
+      ctx.lineWidth = editor ? 1.5 : 1
       ctx.beginPath()
-      ctx.moveTo(px, 0)
-      ctx.lineTo(px, h)
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, h)
       ctx.stroke()
-      ctx.setLineDash([])
+      ctx.fillStyle = PITCH_VISUAL_COLORS.playhead
+      ctx.beginPath()
+      ctx.moveTo(x - 5, 0)
+      ctx.lineTo(x + 5, 0)
+      ctx.lineTo(x, 7)
+      ctx.closePath()
+      ctx.fill()
+      ctx.restore()
     }
   }
 
@@ -915,6 +952,7 @@ export const useStemMixerCanvasController = (
     zone: 'body' | 'start' | 'end'
     startTime: number
     startRow: number
+    scale: PitchCanvasScale
   } | null = null
 
   /** Convert clientX on the overview canvas to a time value. */
@@ -951,7 +989,7 @@ export const useStemMixerCanvasController = (
   }
 
   /** Edit mode: the editable note under the pointer on the pitch lane, if any.
-   *  Matches by time span and pitch-class row (11 - midi%12). */
+   *  Pitch Studio uses octave-aware rows, matching the rendered piano roll. */
   const getEditableNoteAtPoint = (
     clientX: number,
     clientY: number,
@@ -961,12 +999,15 @@ export const useStemMixerCanvasController = (
     if (editable === undefined || editable.length === 0) return null
     const rect = canvas.getBoundingClientRect()
     const time = clientXToTime(clientX, canvas)
-    const rowH = rect.height / 13
+    const scale = createPitchCanvasScale(
+      true,
+      editable.map((note) => note.midi),
+    )
+    const rowH = rect.height / scale.rowCount
     const row = Math.floor((clientY - rect.top) / rowH)
     for (const note of editable) {
       if (time < note.startBeat || time > note.endBeat) continue
-      const pc = ((note.midi % 12) + 12) % 12
-      if (11 - pc === row) return note
+      if (midiToPitchCanvasRow(note.midi, scale) === row) return note
     }
     return null
   }
@@ -992,12 +1033,20 @@ export const useStemMixerCanvasController = (
             : Math.abs(e.clientX - x2) <= EDIT_EDGE_PX
               ? 'end'
               : 'body'
-        const startRow = Math.floor((e.clientY - rect.top) / (rect.height / 13))
+        const editable = deps.editableNotes?.() ?? []
+        const scale = createPitchCanvasScale(
+          true,
+          editable.map((editableNote) => editableNote.midi),
+        )
+        const startRow = Math.floor(
+          (e.clientY - rect.top) / (rect.height / scale.rowCount),
+        )
         editDrag = {
           note,
           zone,
           startTime: clientXToTime(e.clientX, canvas),
           startRow,
+          scale,
         }
         deps.onSelectNote?.(note.id)
         deps.onBeginEdit?.()
@@ -1038,7 +1087,7 @@ export const useStemMixerCanvasController = (
     // Pitch edit drag in progress: live-preview move / resize / retune.
     if (editDrag !== null) {
       e.preventDefault()
-      const { note, zone, startTime, startRow } = editDrag
+      const { note, zone, startTime, startRow, scale } = editDrag
       const time = clientXToTime(e.clientX, canvas)
       if (zone === 'start') {
         deps.onPreviewEdit?.(note, {
@@ -1050,18 +1099,20 @@ export const useStemMixerCanvasController = (
         })
       } else {
         // Body: move in time and retune by the number of lanes the pointer has
-        // moved (preserves the grab offset; same octave — the pitch-class lane
-        // can't represent octave changes).
+        // moved. Pitch Studio rows are octave-aware, so the note can cross an
+        // octave boundary without being folded back to its pitch class.
         const dt = time - startTime
         const rect = canvas.getBoundingClientRect()
-        const row = Math.floor((e.clientY - rect.top) / (rect.height / 13))
-        const pc0 = ((note.midi % 12) + 12) % 12
-        const pc = Math.max(0, Math.min(11, pc0 - (row - startRow)))
-        const octave = Math.floor(note.midi / 12)
+        const row = Math.floor(
+          (e.clientY - rect.top) / (rect.height / scale.rowCount),
+        )
+        const rowDelta = row - startRow
+        const startMidi = pitchCanvasRowToMidi(startRow, scale)
+        const nextMidi = pitchCanvasRowToMidi(startRow + rowDelta, scale)
         deps.onPreviewEdit?.(note, {
           startBeat: note.startBeat + dt,
           endBeat: note.endBeat + dt,
-          midi: octave * 12 + pc,
+          midi: note.midi + (nextMidi - startMidi),
         })
       }
       return

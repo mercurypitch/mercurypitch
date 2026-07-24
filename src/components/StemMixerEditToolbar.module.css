@@ -20,6 +20,18 @@
   justify-content: center;
 }
 
+.embedded {
+  position: static;
+  z-index: auto;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  backdrop-filter: none;
+}
+
 .divider {
   width: 1px;
   align-self: stretch;
