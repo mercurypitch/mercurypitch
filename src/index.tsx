@@ -14,8 +14,10 @@ import { App } from './App'
 
 import { setupConsent } from '@/components/ConsentBanner'
 import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/services/auth-service'
+import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 
+installChunkLoadRecovery()
 initGlobalErrorHandlers()
 // Boot Consent Mode + the cookie banner before anything ad-related loads.
 setupConsent()
