@@ -92,9 +92,22 @@
 
 @media (max-width: 600px) {
   .banner {
-    bottom: 12px;
+    /* Sit above the mobile tab bar so buttons (Resend / Close) stay
+       reachable. --tabbar-total includes the safe-area inset; +12px
+       gives breathing room above the bar's float gap. */
+    bottom: calc(var(--tabbar-total, 54px) + 12px);
+    left: 10px;
+    right: 10px;
+    transform: none;
+    max-width: none;
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
+
+    /* Cap height so long email addresses don't push the close button
+       past the top of the viewport. */
+    max-height: calc(100dvh - var(--tabbar-total, 54px) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
