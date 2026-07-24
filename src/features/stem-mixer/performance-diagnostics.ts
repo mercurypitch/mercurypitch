@@ -34,6 +34,24 @@ export interface StemMixerPerformanceDiagnostics {
   measure: <T>(stage: StemMixerPerformanceStage, work: () => T) => T
 }
 
+export function hasStemMixerPerformanceActivity(
+  snapshot: StemMixerPerformanceSnapshot,
+): boolean {
+  return (
+    snapshot.animation.frames > 0 ||
+    Object.values(snapshot.stages).some((stage) => stage.calls > 0)
+  )
+}
+
+export function selectLatestActivePerformanceSnapshot(
+  current: StemMixerPerformanceSnapshot,
+  previous: StemMixerPerformanceSnapshot | null,
+): StemMixerPerformanceSnapshot {
+  return hasStemMixerPerformanceActivity(current) || previous === null
+    ? current
+    : previous
+}
+
 interface MutableStagePerformance {
   calls: number
   totalMs: number

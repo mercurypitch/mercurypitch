@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createStemMixerPerformanceDiagnostics } from '@/features/stem-mixer/performance-diagnostics'
+import { createStemMixerPerformanceDiagnostics, selectLatestActivePerformanceSnapshot, } from '@/features/stem-mixer/performance-diagnostics'
 
 describe('Stem Mixer performance diagnostics', () => {
   it('reports animation cadence, long frames, and measured stages', () => {
@@ -59,5 +59,19 @@ describe('Stem Mixer performance diagnostics', () => {
 
     diagnostics.reset(40)
     expect(diagnostics.snapshot(50).animation.frames).toBe(0)
+  })
+
+  it('keeps the last active sample when the final window is empty', () => {
+    const diagnostics = createStemMixerPerformanceDiagnostics()
+    diagnostics.start(0)
+    diagnostics.recordFrame(0)
+    diagnostics.recordFrame(20)
+    const active = diagnostics.snapshot(20)
+
+    diagnostics.reset(20)
+    const empty = diagnostics.stop(50)
+
+    expect(selectLatestActivePerformanceSnapshot(empty, active)).toBe(active)
+    expect(selectLatestActivePerformanceSnapshot(active, empty)).toBe(active)
   })
 })

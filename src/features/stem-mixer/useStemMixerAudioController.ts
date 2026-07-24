@@ -18,7 +18,7 @@ import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
-import { createStemMixerPerformanceDiagnostics } from './performance-diagnostics'
+import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -236,6 +236,7 @@ export const useStemMixerAudioController = (
   )
   const performanceDiagnostics = createStemMixerPerformanceDiagnostics()
   let performanceLogTimer: ReturnType<typeof setInterval> | null = null
+  let lastActivePerformanceSnapshot: StemMixerPerformanceSnapshot | null = null
   const vocalTimeData = new Float32Array(PITCH_FFT_SIZE)
   let micTimeData: Float32Array<ArrayBuffer> | null = null
   // Stable callbacks avoid allocating four new closures per animation frame
@@ -284,16 +285,24 @@ export const useStemMixerAudioController = (
   }
 
   const getPerformanceSnapshot = (): StemMixerPerformanceSnapshot =>
-    performanceDiagnostics.snapshot()
+    selectLatestActivePerformanceSnapshot(
+      performanceDiagnostics.snapshot(),
+      lastActivePerformanceSnapshot,
+    )
 
   const startPerformanceDebug = (): void => {
     if (performanceLogTimer !== null) clearInterval(performanceLogTimer)
+    lastActivePerformanceSnapshot = null
     performanceDiagnostics.start()
     console.info(
       '[StemMixer performance] Recording. Call window.__stemMixerDebug.performance.stop() to finish.',
     )
     performanceLogTimer = setInterval(() => {
-      logPerformanceSnapshot(performanceDiagnostics.snapshot())
+      const snapshot = performanceDiagnostics.snapshot()
+      if (hasStemMixerPerformanceActivity(snapshot)) {
+        lastActivePerformanceSnapshot = snapshot
+      }
+      logPerformanceSnapshot(snapshot)
       performanceDiagnostics.reset()
     }, PERFORMANCE_LOG_INTERVAL_MS)
   }
@@ -303,10 +312,15 @@ export const useStemMixerAudioController = (
       clearInterval(performanceLogTimer)
       performanceLogTimer = null
     }
-    const snapshot = performanceDiagnostics.enabled()
+    const currentSnapshot = performanceDiagnostics.enabled()
       ? performanceDiagnostics.stop()
       : performanceDiagnostics.snapshot()
+    const snapshot = selectLatestActivePerformanceSnapshot(
+      currentSnapshot,
+      lastActivePerformanceSnapshot,
+    )
     logPerformanceSnapshot(snapshot)
+    lastActivePerformanceSnapshot = null
     return snapshot
   }
 
