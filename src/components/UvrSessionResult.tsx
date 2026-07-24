@@ -3,10 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
+import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
+import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
@@ -198,6 +200,26 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const hasSelection = () => selectedStems().size > 0
+  const needsRecovery = () => {
+    const status = session()?.status
+    return status === 'cancelled' || status === 'interrupted'
+  }
+  const [retainedOriginal] = createResource(
+    () => (needsRecovery() ? props.sessionId : undefined),
+    (sessionId) => loadRetainedOriginalSong(sessionId),
+  )
+  const recoveryAvailability = (): RecoveryAvailability => {
+    if (retainedOriginal.loading) return 'checking'
+    return retainedOriginal() === true ? 'available' : 'unavailable'
+  }
+  const canProcessAgain = () => {
+    return canRetryUvrSession(
+      session()?.status,
+      session()?.originalFile !== undefined,
+      recoveryAvailability(),
+      props.onRetry !== undefined,
+    )
+  }
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
@@ -360,6 +382,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             if (st === 'error') return session()?.error ?? 'Processing failed'
             if (st === 'interrupted')
               return session()?.error ?? 'Interrupted — please retry'
+            if (st === 'cancelled') return 'Cancelled before completion'
             if (st === 'finalizing') return 'Saving stems…'
             if (st === 'completed') return 'Completed'
             if (st === 'processing')
@@ -674,12 +697,40 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </div>
       </Show>
 
+      <Show when={needsRecovery()}>
+        <div
+          class="session-recovery"
+          classList={{
+            'session-recovery--unavailable':
+              recoveryAvailability() === 'unavailable',
+          }}
+        >
+          <span class="session-recovery-icon" aria-hidden="true">
+            <Show
+              when={recoveryAvailability() !== 'checking'}
+              fallback={<Loader2 />}
+            >
+              <Show
+                when={recoveryAvailability() === 'available'}
+                fallback={<XCircle />}
+              >
+                <RotateCcw />
+              </Show>
+            </Show>
+          </span>
+          <div class="session-recovery-copy">
+            <strong>{getRecoveryCopy(recoveryAvailability()).title}</strong>
+            <span>{getRecoveryCopy(recoveryAvailability()).description}</span>
+          </div>
+        </div>
+      </Show>
+
       {/* Actions */}
       <Show
         when={
           session()?.status === 'completed' ||
-          session()?.status === 'error' ||
-          session()?.status === 'processing'
+          session()?.status === 'processing' ||
+          canProcessAgain()
         }
       >
         <div class="session-result-actions">
@@ -732,8 +783,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               onRerunHq={props.onRerunHq}
             />
           </Show>
-          <Show when={session()?.status === 'error' && session()?.originalFile}>
+          <Show when={canProcessAgain()}>
             <button
+              type="button"
               class="session-result-btn session-result-btn-primary"
               disabled={props.disabled}
               onClick={(e) => {
@@ -741,7 +793,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 props.onRetry?.(props.sessionId)
               }}
             >
-              <RotateCcw /> Retry
+              <RotateCcw />{' '}
+              {session()?.status === 'error' ? 'Retry' : 'Process again'}
             </button>
           </Show>
         </div>

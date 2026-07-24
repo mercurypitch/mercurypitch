@@ -47,6 +47,7 @@ describe('UvrSessionResult Component', () => {
     sessionId: 'session-123',
     onView: vi.fn(),
     onExport: vi.fn(),
+    onRetry: vi.fn(),
     onClose: vi.fn(),
   }
 
@@ -145,6 +146,28 @@ describe('UvrSessionResult Component', () => {
       render(() => <UvrSessionResult {...defaultProps} />)
 
       expect(screen.getByText('Processing failed')).toBeInTheDocument()
+    })
+
+    it('does not promise recovery while checking local storage', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'cancelled',
+        progress: 0,
+        originalFile: {
+          name: 'missing-song.mp3',
+          size: 1024 * 50000,
+          mimeType: 'audio/mpeg',
+        },
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      expect(screen.getByText('Checking original upload')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /Process again/ }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Delete session')).toBeEnabled()
     })
 
     it('shows processing time in status bar', () => {

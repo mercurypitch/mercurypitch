@@ -1964,6 +1964,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                             return
                           }
                           retryUvrSession(sessionId)
+                          setCurrentView('processing')
                           void handleProcessStart(sessionId, s?.processingMode)
                         }}
                         onReindexStem={(sessionId) => {
