@@ -93,6 +93,80 @@ describe('UVR upload queue', () => {
     expect(queue.items().map((item) => item.file.name)).toEqual(['song-2.mp3'])
   })
 
+  it('skips an individual waiting song without interrupting the active song', async () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(3))
+    const processed: string[] = []
+    let releaseFirst: () => void = () => undefined
+    const firstActive = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+
+    const run = queue.run(async (item) => {
+      processed.push(item.file.name)
+      if (item.file.name === 'song-1.mp3') {
+        await firstActive
+      }
+      return { status: 'completed' }
+    })
+
+    await vi.waitFor(() => expect(queue.items()[0].status).toBe('checking'))
+    expect(queue.skipQueued(queue.items()[1].id)).toBe(true)
+    expect(queue.skipQueued(queue.items()[0].id)).toBe(false)
+    releaseFirst()
+    await run
+
+    expect(processed).toEqual(['song-1.mp3', 'song-3.mp3'])
+    expect(queue.items().map((item) => item.status)).toEqual([
+      'completed',
+      'omitted',
+      'completed',
+    ])
+    expect(queue.items()[1].message).toBe('Skipped by you')
+  })
+
+  it('stops after the active song by skipping every waiting song', async () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(4))
+    const processed: string[] = []
+    let releaseActive: () => void = () => undefined
+    const active = new Promise<void>((resolve) => {
+      releaseActive = resolve
+    })
+
+    const run = queue.run(async (item) => {
+      processed.push(item.file.name)
+      await active
+      return { status: 'completed' }
+    })
+
+    await vi.waitFor(() => expect(queue.items()[0].status).toBe('checking'))
+    expect(queue.skipRemaining()).toBe(3)
+    releaseActive()
+    await run
+
+    expect(processed).toEqual(['song-1.mp3'])
+    expect(queue.items().map((item) => item.status)).toEqual([
+      'completed',
+      'omitted',
+      'omitted',
+      'omitted',
+    ])
+    expect(queue.isRunning()).toBe(false)
+  })
+
+  it('does not retain skipped rows when no batch is running', () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(2))
+
+    expect(queue.skipQueued(queue.items()[0].id)).toBe(false)
+    expect(queue.skipRemaining()).toBe(0)
+    expect(queue.items().map((item) => item.status)).toEqual([
+      'queued',
+      'queued',
+    ])
+  })
+
   it('unlocks after cancellation while the worker is still preparing', async () => {
     const queue = createUvrUploadQueue(15, deterministicIds())
     queue.enqueue(songs(2))
