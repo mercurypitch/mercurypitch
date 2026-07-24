@@ -23,6 +23,16 @@ export type WeekTheme =
   | 'tone'
   | 'recovery'
 
+export const PATH_THEME_LABEL: Record<WeekTheme, string> = {
+  foundations: 'Foundations',
+  breath: 'Breath',
+  range: 'Range',
+  ear: 'Ear',
+  agility: 'Agility',
+  tone: 'Tone',
+  recovery: 'Recovery',
+}
+
 export interface ResourceLink {
   title: string
   url: string

@@ -1,0 +1,532 @@
+.section {
+  --dest-void: #0d1117;
+  --dest-glass: #1c2128;
+  --dest-chrome: #e6edf3;
+  --dest-blue: #58a6ff;
+  --dest-aqua: #2dd4bf;
+  --dest-violet: #bc8cff;
+
+  margin-top: 34px;
+}
+
+.heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.72fr);
+  align-items: end;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+
+.headingEyebrow {
+  margin: 0 0 6px;
+  font-family: Inter, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dest-aqua);
+}
+
+.heading h2 {
+  margin: 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(1.55rem, 4vw, 2.15rem);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.headingCopy {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.gallery {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  isolation: isolate;
+}
+
+.mercuryRail {
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  width: calc(100% + 20px);
+  height: calc(100% + 20px);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.mercuryRail path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--dest-chrome) 30%, transparent);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.36));
+}
+
+.cover {
+  position: relative;
+  min-height: 286px;
+  padding: 0;
+  overflow: hidden;
+  appearance: none;
+  border: 1px solid rgba(195, 204, 214, 0.18);
+  border-radius: 22px;
+  background: var(--dest-void);
+  color: var(--dest-chrome);
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.22),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+  transform: translateZ(0);
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cover:hover {
+  border-color: rgba(195, 204, 214, 0.44);
+  box-shadow:
+    0 28px 76px rgba(0, 0, 0, 0.32),
+    0 0 38px rgba(88, 166, 255, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.06);
+  transform: translateY(-3px);
+}
+
+.cover:focus-visible {
+  outline: 3px solid var(--dest-aqua);
+  outline-offset: 3px;
+}
+
+.practice,
+.analysis {
+  grid-column: span 7;
+}
+
+.karaoke,
+.exercises {
+  grid-column: span 5;
+}
+
+.coverShade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 18, 0.02) 18%,
+    rgba(8, 12, 18, 0.26) 48%,
+    rgba(8, 12, 18, 0.96) 84%
+  );
+}
+
+.coverCopy {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px;
+}
+
+.coverEyebrow {
+  font-family: Inter, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--dest-aqua);
+}
+
+.coverTitle {
+  margin-top: 5px;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(1.55rem, 3.6vw, 2.15rem);
+  font-weight: 650;
+  letter-spacing: -0.028em;
+  line-height: 1;
+  text-wrap: balance;
+  color: #f4f8fd;
+}
+
+.coverDescription {
+  max-width: 32rem;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #b8c3cf;
+}
+
+.coverAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #f4f8fd;
+}
+
+.coverAction svg {
+  transition: transform 180ms ease;
+}
+
+.cover:hover .coverAction svg {
+  transform: translateX(4px);
+}
+
+/* Practice Engine: a code-native Mercury stage, not generic background art. */
+.practice {
+  background:
+    radial-gradient(
+      75% 62% at 50% 7%,
+      rgba(88, 166, 255, 0.24),
+      transparent 68%
+    ),
+    radial-gradient(45% 48% at 18% 36%, rgba(188, 140, 255, 0.12), transparent),
+    linear-gradient(155deg, #111927 0%, #090d15 70%);
+}
+
+.practiceVisual,
+.karaokeVisual,
+.exercisesVisual,
+.analysisVisual {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.practiceVisual::after {
+  content: '';
+  position: absolute;
+  right: 6%;
+  bottom: 72px;
+  left: 6%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(230, 237, 243, 0.36),
+    transparent
+  );
+  box-shadow: 0 -3px 22px rgba(88, 166, 255, 0.25);
+}
+
+.practiceHalo {
+  position: absolute;
+  top: -58%;
+  left: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(230, 237, 243, 0.28);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 22px rgba(88, 166, 255, 0.03),
+    0 0 80px rgba(88, 166, 255, 0.2);
+  transform: translateX(-50%);
+}
+
+.practiceInstruments {
+  position: absolute;
+  top: 5px;
+  left: 3%;
+  width: 94%;
+  height: 68%;
+  overflow: visible;
+  filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.45));
+}
+
+.practicePitchLine {
+  opacity: 0.68;
+}
+
+.microphone {
+  transform-origin: 282px 188px;
+  transition: transform 220ms ease;
+}
+
+.cover:hover .microphone {
+  transform: translate(236px, 23px);
+}
+
+.guitar,
+.piano {
+  transition: opacity 180ms ease;
+}
+
+.cover:hover .guitar,
+.cover:hover .piano {
+  opacity: 0.92;
+}
+
+.practiceMascot {
+  position: absolute;
+  top: 14px;
+  right: 21px;
+  opacity: 0.88;
+}
+
+.visualNugget {
+  position: absolute;
+  padding: 5px 9px;
+  border: 1px solid rgba(230, 237, 243, 0.16);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #dbe4ee;
+  background: rgba(13, 17, 23, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.practiceNugget {
+  top: 18px;
+  left: 20px;
+}
+
+/* Karaoke: existing, light stage asset with all interface copy kept in code. */
+.karaoke {
+  background: #12090e;
+}
+
+.karaokeVisual {
+  background:
+    linear-gradient(180deg, rgba(14, 5, 10, 0.02), rgba(14, 5, 10, 0.18)),
+    url('/karaoke-night-stage.webp') center 35% / cover no-repeat;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cover:hover .karaokeVisual {
+  transform: scale(1.025);
+}
+
+.karaokeLight {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  width: 44%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(255, 224, 184, 0.18),
+    transparent 68%
+  );
+  transform: translateX(-50%);
+}
+
+.karaokeNuggets {
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  left: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.karaokeNuggets span {
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 235, 220, 0.19);
+  border-radius: 999px;
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  color: #f6dfd5;
+  background: rgba(22, 7, 13, 0.54);
+  backdrop-filter: blur(8px);
+}
+
+/* Exercises: an authored interval/pitch/timing score. */
+.exercises {
+  background:
+    radial-gradient(
+      70% 90% at 22% 0%,
+      rgba(45, 212, 191, 0.14),
+      transparent 70%
+    ),
+    linear-gradient(150deg, #0e1b21, #091015 72%);
+}
+
+.exercisesVisual svg {
+  position: absolute;
+  top: 3px;
+  left: 3%;
+  width: 94%;
+  height: 70%;
+}
+
+.staff path {
+  stroke: #8aa3ad;
+  stroke-width: 1;
+}
+
+.exerciseCurve {
+  stroke-dasharray: 620;
+  stroke-dashoffset: 0;
+}
+
+.exerciseNotes {
+  filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.42));
+}
+
+.timingTicks {
+  stroke: #a8b6bd;
+  stroke-width: 1.6;
+  opacity: 0.62;
+}
+
+.intervalText {
+  fill: #c9d8de;
+  font-family: Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.exerciseNugget {
+  top: 17px;
+  left: 19px;
+}
+
+/* Analysis: harmonics and pitch evidence, intentionally quieter than a chart UI. */
+.analysis {
+  background:
+    radial-gradient(
+      55% 80% at 76% 8%,
+      rgba(188, 140, 255, 0.17),
+      transparent 70%
+    ),
+    linear-gradient(148deg, #101520, #0a0d14 72%);
+}
+
+.analysisGrid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(144, 159, 180, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(144, 159, 180, 0.16) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 75%);
+}
+
+.analysisVisual svg {
+  position: absolute;
+  top: 0;
+  left: 2%;
+  width: 96%;
+  height: 68%;
+}
+
+.harmonics path {
+  stroke: #c5d0dc;
+  stroke-width: 1.4;
+  opacity: 0.24;
+}
+
+.analysisTrace {
+  filter: drop-shadow(0 0 7px rgba(45, 212, 191, 0.5));
+}
+
+.analysisMetrics {
+  position: absolute;
+  top: 17px;
+  right: 19px;
+  display: flex;
+  gap: 7px;
+}
+
+.analysisMetrics span {
+  padding: 5px 8px;
+  border: 1px solid rgba(230, 237, 243, 0.14);
+  border-radius: 7px;
+  font-size: 0.56rem;
+  font-variant-numeric: tabular-nums;
+  color: #aebdcb;
+  background: rgba(9, 12, 19, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.analysisMetrics b {
+  color: #e6edf3;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .heading {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .headingCopy {
+    max-width: 34rem;
+  }
+
+  .practice,
+  .karaoke,
+  .exercises,
+  .analysis {
+    grid-column: 1 / -1;
+  }
+
+  .cover {
+    min-height: 274px;
+  }
+
+  .mercuryRail {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    margin-top: 28px;
+  }
+
+  .gallery {
+    gap: 12px;
+  }
+
+  .cover {
+    min-height: 252px;
+    border-radius: 18px;
+  }
+
+  .coverCopy {
+    padding: 20px;
+  }
+
+  .coverDescription {
+    max-width: 19rem;
+  }
+
+  .practiceMascot {
+    right: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover,
+  .coverAction svg,
+  .microphone,
+  .karaokeVisual {
+    transition: none;
+  }
+
+  .cover:hover {
+    transform: none;
+  }
+}

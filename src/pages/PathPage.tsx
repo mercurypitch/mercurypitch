@@ -9,26 +9,17 @@
 // cage: completed weeks stay replayable and freeform practice counts.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import type { PathWeek } from '@/features/path/path-content'
-import { ASCENT_WEEKS, DAYS_PER_WEEK } from '@/features/path/path-content'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { ASCENT_WEEKS, DAYS_PER_WEEK, PATH_THEME_LABEL, } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { devMarkPracticeDay, pathComplete, pathFreeRoam, pathProgress, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
+import { pathView } from '@/features/path/path-view'
 import { PathOrb } from '@/features/path/PathOrb'
-import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { PathViewToggle } from '@/features/path/PathViewToggle'
+import { PathWeekGuide } from '@/features/path/PathWeekGuide'
+import { PlainPathView } from '@/features/path/PlainPathView'
 import { IS_DEV } from '@/lib/defaults'
-import { startExercise } from '@/stores/ui-store'
 import styles from './PathPage.module.css'
-
-const THEME_LABEL: Record<PathWeek['theme'], string> = {
-  foundations: 'Foundations',
-  breath: 'Breath',
-  range: 'Range',
-  ear: 'Ear',
-  agility: 'Agility',
-  tone: 'Tone',
-  recovery: 'Recovery',
-}
 
 /** Serpentine horizontal offset per week order (multiplies --amp). */
 const OFFSETS: Record<number, number> = {
@@ -45,7 +36,6 @@ const OFFSETS: Record<number, number> = {
 const DESCENDING = [...ASCENT_WEEKS].sort((a, b) => b.order - a.order)
 
 const PathPage: Component = () => {
-  const routine = useDailyRoutine()
   const [expanded, setExpanded] = createSignal<number | null>(null)
   const [trailPath, setTrailPath] = createSignal('')
 
@@ -90,7 +80,12 @@ const PathPage: Component = () => {
     setTrailPath(d)
   }
 
-  onMount(() => {
+  // The Ascent branch can mount after a persisted Plain Path preference.
+  // Key setup to the selected view so its observers initialize every time the
+  // cosmic branch is entered, not only on the first PathPage mount.
+  createEffect(() => {
+    if (pathView() !== 'ascent') return
+
     drawTrail()
     // Redraw as layout settles. rAF alone can be throttled/paused in some
     // embeds, so also retry on plain timers — the first attempt often runs
@@ -121,13 +116,6 @@ const PathPage: Component = () => {
     }
   })
 
-  /** Start (or resume) today's themed session from the week card. */
-  function practiseToday(): void {
-    routine.startOrResume()
-    const current = routine.currentSegment()
-    if (current !== null) launchRoutineSegment(current)
-  }
-
   const stateLabel = (state: WeekState, order: number): string => {
     if (state === 'complete') return 'Complete'
     if (state === 'active') return `Day ${ringFill(order)} of ${DAYS_PER_WEEK}`
@@ -145,297 +133,176 @@ const PathPage: Component = () => {
           : styles.nameLocked
 
   return (
-    <div class={`${styles.page} path-trail`} ref={pageEl}>
-      <div class={styles.backdrop} aria-hidden="true" />
+    <Show when={pathView() === 'ascent'} fallback={<PlainPathView />}>
+      <div class={`${styles.page} path-trail`} ref={pageEl}>
+        <div class={styles.backdrop} aria-hidden="true" />
+        <div class={styles.viewSwitch}>
+          <PathViewToggle />
+        </div>
 
-      {/* Plain <div>, not <header>/<footer>: the app applies global flex
+        {/* Plain <div>, not <header>/<footer>: the app applies global flex
           layout to those elements (the top nav) which squashes the hero. */}
-      <div class={styles.hero}>
-        <div class={styles.eyebrow}>MercuryPitch · Guided Path</div>
-        <h1 class={styles.title}>
-          The <em>Ascent</em>
-        </h1>
-        <p class={styles.tagline}>
-          Seven weeks through the craft of singing — one luminous week at a
-          time. Practise ~5 minutes a day and watch each orb fill.
-        </p>
-        <Show when={started() && !finished()}>
-          <p class={styles.progressLine}>
-            Week {currentOrder()} of {ASCENT_WEEKS.length} · {totalDays()}{' '}
-            practice {totalDays() === 1 ? 'day' : 'days'} so far
+        <div class={styles.hero}>
+          <div class={styles.eyebrow}>MercuryPitch · Guided Path</div>
+          <h1 class={styles.title}>
+            The <em>Ascent</em>
+          </h1>
+          <p class={styles.tagline}>
+            Seven weeks through the craft of singing — one luminous week at a
+            time. Practise ~5 minutes a day and watch each orb fill.
           </p>
+          <Show when={started() && !finished()}>
+            <p class={styles.progressLine}>
+              Week {currentOrder()} of {ASCENT_WEEKS.length} · {totalDays()}{' '}
+              practice {totalDays() === 1 ? 'day' : 'days'} so far
+            </p>
+          </Show>
+        </div>
+
+        <Show when={IS_DEV}>
+          <div class={styles.devbar}>
+            <span class={styles.devTag}>dev</span>
+            <label class={styles.devToggle}>
+              <input
+                type="checkbox"
+                checked={pathFreeRoam()}
+                onChange={(e) => setPathFreeRoam(e.currentTarget.checked)}
+              />
+              Free-roam
+            </label>
+            <button onClick={() => devMarkPracticeDay()}>+ day</button>
+            <button onClick={() => startAscent()}>begin</button>
+            <button onClick={() => resetAscent()}>reset</button>
+          </div>
         </Show>
-      </div>
 
-      <Show when={IS_DEV}>
-        <div class={styles.devbar}>
-          <span class={styles.devTag}>dev</span>
-          <label class={styles.devToggle}>
-            <input
-              type="checkbox"
-              checked={pathFreeRoam()}
-              onChange={(e) => setPathFreeRoam(e.currentTarget.checked)}
-            />
-            Free-roam
-          </label>
-          <button onClick={() => devMarkPracticeDay()}>+ day</button>
-          <button onClick={() => startAscent()}>begin</button>
-          <button onClick={() => resetAscent()}>reset</button>
-        </div>
-      </Show>
+        <Show when={finished()}>
+          <div class={`${styles.graduation} path-graduation`}>
+            <h2>The Ascent, complete.</h2>
+            <p>
+              Seven weeks, every orb radiant. Your voice has climbed — keep it
+              aloft with the daily session, or replay any week below.
+            </p>
+          </div>
+        </Show>
 
-      <Show when={finished()}>
-        <div class={`${styles.graduation} path-graduation`}>
-          <h2>The Ascent, complete.</h2>
-          <p>
-            Seven weeks, every orb radiant. Your voice has climbed — keep it
-            aloft with the daily session, or replay any week below.
-          </p>
-        </div>
-      </Show>
-
-      <div class={styles.trail} ref={trailEl}>
-        {/* The light-trail, drawn through the orbs' real centres. */}
-        <Show when={trailPath() !== ''}>
-          {/* No viewBox: user units == CSS pixels (1:1), so the path never
+        <div class={styles.trail} ref={trailEl}>
+          {/* The light-trail, drawn through the orbs' real centres. */}
+          <Show when={trailPath() !== ''}>
+            {/* No viewBox: user units == CSS pixels (1:1), so the path never
               stretches when the box resizes — it just redraws through the
               orbs' new centres. */}
-          <svg class={styles.trailSvg} aria-hidden="true">
-            <defs>
-              <linearGradient id="ascent-trail" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stop-color="#f0c674" stop-opacity="0.7" />
-                <stop offset="45%" stop-color="#6d5efc" stop-opacity="0.55" />
-                <stop offset="100%" stop-color="#45d3e8" stop-opacity="0.3" />
-              </linearGradient>
-              <filter
-                id="ascent-trail-blur"
-                x="-20%"
-                y="-5%"
-                width="140%"
-                height="110%"
-              >
-                <feGaussianBlur stdDeviation="4" />
-              </filter>
-            </defs>
-            <path
-              d={trailPath()}
-              fill="none"
-              stroke="url(#ascent-trail)"
-              stroke-width="7"
-              stroke-linecap="round"
-              opacity="0.35"
-              filter="url(#ascent-trail-blur)"
-            />
-            {/* Double ribbon: a fainter parallel line nudged aside. */}
-            <path
-              d={trailPath()}
-              fill="none"
-              stroke="url(#ascent-trail)"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              opacity="0.4"
-              transform="translate(3.5, 0)"
-            />
-            <path
-              d={trailPath()}
-              fill="none"
-              stroke="url(#ascent-trail)"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              opacity="0.85"
-            />
-          </svg>
-        </Show>
-
-        <For each={DESCENDING}>
-          {(week) => {
-            const state = () => weekState(week.order)
-            const isOpen = () => openOrder() === week.order
-            const off = OFFSETS[week.order] ?? 0
-            const labelLeft = off > 0 // orb sits right of centre → label left
-            return (
-              <>
-                <div
-                  class={`${styles.node} ${
-                    state() === 'active' || (!started() && week.order === 1)
-                      ? 'path-orb-current'
-                      : ''
-                  }`}
-                  style={{ '--off': `${off}` }}
+            <svg class={styles.trailSvg} aria-hidden="true">
+              <defs>
+                <linearGradient id="ascent-trail" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="0%" stop-color="#f0c674" stop-opacity="0.7" />
+                  <stop offset="45%" stop-color="#6d5efc" stop-opacity="0.55" />
+                  <stop offset="100%" stop-color="#45d3e8" stop-opacity="0.3" />
+                </linearGradient>
+                <filter
+                  id="ascent-trail-blur"
+                  x="-20%"
+                  y="-5%"
+                  width="140%"
+                  height="110%"
                 >
-                  <button
-                    class={styles.orbBtn}
-                    data-orb-center
-                    onClick={() => setExpanded(isOpen() ? null : week.order)}
-                    aria-expanded={isOpen()}
-                    aria-label={`Week ${week.order}: ${week.title} — ${stateLabel(state(), week.order)}`}
-                  >
-                    <PathOrb
-                      fill={ringFill(week.order)}
-                      state={state()}
-                      theme={week.theme}
-                      size={98}
-                    />
-                  </button>
+                  <feGaussianBlur stdDeviation="4" />
+                </filter>
+              </defs>
+              <path
+                d={trailPath()}
+                fill="none"
+                stroke="url(#ascent-trail)"
+                stroke-width="7"
+                stroke-linecap="round"
+                opacity="0.35"
+                filter="url(#ascent-trail-blur)"
+              />
+              {/* Double ribbon: a fainter parallel line nudged aside. */}
+              <path
+                d={trailPath()}
+                fill="none"
+                stroke="url(#ascent-trail)"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                opacity="0.4"
+                transform="translate(3.5, 0)"
+              />
+              <path
+                d={trailPath()}
+                fill="none"
+                stroke="url(#ascent-trail)"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                opacity="0.85"
+              />
+            </svg>
+          </Show>
+
+          <For each={DESCENDING}>
+            {(week) => {
+              const state = () => weekState(week.order)
+              const isOpen = () => openOrder() === week.order
+              const off = OFFSETS[week.order] ?? 0
+              const labelLeft = off > 0 // orb sits right of centre → label left
+              return (
+                <>
                   <div
-                    class={`${styles.label} ${labelLeft ? styles.labelLeft : styles.labelRight}`}
+                    class={`${styles.node} ${
+                      state() === 'active' || (!started() && week.order === 1)
+                        ? 'path-orb-current'
+                        : ''
+                    }`}
+                    style={{ '--off': `${off}` }}
                   >
-                    <div class={styles.week}>Week {week.order}</div>
-                    <div class={`${styles.name} ${stateClass(state())}`}>
-                      {THEME_LABEL[week.theme]}
-                    </div>
-                    <div class={styles.status}>
-                      {stateLabel(state(), week.order)}
-                    </div>
-                  </div>
-                </div>
-
-                <Show when={isOpen()}>
-                  <div class={`${styles.card} path-week-card`}>
-                    <div class={styles.kicker}>
-                      Week {week.order} · {THEME_LABEL[week.theme]}
-                      <Show when={state() === 'active'}>
-                        {' '}
-                        · Day {ringFill(week.order)} of {DAYS_PER_WEEK}
-                      </Show>
-                    </div>
-                    <h3 class={styles.cardTitle}>{week.title}</h3>
-
-                    <Show
-                      when={state() !== 'locked'}
-                      fallback={
-                        <p class={styles.focus}>
-                          Unlocks after Week {week.order - 1} — every orb opens
-                          in turn as the one before it fills.
-                        </p>
-                      }
+                    <button
+                      class={styles.orbBtn}
+                      data-orb-center
+                      onClick={() => setExpanded(isOpen() ? null : week.order)}
+                      aria-expanded={isOpen()}
+                      aria-label={`Week ${week.order}: ${week.title} — ${stateLabel(state(), week.order)}`}
                     >
-                      <p class={styles.focus}>{week.focus}</p>
-
-                      <Show when={week.coachNote !== undefined}>
-                        <p class={styles.coachNote}>
-                          <svg
-                            class={styles.coachQuote}
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path d="M7 7h4v4c0 3-1.6 5-4.5 6l-.5-1.4C7.7 14.9 8.5 14 8.5 12H7V7Zm7 0h4v4c0 3-1.6 5-4.5 6l-.5-1.4c1.7-.7 2.5-1.6 2.5-3.6H14V7Z" />
-                          </svg>
-                          {week.coachNote}
-                        </p>
-                      </Show>
-
-                      <ul class={styles.goals}>
-                        <For each={week.goals}>{(goal) => <li>{goal}</li>}</For>
-                      </ul>
-
-                      <Show when={state() === 'active'}>
-                        <div class={styles.minibar}>
-                          <div class={styles.miniTrack}>
-                            <div
-                              class={styles.miniFill}
-                              style={{
-                                width: `${(ringFill(week.order) / DAYS_PER_WEEK) * 100}%`,
-                              }}
-                            />
-                          </div>
-                          <span class={styles.miniText}>
-                            {ringFill(week.order)} / {DAYS_PER_WEEK} days
-                          </span>
-                        </div>
-                      </Show>
-
-                      <div class={styles.chips}>
-                        <For each={week.exercises}>
-                          {(ex) => (
-                            <button
-                              class={styles.chip}
-                              onClick={() => startExercise(ex)}
-                              title={`Practise ${ex} now`}
-                            >
-                              {ex}
-                            </button>
-                          )}
-                        </For>
+                      <PathOrb
+                        fill={ringFill(week.order)}
+                        state={state()}
+                        theme={week.theme}
+                        size={98}
+                      />
+                    </button>
+                    <div
+                      class={`${styles.label} ${labelLeft ? styles.labelLeft : styles.labelRight}`}
+                    >
+                      <div class={styles.week}>Week {week.order}</div>
+                      <div class={`${styles.name} ${stateClass(state())}`}>
+                        {PATH_THEME_LABEL[week.theme]}
                       </div>
-
-                      {/* Begin (pre-start) · Practise today (active week) ·
-                          preview note (a free-roamed future week) · replay
-                          note (a finished week). */}
-                      <Show when={!started()}>
-                        <button
-                          class={`${styles.cta} path-cta`}
-                          onClick={() => startAscent()}
-                        >
-                          Begin The Ascent
-                        </button>
-                      </Show>
-                      <Show when={started() && state() === 'active'}>
-                        <button
-                          class={`${styles.cta} path-cta`}
-                          onClick={practiseToday}
-                        >
-                          Practise today · ~
-                          {Math.max(
-                            1,
-                            Math.round(routine.totalDurationSec() / 60) || 8,
-                          )}{' '}
-                          min
-                        </button>
-                      </Show>
-                      <Show when={started() && state() === 'available'}>
-                        <p class={styles.replayNote}>
-                          Preview — try any drill above. Your daily climb
-                          continues on Week {currentOrder()}.
-                        </p>
-                      </Show>
-                      <Show when={started() && state() === 'complete'}>
-                        <p class={styles.replayNote}>
-                          Complete — the drills above stay open. Revisit any
-                          time.
-                        </p>
-                      </Show>
-
-                      <Show when={week.resources.length > 0}>
-                        <div class={styles.resources}>
-                          <div class={styles.resHead}>Go deeper</div>
-                          <For each={week.resources}>
-                            {(r) => (
-                              <a
-                                class={styles.resLink}
-                                href={r.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <b>{r.title}</b>
-                                <span>
-                                  {r.author}
-                                  {r.minutes !== undefined
-                                    ? ` · ${r.minutes} min`
-                                    : ''}
-                                </span>
-                              </a>
-                            )}
-                          </For>
-                        </div>
-                      </Show>
-                    </Show>
+                      <div class={styles.status}>
+                        {stateLabel(state(), week.order)}
+                      </div>
+                    </div>
                   </div>
-                </Show>
-              </>
-            )
-          }}
-        </For>
-      </div>
 
-      <div class={styles.foot}>
-        Any practice that meets your daily goal lights a segment — freeform
-        singing counts too. Missing a day never empties a ring.
+                  <Show when={isOpen()}>
+                    <PathWeekGuide
+                      week={week}
+                      state={state()}
+                      currentOrder={currentOrder()}
+                      started={started()}
+                      themeLabel={PATH_THEME_LABEL[week.theme]}
+                    />
+                  </Show>
+                </>
+              )
+            }}
+          </For>
+        </div>
+
+        <div class={styles.foot}>
+          Any practice that meets your daily goal lights a segment — freeform
+          singing counts too. Missing a day never empties a ring.
+        </div>
       </div>
-    </div>
+    </Show>
   )
 }
 

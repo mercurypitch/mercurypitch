@@ -12,6 +12,7 @@ import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exerc
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { getStreakState, repairStreak } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
+import { DestinationGallery } from '@/features/home/DestinationGallery'
 import { AscentCard } from '@/features/path/AscentCard'
 import type { SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
@@ -326,6 +327,8 @@ const HomePage: Component = () => {
           </div>
         </section>
       </div>
+
+      <DestinationGallery />
     </div>
   )
 }
