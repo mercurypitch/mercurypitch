@@ -1,170 +1,229 @@
-/* ===== Notification Container ===== */
+/* Application-wide notifications. Desktop uses a top-right signal stack;
+   phones use safe-area-aware native-style banners at the top edge. */
+
 .notificationContainer {
   position: fixed;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 11000;
+  top: calc(env(safe-area-inset-top) + 1rem);
+  right: 1rem;
+  z-index: var(--z-toast, 11000);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.65rem;
+  width: min(430px, calc(100vw - 2rem));
   pointer-events: none;
 }
 
-/* Phones: a centred 400px bubble floats awkwardly over content (the tour
-   offer especially). Full-width bottom cards with side margins read as a
-   deliberate toast bar instead. */
-@media (max-width: 768px) {
-  .notificationContainer {
-    left: 10px;
-    right: 10px;
-    /* Sit ABOVE the floating bottom tab bar (both hosts that mount this —
-       the main app and the karaoke-night entry — define --tabbar-total and
-       carry bottom chrome). tabbar-total already includes the safe-area, and
-       +20px covers the bar's 8px float gap plus a little breathing room, so
-       the toast never overlaps navigation. Fallback for any host without the
-       token keeps it near the bottom edge. */
-    bottom: calc(var(--tabbar-total, 54px) + 20px);
-    transform: none;
-  }
-
-  .notification {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-}
-
-/* ===== Individual Notification ===== */
-.notification {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 280px;
-  max-width: 400px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.4;
-  pointer-events: auto;
-  animation: slideIn 0.3s ease-out;
-  backdrop-filter: blur(8px);
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-/* ===== Notification Types ===== */
-.notification.info {
-  background: rgba(13, 17, 23, 0.95);
-  border-left: 4px solid var(--accent);
-  color: var(--text-primary);
-}
-
-.notification.info:hover {
-  background: rgba(13, 17, 23, 0.98);
-}
-
-.notification.success {
-  background: rgba(26, 127, 55, 0.95);
-  border-left: 4px solid var(--green);
-  color: white;
-}
-
-.notification.success:hover {
-  background: rgba(26, 127, 55, 0.98);
-}
-
-.notification.warning {
-  background: rgba(210, 153, 34, 0.95);
-  border-left: 4px solid var(--yellow);
-  color: white;
-}
-
-.notification.warning:hover {
-  background: rgba(210, 153, 34, 0.98);
-}
-
-.notification.error {
-  background: rgba(207, 34, 46, 0.95);
-  border-left: 4px solid var(--red);
-  color: white;
-}
-
-.notification.error:hover {
-  background: rgba(207, 34, 46, 0.98);
-}
-
-/* ===== Close Button ===== */
-.notification .closeBtn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: inherit;
-  opacity: 0.7;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s ease;
-}
-
-.notification .closeBtn:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.notification .closeBtn svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* ===== Empty State ===== */
 .notificationContainer:empty {
   display: none;
 }
 
-/* ===== Text & Action Button ===== */
+.notification {
+  --toast-accent: var(--accent, #58a6ff);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-areas:
+    'icon body close'
+    'icon action close';
+  grid-template-columns: 2.4rem minmax(0, 1fr) 1.9rem;
+  align-items: center;
+  column-gap: 0.75rem;
+  min-height: 72px;
+  padding: 0.78rem 0.72rem 0.78rem 0.82rem;
+  overflow: hidden;
+  color: var(--text-primary, #f0f6fc);
+  background:
+    linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--toast-accent) 9%, transparent),
+      transparent 42%
+    ),
+    rgba(17, 24, 35, 0.96);
+  border: 1px solid
+    color-mix(in srgb, var(--toast-accent) 30%, var(--border, #30363d));
+  border-radius: 0.95rem;
+  box-shadow:
+    0 20px 54px rgba(0, 0, 0, 0.42),
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 1px rgba(255, 255, 255, 0.055);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  pointer-events: auto;
+  backdrop-filter: blur(18px) saturate(1.15);
+  animation: notificationIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.notification::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--toast-accent);
+  box-shadow: 0 0 18px var(--toast-accent);
+  content: '';
+}
+
+.notification.info {
+  --toast-accent: var(--accent, #58a6ff);
+}
+
+.notification.success {
+  --toast-accent: var(--green, #3fb950);
+}
+
+.notification.warning {
+  --toast-accent: var(--yellow, #d29922);
+}
+
+.notification.error {
+  --toast-accent: var(--red, #f85149);
+}
+
+.notificationIcon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--toast-accent);
+  background: color-mix(in srgb, var(--toast-accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--toast-accent) 22%, transparent);
+  border-radius: 0.72rem;
+}
+
+.notificationIcon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.notificationBody {
+  grid-area: body;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.notificationBody > strong {
+  color: var(--toast-accent);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .notificationText {
-  flex: 1;
+  margin-top: 0.2rem;
+  color: var(--text-primary, #f0f6fc);
+  font-size: 0.86rem;
+  font-weight: 590;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
 }
 
 .actionBtn {
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 4px;
+  grid-area: action;
+  justify-self: start;
+  margin-top: 0.48rem;
+  padding: 0.32rem 0.62rem;
+  color: var(--text-primary, #f0f6fc);
+  background: color-mix(in srgb, var(--toast-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--toast-accent) 26%, transparent);
+  border-radius: 0.48rem;
+  font-size: 0.72rem;
+  font-weight: 750;
   cursor: pointer;
-  transition: background 0.15s ease;
 }
 
 .actionBtn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--toast-accent) 20%, transparent);
+}
+
+.closeBtn {
+  grid-area: close;
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--text-muted, #8b949e);
+  background: transparent;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary, #f0f6fc);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.closeBtn svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.actionBtn:focus-visible,
+.closeBtn:focus-visible {
+  outline: 2px solid var(--toast-accent);
+  outline-offset: 2px;
+}
+
+@keyframes notificationIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes mobileNotificationIn {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .notificationContainer {
+    top: calc(env(safe-area-inset-top) + 0.65rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    width: auto;
+    gap: 0.48rem;
+  }
+
+  .notification {
+    grid-template-columns: 2.3rem minmax(0, 1fr) 1.85rem;
+    min-height: 68px;
+    padding: 0.7rem 0.65rem 0.7rem 0.75rem;
+    border-radius: 1rem;
+    box-shadow:
+      0 16px 44px rgba(0, 0, 0, 0.42),
+      inset 0 1px rgba(255, 255, 255, 0.065);
+    animation-name: mobileNotificationIn;
+  }
+
+  .notificationIcon {
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 0.68rem;
+  }
+
+  .notificationText {
+    font-size: 0.84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification {
+    animation: none;
+  }
 }
