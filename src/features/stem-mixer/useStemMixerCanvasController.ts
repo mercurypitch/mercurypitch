@@ -11,6 +11,8 @@ import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
+import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
+import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
 import type { EditableNote } from './pitch-edit-model'
 import type { PitchNote } from './types'
 
@@ -157,27 +159,12 @@ export const useStemMixerCanvasController = (
 
   // ── Drawing helpers ──────────────────────────────────────────
 
-  const peakCache = new Map<AudioBuffer, Float32Array>()
-  const BLOCK_SIZE = 256
+  const peakCache = new Map<AudioBuffer, WaveformPeakCache>()
 
-  const getPeaks = (buffer: AudioBuffer): Float32Array => {
+  const getPeaks = (buffer: AudioBuffer): WaveformPeakCache => {
     if (peakCache.has(buffer)) return peakCache.get(buffer)!
     const data = buffer.getChannelData(0)
-    const numBlocks = Math.ceil(data.length / BLOCK_SIZE)
-    const peaks = new Float32Array(numBlocks * 2)
-    for (let i = 0; i < numBlocks; i++) {
-      const start = i * BLOCK_SIZE
-      const end = Math.min(start + BLOCK_SIZE, data.length)
-      let min = 1,
-        max = -1
-      for (let s = start; s < end; s++) {
-        const v = data[s]
-        if (v < min) min = v
-        if (v > max) max = v
-      }
-      peaks[i * 2] = min
-      peaks[i * 2 + 1] = max
-    }
+    const peaks = buildWaveformPeakCache(data)
     peakCache.set(buffer, peaks)
     return peaks
   }
@@ -228,15 +215,10 @@ export const useStemMixerCanvasController = (
       ctx.lineTo(w, midY)
       ctx.stroke()
 
-      // Waveform — EXACT per-pixel min/max over [sStart, sEnd). The peak
-      // cache (256-sample block min/max) accelerates the whole blocks that
-      // fall *strictly inside* a pixel; the two partial edge blocks are read
-      // raw. Crucially we do NOT fold in whole blocks that merely overlap the
-      // pixel edges (the old `b <= blockEnd`): that makes the block count per
-      // column alternate (e.g. 5 vs 6) and beat against the pixel grid — a
-      // fine stripe moiré that visibly crawls/flickers as the window
-      // auto-scrolls during playback. Exact ranges give the same result as a
-      // full raw scan with no beat, at O(BLOCK_SIZE) per pixel.
+      // Exact ranges keep transient peaks in the correct column, so the
+      // waveform cannot develop moving moiré as the window scrolls. The
+      // segment-tree cache avoids the former two raw 256-sample edge scans per
+      // column, which multiplied into tens of millions of operations/second.
       const amp = trackHeight * 0.35
       ctx.strokeStyle = track.color
       ctx.lineWidth = 1
@@ -247,44 +229,7 @@ export const useStemMixerCanvasController = (
           visibleStart + Math.floor((x + 1) * samplesPerPixel),
           visibleEnd,
         )
-        let min = 1,
-          max = -1
-
-        if (sEnd - sStart > BLOCK_SIZE * 2) {
-          const firstWhole = Math.ceil(sStart / BLOCK_SIZE)
-          const lastWhole = Math.floor(sEnd / BLOCK_SIZE) // exclusive
-          // Leading partial block: [sStart, firstWhole * BLOCK_SIZE)
-          const leadEnd = Math.min(firstWhole * BLOCK_SIZE, sEnd)
-          for (let s = sStart; s < leadEnd; s++) {
-            const v = data[s]
-            if (v < min) min = v
-            if (v > max) max = v
-          }
-          // Whole blocks fully inside the pixel: [firstWhole, lastWhole)
-          for (let b = firstWhole; b < lastWhole; b++) {
-            const pMin = peaks[b * 2]
-            const pMax = peaks[b * 2 + 1]
-            if (pMin < min) min = pMin
-            if (pMax > max) max = pMax
-          }
-          // Trailing partial block: [lastWhole * BLOCK_SIZE, sEnd)
-          for (
-            let s = Math.max(lastWhole * BLOCK_SIZE, leadEnd);
-            s < sEnd;
-            s++
-          ) {
-            const v = data[s]
-            if (v < min) min = v
-            if (v > max) max = v
-          }
-        } else {
-          // Zoomed in — the range is tiny, so a raw scan is already fast.
-          for (let s = sStart; s < sEnd; s++) {
-            const v = data[s]
-            if (v < min) min = v
-            if (v > max) max = v
-          }
-        }
+        const { min, max } = queryWaveformPeakRange(data, peaks, sStart, sEnd)
         ctx.moveTo(x, midY + min * amp)
         ctx.lineTo(x, midY + max * amp)
       }
