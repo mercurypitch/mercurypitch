@@ -1651,16 +1651,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               >
                 <Music /> Playlist
               </button>
-              <Show when={props.preset !== 'performance'}>
-                <button
-                  class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                  onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
-                  title="Pitch Analysis & Settings"
-                  style={{ gap: '0.4rem' }}
-                >
-                  <Settings /> Pitch
-                </button>
-              </Show>
+              <button
+                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
+                onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+                title="Pitch Analysis & Settings"
+                style={{ gap: '0.4rem' }}
+              >
+                <Settings /> Pitch
+              </button>
               {/* Share links are only useful once songs are cloud-synced across
                 devices — gated behind the premium flag (off by default). */}
               <Show when={PREMIUM_FEATURES}>
@@ -2045,13 +2043,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
         </Show>
 
-        <Show
-          when={
-            props.preset !== 'performance' &&
-            pitchAnalysis.panelOpen() &&
-            !pitchAnalysis.editMode()
-          }
-        >
+        <Show when={pitchAnalysis.panelOpen() && !pitchAnalysis.editMode()}>
           <StemMixerPitchAnalysisPanel
             algorithm={pitchAnalysis.algorithm()}
             setAlgorithm={pitchAnalysis.setAlgorithm}
