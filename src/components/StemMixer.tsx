@@ -41,11 +41,11 @@ import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
-import { StemMixerEditToolbar } from './StemMixerEditToolbar'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
 import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
+import { StemMixerPitchStudio } from './StemMixerPitchStudio'
 import { StemMixerScoreModal } from './StemMixerScoreModal'
 import { StemMixerTransport } from './StemMixerTransport'
 
@@ -799,8 +799,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   )
   const [showLyricNoteLabels, setShowLyricNoteLabels] =
     createPersistedSignal<boolean>('pitchperfect_show_lyric_note_labels', false)
-  // Plot the user's live mic pitch as a continuous red line over the vocal-stem
-  // line, and label the note on each red user outline.
+  // Plot the user's live mic pitch as a continuous violet line over the
+  // orange vocal reference, and label the user's violet note layer.
   const [showMicLine, setShowMicLine] = createPersistedSignal<boolean>(
     'pitchperfect_show_mic_line',
     false,
@@ -1019,6 +1019,65 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pitchAnalysis.baseNotes()
     canvas.queueCanvasRedraw()
   })
+
+  const exitPitchStudio = (): void => {
+    pitchAnalysis.setEditMode(false)
+    pitchAnalysis.setSelectedNoteId(null)
+    canvas.queueCanvasRedraw()
+  }
+
+  const enterPitchStudio = (): void => {
+    setShowPitch(true)
+    pitchAnalysis.setSelectedNoteId(null)
+    pitchAnalysis.setEditMode(true)
+    canvas.queueCanvasRedraw()
+  }
+
+  const selectedPitchNote = () => {
+    const selectedId = pitchAnalysis.selectedNoteId()
+    if (selectedId === null) return null
+    return (
+      pitchAnalysis.editableNotes().find((note) => note.id === selectedId) ??
+      null
+    )
+  }
+
+  const nudgeSelectedPitch = (semitones: number): void => {
+    const note = selectedPitchNote()
+    if (note === null) return
+    const midi = Math.max(0, Math.min(127, note.midi + semitones))
+    if (midi === note.midi) return
+
+    pitchAnalysis.beginEdit()
+    pitchAnalysis.previewEdit(note, {
+      midi,
+    })
+    pitchAnalysis.endEdit()
+    canvas.queueCanvasRedraw()
+  }
+
+  const setPitchStudioWindow = (nextDuration: number): void => {
+    const songDuration = audio.duration()
+    if (songDuration <= 0) return
+    const minimumDuration = Math.min(4, songDuration)
+    const duration = Math.max(
+      minimumDuration,
+      Math.min(songDuration, nextDuration),
+    )
+    const center = audio.windowStart() + audio.windowDuration() / 2
+    const maxStart = Math.max(0, songDuration - duration)
+    audio.setWindowDuration(duration)
+    audio.setWindowStart(Math.max(0, Math.min(maxStart, center - duration / 2)))
+    canvas.queueCanvasRedraw()
+  }
+
+  const fitPitchStudio = (): void => {
+    const songDuration = audio.duration()
+    if (songDuration <= 0) return
+    audio.setWindowStart(0)
+    audio.setWindowDuration(songDuration)
+    canvas.queueCanvasRedraw()
+  }
 
   // ── Melody audition synth ──────────────────────────────────────
   // Optionally sound the detected notes as a monophonic synth, following the
@@ -1581,6 +1640,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         classList={{
           'stem-mixer--focus': karaokeFocus(),
           'stem-mixer--mapping': lrcGenMode(),
+          'stem-mixer--pitch-studio':
+            props.preset !== 'performance' && pitchAnalysis.editMode(),
           [`stem-mixer--focus-docked-${karaokeToolbarPosition()}`]:
             karaokeFocus(),
         }}
@@ -1966,6 +2027,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setShowLyricNoteLabels={setShowLyricNoteLabels}
             showScoreDiffBars={showScoreDiffBars}
             setShowScoreDiffBars={setShowScoreDiffBars}
+            showMicLine={showMicLine}
+            setShowMicLine={setShowMicLine}
+            showUserNoteLabels={showUserNoteLabels}
+            setShowUserNoteLabels={setShowUserNoteLabels}
             melodyAudio={melodyAudio}
             onToggleMelodyAudio={toggleMelodyAudio}
             whisperStatus={whisperStatus}
@@ -2077,23 +2142,36 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           }}
         />
 
-        {/* In edit mode the panel collapses and a floating toolbar takes over,
-          so the pitch lane stays visible and clickable. */}
+        {/* Pitch Studio elevates the existing canvas instead of mounting a
+          second renderer, so audio, selection, persistence, and pointer
+          editing continue to share one source of truth. */}
         <Show when={props.preset !== 'performance' && pitchAnalysis.editMode()}>
-          <StemMixerEditToolbar
+          <StemMixerPitchStudio
+            songTitle={props.songTitle}
+            elapsed={audio.elapsed()}
+            duration={audio.duration()}
+            playing={audio.playing()}
+            noteCount={pitchAnalysis.editableNotes().length}
+            selectedNote={selectedPitchNote()}
             pitchView={pitchAnalysis.pitchView()}
             setPitchView={pitchAnalysis.setPitchView}
             hasEdits={pitchAnalysis.hasEdits()}
-            hasSelection={pitchAnalysis.selectedNoteId() !== null}
             onDelete={() => pitchAnalysis.deleteSelectedNote()}
             onSplit={() => pitchAnalysis.splitSelectedNote()}
             onMerge={() => pitchAnalysis.mergeSelectedWithNext()}
             onUndo={() => pitchAnalysis.undoEdit()}
             onReset={() => pitchAnalysis.resetEdits()}
-            onDone={() => {
-              pitchAnalysis.setEditMode(false)
-              pitchAnalysis.setSelectedNoteId(null)
+            onNudgePitch={nudgeSelectedPitch}
+            onPlayPause={() => {
+              if (audio.playing()) audio.handlePause()
+              else audio.handlePlay()
             }}
+            onSeekToStart={() => audio.seekTo(0)}
+            onZoomIn={() => setPitchStudioWindow(audio.windowDuration() * 0.7)}
+            onZoomOut={() => setPitchStudioWindow(audio.windowDuration() * 1.4)}
+            onFit={fitPitchStudio}
+            onDone={exitPitchStudio}
+            formatTime={canvas.formatTime}
           />
         </Show>
 
@@ -2165,10 +2243,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               })()}
               keyRegionCount={pitchAnalysis.keyRegions().length}
               editMode={pitchAnalysis.editMode()}
-              onToggleEditMode={() => {
-                pitchAnalysis.setEditMode((v) => !v)
-                pitchAnalysis.setSelectedNoteId(null)
-              }}
+              onToggleEditMode={enterPitchStudio}
               canEdit={pitchAnalysis.editableNotes().length > 0}
               hasEdits={pitchAnalysis.hasEdits()}
               pitchView={pitchAnalysis.pitchView()}
