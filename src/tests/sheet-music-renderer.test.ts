@@ -83,6 +83,42 @@ describe('sheet music theory conversion', () => {
 })
 
 describe('sheet music rendering', () => {
+  it('keeps foreground notation brighter than the supporting staff', () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+
+    renderSheetMusic({
+      container,
+      melody: [note(1, 60, 0, 0.5), note(2, 62, 0.5, 0.5), note(3, 64, 1, 2)],
+      key: 'C',
+      scaleType: 'major',
+      width: 900,
+      palette: {
+        notation: '#fafcff',
+        symbols: '#bdcad9',
+        staff: '#65768c',
+      },
+    })
+
+    expect(container.querySelector('.vf-stave')?.getAttribute('stroke')).toBe(
+      '#65768c',
+    )
+    expect(container.querySelector('.vf-clef')?.getAttribute('fill')).toBe(
+      '#bdcad9',
+    )
+    expect(container.querySelector('.vf-stavenote')?.getAttribute('fill')).toBe(
+      '#fafcff',
+    )
+    const stem = container.querySelector('.vf-stem')
+    expect(stem?.getAttribute('stroke')).not.toBe('black')
+    expect(
+      stem?.closest('.vf-beam, .vf-stavenote')?.getAttribute('stroke'),
+    ).toBe('#fafcff')
+    const ledgerLine = container.querySelector('.vf-stavenote > path')
+    expect(ledgerLine?.getAttribute('stroke')).not.toBe('#444')
+    expect(ledgerLine?.parentElement?.getAttribute('stroke')).toBe('#fafcff')
+  })
+
   it.each([
     ['G', 'major'],
     ['Bb', 'major'],
