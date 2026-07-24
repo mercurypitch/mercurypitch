@@ -148,13 +148,13 @@ describe('UvrSessionResult Component', () => {
       expect(screen.getByText('Processing failed')).toBeInTheDocument()
     })
 
-    it('offers to process a cancelled session again when its original song is retained', () => {
+    it('does not promise recovery while checking local storage', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'cancelled',
         progress: 0,
         originalFile: {
-          name: 'cancelled-song.mp3',
+          name: 'missing-song.mp3',
           size: 1024 * 50000,
           mimeType: 'audio/mpeg',
         },
@@ -163,27 +163,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(
-        screen.getByText('Cancelled before completion'),
-      ).toBeInTheDocument()
-      expect(screen.getByText('Original song kept')).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /Process again/ }))
-      expect(defaultProps.onRetry).toHaveBeenCalledWith('session-123')
-    })
-
-    it('directs cancelled sessions without an original upload toward cleanup', () => {
-      seedSession({
-        sessionId: 'session-123',
-        status: 'cancelled',
-        progress: 0,
-        createdAt: Date.now() - 3600000,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      expect(
-        screen.getByText('Original upload unavailable'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Checking original upload')).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: /Process again/ }),
       ).not.toBeInTheDocument()

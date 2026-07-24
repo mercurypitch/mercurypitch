@@ -3,10 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
+import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
+import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
@@ -202,13 +204,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const status = session()?.status
     return status === 'cancelled' || status === 'interrupted'
   }
-  const hasOriginalSong = () => session()?.originalFile !== undefined
+  const [retainedOriginal] = createResource(
+    () => (needsRecovery() ? props.sessionId : undefined),
+    (sessionId) => loadRetainedOriginalSong(sessionId),
+  )
+  const recoveryAvailability = (): RecoveryAvailability => {
+    if (retainedOriginal.loading) return 'checking'
+    return retainedOriginal() === true ? 'available' : 'unavailable'
+  }
   const canProcessAgain = () => {
-    const status = session()?.status
-    return (
-      props.onRetry !== undefined &&
-      hasOriginalSong() &&
-      (status === 'error' || status === 'cancelled' || status === 'interrupted')
+    return canRetryUvrSession(
+      session()?.status,
+      session()?.originalFile !== undefined,
+      recoveryAvailability(),
+      props.onRetry !== undefined,
     )
   }
 
@@ -692,25 +701,26 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         <div
           class="session-recovery"
           classList={{
-            'session-recovery--unavailable': !hasOriginalSong(),
+            'session-recovery--unavailable':
+              recoveryAvailability() === 'unavailable',
           }}
         >
           <span class="session-recovery-icon" aria-hidden="true">
-            <Show when={hasOriginalSong()} fallback={<XCircle />}>
-              <RotateCcw />
+            <Show
+              when={recoveryAvailability() !== 'checking'}
+              fallback={<Loader2 />}
+            >
+              <Show
+                when={recoveryAvailability() === 'available'}
+                fallback={<XCircle />}
+              >
+                <RotateCcw />
+              </Show>
             </Show>
           </span>
           <div class="session-recovery-copy">
-            <strong>
-              {hasOriginalSong()
-                ? 'Original song kept'
-                : 'Original upload unavailable'}
-            </strong>
-            <span>
-              {hasOriginalSong()
-                ? 'Process it again to finish creating karaoke stems.'
-                : 'Delete this card or upload the song again.'}
-            </span>
+            <strong>{getRecoveryCopy(recoveryAvailability()).title}</strong>
+            <span>{getRecoveryCopy(recoveryAvailability()).description}</span>
           </div>
         </div>
       </Show>
