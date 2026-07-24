@@ -220,6 +220,17 @@
   .notificationText {
     font-size: 0.84rem;
   }
+
+  .actionBtn {
+    min-height: var(--touch-target, 44px);
+    padding: 0.45rem 0.82rem;
+    font-size: 0.78rem;
+  }
+
+  .closeBtn {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

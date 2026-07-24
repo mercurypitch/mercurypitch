@@ -1,13 +1,15 @@
 /* VerifyEmailBanner — floating glass pill, bottom-centre. Var fallbacks keep
    it styled on the standalone Karaoke Night page (no app.css :root). Sits
-   below the focus-mode stage (z 400) so an immersive performance stays clean. */
+   above the mobile tab bar (z-tabbar 380) but below focus-mode, sheets, and
+   modals so an immersive performance stays clean. On mobile viewports the
+   bottom offset accounts for --tabbar-total so the pill is never occluded. */
 
 .banner {
   position: fixed;
   bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 300;
+  z-index: var(--z-stage, 450);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -90,9 +92,9 @@
   background: color-mix(in srgb, var(--text-primary, #e6edf3) 10%, transparent);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .banner {
-    bottom: 12px;
+    bottom: calc(var(--tabbar-total, 62px) + 10px);
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
