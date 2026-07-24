@@ -135,11 +135,6 @@
   display: block;
 }
 
-.vexHost svg :global(text) {
-  fill: inherit;
-  font-family: var(--font-sans, inherit);
-}
-
 .playCursor {
   position: absolute;
   z-index: 3;

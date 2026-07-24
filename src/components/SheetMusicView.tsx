@@ -13,6 +13,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Music } from '@/components/icons'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
+import { ensureSheetMusicFonts } from '@/lib/sheet-music-fonts'
 import type { SheetLayout } from '@/lib/sheet-music-renderer'
 import { beatToCursor, noteBoxAt, renderSheetMusic, staffYToMidi, systemAtY, xToBeat, } from '@/lib/sheet-music-renderer'
 import type { MelodyItem, NoteName, ScaleDegree } from '@/types'
@@ -40,6 +41,13 @@ interface SheetMusicViewProps {
   dataTour?: string
 }
 
+interface SheetRenderSnapshot {
+  melody: MelodyItem[]
+  key: string
+  scaleType: string
+  beatsPerBar: number | undefined
+}
+
 function snapToScale(midi: number, scale: ScaleDegree[]): ScaleDegree | null {
   if (!scale.length) return null
   let best = scale[0]
@@ -58,9 +66,12 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   let scrollRef: HTMLDivElement | undefined
   let innerRef: HTMLDivElement | undefined
   let vexRef: HTMLDivElement | undefined
+  let canDraw = false
+  let latestRenderInput: SheetRenderSnapshot | undefined
 
   const [layout, setLayout] = createSignal<SheetLayout | null>(null)
   const [renderError, setRenderError] = createSignal<string | null>(null)
+  const [fontsReady, setFontsReady] = createSignal(false)
   const editable = (): boolean => typeof props.onMelodyChange === 'function'
 
   const measureWidth = (): number => {
@@ -68,15 +79,15 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     return Math.max(360, Math.min(1400, w - 4))
   }
 
-  const draw = (): void => {
+  const draw = (input: SheetRenderSnapshot): void => {
     if (!vexRef) return
     try {
       const l = renderSheetMusic({
         container: vexRef,
-        melody: props.melody(),
-        key: props.musicKey(),
-        scaleType: props.scaleType(),
-        beatsPerBar: props.beatsPerBar,
+        melody: input.melody,
+        key: input.key,
+        scaleType: input.scaleType,
+        beatsPerBar: input.beatsPerBar,
         width: measureWidth(),
       })
       setLayout(l)
@@ -94,10 +105,36 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
 
   // Redraw on any content change. createEffect runs once on mount.
   createEffect(() => {
-    props.melody()
-    props.musicKey()
-    props.scaleType()
-    draw()
+    latestRenderInput = {
+      melody: props.melody(),
+      key: props.musicKey(),
+      scaleType: props.scaleType(),
+      beatsPerBar: props.beatsPerBar,
+    }
+    if (fontsReady()) draw(latestRenderInput)
+  })
+
+  // VexFlow registers its bundled fonts asynchronously. Wait before creating
+  // SVG text so browsers that do not repaint private-use glyphs after a
+  // FontFace load never expose hexadecimal missing-glyph boxes.
+  onMount(() => {
+    let disposed = false
+    void ensureSheetMusicFonts()
+      .then(() => {
+        if (disposed) return
+        canDraw = true
+        setFontsReady(true)
+      })
+      .catch(() => {
+        if (disposed) return
+        setRenderError(
+          'The music notation font could not be loaded. Reopen this view to try again.',
+        )
+      })
+
+    onCleanup(() => {
+      disposed = true
+    })
   })
 
   // Redraw on container resize (debounced via rAF).
@@ -106,7 +143,11 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     let raf = 0
     const ro = new ResizeObserver(() => {
       cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(draw)
+      raf = requestAnimationFrame(() => {
+        if (canDraw && latestRenderInput !== undefined) {
+          draw(latestRenderInput)
+        }
+      })
     })
     ro.observe(scrollRef)
     onCleanup(() => {
@@ -360,21 +401,35 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
               onClick={handleClick}
               onContextMenu={handleContextMenu}
             />
-          </div>
-          <Show when={renderError()}>
-            {(message) => (
+            <Show when={!fontsReady() && renderError() === null}>
               <div
                 class={`${styles.emptyState} ${styles.errorState}`}
-                role="alert"
+                role="status"
               >
                 <span class={styles.emptyMark} aria-hidden="true">
                   <Music />
                 </span>
-                <strong>Notation unavailable</strong>
-                <span>{message()}</span>
+                <strong>Preparing notation</strong>
+                <span>
+                  Loading the engraving font before drawing the score.
+                </span>
               </div>
-            )}
-          </Show>
+            </Show>
+            <Show when={renderError()}>
+              {(message) => (
+                <div
+                  class={`${styles.emptyState} ${styles.errorState}`}
+                  role="alert"
+                >
+                  <span class={styles.emptyMark} aria-hidden="true">
+                    <Music />
+                  </span>
+                  <strong>Notation unavailable</strong>
+                  <span>{message()}</span>
+                </div>
+              )}
+            </Show>
+          </div>
         </Show>
       </div>
     </section>
