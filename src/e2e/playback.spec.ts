@@ -30,6 +30,45 @@ test.describe('Playback', () => {
     // Play button visible initially (no playback active)
   })
 
+  test('notation waits for its music font before drawing glyphs', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const loadFont = FontFace.prototype.load
+      FontFace.prototype.load = function loadWithDelay() {
+        const face = this
+        return new Promise<FontFace>((resolve, reject) => {
+          window.setTimeout(() => {
+            loadFont.call(face).then(resolve, reject)
+          }, 500)
+        })
+      }
+    })
+    await page.reload()
+    await page.waitForSelector('#app-tabs', { timeout: 10000 })
+    await dismissOverlays(page)
+    await switchTab(page, 'singing')
+    await page.locator('button[title="Show standard music notation"]').click()
+
+    await expect(
+      page.getByText('Preparing notation', { exact: true }),
+    ).toBeVisible()
+
+    const glyph = page.locator('[class*="vexHost"] svg text').first()
+    await expect(glyph).toBeVisible()
+    await expect(glyph).toHaveCSS('font-family', /Bravura/)
+    await expect(
+      page.locator('[class*="vexHost"] svg text').filter({ hasText: /^1$/ }),
+    ).toHaveCSS('fill', 'rgb(113, 131, 154)')
+
+    const fontFaces = await page.evaluate(() =>
+      document.fonts
+        .load('30pt Bravura', '\uE0A4')
+        .then((faces) => faces.length),
+    )
+    expect(fontFaces).toBeGreaterThan(0)
+  })
+
   test('Practice tab play button starts playback', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
