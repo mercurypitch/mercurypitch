@@ -3012,6 +3012,61 @@
   box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
 }
 
+.session-recovery {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.58rem 0.65rem;
+  color: #d8cdff;
+  background: rgba(139, 92, 246, 0.07);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 0.55rem;
+}
+
+.session-recovery-icon {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  background: rgba(139, 92, 246, 0.13);
+  border-radius: 50%;
+}
+
+.session-recovery-icon svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.session-recovery-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.session-recovery-copy strong {
+  color: var(--fg-primary);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.session-recovery-copy span {
+  color: var(--fg-secondary);
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.session-recovery--unavailable {
+  color: #f8b4b4;
+  background: rgba(239, 68, 68, 0.045);
+  border-color: rgba(239, 68, 68, 0.14);
+}
+
+.session-recovery--unavailable .session-recovery-icon {
+  background: rgba(239, 68, 68, 0.09);
+}
+
 .session-result-actions {
   display: flex;
   gap: 0.35rem;
@@ -4566,6 +4621,15 @@
 // Mobile Layout Overrides
 // ============================================================ */
 @media (max-width: 600px) {
+  .upload-section {
+    max-width: 100%;
+    padding-inline: 0.75rem;
+  }
+
+  .history-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .panel-header {
     flex-direction: column;
     align-items: stretch;
