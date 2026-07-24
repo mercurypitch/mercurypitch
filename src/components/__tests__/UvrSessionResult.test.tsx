@@ -47,6 +47,7 @@ describe('UvrSessionResult Component', () => {
     sessionId: 'session-123',
     onView: vi.fn(),
     onExport: vi.fn(),
+    onRetry: vi.fn(),
     onClose: vi.fn(),
   }
 
@@ -145,6 +146,48 @@ describe('UvrSessionResult Component', () => {
       render(() => <UvrSessionResult {...defaultProps} />)
 
       expect(screen.getByText('Processing failed')).toBeInTheDocument()
+    })
+
+    it('offers to process a cancelled session again when its original song is retained', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'cancelled',
+        progress: 0,
+        originalFile: {
+          name: 'cancelled-song.mp3',
+          size: 1024 * 50000,
+          mimeType: 'audio/mpeg',
+        },
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      expect(
+        screen.getByText('Cancelled before completion'),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Original song kept')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Process again/ }))
+      expect(defaultProps.onRetry).toHaveBeenCalledWith('session-123')
+    })
+
+    it('directs cancelled sessions without an original upload toward cleanup', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'cancelled',
+        progress: 0,
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      expect(
+        screen.getByText('Original upload unavailable'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /Process again/ }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Delete session')).toBeEnabled()
     })
 
     it('shows processing time in status bar', () => {

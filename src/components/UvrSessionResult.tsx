@@ -198,6 +198,19 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const hasSelection = () => selectedStems().size > 0
+  const needsRecovery = () => {
+    const status = session()?.status
+    return status === 'cancelled' || status === 'interrupted'
+  }
+  const hasOriginalSong = () => session()?.originalFile !== undefined
+  const canProcessAgain = () => {
+    const status = session()?.status
+    return (
+      props.onRetry !== undefined &&
+      hasOriginalSong() &&
+      (status === 'error' || status === 'cancelled' || status === 'interrupted')
+    )
+  }
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
@@ -360,6 +373,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             if (st === 'error') return session()?.error ?? 'Processing failed'
             if (st === 'interrupted')
               return session()?.error ?? 'Interrupted — please retry'
+            if (st === 'cancelled') return 'Cancelled before completion'
             if (st === 'finalizing') return 'Saving stems…'
             if (st === 'completed') return 'Completed'
             if (st === 'processing')
@@ -674,12 +688,39 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </div>
       </Show>
 
+      <Show when={needsRecovery()}>
+        <div
+          class="session-recovery"
+          classList={{
+            'session-recovery--unavailable': !hasOriginalSong(),
+          }}
+        >
+          <span class="session-recovery-icon" aria-hidden="true">
+            <Show when={hasOriginalSong()} fallback={<XCircle />}>
+              <RotateCcw />
+            </Show>
+          </span>
+          <div class="session-recovery-copy">
+            <strong>
+              {hasOriginalSong()
+                ? 'Original song kept'
+                : 'Original upload unavailable'}
+            </strong>
+            <span>
+              {hasOriginalSong()
+                ? 'Process it again to finish creating karaoke stems.'
+                : 'Delete this card or upload the song again.'}
+            </span>
+          </div>
+        </div>
+      </Show>
+
       {/* Actions */}
       <Show
         when={
           session()?.status === 'completed' ||
-          session()?.status === 'error' ||
-          session()?.status === 'processing'
+          session()?.status === 'processing' ||
+          canProcessAgain()
         }
       >
         <div class="session-result-actions">
@@ -732,8 +773,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               onRerunHq={props.onRerunHq}
             />
           </Show>
-          <Show when={session()?.status === 'error' && session()?.originalFile}>
+          <Show when={canProcessAgain()}>
             <button
+              type="button"
               class="session-result-btn session-result-btn-primary"
               disabled={props.disabled}
               onClick={(e) => {
@@ -741,7 +783,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 props.onRetry?.(props.sessionId)
               }}
             >
-              <RotateCcw /> Retry
+              <RotateCcw />{' '}
+              {session()?.status === 'error' ? 'Retry' : 'Process again'}
             </button>
           </Show>
         </div>
