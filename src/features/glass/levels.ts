@@ -6,8 +6,9 @@
 // (target.offsetSemitones): lower = an easy win, at/above your ceiling = brutal.
 // Free materials ease you in; Pro materials sit at/above your ceiling.
 //
-// The `material` + `accent` drive the level card today and the real-time object
-// + cinematic shatter later (see the hybrid-visuals task).
+// `image` is the concept render (public/game/materials/*.webp) used for the
+// level thumbnail and the in-level hero object; `accent` tints the card, glow,
+// and shatter.
 // ============================================================
 
 import type { GlassConfig } from '@/lib/glass/config'
@@ -25,6 +26,8 @@ export interface GlassLevel {
   tier: LevelTier
   /** Accent color for the card, object glow, and shatter tint. */
   accent: string
+  /** Concept render served from public/ (thumbnail + in-level hero object). */
+  image: string
   /** Full gameplay config for this level (GLASS_CONFIG with overrides). */
   config: GlassConfig
 }
@@ -46,6 +49,7 @@ export const LEVELS: readonly GlassLevel[] = [
     material: 'glass',
     tier: 'free',
     accent: '#58a6ff',
+    image: '/game/materials/glass.webp',
     blurb: 'The classic. It rings, then bursts.',
     config: atOffset(-3),
   },
@@ -55,6 +59,7 @@ export const LEVELS: readonly GlassLevel[] = [
     material: 'ice',
     tier: 'free',
     accent: '#7ee7ff',
+    image: '/game/materials/ice.webp',
     blurb: 'Sing warm. It cracks, then crumbles.',
     config: atOffset(-2),
   },
@@ -64,6 +69,7 @@ export const LEVELS: readonly GlassLevel[] = [
     material: 'crystal',
     tier: 'free',
     accent: '#bc8cff',
+    image: '/game/materials/crystal.webp',
     blurb: 'Cut crystal — bright and unforgiving.',
     config: atOffset(-1),
   },
@@ -73,6 +79,7 @@ export const LEVELS: readonly GlassLevel[] = [
     material: 'vase',
     tier: 'pro',
     accent: '#f0a8c0',
+    image: '/game/materials/vase.webp',
     blurb: 'Porcelain, right at the top of your range.',
     config: atOffset(0),
   },
@@ -82,6 +89,7 @@ export const LEVELS: readonly GlassLevel[] = [
     material: 'diamond',
     tier: 'pro',
     accent: '#7ee787',
+    image: '/game/materials/diamond.webp',
     blurb: 'The hardest thing you will ever sing.',
     config: atOffset(1),
   },

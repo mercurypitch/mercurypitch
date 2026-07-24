@@ -50,7 +50,7 @@ export const LevelSelect: Component<{ onPick: (level: GlassLevel) => void }> = (
                   style={{ '--accent': level.accent }}
                   onClick={() => props.onPick(level)}
                 >
-                  <span class="ls-dot" aria-hidden="true" />
+                  <img class="ls-thumb" src={level.image} alt="" aria-hidden="true" />
                   <span class="ls-card-main">
                     <span class="ls-card-name">
                       {level.name}

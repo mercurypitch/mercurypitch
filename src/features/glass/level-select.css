@@ -83,13 +83,15 @@
   opacity: 0.62;
 }
 
-.ls-dot {
+.ls-thumb {
   flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 70%, transparent);
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #05060b;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, #21262d);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
 .ls-card-main {

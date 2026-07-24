@@ -50,6 +50,33 @@ Done:
 - RevenueCat SDK wired behind the platform check + a working offerings paywall.
 - Codemagic CI template for both stores.
 
+## Next: the wine-glass vertical slice (validate before expanding assets)
+
+Decision (2026-07-24): build the COMPLETE experience for ONE object (wine
+glass) before spending more generation credits on the others.
+
+1. **Hero visual** — integrate `public/game/materials/glass.webp` into the
+   in-level stage. The seam is `renderer/GlassRenderer.ts` (interface:
+   mount/update/beginTake/shatter/dispose; TypeGPU primary, Canvas2D
+   fallback — the TypeGPU side-quest is ALREADY the primary, decision 9).
+   Options: (a) new image-hero backend drawing the render + procedural
+   glow/rings/cracks; (b) stage backdrop layer inside GlassApp (.glass-shell
+   paints opaque `--glass-void-0` + .glass-cosmos — a backdrop needs a layer
+   INSIDE the shell, not a CSS override on .game-level).
+2. **Live feel** — level accent (`GlassLevel.accent`) tints rings/glow;
+   resonance drives glow intensity on/behind the hero image.
+3. **Shatter payoff** — keep the procedural shard burst as placeholder;
+   swap-in point for the Blender-rendered cinematic (per-material video/
+   frame-sequence) at `GlassRenderer.shatter()`.
+4. Then: user reviews the slice → adjust art direction → expand to
+   ice/crystal/vase/diamond + Merc reactions.
+
+**Blender MCP status:** use the OFFICIAL Blender Lab add-on (repo
+`https://lab.blender.org/` via Get Extensions), NOT ahujasid's addon.py —
+the Claude extension is blender.org's `blmcp` (same port 9876, different
+protocol; mismatched pairing deadlocks). Raw-socket test verified Blender
+responds once the right add-on answers.
+
 TODO (next build phases):
 - **Game progression** — the current glass is a single challenge; add levels /
   packs (e.g. the cosmic "Sing the Universe" stages) as the net-new content, and
