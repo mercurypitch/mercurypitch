@@ -1939,7 +1939,7 @@
 .uvr-queue-item {
   position: relative;
   display: grid;
-  grid-template-columns: 2rem 1.75rem minmax(0, 1fr) 1.9rem;
+  grid-template-columns: 2rem 1.75rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.45rem;
   min-height: 58px;
@@ -1965,6 +1965,10 @@
 
 .uvr-queue-item--error {
   background: rgba(239, 68, 68, 0.055);
+}
+
+.uvr-queue-item--omitted {
+  opacity: 0.7;
 }
 
 .uvr-queue-number {
@@ -2001,6 +2005,11 @@
 .uvr-queue-status-icon--skipped {
   color: var(--success);
   background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.uvr-queue-status-icon--omitted {
+  color: #c7b7ff;
+  background: rgba(155, 124, 246, 0.12);
 }
 
 .uvr-queue-status-icon--error,
@@ -2089,9 +2098,34 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+.uvr-queue-row-action:focus-visible,
+.uvr-queue-button:focus-visible {
+  outline: 2px solid #b49cff;
+  outline-offset: 2px;
+}
+
 .uvr-queue-row-action svg {
   width: 0.82rem;
   height: 0.82rem;
+}
+
+.uvr-queue-row-action--skip {
+  display: inline-flex;
+  width: auto;
+  gap: 0.28rem;
+  padding: 0 0.48rem;
+  color: #c7b7ff;
+  background: rgba(155, 124, 246, 0.07);
+  border: 1px solid rgba(155, 124, 246, 0.16);
+  border-radius: 99px;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.uvr-queue-row-action--skip:hover {
+  color: #eee9ff;
+  background: rgba(155, 124, 246, 0.14);
+  border-color: rgba(155, 124, 246, 0.3);
 }
 
 .uvr-queue-footer {
@@ -2180,6 +2214,17 @@
   box-shadow: 0 8px 20px rgba(109, 77, 206, 0.24);
 }
 
+.uvr-queue-button--stop {
+  color: #d8cdff;
+  background: rgba(155, 124, 246, 0.07);
+  border-color: rgba(155, 124, 246, 0.2);
+}
+
+.uvr-queue-button--stop:hover {
+  background: rgba(155, 124, 246, 0.13);
+  border-color: rgba(155, 124, 246, 0.34);
+}
+
 .uvr-queue-button--danger {
   color: #ffc1c1;
   background: rgba(239, 68, 68, 0.08);
@@ -2204,14 +2249,15 @@
 
   .uvr-queue-actions {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .uvr-queue-button {
-    flex: 1;
+    flex: 1 1 9rem;
   }
 
   .uvr-queue-item {
-    grid-template-columns: 1.55rem 1.6rem minmax(0, 1fr) 1.7rem;
+    grid-template-columns: 1.55rem 1.6rem minmax(0, 1fr) auto;
     padding-inline: 0.32rem;
   }
 }

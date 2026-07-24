@@ -1762,6 +1762,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   costPerSong={songCost}
                   onStart={() => void startUploadQueue()}
                   onRemove={uploadQueue.remove}
+                  onSkip={uploadQueue.skipQueued}
+                  onSkipRemaining={uploadQueue.skipRemaining}
                   onCancel={uploadQueue.cancelActive}
                   onClear={uploadQueue.clear}
                 />

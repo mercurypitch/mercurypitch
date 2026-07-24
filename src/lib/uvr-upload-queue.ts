@@ -9,6 +9,7 @@ export type UvrUploadQueueStatus =
   | 'processing'
   | 'completed'
   | 'skipped'
+  | 'omitted'
   | 'error'
   | 'cancelled'
 
@@ -50,6 +51,8 @@ export interface UvrUploadQueue {
   isRunning: Accessor<boolean>
   enqueue: (files: File[]) => { added: number; overflow: number }
   remove: (itemId: string) => void
+  skipQueued: (itemId: string) => boolean
+  skipRemaining: () => number
   cancelActive: () => void
   clearFinished: () => void
   clear: () => void
@@ -62,6 +65,7 @@ export function isTerminalUploadQueueStatus(
   return (
     status === 'completed' ||
     status === 'skipped' ||
+    status === 'omitted' ||
     status === 'error' ||
     status === 'cancelled'
   )
@@ -134,6 +138,31 @@ export function createUvrUploadQueue(
       current.filter((item) => item.id !== itemId || item.status !== 'queued'),
     )
   }
+
+  const omitQueuedItems = (
+    shouldOmit: (item: UvrUploadQueueItem) => boolean,
+  ): number => {
+    if (!isRunning()) return 0
+    let omitted = 0
+    setItems((current) =>
+      current.map((item) => {
+        if (item.status !== 'queued' || !shouldOmit(item)) return item
+        omitted++
+        return {
+          ...item,
+          status: 'omitted',
+          progress: 0,
+          message: 'Skipped by you',
+        }
+      }),
+    )
+    return omitted
+  }
+
+  const skipQueued = (itemId: string) =>
+    omitQueuedItems((item) => item.id === itemId) === 1
+
+  const skipRemaining = () => omitQueuedItems(() => true)
 
   const cancelActive = () => {
     const current = active
@@ -256,6 +285,8 @@ export function createUvrUploadQueue(
     isRunning,
     enqueue,
     remove,
+    skipQueued,
+    skipRemaining,
     cancelActive,
     clearFinished,
     clear,
