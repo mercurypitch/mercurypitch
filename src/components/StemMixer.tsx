@@ -865,6 +865,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       {}),
     useDenoised,
     setUseDenoised,
+    performance: {
+      start: audio.startPerformanceDebug,
+      stop: audio.stopPerformanceDebug,
+      snapshot: audio.getPerformanceSnapshot,
+      help: 'Call start() before playback to log RAF, analysis, and canvas timings every 2 seconds; call stop() for the final sample.',
+    },
   }
 
   // ── Pitch-word alignment memo ────────────────────────────────
