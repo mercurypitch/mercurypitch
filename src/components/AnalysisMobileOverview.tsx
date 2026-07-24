@@ -7,7 +7,8 @@ import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-se
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { buildMobileAnalysisSummary } from '@/lib/mobile-analysis-summary'
 import { setActiveTab } from '@/stores'
-import { currentUvrSession } from '@/stores/uvr-store'
+import type { UvrSession } from '@/stores/uvr-store'
+import { currentUvrSession, getAllUvrSessionsReactive, setCurrentUvrSession, } from '@/stores/uvr-store'
 import styles from './AnalysisMobileOverview.module.css'
 
 interface VoiceprintBar {
@@ -49,6 +50,22 @@ function statusLabel(status: string): string {
   if (status === 'processing' || status === 'uploading') return 'Processing'
   if (status === 'interrupted') return 'Needs attention'
   return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+/** Human-readable relative timestamp (e.g. "2 hours ago", "3 days ago"). */
+export function relativeTime(epochMs: number): string {
+  const deltaMs = Date.now() - epochMs
+  if (deltaMs < 0) return 'just now'
+  const seconds = Math.floor(deltaMs / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  return `${months}mo ago`
 }
 
 function buildVoiceprint(data: SessionPitchData | null): VoiceprintBar[] {
@@ -101,6 +118,7 @@ export const AnalysisMobileOverview: Component = () => {
     null,
   )
   const [loadState, setLoadState] = createSignal<AnalysisLoadState>('empty')
+  const [showGallery, setShowGallery] = createSignal(false)
   let loadVersion = 0
 
   const loadAnalysis = (sessionId: string | null): void => {
@@ -146,9 +164,110 @@ export const AnalysisMobileOverview: Component = () => {
     return longest
   })
 
+  /** Completed UVR sessions available for selection. */
+  const completedSessions = createMemo(() =>
+    getAllUvrSessionsReactive().filter((s) => s.status === 'completed'),
+  )
+
   const openKaraoke = (): void => {
     setActiveTab(TAB_KARAOKE)
   }
+
+  const selectSession = (session: UvrSession): void => {
+    setCurrentUvrSession(session)
+    setShowGallery(false)
+  }
+
+  const changeSong = (): void => {
+    setShowGallery(true)
+  }
+
+  /** Render the session gallery (list of completed UVR sessions). */
+  const SessionGallery = () => (
+    <section class={styles.gallerySection} data-testid="session-gallery">
+      <div class={styles.galleryHeader}>
+        <div>
+          <p class={styles.eyebrow}>Your songs</p>
+          <h2>Choose a session</h2>
+        </div>
+        <Show when={currentUvrSession()}>
+          <button
+            type="button"
+            class={styles.secondaryAction}
+            onClick={() => setShowGallery(false)}
+          >
+            Cancel
+          </button>
+        </Show>
+      </div>
+
+      <Show
+        when={completedSessions().length > 0}
+        fallback={
+          <div class={styles.galleryEmpty}>
+            <div class={styles.emptyGlyph}>
+              <WaveformBars size={30} />
+            </div>
+            <p class={styles.galleryEmptyTitle}>No sessions yet</p>
+            <p>
+              Process a song in Karaoke first. Once stem separation is complete,
+              the session will appear here.
+            </p>
+            <button
+              type="button"
+              class={styles.primaryAction}
+              onClick={openKaraoke}
+            >
+              Go to Karaoke
+            </button>
+          </div>
+        }
+      >
+        <ul class={styles.galleryList}>
+          <For each={completedSessions()}>
+            {(session) => (
+              <li>
+                <button
+                  type="button"
+                  class={styles.galleryItem}
+                  classList={{
+                    [styles.galleryItemActive]:
+                      session.sessionId === currentUvrSession()?.sessionId,
+                  }}
+                  onClick={() => selectSession(session)}
+                  data-testid={`session-pick-${session.sessionId}`}
+                >
+                  <div class={styles.galleryItemIcon}>
+                    <MusicNote />
+                  </div>
+                  <div class={styles.galleryItemInfo}>
+                    <span class={styles.galleryItemName}>
+                      {session.originalFile?.name ?? 'Untitled'}
+                    </span>
+                    <span class={styles.galleryItemMeta}>
+                      {session.processingMode === 'server'
+                        ? 'Server'
+                        : 'On-device'}
+                      {' \u00B7 '}
+                      {relativeTime(session.createdAt)}
+                    </span>
+                  </div>
+                  <span
+                    class={styles.status}
+                    classList={{
+                      [styles.statusReady]: session.status === 'completed',
+                    }}
+                  >
+                    {statusLabel(session.status)}
+                  </span>
+                </button>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </section>
+  )
 
   return (
     <main class={styles.page} data-testid="analysis-mobile-overview">
@@ -166,246 +285,247 @@ export const AnalysisMobileOverview: Component = () => {
       </div>
 
       <Show
-        when={currentUvrSession()}
-        fallback={
-          <section class={styles.emptyHero}>
-            <div class={styles.emptyGlyph}>
-              <WaveformBars size={30} />
-            </div>
-            <p class={styles.eyebrow}>No song loaded</p>
-            <h2>Bring a separated track into focus</h2>
-            <p>
-              Open a completed Karaoke session first. Its stems and saved pitch
-              pass will appear here automatically.
-            </p>
-            <button
-              type="button"
-              class={styles.primaryAction}
-              onClick={openKaraoke}
-            >
-              Choose a Karaoke session
-            </button>
-          </section>
-        }
+        when={currentUvrSession() && !showGallery()}
+        fallback={<SessionGallery />}
       >
-        {(session) => (
-          <>
-            <section
-              class={styles.sessionCard}
-              aria-labelledby="mobile-session-title"
-            >
-              <div class={styles.cardTopline}>
-                <span>Loaded UVR session</span>
-                <span
-                  class={styles.status}
-                  classList={{
-                    [styles.statusReady]: session().status === 'completed',
-                  }}
-                >
-                  {statusLabel(session().status)}
-                </span>
-              </div>
-
-              <div class={styles.sessionIdentity}>
-                <div class={styles.albumMark}>
-                  <MusicNote />
-                </div>
-                <div>
-                  <h2 id="mobile-session-title">
-                    {session().originalFile?.name ?? 'Untitled session'}
-                  </h2>
-                  <p>
-                    {session().processingMode === 'server'
-                      ? 'Server separation'
-                      : 'On-device separation'}
-                  </p>
-                </div>
-              </div>
-
-              <dl class={styles.sessionFacts}>
-                <div>
-                  <dt>Stems</dt>
-                  <dd>{stemCount()} available</dd>
-                </div>
-                <div>
-                  <dt>Length</dt>
-                  <dd>
-                    {duration() > 0
-                      ? formatSeconds(duration())
-                      : 'Not reported'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Source</dt>
-                  <dd>{formatBytes(session().originalFile?.size ?? 0)}</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section
-              class={styles.analysisCard}
-              aria-labelledby="mobile-algorithm-title"
-            >
-              <div class={styles.analysisHeading}>
-                <div>
-                  <p class={styles.eyebrow}>Saved detector pass</p>
-                  <h2 id="mobile-algorithm-title">Pitch algorithm</h2>
-                </div>
-                <span class={styles.analysisIcon}>
-                  <Cpu />
-                </span>
-              </div>
-
-              <Show
-                when={loadState() !== 'loading'}
-                fallback={
-                  <div class={styles.loading}>
-                    <Loader2 />
-                    <span>Reading the session pitch map…</span>
-                  </div>
-                }
+        {(_session) => {
+          const session = () => currentUvrSession()!
+          return (
+            <>
+              <section
+                class={styles.sessionCard}
+                aria-labelledby="mobile-session-title"
               >
+                <div class={styles.cardTopline}>
+                  <span>Loaded UVR session</span>
+                  <span
+                    class={styles.status}
+                    classList={{
+                      [styles.statusReady]: session().status === 'completed',
+                    }}
+                  >
+                    {statusLabel(session().status)}
+                  </span>
+                </div>
+
+                <div class={styles.sessionIdentity}>
+                  <div class={styles.albumMark}>
+                    <MusicNote />
+                  </div>
+                  <div>
+                    <h2 id="mobile-session-title">
+                      {session().originalFile?.name ?? 'Untitled session'}
+                    </h2>
+                    <p>
+                      {session().processingMode === 'server'
+                        ? 'Server separation'
+                        : 'On-device separation'}
+                    </p>
+                  </div>
+                </div>
+
+                <dl class={styles.sessionFacts}>
+                  <div>
+                    <dt>Stems</dt>
+                    <dd>{stemCount()} available</dd>
+                  </div>
+                  <div>
+                    <dt>Length</dt>
+                    <dd>
+                      {duration() > 0
+                        ? formatSeconds(duration())
+                        : 'Not reported'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Source</dt>
+                    <dd>{formatBytes(session().originalFile?.size ?? 0)}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section
+                class={styles.analysisCard}
+                aria-labelledby="mobile-algorithm-title"
+              >
+                <div class={styles.analysisHeading}>
+                  <div>
+                    <p class={styles.eyebrow}>Saved detector pass</p>
+                    <h2 id="mobile-algorithm-title">Pitch algorithm</h2>
+                  </div>
+                  <span class={styles.analysisIcon}>
+                    <Cpu />
+                  </span>
+                </div>
+
                 <Show
-                  when={loadState() !== 'error'}
+                  when={loadState() !== 'loading'}
                   fallback={
-                    <div class={styles.analysisEmpty}>
-                      <p class={styles.analysisEmptyTitle}>
-                        Pitch map unavailable
-                      </p>
-                      <p>
-                        MercuryPitch could not read this session’s saved
-                        analysis. Try loading it again.
-                      </p>
-                      <button
-                        type="button"
-                        class={styles.secondaryAction}
-                        onClick={() =>
-                          loadAnalysis(currentUvrSession()?.sessionId ?? null)
-                        }
-                      >
-                        Try again
-                      </button>
+                    <div class={styles.loading}>
+                      <Loader2 />
+                      <span>Reading the session pitch map…</span>
                     </div>
                   }
                 >
                   <Show
-                    when={summary()}
+                    when={loadState() !== 'error'}
                     fallback={
                       <div class={styles.analysisEmpty}>
                         <p class={styles.analysisEmptyTitle}>
-                          No cached pitch map yet
+                          Pitch map unavailable
                         </p>
                         <p>
-                          In Karaoke, open this song’s pitch tools and run
-                          Analyze vocal. The compact result will be available
-                          here next time you visit.
+                          MercuryPitch could not read this session's saved
+                          analysis. Try loading it again.
                         </p>
                         <button
                           type="button"
                           class={styles.secondaryAction}
-                          onClick={openKaraoke}
+                          onClick={() =>
+                            loadAnalysis(currentUvrSession()?.sessionId ?? null)
+                          }
                         >
-                          Open pitch tools
+                          Try again
                         </button>
                       </div>
                     }
                   >
-                    {(facts) => (
-                      <>
-                        <div class={styles.voiceprint}>
-                          <div class={styles.voiceprintLabel}>
-                            <span>Detected melody</span>
-                            <span>{facts().coveragePercent}% voiced</span>
-                          </div>
-                          <svg
-                            viewBox="0 0 100 42"
-                            preserveAspectRatio="none"
-                            role="img"
-                            aria-label={`Detected pitch map from ${facts().lowNote} to ${facts().highNote}`}
+                    <Show
+                      when={summary()}
+                      fallback={
+                        <div class={styles.analysisEmpty}>
+                          <p class={styles.analysisEmptyTitle}>
+                            No cached pitch map yet
+                          </p>
+                          <p>
+                            In Karaoke, open this song's pitch tools and run
+                            Analyze vocal. The compact result will be available
+                            here next time you visit.
+                          </p>
+                          <button
+                            type="button"
+                            class={styles.secondaryAction}
+                            onClick={openKaraoke}
                           >
-                            <defs>
-                              <linearGradient
-                                id="mobile-voiceprint-gradient"
-                                x1="0"
-                                x2="1"
-                              >
-                                <stop offset="0" stop-color="#69e3c2" />
-                                <stop offset=".52" stop-color="#8f82ff" />
-                                <stop offset="1" stop-color="#ec77c5" />
-                              </linearGradient>
-                            </defs>
-                            <For each={voiceprint()}>
-                              {(bar) => (
-                                <rect
-                                  x={bar.x}
-                                  y={bar.y}
-                                  width={bar.width}
-                                  height="3.2"
-                                  rx="1.6"
-                                  fill="url(#mobile-voiceprint-gradient)"
-                                />
-                              )}
-                            </For>
-                          </svg>
-                          <div class={styles.rangeLabels}>
-                            <span>{facts().lowNote}</span>
-                            <span>{facts().rangeSemitones} semitone span</span>
-                            <span>{facts().highNote}</span>
-                          </div>
+                            Open pitch tools
+                          </button>
                         </div>
+                      }
+                    >
+                      {(facts) => (
+                        <>
+                          <div class={styles.voiceprint}>
+                            <div class={styles.voiceprintLabel}>
+                              <span>Detected melody</span>
+                              <span>{facts().coveragePercent}% voiced</span>
+                            </div>
+                            <svg
+                              viewBox="0 0 100 42"
+                              preserveAspectRatio="none"
+                              role="img"
+                              aria-label={`Detected pitch map from ${facts().lowNote} to ${facts().highNote}`}
+                            >
+                              <defs>
+                                <linearGradient
+                                  id="mobile-voiceprint-gradient"
+                                  x1="0"
+                                  x2="1"
+                                >
+                                  <stop offset="0" stop-color="#69e3c2" />
+                                  <stop offset=".52" stop-color="#8f82ff" />
+                                  <stop offset="1" stop-color="#ec77c5" />
+                                </linearGradient>
+                              </defs>
+                              <For each={voiceprint()}>
+                                {(bar) => (
+                                  <rect
+                                    x={bar.x}
+                                    y={bar.y}
+                                    width={bar.width}
+                                    height="3.2"
+                                    rx="1.6"
+                                    fill="url(#mobile-voiceprint-gradient)"
+                                  />
+                                )}
+                              </For>
+                            </svg>
+                            <div class={styles.rangeLabels}>
+                              <span>{facts().lowNote}</span>
+                              <span>
+                                {facts().rangeSemitones} semitone span
+                              </span>
+                              <span>{facts().highNote}</span>
+                            </div>
+                          </div>
 
-                        <dl class={styles.metrics}>
-                          <div>
-                            <dt>Clean notes</dt>
-                            <dd>{facts().cleanedNoteCount}</dd>
-                          </div>
-                          <div>
-                            <dt>Voiced time</dt>
-                            <dd>{formatSeconds(facts().voicedSeconds)}</dd>
-                          </div>
-                          <div>
-                            <dt>Detected key</dt>
-                            <dd>{facts().keyLabel}</dd>
-                          </div>
-                          <div>
-                            <dt>Key regions</dt>
-                            <dd>{facts().keyRegionCount}</dd>
-                          </div>
-                        </dl>
+                          <dl class={styles.metrics}>
+                            <div>
+                              <dt>Clean notes</dt>
+                              <dd>{facts().cleanedNoteCount}</dd>
+                            </div>
+                            <div>
+                              <dt>Voiced time</dt>
+                              <dd>{formatSeconds(facts().voicedSeconds)}</dd>
+                            </div>
+                            <div>
+                              <dt>Detected key</dt>
+                              <dd>{facts().keyLabel}</dd>
+                            </div>
+                            <div>
+                              <dt>Key regions</dt>
+                              <dd>{facts().keyRegionCount}</dd>
+                            </div>
+                          </dl>
 
-                        <div class={styles.passSummary}>
-                          <CheckCircle />
-                          <div>
-                            <strong>Cleanup pass complete</strong>
-                            <p>
-                              {facts().rawNoteCount} raw fragments became{' '}
-                              {facts().cleanedNoteCount} stable notes
-                              {facts().manualEditCount > 0
-                                ? `, with ${facts().manualEditCount} saved manual edits.`
-                                : '.'}
-                            </p>
+                          <div class={styles.passSummary}>
+                            <CheckCircle />
+                            <div>
+                              <strong>Cleanup pass complete</strong>
+                              <p>
+                                {facts().rawNoteCount} raw fragments became{' '}
+                                {facts().cleanedNoteCount} stable notes
+                                {facts().manualEditCount > 0
+                                  ? `, with ${facts().manualEditCount} saved manual edits.`
+                                  : '.'}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
+                    </Show>
                   </Show>
                 </Show>
-              </Show>
-            </section>
+              </section>
 
-            <button
-              type="button"
-              class={styles.sessionLink}
-              onClick={openKaraoke}
-            >
-              <span>
-                <Clock />
-                Open full session
-              </span>
-              <span aria-hidden="true">›</span>
-            </button>
-          </>
-        )}
+              <div class={styles.sessionActions}>
+                <button
+                  type="button"
+                  class={styles.sessionLink}
+                  onClick={openKaraoke}
+                >
+                  <span>
+                    <Clock />
+                    Open full session
+                  </span>
+                  <span aria-hidden="true">&rsaquo;</span>
+                </button>
+
+                <button
+                  type="button"
+                  class={styles.sessionLink}
+                  onClick={changeSong}
+                  data-testid="change-song-btn"
+                >
+                  <span>
+                    <MusicNote />
+                    Change song
+                  </span>
+                  <span aria-hidden="true">&rsaquo;</span>
+                </button>
+              </div>
+            </>
+          )
+        }}
       </Show>
 
       <DesktopHint message="Live mic diagnostics, detector tuning, benchmark tools and multi-pane analysis are available on desktop." />
