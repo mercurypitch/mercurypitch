@@ -5,6 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
@@ -173,6 +174,7 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
+const MAX_VISUAL_FRAMES_PER_SECOND = 30
 
 // ── Controller ─────────────────────────────────────────────────
 
@@ -221,7 +223,11 @@ export const useStemMixerAudioController = (
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
   let mappingWasActive = false
-  let lastMappingWaveformDrawAt = -Infinity
+  const visualFrameLimiter = createFrameRateLimiter(
+    MAX_VISUAL_FRAMES_PER_SECOND,
+  )
+  const vocalTimeData = new Float32Array(PITCH_FFT_SIZE)
+  let micTimeData: Float32Array<ArrayBuffer> | null = null
 
   // ── Live pitch smoothing ─────────────────────────────────────
   // Raw per-frame detection flickers (single-frame octave/harmonic errors,
@@ -597,6 +603,7 @@ export const useStemMixerAudioController = (
     deps.resetMicPitchHistory()
     pitchDetector?.resetHistory()
     resetSmoothers()
+    visualFrameLimiter.reset()
     startRafLoop()
   }
 
@@ -715,149 +722,154 @@ export const useStemMixerAudioController = (
       const now = audioCtx.currentTime
       const elapsedTime =
         bufferPlayStart + (now - wallPlayStart) * playbackSpeed
-      setElapsed(Math.min(elapsedTime, duration()))
+      if (visualFrameLimiter.shouldRun(now)) {
+        setElapsed(Math.min(elapsedTime, duration()))
 
-      // AudioContext.currentTime describes the rendering timeline, which can
-      // lead what the listener actually hears by the device output latency.
-      // Drive lyrics from the output timestamp when the browser exposes it.
-      let audibleContextTime = now
-      try {
-        const output = audioCtx.getOutputTimestamp()
-        const outputContextTime = output.contextTime
-        if (
-          outputContextTime !== undefined &&
-          Number.isFinite(outputContextTime) &&
-          outputContextTime > 0
-        ) {
-          audibleContextTime = outputContextTime
-        } else {
+        // AudioContext.currentTime describes the rendering timeline, which can
+        // lead what the listener actually hears by the device output latency.
+        // Drive lyrics from the output timestamp when the browser exposes it.
+        let audibleContextTime = now
+        try {
+          const output = audioCtx.getOutputTimestamp()
+          const outputContextTime = output.contextTime
+          if (
+            outputContextTime !== undefined &&
+            Number.isFinite(outputContextTime) &&
+            outputContextTime > 0
+          ) {
+            audibleContextTime = outputContextTime
+          } else {
+            audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
+          }
+        } catch {
           audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
         }
-      } catch {
-        audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
-      }
-      const audibleTime =
-        bufferPlayStart +
-        Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
-      setAudibleElapsed(Math.min(audibleTime, duration()))
+        const audibleTime =
+          bufferPlayStart +
+          Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
+        setAudibleElapsed(Math.min(audibleTime, duration()))
 
-      const mappingActive = deps.lyricsMappingActive?.() === true
-      if (mappingActive && !mappingWasActive) {
-        // Mapping only needs the vocal waveform. Stop the pitch/scoring history
-        // at the boundary so its stale tail cannot leak into the next session.
-        setCurrentPitch(null)
-        deps.setMicPitch(null)
-        resetSmoothers()
-      }
-      const mappingJustEnded = !mappingActive && mappingWasActive
-      if (mappingJustEnded) {
-        const resume = getPitchWindowResumeState(
-          elapsedTime,
-          windowDuration(),
-          deps.PITCH_WINDOW_FILL_RATIO,
-        )
-        activeAnchor = resume.anchor
-        isRecentering = false
-        setWindowStart(resume.windowStart)
-      }
-      mappingWasActive = mappingActive
-
-      // Pitch detection from vocal analyser (median + octave-corrected). This
-      // is intentionally suspended while mapping lyrics: FFTs, pitch tracking,
-      // mic comparison, and history allocation compete with pointer input.
-      let stemFreq = 0
-      if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
-        const timeData = new Float32Array(PITCH_FFT_SIZE)
-        vocalAnalyser.getFloatTimeDomainData(timeData)
-        const raw = pitchDetector!.detect(timeData)
-        const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
-        setCurrentPitch(pitch)
-
-        if (pitch) {
-          const midi = freqToMidi(pitch.frequency)
-          if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
-            stemFreq = pitch.frequency
-            pitchHistory.push({
-              time: elapsedTime,
-              noteName: pitch.noteName,
-              frequency: pitch.frequency,
-              octave: pitch.octave,
-            })
-          }
+        const mappingActive = deps.lyricsMappingActive?.() === true
+        if (mappingActive && !mappingWasActive) {
+          // Mapping only needs the vocal waveform. Stop the pitch/scoring history
+          // at the boundary so its stale tail cannot leak into the next session.
+          setCurrentPitch(null)
+          deps.setMicPitch(null)
+          resetSmoothers()
         }
-      }
+        const mappingJustEnded = !mappingActive && mappingWasActive
+        if (mappingJustEnded) {
+          const resume = getPitchWindowResumeState(
+            elapsedTime,
+            windowDuration(),
+            deps.PITCH_WINDOW_FILL_RATIO,
+          )
+          activeAnchor = resume.anchor
+          isRecentering = false
+          setWindowStart(resume.windowStart)
+        }
+        mappingWasActive = mappingActive
 
-      // Mic pitch detection (same smoothing), judged by the compare engine —
-      // octave-agnostic, transition-graced, note-aggregated (see
-      // pitch-compare-engine.ts).
-      if (!mappingActive && deps.micActive()) {
-        const micAnalyser = deps.getMicAnalyserNode()
-        if (micAnalyser) {
-          // Buffer size follows the global setting (mic analyser fftSize), so
-          // read its current size rather than a fixed constant.
-          const micData = new Float32Array(micAnalyser.fftSize)
-          micAnalyser.getFloatTimeDomainData(micData)
-          const rawMic = deps.getMicPitchDetector()!.detect(micData)
-          const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
-          deps.setMicPitch(mp)
-          let micFreq = 0
-          if (mp) {
-            const midi = freqToMidi(mp.frequency)
+        // Pitch detection from vocal analyser (median + octave-corrected). This
+        // is intentionally suspended while mapping lyrics: FFTs, pitch tracking,
+        // mic comparison, and history allocation compete with pointer input.
+        let stemFreq = 0
+        if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
+          vocalAnalyser.getFloatTimeDomainData(vocalTimeData)
+          const raw = pitchDetector!.detect(vocalTimeData)
+          const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
+          setCurrentPitch(pitch)
+
+          if (pitch) {
+            const midi = freqToMidi(pitch.frequency)
             if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
-              micFreq = mp.frequency
-              deps.getMicPitchHistory().push({
+              stemFreq = pitch.frequency
+              pitchHistory.push({
                 time: elapsedTime,
-                noteName: mp.noteName,
-                frequency: mp.frequency,
-                octave: mp.octave,
+                noteName: pitch.noteName,
+                frequency: pitch.frequency,
+                octave: pitch.octave,
               })
             }
           }
-          deps.pushComparison(elapsedTime, stemFreq, micFreq)
         }
-      }
 
-      // The pitch and MIDI windows are not drawn during mapping, so avoid their
-      // per-frame reactive scroll updates as well.
-      if (!mappingActive && !mappingJustEnded) {
-        // Continuous-scroll time window (skip while user is touch-panning)
-        if (deps.canvas.isUserPanning?.() === true) {
-          activeAnchor = (elapsedTime - windowStart()) / windowDuration()
-          isRecentering = false
-        } else {
-          // Detect external changes to windowStart (like click-to-seek)
-          const expectedStart = elapsedTime - activeAnchor * windowDuration()
-          if (Math.abs(windowStart() - expectedStart) > 0.05) {
-            activeAnchor = (elapsedTime - windowStart()) / windowDuration()
-            isRecentering = activeAnchor > 0.85 || activeAnchor < 0.15
-          }
-
-          // Gently pull the playhead back to 30% if we entered the danger zone
-          if (isRecentering) {
-            activeAnchor += (deps.PITCH_WINDOW_FILL_RATIO - activeAnchor) * 0.05
-            if (Math.abs(activeAnchor - deps.PITCH_WINDOW_FILL_RATIO) < 0.01) {
-              activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
-              isRecentering = false
+        // Mic pitch detection (same smoothing), judged by the compare engine —
+        // octave-agnostic, transition-graced, note-aggregated (see
+        // pitch-compare-engine.ts).
+        if (!mappingActive && deps.micActive()) {
+          const micAnalyser = deps.getMicAnalyserNode()
+          if (micAnalyser) {
+            // Buffer size follows the global setting (mic analyser fftSize), so
+            // read its current size rather than a fixed constant.
+            if (micTimeData?.length !== micAnalyser.fftSize) {
+              micTimeData = new Float32Array(micAnalyser.fftSize)
             }
+            micAnalyser.getFloatTimeDomainData(micTimeData)
+            const rawMic = deps.getMicPitchDetector()!.detect(micTimeData)
+            const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
+            deps.setMicPitch(mp)
+            let micFreq = 0
+            if (mp) {
+              const midi = freqToMidi(mp.frequency)
+              if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
+                micFreq = mp.frequency
+                deps.getMicPitchHistory().push({
+                  time: elapsedTime,
+                  noteName: mp.noteName,
+                  frequency: mp.frequency,
+                  octave: mp.octave,
+                })
+              }
+            }
+            deps.pushComparison(elapsedTime, stemFreq, micFreq)
           }
-
-          const newStart = elapsedTime - activeAnchor * windowDuration()
-          setWindowStart(Math.max(0, newStart))
         }
-      }
 
-      const { canvas } = deps
-      if (!mappingActive || now - lastMappingWaveformDrawAt >= 1 / 30) {
-        canvas.syncCanvasSizes()
+        // The pitch and MIDI windows are not drawn during mapping, so avoid their
+        // per-frame reactive scroll updates as well.
+        if (!mappingActive && !mappingJustEnded) {
+          // Continuous-scroll time window (skip while user is touch-panning)
+          if (deps.canvas.isUserPanning?.() === true) {
+            activeAnchor = (elapsedTime - windowStart()) / windowDuration()
+            isRecentering = false
+          } else {
+            // Detect external changes to windowStart (like click-to-seek)
+            const expectedStart = elapsedTime - activeAnchor * windowDuration()
+            if (Math.abs(windowStart() - expectedStart) > 0.05) {
+              activeAnchor = (elapsedTime - windowStart()) / windowDuration()
+              isRecentering = activeAnchor > 0.85 || activeAnchor < 0.15
+            }
+
+            // Gently pull the playhead back to 30% if we entered the danger zone
+            if (isRecentering) {
+              activeAnchor +=
+                (deps.PITCH_WINDOW_FILL_RATIO - activeAnchor) * 0.05
+              if (
+                Math.abs(activeAnchor - deps.PITCH_WINDOW_FILL_RATIO) < 0.01
+              ) {
+                activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
+                isRecentering = false
+              }
+            }
+
+            const newStart = elapsedTime - activeAnchor * windowDuration()
+            setWindowStart(Math.max(0, newStart))
+          }
+        }
+
+        const { canvas } = deps
+        // ResizeObserver and the DPR watcher own backing-store synchronization.
+        // Measuring every canvas here forced synchronous layout on every display
+        // refresh, directly in the audio visualisation hot path.
         canvas.drawWaveformOverview()
-        lastMappingWaveformDrawAt = now
+        if (!mappingActive) {
+          canvas.drawPitchCanvas()
+          canvas.drawMidiCanvas()
+          canvas.drawLiveWaveform()
+        }
+        deps.updateCurrentLine()
       }
-      if (!mappingActive) {
-        canvas.drawPitchCanvas()
-        canvas.drawMidiCanvas()
-        canvas.drawLiveWaveform()
-      }
-      deps.updateCurrentLine()
 
       // End detection is meaningless until the buffers report a real duration.
       // Without this guard a tick that runs before decode finishes sees
