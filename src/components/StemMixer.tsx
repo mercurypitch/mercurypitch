@@ -1754,26 +1754,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               >
                 <Music /> Playlist
               </button>
-              <Show when={props.preset !== 'performance'}>
-                <button
-                  type="button"
-                  class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
-                  classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
-                  onClick={() => {
-                    const opening = !pitchAnalysis.panelOpen()
-                    if (opening) {
-                      setPlaylistSidebarOpen(false)
-                      pitchAnalysis.setEditMode(false)
-                      pitchAnalysis.setSelectedNoteId(null)
-                    }
-                    pitchAnalysis.setPanelOpen(opening)
-                  }}
-                  title="Pitch Analysis & Settings"
-                  style={{ gap: '0.4rem' }}
-                >
-                  <Settings /> Pitch
-                </button>
-              </Show>
+              <button
+                type="button"
+                class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
+                classList={{ 'sm-btn--active': pitchAnalysis.panelOpen() }}
+                onClick={() => {
+                  const opening = !pitchAnalysis.panelOpen()
+                  if (opening) {
+                    setPlaylistSidebarOpen(false)
+                    pitchAnalysis.setEditMode(false)
+                    pitchAnalysis.setSelectedNoteId(null)
+                  }
+                  pitchAnalysis.setPanelOpen(opening)
+                }}
+                title="Pitch Analysis & Settings"
+                style={{ gap: '0.4rem' }}
+              >
+                <Settings /> Pitch
+              </button>
               {/* Share links are only useful once songs are cloud-synced across
                 devices — gated behind the premium flag (off by default). */}
               <Show when={PREMIUM_FEATURES}>
@@ -2175,13 +2173,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
         </Show>
 
-        <Show
-          when={
-            props.preset !== 'performance' &&
-            pitchAnalysis.panelOpen() &&
-            !pitchAnalysis.editMode()
-          }
-        >
+        <Show when={pitchAnalysis.panelOpen() && !pitchAnalysis.editMode()}>
           <div class="sm-left-rail-wrap">
             <StemMixerPitchAnalysisPanel
               algorithm={pitchAnalysis.algorithm()}
@@ -2244,7 +2236,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               keyRegionCount={pitchAnalysis.keyRegions().length}
               editMode={pitchAnalysis.editMode()}
               onToggleEditMode={enterPitchStudio}
-              canEdit={pitchAnalysis.editableNotes().length > 0}
+              canEdit={
+                props.preset !== 'performance' &&
+                pitchAnalysis.editableNotes().length > 0
+              }
               hasEdits={pitchAnalysis.hasEdits()}
               pitchView={pitchAnalysis.pitchView()}
               setPitchView={pitchAnalysis.setPitchView}
