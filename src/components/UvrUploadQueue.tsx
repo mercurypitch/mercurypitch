@@ -199,6 +199,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
                   when={props.running()}
                   fallback={
                     <button
+                      type="button"
                       class="uvr-queue-row-action"
                       onClick={() => props.onRemove(item.id)}
                       aria-label={`Remove ${item.file.name} from queue`}
@@ -209,6 +210,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
                   }
                 >
                   <button
+                    type="button"
                     class="uvr-queue-row-action uvr-queue-row-action--skip"
                     onClick={() => props.onSkip(item.id)}
                     aria-label={`Skip ${item.file.name}`}
@@ -248,6 +250,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
           <Show when={props.running() && hasActiveItem() && !allFinished()}>
             <Show when={queuedCount() > 0}>
               <button
+                type="button"
                 class="uvr-queue-button uvr-queue-button--stop"
                 onClick={() => props.onSkipRemaining()}
                 title="Let this song finish and skip every waiting song"
@@ -256,6 +259,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
               </button>
             </Show>
             <button
+              type="button"
               class="uvr-queue-button uvr-queue-button--danger"
               onClick={() => props.onCancel()}
               title="Cancel this song, then continue with the next waiting song"
@@ -265,12 +269,14 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
           </Show>
           <Show when={!props.running() && !allFinished()}>
             <button
+              type="button"
               class="uvr-queue-button uvr-queue-button--ghost"
               onClick={() => props.onClear()}
             >
               <Trash2 /> Clear
             </button>
             <button
+              type="button"
               class="uvr-queue-button uvr-queue-button--primary"
               onClick={() => props.onStart()}
               disabled={queuedCount() === 0}
@@ -284,6 +290,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
           </Show>
           <Show when={allFinished()}>
             <button
+              type="button"
               class="uvr-queue-button uvr-queue-button--primary"
               onClick={() => props.onClear()}
             >
