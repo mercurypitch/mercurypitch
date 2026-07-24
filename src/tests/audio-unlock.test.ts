@@ -6,6 +6,8 @@ interface RecoverableAudioContext {
   suspend: ReturnType<typeof vi.fn>
 }
 
+let playSilent: ReturnType<typeof vi.fn>
+
 function setVisibility(state: DocumentVisibilityState): void {
   Object.defineProperty(document, 'visibilityState', {
     configurable: true,
@@ -32,13 +34,16 @@ function createAudioContext(
 describe('iOS audio unlock', () => {
   beforeEach(() => {
     vi.resetModules()
+    playSilent = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal(
       'Audio',
-      vi.fn().mockImplementation(() => ({
-        play: vi.fn().mockResolvedValue(undefined),
-        preload: '',
-        setAttribute: vi.fn(),
-      })),
+      vi.fn().mockImplementation(function MockAudio() {
+        return {
+          play: playSilent,
+          preload: '',
+          setAttribute: vi.fn(),
+        }
+      }),
     )
     setVisibility('visible')
   })
@@ -83,6 +88,26 @@ describe('iOS audio unlock', () => {
       expect(context.resume).toHaveBeenCalledOnce()
     })
     expect(context.suspend).toHaveBeenCalledBefore(context.resume)
+    uninstall()
+  })
+
+  it('re-primes the playback session on the first gesture after backgrounding', async () => {
+    const { installAudioUnlock, unlockAudio } =
+      await import('@/lib/audio-unlock')
+    const context = createAudioContext()
+
+    unlockAudio(context as unknown as AudioContext)
+    const uninstall = installAudioUnlock(
+      () => context as unknown as AudioContext,
+    )
+
+    setVisibility('hidden')
+    setVisibility('visible')
+    document.dispatchEvent(new Event('pointerup'))
+
+    await vi.waitFor(() => {
+      expect(playSilent).toHaveBeenCalledTimes(2)
+    })
     uninstall()
   })
 

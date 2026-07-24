@@ -134,6 +134,10 @@ export function installAudioUnlock(
   const onVisible = (): void => {
     if (document.visibilityState !== 'visible') {
       wasBackgrounded = true
+      // iOS can discard the promoted playback audio session while keeping the
+      // AudioContext state as "running". Require the next real gesture to
+      // replay the silent media element and promote the session again.
+      sessionPrimed = false
       return
     }
 
