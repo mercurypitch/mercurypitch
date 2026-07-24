@@ -5,7 +5,6 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
-import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
@@ -17,6 +16,9 @@ import { createRunningMedian } from '@/lib/pitch-pipeline/running-median'
 import { getPitchWindowResumeState } from '@/lib/pitch-window'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { sliderToGain } from '@/lib/volume-curve'
+import { createStemMixerFrameScheduler } from './frame-scheduler'
+import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
+import { createStemMixerPerformanceDiagnostics } from './performance-diagnostics'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -164,6 +166,11 @@ export interface StemMixerAudioController {
   getPitchHistory: () => PitchNote[]
   setPitchHistory: (history: PitchNote[]) => void
 
+  // Opt-in playback diagnostics (exposed through window.__stemMixerDebug)
+  startPerformanceDebug: () => void
+  stopPerformanceDebug: () => StemMixerPerformanceSnapshot
+  getPerformanceSnapshot: () => StemMixerPerformanceSnapshot
+
   // Ref accessors (for onCleanup)
   getAudioCtx: () => AudioContext | null
   getRafId: () => number
@@ -174,7 +181,8 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
-const MAX_VISUAL_FRAMES_PER_SECOND = 30
+const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
+const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
 // ── Controller ─────────────────────────────────────────────────
 
@@ -223,11 +231,88 @@ export const useStemMixerAudioController = (
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
   let mappingWasActive = false
-  const visualFrameLimiter = createFrameRateLimiter(
-    MAX_VISUAL_FRAMES_PER_SECOND,
+  const frameScheduler = createStemMixerFrameScheduler(
+    MAX_ANALYSIS_FRAMES_PER_SECOND,
   )
+  const performanceDiagnostics = createStemMixerPerformanceDiagnostics()
+  let performanceLogTimer: ReturnType<typeof setInterval> | null = null
   const vocalTimeData = new Float32Array(PITCH_FFT_SIZE)
   let micTimeData: Float32Array<ArrayBuffer> | null = null
+  // Stable callbacks avoid allocating four new closures per animation frame
+  // while diagnostics are disabled (the normal production path).
+  const drawOverviewFrame = () => deps.canvas.drawWaveformOverview()
+  const drawPitchFrame = () => deps.canvas.drawPitchCanvas()
+  const drawMidiFrame = () => deps.canvas.drawMidiCanvas()
+  const drawLiveFrame = () => deps.canvas.drawLiveWaveform()
+
+  const logPerformanceSnapshot = (
+    snapshot: StemMixerPerformanceSnapshot,
+  ): void => {
+    const rows: Record<
+      string,
+      {
+        ratePerSecond: string
+        averageMs: string
+        worstMs: string
+        calls: number
+        longFrames: number | string
+      }
+    > = {
+      animation: {
+        ratePerSecond: snapshot.animation.fps.toFixed(1),
+        averageMs: snapshot.animation.averageIntervalMs.toFixed(2),
+        worstMs: snapshot.animation.worstIntervalMs.toFixed(2),
+        calls: snapshot.animation.frames,
+        longFrames: snapshot.animation.longFrames,
+      },
+    }
+
+    for (const [stage, stats] of Object.entries(snapshot.stages)) {
+      rows[stage] = {
+        ratePerSecond: stats.callsPerSecond.toFixed(1),
+        averageMs: stats.averageMs.toFixed(2),
+        worstMs: stats.worstMs.toFixed(2),
+        calls: stats.calls,
+        longFrames: '—',
+      }
+    }
+
+    console.info(
+      `[StemMixer performance] ${snapshot.sampledMs.toFixed(0)} ms sample`,
+    )
+    console.table(rows)
+  }
+
+  const getPerformanceSnapshot = (): StemMixerPerformanceSnapshot =>
+    performanceDiagnostics.snapshot()
+
+  const startPerformanceDebug = (): void => {
+    if (performanceLogTimer !== null) clearInterval(performanceLogTimer)
+    performanceDiagnostics.start()
+    console.info(
+      '[StemMixer performance] Recording. Call window.__stemMixerDebug.performance.stop() to finish.',
+    )
+    performanceLogTimer = setInterval(() => {
+      logPerformanceSnapshot(performanceDiagnostics.snapshot())
+      performanceDiagnostics.reset()
+    }, PERFORMANCE_LOG_INTERVAL_MS)
+  }
+
+  const stopPerformanceDebug = (): StemMixerPerformanceSnapshot => {
+    if (performanceLogTimer !== null) {
+      clearInterval(performanceLogTimer)
+      performanceLogTimer = null
+    }
+    const snapshot = performanceDiagnostics.enabled()
+      ? performanceDiagnostics.stop()
+      : performanceDiagnostics.snapshot()
+    logPerformanceSnapshot(snapshot)
+    return snapshot
+  }
+
+  onCleanup(() => {
+    if (performanceLogTimer !== null) clearInterval(performanceLogTimer)
+  })
 
   // ── Live pitch smoothing ─────────────────────────────────────
   // Raw per-frame detection flickers (single-frame octave/harmonic errors,
@@ -603,7 +688,7 @@ export const useStemMixerAudioController = (
     deps.resetMicPitchHistory()
     pitchDetector?.resetHistory()
     resetSmoothers()
-    visualFrameLimiter.reset()
+    frameScheduler.reset()
     startRafLoop()
   }
 
@@ -716,13 +801,18 @@ export const useStemMixerAudioController = (
 
   // ── RAF Loop ─────────────────────────────────────────────────
   const startRafLoop = () => {
-    const tick = () => {
+    const tick = (rafTimestampMs: number) => {
       if (!audioCtx || !playing()) return
 
+      performanceDiagnostics.recordFrame(rafTimestampMs)
       const now = audioCtx.currentTime
       const elapsedTime =
         bufferPlayStart + (now - wallPlayStart) * playbackSpeed
-      if (visualFrameLimiter.shouldRun(now)) {
+      // Use the RAF clock for cadence decisions. Firefox's AudioContext clock
+      // advances in render quanta, so comparing it with a 30 Hz interval can
+      // accidentally produce a visibly uneven ~20–25 Hz analysis cadence.
+      const frame = frameScheduler.next(rafTimestampMs / 1000)
+      if (frame.present) {
         setElapsed(Math.min(elapsedTime, duration()))
 
         // AudioContext.currentTime describes the rendering timeline, which can
@@ -770,60 +860,70 @@ export const useStemMixerAudioController = (
         }
         mappingWasActive = mappingActive
 
-        // Pitch detection from vocal analyser (median + octave-corrected). This
-        // is intentionally suspended while mapping lyrics: FFTs, pitch tracking,
-        // mic comparison, and history allocation compete with pointer input.
-        let stemFreq = 0
-        if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
-          vocalAnalyser.getFloatTimeDomainData(vocalTimeData)
-          const raw = pitchDetector!.detect(vocalTimeData)
-          const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
-          setCurrentPitch(pitch)
+        if (frame.analyze) {
+          performanceDiagnostics.measure('analysis', () => {
+            // Pitch detection from vocal analyser (median + octave-corrected).
+            // This is intentionally suspended while mapping lyrics: FFTs,
+            // pitch tracking, mic comparison, and history allocation compete
+            // with pointer input.
+            let stemFreq = 0
+            if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
+              vocalAnalyser.getFloatTimeDomainData(vocalTimeData)
+              const raw = pitchDetector!.detect(vocalTimeData)
+              const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
+              setCurrentPitch(pitch)
 
-          if (pitch) {
-            const midi = freqToMidi(pitch.frequency)
-            if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
-              stemFreq = pitch.frequency
-              pitchHistory.push({
-                time: elapsedTime,
-                noteName: pitch.noteName,
-                frequency: pitch.frequency,
-                octave: pitch.octave,
-              })
-            }
-          }
-        }
-
-        // Mic pitch detection (same smoothing), judged by the compare engine —
-        // octave-agnostic, transition-graced, note-aggregated (see
-        // pitch-compare-engine.ts).
-        if (!mappingActive && deps.micActive()) {
-          const micAnalyser = deps.getMicAnalyserNode()
-          if (micAnalyser) {
-            // Buffer size follows the global setting (mic analyser fftSize), so
-            // read its current size rather than a fixed constant.
-            if (micTimeData?.length !== micAnalyser.fftSize) {
-              micTimeData = new Float32Array(micAnalyser.fftSize)
-            }
-            micAnalyser.getFloatTimeDomainData(micTimeData)
-            const rawMic = deps.getMicPitchDetector()!.detect(micTimeData)
-            const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
-            deps.setMicPitch(mp)
-            let micFreq = 0
-            if (mp) {
-              const midi = freqToMidi(mp.frequency)
-              if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
-                micFreq = mp.frequency
-                deps.getMicPitchHistory().push({
-                  time: elapsedTime,
-                  noteName: mp.noteName,
-                  frequency: mp.frequency,
-                  octave: mp.octave,
-                })
+              if (pitch) {
+                const midi = freqToMidi(pitch.frequency)
+                if (
+                  midi >= MIDI_NOTE_RANGE.min &&
+                  midi <= MIDI_NOTE_RANGE.max
+                ) {
+                  stemFreq = pitch.frequency
+                  pitchHistory.push({
+                    time: elapsedTime,
+                    noteName: pitch.noteName,
+                    frequency: pitch.frequency,
+                    octave: pitch.octave,
+                  })
+                }
               }
             }
-            deps.pushComparison(elapsedTime, stemFreq, micFreq)
-          }
+
+            // Mic pitch detection (same smoothing), judged by the compare
+            // engine — octave-agnostic, transition-graced, note-aggregated.
+            if (!mappingActive && deps.micActive()) {
+              const micAnalyser = deps.getMicAnalyserNode()
+              if (micAnalyser) {
+                // Buffer size follows the global setting (mic analyser fftSize),
+                // so read its current size rather than a fixed constant.
+                if (micTimeData?.length !== micAnalyser.fftSize) {
+                  micTimeData = new Float32Array(micAnalyser.fftSize)
+                }
+                micAnalyser.getFloatTimeDomainData(micTimeData)
+                const rawMic = deps.getMicPitchDetector()!.detect(micTimeData)
+                const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
+                deps.setMicPitch(mp)
+                let micFreq = 0
+                if (mp) {
+                  const midi = freqToMidi(mp.frequency)
+                  if (
+                    midi >= MIDI_NOTE_RANGE.min &&
+                    midi <= MIDI_NOTE_RANGE.max
+                  ) {
+                    micFreq = mp.frequency
+                    deps.getMicPitchHistory().push({
+                      time: elapsedTime,
+                      noteName: mp.noteName,
+                      frequency: mp.frequency,
+                      octave: mp.octave,
+                    })
+                  }
+                }
+                deps.pushComparison(elapsedTime, stemFreq, micFreq)
+              }
+            }
+          })
         }
 
         // The pitch and MIDI windows are not drawn during mapping, so avoid their
@@ -858,15 +958,14 @@ export const useStemMixerAudioController = (
           }
         }
 
-        const { canvas } = deps
         // ResizeObserver and the DPR watcher own backing-store synchronization.
         // Measuring every canvas here forced synchronous layout on every display
         // refresh, directly in the audio visualisation hot path.
-        canvas.drawWaveformOverview()
+        performanceDiagnostics.measure('overview', drawOverviewFrame)
         if (!mappingActive) {
-          canvas.drawPitchCanvas()
-          canvas.drawMidiCanvas()
-          canvas.drawLiveWaveform()
+          performanceDiagnostics.measure('pitch', drawPitchFrame)
+          performanceDiagnostics.measure('midi', drawMidiFrame)
+          performanceDiagnostics.measure('live', drawLiveFrame)
         }
         deps.updateCurrentLine()
       }
@@ -1006,6 +1105,9 @@ export const useStemMixerAudioController = (
     setPitchHistory: (h: PitchNote[]) => {
       pitchHistory = h
     },
+    startPerformanceDebug,
+    stopPerformanceDebug,
+    getPerformanceSnapshot,
     getAudioCtx: () => audioCtx,
     getRafId: () => rafId,
   }

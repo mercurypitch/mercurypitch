@@ -16,7 +16,10 @@ export function createFrameRateLimiter(
       ? maxFramesPerSecond
       : 1
   const intervalSeconds = 1 / safeFramesPerSecond
-  const clockToleranceSeconds = 1e-6
+  // RAF timestamps are commonly rounded to 0.1 ms. Without a small tolerance,
+  // a nominal 33.333 ms deadline can arrive as 33.3 ms and miss until the next
+  // display frame, turning a requested 30 Hz cadence into an uneven ~20 Hz.
+  const clockToleranceSeconds = Math.min(0.001, intervalSeconds / 10)
   let lastRunAt = Number.NEGATIVE_INFINITY
 
   return {

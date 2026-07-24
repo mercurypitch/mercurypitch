@@ -36,4 +36,14 @@ describe('createFrameRateLimiter', () => {
     expect(limiter.shouldRun(0.5)).toBe(false)
     expect(limiter.shouldRun(1)).toBe(true)
   })
+
+  it('accepts display timestamps rounded just before a frame deadline', () => {
+    const limiter = createFrameRateLimiter(30)
+
+    expect(limiter.shouldRun(0)).toBe(true)
+    expect(limiter.shouldRun(0.0166)).toBe(false)
+    expect(limiter.shouldRun(0.0333)).toBe(true)
+    expect(limiter.shouldRun(0.05)).toBe(false)
+    expect(limiter.shouldRun(0.0666)).toBe(true)
+  })
 })

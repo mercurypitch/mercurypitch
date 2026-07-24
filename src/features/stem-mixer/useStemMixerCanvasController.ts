@@ -160,6 +160,7 @@ export const useStemMixerCanvasController = (
   // ── Drawing helpers ──────────────────────────────────────────
 
   const peakCache = new Map<AudioBuffer, WaveformPeakCache>()
+  const liveWaveformData = new WeakMap<AnalyserNode, Uint8Array<ArrayBuffer>>()
 
   const getPeaks = (buffer: AudioBuffer): WaveformPeakCache => {
     if (peakCache.has(buffer)) return peakCache.get(buffer)!
@@ -346,7 +347,11 @@ export const useStemMixerCanvasController = (
     for (let ti = 0; ti < activeTracks.length; ti++) {
       const track = activeTracks[ti]
       const analyser = track.analyserNode!
-      const data = new Uint8Array(analyser.frequencyBinCount)
+      let data = liveWaveformData.get(analyser)
+      if (data?.length !== analyser.frequencyBinCount) {
+        data = new Uint8Array(analyser.frequencyBinCount)
+        liveWaveformData.set(analyser, data)
+      }
       analyser.getByteTimeDomainData(data)
       const yOff = ti * trackHeight
       const midY = yOff + trackHeight / 2
