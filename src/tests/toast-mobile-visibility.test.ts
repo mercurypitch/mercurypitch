@@ -50,7 +50,8 @@ describe('REQ-TMV-001 — Mobile toast container respects tab bar clearance', ()
   })
 
   it('sets max-height using --tabbar-total', () => {
-    expect(block).toMatch(/max-height\s*:.*--tabbar-total/)
+    // [\s\S] so the match survives Prettier wrapping the calc() value.
+    expect(block).toMatch(/max-height\s*:[\s\S]*?--tabbar-total/)
   })
 
   it('uses dynamic viewport height (dvh)', () => {
@@ -82,7 +83,7 @@ describe('REQ-TMV-003 — Banner sits above the tab bar on mobile', () => {
   })
 
   it('caps height so buttons remain visible', () => {
-    expect(block).toMatch(/max-height\s*:.*--tabbar-total/)
+    expect(block).toMatch(/max-height\s*:[\s\S]*?--tabbar-total/)
   })
 
   it('enables vertical scrolling for long content', () => {

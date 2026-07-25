@@ -200,9 +200,9 @@
     gap: 0.48rem;
 
     /* Prevent stacked / multi-line toasts from pushing action buttons
-       below the visible viewport. The 120px budget keeps the bottom
-       clear of the tab bar + safe area. Scrollable so every toast and
-       its buttons remain reachable. */
+       below the visible viewport: budget the tab bar + safe area out of
+       the height, and scroll so every toast and its buttons remain
+       reachable. */
     max-height: calc(
       100dvh - env(safe-area-inset-top) - var(--tabbar-total, 54px) - 1.3rem
     );
