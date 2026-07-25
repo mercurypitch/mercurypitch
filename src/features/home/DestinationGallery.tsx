@@ -142,7 +142,7 @@ function PracticeVisual(): JSX.Element {
 
         <g
           class={styles.guitar}
-          transform="translate(66 12) rotate(-10 66 118)"
+          transform="translate(90 38) scale(.75) translate(66 12) rotate(-10 66 118)"
           filter="url(#practice-instrument-shadow)"
         >
           <ellipse
@@ -232,7 +232,7 @@ function PracticeVisual(): JSX.Element {
 
         <g
           class={styles.microphone}
-          transform="translate(302 10)"
+          transform="translate(90 38) scale(.75) translate(302 10)"
           filter="url(#practice-instrument-shadow)"
         >
           <ellipse
@@ -279,7 +279,7 @@ function PracticeVisual(): JSX.Element {
 
         <g
           class={styles.piano}
-          transform="translate(445 100)"
+          transform="translate(90 38) scale(.75) translate(445 100)"
           filter="url(#practice-instrument-shadow)"
         >
           <ellipse
