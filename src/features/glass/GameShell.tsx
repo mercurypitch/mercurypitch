@@ -61,7 +61,10 @@ export const GameShell: Component = () => {
               <IconBack />
               <span>Levels</span>
             </button>
-            <GlassApp config={current.config} />
+            <GlassApp
+              config={current.config}
+              level={{ name: current.name, image: current.image, accent: current.accent }}
+            />
           </div>
         )}
       </Show>

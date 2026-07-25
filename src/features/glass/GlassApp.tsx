@@ -124,7 +124,11 @@ const IDLE_READOUT: LiveReadout = {
   lockRun: 0,
 }
 
-export const GlassApp: Component<{ config?: GlassConfig }> = (props) => {
+export const GlassApp: Component<{
+  config?: GlassConfig
+  /** Native game: per-level stage dressing (concept render + accent). */
+  level?: { name: string; image: string; accent: string }
+}> = (props) => {
   const [session, setSession] = createSignal<GlassSessionState>(
     initialSessionState(),
   )
@@ -1235,6 +1239,15 @@ export const GlassApp: Component<{ config?: GlassConfig }> = (props) => {
   return (
     <div class="glass-shell">
       <div class="glass-cosmos" aria-hidden="true" />
+      <Show when={props.level} keyed>
+        {(lv) => (
+          <div
+            class="glass-level-backdrop"
+            aria-hidden="true"
+            style={{ 'background-image': `url(${lv.image})` }}
+          />
+        )}
+      </Show>
 
       <main class="glass-main">
         <Show when={phase() === 'idle' && !previewOpen()}>
