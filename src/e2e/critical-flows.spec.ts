@@ -17,6 +17,10 @@ test.describe('Critical Flows — GH #121', () => {
         pp.appStore.setAdvancedFeaturesEnabled(true)
       }
     })
+
+    // The app now lands on the Home tab by default; these flows exercise the
+    // Singing practice surface, so start every test there.
+    await switchTab(page, 'singing')
   })
 
   // ============================================================
