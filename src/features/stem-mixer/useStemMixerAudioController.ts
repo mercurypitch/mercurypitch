@@ -940,9 +940,21 @@ export const useStemMixerAudioController = (
           })
         }
 
-        // The pitch and MIDI windows are not drawn during mapping, so avoid their
-        // per-frame reactive scroll updates as well.
-        if (!mappingActive && !mappingJustEnded) {
+        // The pitch and MIDI windows are not drawn during mapping, so avoid
+        // their per-frame reactive scroll updates as well. The overview
+        // waveform IS still on screen (it is the mapping tap surface), so it
+        // gets a page-flip below instead of the per-frame smooth follow.
+        if (mappingActive) {
+          // One signal write per page (not per frame, which is what the
+          // mapping mode suspends for pointer responsiveness): once the
+          // playhead leaves the visible window, jump the window so playback
+          // stays in view, with a small lead-in for context.
+          const winStartNow = windowStart()
+          const winDur = windowDuration()
+          if (elapsedTime > winStartNow + winDur || elapsedTime < winStartNow) {
+            setWindowStart(Math.max(0, elapsedTime - winDur * 0.1))
+          }
+        } else if (!mappingJustEnded) {
           // Continuous-scroll time window (skip while user is touch-panning)
           if (deps.canvas.isUserPanning?.() === true) {
             activeAnchor = (elapsedTime - windowStart()) / windowDuration()
