@@ -3317,6 +3317,13 @@ export const StemMixerStyles: string = `
   display: inline-block;
   flex: 0 0 auto;
   box-sizing: border-box;
+  /* The interactive variant is a <button>, and buttons do NOT inherit
+     font-size — without this the 0.55em below resolves against the UA's
+     ~13px button default and the dots render as tiny squished ovals next
+     to large lyrics (the zen-stage bug). font: inherit makes the em track
+     the surrounding lyric text exactly like the non-interactive span. */
+  appearance: none;
+  font: inherit;
   width: 0.55em;
   height: 0.55em;
   padding: 0;
