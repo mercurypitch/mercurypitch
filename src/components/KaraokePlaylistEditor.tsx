@@ -185,154 +185,181 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                 </p>
               }
             >
-              {(item, i) => (
-                <div
-                  class={styles.itemRow}
-                  classList={{
-                    [styles.itemRowCompact]: compactItems(),
-                    [styles.itemRowTarget]:
-                      item.kind === 'group' && targetGroupId() === item.refId,
-                  }}
-                >
-                  <Show when={!compactItems()}>
-                    <div class={styles.itemReorder}>
-                      <button
-                        class={styles.iconBtn}
-                        title="Move up"
-                        disabled={i() === 0}
-                        onClick={() => void reorderItems(pl().id, i(), i() - 1)}
-                      >
-                        <ChevronUp />
-                      </button>
-                      <button
-                        class={styles.iconBtn}
-                        title="Move down"
-                        disabled={i() === pl().items.length - 1}
-                        onClick={() => void reorderItems(pl().id, i(), i() + 1)}
-                      >
-                        <ChevronDown size={16} />
-                      </button>
-                    </div>
-                  </Show>
+              {(item, i) => {
+                // The vocal slider must not commit to the store per input
+                // event: each commit maps this item to a new object, <For>
+                // recreates the row, and an in-progress thumb drag dies with
+                // the replaced element. Track the drag locally and persist
+                // once on release — same commit-on-done idea as the singer
+                // input's onChange.
+                const [vocalDrag, setVocalDrag] = createSignal<number | null>(
+                  null,
+                )
+                const vocalPct = (): number =>
+                  vocalDrag() ?? Math.round((item.vocalVolume ?? 0) * 100)
+                return (
+                  <div
+                    class={styles.itemRow}
+                    classList={{
+                      [styles.itemRowCompact]: compactItems(),
+                      [styles.itemRowTarget]:
+                        item.kind === 'group' && targetGroupId() === item.refId,
+                    }}
+                  >
+                    <Show when={!compactItems()}>
+                      <div class={styles.itemReorder}>
+                        <button
+                          class={styles.iconBtn}
+                          title="Move up"
+                          disabled={i() === 0}
+                          onClick={() =>
+                            void reorderItems(pl().id, i(), i() - 1)
+                          }
+                        >
+                          <ChevronUp />
+                        </button>
+                        <button
+                          class={styles.iconBtn}
+                          title="Move down"
+                          disabled={i() === pl().items.length - 1}
+                          onClick={() =>
+                            void reorderItems(pl().id, i(), i() + 1)
+                          }
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      </div>
+                    </Show>
 
-                  <div class={styles.itemMain}>
-                    <Show
-                      when={item.kind === 'group'}
-                      fallback={
-                        <div class={styles.itemLabel}>
-                          <span class={styles.itemKind}>SONG</span>
-                          {itemLabel(item)}
-                        </div>
-                      }
-                    >
-                      <button
-                        class={styles.itemLabelBtn}
-                        classList={{
-                          [styles.itemLabelBtnActive]:
-                            targetGroupId() === item.refId,
-                        }}
-                        title={
-                          targetGroupId() === item.refId
-                            ? 'Selected — clicking a song below adds it here. Click to deselect.'
-                            : 'Select this group, then click songs below to add them into it'
+                    <div class={styles.itemMain}>
+                      <Show
+                        when={item.kind === 'group'}
+                        fallback={
+                          <div class={styles.itemLabel}>
+                            <span class={styles.itemKind}>SONG</span>
+                            {itemLabel(item)}
+                          </div>
                         }
-                        onClick={() =>
-                          setTargetGroupId(
-                            targetGroupId() === item.refId ? null : item.refId,
+                      >
+                        <button
+                          class={styles.itemLabelBtn}
+                          classList={{
+                            [styles.itemLabelBtnActive]:
+                              targetGroupId() === item.refId,
+                          }}
+                          title={
+                            targetGroupId() === item.refId
+                              ? 'Selected — clicking a song below adds it here. Click to deselect.'
+                              : 'Select this group, then click songs below to add them into it'
+                          }
+                          onClick={() =>
+                            setTargetGroupId(
+                              targetGroupId() === item.refId
+                                ? null
+                                : item.refId,
+                            )
+                          }
+                        >
+                          <span
+                            class={`${styles.itemKind} ${styles.kindGroup}`}
+                          >
+                            GROUP
+                          </span>
+                          {itemLabel(item)}
+                        </button>
+                      </Show>
+                      <input
+                        class={styles.singerInput}
+                        placeholder={
+                          item.kind === 'group'
+                            ? 'Singer for whole group…'
+                            : 'Singer…'
+                        }
+                        value={item.singerName ?? ''}
+                        onChange={(e) =>
+                          void setItemSinger(
+                            pl().id,
+                            item.id,
+                            e.currentTarget.value,
                           )
                         }
-                      >
-                        <span class={`${styles.itemKind} ${styles.kindGroup}`}>
-                          GROUP
-                        </span>
-                        {itemLabel(item)}
-                      </button>
-                    </Show>
-                    <input
-                      class={styles.singerInput}
-                      placeholder={
-                        item.kind === 'group'
-                          ? 'Singer for whole group…'
-                          : 'Singer…'
-                      }
-                      value={item.singerName ?? ''}
-                      onChange={(e) =>
-                        void setItemSinger(
-                          pl().id,
-                          item.id,
-                          e.currentTarget.value,
-                        )
-                      }
-                    />
-                    <Show when={item.kind === 'group' && !compactItems()}>
-                      <label class={styles.shuffleWithin}>
-                        <input
-                          type="checkbox"
-                          checked={item.shuffleWithinGroup ?? false}
-                          onChange={(e) =>
-                            void setItemShuffleWithinGroup(
-                              pl().id,
-                              item.id,
-                              e.currentTarget.checked,
-                            )
-                          }
-                        />
-                        Shuffle within group
-                      </label>
-                    </Show>
-                    <Show when={!compactItems()}>
-                      <div
-                        class={styles.vocalPref}
-                        title="This singer's backing-vocal level — pre-applied to every song of this entry before it starts"
-                      >
-                        <span class={styles.vocalPrefLabel}>Vocals</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="5"
-                          value={Math.round((item.vocalVolume ?? 0) * 100)}
-                          onInput={(e) =>
-                            void setItemVocalVolume(
-                              pl().id,
-                              item.id,
-                              Number(e.currentTarget.value) / 100,
-                            )
-                          }
-                        />
-                        <span class={styles.vocalPrefValue}>
-                          {item.vocalVolume !== undefined
-                            ? `${Math.round(item.vocalVolume * 100)}%`
-                            : 'default'}
-                        </span>
-                        <Show when={item.vocalVolume !== undefined}>
-                          <button
-                            class={styles.vocalPrefClear}
-                            title="Use the stage's default vocal mix"
-                            onClick={() =>
+                      />
+                      <Show when={item.kind === 'group' && !compactItems()}>
+                        <label class={styles.shuffleWithin}>
+                          <input
+                            type="checkbox"
+                            checked={item.shuffleWithinGroup ?? false}
+                            onChange={(e) =>
+                              void setItemShuffleWithinGroup(
+                                pl().id,
+                                item.id,
+                                e.currentTarget.checked,
+                              )
+                            }
+                          />
+                          Shuffle within group
+                        </label>
+                      </Show>
+                      <Show when={!compactItems()}>
+                        <div
+                          class={styles.vocalPref}
+                          title="This singer's backing-vocal level — pre-applied to every song of this entry before it starts"
+                        >
+                          <span class={styles.vocalPrefLabel}>Vocals</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={vocalPct()}
+                            onInput={(e) =>
+                              setVocalDrag(Number(e.currentTarget.value))
+                            }
+                            onChange={(e) => {
+                              setVocalDrag(null)
                               void setItemVocalVolume(
                                 pl().id,
                                 item.id,
-                                undefined,
+                                Number(e.currentTarget.value) / 100,
                               )
-                            }
-                          >
-                            <X />
-                          </button>
-                        </Show>
-                      </div>
-                    </Show>
-                  </div>
+                            }}
+                          />
+                          <span class={styles.vocalPrefValue}>
+                            {vocalDrag() !== null
+                              ? `${vocalDrag()}%`
+                              : item.vocalVolume !== undefined
+                                ? `${Math.round(item.vocalVolume * 100)}%`
+                                : 'default'}
+                          </span>
+                          <Show when={item.vocalVolume !== undefined}>
+                            <button
+                              class={styles.vocalPrefClear}
+                              title="Use the stage's default vocal mix"
+                              onClick={() =>
+                                void setItemVocalVolume(
+                                  pl().id,
+                                  item.id,
+                                  undefined,
+                                )
+                              }
+                            >
+                              <X />
+                            </button>
+                          </Show>
+                        </div>
+                      </Show>
+                    </div>
 
-                  <button
-                    class={styles.iconBtn}
-                    title="Remove"
-                    onClick={() => void removeItem(pl().id, item.id)}
-                  >
-                    <X />
-                  </button>
-                </div>
-              )}
+                    <button
+                      class={styles.iconBtn}
+                      title="Remove"
+                      onClick={() => void removeItem(pl().id, item.id)}
+                    >
+                      <X />
+                    </button>
+                  </div>
+                )
+              }}
             </For>
           </div>
 
