@@ -164,9 +164,11 @@ export const AnalysisMobileOverview: Component = () => {
     return longest
   })
 
-  /** Completed UVR sessions available for selection. */
+  /** Completed UVR sessions available for selection, newest first. */
   const completedSessions = createMemo(() =>
-    getAllUvrSessionsReactive().filter((s) => s.status === 'completed'),
+    getAllUvrSessionsReactive()
+      .filter((s) => s.status === 'completed')
+      .sort((a, b) => b.createdAt - a.createdAt),
   )
 
   const openKaraoke = (): void => {
