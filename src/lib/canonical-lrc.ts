@@ -12,6 +12,11 @@ export const REST_THRESHOLD_SEC = 20
 /** Each rest countdown dot represents this many seconds. */
 export const SECONDS_PER_REST_DOT = 5
 
+/** Intro silence (song start → first sung line) that earns a countdown. Much
+ *  lower than the mid-song REST_THRESHOLD_SEC: knowing when to come in
+ *  matters most at the very start, and >5s instrumental intros are common. */
+export const INTRO_REST_THRESHOLD_SEC = 5
+
 export function getRestDotCount(gapStart: number, gapEnd: number): number {
   if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd)) return 0
   if (gapEnd <= gapStart) return 0
@@ -53,6 +58,28 @@ export function buildCanonicalEntries(
 
   for (let i = 0; i < lrcLines.length; i++) {
     const line = lrcLines[i]
+
+    // Intro countdown: silence from the song start to the first sung line, so
+    // the singer knows when to come in. Skipped when the LRC opens with an
+    // explicit ~Rest~ — that is the author's own intro marker.
+    if (
+      !hasPrev &&
+      !afterExplicitRest &&
+      line.text !== '~Rest~' &&
+      line.time > INTRO_REST_THRESHOLD_SEC
+    ) {
+      result.push({
+        type: 'rest',
+        lrcIndex: -1,
+        canonicalIndex: result.length,
+        time: 0,
+        text: '~Rest~',
+        words: [],
+        gapStart: 0,
+        gapEnd: line.time,
+        dotCount: getRestDotCount(0, line.time),
+      })
+    }
 
     // Synthetic ~Rest~ when the silence before this entry is large — but not
     // right after an explicit ~Rest~, which already covers that silence.

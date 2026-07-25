@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
-import { applyRepeatBlocks, buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, getRestDotCount, selectActiveItem, } from '@/lib/canonical-lrc'
+import { applyRepeatBlocks, buildCanonicalEntries, buildCanonicalToLrcMap, buildLrcToCanonicalMap, computeRestProgress, getRestDotCount, INTRO_REST_THRESHOLD_SEC, selectActiveItem, } from '@/lib/canonical-lrc'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyrics-service'
 
@@ -13,7 +13,7 @@ import { computeActiveWord, parseLrcFile, parseLrcWordTimings, } from '@/lib/lyr
 // DUMMY TEST DATA
 // ═══════════════════════════════════════════════════════════════
 
-/** LRC with no gaps — no ~Rest~ needed */
+/** LRC with no mid-song gaps — its 10s start still earns an intro rest */
 export const LRC_NO_GAPS = `[00:10.00]First line of lyrics
 [00:15.00]Second line here
 [00:20.00]Third and final line`
@@ -68,11 +68,15 @@ describe('REQ-UV-028: Canonical entry construction', () => {
   it('builds canonical entries without ~Rest~ when gaps are < 20s', () => {
     const lrc = parseLrcFile(LRC_NO_GAPS)
     const entries = buildCanonicalEntries(lrc)
-    expect(entries).toHaveLength(3)
-    expect(entries.every((e) => e.type === 'line')).toBe(true)
-    expect(entries[0].canonicalIndex).toBe(0)
+    // [introRest(0), line0(10), line1(15), line2(20)] — the 10s intro earns a
+    // countdown rest, but the <20s gaps between lines never do.
+    expect(entries).toHaveLength(4)
+    expect(entries[0].type).toBe('rest')
+    expect(entries[0].lrcIndex).toBe(-1) // synthetic intro rest
+    expect(entries.slice(1).every((e) => e.type === 'line')).toBe(true)
     expect(entries[1].canonicalIndex).toBe(1)
     expect(entries[2].canonicalIndex).toBe(2)
+    expect(entries[3].canonicalIndex).toBe(3)
   })
 
   it('inserts synthetic ~Rest~ for gaps > 20 seconds', () => {
@@ -97,9 +101,10 @@ describe('REQ-UV-028: Canonical entry construction', () => {
   it('handles explicit ~Rest~ from API data (no double rest after it)', () => {
     const lrc = parseLrcFile(LRC_WITH_EXPLICIT_REST)
     const entries = buildCanonicalEntries(lrc)
-    // [line0(10), ~Rest~(explicit, lrcIdx=1, 25), line1(50)]. The explicit rest
-    // already covers the 25s silence, so NO synthetic rest is added after it.
-    expect(entries).toHaveLength(3)
+    // [introRest(0), line0(10), ~Rest~(explicit, lrcIdx=1, 25), line1(50)].
+    // The explicit rest already covers the 25s silence, so NO synthetic rest
+    // is added after it (the intro rest before line0 is a separate countdown).
+    expect(entries).toHaveLength(4)
     const explicitRest = entries.find((e) => e.lrcIndex === 1)
     expect(explicitRest).toBeDefined()
     expect(explicitRest!.type).toBe('rest')
@@ -129,6 +134,84 @@ describe('REQ-UV-028: Canonical entry construction', () => {
 })
 
 // ═══════════════════════════════════════════════════════════════
+// Intro rest — countdown before the song's first line
+// ═══════════════════════════════════════════════════════════════
+
+describe('Intro rest (countdown before the first line)', () => {
+  it('inserts a countdown rest at canonical 0 when the first line starts late', () => {
+    const lrc: LrcLine[] = [
+      { time: 12, text: 'First line' },
+      { time: 15, text: 'Second line' },
+    ]
+    const entries = buildCanonicalEntries(lrc)
+    expect(entries).toHaveLength(3)
+    const intro = entries[0]
+    expect(intro.type).toBe('rest')
+    expect(intro.lrcIndex).toBe(-1) // synthetic
+    expect(intro.time).toBe(0)
+    expect(intro.gapStart).toBe(0)
+    expect(intro.gapEnd).toBe(12)
+    expect(intro.dotCount).toBe(getRestDotCount(0, 12))
+    // the first real line follows the intro rest
+    expect(entries[1].type).toBe('line')
+    expect(entries[1].lrcIndex).toBe(0)
+    expect(entries[1].time).toBe(12)
+  })
+
+  it('does NOT insert an intro rest at exactly the threshold (strict >)', () => {
+    const lrc: LrcLine[] = [
+      { time: INTRO_REST_THRESHOLD_SEC, text: 'Right at the threshold' },
+      { time: 8, text: 'Next line' },
+    ]
+    const entries = buildCanonicalEntries(lrc)
+    expect(entries).toHaveLength(2)
+    expect(entries.every((e) => e.type === 'line')).toBe(true)
+    expect(entries[0].lrcIndex).toBe(0)
+  })
+
+  it('does NOT insert an intro rest for an early first line', () => {
+    const lrc: LrcLine[] = [
+      { time: 4, text: 'Early opener' },
+      { time: 8, text: 'Next line' },
+    ]
+    const entries = buildCanonicalEntries(lrc)
+    expect(entries).toHaveLength(2)
+    expect(entries.every((e) => e.type === 'line')).toBe(true)
+  })
+
+  it('defers to an explicit leading ~Rest~ (no synthetic intro before it)', () => {
+    const lrc = parseLrcFile(`[00:08.00]~Rest~
+[00:12.00]After the intro marker`)
+    const entries = buildCanonicalEntries(lrc)
+    // the explicit rest is the author's own intro marker — nothing is
+    // inserted before it, even though it starts past the threshold
+    expect(entries).toHaveLength(2)
+    expect(entries[0].type).toBe('rest')
+    expect(entries[0].lrcIndex).toBe(0) // the explicit rest, not a synthetic
+    expect(entries[0].time).toBe(8)
+    expect(entries[1].type).toBe('line')
+  })
+
+  it('is excluded from both LRC↔canonical maps', () => {
+    const lrc: LrcLine[] = [
+      { time: 12, text: 'First line' },
+      { time: 15, text: 'Second line' },
+    ]
+    const entries = buildCanonicalEntries(lrc)
+    const lrcToCanon = buildLrcToCanonicalMap(entries)
+    const canonToLrc = buildCanonicalToLrcMap(entries)
+    // canonical 0 is the intro rest → absent from canonToLrc
+    expect(canonToLrc.has(0)).toBe(false)
+    expect(lrcToCanon.has(-1)).toBe(false)
+    // real lines shift by one
+    expect(lrcToCanon.get(0)).toBe(1)
+    expect(lrcToCanon.get(1)).toBe(2)
+    expect(canonToLrc.get(1)).toBe(0)
+    expect(canonToLrc.get(2)).toBe(1)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
 // EARS REQ-UV-039: LRC↔Canonical index mapping round-trip
 // ═══════════════════════════════════════════════════════════════
 
@@ -139,9 +222,11 @@ describe('REQ-UV-039: LRC↔Canonical index mapping', () => {
     const lrcToCanon = buildLrcToCanonicalMap(entries)
     const canonToLrc = buildCanonicalToLrcMap(entries)
 
+    // The 10s intro rest occupies canonical 0, so LRC index i → canonical i+1;
+    // the maps must stay mutually consistent across that fixed offset.
     for (let i = 0; i < lrc.length; i++) {
       const ci = lrcToCanon.get(i)
-      expect(ci).toBe(i) // no gaps = identity mapping
+      expect(ci).toBe(i + 1)
       expect(canonToLrc.get(ci!)).toBe(i)
     }
   })
@@ -182,15 +267,14 @@ describe('REQ-UV-039: LRC↔Canonical index mapping', () => {
     const lrcToCanon = buildLrcToCanonicalMap(entries)
 
     // LRC: [line0(idx0,10s), ~Rest~(idx1,15s), ~Rest~(idx2,45s), line3(idx3,60s)]
-    // Gap 15→45=30 >20 → synthetic rest before explicit rest at idx2
-    // Gap 45→60=15 <20 → no synthetic rest before final
-    // So expected entries: [line0, ~Rest(synth), ~Rest(lrcIdx=1), ~Rest(lrcIdx=2), line3]
-    expect(entries.length).toBeGreaterThanOrEqual(4)
+    // The 10s intro earns a countdown rest; each explicit rest suppresses any
+    // synthetic rest right after it, so no extra rests appear between them.
+    // Canonical: [introRest(0), line0, ~Rest~(lrcIdx=1), ~Rest~(lrcIdx=2), line3]
+    expect(entries).toHaveLength(5)
 
-    // LRC index 3 (the final line) must map somewhere
+    // LRC index 3 (the final line) maps past the intro rest and both explicit rests
     const finalCanon = lrcToCanon.get(3)
-    expect(finalCanon).toBeDefined()
-    expect(finalCanon).toBeGreaterThan(2) // after all rests
+    expect(finalCanon).toBe(4)
   })
 
   it('handles empty LRC gracefully', () => {
@@ -254,13 +338,16 @@ describe('REQ-UV-040: Gen state seeding with canonical index mapping', () => {
     }
     const { lineTimes, wordTimings } = seedGenState(wtLrc, entries)
 
-    expect(lineTimes).toHaveLength(3)
-    expect(lineTimes[0]).toBe(10)
-    expect(lineTimes[1]).toBe(15)
-    expect(lineTimes[2]).toBe(20)
-    expect(wordTimings[0]).toEqual([10, 12])
-    expect(wordTimings[1]).toEqual([15, 16])
-    expect(wordTimings[2]).toEqual([20, 21])
+    // Canonical: [introRest(0), line0(1), line1(2), line2(3)] — seeds land +1
+    expect(lineTimes).toHaveLength(4)
+    expect(lineTimes[0]).toBeUndefined() // intro rest — no seed
+    expect(lineTimes[1]).toBe(10)
+    expect(lineTimes[2]).toBe(15)
+    expect(lineTimes[3]).toBe(20)
+    expect(wordTimings[0]).toBeUndefined()
+    expect(wordTimings[1]).toEqual([10, 12])
+    expect(wordTimings[2]).toEqual([15, 16])
+    expect(wordTimings[3]).toEqual([20, 21])
   })
 
   it('places LRC-indexed seeds at correct canonical positions across gaps', () => {
@@ -348,7 +435,9 @@ describe('REQ-UV-043: LRC gen Finish canonical→LRC output', () => {
   it('produces correct LRC output without gaps', () => {
     const lrc = parseLrcFile(LRC_NO_GAPS)
     const entries = buildCanonicalEntries(lrc)
-    const lineTimes: (number | undefined)[] = [10, 15, 20]
+    // Canonical: [introRest(0), line0(1), line1(2), line2(3)] — lineTimes are
+    // canonical-indexed, and the intro rest (lrcIndex=-1) is skipped in output.
+    const lineTimes: (number | undefined)[] = [undefined, 10, 15, 20]
     const output = buildLrcOutput(entries, lineTimes)
 
     expect(output).toHaveLength(3)
@@ -442,8 +531,8 @@ describe('REQ-UV-029: Word-level LRC parsing', () => {
     const lrc = parseLrcFile(LRC_WORD_LEVEL)
     expect(lrc).toHaveLength(3)
 
-    // Line 1: 02:30.60 = 150.6s
-    const entry = buildCanonicalEntries(lrc)[0]
+    // Line 1: 02:30.60 = 150.6s (canonical 0 is the intro countdown rest)
+    const entry = buildCanonicalEntries(lrc)[1]
     expect(entry.type).toBe('line')
     expect(entry.words).toEqual(['Amigos', 'no', 'more', 'tears'])
     expect(entry.wordTimes).toHaveLength(4)
@@ -561,17 +650,25 @@ describe('REQ-UV-042: Partial gen merge logic', () => {
       1: [15],
       2: [20],
     }
-    const newTimes: (number | undefined)[] = [undefined, 18, undefined]
-    const touched = new Set<number>([1]) // only canonical index 1 touched
+    // Canonical: [introRest(0), line0(1), line1(2), line2(3)]
+    const newTimes: (number | undefined)[] = [
+      undefined,
+      undefined,
+      18,
+      undefined,
+    ]
+    const touched = new Set<number>([2]) // only line1 (canonical index 2) touched
 
     const { finalTimes } = partialMerge(entries, newTimes, origWt, touched)
 
-    // Canonical index 0: untouched, keeps original 10
-    expect(finalTimes[0]).toBe(10)
-    // Canonical index 1: touched, gets new 18
-    expect(finalTimes[1]).toBe(18)
-    // Canonical index 2: untouched, keeps original 20
-    expect(finalTimes[2]).toBe(20)
+    // Canonical index 0: intro rest — no original timing, untouched
+    expect(finalTimes[0]).toBeUndefined()
+    // Canonical index 1: untouched, keeps original 10
+    expect(finalTimes[1]).toBe(10)
+    // Canonical index 2: touched, gets new 18
+    expect(finalTimes[2]).toBe(18)
+    // Canonical index 3: untouched, keeps original 20
+    expect(finalTimes[3]).toBe(20)
   })
 
   it('untouched lines without original timings remain undefined', () => {
@@ -583,14 +680,16 @@ describe('REQ-UV-042: Partial gen merge logic', () => {
       // index 1 was never mapped
       2: [20],
     }
-    const newTimes: (number | undefined)[] = [undefined, undefined, undefined]
+    // Canonical: [introRest(0), line0(1), line1(2), line2(3)]
+    const newTimes = new Array<number | undefined>(entries.length)
     const touched = new Set<number>([])
 
     const { finalTimes } = partialMerge(entries, newTimes, origWt, touched)
 
-    expect(finalTimes[0]).toBe(10)
-    expect(finalTimes[1]).toBeUndefined()
-    expect(finalTimes[2]).toBe(20)
+    expect(finalTimes[0]).toBeUndefined() // intro rest
+    expect(finalTimes[1]).toBe(10)
+    expect(finalTimes[2]).toBeUndefined() // LRC index 1 was never mapped
+    expect(finalTimes[3]).toBe(20)
   })
 
   it('untouched gap lines keep original LRC timestamps (not canonical)', () => {
@@ -678,9 +777,13 @@ describe('REQ-UV-045: Edge cases', () => {
       { time: 310, text: 'End' }, // 300s gap
     ]
     const entries = buildCanonicalEntries(lrc)
-    expect(entries).toHaveLength(3)
-    expect(entries[1].type).toBe('rest')
-    expect(entries[1].time).toBeCloseTo(160, 0) // midpoint of 10..310
+    // [introRest(0..10), line(10), midGapRest(~160), line(310)]
+    expect(entries).toHaveLength(4)
+    expect(entries[0].type).toBe('rest') // intro countdown
+    expect(entries[1].type).toBe('line')
+    expect(entries[2].type).toBe('rest')
+    expect(entries[2].time).toBeCloseTo(160, 0) // midpoint of 10..310
+    expect(entries[3].type).toBe('line')
   })
 
   it('no gap before first line (i=0) — never inserts rest', () => {
@@ -696,7 +799,8 @@ describe('REQ-UV-045: Edge cases', () => {
 // ═══════════════════════════════════════════════════════════════
 
 /** Word-level LRC: line A is sung 10..12s, line B starts at 40s.
- *  Word-end→next gap = 40-12 = 28s (> 20) → synthetic rest. */
+ *  Word-end→next gap = 40-12 = 28s (> 20) → synthetic rest.
+ *  The 10s start also earns an intro rest at canonical 0. */
 const LRC_WL_BIG_GAP = `[00:10.00]Hold [00:11.00]this [00:12.00]note
 [00:40.00]After [00:41.00]long [00:42.00]rest`
 
@@ -709,15 +813,18 @@ const LRC_WL_NO_REST = `[00:10.00]One [00:12.00]two [00:14.00]three [00:16.00]fo
 describe('Rest gap metric (word-level)', () => {
   it('measures the gap from the previous last word, not the line start', () => {
     const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_NO_REST))
-    // 24s line-start gap, but only 18s of real silence -> NO rest.
-    expect(entries.every((e) => e.type === 'line')).toBe(true)
-    expect(entries).toHaveLength(2)
+    // 24s line-start gap, but only 18s of real silence -> NO mid-song rest.
+    // (The 10s intro before the first line still earns its countdown rest.)
+    expect(entries).toHaveLength(3)
+    expect(entries[0].type).toBe('rest')
+    expect(entries[0].time).toBe(0) // intro rest, not a mid-song one
+    expect(entries.slice(1).every((e) => e.type === 'line')).toBe(true)
   })
 
   it('inserts a rest sized from the silence, with gapStart/gapEnd/dotCount', () => {
     const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_BIG_GAP))
-    expect(entries).toHaveLength(3) // line, rest, line
-    const rest = entries[1]
+    expect(entries).toHaveLength(4) // introRest, line, rest, line
+    const rest = entries[2]
     expect(rest.type).toBe('rest')
     expect(rest.lrcIndex).toBe(-1) // synthetic
     expect(rest.gapStart).toBeCloseTo(12, 1) // prev line's last word start
@@ -818,21 +925,30 @@ describe('getRestDotCount', () => {
 
 describe('selectActiveItem', () => {
   const entries = buildCanonicalEntries(parseLrcFile(LRC_WL_BIG_GAP))
-  // [ lineA(time 10), rest(time 12, gap 12..40, 6 dots), lineB(time 40) ]
+  // [ introRest(time 0, gap 0..10, 2 dots), lineA(time 10),
+  //   rest(time 12, gap 12..40, 6 dots), lineB(time 40) ]
 
-  it('returns none before the first entry', () => {
-    expect(selectActiveItem(entries, 5)).toEqual({ index: -1, kind: 'none' })
+  it('selects the intro rest (not none) before the first line', () => {
+    // The pre-first-line window is now the intro countdown rest, so kind
+    // 'none' can no longer occur at t >= 0.
+    const a = selectActiveItem(entries, 5)
+    expect(a.index).toBe(0)
+    expect(a.kind).toBe('rest')
+    expect(a.restProgress).toBeDefined()
+    // halfway through the 0..10 intro gap: 1 of 2 dots filled
+    expect(a.restProgress?.filledDots).toBe(1)
+    expect(a.restProgress?.currentDotFrac).toBeCloseTo(0, 5)
   })
 
   it('selects the active line while it is being sung', () => {
     const a = selectActiveItem(entries, 11)
-    expect(a.index).toBe(0)
+    expect(a.index).toBe(1)
     expect(a.kind).toBe('line')
   })
 
   it('selects the rest during the gap and reports fill', () => {
     const a = selectActiveItem(entries, 20)
-    expect(a.index).toBe(1)
+    expect(a.index).toBe(2)
     expect(a.kind).toBe('rest')
     // (20-12)/28 * 6 = 1.714 dots
     expect(a.restProgress?.filledDots).toBe(1)
@@ -841,7 +957,7 @@ describe('selectActiveItem', () => {
 
   it('selects the next line after the gap', () => {
     const a = selectActiveItem(entries, 45)
-    expect(a.index).toBe(2)
+    expect(a.index).toBe(3)
     expect(a.kind).toBe('line')
   })
 })
@@ -855,13 +971,14 @@ describe('applyRepeatBlocks (repeat-block rest delay)', () => {
   it('delays a rest after a repeated block until all passes are sung', () => {
     const lrc = parseLrcFile(LRC_REPEAT)
     const base = buildCanonicalEntries(lrc)
-    expect(base[2].type).toBe('rest')
-    const restBefore = base[2].time // midpoint ~32
+    // base: [introRest(0), line0(10), line1(14), rest(~32), line2(50)]
+    expect(base[3].type).toBe('rest')
+    const restBefore = base[3].time // midpoint ~32
 
     const out = applyRepeatBlocks(base, lrc, [
       { startLrc: 0, endLrc: 2, repeatCount: 2 },
     ])
-    const rest = out[2]
+    const rest = out[3]
     expect(rest.type).toBe('rest')
     expect(rest.time).toBeGreaterThan(restBefore)
     // one extra 8s pass (4s span * 2/1) pushes ~32 -> ~40
@@ -878,8 +995,9 @@ describe('applyRepeatBlocks (repeat-block rest delay)', () => {
       { startLrc: 0, endLrc: 2, repeatCount: 2 },
     ])
     // at 35s (pass 2) the last block line is active, not the rest
+    // (canonical 0 is the intro rest, so the last block line sits at index 2)
     const mid = selectActiveItem(out, 35)
-    expect(mid.index).toBe(1)
+    expect(mid.index).toBe(2)
     expect(mid.kind).toBe('line')
     // after the delayed rest the rest is active
     expect(selectActiveItem(out, 45).kind).toBe('rest')
@@ -904,13 +1022,14 @@ describe('applyRepeatBlocks (repeat-block rest delay)', () => {
 [00:13.00]~Rest~
 [00:40.00]Srebrni snijeg`)
     const base = buildCanonicalEntries(lrc)
-    const restBefore = base.find((e) => e.type === 'rest')!
+    // find the EXPLICIT rest (lrcIndex >= 0) — canonical 0 is the intro rest
+    const restBefore = base.find((e) => e.type === 'rest' && e.lrcIndex >= 0)!
     expect(restBefore.gapStart).toBeCloseTo(13, 1) // fires at pass-1 end
 
     const out = applyRepeatBlocks(base, lrc, [
       { startLrc: 0, endLrc: 1, repeatCount: 2 },
     ])
-    const rest = out.find((e) => e.type === 'rest')!
+    const rest = out.find((e) => e.type === 'rest' && e.lrcIndex >= 0)!
     // one extra ~3s pass (10->13) pushes the rest start to ~16
     expect(rest.gapStart).toBeGreaterThan(13)
     expect(rest.gapStart).toBeCloseTo(16, 1)
