@@ -307,6 +307,7 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                         >
                           <span class={styles.vocalPrefLabel}>Vocals</span>
                           <input
+                            data-testid="vocal-pref-slider"
                             type="range"
                             min="0"
                             max="100"
@@ -316,12 +317,23 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                               setVocalDrag(Number(e.currentTarget.value))
                             }
                             onChange={(e) => {
-                              setVocalDrag(null)
+                              // Read BEFORE any state change: resetting the
+                              // drag signal re-asserts the value binding from
+                              // the (stale) stored item synchronously, which
+                              // would clobber currentTarget.value to the old
+                              // level — the #346 snap-back-and-commit-old bug.
+                              const pct = Number(e.currentTarget.value)
+                              setVocalDrag(pct)
                               void setItemVocalVolume(
                                 pl().id,
                                 item.id,
-                                Number(e.currentTarget.value) / 100,
+                                pct / 100,
                               )
+                              // No drag reset here: the commit replaces the
+                              // item, <For> recreates the row, and the fresh
+                              // row reads the persisted value. Clearing now
+                              // would snap the thumb to the pre-commit value
+                              // for the async beat before that happens.
                             }}
                           />
                           <span class={styles.vocalPrefValue}>

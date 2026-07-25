@@ -3,6 +3,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { appStore } from '@/stores'
+import * as karaokePlaylistStore from '@/stores/karaoke-playlist-store'
 import type { melodyStore } from '@/stores/melody-store'
 import type { PlaybackMode } from '@/types'
 
@@ -60,4 +61,8 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
   if (playSessionSequence)
     exposeForE2E('__playSessionSequence', playSessionSequence)
   if (setPlayMode) exposeForE2E('__setPlayMode', setPlayMode)
+
+  // Karaoke playlist store — lets specs seed a playlist and read it back
+  // without audio hardware or UVR sessions (e.g. the vocal-slider drag spec).
+  exposeForE2E('__karaokePlaylists', karaokePlaylistStore)
 }
