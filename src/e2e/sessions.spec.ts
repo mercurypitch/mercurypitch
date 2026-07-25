@@ -621,6 +621,9 @@ test.describe('Practice Sessions', () => {
     await page.goto('/')
     await page.waitForTimeout(1000)
 
+    // Home is the default landing tab now — activate Singing first.
+    await switchTab(page, 'singing')
+
     const practiceTab = page.locator('#tab-singing')
     await expect(practiceTab).toHaveClass(/active/)
   })
