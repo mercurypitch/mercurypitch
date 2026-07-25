@@ -80,6 +80,7 @@
   background: var(--dest-void);
   color: var(--dest-chrome);
   cursor: pointer;
+  text-decoration: none;
   text-align: left;
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.22),
@@ -239,35 +240,21 @@
 
 .practiceInstruments {
   position: absolute;
-  top: 5px;
-  left: 3%;
-  width: 94%;
-  height: 68%;
+  top: 1px;
+  left: 1%;
+  width: 98%;
+  height: 72%;
   overflow: visible;
   filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.45));
+  transition: filter 240ms ease;
 }
 
 .practicePitchLine {
-  opacity: 0.68;
+  opacity: 0.58;
 }
 
-.microphone {
-  transform-origin: 282px 188px;
-  transition: transform 220ms ease;
-}
-
-.cover:hover .microphone {
-  transform: translate(236px, 23px);
-}
-
-.guitar,
-.piano {
-  transition: opacity 180ms ease;
-}
-
-.cover:hover .guitar,
-.cover:hover .piano {
-  opacity: 0.92;
+.cover:hover .practiceInstruments {
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.52)) brightness(1.045);
 }
 
 .practiceMascot {
@@ -521,7 +508,7 @@
 @media (prefers-reduced-motion: reduce) {
   .cover,
   .coverAction svg,
-  .microphone,
+  .practiceInstruments,
   .karaokeVisual {
     transition: none;
   }
