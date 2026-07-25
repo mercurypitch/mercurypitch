@@ -316,6 +316,11 @@ export interface KaraokePlaylistItem {
   singerName?: string
   /** Shuffle the order of sessions within the group when played. */
   shuffleWithinGroup?: boolean
+  /**
+   * This singer's preferred vocal-stem level (0–1), pre-applied to every song
+   * of this entry before it starts. Unset = the stage's default vocal mix.
+   */
+  vocalVolume?: number
 }
 
 /** A saved, reusable karaoke set list built from sessions and/or groups. */

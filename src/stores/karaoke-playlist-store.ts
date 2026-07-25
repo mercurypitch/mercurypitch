@@ -21,6 +21,8 @@ export interface QueueEntry {
   songTitle: string
   groupName?: string
   singerName?: string
+  /** The entry's preferred vocal-stem level (0–1), applied at song start. */
+  vocalVolume?: number
 }
 
 export type KaraokePhase =
@@ -73,6 +75,7 @@ function expandItem(
         sessionId: item.refId,
         songTitle: deps.sessionTitle(item.refId) ?? 'Unknown',
         singerName: item.singerName,
+        vocalVolume: item.vocalVolume,
       },
     ]
   }
@@ -86,6 +89,7 @@ function expandItem(
     songTitle: deps.sessionTitle(sid) ?? 'Unknown',
     groupName,
     singerName: item.singerName,
+    vocalVolume: item.vocalVolume,
   }))
 }
 
@@ -302,6 +306,23 @@ export async function setItemSinger(
   await mutateItems(playlistId, (items) =>
     items.map((it) =>
       it.id === itemId ? { ...it, singerName: trimmed || undefined } : it,
+    ),
+  )
+}
+
+/** Set (or clear, with undefined) an entry's preferred vocal-stem level. */
+export async function setItemVocalVolume(
+  playlistId: string,
+  itemId: string,
+  vocalVolume: number | undefined,
+): Promise<void> {
+  const clamped =
+    vocalVolume === undefined
+      ? undefined
+      : Math.max(0, Math.min(1, vocalVolume))
+  await mutateItems(playlistId, (items) =>
+    items.map((it) =>
+      it.id === itemId ? { ...it, vocalVolume: clamped } : it,
     ),
   )
 }

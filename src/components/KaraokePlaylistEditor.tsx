@@ -9,7 +9,7 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { createPersistedSignal } from '@/lib/storage'
-import { addItem, getPlaylistsReactive, removeItem, reorderItems, setItemShuffleWithinGroup, setItemSinger, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, } from '@/stores/karaoke-playlist-store'
+import { addItem, getPlaylistsReactive, removeItem, reorderItems, setItemShuffleWithinGroup, setItemSinger, setItemVocalVolume, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { addSessionToGroup, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/uvr-store'
 import { CheckSmall, ChevronDown, ChevronUp, Play, X } from './icons'
@@ -279,6 +279,48 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                         />
                         Shuffle within group
                       </label>
+                    </Show>
+                    <Show when={!compactItems()}>
+                      <div
+                        class={styles.vocalPref}
+                        title="This singer's backing-vocal level — pre-applied to every song of this entry before it starts"
+                      >
+                        <span class={styles.vocalPrefLabel}>Vocals</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value={Math.round((item.vocalVolume ?? 0) * 100)}
+                          onInput={(e) =>
+                            void setItemVocalVolume(
+                              pl().id,
+                              item.id,
+                              Number(e.currentTarget.value) / 100,
+                            )
+                          }
+                        />
+                        <span class={styles.vocalPrefValue}>
+                          {item.vocalVolume !== undefined
+                            ? `${Math.round(item.vocalVolume * 100)}%`
+                            : 'default'}
+                        </span>
+                        <Show when={item.vocalVolume !== undefined}>
+                          <button
+                            class={styles.vocalPrefClear}
+                            title="Use the stage's default vocal mix"
+                            onClick={() =>
+                              void setItemVocalVolume(
+                                pl().id,
+                                item.id,
+                                undefined,
+                              )
+                            }
+                          >
+                            <X />
+                          </button>
+                        </Show>
+                      </div>
                     </Show>
                   </div>
 

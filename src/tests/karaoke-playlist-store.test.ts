@@ -180,3 +180,26 @@ describe('buildQueue', () => {
     })
   })
 })
+
+describe('per-entry vocal volume', () => {
+  it('carries an item vocalVolume onto every queued song it expands to', () => {
+    const q = buildQueue(
+      playlist({
+        items: [
+          {
+            id: 'i1',
+            kind: 'group',
+            refId: 'g1',
+            singerName: 'Ana',
+            vocalVolume: 0.2,
+          },
+          { id: 'i2', kind: 'session', refId: 's5', vocalVolume: 0.6 },
+          { id: 'i3', kind: 'session', refId: 's4' },
+        ],
+      }),
+      deps,
+    )
+    expect(q.map((e) => e.vocalVolume)).toEqual([0.2, 0.2, 0.2, 0.6, undefined])
+    expect(q.map((e) => e.sessionId)).toEqual(['s1', 's2', 's3', 's5', 's4'])
+  })
+})

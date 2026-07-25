@@ -122,3 +122,60 @@ export function autoAdvanceTarget(
   if (!autoplayOn) return null
   return nextSessionId(orderedIds, currentId)
 }
+
+/** What the playlist should do when a song ends naturally. */
+export type PlaylistEndAction =
+  | 'defer-to-score-modal'
+  | 'advance-with-score'
+  | 'advance-without-score'
+
+/**
+ * End-of-song advance decision for a running playlist.
+ *
+ * The desktop mixer presents the score in StemMixerScoreModal and advances
+ * when it closes — but that modal only mounts on the desktop branch. The zen
+ * stage surfaces scores on the next song's overlay / the summary instead, so
+ * deferring there would leave the advance waiting on a modal that never
+ * appears and stall the playlist at 0:00. A playlist must ALWAYS advance at
+ * end-of-song: defer only when the modal is actually mounted.
+ */
+export function playlistEndAction(
+  zenStageActive: boolean,
+  micActive: boolean,
+  comparisonCount: number,
+): PlaylistEndAction {
+  const hasScoreData = micActive && comparisonCount > 0
+  if (!hasScoreData) return 'advance-without-score'
+  return zenStageActive ? 'advance-with-score' : 'defer-to-score-modal'
+}
+
+/** Zen lyrics size presets — Smaller / Current (default) / Bigger. */
+export const ZEN_LYRICS_SIZES = ['smaller', 'current', 'bigger'] as const
+export type ZenLyricsSize = (typeof ZEN_LYRICS_SIZES)[number]
+
+/** Font multiplier applied to the zen lyrics lines for each preset. */
+export const ZEN_LYRICS_SCALE: Record<ZenLyricsSize, number> = {
+  smaller: 0.85,
+  current: 1,
+  bigger: 1.25,
+}
+
+/** Step a lyrics-size preset up or down, clamped at the ends. */
+export function stepLyricsSize(
+  size: ZenLyricsSize,
+  direction: 1 | -1,
+): ZenLyricsSize {
+  const idx = ZEN_LYRICS_SIZES.indexOf(size)
+  const next = Math.max(
+    0,
+    Math.min(ZEN_LYRICS_SIZES.length - 1, idx + direction),
+  )
+  return ZEN_LYRICS_SIZES[next]
+}
+
+/** Cycle a lyrics-size preset (for a single toggle button): smaller → current
+ *  → bigger → smaller. */
+export function cycleLyricsSize(size: ZenLyricsSize): ZenLyricsSize {
+  const idx = ZEN_LYRICS_SIZES.indexOf(size)
+  return ZEN_LYRICS_SIZES[(idx + 1) % ZEN_LYRICS_SIZES.length]
+}

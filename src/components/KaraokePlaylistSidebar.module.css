@@ -192,6 +192,52 @@
   font-size: 0.72rem;
 }
 
+/* Per-entry vocal-stem level preference */
+.vocalPref {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+.vocalPref input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  height: 3px;
+  accent-color: var(--accent);
+}
+.vocalPrefLabel {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+.vocalPrefValue {
+  flex: 0 0 auto;
+  min-width: 3.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vocalPrefClear {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.3rem;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.vocalPrefClear svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+.vocalPrefClear:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Items */
 .itemsHeader {
   display: flex;

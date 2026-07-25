@@ -152,6 +152,25 @@ export const AutoplayIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
+/** Text size — a small and a large "A" (cycle the lyrics size presets). */
+export const TextSizeIcon: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={props.size ?? 18}
+    height={props.size ?? 18}
+    class={props.class}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 17l3.2-8L9.4 17M4.2 14.2h4.4" />
+    <path d="M12 19L16 7l4 12M13.4 15h5.2" />
+  </svg>
+)
+
 /** More / overflow — three dots. */
 export const EllipsisIcon: Component<IconProps> = (props) => (
   <svg

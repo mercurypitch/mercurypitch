@@ -14,7 +14,7 @@ import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
-import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
+import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
@@ -398,14 +398,40 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   /** Called by the audio controller when the track ends naturally. */
   const handlePlaylistSongEnded = () => {
     if (!isCurrentPlaylistSong() || playlist.phase() !== 'playing') return
-    if (mic.micActive() && mic.comparisonData().length > 0) {
-      // handleStop() will show the score modal — advance when it closes.
+    const action = playlistEndAction(
+      zenStage(),
+      mic.micActive(),
+      mic.comparisonData().length,
+    )
+    if (action === 'defer-to-score-modal') {
+      // Desktop mixer: handleStop() will show the score modal — advance when
+      // it closes.
       pendingAdvance = true
     } else {
-      playlist.reportSongScore(null)
+      // The zen stage mounts no score modal, so score (comparison data is
+      // still intact — handleStop() clears it after this callback) and
+      // advance right away; the result surfaces on the next song's overlay
+      // and the summary instead.
+      playlist.reportSongScore(
+        action === 'advance-with-score' ? mic.computeScore() : null,
+      )
       playlist.advance()
     }
   }
+
+  // Safety net: an advance must never wait on a score modal that is not
+  // mounted. If the zen stage is up (it renders no StemMixerScoreModal) while
+  // the end-of-song score signal is showing — e.g. zen was toggled while the
+  // modal was open — consume it here exactly like the modal's close would.
+  createEffect(() => {
+    if (!zenStage() || !mic.showScore()) return
+    mic.setShowScore(false)
+    if (playlist.isPlaylistActive() && pendingAdvance) {
+      pendingAdvance = false
+      playlist.reportSongScore(mic.score())
+      playlist.advance()
+    }
+  })
 
   /** Overlay "Start": request the mic (user gesture) then run the countdown. */
   const handlePlaylistStart = () => {
@@ -504,6 +530,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       audio.duration() > 0
     ) {
       playStarted = true
+      // This singer's preferred backing-vocal level, saved on the playlist
+      // entry — applied before play so the sources start at the right gain.
+      const vocalPref = playlist.currentSong()?.vocalVolume
+      if (vocalPref !== undefined) setTrackVolume('Vocal', vocalPref)
       audio.handlePlay()
       // Get the playlist builder out of the way once the song is playing.
       setPlaylistSidebarOpen(false)
