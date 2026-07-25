@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LibrarySessionLike } from '@/features/stem-mixer/zen-navigation'
-import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, prevSessionId, relativeSessionId, resolveBackIntent, SEEK_TO_START_THRESHOLD_SEC, } from '@/features/stem-mixer/zen-navigation'
+import { autoAdvanceTarget, cycleLyricsSize, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, relativeSessionId, resolveBackIntent, SEEK_TO_START_THRESHOLD_SEC, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 
 // ── resolveBackIntent (REQ-ZEN-001 / 002) ──────────────────────
 
@@ -146,5 +146,57 @@ describe('autoAdvanceTarget', () => {
 
   it('REQ-ZEN-006: on at the last song -> null (nothing to advance to)', () => {
     expect(autoAdvanceTarget(true, ids, 's3')).toBeNull()
+  })
+})
+
+// ── playlistEndAction — the playlist must ALWAYS advance at song end ──
+
+describe('playlistEndAction', () => {
+  it('no mic data -> advance without a score (any stage)', () => {
+    expect(playlistEndAction(false, false, 0)).toBe('advance-without-score')
+    expect(playlistEndAction(true, false, 0)).toBe('advance-without-score')
+    expect(playlistEndAction(true, true, 0)).toBe('advance-without-score')
+    expect(playlistEndAction(false, true, 0)).toBe('advance-without-score')
+  })
+
+  it('desktop mixer with mic data -> defer to the mounted score modal', () => {
+    expect(playlistEndAction(false, true, 12)).toBe('defer-to-score-modal')
+  })
+
+  it('zen stage with mic data -> score and advance immediately (no modal is mounted there)', () => {
+    expect(playlistEndAction(true, true, 12)).toBe('advance-with-score')
+  })
+
+  it('never defers on the zen stage, whatever the mic state', () => {
+    for (const micActive of [true, false]) {
+      for (const count of [0, 1, 500]) {
+        expect(playlistEndAction(true, micActive, count)).not.toBe(
+          'defer-to-score-modal',
+        )
+      }
+    }
+  })
+})
+
+// ── Lyrics size presets ──────────────────────────────────────────
+
+describe('lyrics size presets', () => {
+  it('steps up and down with clamping at the ends', () => {
+    expect(stepLyricsSize('current', 1)).toBe('bigger')
+    expect(stepLyricsSize('current', -1)).toBe('smaller')
+    expect(stepLyricsSize('bigger', 1)).toBe('bigger')
+    expect(stepLyricsSize('smaller', -1)).toBe('smaller')
+  })
+
+  it('cycles smaller -> current -> bigger -> smaller', () => {
+    expect(cycleLyricsSize('smaller')).toBe('current')
+    expect(cycleLyricsSize('current')).toBe('bigger')
+    expect(cycleLyricsSize('bigger')).toBe('smaller')
+  })
+
+  it('scales: bigger > current > smaller, current is exactly 1', () => {
+    expect(ZEN_LYRICS_SCALE.current).toBe(1)
+    expect(ZEN_LYRICS_SCALE.bigger).toBeGreaterThan(1)
+    expect(ZEN_LYRICS_SCALE.smaller).toBeLessThan(1)
   })
 })

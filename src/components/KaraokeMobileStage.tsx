@@ -23,7 +23,7 @@ import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
-import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -31,9 +31,11 @@ import { StageShell } from '@/components/mobile/StageShell'
 import { RestCountdownDots } from '@/components/RestCountdownDots'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
-import { orderedLibrarySessions, resolveBackIntent, } from '@/features/stem-mixer/zen-navigation'
+import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
+import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import { createPersistedSignal } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -319,6 +321,25 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const showPlaylistCard = () =>
     !isNarrow() && isPlaylistActive() && queue().length > 0
 
+  // ── Lyrics size presets (Smaller / Current / Bigger) ──────────
+  // Cycled from the header button; Ctrl/Cmd+wheel (trackpad pinch) over the
+  // lyrics steps through the same presets. Persisted per user.
+  const [lyricsSize, setLyricsSize] = createPersistedSignal<ZenLyricsSize>(
+    'sm-zen-lyrics-size',
+    'current',
+  )
+  const lyricsSizeTitle = (): string =>
+    ({
+      smaller: 'Lyrics size: Smaller — click for Current',
+      current: 'Lyrics size: Current — click for Bigger',
+      bigger: 'Lyrics size: Bigger — click for Smaller',
+    })[lyricsSize()]
+  const handleLyricsZoomWheel = (e: WheelEvent): void => {
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    setLyricsSize(stepLyricsSize(lyricsSize(), e.deltaY < 0 ? 1 : -1))
+  }
+
   return (
     <StageShell class={styles.stage} testId="karaoke-mobile-stage">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -345,6 +366,17 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             </p>
           </Show>
         </div>
+        <button
+          class={styles.autoplayBtn}
+          classList={{
+            [styles.autoplayBtnOn]: lyricsSize() !== 'current',
+          }}
+          onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
+          title={lyricsSizeTitle()}
+          aria-label="Cycle the lyrics text size"
+        >
+          <TextSizeIcon />
+        </button>
         <Show when={props.onPickSession}>
           <button
             class={styles.autoplayBtn}
@@ -421,8 +453,14 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         ref={scrollerRef}
         class={styles.lyrics}
         classList={{ [styles.lyricsEmpty]: lines().length === 0 }}
+        style={{ '--lyrics-scale': String(ZEN_LYRICS_SCALE[lyricsSize()]) }}
         onTouchMove={noteUserScroll}
-        onWheel={noteUserScroll}
+        onWheel={(e) => {
+          // Ctrl/Cmd+wheel (trackpad pinch) zooms the presets; it is not a
+          // scroll-away, so it must not pause the lyrics auto-follow.
+          if (e.ctrlKey || e.metaKey) handleLyricsZoomWheel(e)
+          else noteUserScroll()
+        }}
       >
         <Show
           when={lines().length > 0}
