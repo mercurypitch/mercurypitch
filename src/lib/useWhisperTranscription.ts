@@ -76,6 +76,13 @@ export function useWhisperTranscription(
 
   // ── Init ───────────────────────────────────────────────────
 
+  // A transcription requested before the service finished (or started)
+  // initializing — consumed once init lands. Lets callers simply ask to
+  // transcribe: hosts that skip the eager model download (the karaoke
+  // performance stage) pay it on the first explicit request instead of
+  // silently doing nothing.
+  let pendingStart = false
+
   const initWhisper = () => {
     if (serviceRef != null) return
     setStatus('loading')
@@ -95,9 +102,14 @@ export function useWhisperTranscription(
       .init()
       .then(() => {
         setStatus('ready')
+        if (pendingStart) {
+          pendingStart = false
+          startTranscription()
+        }
       })
       .catch((err) => {
         console.error(`[${tag}] Whisper init failed:`, err)
+        pendingStart = false
         setStatus('error')
       })
   }
@@ -121,10 +133,27 @@ export function useWhisperTranscription(
       console.warn(`[${tag}] startTranscription: already transcribing`)
       return
     }
+    if (currentStatus === 'error' && serviceRef != null) {
+      // A failed init (network hiccup, blocked model fetch) is retryable on
+      // an explicit request — discard the dead service and re-init below.
+      console.log(`[${tag}] startTranscription: retrying after failed init`)
+      serviceRef.destroy()
+      serviceRef = null
+    }
     if (serviceRef == null) {
-      console.warn(
-        `[${tag}] startTranscription: whisper service not initialized`,
+      // Self-initialize on demand and queue this request — init's completion
+      // re-invokes startTranscription.
+      console.log(
+        `[${tag}] startTranscription: initializing whisper service on demand`,
       )
+      pendingStart = true
+      initWhisper()
+      return
+    }
+    if (currentStatus === 'loading') {
+      // Init already in flight (e.g. eager init still downloading the
+      // model) — queue and let it fire when ready.
+      pendingStart = true
       return
     }
     // Allow transcription from 'ready' or 'done' (re-transcription)
