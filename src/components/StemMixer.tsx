@@ -1573,6 +1573,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  // Zen mic toggle: same engine the playlist scoring uses; surface a
+  // denied/unavailable mic as a notification since the zen stage has no
+  // inline error slot.
+  const toggleZenMic = () => {
+    void mic.toggleMic().then(() => {
+      const err = mic.micError()
+      if (err !== '') showNotification(err, 'error')
+    })
+  }
+
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
   const ensureZenNotes = () => {
@@ -1677,6 +1687,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onEnsureNotes={ensureZenNotes}
           notesAnalyzing={pitchAnalysis.isAnalyzing}
           notesProgress={pitchAnalysis.progress}
+          micActive={mic.micActive}
+          onToggleMic={toggleZenMic}
+          micPitch={mic.micPitch}
+          ribbonNotes={pitchAnalysis.editableNotes}
         />
       }
     >

@@ -1,0 +1,32 @@
+/* Live pitch ribbon — the zen stage's coach strip. Glass to match the
+   header; the canvas inside draws the notes and the singer's dot. */
+
+.ribbon {
+  flex-shrink: 0;
+  height: 56px;
+  margin: 0.55rem 1rem 0;
+  overflow: hidden;
+  border: 1px solid rgba(238, 228, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(22, 14, 36, 0.5);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Wide (desktop-zen) stages keep the ribbon a centred column, matching
+   the lyrics measure rather than stretching wall to wall. */
+@media (min-width: 900px) {
+  .ribbon {
+    max-width: 720px;
+    margin-inline: auto;
+    width: calc(100% - 2rem);
+  }
+}
