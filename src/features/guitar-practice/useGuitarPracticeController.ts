@@ -9,6 +9,7 @@ import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
 import { micManager } from '@/lib/mic-manager'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { MidiEngine } from '@/lib/midi-engine'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -173,10 +174,27 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     'mp.guitarOutputDevice',
     '',
   )
-  // Apply the saved selections at startup.
-  void micManager.setPreferredDevice(inputDeviceId() || null)
+  // Apply the saved output selection at startup. The saved INPUT device is
+  // deliberately NOT applied here: this controller is constructed by
+  // GuitarProvider, which wraps the whole app — applying it at construction
+  // redirected the shared capture device for singing/piano/etc. on every
+  // boot after a single guitar visit. Instead, App.tsx calls
+  // applyGuitarInputDevice / releaseGuitarInputDevice as the guitar tab
+  // activates/deactivates, so the guitar-specific input (e.g. an audio
+  // interface's instrument in) is scoped to the guitar surface. The persisted
+  // signal itself is untouched — the picker's value survives.
   if (outputDeviceId() !== '') {
     void audioEngine.setOutputDevice(outputDeviceId())
+  }
+
+  /** Route capture to the persisted guitar input while the surface is in use. */
+  const applyGuitarInputDevice = (): void => {
+    void micManager.setPreferredDevice(inputDeviceId() || null)
+  }
+
+  /** Hand capture back to the system default when leaving the surface. */
+  const releaseGuitarInputDevice = (): void => {
+    void micManager.setPreferredDevice(null)
   }
 
   // ── Transpose (real note shift; slides notes along the neck) ─────
@@ -239,6 +257,29 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setMicActive(false)
     if (inputMode() === 'mic') setInputMode('keyboard')
   }
+
+  // The shared stream can die under us (OS revoke, a device switch tearing
+  // the manager's stream down). The engine has already reset itself when this
+  // fires — flip our signals so the guitar mic icon follows reality.
+  const unsubscribeMicLost = audioEngine.onMicLost(() => {
+    setMicOn(false)
+    setMicActive(false)
+  })
+
+  // Watchdog registration: the guitar toolbar / 3D HUD mic buttons read
+  // micOn — a confirmed icon-on-with-no-live-track mismatch is healed
+  // through the normal stop path.
+  const unregisterSentinel = registerMicIndicator(
+    'guitar',
+    // Deliberately non-reactive: the sentinel polls these accessors on its
+    // own low-frequency interval — no tracked scope involved.
+    // eslint-disable-next-line solid/reactivity
+    () => micOn(),
+    // eslint-disable-next-line solid/reactivity
+    () => {
+      if (micOn()) stopMic()
+    },
+  )
 
   // Choose the audio input device (e.g. an interface's instrument input). If the
   // mic is live, restart it so the engine re-wires onto the new device.
@@ -521,6 +562,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   onCleanup(() => {
     stopLoop()
     midiEngine.disconnect()
+    unsubscribeMicLost()
+    unregisterSentinel()
   })
 
   // ── Pitch detection helper ────────────────────────────────────
@@ -1093,6 +1136,8 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     // Audio I/O device routing
     inputDeviceId,
     setInputDevice,
+    applyGuitarInputDevice,
+    releaseGuitarInputDevice,
     outputDeviceId,
     setOutputDevice,
     outputDeviceSupported: () => audioEngine.outputDeviceSupported(),

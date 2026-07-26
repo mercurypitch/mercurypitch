@@ -82,6 +82,19 @@ export function GuitarPage(props: GuitarPageProps) {
   const { audioEngine } = useEngines()
   const ctx = useGuitar()
   const guitar = ctx.guitar
+
+  // Start the guitar mic and SAY so when it fails — the toggles used to
+  // discard startMic's boolean, leaving a dead click with no explanation.
+  const startGuitarMic = (): void => {
+    void guitar.startMic().then((ok) => {
+      if (!ok) {
+        showNotification(
+          'Microphone unavailable — check permissions or the selected input device.',
+          'error',
+        )
+      }
+    })
+  }
   // Bottom fretboard reference panel in the 3D view (toggle).
   const [show3dFretboard, setShow3dFretboard] = createSignal(true)
   // Input signal monitor overlay in the 3D view (toggle); persisted per device.
@@ -465,7 +478,7 @@ export function GuitarPage(props: GuitarPageProps) {
           outputSupported={guitar.outputDeviceSupported()}
           getInputLevel={guitar.getInputLevel}
           isMicActive={guitar.isMicActive}
-          startMic={() => void guitar.startMic()}
+          startMic={startGuitarMic}
         />
       </Show>
       <Show when={guitarView() === 'interactive'}>
@@ -915,7 +928,7 @@ export function GuitarPage(props: GuitarPageProps) {
               }}
               micActive={guitar.isMicActive}
               onMicToggle={() =>
-                guitar.isMicActive() ? guitar.stopMic() : void guitar.startMic()
+                guitar.isMicActive() ? guitar.stopMic() : startGuitarMic()
               }
               midiConnected={guitar.midiConnected}
               onMidiToggle={() =>
@@ -1018,7 +1031,7 @@ export function GuitarPage(props: GuitarPageProps) {
                   hitResults: guitar.hitResults,
                   showUserNotes: guitar.showUserNotes,
                   isMicActive: guitar.isMicActive,
-                  startMic: () => void guitar.startMic(),
+                  startMic: startGuitarMic,
                   stopMic: guitar.stopMic,
                   midiConnected: guitar.midiConnected,
                   midiConnect: () => void guitar.midiConnect(),

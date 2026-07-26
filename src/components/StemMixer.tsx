@@ -1744,7 +1744,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           computeActiveWord={computeActiveWord}
           onLineClick={handleLyricLineClick}
           playlistOverlayActive={isCurrentPlaylistSong}
-          onPlaylistStart={() => playlist.beginCountdown()}
+          onPlaylistStart={handlePlaylistStart}
           onPlaylistSkip={() => {
             audio.handlePause()
             playlist.advance()

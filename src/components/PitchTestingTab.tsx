@@ -1234,6 +1234,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   onCleanup(() => {
     stopLiveDetection()
+    // This tab holds a RAW getUserMedia stream + its own AudioContext (it
+    // bypasses the shared MicManager on purpose, to test detectors against
+    // the unmanaged device). Unmounting mid-detection must run the same
+    // teardown as the stop button, or the tracks and context leak — the
+    // device stays hot with every mic icon off.
+    cleanupMicrophoneResources()
     whisper.destroy()
   })
 

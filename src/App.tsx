@@ -1211,7 +1211,7 @@ const AppShell: Component<AppProps> = (props) => {
   // first kept the previous tab's audio running (e.g. singing playback kept
   // sounding under the piano tab). The listener runs before the signal
   // flips and cannot miss a transition.
-  onTabTransition((prevTab, _newTab) => {
+  onTabTransition((prevTab, newTab) => {
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
     // lingers after leaving and micActive stays stuck on — making the mic
@@ -1240,12 +1240,28 @@ const AppShell: Component<AppProps> = (props) => {
 
     // 4. Stop guitar mic if active. The guitar controller owns its mic
     // (shared MicManager), so stop it directly; practiceEngine.stopMic()
-    // covers the singToFretboard mode's own mic.
+    // covers the singToFretboard mode's own mic. Then hand capture back to
+    // the system default: the persisted guitar input (e.g. an interface's
+    // instrument in) must only redirect capture while the guitar surface is
+    // in use, not for singing/piano afterwards.
     if (prevTab === TAB_GUITAR) {
       guitarCtx.guitar.stopMic()
       practiceEngine.stopMic()
+      guitarCtx.guitar.releaseGuitarInputDevice()
+    }
+
+    // 5. Route capture to the persisted guitar input while on the guitar tab.
+    if (newTab === TAB_GUITAR) {
+      guitarCtx.guitar.applyGuitarInputDevice()
     }
   })
+
+  // Booting straight into the guitar tab (deep link / restored hash) has no
+  // transition for the block above to catch — apply the persisted guitar
+  // input now.
+  if (activeTab() === TAB_GUITAR) {
+    guitarCtx.guitar.applyGuitarInputDevice()
+  }
 
   const handleTabChange = (newTab: ActiveTab) => {
     setActiveTab(newTab)

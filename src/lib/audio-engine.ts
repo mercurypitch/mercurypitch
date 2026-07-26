@@ -99,6 +99,9 @@ export class AudioEngine {
   // Microphone
   private micStream: MediaStream | null = null
   private micSource: MediaStreamAudioSourceNode | null = null
+  private micStartInFlight: Promise<boolean> | null = null
+  private readonly micLostCallbacks = new Set<() => void>()
+  private unsubscribeMicManager: (() => void) | null = null
   // Unique per-instance id for the shared MicManager. Several AudioEngine
   // instances exist (EngineContext, pitch canvases, etc.); each must hold the
   // shared device under its own id so releases are ref-counted correctly.
@@ -726,6 +729,22 @@ export class AudioEngine {
   // ============================================================
 
   async startMic(): Promise<boolean> {
+    // Re-entrant calls (toggle + nudge + auto-calibrate can race) share one
+    // start — a second concurrent run used to wire a duplicate, orphaned
+    // source graph into the analyser.
+    if (this.micStartInFlight !== null) return this.micStartInFlight
+    const run = (async (): Promise<boolean> => {
+      try {
+        return await this.doStartMic()
+      } finally {
+        this.micStartInFlight = null
+      }
+    })()
+    this.micStartInFlight = run
+    return run
+  }
+
+  private async doStartMic(): Promise<boolean> {
     try {
       await this.init()
       await this.resume()
@@ -742,29 +761,80 @@ export class AudioEngine {
       // noiseSuppression / autoGainControl all off (ANALYSIS_CONSTRAINTS in
       // mic-manager.ts), exactly the constraints this engine requested before.
       // We just borrow its stream and wire it into our analyser graph.
-      this.micStream = await micManager.acquire(this.micConsumerId)
+      const stream = await micManager.acquire(this.micConsumerId)
 
+      // Every failure past this point MUST release the hold, or the manager
+      // keeps the device open forever with every UI reporting off (the
+      // phantom-hold leak from the mic postmortem).
       const ctx = this.audioCtx
       if (!ctx || !this.analyser) {
         console.error('[AudioEngine] AudioContext or analyser not available')
+        micManager.release(this.micConsumerId)
         return false
       }
 
-      // Connect mic stream to shared analyser (mirrors old JS behavior)
-      this.micSource = ctx.createMediaStreamSource(this.micStream)
-      this.micGain = ctx.createGain()
-      this.micGain.gain.value = 1.0
+      try {
+        // Connect mic stream to shared analyser (mirrors old JS behavior)
+        this.micSource = ctx.createMediaStreamSource(stream)
+        this.micGain = ctx.createGain()
+        this.micGain.gain.value = 1.0
 
-      this.micSource.connect(this.micGain)
-      this.micGain.connect(this.analyser)
+        this.micSource.connect(this.micGain)
+        this.micGain.connect(this.analyser)
+      } catch (wireErr) {
+        console.error('[AudioEngine] Mic graph wiring failed:', wireErr)
+        this.micSource?.disconnect()
+        this.micSource = null
+        this.micGain = null
+        micManager.release(this.micConsumerId)
+        return false
+      }
 
+      this.micStream = stream
       this.isRecording = true
+      // From here on the shared stream can die under us (OS revoke, device
+      // switch) — reconcile instead of reporting a live mic over dead tracks.
+      this.watchSharedStream()
       console.info('[AudioEngine] Microphone started successfully')
       return true
     } catch (err) {
+      // acquire() itself rejected — the manager already dropped this
+      // consumer's hold; nothing to release.
       console.error('[AudioEngine] Microphone access denied:', err)
       return false
     }
+  }
+
+  /**
+   * Register a callback for when the mic is lost OUTSIDE stopMic — the OS
+   * revoked the device, or a device switch tore the shared stream down. The
+   * engine has already reset its own state when this fires; wrappers use it
+   * to reset their UI signals. Returns an unsubscribe function.
+   */
+  onMicLost(cb: () => void): () => void {
+    this.micLostCallbacks.add(cb)
+    return () => this.micLostCallbacks.delete(cb)
+  }
+
+  private watchSharedStream(): void {
+    if (this.unsubscribeMicManager !== null) return
+    this.unsubscribeMicManager = micManager.subscribe(() => {
+      if (!this.isRecording) return
+      if (micManager.getStream() !== null) return
+      // We believe the mic is on, but the shared device is gone.
+      console.warn(
+        '[AudioEngine] Shared mic stream was torn down — resetting mic state',
+      )
+      this.isRecording = false
+      this.micSource?.disconnect()
+      this.micSource = null
+      this.micGain?.disconnect()
+      this.micGain = null
+      this.micStream = null
+      // Drop the stale hold so the manager doesn't count us forever.
+      micManager.release(this.micConsumerId)
+      for (const cb of this.micLostCallbacks) cb()
+    })
   }
 
   stopMic(): void {
@@ -1935,6 +2005,9 @@ export class AudioEngine {
 
   destroy(): void {
     this.stopMic()
+    this.unsubscribeMicManager?.()
+    this.unsubscribeMicManager = null
+    this.micLostCallbacks.clear()
     this.stopTone()
     this.stopAllNotes()
     if (this.audioCtx) {
