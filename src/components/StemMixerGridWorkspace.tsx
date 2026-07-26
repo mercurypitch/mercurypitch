@@ -54,12 +54,15 @@ interface StemMixerGridWorkspaceProps {
   handleForceSearch: () => void
   handleRemoveLyrics: () => void
   toggleEditMode: () => void
+  beginTextEdit: () => void
   startLrcGen: () => void
   autoSyncWords: () => void
   lyricsVersions: Accessor<LyricsVersion[]>
   activeVersionKind: Accessor<LyricsVersionKind | null>
   switchVersion: (kind: LyricsVersionKind) => void
   deleteVersion: (kind: LyricsVersionKind) => void
+  onGenerateFromVocal: () => void
+  generatingFromVocal: Accessor<boolean>
   handleDownloadLrc: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
@@ -491,6 +494,21 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   class="sm-lyrics-edit-btn"
                   onClick={(e) => {
                     e.stopPropagation()
+                    props.beginTextEdit()
+                  }}
+                  title="Edit lyrics text"
+                >
+                  <svg viewBox="0 0 24 24" width="11" height="11">
+                    <path
+                      fill="currentColor"
+                      d="M3 4h18v2H3V4zm0 5h9v2H3V9zm0 5h6v2H3v-2zm0 5h6v2H3v-2zm17.6-9.1c.4-.4.4-1 0-1.4l-1.1-1.1c-.4-.4-1-.4-1.4 0l-1.2 1.2 2.5 2.5 1.2-1.2zM10 17.5V20h2.5l6.2-6.2-2.5-2.5L10 17.5z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="sm-lyrics-edit-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
                     props.handleRemoveLyrics()
                   }}
                   title="Remove lyrics"
@@ -547,6 +565,8 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 activeKind={props.activeVersionKind}
                 onSwitch={props.switchVersion}
                 onDelete={props.deleteVersion}
+                onGenerateFromVocal={props.onGenerateFromVocal}
+                generatingFromVocal={props.generatingFromVocal}
               />
               <Show when={lp().lrcGenMode()}>
                 <span class="sm-lyrics-gen-label">LRC Gen</span>

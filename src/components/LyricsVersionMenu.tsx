@@ -2,8 +2,10 @@
 // LyricsVersionMenu — switch between saved lyric mappings
 // ============================================================
 // Header dropdown listing the Original / Edited / Auto-sync / Mapped
-// mappings (see src/lib/lyrics-versions.ts). Only shown when two or more
-// versions exist — with a single mapping there's nothing to switch.
+// mappings (see src/lib/lyrics-versions.ts). Shown when two or more
+// versions exist (with a single mapping there's nothing to switch), or when
+// a "Generate from vocal" action is wired in — that action must stay
+// reachable even with one (or zero) versions.
 
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
@@ -16,6 +18,10 @@ export interface LyricsVersionMenuProps {
   activeKind: Accessor<LyricsVersionKind | null>
   onSwitch: (kind: LyricsVersionKind) => void
   onDelete: (kind: LyricsVersionKind) => void
+  /** Build a "From vocal" draft with Whisper. Optional — surfaces the
+   *  action item (and the menu itself, even with < 2 versions) when set. */
+  onGenerateFromVocal?: () => void
+  generatingFromVocal?: Accessor<boolean>
 }
 
 export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
@@ -26,7 +32,11 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
   }
 
   return (
-    <Show when={props.versions().length >= 2}>
+    <Show
+      when={
+        props.versions().length >= 2 || props.onGenerateFromVocal !== undefined
+      }
+    >
       <div class="sm-lyrics-version">
         <button
           class="sm-lyrics-version-btn"
@@ -105,6 +115,33 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
                 </div>
               )}
             </For>
+            <Show when={props.onGenerateFromVocal !== undefined}>
+              <Show when={props.versions().length > 0}>
+                <div class="sm-lyrics-version-sep" />
+              </Show>
+              <button
+                class="sm-lyrics-version-action"
+                disabled={props.generatingFromVocal?.() === true}
+                title="Listen to the vocal stem and draft synced lyrics from it"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  props.onGenerateFromVocal?.()
+                  setOpen(false)
+                }}
+              >
+                <span class="sm-lyrics-version-check">
+                  <svg viewBox="0 0 24 24" width="12" height="12">
+                    <path
+                      fill="currentColor"
+                      d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"
+                    />
+                  </svg>
+                </span>
+                {props.generatingFromVocal?.() === true
+                  ? 'Listening to the vocal…'
+                  : 'Generate from vocal'}
+              </button>
+            </Show>
           </div>
         </Show>
       </div>

@@ -14,7 +14,12 @@
 
 import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 
-export type LyricsVersionKind = 'imported' | 'edited' | 'auto-sync' | 'lrc-gen'
+export type LyricsVersionKind =
+  | 'imported'
+  | 'edited'
+  | 'auto-sync'
+  | 'lrc-gen'
+  | 'whisper'
 
 export interface LyricsVersion {
   /** One version per kind — re-running an operation updates its own version
@@ -33,6 +38,7 @@ export const VERSION_LABELS: Record<LyricsVersionKind, string> = {
   edited: 'Edited',
   'auto-sync': 'Auto-sync',
   'lrc-gen': 'Mapped',
+  whisper: 'From vocal',
 }
 
 /** Display order in the switcher (original first, then the derived ones). */
@@ -41,6 +47,7 @@ const KIND_ORDER: LyricsVersionKind[] = [
   'edited',
   'auto-sync',
   'lrc-gen',
+  'whisper',
 ]
 
 export function sortVersions(versions: LyricsVersion[]): LyricsVersion[] {

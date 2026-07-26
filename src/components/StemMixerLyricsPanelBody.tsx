@@ -4,6 +4,7 @@
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createStore, produce } from 'solid-js/store'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
@@ -11,6 +12,8 @@ import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { buildForwardMarkerPath } from '@/lib/marker-path'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
+import type { LyricsEditRow } from '@/lib/whisper-lyrics'
+import { insertedLineTime, stripInlineWordStamps } from '@/lib/whisper-lyrics'
 import { LyricsSongPicker } from './LyricsSongPicker'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -48,6 +51,9 @@ export interface StemMixerLyricsPanelBodyProps {
     wordIdx: number
     word: string
   } | null>
+  textEditMode: Accessor<boolean>
+  onTextEditSave: (rows: LyricsEditRow[]) => void
+  onTextEditCancel: () => void
   lrcGenMode: Accessor<boolean>
   lrcGenLineIdx: Accessor<number>
   lrcGenWordIdx: Accessor<number>
@@ -434,6 +440,97 @@ export const StemMixerLyricsPanelBody: Component<
       }
     }
     return best
+  }
+
+  // ── Lyrics text editing ─────────────────────────────────────
+  // Local editable copy of the lines, (re)built each time the mode opens.
+  // A store keeps row identity stable so typing never recreates the input.
+  interface TextEditRowLocal {
+    originalIndex: number | null
+    time: number | null
+    text: string
+    rawText: string | null
+    dirty: boolean
+  }
+
+  const [textRows, setTextRows] = createStore<TextEditRowLocal[]>([])
+
+  createEffect(
+    on(
+      () => props.textEditMode(),
+      (active) => {
+        if (!active) return
+        const lrc = props.lrcLines()
+        if (lrc.length > 0) {
+          setTextRows(
+            lrc.map((line, i) => ({
+              originalIndex: i,
+              time: line.time,
+              text: stripInlineWordStamps(line.text),
+              rawText: line.text,
+              dirty: false,
+            })),
+          )
+        } else {
+          setTextRows(
+            props.lyricsLines().map((line, i) => ({
+              originalIndex: i,
+              time: null,
+              text: line,
+              rawText: null,
+              dirty: false,
+            })),
+          )
+        }
+      },
+    ),
+  )
+
+  const textEditRowTime = (secs: number): string => {
+    const m = Math.floor(secs / 60)
+    const s = Math.floor(secs % 60)
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+
+  const textEditSaveDisabled = () =>
+    textRows.length === 0 || textRows.every((row) => row.text.trim() === '')
+
+  const collectTextEditRows = (): LyricsEditRow[] =>
+    textRows.map((row) => ({
+      time: row.time,
+      text: row.text,
+      // A touched or added row is re-emitted from its clean text; untouched
+      // rows keep the raw body so inline word stamps survive.
+      rawText: row.dirty || row.originalIndex === null ? null : row.rawText,
+      originalIndex: row.originalIndex,
+    }))
+
+  const deleteTextEditRow = (index: number) => {
+    setTextRows(
+      produce((rows) => {
+        rows.splice(index, 1)
+      }),
+    )
+  }
+
+  const addTextEditRowBelow = (index: number) => {
+    setTextRows(
+      produce((rows) => {
+        const row = rows[index]
+        if (row === undefined) return
+        const nextTime = rows[index + 1]?.time ?? undefined
+        rows.splice(index + 1, 0, {
+          originalIndex: null,
+          time:
+            row.time === null
+              ? null
+              : insertedLineTime(row.time, nextTime ?? undefined),
+          text: '',
+          rawText: null,
+          dirty: false,
+        })
+      }),
+    )
   }
 
   return (
@@ -1006,8 +1103,93 @@ export const StemMixerLyricsPanelBody: Component<
           </Show>
         </Show>
 
+        {/* ── Lyrics text editor ───────────────────────── */}
+        <Show
+          when={
+            props.textEditMode() && !props.editMode() && !props.lrcGenMode()
+          }
+        >
+          <div class="sm-lyrics-textedit-toolbar">
+            <span class="sm-lyrics-textedit-title">Edit lyrics</span>
+            <button
+              class="sm-lyrics-cancel-btn"
+              onClick={() => props.onTextEditCancel()}
+            >
+              Cancel
+            </button>
+            <button
+              class="sm-lyrics-save-btn"
+              disabled={textEditSaveDisabled()}
+              onClick={() => props.onTextEditSave(collectTextEditRows())}
+            >
+              Save
+            </button>
+          </div>
+          <div class="sm-lyrics-textedit-list">
+            <For each={textRows}>
+              {(row, i) => (
+                <div class="sm-lyrics-textedit-row">
+                  <Show when={row.time !== null}>
+                    <span class="sm-lyrics-textedit-time">
+                      {textEditRowTime(row.time ?? 0)}
+                    </span>
+                  </Show>
+                  <Show
+                    when={row.rawText === '~Rest~'}
+                    fallback={
+                      <input
+                        class="sm-lyrics-textedit-input"
+                        type="text"
+                        value={row.text}
+                        onInput={(e) =>
+                          setTextRows(i(), {
+                            text: e.currentTarget.value,
+                            dirty: true,
+                          })
+                        }
+                      />
+                    }
+                  >
+                    <span class="sm-lyrics-textedit-rest">Rest</span>
+                  </Show>
+                  <button
+                    class="sm-lyrics-textedit-del"
+                    title="Delete line"
+                    aria-label="Delete line"
+                    onClick={() => deleteTextEditRow(i())}
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="sm-lyrics-textedit-add"
+                    title="Add a line below"
+                    aria-label="Add a line below"
+                    onClick={() => addTextEditRowBelow(i())}
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
+
         {/* ── Normal view ──────────────────────────────── */}
-        <Show when={!props.editMode() && !props.lrcGenMode()}>
+        <Show
+          when={
+            !props.editMode() && !props.lrcGenMode() && !props.textEditMode()
+          }
+        >
           {/* ── Block edit popover ─────────────────────── */}
           <Show when={props.blockEditTarget() !== null}>
             <div class="sm-lyrics-block-edit-popover">
