@@ -707,24 +707,6 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         </Show>
       </div>
 
-      {/* ── Mic (your voice → the pitch ribbon) ────────────── */}
-      <Show when={props.onToggleMic}>
-        <button
-          class={styles.micFloatBtn}
-          classList={{ [styles.micFloatBtnOn]: micOn() }}
-          onClick={toggleMic}
-          aria-pressed={micOn()}
-          title={
-            micOn()
-              ? 'Mic is live — the ribbon follows your pitch. Tap to turn it off.'
-              : 'Sing with the mic and watch your pitch ride the notes'
-          }
-          aria-label="Toggle your microphone"
-        >
-          <MicIcon />
-        </button>
-      </Show>
-
       {/* ── Sing pill (vocals on/off + level) ──────────────── */}
       <PillControl
         class={styles.singPill}
@@ -753,34 +735,60 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <span>-{formatTime(remaining())}</span>
         </div>
         <div class={styles.transport}>
-          <button
-            class={styles.sideBtn}
-            onClick={handleBack}
-            title="Back to start (press again to go to the previous song)"
-            aria-label="Back to the start of the song"
-          >
-            <PrevIcon />
-          </button>
-          <button
-            class={styles.playBtn}
-            onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
-            disabled={props.loading()}
-            title={props.playing() ? 'Pause' : 'Play'}
-            aria-label={props.playing() ? 'Pause' : 'Play'}
-          >
-            <Show when={props.playing()} fallback={<PlayIcon />}>
-              <PauseIcon />
+          {/* Left slot: your mic. Lives in the bar with the other
+              performance controls — never floating over the lyrics. */}
+          <div class={styles.transportSide}>
+            <Show when={props.onToggleMic}>
+              <button
+                class={styles.micBtn}
+                classList={{ [styles.micBtnOn]: micOn() }}
+                onClick={toggleMic}
+                aria-pressed={micOn()}
+                title={
+                  micOn()
+                    ? 'Mic is live — the ribbon follows your pitch. Tap to turn it off.'
+                    : 'Sing with the mic and watch your pitch ride the notes'
+                }
+                aria-label="Toggle your microphone"
+              >
+                <MicIcon />
+              </button>
             </Show>
-          </button>
-          <button
-            class={styles.sideBtn}
-            onClick={() => props.onNextItem()}
-            disabled={!props.hasNextItem()}
-            title="Next song"
-            aria-label="Next song"
-          >
-            <NextIcon />
-          </button>
+          </div>
+          <div class={styles.transportMain}>
+            <button
+              class={styles.sideBtn}
+              onClick={handleBack}
+              title="Back to start (press again to go to the previous song)"
+              aria-label="Back to the start of the song"
+            >
+              <PrevIcon />
+            </button>
+            <button
+              class={styles.playBtn}
+              onClick={() =>
+                props.playing() ? props.onPause() : props.onPlay()
+              }
+              disabled={props.loading()}
+              title={props.playing() ? 'Pause' : 'Play'}
+              aria-label={props.playing() ? 'Pause' : 'Play'}
+            >
+              <Show when={props.playing()} fallback={<PlayIcon />}>
+                <PauseIcon />
+              </Show>
+            </button>
+            <button
+              class={styles.sideBtn}
+              onClick={() => props.onNextItem()}
+              disabled={!props.hasNextItem()}
+              title="Next song"
+              aria-label="Next song"
+            >
+              <NextIcon />
+            </button>
+          </div>
+          {/* Right slot mirrors the left so play stays dead centre. */}
+          <div class={styles.transportSide} aria-hidden="true" />
         </div>
       </div>
 
