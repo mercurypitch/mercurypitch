@@ -93,6 +93,13 @@ after the fun is proven. Monetization gate (locked earlier, unchanged):
 free = 3 arcade materials + journey chapter 1; Pro = all materials,
 full journey, bosses. Pro fail-states stay (Diamond/bosses can be lost).
 
+## Input modes (Sing / Tap / Listen)
+
+The adventure is playable three ways — voice (pitch), taps (rhythm game),
+or hear-and-answer (ear training with contour gestures: swipe up/down for
+slide direction, zigzag for vibrato). Same stages, one `InteractionDriver`
+seam, modes never paywalled. Full spec: [input-modes.md](input-modes.md).
+
 ## Implementation notes
 
 - Moving/hidden targets: `computeTarget` result becomes `targetMidi(t)`
