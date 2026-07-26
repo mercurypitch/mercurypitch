@@ -5,7 +5,7 @@
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
-import type { SettingsSection } from '@/stores/ui-store'
+import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
@@ -29,7 +29,7 @@ export type HashRoute =
   | { type: 'billing-return'; outcome: 'success' | 'cancel' }
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
-  | { type: 'admin-weekly' }
+  | { type: 'admin'; section: AdminSection }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -78,8 +78,18 @@ const SETTINGS_SECTION_TO_SLUG: Record<SettingsSection, string> = {
   credits: 'credits',
 }
 
+const VALID_ADMIN_SECTIONS: Set<string> = new Set([
+  'exercises',
+  'ascent',
+  'weekly',
+])
+
 function isValidTab(tab: string): tab is ActiveTab {
   return VALID_TABS.has(tab)
+}
+
+function isAdminSection(section: string): section is AdminSection {
+  return VALID_ADMIN_SECTIONS.has(section)
 }
 
 /**
@@ -208,9 +218,14 @@ export function parseHash(rawHash: string): HashRoute {
     }
   }
 
-  // Match: /admin/weekly (owner-only weekly-challenge authoring)
-  if (hash === '/admin/weekly' || hash === '/admin') {
-    return { type: 'admin-weekly' }
+  // Match: /admin/<section> (owner-only content authoring). Bare /admin opens
+  // the exercise catalogue, which is the Content Studio's primary surface.
+  if (hash === '/admin') {
+    return { type: 'admin', section: 'exercises' }
+  }
+  const adminMatch = hash.match(/^\/admin\/([a-z-]+)$/)
+  if (adminMatch && isAdminSection(adminMatch[1])) {
+    return { type: 'admin', section: adminMatch[1] }
   }
 
   // Match: /tab-name
@@ -257,8 +272,8 @@ export function buildHash(route: HashRoute): string {
       return route.outcome === 'success' ? '/billing/success' : '/pricing'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
-    case 'admin-weekly':
-      return '/admin/weekly'
+    case 'admin':
+      return `/admin/${route.section}`
     case 'unknown':
       return '/'
   }

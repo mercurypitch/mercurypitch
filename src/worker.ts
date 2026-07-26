@@ -215,6 +215,26 @@ export default {
       if (shareResp) return shareResp
     }
 
+    // Guided-exercise playback is stored permanently by the db-worker, but
+    // browser media policy intentionally allows only same-origin audio. Proxy
+    // the small public playback derivative through the app domain while
+    // retaining its immutable cache, range, and entity headers.
+    if (url.pathname.startsWith('/api/guided-media/')) {
+      if (method !== 'GET' && method !== 'HEAD') {
+        return json({ error: 'Method not allowed' }, 405)
+      }
+      if (env.DB_API_URL === undefined || env.DB_API_URL === '') {
+        return json({ error: 'Guided media service is unavailable' }, 503)
+      }
+      try {
+        const upstream = new URL(url.pathname + url.search, env.DB_API_URL)
+        return await fetch(new Request(upstream.toString(), request))
+      } catch (err) {
+        console.error('[worker] guided media proxy error:', err)
+        return json({ error: 'Guided media service is unavailable' }, 502)
+      }
+    }
+
     // Unmatched /api/* must 404 as JSON, not fall through to the SPA shell
     // below — with not_found_handling=single-page-application the asset binding
     // returns index.html for any unknown path, which would be wrong for an API.

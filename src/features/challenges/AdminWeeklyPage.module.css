@@ -176,6 +176,9 @@
 }
 
 .form {
+  min-inline-size: 0;
+  margin: 0;
+  border: 0;
   padding: 16px 18px;
   display: grid;
   grid-template-columns: 1fr 1fr;

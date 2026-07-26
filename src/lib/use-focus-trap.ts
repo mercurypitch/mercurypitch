@@ -32,8 +32,30 @@ const FOCUSABLE_SELECTOR = [
   'input:not([disabled])',
   'select:not([disabled])',
   'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
+  'audio[controls]',
+  'video[controls]',
+  '[contenteditable="true"]',
+  '[tabindex]',
 ].join(',')
+
+function isRendered(element: HTMLElement, root: HTMLElement): boolean {
+  if (
+    element.tabIndex < 0 ||
+    element.matches(':disabled') ||
+    element.closest('[hidden], [inert], [aria-hidden="true"]')
+  ) {
+    return false
+  }
+
+  let current: HTMLElement | null = element
+  while (current !== null) {
+    const style = window.getComputedStyle(current)
+    if (style.display === 'none' || style.visibility === 'hidden') return false
+    if (current === root) return true
+    current = current.parentElement
+  }
+  return false
+}
 
 export function useFocusTrap(
   getRoot: () => HTMLElement | undefined,
@@ -49,7 +71,10 @@ export function useFocusTrap(
     lastFocused = document.activeElement as HTMLElement | null
 
     const focusable = (): HTMLElement[] =>
-      Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+      Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (element) => isRendered(element, root),
+      )
+    let focusWithinDialog: HTMLElement | undefined
 
     // Defer initial focus until the dialog's children have mounted.
     // preventScroll keeps a tall sheet from being yanked into view on open.
@@ -58,29 +83,66 @@ export function useFocusTrap(
     )
 
     const onKeyDown = (e: KeyboardEvent): void => {
+      const eventModal =
+        e.target instanceof Element
+          ? e.target.closest<HTMLElement>('[aria-modal="true"]')
+          : null
+      if (eventModal !== null && eventModal !== root) return
+
       if (e.key === 'Escape') {
+        e.preventDefault()
         opts.onClose?.()
         return
       }
       if (e.key !== 'Tab') return
       const items = focusable()
-      if (items.length === 0) return
+      if (items.length === 0) {
+        e.preventDefault()
+        root.focus({ preventScroll: true })
+        return
+      }
       const first = items[0]
       const last = items[items.length - 1]
       const active = document.activeElement
-      if (e.shiftKey && active === first) {
+      if (e.shiftKey && (active === first || !root.contains(active))) {
         e.preventDefault()
         last.focus()
-      } else if (!e.shiftKey && active === last) {
+      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
         e.preventDefault()
         first.focus()
       }
     }
 
+    const onFocusIn = (e: FocusEvent): void => {
+      const target = e.target
+      if (!(target instanceof HTMLElement)) return
+      if (root.contains(target)) {
+        focusWithinDialog = target
+        return
+      }
+
+      // A nested modal can be portalled outside this root. Its own focus trap
+      // owns focus until it closes, so the parent must not pull focus back.
+      if (target.closest('[aria-modal="true"]') !== null) return
+
+      queueMicrotask(() => {
+        if (root.contains(document.activeElement)) return
+        const fallback =
+          focusWithinDialog !== undefined && root.contains(focusWithinDialog)
+            ? focusWithinDialog
+            : focusable()[0]
+        ;(fallback ?? root).focus({ preventScroll: true })
+      })
+    }
+
     root.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     onCleanup(() => {
       root.removeEventListener('keydown', onKeyDown)
-      lastFocused?.focus?.()
+      document.removeEventListener('focusin', onFocusIn)
+      if (lastFocused?.isConnected === true) {
+        lastFocused.focus({ preventScroll: true })
+      }
     })
   })
 }

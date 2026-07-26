@@ -5,7 +5,7 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
-import type { SettingsSection } from '@/stores/ui-store'
+import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
@@ -33,10 +33,14 @@ export interface UseHashRouterDeps {
   openSettingsSection: (section: SettingsSection) => void
   /** Current Settings sub-tab — synced into #/settings/<slug>. */
   settingsSection: Accessor<SettingsSection>
-  /** Open the owner-only weekly-challenge authoring overlay. */
-  openAdminWeekly: () => void
-  /** Whether that overlay is open (keeps the tab→hash sync off it). */
-  showAdminWeekly: Accessor<boolean>
+  /** Open the owner-only Content Studio at a specific authoring section. */
+  openAdminContent: (section: AdminSection) => boolean
+  /** Close the Content Studio when browser navigation leaves /admin. */
+  closeAdminContent: () => boolean
+  /** Whether the studio is open (keeps tab→hash sync off its route). */
+  showAdminContentStudio: Accessor<boolean>
+  /** Current studio section, used to restore a cancelled history navigation. */
+  adminContentSection: Accessor<AdminSection>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -58,6 +62,26 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   const dispatchRoute = (route: HashRoute) => {
     hashSyncing = true
+    if (
+      route.type !== 'admin' &&
+      deps.showAdminContentStudio() &&
+      !deps.closeAdminContent()
+    ) {
+      replaceHash({
+        type: 'admin',
+        section: deps.adminContentSection(),
+      })
+      hashSyncing = false
+      return
+    }
+    if (route.type === 'admin' && !deps.openAdminContent(route.section)) {
+      replaceHash({
+        type: 'admin',
+        section: deps.adminContentSection(),
+      })
+      hashSyncing = false
+      return
+    }
     if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
       deps.setActiveUvrSessionId(null)
@@ -102,9 +126,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'settings-section') {
       deps.openSettingsSection(route.section)
       deps.setActiveUvrSessionId(null)
-    } else if (route.type === 'admin-weekly') {
+    } else if (route.type === 'admin') {
       deps.dismissWelcome()
-      deps.openAdminWeekly()
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
@@ -147,7 +170,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection() ||
-      deps.showAdminWeekly()
+      deps.showAdminContentStudio()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {

@@ -9,7 +9,8 @@ import type { PracticeFrame, PracticeFrameListener, } from '@/features/practice/
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { midiToNote } from '@/lib/scale-data'
 import { isNarrow } from '@/lib/use-viewport'
-import { getZenExercise, ZEN_EXERCISES } from './exercise-catalog'
+import { getZenExercise, zenExerciseCatalog } from './exercise-catalog'
+import { refreshGuidedContent } from './guided-content-store'
 import type { ZenExerciseCategory, ZenPitchRun, ZenTargetVisibility, } from './types'
 import { useZenPitchSession } from './useZenPitchSession'
 import type { ZenCanvasRenderModel } from './zen-canvas-renderer'
@@ -31,6 +32,7 @@ import styles from './ZenPitchStage.module.css'
 
 interface ZenPitchStageProps {
   initialExerciseId?: string
+  initialExerciseVersion?: number
   subscribeFrames: (listener: PracticeFrameListener) => () => void
   micActive: Accessor<boolean>
   startMic: () => Promise<boolean>
@@ -66,6 +68,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
 
   const session = useZenPitchSession({
     initialExerciseId: props.initialExerciseId,
+    initialExerciseVersion: props.initialExerciseVersion,
     initialCenterMidi: props.initialCenterMidi,
     subscribeFrames: (listener: (frame: PracticeFrame) => void) =>
       props.subscribeFrames(listener),
@@ -74,10 +77,9 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     stopMic: () => props.stopMic(),
     onRunFinalized: (run) => {
       const { id: _sessionId, ...draft } = run
-      const exerciseVersion = getZenExercise(run.exerciseId)?.version
       void saveZenTake({
         ...draft,
-        exerciseVersion,
+        exerciseVersion: run.exerciseVersion,
       })
     },
   })
@@ -153,7 +155,10 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
 
   const loadHistory = async (exerciseId: string | null): Promise<void> => {
     const request = ++loadRequest
-    const exerciseVersion = getZenExercise(exerciseId)?.version
+    const exerciseVersion =
+      exerciseId === session.exerciseId()
+        ? session.exercise()?.version
+        : getZenExercise(exerciseId)?.version
     const history = await listZenTakes({
       mode: exerciseId === null ? 'monitor' : 'exercise',
       ...(exerciseId === null
@@ -292,7 +297,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
             {(category) => (
               <optgroup label={CATEGORY_LABELS[category]}>
                 <For
-                  each={ZEN_EXERCISES.filter(
+                  each={zenExerciseCatalog().filter(
                     (candidate) => candidate.category === category,
                   )}
                 >
@@ -599,6 +604,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
 
   onMount(() => {
     window.addEventListener('keydown', onKeyDown)
+    void refreshGuidedContent()
     void loadHistory(session.exerciseId())
   })
 

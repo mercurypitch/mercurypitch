@@ -3,7 +3,7 @@ import { copyFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import typegpuPlugin from 'unplugin-typegpu/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 
@@ -41,7 +41,11 @@ try {
 // aliases, /karaoke-night + alias, /glass + aliases) to their HTML entries in
 // production; dev and preview servers have no worker, so mirror the rewrites
 // here or the links would land on the SPA shell instead.
-const MIRROR_PATHS = new Set(['/mirror', '/vocal-range-test', '/tone-deaf-test'])
+const MIRROR_PATHS = new Set([
+  '/mirror',
+  '/vocal-range-test',
+  '/tone-deaf-test',
+])
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 // Glass aliases are worker-routed in production (wrangler `run_worker_first`
 // + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
@@ -56,11 +60,7 @@ function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
     middlewares: {
       use: (
-        fn: (
-          req: { url?: string },
-          res: unknown,
-          next: () => void,
-        ) => void,
+        fn: (req: { url?: string }, res: unknown, next: () => void) => void,
       ) => void
     }
   }) => {
@@ -130,160 +130,181 @@ function removeWasmAssetsPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [
-    isDev ? ssl() : [],
-    qrcode(),
-    solidPlugin(),
-    // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
-    // vertexFn/fragmentFn closures) — same setup as chaos-master.
-    typegpuPlugin({}),
-    standaloneEntryRewritePlugin(),
-    mirrorAliasFilesPlugin(),
-    removeWasmAssetsPlugin(),
-  ],
-  // Absolute base so asset URLs resolve from the site root. Required for
-  // path-based deep-links (e.g. /exercises/<slug>): a relative './' base would
-  // resolve ./assets/* against /exercises/, 404, and fall back to the SPA
-  // shell (text/html) — blocked by X-Content-Type-Options: nosniff.
-  base: '/',
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
-  },
-  server: {
-    port: Number(process.env.VITE_DEV_PORT) || 3000,
-    headers: {
-      // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-    },
-    proxy: {
-      '/api/jam': {
-        target: 'http://localhost:8787',
-        changeOrigin: true,
-        ws: true,
-      },
-      '/api/uvr': {
-        target: `http://localhost:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
-      },
-      // Proxy the large model to bypass CORS during development
-      '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
-        target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  const modeEnv = loadEnv(mode, __dirname, '')
+  const configuredApiBase =
+    process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
+  const guidedMediaTarget =
+    configuredApiBase === undefined || configuredApiBase === ''
+      ? 'http://localhost:8788'
+      : configuredApiBase
+
+  return {
+    plugins: [
+      isDev ? ssl() : [],
+      qrcode(),
+      solidPlugin(),
+      // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
+      // vertexFn/fragmentFn closures) — same setup as chaos-master.
+      typegpuPlugin({}),
+      standaloneEntryRewritePlugin(),
+      mirrorAliasFilesPlugin(),
+      removeWasmAssetsPlugin(),
+    ],
+    // Absolute base so asset URLs resolve from the site root. Required for
+    // path-based deep-links (e.g. /exercises/<slug>): a relative './' base would
+    // resolve ./assets/* against /exercises/, 404, and fall back to the SPA
+    // shell (text/html) — blocked by X-Content-Type-Options: nosniff.
+    base: '/',
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
       },
     },
-  },
-  preview: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-    },
-    proxy: {
-      '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
-        target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
-        changeOrigin: true,
+    server: {
+      port: Number(process.env.VITE_DEV_PORT) || 3000,
+      headers: {
+        // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
       },
-    },
-  },
-  build: {
-    target: 'esnext',
-    sourcemap: true,
-    rollupOptions: {
-      external: [/.*\.wasm$/],
-      // Voice Mirror is a second, standalone entry (mirror.html) so its
-      // bundle stays tiny — it must not pull in the app shell or ONNX.
-      input: {
-        index: resolve(__dirname, 'index.html'),
-        mirror: resolve(__dirname, 'mirror.html'),
-        karaoke: resolve(__dirname, 'karaoke.html'),
-        glass: resolve(__dirname, 'glass.html'),
-      },
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('onnxruntime')) return undefined
-            // GPU stack rides its own chunk: only the lazily-imported glass
-            // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
-            // vendor chunk must never drag typegpu into first paints, and
-            // vendor must never be dragged in BY the gpu backend.
-            if (id.includes('typegpu') || id.includes('wgpu-matrix'))
-              return 'vendor-gpu'
-            // VexFlow is only needed after a user opens a notation surface.
-            // Keep its engraving/font payload out of the initial app vendor
-            // chunk so adding sheet music does not tax every first visit.
-            if (id.includes('vexflow')) return 'vendor-vexflow'
-            // solid-js gets its own chunk so the standalone mirror entry
-            // (which uses nothing else from node_modules) doesn't drag the
-            // whole app vendor bundle onto mobile 4G.
-            if (id.includes('solid-js')) return 'vendor-solid'
-            return 'vendor'
-          }
-          // Small pitch/mic/consent modules shared by the app and the
-          // standalone entries (mirror, karaoke). Without this, Rollup
-          // co-locates them with app chunks and the standalone entries
-          // transitively load the whole app vendor bundle — legal-links
-          // landing in the 'advanced' chunk once dragged ~2.7 MB of static
-          // JS into the mirror's first paint via ConsentBanner.
-          if (
-            /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
-              id,
-            ) ||
-            /src\/stores\/notifications-store/.test(id) ||
-            /src\/db\/services\/(auth-service|user-service|billing-service)/.test(
-              id,
-            )
-          ) {
-            // These are all app-store-free leaves shared by the app and the
-            // standalone entries (the toast host, the karaoke account chip +
-            // server-mode toggle). Without pinning them here Rollup co-locates
-            // them in the heavy 'library' chunk — which also holds app-store —
-            // and the karaoke entry statically pulls the whole thing.
-            return 'pitch-core'
-          }
-          if (
-            id.includes('CommunityShare') ||
-            id.includes('CommunityLeaderboard')
-          )
-            return 'community'
-          if (
-            id.includes('PitchTestingTab') ||
-            id.includes('PitchAlgorithmTester') ||
-            id.includes('VocalChallenges') ||
-            id.includes('VocalAnalysis') ||
-            id.includes('UvrPanel') ||
-            id.includes('UvrGuide') ||
-            id.includes('uvr-api') ||
-            id.includes('StemMixer')
-          )
-            return 'advanced'
-          if (id.includes('LibraryModal') || id.includes('SessionLibraryModal'))
-            return 'library'
+      proxy: {
+        '/api/guided-media': {
+          target: guidedMediaTarget,
+          changeOrigin: true,
+        },
+        '/api/jam': {
+          target: 'http://localhost:8787',
+          changeOrigin: true,
+          ws: true,
+        },
+        '/api/uvr': {
+          target: `http://localhost:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
+        },
+        // Proxy the large model to bypass CORS during development
+        '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
+          target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
+          changeOrigin: true,
         },
       },
     },
-  },
-  worker: {
-    format: 'es',
-  },
-  define: {
-    'process.env': {},
-    __COMMIT_SHA__: JSON.stringify(commitSha),
-  },
-  optimizeDeps: {
-    exclude: ['onnxruntime-web'],
-  },
-  css: {
-    transformer: 'lightningcss',
-    lightningcss: {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      drafts: { nesting: true } as Record<string, unknown>,
+    preview: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+      },
+      proxy: {
+        '/api/guided-media': {
+          target: guidedMediaTarget,
+          changeOrigin: true,
+        },
+        '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
+          target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
+          changeOrigin: true,
+        },
+      },
     },
-    modules: {
-      localsConvention: 'camelCaseOnly',
+    build: {
+      target: 'esnext',
+      sourcemap: true,
+      rollupOptions: {
+        external: [/.*\.wasm$/],
+        // Voice Mirror is a second, standalone entry (mirror.html) so its
+        // bundle stays tiny — it must not pull in the app shell or ONNX.
+        input: {
+          index: resolve(__dirname, 'index.html'),
+          mirror: resolve(__dirname, 'mirror.html'),
+          karaoke: resolve(__dirname, 'karaoke.html'),
+          glass: resolve(__dirname, 'glass.html'),
+        },
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('onnxruntime')) return undefined
+              // GPU stack rides its own chunk: only the lazily-imported glass
+              // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
+              // vendor chunk must never drag typegpu into first paints, and
+              // vendor must never be dragged in BY the gpu backend.
+              if (id.includes('typegpu') || id.includes('wgpu-matrix'))
+                return 'vendor-gpu'
+              // VexFlow is only needed after a user opens a notation surface.
+              // Keep its engraving/font payload out of the initial app vendor
+              // chunk so adding sheet music does not tax every first visit.
+              if (id.includes('vexflow')) return 'vendor-vexflow'
+              // solid-js gets its own chunk so the standalone mirror entry
+              // (which uses nothing else from node_modules) doesn't drag the
+              // whole app vendor bundle onto mobile 4G.
+              if (id.includes('solid-js')) return 'vendor-solid'
+              return 'vendor'
+            }
+            // Small pitch/mic/consent modules shared by the app and the
+            // standalone entries (mirror, karaoke). Without this, Rollup
+            // co-locates them with app chunks and the standalone entries
+            // transitively load the whole app vendor bundle — legal-links
+            // landing in the 'advanced' chunk once dragged ~2.7 MB of static
+            // JS into the mirror's first paint via ConsentBanner.
+            if (
+              /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+                id,
+              ) ||
+              /src\/stores\/notifications-store/.test(id) ||
+              /src\/db\/services\/(auth-service|user-service|billing-service)/.test(
+                id,
+              )
+            ) {
+              // These are all app-store-free leaves shared by the app and the
+              // standalone entries (the toast host, the karaoke account chip +
+              // server-mode toggle). Without pinning them here Rollup co-locates
+              // them in the heavy 'library' chunk — which also holds app-store —
+              // and the karaoke entry statically pulls the whole thing.
+              return 'pitch-core'
+            }
+            if (
+              id.includes('CommunityShare') ||
+              id.includes('CommunityLeaderboard')
+            )
+              return 'community'
+            if (
+              id.includes('PitchTestingTab') ||
+              id.includes('PitchAlgorithmTester') ||
+              id.includes('VocalChallenges') ||
+              id.includes('VocalAnalysis') ||
+              id.includes('UvrPanel') ||
+              id.includes('UvrGuide') ||
+              id.includes('uvr-api') ||
+              id.includes('StemMixer')
+            )
+              return 'advanced'
+            if (
+              id.includes('LibraryModal') ||
+              id.includes('SessionLibraryModal')
+            )
+              return 'library'
+          },
+        },
+      },
     },
-  },
+    worker: {
+      format: 'es',
+    },
+    define: {
+      'process.env': {},
+      __COMMIT_SHA__: JSON.stringify(commitSha),
+    },
+    optimizeDeps: {
+      exclude: ['onnxruntime-web'],
+    },
+    css: {
+      transformer: 'lightningcss',
+      lightningcss: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        drafts: { nesting: true } as Record<string, unknown>,
+      },
+      modules: {
+        localsConvention: 'camelCaseOnly',
+      },
+    },
+  }
 })
