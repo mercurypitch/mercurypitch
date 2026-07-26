@@ -18,8 +18,18 @@
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  opacity: 0.62;
   pointer-events: none;
+}
+
+/* Fine noise dither over the whole backdrop area: breaks up any residual
+   gradient stepping (ours or the display's) into invisible speckle. */
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
 }
 
 /* One class per room, 2K webp base. The 4K tier applies only on wide
@@ -87,15 +97,18 @@
   }
 }
 
-/* Readability wash — kept light on purpose: crushing the image into
-   near-black is exactly what makes dark gradients band on 8-bit displays. */
+/* Whisper of a wash for edge blending only. Readability now lives on the
+   UI itself (the lobby card, panel backgrounds) — darkening the whole
+   image squeezes it into the band-prone near-black range and turns the
+   backdrop to mush, which is exactly what we un-did here. */
 .backdrop::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     180deg,
-    rgba(8, 11, 17, 0.38),
-    rgba(8, 11, 17, 0.74)
+    rgba(8, 11, 17, 0.16),
+    rgba(8, 11, 17, 0.45)
   );
 }

@@ -29,8 +29,15 @@
   margin: auto;
   justify-content: center;
   align-self: center;
-  height: 100%;
-  padding: 24px;
+  height: auto;
+  padding: 28px;
+  /* Local scrim card: readability lives here so the room backdrop behind
+     can stay at full brightness instead of being washed to mush. */
+  border: 1px solid rgba(195, 204, 214, 0.14);
+  border-radius: 18px;
+  background: rgba(10, 14, 21, 0.68);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
 }
 
 .title {
