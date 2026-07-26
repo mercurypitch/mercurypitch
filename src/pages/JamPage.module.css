@@ -1,0 +1,29 @@
+/* JamPage — ambient rehearsal-room backdrop behind the session UI. */
+
+.page {
+  position: relative;
+  isolation: isolate;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Darkening wash keeps panels and text readable over any room still. */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 11, 17, 0.55),
+    rgba(8, 11, 17, 0.88)
+  );
+}

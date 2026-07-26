@@ -1,18 +1,8 @@
-// ============================================================
-// DestinationGallery — the Home page's card grid
-// ============================================================
-//
-// `HOME_DESTINATIONS` is the content; the component is the renderer. Adding a
-// card means adding an entry there and, if it needs new artwork, a
-// `DestinationVisual` variant with matching CSS. Each card targets a tab via
-// `setActiveTab`, so a card pointing at a tab that is hidden in the current
-// practice scope will render but lead nowhere -- check TAB_SCOPES.
-
 import type { Component, JSX } from 'solid-js'
-import { For, Match, Show, Switch } from 'solid-js'
+import { createSignal, For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_EXERCISES, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
 
@@ -21,6 +11,7 @@ export type DestinationVisual =
   | 'karaoke'
   | 'exercises'
   | 'analysis'
+  | 'jam'
 
 type DestinationTarget =
   | { kind: 'tab'; tab: ActiveTab }
@@ -71,6 +62,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'Inspect pitch traces, harmonics, range and consistency in plain language.',
     action: 'Open analysis lab',
+  },
+  {
+    target: { kind: 'tab', tab: TAB_JAM },
+    visual: 'jam',
+    eyebrow: 'Sing together, live',
+    title: 'Jam Rooms',
+    description:
+      'Create a room, share the code, and practice together — synced playback with live pitch from every singer.',
+    action: 'Start a jam',
   },
 ]
 
@@ -480,6 +480,22 @@ function AnalysisVisual(): JSX.Element {
   )
 }
 
+function JamVisual(): JSX.Element {
+  return (
+    <div class={styles.jamVisual} aria-hidden="true">
+      <div class={styles.jamNuggets}>
+        <span>
+          <i class={styles.liveDot} />
+          Live rooms
+        </span>
+        <span>Synced pitch</span>
+        <span>Chat + camera</span>
+      </div>
+      <div class={styles.jamLight} />
+    </div>
+  )
+}
+
 /**
  * The cover artwork on its own, so surfaces other than this gallery can
  * show the same rooms without a second set of drawings. The onboarding
@@ -513,8 +529,58 @@ export function DestinationArtwork(props: {
         <Match when={props.visual === 'analysis'}>
           <AnalysisVisual />
         </Match>
+        <Match when={props.visual === 'jam'}>
+          <JamVisual />
+        </Match>
       </Switch>
     </div>
+  )
+}
+
+// ── The sixth cover: a veiled teaser for the next chapter ──────────
+// Unrevealed it is only a slow-breathing question mark. Hovering
+// (desktop) or tapping (touch/keyboard) lifts the veil over ~1.4s to
+// show the Hear Yourself proposition. Not navigable yet — on purpose.
+function MysteryCover(): JSX.Element {
+  const [revealed, setRevealed] = createSignal(false)
+
+  return (
+    <button
+      type="button"
+      class={`${styles.cover} ${styles.mystery} ${
+        revealed() ? styles.mysteryRevealed : ''
+      }`}
+      data-destination="mystery"
+      aria-expanded={revealed()}
+      aria-label="Coming soon: Hear Yourself — reveal a preview"
+      onClick={() => setRevealed((r) => !r)}
+    >
+      <span class={styles.mysteryScene} aria-hidden={!revealed()}>
+        <span class={styles.mysteryBackdrop} />
+        <span class={styles.coverShade} />
+        <span class={`${styles.coverCopy} ${styles.mysteryCopy}`}>
+          <span class={styles.coverEyebrow}>Coming soon</span>
+          <span class={styles.coverTitle}>Hear Yourself</span>
+          <span class={styles.coverDescription}>
+            A private home for your voice. Keep tiny takes on your device,
+            revisit your best Legend runs, take on weekly creative challenges —
+            and hear yourself grow, week by week.
+          </span>
+          <span class={styles.mysteryStatus}>Now being tuned</span>
+        </span>
+      </span>
+
+      <span class={styles.mysteryVeil} aria-hidden="true">
+        <span class={styles.mysteryMark}>?</span>
+        <span class={styles.mysteryWhisper}>Something new is being tuned</span>
+        <span class={styles.mysteryHint} data-hint-hover>
+          Hover to peek
+        </span>
+        <span class={styles.mysteryHint} data-hint-tap>
+          Tap to peek
+        </span>
+      </span>
+    </button>
   )
 }
 
@@ -574,7 +640,10 @@ function DestinationCover(props: {
 }
 
 export const DestinationGallery: Component = () => (
-  <section class={styles.section} aria-labelledby="destination-heading">
+  <section
+    class={`${styles.section} home-destinations`}
+    aria-labelledby="destination-heading"
+  >
     <div class={styles.heading}>
       <div>
         <p class={styles.headingEyebrow}>Explore MercuryPitch</p>
@@ -599,6 +668,8 @@ export const DestinationGallery: Component = () => (
       <For each={HOME_DESTINATIONS}>
         {(destination) => <DestinationCover destination={destination} />}
       </For>
+
+      <MysteryCover />
     </div>
   </section>
 )
