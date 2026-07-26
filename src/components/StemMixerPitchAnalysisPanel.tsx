@@ -1,6 +1,8 @@
 import type { Component } from 'solid-js'
 import { createUniqueId, For, onCleanup, onMount, Show } from 'solid-js'
 import { Settings, X } from '@/components/icons'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { AnalysisAlgorithm } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { NOTE_NAMES } from '@/lib/scale-data'
@@ -62,6 +64,12 @@ export const StemMixerPitchAnalysisPanel: Component<
   const panelId = createUniqueId()
   const titleId = `${panelId}-title`
   const controlId = (name: string): string => `${panelId}-${name}`
+  const cleanupDrag: DragGestureOptions = {
+    // Keep the native range input's built-in value and keyboard behavior while
+    // the shared lifecycle owns capture, release, and pointer cancellation.
+    preventDefault: false,
+    canStart: () => props.contourReady,
+  }
 
   // Escape closes the panel.
   const onKey = (e: KeyboardEvent): void => {
@@ -242,6 +250,7 @@ export const StemMixerPitchAnalysisPanel: Component<
               step="1"
               value={Math.round(props.cleanupAmount * 100)}
               disabled={!props.contourReady}
+              ref={(element) => dragGesture(element, () => cleanupDrag)}
               onInput={(e) =>
                 props.setCleanupAmount(Number(e.currentTarget.value) / 100)
               }

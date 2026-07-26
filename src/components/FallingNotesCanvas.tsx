@@ -4,6 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
@@ -258,6 +260,65 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     return null
   }
 
+  // ── Piano key and A/B marker pointer gesture ──────────────────────
+
+  const canvasDrag: DragGestureOptions = {
+    canStart: (event) =>
+      hitLoopMarker(event.clientY) !== null ||
+      (props.clickPianoEnabled?.() === true &&
+        hitTestKeyboard(event.clientX, event.clientY) !== null),
+    onStart: (event) => {
+      // A press on an A/B loop marker (in the note lane) starts a drag; it
+      // works regardless of the click-piano toggle and never touches the keys.
+      const loopHit = hitLoopMarker(event.clientY)
+      if (loopHit !== null) {
+        loopDrag = loopHit
+        return
+      }
+
+      const midi = hitTestKeyboard(event.clientX, event.clientY)
+      if (midi === null) return
+      clickedKey = midi
+      pointerDownX = event.clientX
+      pointerDownY = event.clientY
+      props.onClickPianoOn?.(midi)
+    },
+    onMove: (event) => {
+      if (loopDrag !== null) {
+        const beat = loopAxis().beatFromClientY(event.clientY)
+        if (loopDrag === 'A') props.onMoveLoopA?.(beat)
+        else props.onMoveLoopB?.(beat)
+        return
+      }
+      if (clickedKey === null) return
+
+      // Ignore sub-5px movement to prevent iOS tap-jitter key switching.
+      const dx = event.clientX - pointerDownX
+      const dy = event.clientY - pointerDownY
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
+
+      const midi = hitTestKeyboard(event.clientX, event.clientY)
+      if (midi !== clickedKey) {
+        clickedKey = midi
+        if (midi !== null) {
+          props.onClickPianoOn?.(midi)
+        } else {
+          props.onClickPianoOff?.()
+        }
+      }
+    },
+    onEnd: () => {
+      if (loopDrag !== null) {
+        loopDrag = null
+        return
+      }
+      if (clickedKey !== null) {
+        clickedKey = null
+        props.onClickPianoOff?.()
+      }
+    },
+  }
+
   onMount(() => {
     if (!canvasRef) return
     ctx = canvasRef.getContext('2d')
@@ -280,74 +341,14 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       }
     }
 
-    // ── Piano key click/touch handlers ─────────────────────────
-
-    const onPointerDown = (e: PointerEvent) => {
-      // A press on an A/B loop marker (in the note lane) starts a drag; it
-      // works regardless of the click-piano toggle and never touches the keys.
-      const loopHit = hitLoopMarker(e.clientY)
-      if (loopHit !== null) {
-        loopDrag = loopHit
-        canvasRef?.setPointerCapture(e.pointerId)
-        return
-      }
-      if (props.clickPianoEnabled?.() !== true) return
-      const midi = hitTestKeyboard(e.clientX, e.clientY)
-      if (midi !== null) {
-        clickedKey = midi
-        pointerDownX = e.clientX
-        pointerDownY = e.clientY
-        props.onClickPianoOn?.(midi)
-        canvasRef?.setPointerCapture(e.pointerId)
+    const onPointerHover = (event: PointerEvent): void => {
+      // Idle hover: show a resize cursor over a loop marker.
+      if (clickedKey === null && loopDrag === null && canvasRef !== undefined) {
+        canvasRef.style.cursor =
+          hitLoopMarker(event.clientY) !== null ? 'ns-resize' : ''
       }
     }
-
-    const onPointerUp = () => {
-      if (loopDrag !== null) {
-        loopDrag = null
-        return
-      }
-      if (clickedKey !== null) {
-        clickedKey = null
-        props.onClickPianoOff?.()
-      }
-    }
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (loopDrag !== null) {
-        const beat = loopAxis().beatFromClientY(e.clientY)
-        if (loopDrag === 'A') props.onMoveLoopA?.(beat)
-        else props.onMoveLoopB?.(beat)
-        return
-      }
-      if (clickedKey === null) {
-        // Idle hover: show a resize cursor over a loop marker.
-        if (canvasRef !== undefined) {
-          canvasRef.style.cursor =
-            hitLoopMarker(e.clientY) !== null ? 'ns-resize' : ''
-        }
-        return
-      }
-      // Ignore sub-5px movement to prevent iOS tap-jitter key switching
-      const dx = e.clientX - pointerDownX
-      const dy = e.clientY - pointerDownY
-      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
-
-      const midi = hitTestKeyboard(e.clientX, e.clientY)
-      if (midi !== clickedKey) {
-        clickedKey = midi
-        if (midi !== null) {
-          props.onClickPianoOn?.(midi)
-        } else {
-          props.onClickPianoOff?.()
-        }
-      }
-    }
-
-    canvasRef.addEventListener('pointerdown', onPointerDown)
-    canvasRef.addEventListener('pointerup', onPointerUp)
-    canvasRef.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp) // catch releases outside canvas
+    canvasRef.addEventListener('pointermove', onPointerHover)
 
     // Touch pinch-to-zoom (only for multi-touch; single-finger is piano click)
     let pinchStartDist = 0
@@ -392,10 +393,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     onCleanup(() => {
       ro.disconnect()
       canvasRef?.removeEventListener('wheel', onWheel)
-      canvasRef?.removeEventListener('pointerdown', onPointerDown)
-      canvasRef?.removeEventListener('pointerup', onPointerUp)
-      canvasRef?.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
+      canvasRef?.removeEventListener('pointermove', onPointerHover)
       canvasRef?.removeEventListener('touchstart', onTouchStart)
       canvasRef?.removeEventListener('touchmove', onTouchMove)
       canvasRef?.removeEventListener('touchend', onTouchEnd)
@@ -1297,7 +1295,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
   return (
     <canvas
-      ref={canvasRef}
+      ref={(element) => {
+        canvasRef = element
+        dragGesture(element, () => canvasDrag)
+      }}
       id="falling-notes-canvas"
       role="img"
       aria-label="Falling-notes piano. Play the falling notes with a connected MIDI keyboard or the on-screen piano keys."

@@ -10,6 +10,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { loopRegionPct } from '@/lib/ab-loop'
+import type { DragGestureOptions } from './drag-gesture'
+import { dragGesture } from './drag-gesture'
 import styles from './status-bar/SongStatusBar.module.css'
 
 interface LoopSeekRailProps {
@@ -67,31 +69,57 @@ export const LoopSeekRail: Component<LoopSeekRailProps> = (props) => {
   const pctOf = (beat: number): number =>
     props.totalBeats() > 0 ? (beat / props.totalBeats()) * 100 : 0
 
-  const startMarkerDrag = (which: 'A' | 'B') => (e: PointerEvent) => {
-    e.preventDefault()
+  const startMarkerDrag = (which: 'A' | 'B', e: PointerEvent): void => {
     e.stopPropagation() // don't let the rail read this as a seek-click
     setDragTarget(which)
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
-  const onMarkerDrag = (e: PointerEvent) => {
-    const which = dragTarget()
-    if (which === null) return
-    e.preventDefault()
-    const beat = beatFromClientX(e.clientX)
-    if (which === 'A') props.onMoveLoopA?.(beat)
-    else props.onMoveLoopB?.(beat)
-  }
-  const endMarkerDrag = (e: PointerEvent) => {
+  const endMarkerDrag = (): void => {
     if (dragTarget() === null) return
-    const el = e.currentTarget as HTMLElement
-    if (el.hasPointerCapture?.(e.pointerId))
-      el.releasePointerCapture(e.pointerId)
     setDragTarget(null)
     suppressSeek = true
     setTimeout(() => {
       suppressSeek = false
     }, 0)
   }
+
+  const markerDragOptions = (which: 'A' | 'B'): DragGestureOptions => ({
+    canStart: () =>
+      which === 'A'
+        ? props.onMoveLoopA !== undefined
+        : props.onMoveLoopB !== undefined,
+    onStart: (event) => startMarkerDrag(which, event),
+    onEnd: endMarkerDrag,
+    stopPropagation: true,
+    slider: {
+      getAriaLabel: () =>
+        which === 'A' ? 'Loop start marker' : 'Loop end marker',
+      getValue: () =>
+        which === 'A' ? (props.loopA?.() ?? 0) : (props.loopB?.() ?? 0),
+      getMin: () =>
+        which === 'A' ? 0 : Math.min(props.loopA?.() ?? 0, props.totalBeats()),
+      getMax: () =>
+        which === 'A'
+          ? Math.max(0, props.loopB?.() ?? props.totalBeats())
+          : props.totalBeats(),
+      getStep: () => 0.25,
+      getValueFromPointer: (event) => beatFromClientX(event.clientX),
+      getValueText: () => {
+        const beat =
+          which === 'A' ? (props.loopA?.() ?? 0) : (props.loopB?.() ?? 0)
+        return `${beat.toFixed(2)} beats`
+      },
+      isDisabled: () =>
+        which === 'A'
+          ? props.onMoveLoopA === undefined
+          : props.onMoveLoopB === undefined,
+      onChange: (beat) => {
+        if (which === 'A') props.onMoveLoopA?.(beat)
+        else props.onMoveLoopB?.(beat)
+      },
+    },
+  })
+  const markerADrag = markerDragOptions('A')
+  const markerBDrag = markerDragOptions('B')
 
   return (
     <div
@@ -121,10 +149,7 @@ export const LoopSeekRail: Component<LoopSeekRailProps> = (props) => {
           style={{ left: `${pctOf(props.loopA?.() ?? 0)}%` }}
           title="Drag to move loop start (A)"
           data-testid="loop-marker-a"
-          onPointerDown={startMarkerDrag('A')}
-          onPointerMove={onMarkerDrag}
-          onPointerUp={endMarkerDrag}
-          onPointerCancel={endMarkerDrag}
+          ref={(element) => dragGesture(element, () => markerADrag)}
           onClick={(e) => e.stopPropagation()}
         >
           <span class={styles.loopMarkerFlag}>A</span>
@@ -137,10 +162,7 @@ export const LoopSeekRail: Component<LoopSeekRailProps> = (props) => {
           style={{ left: `${pctOf(props.loopB?.() ?? 0)}%` }}
           title="Drag to move loop end (B)"
           data-testid="loop-marker-b"
-          onPointerDown={startMarkerDrag('B')}
-          onPointerMove={onMarkerDrag}
-          onPointerUp={endMarkerDrag}
-          onPointerCancel={endMarkerDrag}
+          ref={(element) => dragGesture(element, () => markerBDrag)}
           onClick={(e) => e.stopPropagation()}
         >
           <span class={styles.loopMarkerFlag}>B</span>
