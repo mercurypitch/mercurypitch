@@ -1,8 +1,14 @@
 /* JamPage — ambient rehearsal-room backdrop behind the session UI. */
 
+/* Fill .main-content (a full-height flex column) so the backdrop spans
+   the viewport, not just the lobby form; sessionLayout's flex:1 +
+   height:100% also finally get a real flex parent to fill. */
 .page {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
 }
 
 .backdrop {
@@ -14,6 +20,56 @@
   background-repeat: no-repeat;
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* One class per room. 2K webp everywhere, with a 4K tier picked up by
+   hi-DPI screens where the full-bleed backdrop actually resolves it. */
+.roomStage {
+  background-image: url('/jam/room-stage.webp');
+  background-image: -webkit-image-set(
+    url('/jam/room-stage.webp') 1x,
+    url('/jam/room-stage-4k.webp') 2x
+  );
+  background-image: image-set(
+    url('/jam/room-stage.webp') 1x,
+    url('/jam/room-stage-4k.webp') 2x
+  );
+}
+
+.roomSinger {
+  background-image: url('/jam/room-singer.webp');
+  background-image: -webkit-image-set(
+    url('/jam/room-singer.webp') 1x,
+    url('/jam/room-singer-4k.webp') 2x
+  );
+  background-image: image-set(
+    url('/jam/room-singer.webp') 1x,
+    url('/jam/room-singer-4k.webp') 2x
+  );
+}
+
+.roomGuitar {
+  background-image: url('/jam/room-guitar.webp');
+  background-image: -webkit-image-set(
+    url('/jam/room-guitar.webp') 1x,
+    url('/jam/room-guitar-4k.webp') 2x
+  );
+  background-image: image-set(
+    url('/jam/room-guitar.webp') 1x,
+    url('/jam/room-guitar-4k.webp') 2x
+  );
+}
+
+.roomKeys {
+  background-image: url('/jam/room-keys.webp');
+  background-image: -webkit-image-set(
+    url('/jam/room-keys.webp') 1x,
+    url('/jam/room-keys-4k.webp') 2x
+  );
+  background-image: image-set(
+    url('/jam/room-keys.webp') 1x,
+    url('/jam/room-keys-4k.webp') 2x
+  );
 }
 
 /* Darkening wash keeps panels and text readable over any room still. */
