@@ -13,6 +13,8 @@ import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries, buildLrcToCanonicalMap, } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
+import type { SungNote } from '@/lib/lyric-sung-end'
+import { clampLineEndToVocal, synthesizeLastWordEnd, } from '@/lib/lyric-sung-end'
 import { appendWordSweepSample, beginWordSweep } from '@/lib/lyric-sweep'
 import { findLyricsRow } from '@/lib/lyrics-row'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
@@ -42,6 +44,11 @@ export interface StemMixerLyricsDeps {
    *  default to centered lyrics without touching the studio preference. */
   defaultAlign?: LyricsAlign
   alignPrefsKey?: string
+  /** Analyzed melody notes (seconds) — lets the display clamp a line's
+   *  highlight to when the vocal actually finishes, instead of stretching
+   *  the last word across the silence before the next line. Optional: hosts
+   *  without pitch analysis keep the estimate-based behavior. */
+  melodyNotes?: () => SungNote[]
 }
 
 // ── Controller return type ────────────────────────────────────────
@@ -2468,14 +2475,38 @@ export function useStemMixerLyricsController(
           endTime = next.time
           break
         }
+        // The vocal knows when a line really ends: clamp the display end to
+        // the analyzed notes (plus release) so the last word never sweeps
+        // across the silence before the next line — and give a start-only
+        // mapped last word its true end the same way. Rests keep their raw
+        // span (their dots ARE the silence).
+        const notes = deps.melodyNotes?.() ?? []
+        let displayEnd = endTime
+        let wordEndTimes =
+          entry.lrcIndex >= 0 ? wordEndTimings()[entry.lrcIndex] : undefined
+        if (entry.words.length > 0 && notes.length > 0) {
+          displayEnd = clampLineEndToVocal(entry.time, endTime, notes)
+          const lastIdx = (entry.wordTimes?.length ?? 0) - 1
+          if (lastIdx >= 0 && wordEndTimes?.[lastIdx] === undefined) {
+            const lastEnd = synthesizeLastWordEnd(
+              entry.wordTimes,
+              displayEnd,
+              notes,
+            )
+            if (lastEnd !== undefined) {
+              const filled = wordEndTimes ? [...wordEndTimes] : []
+              filled[lastIdx] = lastEnd
+              wordEndTimes = filled
+            }
+          }
+        }
         map.set(i, {
           key: `lrc-${i}`,
           time: entry.time,
-          endTime,
+          endTime: displayEnd,
           words: entry.words,
           wordTimes: entry.wordTimes,
-          wordEndTimes:
-            entry.lrcIndex >= 0 ? wordEndTimings()[entry.lrcIndex] : undefined,
+          wordEndTimes,
           wordSweeps:
             entry.lrcIndex >= 0
               ? wordSweepTimings()[entry.lrcIndex]

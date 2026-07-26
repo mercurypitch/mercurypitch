@@ -710,6 +710,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     duration: audio.duration,
     playing: audio.playing,
     elapsed: audio.audibleElapsed,
+    // Lets the lyric display end lines when the vocal actually stops.
+    // Lazy closure: pitchAnalysis is initialized after this controller,
+    // and the accessor is only invoked from memos once setup completes.
+    melodyNotes: () => pitchAnalysis.editableNotes(),
     seekToWithWindow: (t: number) => {
       audio.seekTo(t)
       audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
