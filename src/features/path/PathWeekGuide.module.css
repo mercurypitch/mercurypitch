@@ -173,6 +173,17 @@
   background: rgba(109, 94, 252, 0.28);
 }
 
+.zenChip {
+  border-color: rgba(245, 158, 11, 0.38);
+  color: #fff0cf;
+  background: rgba(245, 158, 11, 0.11);
+}
+
+.zenChip:hover {
+  border-color: rgba(255, 193, 90, 0.62);
+  background: rgba(245, 158, 11, 0.2);
+}
+
 .chip:focus-visible,
 .cta:focus-visible,
 .resLink:focus-visible {

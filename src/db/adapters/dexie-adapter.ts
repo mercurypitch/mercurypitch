@@ -49,6 +49,12 @@ class DexieDatabase extends DexieDB {
     this.version(3).stores({ karaokePlaylists: 'id' })
     // v4: userSurveyResponses (onboarding survey). Incremental.
     this.version(4).stores({ userSurveyResponses: 'id, userId' })
+    // v5: local Zen singing takes. Pitch traces stay in IndexedDB and are
+    // intentionally absent from the cloud entity allowlist.
+    this.version(5).stores({
+      zenTakes:
+        'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
+    })
   }
 }
 

@@ -56,6 +56,8 @@ export interface PathWeek {
   goals: string[]
   /** In-app drills this week's daily sessions favour. */
   exercises: ExerciseType[]
+  /** Authored pitch-loop patterns launched in the Zen practice stage. */
+  zenExercises?: string[]
   /** Warm-up pattern the guided warmup should use this week. */
   warmupPattern?: string
   /** Curated external links (official uploads only). */
@@ -82,6 +84,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Learn what "easy" singing feels like',
     ],
     exercises: [EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN],
+    zenExercises: ['ng-five-tone', 'major-scale-ascending'],
     warmupPattern: 'lip-trill',
     resources: [
       {
@@ -115,6 +118,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Longer, calmer exhales day by day',
     ],
     exercises: [EXERCISE_DYNAMIC_SWELL, EXERCISE_LONG_NOTE, EXERCISE_SIREN],
+    zenExercises: ['mah-meh-mee-moh-moo'],
     warmupPattern: 'sirens',
     resources: [
       {
@@ -148,6 +152,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Touch one new note at each end of your range',
     ],
     exercises: [EXERCISE_SIREN, EXERCISE_ARPEGGIO_JUMPER, EXERCISE_SLIDE],
+    zenExercises: ['noo-siren', 'octave-repeat-nay'],
     warmupPattern: 'sirens',
     resources: [
       {
@@ -186,6 +191,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_DRONE_INTONATION,
       EXERCISE_MIRROR_MELODY,
     ],
+    zenExercises: ['major-scale-ascending'],
     warmupPattern: 'ascending-scale',
     resources: [
       {
@@ -223,6 +229,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_STACCATO,
       EXERCISE_ARPEGGIO_JUMPER,
     ],
+    zenExercises: ['three-note-run'],
     warmupPattern: 'five-tone-descending',
     resources: [
       {
@@ -256,6 +263,7 @@ export const ASCENT_WEEKS: PathWeek[] = [
       'Finish notes with intention, not collapse',
     ],
     exercises: [EXERCISE_VIBRATO, EXERCISE_DYNAMIC_SWELL, EXERCISE_LONG_NOTE],
+    zenExercises: ['mam-arpeggio', 'descending-nya'],
     warmupPattern: 'lip-trill',
     resources: [
       {

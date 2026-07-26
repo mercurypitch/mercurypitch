@@ -5,6 +5,7 @@ import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/const
 import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
 
 export type { ActiveTab } from '@/features/tabs/constants'
 
@@ -121,6 +122,7 @@ export function hideSessionPresetsLibrary(): void {
 export const [focusMode, _setFocusMode] = createSignal<boolean>(false)
 
 export function setFocusMode(val: boolean): void {
+  if (val) setSingingZenLaunch(null)
   _setFocusMode(val)
 }
 
@@ -132,6 +134,43 @@ export function exitFocusMode(): void {
   setFocusMode(false)
 }
 exposeForE2E('__exitFocusMode', exitFocusMode)
+
+// ── Singing Zen pitch stage ─────────────────────────────────────
+
+export type SingingZenSource = 'singing' | 'exercises' | 'path'
+
+export interface SingingZenLaunch {
+  launchId: number
+  mode: 'monitor' | 'exercise'
+  exerciseId?: string
+  source: SingingZenSource
+}
+
+export const [singingZenLaunch, setSingingZenLaunch] =
+  createSignal<SingingZenLaunch | null>(null)
+
+export function openSingingZen(
+  input:
+    | { mode: 'monitor'; source: SingingZenSource }
+    | {
+        mode: 'exercise'
+        exerciseId: string
+        source: SingingZenSource
+      },
+): void {
+  _setFocusMode(false)
+  removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
+  setSingingZenLaunch({
+    ...input,
+    launchId: Date.now(),
+  })
+}
+
+export function closeSingingZen(): void {
+  setSingingZenLaunch(null)
+}
+
+exposeForE2E('__exitSingingZen', closeSingingZen)
 
 // ── Karaoke Focus Mode (StemMixer fullscreen) ────────────────────
 

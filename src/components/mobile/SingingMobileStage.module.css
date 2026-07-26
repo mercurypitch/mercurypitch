@@ -49,6 +49,12 @@
   max-width: 46vw;
 }
 
+.zenChip {
+  color: #ffd58c;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
 .progress {
   margin: 0 12px;
   flex-shrink: 0;

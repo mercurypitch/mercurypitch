@@ -22,6 +22,9 @@ interface KeyboardShortcutHandlers {
   /** Active tab accessor so Space/Esc can be context-aware. */
   activeTab?: Accessor<ActiveTab>
 
+  /** Temporarily yield all global shortcuts to an immersive child surface. */
+  isSuspended?: Accessor<boolean>
+
   /** Piano tab game handlers — used when activeTab === 'piano'. */
   piano?: {
     isPlaying: Accessor<boolean>
@@ -70,6 +73,8 @@ interface KeyboardShortcutHandlers {
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
   const onKeyDown = (e: KeyboardEvent) => {
+    if (handlers.isSuspended?.() === true) return
+
     // Skip if typing in input/select/textarea
     const isTyping = !!(e.target as Element | null)?.closest(
       'input,textarea,select,[contenteditable]',

@@ -21,6 +21,7 @@ import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/S
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
+import styles from './ExercisesPage.module.css'
 
 interface ExercisesPageProps {
   /** Exercise selection state lives in AppShell (also set by share/deep-link
@@ -30,6 +31,7 @@ interface ExercisesPageProps {
   onSelect: (type: ExerciseType) => void
   onQuickStart: (type: ExerciseType, config?: ExerciseConfig) => void
   onBack: () => void
+  onOpenZen?: () => void
 }
 
 /** Exercises tab (TAB_EXERCISES): the menu plus the selected exercise. */
@@ -41,10 +43,27 @@ export function ExercisesPage(props: ExercisesPageProps) {
       <Show
         when={props.selectedExercise()}
         fallback={
-          <ExerciseMenu
-            onSelect={(type) => props.onSelect(type)}
-            onQuickStart={props.onQuickStart}
-          />
+          <>
+            <Show when={props.onOpenZen !== undefined}>
+              <section class={styles.zenEntry} aria-label="Guided pitch loops">
+                <div>
+                  <span>New practice space</span>
+                  <h2>Guided pitch loops</h2>
+                  <p>
+                    Sing short vocal patterns on a focused two-octave canvas,
+                    then compare each pass.
+                  </p>
+                </div>
+                <button type="button" onClick={() => props.onOpenZen?.()}>
+                  Open Zen exercises
+                </button>
+              </section>
+            </Show>
+            <ExerciseMenu
+              onSelect={(type) => props.onSelect(type)}
+              onQuickStart={props.onQuickStart}
+            />
+          </>
         }
       >
         <Show when={props.selectedExercise() === 'warmup'}>

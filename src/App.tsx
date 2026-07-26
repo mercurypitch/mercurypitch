@@ -52,6 +52,11 @@ const SheetMusicView = lazy(async () =>
     default: m.SheetMusicView,
   })),
 )
+const ZenPitchStage = lazy(async () =>
+  import('@/features/zen/ZenPitchStage').then((m) => ({
+    default: m.ZenPitchStage,
+  })),
+)
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
@@ -135,7 +140,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { openSettingsSection, setSingingSheetView, settingsSection, singingSheetView, triggerTargetFocus, } from '@/stores/ui-store'
+import { closeSingingZen, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
 import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -874,6 +879,15 @@ const AppShell: Component<AppProps> = (props) => {
     isCountingIn,
   } = practice
 
+  // Zen is an immersive overlay with its own seconds-based loop. Stop the
+  // song transport before it mounts so the underlying Singing canvas and
+  // legacy exercise controllers cannot keep playing or polling behind it.
+  createEffect(
+    on(singingZenLaunch, (launch) => {
+      if (launch !== null) void resetPlaybackState()
+    }),
+  )
+
   // ── Compose live recording preview (Phase 2) ───────────────
   // Notes captured so far this take, plus the currently-held note growing with
   // the playhead. Kept out of melodyStore until the take is finalized.
@@ -1130,6 +1144,7 @@ const AppShell: Component<AppProps> = (props) => {
     playMode,
     setPlayMode,
     activeTab,
+    isSuspended: () => singingZenLaunch() !== null,
     piano: {
       isPlaying: pianoIsPlaying,
       isPaused: pianoIsPaused,
@@ -1212,6 +1227,8 @@ const AppShell: Component<AppProps> = (props) => {
   // sounding under the piano tab). The listener runs before the signal
   // flips and cannot miss a transition.
   onTabTransition((prevTab, newTab) => {
+    closeSingingZen()
+
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
     // lingers after leaving and micActive stays stuck on — making the mic
@@ -2170,6 +2187,13 @@ const AppShell: Component<AppProps> = (props) => {
     />
   )
 
+  const zenInitialCenterMidi = (): number => {
+    const range = VOCAL_RANGES[vocalRangePreset()]
+    const lowC = 12 * (range.minOctave + 1)
+    const highC = 12 * (range.maxOctave + 1)
+    return (lowC + highC) / 2
+  }
+
   // ============================================================
   // Render
   // ============================================================
@@ -2205,7 +2229,7 @@ const AppShell: Component<AppProps> = (props) => {
           <div class="sidebar-backdrop" onClick={closeSidebar} />
         </Show>
 
-        <Show when={!focusMode()}>
+        <Show when={!focusMode() && singingZenLaunch() === null}>
           <header>
             <div class="header-left">
               <button
@@ -2401,6 +2425,12 @@ const AppShell: Component<AppProps> = (props) => {
                         onMicToggle={() => {
                           void handleMicToggle()
                         }}
+                        onOpenZen={() =>
+                          openSingingZen({
+                            mode: 'monitor',
+                            source: 'singing',
+                          })
+                        }
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         onPlay={handlePracticePlay}
@@ -2556,6 +2586,12 @@ const AppShell: Component<AppProps> = (props) => {
                               onMicToggle={() => {
                                 void handleMicToggle()
                               }}
+                              onOpenZen={() =>
+                                openSingingZen({
+                                  mode: 'monitor',
+                                  source: 'singing',
+                                })
+                              }
                               loopEnabled={loopEnabled}
                               loopA={loopA}
                               loopB={loopB}
@@ -2897,6 +2933,13 @@ const AppShell: Component<AppProps> = (props) => {
                     onSelect={setSelectedExercise}
                     onQuickStart={handleQuickStart}
                     onBack={clearExercise}
+                    onOpenZen={() =>
+                      openSingingZen({
+                        mode: 'exercise',
+                        exerciseId: 'major-scale-ascending',
+                        source: 'exercises',
+                      })
+                    }
                   />
                 </TabErrorBoundary>
               </Show>
@@ -2950,7 +2993,7 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={focusMode()}>
+        <Show when={focusMode() && singingZenLaunch() === null}>
           <FocusMode
             melody={activePlaybackItems}
             isPlaying={isPlaying}
@@ -2969,6 +3012,24 @@ const AppShell: Component<AppProps> = (props) => {
             onResume={handleResume}
             onStop={handleReset}
           />
+        </Show>
+
+        <Show when={singingZenLaunch()} keyed>
+          {(launch) => (
+            <Suspense>
+              <ZenPitchStage
+                {...(launch.mode === 'exercise'
+                  ? { initialExerciseId: launch.exerciseId }
+                  : {})}
+                subscribeFrames={practice.subscribeFrames}
+                micActive={micActive}
+                startMic={() => practiceEngine.startMic()}
+                stopMic={() => practiceEngine.stopMic()}
+                initialCenterMidi={zenInitialCenterMidi()}
+                onClose={closeSingingZen}
+              />
+            </Suspense>
+          )}
         </Show>
 
         {/* Score overlay */}

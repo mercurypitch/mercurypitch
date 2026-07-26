@@ -72,6 +72,32 @@ export interface SessionRecord extends DbEntity {
   results: PracticeResultRecord[]
 }
 
+// ── Zen Singing Takes ───────────────────────────────────────────
+
+/**
+ * Local-only snapshot of one completed Zen canvas pass. The pitch contour is
+ * stored as compact positional tuples in traceJson; it is never routed through
+ * the cloud adapter.
+ */
+export interface ZenTakeRecord extends DbEntity {
+  mode: 'monitor' | 'exercise'
+  takeNumber: number
+  exerciseId?: string
+  exerciseVersion?: number
+  rootMidi?: number
+  completedAt: number
+  durationSec: number
+  traceVersion: 1
+  traceJson: string
+  viewportMinMidi: number
+  viewportMaxMidi: number
+  scoreTotal?: number
+  scorePitch?: number
+  scoreCoverage?: number
+  scoreSteadiness?: number
+  scoreAverageCents?: number
+}
+
 // ── Challenges ──────────────────────────────────────────────────
 
 export type ChallengeCategory =
