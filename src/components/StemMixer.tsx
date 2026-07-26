@@ -1666,6 +1666,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       whisper.status() === 'loading' ||
       pitchAnalysis.isAnalyzing())
 
+  // Live phase label for the version menu while a From-vocal draft runs.
+  const generatingLabel = () => {
+    if (pitchAnalysis.isAnalyzing()) {
+      return `Reading the vocal… ${Math.round(pitchAnalysis.progress())}%`
+    }
+    if (whisper.status() === 'loading') {
+      const pct = Math.round(whisper.progress())
+      return pct > 0
+        ? `Fetching the listener… ${pct}%`
+        : 'Fetching the listener…'
+    }
+    const secs = whisper.elapsed()
+    return secs >= 0 ? `Transcribing… ${secs}s` : 'Transcribing…'
+  }
+
   onCleanup(() => {
     audio.disconnectSources()
     cancelAnimationFrame(audio.getRafId())
@@ -2126,6 +2141,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             deleteVersion={deleteVersion}
             onGenerateFromVocal={generateLyricsFromVocal}
             generatingFromVocal={generatingFromVocal}
+            generatingLabel={generatingLabel}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -2189,6 +2205,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             deleteVersion={deleteVersion}
             onGenerateFromVocal={generateLyricsFromVocal}
             generatingFromVocal={generatingFromVocal}
+            generatingLabel={generatingLabel}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el

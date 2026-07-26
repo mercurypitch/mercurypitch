@@ -59,6 +59,7 @@ interface StemMixerFixedWorkspaceProps {
   deleteVersion: (kind: LyricsVersionKind) => void
   onGenerateFromVocal: () => void
   generatingFromVocal: Accessor<boolean>
+  generatingLabel: Accessor<string>
   handleDownloadLrc: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
@@ -273,6 +274,7 @@ export const StemMixerFixedWorkspace: Component<
                     onDelete={props.deleteVersion}
                     onGenerateFromVocal={props.onGenerateFromVocal}
                     generatingFromVocal={props.generatingFromVocal}
+                    generatingLabel={props.generatingLabel}
                   />
                   <Show when={lp().lrcGenMode()}>
                     <span class="sm-lyrics-gen-label">LRC Gen</span>

@@ -22,11 +22,20 @@ export interface LyricsVersionMenuProps {
    *  action item (and the menu itself, even with < 2 versions) when set. */
   onGenerateFromVocal?: () => void
   generatingFromVocal?: Accessor<boolean>
+  /** Live phase label while generating ("Fetching the listener… 42%",
+   *  "Transcribing… 12s") — shown on the action item and, since the
+   *  dropdown is usually closed during the long run, on the trigger too. */
+  generatingLabel?: Accessor<string>
 }
 
 export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
   const [open, setOpen] = createSignal(false)
   const activeLabel = () => {
+    // While a From-vocal draft is being generated the dropdown is usually
+    // closed — the trigger doubles as the live status line.
+    if (props.generatingFromVocal?.() === true) {
+      return props.generatingLabel?.() ?? 'Listening to the vocal…'
+    }
     const k = props.activeKind()
     return k !== null ? VERSION_LABELS[k] : 'Version'
   }
@@ -138,7 +147,7 @@ export const LyricsVersionMenu: Component<LyricsVersionMenuProps> = (props) => {
                   </svg>
                 </span>
                 {props.generatingFromVocal?.() === true
-                  ? 'Listening to the vocal…'
+                  ? (props.generatingLabel?.() ?? 'Listening to the vocal…')
                   : 'Generate from vocal'}
               </button>
             </Show>
