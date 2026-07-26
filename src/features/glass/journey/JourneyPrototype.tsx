@@ -30,6 +30,12 @@ interface Platform {
   x1: number
   lit: boolean
   dwell: number
+  /** stone platforms are safe to rest on; glass ones crack under Merc. */
+  kind: 'stone' | 'glass'
+  /** 1 → intact; ticks down while Merc rests on glass; 0 → shattered. */
+  integrity: number
+  broken: boolean
+  respawnMs: number
 }
 
 export const JourneyPrototype: Component = () => {
@@ -49,10 +55,19 @@ export const JourneyPrototype: Component = () => {
   let gateRes = 0
   let burstT = -1 // >=0 while the burst anim runs (seconds)
   let shards: { x: number; y: number; vx: number; vy: number; r: number }[] = []
+  let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
+  let puffT = -1 // platform-crumble burst clock (separate from the gate's)
   let mercX = 0.3
   let mercY = 0.8 // canvas fractions
   let trail: { x: number; y: number }[] = []
   let groundSamples: { t: number; midi: number }[] = []
+  // Voice-edge hardening + rest state: raw f0 at voicing edges throws
+  // octave-flip artifacts, and silence must NOT read as "fall" — Merc
+  // rests on the nearest platform below until the voice returns.
+  let voicedStreak = 0
+  let unvoicedMs = 0
+  let shownMidi: number | null = null
+  let restIdx: number | null = null
   const merc = new Image()
   merc.src = '/game/merc.webp'
 
@@ -89,7 +104,27 @@ export const JourneyPrototype: Component = () => {
     const dt = last === 0 ? 16 : Math.min(48, now - last)
     last = now
     const p = phase()
-    const midi = voicedMidi()
+    // Debounce voicing edges (3 consecutive voiced frames before trusting
+    // pitch) and slew-clamp movement so octave-flip artifacts at the start/
+    // end of a phrase can't teleport Merc. Silence never means "fall": after
+    // a short grace, shownMidi goes null and Merc rests where he is.
+    const raw = voicedMidi()
+    if (raw !== null) {
+      voicedStreak += 1
+      unvoicedMs = 0
+      if (voicedStreak >= 3) {
+        if (shownMidi === null) shownMidi = raw
+        else {
+          const maxStep = 0.45 * (dt / 16.7)
+          shownMidi += Math.max(-maxStep, Math.min(maxStep, raw - shownMidi))
+        }
+      }
+    } else {
+      voicedStreak = 0
+      unvoicedMs += dt
+      if (unvoicedMs > 280) shownMidi = null
+    }
+    const midi = shownMidi
 
     // --- phase logic ---
     if (p === 'ground' && midi !== null) {
@@ -101,10 +136,11 @@ export const JourneyPrototype: Component = () => {
         const spread = ms[ms.length - 1] - ms[0]
         if (spread < 1.6) {
           groundMidi = Math.round(ms[Math.floor(ms.length / 2)])
+          const base = { lit: false, dwell: 0, integrity: 1, broken: false, respawnMs: 0 }
           platforms = [
-            { midi: groundMidi, x0: 0.08, x1: 0.36, lit: true, dwell: 999 },
-            { midi: groundMidi + 2, x0: 0.36, x1: 0.62, lit: false, dwell: 0 },
-            { midi: groundMidi + 4, x0: 0.62, x1: 0.88, lit: false, dwell: 0 },
+            { ...base, midi: groundMidi, x0: 0.08, x1: 0.36, lit: true, dwell: 999, kind: 'stone' },
+            { ...base, midi: groundMidi + 2, x0: 0.36, x1: 0.62, kind: 'glass' },
+            { ...base, midi: groundMidi + 4, x0: 0.62, x1: 0.88, kind: 'stone' },
           ]
           activeIdx = 1
           setGroundLabel(midiToNoteNameOctave(groundMidi))
@@ -113,7 +149,7 @@ export const JourneyPrototype: Component = () => {
       }
     } else if (p === 'climb' && activeIdx < platforms.length) {
       const target = platforms[activeIdx]
-      if (midi !== null && Math.abs(midi - target.midi) <= 0.6) {
+      if (!target.broken && midi !== null && Math.abs(midi - target.midi) <= 0.6) {
         target.dwell += dt
         if (target.dwell >= 700) {
           target.lit = true
@@ -154,10 +190,66 @@ export const JourneyPrototype: Component = () => {
       }
     }
 
-    // --- merc follows the voice ---
-    if (midi !== null && p !== 'intro') {
-      const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
-      mercY += (ty - mercY) * 0.22
+    // --- merc follows the voice, or rests on the nearest platform below ---
+    if (p !== 'intro') {
+      if (midi !== null) {
+        restIdx = null
+        const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
+        mercY += (ty - mercY) * 0.22
+      } else if (platforms.length > 0) {
+        if (restIdx === null || platforms[restIdx].broken) {
+          let best: number | null = null
+          let bestD = Infinity
+          for (const [i, pl] of platforms.entries()) {
+            if (pl.broken) continue
+            const d = yFor(pl.midi) - mercY // canvas y grows downward
+            if (d > -0.06 && d < bestD) {
+              bestD = d
+              best = i
+            }
+          }
+          restIdx = best ?? 0
+        }
+        const pl = platforms[restIdx]
+        const sitY = yFor(pl.midi) - 0.035
+        mercY += (sitY - mercY) * 0.15
+        // Glass cracks under a resting Merc; stone is safe ground.
+        if (pl.kind === 'glass' && Math.abs(mercY - sitY) < 0.02) {
+          pl.integrity = Math.max(0, pl.integrity - dt / 3200)
+          if (pl.integrity === 0 && !pl.broken) {
+            pl.broken = true
+            pl.respawnMs = 2600
+            const py = yFor(pl.midi)
+            puff = Array.from({ length: 14 }, (_, i) => ({
+              x: pl.x0 + ((i + 0.5) / 14) * (pl.x1 - pl.x0),
+              y: py,
+              vx: (i / 14 - 0.5) * 0.3,
+              vy: 0.05 + (i % 3) * 0.08,
+              r: 2 + (i % 3) * 2,
+            }))
+            puffT = 0
+            restIdx = null // gravity: settle onto whatever is below
+          }
+        }
+      }
+      for (const pl of platforms) {
+        if (pl.broken) {
+          pl.respawnMs -= dt
+          if (pl.respawnMs <= 0) {
+            pl.broken = false
+            pl.integrity = 1
+          }
+        }
+      }
+      if (puffT >= 0) {
+        puffT += dt / 1000
+        for (const s of puff) {
+          s.x += (s.vx * dt) / 1000
+          s.y += (s.vy * dt) / 1000
+          s.vy += (1.4 * dt) / 1000
+        }
+        if (puffT > 1) puffT = -1
+      }
     }
     const wantX =
       p === 'gate' || phase() === 'done'
@@ -196,20 +288,43 @@ export const JourneyPrototype: Component = () => {
       ctx.lineWidth = 6
       ctx.lineCap = 'round'
       const active = i === activeIdx
-      ctx.strokeStyle = pl.lit
-        ? '#2dd4bf'
-        : active
-          ? 'rgba(88,166,255,0.9)'
-          : 'rgba(88,166,255,0.28)'
-      if (pl.lit) {
-        ctx.shadowColor = '#2dd4bf'
+      const glassTint = pl.kind === 'glass' ? '#7ee7ff' : '#2dd4bf'
+      if (pl.broken) {
+        ctx.strokeStyle = 'rgba(126,231,255,0.10)'
+        ctx.setLineDash([6, 10])
+      } else {
+        ctx.strokeStyle = pl.lit
+          ? glassTint
+          : active
+            ? 'rgba(88,166,255,0.9)'
+            : pl.kind === 'glass'
+              ? 'rgba(126,231,255,0.35)'
+              : 'rgba(88,166,255,0.28)'
+      }
+      if (pl.lit && !pl.broken) {
+        ctx.shadowColor = glassTint
         ctx.shadowBlur = 14
       } else ctx.shadowBlur = 0
       ctx.beginPath()
       ctx.moveTo(x0, y)
       ctx.lineTo(x1, y)
       ctx.stroke()
+      ctx.setLineDash([])
       ctx.shadowBlur = 0
+      // stress cracks while a glass platform is being rested on
+      if (pl.kind === 'glass' && !pl.broken && pl.integrity < 1) {
+        const n = Math.ceil((1 - pl.integrity) * 6)
+        ctx.strokeStyle = 'rgba(230,237,243,0.65)'
+        ctx.lineWidth = 1
+        for (let c = 0; c < n; c++) {
+          const cx = x0 + ((c + 0.7) / 6.4) * (x1 - x0)
+          ctx.beginPath()
+          ctx.moveTo(cx, y - 3)
+          ctx.lineTo(cx + (c % 2 === 0 ? 4 : -4), y + 6 + c * 1.5)
+          ctx.stroke()
+        }
+        ctx.lineWidth = 6
+      }
       // dwell progress on the active platform
       if (active && pl.dwell > 0 && !pl.lit) {
         ctx.strokeStyle = '#7ee787'
@@ -260,8 +375,20 @@ export const JourneyPrototype: Component = () => {
       for (const t of trail) ctx.lineTo(t.x * w, t.y * h)
       ctx.stroke()
     }
+    // platform-crumble puff
+    if (puffT >= 0) {
+      ctx.fillStyle = '#7ee7ff'
+      for (const s of puff) {
+        ctx.globalAlpha = Math.max(0, 1 - puffT)
+        ctx.fillRect(s.x * w, s.y * h, s.r, s.r)
+      }
+      ctx.globalAlpha = 1
+    }
+
     const mx = mercX * w
-    const my = mercY * h
+    // gentle idle bob while resting on a platform
+    const bob = shownMidi === null && restIdx !== null ? Math.sin(last / 300) * 1.5 : 0
+    const my = mercY * h + bob
     if (merc.complete && merc.naturalWidth > 0) {
       ctx.drawImage(merc, mx - 22, my - 22, 44, 44)
     } else {
@@ -321,6 +448,8 @@ export const JourneyPrototype: Component = () => {
         <Show when={phase() === 'climb'}>
           <p class="jp-text">
             Ground set: {groundLabel()}. Slide UP to each platform and hold.
+            Go quiet and Merc rests where he is — but the icy glass platform
+            cracks if he lingers.
           </p>
         </Show>
         <Show when={phase() === 'gate'}>
