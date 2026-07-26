@@ -19,6 +19,9 @@ import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyri
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
+import type { LyricsEditRow } from '@/lib/whisper-lyrics'
+import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
+import type { WhisperSegment } from '@/lib/whisper-service'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
@@ -176,6 +179,15 @@ export interface StemMixerLyricsController {
   formatTimeLrcWord: (secs: number) => string
   parseTimeInput: (input: string) => number | null
 
+  // Actions — lyrics text editing (rewrite the words, keep the timings)
+  textEditMode: () => boolean
+  beginTextEdit: () => void
+  cancelTextEdit: () => void
+  applyTextEdit: (rows: LyricsEditRow[]) => void
+  /** Build a fresh "From vocal" lyric version from Whisper segments and open
+   *  the text editor on it for cleanup. False when the segments held no text. */
+  importWhisperLyrics: (segments: WhisperSegment[]) => boolean
+
   // Actions — LRC gen
   startLrcGen: () => void
   handleNextLine: () => void
@@ -308,6 +320,10 @@ export function useStemMixerLyricsController(
     deps.defaultAlign ?? 'left',
   )
   const [editMode, setEditMode] = createSignal(false)
+  // Lyrics TEXT editor (rewrite the words; distinct from the word-timing
+  // editMode above). Declared with the signals so applyVersionToLive below
+  // can reset it on version switches.
+  const [textEditMode, setTextEditMode] = createSignal(false)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   const [wordEndTimings, setWordEndTimings] = createSignal<WordTimingsMap>({})
   const [wordSweepTimings, setWordSweepTimings] =
@@ -488,6 +504,7 @@ export function useStemMixerLyricsController(
     setWordEndTimings(version.wordEndTimings ?? {})
     setWordSweepTimings(version.wordSweepTimings ?? {})
     setEditMode(false)
+    setTextEditMode(false)
     // Blocks/repeats belong to a specific mapping — reset on switch.
     setBlocks([])
     setBlockInstances({})
@@ -589,6 +606,7 @@ export function useStemMixerLyricsController(
     setLyricsVersions([])
     setActiveVersionKind(null)
     setEditMode(false)
+    setTextEditMode(false)
     setEditBuffer({})
     setLrcGenMode(false)
     setLrcGenLineIdx(0)
@@ -1129,6 +1147,102 @@ export function useStemMixerLyricsController(
     setLyricsLines([])
     setEditMode(false)
     setEditBuffer({})
+  }
+
+  // ── Lyrics text editing ───────────────────────────────────────────
+  // Rewrite the words themselves (fix typos, drop or add lines) while the
+  // untouched lines keep their word-level timings verbatim. Saves as the
+  // 'edited' version; see src/lib/whisper-lyrics.ts for the row model.
+  // (The textEditMode signal lives with the other signals above.)
+
+  const beginTextEdit = () => {
+    if (lrcLines().length === 0 && lyricsLines().length === 0) return
+    setEditMode(false)
+    setTextEditMode(true)
+  }
+
+  const cancelTextEdit = () => {
+    setTextEditMode(false)
+  }
+
+  const applyTextEdit = (rows: LyricsEditRow[]) => {
+    // Mirror buildEditedLrc's dropping of empty timed rows so the timing
+    // maps (keyed by the NEW line index) line up with the emitted lines.
+    const kept = rows.filter(
+      (row) => row.time === null || buildEditedLrc([row]) !== '',
+    )
+    const text = buildEditedLrc(kept)
+    if (text.trim() === '') {
+      // Nothing left to save — the UI disables Save on empty rows anyway.
+      setTextEditMode(false)
+      return
+    }
+
+    const isLrc = LRC_LINE_RE.test(text)
+    const wt: WordTimingsMap = {}
+    const wet: WordTimingsMap = {}
+    const wst: WordSweepTimingsMap = {}
+    if (isLrc) {
+      // Untouched lines (rawText emitted verbatim) carry their word timings
+      // to the line's new position; edited/added lines start unmapped.
+      const sourceWt = wordTimings()
+      const sourceWet = wordEndTimings()
+      const sourceWst = wordSweepTimings()
+      kept.forEach((row, i) => {
+        if (row.rawText === null || row.originalIndex === null) return
+        const src = row.originalIndex
+        if (sourceWt[src] !== undefined) wt[i] = sourceWt[src]
+        if (sourceWet[src] !== undefined) wet[i] = sourceWet[src]
+        if (sourceWst[src] !== undefined) wst[i] = sourceWst[src]
+      })
+    }
+    const hasWt = Object.keys(wt).length > 0
+    const hasExtension =
+      Object.keys(wet).length > 0 || Object.keys(wst).length > 0
+
+    const version: LyricsVersion = {
+      kind: 'edited',
+      text,
+      wordTimings: hasWt ? wt : undefined,
+      wordEndTimings: Object.keys(wet).length > 0 ? wet : undefined,
+      wordSweepTimings: Object.keys(wst).length > 0 ? wst : undefined,
+      createdAt: Date.now(),
+    }
+    applyVersionToLive(version)
+    // persistLyrics upserts the 'edited' version and makes it active.
+    persistLyrics(
+      text,
+      isLrc ? 'lrc' : 'txt',
+      loadPersistedLyrics()?.filename ?? 'lyrics.lrc',
+      hasWt ? wt : undefined,
+      undefined,
+      'edited',
+      hasExtension ? { wordEndTimings: wet, wordSweepTimings: wst } : undefined,
+    )
+    setTextEditMode(false)
+  }
+
+  const importWhisperLyrics = (segments: WhisperSegment[]): boolean => {
+    const text = segmentsToLrc(segments)
+    if (text === '') return false
+    const version: LyricsVersion = {
+      kind: 'whisper',
+      text,
+      createdAt: Date.now(),
+    }
+    applyVersionToLive(version)
+    // persistLyrics upserts the 'whisper' version and makes it active.
+    persistLyrics(
+      text,
+      'lrc',
+      loadPersistedLyrics()?.filename ?? 'lyrics.lrc',
+      undefined,
+      undefined,
+      'whisper',
+    )
+    // Whisper drafts always want a cleanup pass — open the editor directly.
+    setTextEditMode(true)
+    return true
   }
 
   // ── Block helpers ─────────────────────────────────────────────────
@@ -2774,6 +2888,13 @@ export function useStemMixerLyricsController(
     formatTimeMs,
     formatTimeLrcWord,
     parseTimeInput,
+
+    // Actions — lyrics text editing (words, not timings)
+    textEditMode,
+    beginTextEdit,
+    cancelTextEdit,
+    applyTextEdit,
+    importWhisperLyrics,
 
     // Actions — LRC gen
     startLrcGen,

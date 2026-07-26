@@ -657,6 +657,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     commitPopoverValue,
     formatTimeMs,
 
+    // Actions — lyrics text editing + "From vocal" generation
+    textEditMode,
+    beginTextEdit,
+    cancelTextEdit,
+    applyTextEdit,
+    importWhisperLyrics,
+
     // Actions — LRC gen
     startLrcGen,
     handleNextLine,
@@ -1180,6 +1187,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setEditMode,
     setEditBuffer,
     editPopover,
+    textEditMode,
+    onTextEditSave: applyTextEdit,
+    onTextEditCancel: cancelTextEdit,
     lrcGenMode,
     lrcGenLineIdx,
     lrcGenWordIdx,
@@ -1609,6 +1619,52 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     whisper.startTranscription()
   }
+
+  // ── "From vocal" lyrics generation ─────────────────────────────
+  // Turn the Whisper transcription into a synced lyric draft (the 'whisper'
+  // version) and drop straight into the text editor for cleanup. Reuses a
+  // cached transcription when one exists; otherwise runs the full
+  // pitch-analysis-then-whisper pipeline and imports once it lands.
+  const [pendingWhisperLyrics, setPendingWhisperLyrics] = createSignal(false)
+
+  const importFromSegmentsIfReady = (): boolean => {
+    const segs = whisper.segments()
+    if (whisper.status() !== 'done' || segs.length === 0) return false
+    const ok = importWhisperLyrics(segs)
+    if (!ok) {
+      showNotification(
+        'No recognizable words in the vocal to build lyrics from.',
+        'warning',
+      )
+    }
+    return true
+  }
+
+  const generateLyricsFromVocal = () => {
+    if (importFromSegmentsIfReady()) return
+    setPendingWhisperLyrics(true)
+    // Ensures pitch analysis first, then whisper (cache-aware).
+    startWhisperTranscription()
+  }
+
+  createEffect(
+    on(whisper.status, (s) => {
+      if (!pendingWhisperLyrics()) return
+      if (s === 'done') {
+        setPendingWhisperLyrics(false)
+        importFromSegmentsIfReady()
+      } else if (s === 'error') {
+        setPendingWhisperLyrics(false)
+        showNotification('Could not transcribe the vocal.', 'error')
+      }
+    }),
+  )
+
+  const generatingFromVocal = () =>
+    pendingWhisperLyrics() &&
+    (whisper.status() === 'processing' ||
+      whisper.status() === 'loading' ||
+      pitchAnalysis.isAnalyzing())
 
   onCleanup(() => {
     audio.disconnectSources()
@@ -2061,12 +2117,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             lyricsPanel={lyricsPanel}
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
+            beginTextEdit={beginTextEdit}
             startLrcGen={startLrcGen}
             autoSyncWords={autoSyncWords}
             lyricsVersions={lyricsVersions}
             activeVersionKind={activeVersionKind}
             switchVersion={switchVersion}
             deleteVersion={deleteVersion}
+            onGenerateFromVocal={generateLyricsFromVocal}
+            generatingFromVocal={generatingFromVocal}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -2121,12 +2180,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             lyricsPanel={lyricsPanel}
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
+            beginTextEdit={beginTextEdit}
             startLrcGen={startLrcGen}
             autoSyncWords={autoSyncWords}
             lyricsVersions={lyricsVersions}
             activeVersionKind={activeVersionKind}
             switchVersion={switchVersion}
             deleteVersion={deleteVersion}
+            onGenerateFromVocal={generateLyricsFromVocal}
+            generatingFromVocal={generatingFromVocal}
             handleDownloadLrc={handleDownloadLrc}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
@@ -3684,6 +3746,110 @@ export const StemMixerStyles: string = `
   border-color: var(--fg-tertiary, #484f58);
 }
 
+/* ── Lyrics text editor ─────────────────────────────────── */
+
+.sm-lyrics-textedit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border, #30363d);
+}
+
+.sm-lyrics-textedit-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--fg-secondary, #a8b3bf);
+  margin-right: auto;
+}
+
+.sm-lyrics-textedit-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  overflow-y: auto;
+}
+
+.sm-lyrics-textedit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sm-lyrics-textedit-time {
+  font-size: 0.62rem;
+  font-family: monospace;
+  color: var(--fg-tertiary, #484f58);
+  min-width: 3.2em;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-textedit-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-tertiary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--text-primary, #c9d1d9);
+}
+
+.sm-lyrics-textedit-input:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-textedit-rest {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-tertiary, #161b22);
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--fg-tertiary, #484f58);
+  user-select: none;
+}
+
+.sm-lyrics-textedit-del,
+.sm-lyrics-textedit-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-textedit-del:hover {
+  color: var(--error, #f85149);
+  border-color: var(--error, #f85149);
+  background: rgba(248, 81, 73, 0.08);
+}
+
+.sm-lyrics-textedit-add:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-save-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .sm-lyrics-lines-edit {
   display: flex;
   flex-direction: column;
@@ -3924,6 +4090,32 @@ export const StemMixerStyles: string = `
 .sm-lyrics-version-del:hover {
   color: var(--error, #f85149);
   background: color-mix(in srgb, var(--error, #f85149) 12%, transparent);
+}
+.sm-lyrics-version-sep {
+  height: 1px;
+  margin: 0.25rem 0.2rem;
+  background: var(--border, #30363d);
+}
+.sm-lyrics-version-action {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.4rem 0.45rem;
+  background: none;
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--fg-primary, #e6edf3);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+.sm-lyrics-version-action:hover:not(:disabled) {
+  background: var(--bg-tertiary, #21262d);
+}
+.sm-lyrics-version-action:disabled {
+  color: var(--fg-tertiary, #8b949e);
+  cursor: default;
 }
 
 .sm-lyrics-gen-btn:hover {
