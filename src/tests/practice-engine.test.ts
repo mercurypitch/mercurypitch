@@ -189,6 +189,7 @@ describe('PracticeEngine callback subscriptions', () => {
       startMic: () => Promise.resolve(true),
       stopMic: () => {},
       isMicActive: () => true,
+      onMicLost: () => () => {},
     }) as unknown as AudioEngine
 
   it('notifies every subscriber of mic state changes', async () => {

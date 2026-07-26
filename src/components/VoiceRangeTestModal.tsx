@@ -118,10 +118,15 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
   let disposed = false
   let acquiring = false
 
+  // Keep-warm (mirrors use-base-exercise): if the mic was already running
+  // when this modal opened — e.g. the Singing surface behind it — it is not
+  // ours to stop. Only a mic this modal itself started is released.
+  const micWasActive = practiceEngine.isMicActive()
+
   onCleanup(() => {
     disposed = true
     stopLoop()
-    practiceEngine.stopMic()
+    if (!micWasActive) practiceEngine.stopMic()
   })
 
   const task = () => TASKS[taskIndex()]
@@ -138,7 +143,7 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
     }
     acquiring = false
     if (disposed) {
-      practiceEngine.stopMic()
+      if (!micWasActive) practiceEngine.stopMic()
       return
     }
     if (!ok) {
@@ -212,7 +217,7 @@ export const VoiceRangeTestModal: Component<VoiceRangeTestModalProps> = (
       runCapture()
       return
     }
-    practiceEngine.stopMic()
+    if (!micWasActive) practiceEngine.stopMic()
     setPhase('computing')
     const range = computeRange(takes)
     if (range === null) {

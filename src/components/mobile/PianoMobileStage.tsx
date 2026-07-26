@@ -22,6 +22,7 @@ import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { haptics } from '@/lib/haptics'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
+import { showNotification } from '@/stores'
 import { selectedSongName } from '@/stores/falling-notes-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import styles from './PianoMobileStage.module.css'
@@ -71,8 +72,18 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
 
   const onMicToggle = (): void => {
     haptics.tapLight()
-    if (fn.isMicActive()) fn.stopMic()
-    else void fn.startMic()
+    if (fn.isMicActive()) {
+      fn.stopMic()
+    } else {
+      void fn.startMic().then((ok) => {
+        if (!ok) {
+          showNotification(
+            'Microphone unavailable — check permissions or the selected input device.',
+            'error',
+          )
+        }
+      })
+    }
   }
 
   const songLabel = (): string => {

@@ -83,6 +83,19 @@ export class PracticeEngine {
       bufferSize: this.bufferSize,
       sensitivity: this.sensitivity,
     })
+    // The OS can kill the mic under us (unplugged, taken by another app,
+    // device switch). The engine resets itself and tells us here — emit so
+    // the UI icon follows reality instead of showing a live mic over dead
+    // tracks.
+    this.audioEngine.onMicLost(() => {
+      if (!this.micActive) return
+      this.micActive = false
+      this.emit(
+        'onMicStateChange',
+        false,
+        'Microphone disconnected — it may have been unplugged or taken by another app.',
+      )
+    })
   }
 
   // ── Config ────────────────────────────────────────────────
@@ -232,6 +245,10 @@ export class PracticeEngine {
         )
       }
       this.micActive = engineActive
+      // The old silent sync left the UI signal (fed only by this emit) on
+      // the WRONG side forever — the exact "icon off, pitch still
+      // detecting" desync. Healing must be announced, not whispered.
+      this.emit('onMicStateChange', engineActive)
     } else if (this._micMismatchWarned) {
       // Reset throttle once states are back in agreement
       this._micMismatchWarned = false

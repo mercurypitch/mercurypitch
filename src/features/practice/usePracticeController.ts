@@ -2,9 +2,10 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { setMicActive, setMicError, showNotification } from '@/stores'
+import { micActive, setMicActive, setMicError, showNotification, } from '@/stores'
 import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
@@ -85,6 +86,16 @@ export function usePracticeController(deps: Deps): PracticeController {
       }
     },
   })
+
+  // Mic sentinel: the global singing/compose icon reads micActive — register
+  // it so a confirmed "icon on with no live track" mismatch is reported and
+  // healed through the engine's own stop path (which emits, so the signal
+  // and the pipeline settle together). App-lifetime, like the callbacks.
+  registerMicIndicator(
+    'practice',
+    () => micActive(),
+    () => practiceEngine.stopMic(),
+  )
 
   // Count-in tracking
   playbackRuntime.on('countIn', (e: { countIn?: number }) => {

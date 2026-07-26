@@ -408,7 +408,14 @@ export function PianoPage(props: PianoPageProps) {
                 if (fallingNotes.isMicActive()) {
                   fallingNotes.stopMic()
                 } else {
-                  void fallingNotes.startMic()
+                  void fallingNotes.startMic().then((ok) => {
+                    if (!ok) {
+                      showNotification(
+                        'Microphone unavailable — check permissions or the selected input device.',
+                        'error',
+                      )
+                    }
+                  })
                 }
               }}
               midiConnected={fallingNotes.midiConnected}

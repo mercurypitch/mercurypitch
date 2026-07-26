@@ -7,6 +7,7 @@ import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { MidiNoteEvent } from '@/lib/midi-engine'
 import { MidiEngine } from '@/lib/midi-engine'
 import { midiToNoteName } from '@/lib/note-utils'
@@ -443,6 +444,35 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setMicOn(false)
     setMicActive(false)
   }
+
+  // The shared stream can die under us (OS revoke, a device switch tearing
+  // the manager's stream down). The engine has already reset itself when this
+  // fires — flip our signals so the piano mic icon follows reality.
+  const unsubscribeMicLost = audioEngine.onMicLost(() => {
+    setMicOn(false)
+    setMicActive(false)
+  })
+
+  // Watchdog registration: the piano transport / mobile stage mic buttons
+  // read micOn — a confirmed icon-on-with-no-live-track mismatch is healed
+  // through the normal stop path. This controller lives for the whole app
+  // session; the unsubscribes below run only if it is ever disposed.
+  const unregisterSentinel = registerMicIndicator(
+    'piano',
+    // Deliberately non-reactive: the sentinel polls these accessors on its
+    // own low-frequency interval — no tracked scope involved.
+    // eslint-disable-next-line solid/reactivity
+    () => micOn(),
+    // eslint-disable-next-line solid/reactivity
+    () => {
+      if (micOn()) stopMic()
+    },
+  )
+
+  onCleanup(() => {
+    unsubscribeMicLost()
+    unregisterSentinel()
+  })
 
   const midiConnect = async (): Promise<boolean> => {
     const ok = await midiEngine.connect()

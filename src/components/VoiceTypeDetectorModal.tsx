@@ -56,6 +56,11 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
   let disposed = false
   let acquiring = false
 
+  // Keep-warm (mirrors use-base-exercise): if the mic was already running
+  // when this modal opened — e.g. the Singing surface behind it — it is not
+  // ours to stop. Only a mic this modal itself started is released.
+  const micWasActive = practiceEngine.isMicActive()
+
   /** Request the mic (if needed) and start listening automatically. */
   const begin = async () => {
     if (acquiring) return
@@ -71,7 +76,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
     }
     acquiring = false
     if (disposed) {
-      practiceEngine.stopMic()
+      if (!micWasActive) practiceEngine.stopMic()
       return
     }
     if (!ok) {
@@ -126,7 +131,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
 
   const finishListening = (take: number[]) => {
     stopLoop()
-    practiceEngine.stopMic()
+    if (!micWasActive) practiceEngine.stopMic()
 
     // Median-filter the frame series first: a stray octave-error frame from
     // the detector would otherwise be free to land right at the median.
@@ -171,7 +176,7 @@ export const VoiceTypeDetectorModal: Component<VoiceTypeDetectorModalProps> = (
   onCleanup(() => {
     disposed = true
     stopLoop()
-    practiceEngine.stopMic()
+    if (!micWasActive) practiceEngine.stopMic()
   })
 
   const handleApply = () => {

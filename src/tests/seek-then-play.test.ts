@@ -26,6 +26,7 @@ const mockAudioEngine = () =>
     stopAllNotes: () => {},
     stopTone: () => {},
     isMicActive: () => false,
+    onMicLost: () => () => {},
     audioCtx: null,
   }) as unknown as AudioEngine
 

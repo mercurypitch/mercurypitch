@@ -8,6 +8,7 @@ import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { computeScore as computeFrameScore } from '@/lib/mic-scoring'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { createPitchCompareEngine } from '@/lib/pitch-compare-engine'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -243,7 +244,25 @@ export const useStemMixerMicController = (
   }
 
   // ── Mic Toggle ──────────────────────────────────────────────
+  // Set when the owning component is disposed; the async acquire path
+  // checks it so a playlist-advance remount mid-acquire can't leak a
+  // permanent hold on the device.
+  let disposed = false
+  // A toggle in flight; further taps are ignored instead of building a
+  // second, orphaned node graph over the same stream.
+  let toggling = false
+
   const toggleMic = async () => {
+    if (toggling) return
+    toggling = true
+    try {
+      await doToggleMic()
+    } finally {
+      toggling = false
+    }
+  }
+
+  const doToggleMic = async () => {
     if (micActive()) {
       // Disconnect our own nodes; the MicManager owns the device and stops the
       // tracks once no other feature holds them.
@@ -264,6 +283,13 @@ export const useStemMixerMicController = (
       try {
         const ctx = deps.getAudioCtx() ?? deps.ensureAudioCtx()
         const stream = await micManager.acquire('stem-mixer')
+        if (disposed) {
+          // The component died while the permission prompt / acquire was in
+          // flight (playlist advance remounts the mixer per song). Without
+          // this release the hold leaked forever: device hot, every icon off.
+          micManager.release('stem-mixer')
+          return
+        }
         const source = ctx.createMediaStreamSource(stream)
         micGainNode = ctx.createGain()
         micGainNode.gain.value = 1.0
@@ -304,11 +330,53 @@ export const useStemMixerMicController = (
     }
   }
 
-  // Release the shared mic device if this panel unmounts while the mic is on
-  // (e.g. navigating away from Karaoke). Without this the 'stem-mixer' hold
-  // would leak, keeping the device open and leaving global mic state stale.
+  // The shared stream can die under us (OS revoke, a device switch tearing
+  // the manager's stream down). Reflect reality: tear down our nodes, drop
+  // the stale hold, and flip the signals the mic button and pitch ribbon
+  // read — the "icon on over a dead mic" state must be impossible.
+  // Deliberately non-reactive: the manager notifies this callback itself.
+  // eslint-disable-next-line solid/reactivity
+  const unsubscribeManager = micManager.subscribe(() => {
+    if (!micActive() || micManager.getStream() !== null) return
+    micGainNode?.disconnect()
+    micAnalyserNode?.disconnect()
+    monitorGainNode?.disconnect()
+    micGainNode = null
+    micAnalyserNode = null
+    monitorGainNode = null
+    micPitchDetector = null
+    micPitchHistory = []
+    micManager.release('stem-mixer')
+    setMicActive(false)
+    setMicEnabled(false)
+    setMicPitch(null)
+    setMicError('Microphone was disconnected.')
+  })
+
+  // Watchdog registration: the karaoke mic button + pitch ribbon read
+  // micActive — a confirmed icon-on-with-no-live-track mismatch is healed
+  // through the normal toggle-off path.
+  const unregisterSentinel = registerMicIndicator(
+    'stem-mixer',
+    // Deliberately non-reactive: the sentinel polls these accessors on its
+    // own low-frequency interval — no tracked scope involved.
+    // eslint-disable-next-line solid/reactivity
+    () => micActive(),
+    // eslint-disable-next-line solid/reactivity
+    () => {
+      if (micActive()) void toggleMic()
+    },
+  )
+
+  // Release the shared mic device when this panel unmounts (navigating away
+  // from Karaoke, playlist advancing to the next song). Unconditional: the
+  // manager treats releasing an unheld id as a no-op, and the old
+  // `if (!micActive())` guard leaked the hold when unmount raced a pending
+  // acquire (micActive flips true only after the acquire resolves).
   onCleanup(() => {
-    if (!micActive()) return
+    disposed = true
+    unsubscribeManager()
+    unregisterSentinel()
     micGainNode?.disconnect()
     micAnalyserNode?.disconnect()
     monitorGainNode?.disconnect()

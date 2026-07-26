@@ -182,6 +182,14 @@ export function GuitarProvider(props: { children: JSX.Element }) {
   // ── Guitar mode lifecycle ────────────────────────────────────
   // Single createEffect dispatches on the active mode, starting the correct
   // sub-mode on enter and stopping/disabling it on leave.
+
+  // True while the current guitar mic run was auto-started by the effect
+  // below for tuner/riffTracker (the mic was off on entry). While IN those
+  // modes any off-flip re-runs the effect, which restarts the mic and
+  // re-claims — so a user-started run can only exist when the claim is
+  // false, and mode leave never stops a mic it doesn't own.
+  let tunerAutoStartedMic = false
+
   createEffect(() => {
     const active = activeTab() === TAB_GUITAR && guitarView() === 'interactive'
     const mode = active ? fretboardMode() : null
@@ -228,11 +236,21 @@ export function GuitarProvider(props: { children: JSX.Element }) {
     }
 
     // Tuner & RiffTracker: auto-start the guitar controller mic on enter,
-    // stop on leave (only if this source started it).
+    // stop on leave (only if this source started it — a mic the user had on
+    // before entering keeps running).
     if (mode === 'tuner' || mode === 'riffTracker') {
       if (!guitar.isMicActive()) {
-        void guitar.startMic()
+        tunerAutoStartedMic = true
+        void guitar.startMic().then(() => {
+          // The mode was left while the acquire / permission prompt was in
+          // flight: this start belongs to a mode that is gone — undo it.
+          if (!tunerAutoStartedMic && guitar.isMicActive()) guitar.stopMic()
+        })
       }
+    } else {
+      const wasAutoStarted = tunerAutoStartedMic
+      tunerAutoStartedMic = false
+      if (wasAutoStarted && guitar.isMicActive()) guitar.stopMic()
     }
 
     // transcriptionTrainer: stop when leaving mode
