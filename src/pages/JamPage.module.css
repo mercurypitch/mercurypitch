@@ -18,68 +18,84 @@
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  opacity: 0.5;
+  opacity: 0.62;
   pointer-events: none;
 }
 
-/* One class per room. 2K webp everywhere, with a 4K tier picked up by
-   hi-DPI screens where the full-bleed backdrop actually resolves it. */
+/* One class per room, 2K webp base. The 4K tier applies only on wide
+   hi-DPI screens: a dpr-3 phone resolves nothing extra from 4K, so it
+   stays on 2K instead of pulling the big file over cell data. */
 .roomStage {
   background-image: url('/jam/room-stage.webp');
-  background-image: -webkit-image-set(
-    url('/jam/room-stage.webp') 1x,
-    url('/jam/room-stage-4k.webp') 2x
-  );
-  background-image: image-set(
-    url('/jam/room-stage.webp') 1x,
-    url('/jam/room-stage-4k.webp') 2x
-  );
 }
 
 .roomSinger {
   background-image: url('/jam/room-singer.webp');
-  background-image: -webkit-image-set(
-    url('/jam/room-singer.webp') 1x,
-    url('/jam/room-singer-4k.webp') 2x
-  );
-  background-image: image-set(
-    url('/jam/room-singer.webp') 1x,
-    url('/jam/room-singer-4k.webp') 2x
-  );
 }
 
 .roomGuitar {
   background-image: url('/jam/room-guitar.webp');
-  background-image: -webkit-image-set(
-    url('/jam/room-guitar.webp') 1x,
-    url('/jam/room-guitar-4k.webp') 2x
-  );
-  background-image: image-set(
-    url('/jam/room-guitar.webp') 1x,
-    url('/jam/room-guitar-4k.webp') 2x
-  );
 }
 
 .roomKeys {
   background-image: url('/jam/room-keys.webp');
-  background-image: -webkit-image-set(
-    url('/jam/room-keys.webp') 1x,
-    url('/jam/room-keys-4k.webp') 2x
-  );
-  background-image: image-set(
-    url('/jam/room-keys.webp') 1x,
-    url('/jam/room-keys-4k.webp') 2x
-  );
 }
 
-/* Darkening wash keeps panels and text readable over any room still. */
+@media (min-width: 900px) {
+  .roomStage {
+    background-image: -webkit-image-set(
+      url('/jam/room-stage.webp') 1x,
+      url('/jam/room-stage-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/jam/room-stage.webp') 1x,
+      url('/jam/room-stage-4k.webp') 2x
+    );
+  }
+
+  .roomSinger {
+    background-image: -webkit-image-set(
+      url('/jam/room-singer.webp') 1x,
+      url('/jam/room-singer-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/jam/room-singer.webp') 1x,
+      url('/jam/room-singer-4k.webp') 2x
+    );
+  }
+
+  .roomGuitar {
+    background-image: -webkit-image-set(
+      url('/jam/room-guitar.webp') 1x,
+      url('/jam/room-guitar-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/jam/room-guitar.webp') 1x,
+      url('/jam/room-guitar-4k.webp') 2x
+    );
+  }
+
+  .roomKeys {
+    background-image: -webkit-image-set(
+      url('/jam/room-keys.webp') 1x,
+      url('/jam/room-keys-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/jam/room-keys.webp') 1x,
+      url('/jam/room-keys-4k.webp') 2x
+    );
+  }
+}
+
+/* Readability wash — kept light on purpose: crushing the image into
+   near-black is exactly what makes dark gradients band on 8-bit displays. */
 .backdrop::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(8, 11, 17, 0.55),
-    rgba(8, 11, 17, 0.88)
+    rgba(8, 11, 17, 0.38),
+    rgba(8, 11, 17, 0.74)
   );
 }
