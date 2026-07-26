@@ -1,0 +1,87 @@
+/* Merc's Journey prototype — full-screen canvas scene + HUD overlay. */
+
+.jp-root {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% -20%, #131a2e 0%, #05060b 64%);
+  overflow: hidden;
+}
+
+.jp-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.jp-hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.jp-hud button {
+  pointer-events: auto;
+}
+
+.jp-title {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #58a6ff, #bc8cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.jp-text {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #9aa4af;
+}
+
+.jp-pulse {
+  animation: jp-pulse 1.6s ease-in-out infinite;
+}
+
+.jp-start {
+  padding: 14px 26px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #58a6ff, #2dd4bf);
+  color: #05060b;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.jp-error {
+  margin: 0;
+  font-size: 13.5px;
+  color: #f85149;
+}
+
+@keyframes jp-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jp-pulse {
+    animation: none;
+  }
+}

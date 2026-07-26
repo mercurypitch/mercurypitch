@@ -14,6 +14,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { isPro } from '@/lib/monetization/revenuecat'
 import { GlassApp } from './GlassApp'
+import { JourneyPrototype } from './journey/JourneyPrototype'
 import { type GlassLevel, isLevelLocked } from './levels'
 import { LevelSelect } from './LevelSelect'
 import { Paywall } from './Paywall'
@@ -27,6 +28,7 @@ const IconBack: Component = () => (
 
 export const GameShell: Component = () => {
   const [level, setLevel] = createSignal<GlassLevel | null>(null)
+  const [journey, setJourney] = createSignal(false)
 
   const pick = (l: GlassLevel): void => {
     if (isLevelLocked(l, isPro())) {
@@ -42,6 +44,7 @@ export const GameShell: Component = () => {
     // One-sheet-at-a-time hardware back: paywall → level → exit.
     const handle = CapApp.addListener('backButton', () => {
       if (paywallOpen()) closePaywall()
+      else if (journey()) setJourney(false)
       else if (level() !== null) setLevel(null)
       else void CapApp.exitApp()
     })
@@ -50,7 +53,28 @@ export const GameShell: Component = () => {
 
   return (
     <>
-      <Show when={level()} keyed fallback={<LevelSelect onPick={pick} />}>
+      <Show when={journey()}>
+        <div class="game-level">
+          <button
+            class="game-back"
+            onClick={() => setJourney(false)}
+            aria-label="Back to levels"
+          >
+            <IconBack />
+            <span>Levels</span>
+          </button>
+          <JourneyPrototype />
+        </div>
+      </Show>
+      <Show
+        when={!journey() && level()}
+        keyed
+        fallback={
+          <Show when={!journey()}>
+            <LevelSelect onPick={pick} onJourney={() => setJourney(true)} />
+          </Show>
+        }
+      >
         {(current) => (
           <div class="game-level">
             <button

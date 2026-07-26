@@ -111,6 +111,22 @@
   font-size: 17px;
 }
 
+.ls-journey {
+  --accent: #2dd4bf;
+  margin-bottom: 4px;
+}
+
+.ls-proto {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #2dd4bf;
+  border: 1px solid color-mix(in oklab, #2dd4bf 55%, transparent);
+}
+
 .ls-pro {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 10px;

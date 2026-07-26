@@ -25,9 +25,10 @@ const IconArrow: Component = () => (
   </svg>
 )
 
-export const LevelSelect: Component<{ onPick: (level: GlassLevel) => void }> = (
-  props,
-) => {
+export const LevelSelect: Component<{
+  onPick: (level: GlassLevel) => void
+  onJourney?: () => void
+}> = (props) => {
   return (
     <div class="ls-root">
       <header class="ls-head">
@@ -37,6 +38,24 @@ export const LevelSelect: Component<{ onPick: (level: GlassLevel) => void }> = (
           Sing up to the note the glass rings at, hold it, and shatter it.
         </p>
       </header>
+
+      <Show when={props.onJourney}>
+        <button class="ls-card ls-journey" onClick={() => props.onJourney?.()}>
+          <img class="ls-thumb" src="/game/merc.webp" alt="" aria-hidden="true" />
+          <span class="ls-card-main">
+            <span class="ls-card-name">
+              Merc's Journey
+              <span class="ls-proto">PROTOTYPE</span>
+            </span>
+            <span class="ls-card-blurb">
+              Your voice is the controller — climb the platforms, shatter the gate.
+            </span>
+          </span>
+          <span class="ls-card-icon">
+            <IconArrow />
+          </span>
+        </button>
+      </Show>
 
       <ul class="ls-levels">
         <For each={LEVELS}>
