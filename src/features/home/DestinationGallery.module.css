@@ -107,12 +107,14 @@
 }
 
 .practice,
-.analysis {
+.analysis,
+.jam {
   grid-column: span 7;
 }
 
 .karaoke,
-.exercises {
+.exercises,
+.mystery {
   grid-column: span 5;
 }
 
@@ -201,7 +203,8 @@
 .practiceVisual,
 .karaokeVisual,
 .exercisesVisual,
-.analysisVisual {
+.analysisVisual,
+.jamVisual {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -452,6 +455,264 @@
   font-weight: 700;
 }
 
+/* Jam Rooms: a generated rehearsal-room still, interface copy in code. */
+.jam {
+  background: #0b1018;
+}
+
+.jamVisual {
+  background:
+    linear-gradient(180deg, rgba(6, 10, 16, 0.04), rgba(6, 10, 16, 0.24)),
+    url('/jam/room-stage.webp') center 42% / cover no-repeat;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cover:hover .jamVisual {
+  transform: scale(1.025);
+}
+
+.jamLight {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  width: 46%;
+  height: 52%;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(150, 196, 255, 0.15),
+    transparent 68%
+  );
+  transform: translateX(-50%);
+}
+
+.jamNuggets {
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  left: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.jamNuggets span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid rgba(210, 228, 245, 0.19);
+  border-radius: 999px;
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  color: #d9e7f4;
+  background: rgba(7, 13, 20, 0.54);
+  backdrop-filter: blur(8px);
+}
+
+.liveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dest-aqua);
+  box-shadow: 0 0 6px rgba(45, 212, 191, 0.9);
+  animation: jam-live-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes jam-live-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The sixth cover: veiled question mark → slow unveil of Hear Yourself. */
+.mystery {
+  background:
+    radial-gradient(
+      62% 72% at 50% 28%,
+      rgba(188, 140, 255, 0.1),
+      transparent 70%
+    ),
+    linear-gradient(160deg, #0d1119, #07090f 75%);
+}
+
+.mysteryScene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  opacity: 0;
+  transition: opacity 1100ms ease 80ms;
+}
+
+.mysteryBackdrop {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: url('/home/hear-yourself-tease.webp') center / cover no-repeat;
+  filter: blur(12px) saturate(0.75);
+  transform: scale(1.09);
+  transition:
+    transform 1700ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1400ms ease;
+}
+
+.mysteryCopy > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 800ms ease,
+    transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mysteryCopy > :nth-child(1) {
+  transition-delay: 300ms;
+}
+
+.mysteryCopy > :nth-child(2) {
+  transition-delay: 450ms;
+}
+
+.mysteryCopy > :nth-child(3) {
+  transition-delay: 620ms;
+}
+
+.mysteryCopy > :nth-child(4) {
+  transition-delay: 820ms;
+}
+
+.mysteryStatus {
+  margin-top: 14px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--dest-aqua);
+}
+
+.mysteryVeil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    opacity 900ms ease,
+    transform 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mysteryMark {
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(4.2rem, 8vw, 5.8rem);
+  font-weight: 650;
+  line-height: 1;
+  background: linear-gradient(160deg, #e6edf3 8%, #58a6ff 48%, #bc8cff 92%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 22px rgba(88, 166, 255, 0.35));
+  animation: mystery-breathe 4.6s ease-in-out infinite;
+}
+
+@keyframes mystery-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translateY(-6px) scale(1.045);
+    opacity: 1;
+  }
+}
+
+.mysteryWhisper {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #94a3b4;
+}
+
+.mysteryHint {
+  display: none;
+  align-items: center;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border: 1px solid rgba(230, 237, 243, 0.16);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #dbe4ee;
+  background: rgba(13, 17, 23, 0.52);
+}
+
+@media (hover: hover) {
+  .mysteryHint[data-hint-hover] {
+    display: inline-flex;
+  }
+}
+
+@media (hover: none) {
+  .mysteryHint[data-hint-tap] {
+    display: inline-flex;
+  }
+}
+
+/* Reveal — a persistent tap/keyboard toggle... */
+.mysteryRevealed .mysteryScene {
+  opacity: 1;
+}
+
+.mysteryRevealed .mysteryBackdrop {
+  filter: blur(0) saturate(1);
+  transform: scale(1);
+}
+
+.mysteryRevealed .mysteryCopy > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mysteryRevealed .mysteryVeil {
+  opacity: 0;
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+/* ...and the same unveil on desktop hover, kept out of touch emulation. */
+@media (hover: hover) {
+  .mystery:hover .mysteryScene {
+    opacity: 1;
+  }
+
+  .mystery:hover .mysteryBackdrop {
+    filter: blur(0) saturate(1);
+    transform: scale(1);
+  }
+
+  .mystery:hover .mysteryCopy > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .mystery:hover .mysteryVeil {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+
 @media (max-width: 800px) {
   .heading {
     grid-template-columns: 1fr;
@@ -465,7 +726,9 @@
   .practice,
   .karaoke,
   .exercises,
-  .analysis {
+  .analysis,
+  .jam,
+  .mystery {
     grid-column: 1 / -1;
   }
 
@@ -509,12 +772,22 @@
   .cover,
   .coverAction svg,
   .practiceInstruments,
-  .karaokeVisual {
+  .karaokeVisual,
+  .jamVisual,
+  .mysteryScene,
+  .mysteryBackdrop,
+  .mysteryCopy > *,
+  .mysteryVeil {
     transition: none;
   }
 
   .cover:hover {
     transform: none;
+  }
+
+  .liveDot,
+  .mysteryMark {
+    animation: none;
   }
 }
 
