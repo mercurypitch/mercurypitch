@@ -393,6 +393,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     hasNoteData() &&
     (idx === props.currentLineIdx() || idx === nextLyricLineIdx())
 
+  // Layout-shifting display toggles (note glyphs appearing, text-size
+  // presets) reflow the whole lyric sheet — snap the follow back to the
+  // target line so the singer never lands mid-verse somewhere else.
+  // Deliberately overrides a manual scroll: the reflow just invalidated
+  // that position anyway.
+  const notedActive = (): boolean => noteGlyphsOn() && hasNoteData()
+  createEffect(
+    on([notedActive, lyricsSize], (_, prev) => {
+      if (prev === undefined) return // mount — the line-follow effect owns it
+      setUserScrolled(false)
+      const idx = props.currentLineIdx()
+      if (idx < 0) scrollLyricsToTop()
+      else centerLine(idx, true)
+    }),
+  )
+
   // ── Live pitch coach (mic + ribbon) ───────────────────────────
   const micOn = (): boolean => props.micActive?.() === true
   const ribbonVisible = (): boolean =>
