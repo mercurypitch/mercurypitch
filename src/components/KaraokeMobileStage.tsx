@@ -23,7 +23,7 @@ import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
-import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -33,8 +33,10 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
+import { buildWordNoteIndex, glyphForWordTime, } from '@/features/stem-mixer/zen-note-glyphs'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -122,6 +124,14 @@ export interface KaraokeMobileStageProps {
 
   /** Stage another library song from the in-stage song sheet. */
   onPickSession?: (sessionId: string) => void
+
+  // Sing-this-note glyphs (chord-chart labels over the words). When the host
+  // provides the alignment, the header shows the notes toggle; enabling it
+  // with no notes yet asks the host to run the (denoised) pitch analysis.
+  alignedWords?: () => AlignedWord[]
+  onEnsureNotes?: () => void
+  notesAnalyzing?: () => boolean
+  notesProgress?: () => number
 
   /** Attach user-supplied lyrics when none were found (paste or file).
       Reuses the studio's lyrics controller, so they parse, sync, persist,
@@ -340,6 +350,38 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     setLyricsSize(stepLyricsSize(lyricsSize(), e.deltaY < 0 ? 1 : -1))
   }
 
+  // ── Sing-this-note glyphs ─────────────────────────────────────
+  // Chord-chart labels over the words: the note the singer should hit,
+  // from the denoised pitch alignment. Enabling with no notes yet asks
+  // the host to run the analysis; glyphs fade in when it lands.
+  const [noteGlyphsOn, setNoteGlyphsOn] = createPersistedSignal(
+    'sm-zen-note-glyphs',
+    false,
+  )
+  const wordNoteIndex = createMemo(() =>
+    buildWordNoteIndex(props.alignedWords?.() ?? []),
+  )
+  const hasNoteData = (): boolean => wordNoteIndex().size > 0
+  const toggleNoteGlyphs = (): void => {
+    const next = !noteGlyphsOn()
+    setNoteGlyphsOn(next)
+    if (next && !hasNoteData()) props.onEnsureNotes?.()
+  }
+  // The line the singer reads ahead to — the first lyric line after the
+  // current one (rests skipped). Before the first line it is the opener,
+  // so the intro countdown already shows what the entry note will be.
+  const nextLyricLineIdx = createMemo(() => {
+    const current = props.currentLineIdx()
+    for (const [idx, entry] of lines()) {
+      if (idx > current && entry.words.length > 0) return idx
+    }
+    return -1
+  })
+  const glyphsForLine = (idx: number): boolean =>
+    noteGlyphsOn() &&
+    hasNoteData() &&
+    (idx === props.currentLineIdx() || idx === nextLyricLineIdx())
+
   return (
     <StageShell class={styles.stage} testId="karaoke-mobile-stage">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -366,6 +408,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             </p>
           </Show>
         </div>
+        <Show when={props.alignedWords}>
+          <button
+            class={styles.autoplayBtn}
+            classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
+            onClick={toggleNoteGlyphs}
+            aria-pressed={noteGlyphsOn()}
+            title={
+              noteGlyphsOn()
+                ? 'Hide the notes to sing'
+                : 'Show the note to sing over each word'
+            }
+            aria-label="Toggle the sing-this-note labels"
+          >
+            <NoteGlyphIcon />
+          </button>
+        </Show>
         <button
           class={styles.autoplayBtn}
           classList={{
@@ -448,11 +506,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         </aside>
       </Show>
 
+      {/* Analysis running for the note labels — quiet inline status. */}
+      <Show when={noteGlyphsOn() && props.notesAnalyzing?.()}>
+        <p class={styles.notesHint}>
+          Reading the vocal to find the notes —{' '}
+          {Math.round(props.notesProgress?.() ?? 0)}%
+        </p>
+      </Show>
+
       {/* ── Lyrics ─────────────────────────────────────────── */}
       <div
         ref={scrollerRef}
         class={styles.lyrics}
-        classList={{ [styles.lyricsEmpty]: lines().length === 0 }}
+        classList={{
+          [styles.lyricsEmpty]: lines().length === 0,
+          [styles.lyricsNoted]: noteGlyphsOn() && hasNoteData(),
+        }}
         style={{ '--lyrics-scale': String(ZEN_LYRICS_SCALE[lyricsSize()]) }}
         onTouchMove={noteUserScroll}
         onWheel={(e) => {
@@ -550,25 +619,46 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                       />
                     }
                   >
-                    <Show when={isCurrent()} fallback={entry.words.join(' ')}>
+                    <Show
+                      when={isCurrent() || glyphsForLine(idx)}
+                      fallback={entry.words.join(' ')}
+                    >
                       <For each={entry.words}>
                         {(word, i) => (
                           <span
                             classList={{
                               [styles.word]: true,
-                              [styles.wordSung]: i() <= activeWord().activeUpTo,
+                              [styles.wordSung]:
+                                isCurrent() && i() <= activeWord().activeUpTo,
                               [styles.wordActive]:
+                                isCurrent() &&
                                 i() === activeWord().activeUpTo + 1 &&
                                 activeWord().fraction > 0,
                             }}
                             style={
-                              i() === activeWord().activeUpTo + 1
+                              isCurrent() && i() === activeWord().activeUpTo + 1
                                 ? {
                                     '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
                                   }
                                 : undefined
                             }
                           >
+                            <Show when={glyphsForLine(idx)}>
+                              {(() => {
+                                const glyph = glyphForWordTime(
+                                  wordNoteIndex(),
+                                  entry.wordTimes?.[i()],
+                                )
+                                return glyph === null ? null : (
+                                  <i
+                                    class={styles.noteGlyph}
+                                    aria-hidden="true"
+                                  >
+                                    {glyph}
+                                  </i>
+                                )
+                              })()}
+                            </Show>
                             {word}
                             {i() < entry.words.length - 1 ? ' ' : ''}
                           </span>

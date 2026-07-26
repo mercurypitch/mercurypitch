@@ -152,6 +152,25 @@ export const AutoplayIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
+/** Note glyph — an eighth note (toggle the sing-this-note labels). */
+export const NoteGlyphIcon: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={props.size ?? 18}
+    height={props.size ?? 18}
+    class={props.class}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="8.5" cy="17.5" r="3" />
+    <path d="M11.5 17.5V5.5l7-1.8v4.1l-7 1.8" />
+  </svg>
+)
+
 /** Text size — a small and a large "A" (cycle the lyrics size presets). */
 export const TextSizeIcon: Component<IconProps> = (props) => (
   <svg
