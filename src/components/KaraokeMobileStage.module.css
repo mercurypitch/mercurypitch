@@ -400,6 +400,49 @@
   z-index: 3;
 }
 
+/* The mic mirrors the sing pill on the left: guide vocals on the right
+   hand, your own voice on the left. Emerald when live — the coach color
+   the ribbon judges you in. */
+.micFloatBtn {
+  position: absolute;
+  left: 14px;
+  bottom: calc(128px + var(--safe-bottom));
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(238, 228, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.micFloatBtn:active {
+  transform: scale(0.94);
+}
+
+.micFloatBtnOn {
+  border-color: rgba(110, 231, 183, 0.55);
+  color: #6ee7b7;
+  background: rgba(110, 231, 183, 0.14);
+  box-shadow: 0 4px 18px rgba(110, 231, 183, 0.22);
+}
+
+.micFloatBtn:focus-visible {
+  outline: 2px solid rgba(110, 231, 183, 0.8);
+  outline-offset: 2px;
+}
+
 /* ── Bottom bar ─────────────────────────────────────────── */
 
 .bottomBar {

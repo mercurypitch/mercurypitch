@@ -23,7 +23,7 @@ import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
-import { AutoplayIcon, ChevronLeftIcon, MicSparkleIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, MicIcon, MicSparkleIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -34,14 +34,17 @@ import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 import { buildWordNoteIndex, glyphForWordTime, } from '@/features/stem-mixer/zen-note-glyphs'
+import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
+import { ZenPitchRibbon } from './ZenPitchRibbon'
 
 // The uploader's CSS is a plain string injected once. The standalone host
 // injects it too (same key → deduped); this covers the in-app karaoke tab,
@@ -132,6 +135,14 @@ export interface KaraokeMobileStageProps {
   onEnsureNotes?: () => void
   notesAnalyzing?: () => boolean
   notesProgress?: () => number
+
+  // Live pitch coach: mic on/off plus the ribbon of target notes the
+  // singer's pitch rides. All optional — hosts without a mic engine
+  // simply don't get the button.
+  micActive?: () => boolean
+  onToggleMic?: () => void
+  micPitch?: () => DetectedPitch | null
+  ribbonNotes?: () => RibbonNote[]
 
   /** Attach user-supplied lyrics when none were found (paste or file).
       Reuses the studio's lyrics controller, so they parse, sync, persist,
@@ -382,6 +393,19 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     hasNoteData() &&
     (idx === props.currentLineIdx() || idx === nextLyricLineIdx())
 
+  // ── Live pitch coach (mic + ribbon) ───────────────────────────
+  const micOn = (): boolean => props.micActive?.() === true
+  const ribbonVisible = (): boolean =>
+    micOn() && (props.ribbonNotes?.() ?? []).length > 0
+  const toggleMic = (): void => {
+    // Turning the mic on with no analyzed notes yet: the ribbon needs
+    // targets, so kick off the same denoised analysis the glyphs use.
+    if (!micOn() && (props.ribbonNotes?.() ?? []).length === 0) {
+      props.onEnsureNotes?.()
+    }
+    props.onToggleMic?.()
+  }
+
   return (
     <StageShell class={styles.stage} testId="karaoke-mobile-stage">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -507,11 +531,21 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       </Show>
 
       {/* Analysis running for the note labels — quiet inline status. */}
-      <Show when={noteGlyphsOn() && props.notesAnalyzing?.()}>
+      <Show when={(noteGlyphsOn() || micOn()) && props.notesAnalyzing?.()}>
         <p class={styles.notesHint}>
           Reading the vocal to find the notes —{' '}
           {Math.round(props.notesProgress?.() ?? 0)}%
         </p>
+      </Show>
+
+      {/* ── Live pitch ribbon — your voice riding the notes ── */}
+      <Show when={ribbonVisible()}>
+        <ZenPitchRibbon
+          playing={props.playing}
+          elapsed={props.elapsed}
+          notes={props.ribbonNotes!}
+          micPitch={props.micPitch ?? (() => null)}
+        />
       </Show>
 
       {/* ── Lyrics ─────────────────────────────────────────── */}
@@ -672,6 +706,24 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </For>
         </Show>
       </div>
+
+      {/* ── Mic (your voice → the pitch ribbon) ────────────── */}
+      <Show when={props.onToggleMic}>
+        <button
+          class={styles.micFloatBtn}
+          classList={{ [styles.micFloatBtnOn]: micOn() }}
+          onClick={toggleMic}
+          aria-pressed={micOn()}
+          title={
+            micOn()
+              ? 'Mic is live — the ribbon follows your pitch. Tap to turn it off.'
+              : 'Sing with the mic and watch your pitch ride the notes'
+          }
+          aria-label="Toggle your microphone"
+        >
+          <MicIcon />
+        </button>
+      </Show>
 
       {/* ── Sing pill (vocals on/off + level) ──────────────── */}
       <PillControl
