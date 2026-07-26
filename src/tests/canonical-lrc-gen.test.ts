@@ -562,17 +562,25 @@ describe('REQ-UV-029: Word-level LRC parsing', () => {
 
 describe('REQ-UV-033: computeActiveWord with long gaps', () => {
   it('last word is NOT stretched across remainder of gap (even-division path)', () => {
-    // Simulate even-division: line at 5s, next at 35s (30s gap)
-    // "Opening line" = 2 words, should NOT stretch 30s
+    // Even-division: line at 5s, next at 35s (30s gap). "Opening line"
+    // takes ~1.5s of plausible singing — the capped fallback completes the
+    // line promptly and dwells lit, instead of crawling one word per 15s
+    // across the silence (the old behavior this suite used to lock in).
+    // Still sweeping naturally shortly after the line starts…
+    const singing = computeActiveWord(['Opening', 'line'], 5, 35, undefined, 6)
+    expect(singing.activeUpTo).toBeLessThan(1)
+
+    // …and fully lit once the plausible sung span (~2s) has passed,
+    // for the whole remainder of the 30s gap.
     const result = computeActiveWord(
       ['Opening', 'line'],
       5,
       35, // endTime at next line
       undefined,
-      7, // 2s into the line
+      8, // 3s into the line — past the capped sung span
     )
-    // 2 words over 30s = 15s per word. At 2s elapsed, we're still in first word
-    expect(result.activeUpTo).toBe(-1)
+    expect(result.activeUpTo).toBe(1)
+    expect(result.fraction).toBe(1)
   })
 
   it('per-word timings prevent stretching past the actual word duration', () => {
@@ -590,8 +598,10 @@ describe('REQ-UV-033: computeActiveWord with long gaps', () => {
   })
 
   it('does NOT partially highlight all 4 words at elapsed=160 in even-division mode', () => {
-    // Without per-word timings, even division over 87s would have each word at ~21.75s
-    // At 160s (9.4s into line), only ~43% of first word would be done
+    // Without per-word timings the raw span is 86.66s — far beyond the ~3s
+    // the four words plausibly take. The capped fallback finishes the line
+    // and dwells fully lit at 9.4s in, rather than crawling ~21.75s per
+    // word across the instrumental gap.
     const result = computeActiveWord(
       ['Amigos', 'no', 'more', 'tears'],
       150.6,
@@ -599,10 +609,8 @@ describe('REQ-UV-033: computeActiveWord with long gaps', () => {
       undefined,
       160,
     )
-    // At 9.4s into 86.66s line, progress=0.108, wordIndex=0
-    expect(result.activeUpTo).toBe(-1)
-    // First word partially revealed
-    expect(result.charProgress).toBeLessThan('Amigos'.length)
+    expect(result.activeUpTo).toBe(3)
+    expect(result.fraction).toBe(1)
   })
 })
 

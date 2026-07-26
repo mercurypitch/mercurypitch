@@ -2,6 +2,7 @@
 // Lyrics Service — fetch, parse, and sync lyrics
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import { IS_DEV } from './defaults'
+import { cappedEvenLineDuration } from './lyric-sung-end'
 import { interpolateSweepProgress } from './lyric-sweep'
 import { estimateWordDuration } from './word-sync'
 
@@ -584,8 +585,13 @@ export function computeActiveWord(
     return { activeUpTo, charProgress, fraction }
   }
 
-  // Fallback: evenly divide line duration among words
-  const lineDuration = Math.max(0.05, endTime - startTime)
+  // Fallback: evenly divide the line's SUNG span among the words. The raw
+  // span (endTime = next line's start) can include a long silence after the
+  // singing — capping by a syllable estimate stops a short line (or a single
+  // word) from sweeping its highlight across the whole gap; once the cap is
+  // reached the line dwells fully lit, like the word-timed path.
+  const rawLineDuration = Math.max(0.05, endTime - startTime)
+  const lineDuration = cappedEvenLineDuration(words, rawLineDuration)
   const progress = (elapsedTime - startTime) / lineDuration
   if (progress < 0) return { activeUpTo: -1, charProgress: 0, fraction: 0 }
   if (progress >= 1)

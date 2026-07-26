@@ -818,17 +818,18 @@ describe('computeActiveWord — edge cases', () => {
   })
 
   it('handles wordTimes length mismatch (falls back to even division)', () => {
-    // words.length=3 but wordTimes.length=2 → fallback path
+    // words.length=3 but wordTimes.length=2 → fallback path. The 9s raw
+    // span is a silence-stretch for three short words, so the capped
+    // fallback has completed the line by 4.5s and dwells lit.
     const result = computeActiveWord(
       ['one', 'two', 'three'],
       0,
       9,
       [0, 3], // mismatched!
-      4.5, // halfway through 0-9
+      4.5,
     )
-    // Even-division: 3s per word. At 4.5s, index = floor(4.5/3) = 1
-    expect(result.activeUpTo).toBe(0) // "one" done
-    expect(result.charProgress).toBe(1) // halfway into "two" (3 chars / 3s = 0.5 → 1 char)
+    expect(result.activeUpTo).toBe(2)
+    expect(result.fraction).toBe(1)
   })
 
   it('handles wordTimes present but empty', () => {
