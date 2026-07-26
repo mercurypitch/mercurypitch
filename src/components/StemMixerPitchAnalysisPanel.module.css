@@ -40,10 +40,6 @@
   );
 }
 
-.previewing {
-  opacity: 0.28;
-}
-
 .header {
   position: sticky;
   top: 0;

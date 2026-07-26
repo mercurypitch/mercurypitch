@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createUniqueId, For, onCleanup, onMount, Show } from 'solid-js'
 import { Settings, X } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { AnalysisAlgorithm } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
@@ -59,9 +59,6 @@ export interface StemMixerPitchAnalysisPanelProps {
 export const StemMixerPitchAnalysisPanel: Component<
   StemMixerPitchAnalysisPanelProps
 > = (props) => {
-  // While the cleanup slider is dragged, fade the panel so the pitch view it
-  // overlaps stays visible — the user can judge how much cleanup looks right.
-  const [previewing, setPreviewing] = createSignal(false)
   const panelId = createUniqueId()
   const titleId = `${panelId}-title`
   const controlId = (name: string): string => `${panelId}-${name}`
@@ -74,10 +71,7 @@ export const StemMixerPitchAnalysisPanel: Component<
   onCleanup(() => window.removeEventListener('keydown', onKey))
 
   return (
-    <aside
-      class={`${styles.sidebar} ${previewing() ? styles.previewing : ''}`}
-      aria-labelledby={titleId}
-    >
+    <aside class={styles.sidebar} aria-labelledby={titleId}>
       <div class={styles.header}>
         <h3 id={titleId} class={styles.title}>
           <span class={styles.titleIcon} aria-hidden="true">
@@ -251,14 +245,6 @@ export const StemMixerPitchAnalysisPanel: Component<
               onInput={(e) =>
                 props.setCleanupAmount(Number(e.currentTarget.value) / 100)
               }
-              onPointerDown={(event) => {
-                event.currentTarget.setPointerCapture(event.pointerId)
-                setPreviewing(true)
-              }}
-              onPointerUp={() => setPreviewing(false)}
-              onPointerCancel={() => setPreviewing(false)}
-              onLostPointerCapture={() => setPreviewing(false)}
-              onBlur={() => setPreviewing(false)}
             />
           </div>
 
