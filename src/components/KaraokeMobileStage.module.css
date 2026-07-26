@@ -203,10 +203,15 @@
 }
 
 /* ── Sing-this-note glyphs (chord-chart labels over the words) ──
-   Uniform headroom on every line while enabled, so the current line
-   gaining glyphs never reflows the scroll position. */
+   Headroom comes from LEADING, not padding: a padded paragraph only
+   clears its first visual line, so on phones a wrapped line's glyphs
+   would land on the text above them. Taller line-height gives every
+   wrapped line its own glyph room; the glyph offset below stays inside
+   that half-leading. Uniform on every line while enabled, so the
+   current line gaining glyphs never reflows the scroll position. */
 .lyricsNoted .line {
-  padding-top: 1.12em;
+  margin-bottom: 0.85rem;
+  line-height: 2.15;
 }
 
 .lyricsNoted .word {
@@ -219,7 +224,9 @@
    .wordActive's background-clip sweep. */
 .noteGlyph {
   position: absolute;
-  top: -2.5em;
+  /* Glyph-font ems: ≈0.56 word-ems above the word's em box, inside the
+     0.575 word-em half-leading the 2.15 line-height provides. */
+  top: -1.66em;
   left: 0.06em;
   color: rgba(238, 228, 255, 0.4);
   -webkit-text-fill-color: rgba(238, 228, 255, 0.4);
