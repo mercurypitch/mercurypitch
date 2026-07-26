@@ -1573,6 +1573,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  // Zen note glyphs asked for notes with no analysis present — run the
+  // denoised pipeline once; the alignment (and the glyphs) follow reactively.
+  const ensureZenNotes = () => {
+    const hasNotes =
+      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
+      pitchAnalysis.offlineMergedNotes().length > 0
+    if (!hasNotes && !pitchAnalysis.isAnalyzing()) {
+      void pitchAnalysis.runAnalysis()
+    }
+  }
+
   const startWhisperTranscription = () => {
     // If pitch analysis hasn't been run yet, run it first with default
     // settings so the alignment has notes to work with.
@@ -1662,6 +1673,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onSongPickerQuery={setSongPickerQuery}
           onSongPickerRefine={() => void handleSongPickerRefine()}
           onSongPick={(m) => void handleSongPick(m)}
+          alignedWords={() => alignmentResult().alignedWords}
+          onEnsureNotes={ensureZenNotes}
+          notesAnalyzing={pitchAnalysis.isAnalyzing}
+          notesProgress={pitchAnalysis.progress}
         />
       }
     >

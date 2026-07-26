@@ -202,6 +202,71 @@
   color: rgba(244, 236, 255, 0.26);
 }
 
+/* ── Sing-this-note glyphs (chord-chart labels over the words) ──
+   Uniform headroom on every line while enabled, so the current line
+   gaining glyphs never reflows the scroll position. */
+.lyricsNoted .line {
+  padding-top: 1.12em;
+}
+
+.lyricsNoted .word {
+  position: relative;
+}
+
+/* Anchored over the word's start, like a chord chart. Monospace is the
+   measurement voice here (pitch data, not decoration). Explicit
+   -webkit-text-fill-color defeats the transparent fill inherited from
+   .wordActive's background-clip sweep. */
+.noteGlyph {
+  position: absolute;
+  top: -2.5em;
+  left: 0.06em;
+  color: rgba(238, 228, 255, 0.4);
+  -webkit-text-fill-color: rgba(238, 228, 255, 0.4);
+  background: none;
+  font:
+    500 0.34em ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  letter-spacing: 0.05em;
+  font-style: normal;
+  text-shadow: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.line.current .noteGlyph {
+  color: rgba(255, 240, 252, 0.82);
+  -webkit-text-fill-color: rgba(255, 240, 252, 0.82);
+  text-shadow: 0 0 14px rgba(255, 154, 213, 0.3);
+}
+
+/* Quiet status line while the pitch analysis prepares the labels. */
+.notesHint {
+  margin: 0.45rem 1.5rem 0;
+  color: rgba(238, 228, 255, 0.58);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+  animation: notesHintPulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes notesHintPulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notesHint {
+    animation: none;
+  }
+}
+
 .line.current {
   color: rgba(255, 255, 255, 0.55);
   transform: scale(1.02);
