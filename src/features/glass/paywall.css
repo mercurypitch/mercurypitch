@@ -36,10 +36,7 @@
 }
 
 .pw-title span {
-  background: linear-gradient(90deg, #58a6ff, #bc8cff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #58a6ff;
 }
 
 .pw-sub {
@@ -80,6 +77,13 @@
 .pw-buy:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.pw-buy:focus-visible,
+.pw-restore:focus-visible,
+.pw-close:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
 }
 
 .pw-buy-title {

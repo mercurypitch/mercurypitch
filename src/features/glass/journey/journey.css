@@ -39,10 +39,7 @@
   font-weight: 800;
   font-size: 28px;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #58a6ff, #bc8cff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #e6edf3;
 }
 
 .jp-text {
@@ -50,7 +47,16 @@
   max-width: 40ch;
   font-size: 15px;
   line-height: 1.45;
-  color: #9aa4af;
+  color: #93a0b4;
+}
+
+.jp-start:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+.jp-start:active {
+  transform: scale(0.98);
 }
 
 .jp-pulse {

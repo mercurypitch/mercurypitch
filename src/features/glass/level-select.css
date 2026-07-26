@@ -35,10 +35,7 @@
   font-weight: 800;
   font-size: clamp(30px, 9vw, 40px);
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #58a6ff, #bc8cff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #e6edf3;
 }
 
 .ls-sub {
@@ -46,7 +43,27 @@
   max-width: 30ch;
   font-size: 15px;
   line-height: 1.4;
-  color: #9aa4af;
+  color: #93a0b4;
+}
+
+/* One authored moment: the ladder assembles on arrival, bottom-up like a
+   climb — cards rise into place with a soft stagger. */
+.ls-journey,
+.ls-levels li {
+  animation: ls-rise 460ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+
+.ls-levels li:nth-child(1) { animation-delay: 60ms; }
+.ls-levels li:nth-child(2) { animation-delay: 110ms; }
+.ls-levels li:nth-child(3) { animation-delay: 160ms; }
+.ls-levels li:nth-child(4) { animation-delay: 210ms; }
+.ls-levels li:nth-child(5) { animation-delay: 260ms; }
+
+@keyframes ls-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
 .ls-levels {
@@ -91,7 +108,17 @@
   object-fit: cover;
   background: #05060b;
   border: 1px solid color-mix(in oklab, var(--accent) 45%, #21262d);
-  box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 35%, transparent);
+  box-shadow: 0 4px 14px -4px color-mix(in oklab, var(--accent) 45%, #000);
+}
+
+.ls-card:focus-visible,
+.game-back:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+.ls-card:active:not(.ls-locked) {
+  transform: translateY(0) scale(0.99);
 }
 
 .ls-card-main {
@@ -154,8 +181,14 @@
   margin: auto auto 0;
   padding-top: 12px;
   font-size: 12px;
-  color: #6e7681;
+  color: #8b96a6;
   text-align: center;
+}
+
+/* Native game context: the web entry's footer links (/mirror,
+   /karaoke-night) have no destination inside the app shell. */
+.game-level .glass-foot {
+  display: none;
 }
 
 /* Per-level stage backdrop: the material's concept render behind the live
@@ -211,5 +244,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ls-card {
     transition: none;
+  }
+
+  .ls-journey,
+  .ls-levels li {
+    animation: none;
   }
 }
