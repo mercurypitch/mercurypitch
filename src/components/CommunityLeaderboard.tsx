@@ -4,13 +4,15 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
+import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
+import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
@@ -296,8 +298,41 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   createEffect(() => {
     authVersion()
     activeCategory()
-    activeView()
+    const view = activeView()
+    // The league view has its own loader below — no board page to fetch.
+    if (view === 'league') return
     void loadPage(0)
+  })
+
+  // ── League view state ─────────────────────────────────────────
+  const [leagueMe, setLeagueMe] = createSignal<LeagueMe | null>(null)
+  const [leagueLadder, setLeagueLadder] = createSignal<LeagueRung[]>([])
+  const [nowMs, setNowMs] = createSignal(Date.now())
+  const cutTimer = setInterval(() => setNowMs(Date.now()), 60_000)
+  onCleanup(() => clearInterval(cutTimer))
+
+  createEffect(() => {
+    authVersion()
+    if (activeView() !== 'league' || !cloudConfigured) return
+    void (async () => {
+      const [me, ladder] = await Promise.all([
+        fetchLeagueMe(),
+        fetchLeagueLadder(),
+      ])
+      setLeagueMe(me)
+      setLeagueLadder(ladder)
+    })()
+  })
+
+  /** The rung one above / below the signed-in user's, for zone hints. */
+  const leagueNeighbours = createMemo(() => {
+    const rank = leagueMe()?.league?.rank
+    if (rank == null) return { up: undefined, down: undefined }
+    const ladder = leagueLadder()
+    return {
+      up: ladder.find((r) => r.rank === rank + 1 && !r.isMystery),
+      down: ladder.find((r) => r.rank === rank - 1),
+    }
   })
 
   createEffect(() => {
@@ -435,10 +470,18 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           <span class="tab-name">Weekly</span>
           <span class="tab-count">{weeklyChallenges().length}</span>
         </button>
+        <button
+          class={`leaderboard-tab ${activeView() === 'league' ? 'active' : ''}`}
+          onClick={() => setActiveView('league')}
+          data-testid="league-tab"
+        >
+          <IconTrophy />
+          <span class="tab-name">League</span>
+        </button>
       </div>
 
       {/* Category Tabs */}
-      {activeView() !== 'weekly' && (
+      {activeView() !== 'weekly' && activeView() !== 'league' && (
         <div class="category-tabs">
           <For each={visibleCategories()}>
             {(cat) => (
@@ -454,19 +497,142 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div class="search-container">
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Search players..."
-          value={searchQuery()}
-          onInput={(e) => setSearchQuery(e.currentTarget.value)}
-        />
-        <button class="filter-btn" aria-label="Filter" title="Filter">
-          <IconFilter />
-        </button>
-      </div>
+      {/* League View */}
+      <Show when={activeView() === 'league'}>
+        <div class="league-view" data-testid="league-view">
+          <Show
+            when={cloudConfigured}
+            fallback={
+              <p class="weekly-challenges-desc">
+                Leagues need a cloud account (not available in this build).
+              </p>
+            }
+          >
+            <Show
+              when={leagueMe()?.eligible === true}
+              fallback={
+                <div class="league-locked" data-testid="league-locked">
+                  <p class="weekly-challenges-desc">
+                    Leagues are for registered singers — create an account in
+                    Settings → Account to climb the ladder. Practice earns
+                    weekly points; the top of each league advances every Monday.
+                  </p>
+                </div>
+              }
+            >
+              <div class="league-rung-card" data-testid="league-rung-card">
+                <Show when={leagueMe()?.league?.trophyAsset}>
+                  <img
+                    class="league-rung-trophy"
+                    src={leagueMe()?.league?.trophyAsset ?? ''}
+                    alt={`${leagueMe()?.league?.name ?? 'League'} trophy`}
+                  />
+                </Show>
+                <div class="league-rung-info">
+                  <span class="league-rung-label">Your league</span>
+                  <h3 class="league-rung-name" data-testid="league-rung-name">
+                    {leagueMe()?.league?.name}
+                  </h3>
+                  <p class="league-rung-stats">
+                    {leagueMe()?.points ?? 0} pts this week
+                    <Show when={leagueMe()?.rank != null}>
+                      {' '}
+                      · #{leagueMe()?.rank} of {leagueMe()?.cohortSize}
+                    </Show>
+                  </p>
+                  <p class="league-rung-zones">
+                    <Show
+                      when={leagueNeighbours().up}
+                      fallback={<>Top of the playable ladder — defend it.</>}
+                    >
+                      Top {leagueMe()?.league?.promoteCount} advance to{' '}
+                      {leagueNeighbours().up?.name}.
+                    </Show>{' '}
+                    <Show when={(leagueMe()?.league?.relegateCount ?? 0) > 0}>
+                      Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
+                      {leagueNeighbours().down?.name}.
+                    </Show>
+                  </p>
+                  <span class="league-cut-countdown">
+                    Weekly cut in {formatCutCountdown(msUntilNextCut(nowMs()))}
+                  </span>
+                </div>
+              </div>
+
+              <Show
+                when={(leagueMe()?.standings?.length ?? 0) > 0}
+                fallback={
+                  <p class="weekly-challenges-desc">
+                    Nobody has scored league points yet this week — finish an
+                    exercise or challenge to open the board.
+                  </p>
+                }
+              >
+                <div class="league-standings" data-testid="league-standings">
+                  <For each={leagueMe()?.standings ?? []}>
+                    {(row) => (
+                      <div
+                        class={`league-standing-row ${
+                          row.userId === getUserId() ? 'me' : ''
+                        }`}
+                      >
+                        <span class="league-standing-rank">#{row.rank}</span>
+                        <span class="league-standing-name">
+                          {row.displayName}
+                        </span>
+                        <span class="league-standing-points">
+                          {row.points} pts
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+            </Show>
+
+            {/* The 7-rung ladder, mystery included, for everyone */}
+            <Show when={leagueLadder().length > 0}>
+              <div class="league-ladder" data-testid="league-ladder">
+                <For each={leagueLadder()}>
+                  {(rung) => (
+                    <div
+                      class={`league-ladder-rung ${
+                        rung.id === leagueMe()?.league?.id ? 'current' : ''
+                      } ${rung.isMystery ? 'mystery' : ''}`}
+                      title={rung.isMystery ? 'Coming soon' : rung.name}
+                    >
+                      <Show when={rung.trophyAsset}>
+                        <img
+                          class="league-ladder-trophy"
+                          src={rung.trophyAsset ?? ''}
+                          alt={rung.isMystery ? 'Mystery league' : rung.name}
+                        />
+                      </Show>
+                      <span class="league-ladder-name">{rung.name}</span>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </Show>
+          </Show>
+        </div>
+      </Show>
+
+      {/* Search Bar (board views only) */}
+      <Show when={activeView() !== 'league'}>
+        <div class="search-container">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search players..."
+            value={searchQuery()}
+            onInput={(e) => setSearchQuery(e.currentTarget.value)}
+          />
+          <button class="filter-btn" aria-label="Filter" title="Filter">
+            <IconFilter />
+          </button>
+        </div>
+      </Show>
 
       {/* Weekly Challenges View */}
       <Show when={activeView() === 'weekly'}>
@@ -538,7 +704,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       </Show>
 
       {/* Leaderboard Table View */}
-      <Show when={activeView() !== 'weekly'}>
+      <Show when={activeView() !== 'weekly' && activeView() !== 'league'}>
         <div class="leaderboard-content">
           {/* Friends tab: share/redeem codes, then the empty-state hint */}
           <Show when={activeView() === 'friends' && cloudConfigured}>

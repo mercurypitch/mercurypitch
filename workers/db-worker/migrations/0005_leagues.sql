@@ -102,3 +102,16 @@ INSERT OR IGNORE INTO leaguePointsConfig
   (id, createdAt, updatedAt)
 VALUES
   ('default', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z');
+
+-- Single-row bookkeeping for the weekly cut (server-written only, not in the
+-- CRUD allowlist). lastCutWeekStart marks the week the cron has already
+-- processed, so a 6-hourly cron firing many times per week applies the
+-- promotion/relegation pass exactly once.
+CREATE TABLE IF NOT EXISTS leagueMeta (
+  id TEXT PRIMARY KEY,        -- always 'default' (single row)
+  updatedAt TEXT NOT NULL,
+  lastCutWeekStart TEXT       -- ISO Monday of the most recent week already cut
+);
+
+INSERT OR IGNORE INTO leagueMeta (id, updatedAt, lastCutWeekStart)
+VALUES ('default', '2026-01-01T00:00:00.000Z', NULL);

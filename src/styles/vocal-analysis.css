@@ -4666,3 +4666,159 @@
   flex-shrink: 0;
   font-size: 1.1rem;
 }
+
+/* ── League view (weekly promotion ladder) ─────────────────────────── */
+
+.league-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 16px;
+}
+
+.league-rung-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.league-rung-trophy {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.league-rung-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.league-rung-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.league-rung-name {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-primary, #eee);
+}
+
+.league-rung-stats {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary, #ddd);
+}
+
+.league-rung-zones {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.league-cut-countdown {
+  margin-top: 4px;
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.league-standings {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.league-standing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  font-size: 14px;
+  color: var(--text-primary, #ddd);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+}
+
+.league-standing-row:last-child {
+  border-bottom: none;
+}
+
+.league-standing-row.me {
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
+.league-standing-rank {
+  width: 44px;
+  color: var(--text-secondary, #9aa4b2);
+  flex-shrink: 0;
+}
+
+.league-standing-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-standing-points {
+  color: var(--accent, #58a6ff);
+  flex-shrink: 0;
+}
+
+.league-ladder {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.league-ladder-rung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px 8px;
+  width: 92px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+}
+
+.league-ladder-rung.current {
+  border-color: var(--accent, #58a6ff);
+  box-shadow: 0 0 0 1px var(--accent, #58a6ff);
+}
+
+.league-ladder-rung.mystery {
+  opacity: 0.75;
+}
+
+.league-ladder-trophy {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.league-ladder-name {
+  font-size: 11px;
+  color: var(--text-secondary, #9aa4b2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}

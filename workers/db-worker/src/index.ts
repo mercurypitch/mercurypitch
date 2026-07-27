@@ -17,6 +17,7 @@
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
+import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import type { TableDef } from './tables'
 import { TABLES } from './tables'
 
@@ -377,6 +378,18 @@ async function handleCreate(
   }
 
   const row = (await fetchRow(entity, id, env)) as Row
+
+  // A saved practice attempt is the league's points source (server-side, so
+  // the award can't be called directly by a client). Never blocks the save.
+  if (entity === 'sessionRecords' && auth) {
+    await awardForSessionRecord(env, auth.userId, {
+      id,
+      source: row.source as string | null,
+      score: row.score as number | null,
+      melodyName: row.melodyName as string | null,
+    })
+  }
+
   return respond(fromSql(def, row), { status: 201 })
 }
 
@@ -429,6 +442,16 @@ async function handleUpdate(
   }
 
   const updated = (await fetchRow(entity, id, env)) as Row
+
+  // The streak lives on the profile; a raise is the league's "showed up
+  // today" signal. Both bonuses are deduped server-side to once per UTC day
+  // (see awardStreakBonuses), which bounds a scripted client.
+  if (entity === 'userProfiles' && auth) {
+    const prev = Number(row.currentStreak ?? 0)
+    const next = Number(updated.currentStreak ?? 0)
+    if (next > prev) await awardStreakBonuses(env, auth.userId, prev, next)
+  }
+
   return respond(fromSql(def, updated))
 }
 
@@ -1474,15 +1497,21 @@ export default {
     }
   },
 
-  // Cron (wrangler.jsonc "triggers"): billing reconciliation — the safety
-  // net for lost Stripe webhook deliveries (see reconcileBilling). Runs in
-  // every deployed env; a no-op wherever Stripe isn't configured.
+  // Cron (wrangler.jsonc "triggers"), every 6 hours:
+  //  - billing reconciliation — the safety net for lost Stripe webhook
+  //    deliveries (see reconcileBilling); a no-op wherever Stripe isn't
+  //    configured.
+  //  - the weekly league cut — applies promotions/relegations exactly once
+  //    per ISO week (leagueMeta.lastCutWeekStart is the idempotency marker;
+  //    the other ~27 ticks a week no-op). Each swallows its own errors so
+  //    one can never starve the other.
   async scheduled(
     _controller: ScheduledController,
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
     await reconcileBilling(env)
+    await runWeeklyLeagueCut(env)
   },
 }
 
@@ -1501,6 +1530,12 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
     return handleMirrorEvent(request, env)
+  }
+
+  if (url.pathname === '/api/league/me' && request.method === 'GET') {
+    const auth = await getAuth(request, env)
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    return respond(await getLeagueMe(env, auth.userId))
   }
 
   if (url.pathname === '/api/friends/code' && request.method === 'GET') {
