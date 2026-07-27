@@ -480,29 +480,12 @@ function weekStartIso(): string {
   return monday.toISOString()
 }
 
-/** UTC YYYY-MM-DD, `offsetDays` from today. */
-function utcDay(offsetDays: number): string {
-  return new Date(Date.now() + offsetDays * 86_400_000)
-    .toISOString()
-    .slice(0, 10)
-}
-
-/** Current consecutive-day streak (ending today or yesterday) from a set of
- *  practice days — mirrors the client's streak semantics. */
-function streakFromDays(days: Set<string>): number {
-  let cursor = utcDay(0)
-  if (!days.has(cursor)) {
-    cursor = utcDay(-1)
-    if (!days.has(cursor)) return 0
-  }
-  let streak = 0
-  let t = new Date(`${cursor}T00:00:00.000Z`).getTime()
-  while (days.has(new Date(t).toISOString().slice(0, 10))) {
-    streak++
-    t -= 86_400_000
-  }
-  return streak
-}
+// The streak shown here is userProfiles.currentStreak — the same number the
+// app shows its owner. It used to be re-derived from distinct sessionRecords
+// days, which already disagreed with the profile (the real streak counts days
+// that met the ~5-minute practice goal, and forgives gaps via freezes), and
+// restricting the board to eligible sources would have widened the gap: a
+// friend's board entry could read "3 day streak" while their own app said 11.
 
 interface AggRow {
   userId: string
@@ -512,6 +495,8 @@ interface AggRow {
   bestScore: number
   accuracy: number
   totalSessions: number
+  /** Profile's live streak — the same number its owner sees on Home. */
+  streak: number
   /** Profile's best-ever streak — the sticky half of the publication gate. */
   longestStreak: number
 }
@@ -784,6 +769,7 @@ async function handleLeaderboard(
             MAX(s."score") AS bestScore,
             AVG(s."accuracy") AS accuracy,
             COUNT(*) AS totalSessions,
+            COALESCE(p."currentStreak", 0) AS streak,
             COALESCE(p."longestStreak", 0) AS longestStreak
      FROM "sessionRecords" s
      LEFT JOIN "userProfiles" p ON p."id" = s."userId"${where}
@@ -791,22 +777,6 @@ async function handleLeaderboard(
   )
     .bind(...binds)
     .all<AggRow>()
-
-  // Distinct practice days per user → consecutive-day streak (computed in JS).
-  const { results: dayRows } = await env.DB.prepare(
-    `SELECT s."userId" AS userId, substr(s."endedAt", 1, 10) AS day
-     FROM "sessionRecords" s${where}
-     GROUP BY s."userId", day`,
-  )
-    .bind(...binds)
-    .all<{ userId: string; day: string }>()
-
-  const daysByUser = new Map<string, Set<string>>()
-  for (const r of dayRows) {
-    const set = daysByUser.get(r.userId) ?? new Set<string>()
-    set.add(r.day)
-    daysByUser.set(r.userId, set)
-  }
 
   const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; streak: number }): number => {
     switch (category) {
@@ -835,7 +805,7 @@ async function handleLeaderboard(
       bestScore: Math.round(r.bestScore),
       accuracy: Math.round(r.accuracy),
       totalSessions: r.totalSessions,
-      streak: streakFromDays(daysByUser.get(r.userId) ?? new Set<string>()),
+      streak: r.streak,
       longestStreak: r.longestStreak,
     }))
     // Thresholds apply to the public board only: among friends you asked to
