@@ -29,7 +29,7 @@ export interface TableDef {
 }
 
 export const TABLES: Record<string, TableDef> = {
-  userProfiles: { access: 'owner' },
+  userProfiles: { access: 'owner', boolCols: ['leaderboardOptIn'] },
   sessionRecords: { access: 'user', jsonCols: ['results'] },
   challengeDefinitions: { access: 'admin', boolCols: ['isActive'] },
   challengeProgress: { access: 'user', boolCols: ['completed'] },

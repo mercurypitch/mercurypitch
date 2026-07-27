@@ -27,6 +27,15 @@ export interface UserProfile extends DbEntity {
   /** When the streak last reset to 1 (drives the 72h repair window). */
   streakResetDate?: string | null // YYYY-MM-DD
   lastRepairDate?: string | null // YYYY-MM-DD (repair allowed once per 30 days)
+  /**
+   * Consent to appear on the public leaderboard. Off unless explicitly set:
+   * qualifying on activity is necessary but not sufficient — nobody is
+   * published without saying yes.
+   */
+  leaderboardOptIn?: boolean
+  leaderboardOptInAt?: string | null
+  /** Shareable friend code (registered accounts only; server-minted). */
+  friendCode?: string | null
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────

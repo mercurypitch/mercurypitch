@@ -303,3 +303,17 @@
   color: var(--bg-primary, #111);
   border-color: var(--red, #e05555);
 }
+
+.optInRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary, #eee);
+  cursor: pointer;
+}
+
+.optInRow input {
+  accent-color: var(--accent, #7aa2f7);
+  cursor: pointer;
+}

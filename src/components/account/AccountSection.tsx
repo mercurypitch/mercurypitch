@@ -88,6 +88,33 @@ export const AccountSection: Component = () => {
     setMe(await fetchMe())
   }
 
+  const optIn = (): boolean => me()?.profile?.leaderboardOptIn === true
+
+  /** Persist public-board consent. Writes straight to the owned profile row. */
+  async function setLeaderboardOptIn(next: boolean): Promise<void> {
+    setError('')
+    setBusy(true)
+    try {
+      const db = await getDb()
+      const profiles = db.getRepository<UserProfile>('userProfiles')
+      await profiles.update(getUserId(), {
+        leaderboardOptIn: next,
+        leaderboardOptInAt: next ? new Date().toISOString() : null,
+      })
+      await refreshMe()
+      showNotification(
+        next
+          ? 'You’re on the public leaderboard'
+          : 'Removed from the public leaderboard',
+        'info',
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   onMount(() => {
     if (!cloudConfigured) return
     void (async () => {
@@ -456,6 +483,30 @@ export const AccountSection: Component = () => {
             </form>
           </Match>
         </Switch>
+
+        {/* Public-board consent. Qualifying on activity is necessary but not
+            sufficient — nothing is published until this is on. */}
+        <Show when={me() != null}>
+          <div class={styles.accountField}>
+            <label class={styles.optInRow}>
+              <input
+                type="checkbox"
+                checked={optIn()}
+                disabled={busy()}
+                data-testid="leaderboard-optin"
+                onChange={(e) =>
+                  void setLeaderboardOptIn(e.currentTarget.checked)
+                }
+              />
+              <span>Show me on the public leaderboard</span>
+            </label>
+            <p class={styles.fieldHint}>
+              Off by default. Exercise and challenge results rank once you've
+              practised a few days running; free practice and your streak are
+              never published. Friends you add see more.
+            </p>
+          </div>
+        </Show>
 
         {/* Erasure is offered whenever a server identity exists — anonymous
             accounts hold streaks, scores and settings too, and GDPR doesn't

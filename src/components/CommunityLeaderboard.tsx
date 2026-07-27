@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
@@ -335,6 +336,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     }
   }
 
+  async function refreshFollowing(): Promise<void> {
+    setFollowing(await getFollowing())
+  }
+
   async function toggleFollow(userId: string): Promise<void> {
     const isFollowed = following().includes(userId)
     const ok = isFollowed ? await unfollow(userId) : await follow(userId)
@@ -535,16 +540,29 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       {/* Leaderboard Table View */}
       <Show when={activeView() !== 'weekly'}>
         <div class="leaderboard-content">
-          {/* Friends tab: empty-state hint */}
+          {/* Friends tab: share/redeem codes, then the empty-state hint */}
+          <Show when={activeView() === 'friends' && cloudConfigured}>
+            <FriendCodePanel
+              onFriendAdded={() => {
+                void refreshFollowing()
+                void loadPage(0)
+              }}
+            />
+          </Show>
           <Show
             when={
               activeView() === 'friends' && allLeaderboardUsers().length === 0
             }
           >
+            {/* An added friend with no ranked attempts yet produces no board
+                row, and "No friends yet" would read as though the add
+                failed — so distinguish "nobody added" from "nothing to rank". */}
             <p class="weekly-challenges-desc" data-testid="friends-empty">
-              {cloudConfigured
-                ? 'No friends yet — open a player on the Global tab and hit Follow. Sign in to keep your friends across devices.'
-                : 'Friends leaderboards need a cloud account (not available in this build).'}
+              {!cloudConfigured
+                ? 'Friends leaderboards need a cloud account (not available in this build).'
+                : following().length > 0
+                  ? 'Your friends are added — this fills in once they finish an exercise or challenge.'
+                  : 'No friends yet — swap codes above, or open a player on the Global tab and hit Follow.'}
             </p>
           </Show>
           {/* Top 3 Podium */}
