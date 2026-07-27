@@ -186,11 +186,22 @@ function renderIcon(icon: Component | string) {
 // Mock Data
 // ============================================================
 
+/**
+ * `friendsOnly` categories are hidden on the global board and rejected by
+ * the worker there. A streak measures showing up rather than skill, and it
+ * counts every practice day — worth comparing with friends who chose to see
+ * each other, not a behavioural record to publish to strangers.
+ */
 const leaderboardCategories = [
   { id: 'overall' as const, name: 'Overall', icon: IconOverall },
   { id: 'best-score' as const, name: 'Best Score', icon: IconScore },
   { id: 'accuracy' as const, name: 'Accuracy', icon: IconAccuracy },
-  { id: 'streak' as const, name: 'Longest Streak', icon: IconStreak },
+  {
+    id: 'streak' as const,
+    name: 'Longest Streak',
+    icon: IconStreak,
+    friendsOnly: true,
+  },
   { id: 'sessions' as const, name: 'Most Sessions', icon: IconSessions },
 ]
 
@@ -223,6 +234,20 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const PAGE_SIZE = 25
+
+  const visibleCategories = createMemo(() =>
+    leaderboardCategories.filter(
+      (c) => c.friendsOnly !== true || activeView() === 'friends',
+    ),
+  )
+
+  // Leaving Friends while on a friends-only category would request one the
+  // server refuses on the global board; fall back instead of showing an error.
+  createEffect(() => {
+    if (!visibleCategories().some((c) => c.id === activeCategory())) {
+      setActiveCategory('overall')
+    }
+  })
 
   // DB-backed leaderboard data (paged)
   const [dbLeaderboardUsers, setDbLeaderboardUsers] = createSignal<
@@ -410,7 +435,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       {/* Category Tabs */}
       {activeView() !== 'weekly' && (
         <div class="category-tabs">
-          <For each={leaderboardCategories}>
+          <For each={visibleCategories()}>
             {(cat) => (
               <button
                 class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
