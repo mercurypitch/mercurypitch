@@ -156,4 +156,96 @@ describe('ConfirmDialog', () => {
     setOpen(false)
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
+
+  // Type-to-confirm — the gate on unrecoverable actions (account erasure).
+  describe('confirmPhrase', () => {
+    it('keeps confirm disabled until the exact phrase is typed', () => {
+      const onConfirm = vi.fn()
+      render(() => (
+        <ConfirmDialog
+          {...baseProps}
+          open={true}
+          confirmPhrase="delete"
+          onConfirm={onConfirm}
+        />
+      ))
+      const confirm = screen.getByTestId('confirm-delete')
+      const input = screen.getByTestId('confirm-phrase')
+
+      expect(confirm).toBeDisabled()
+      fireEvent.click(confirm)
+      expect(onConfirm).not.toHaveBeenCalled()
+
+      // A near-miss must not unlock it.
+      fireEvent.input(input, { target: { value: 'delet' } })
+      expect(confirm).toBeDisabled()
+
+      fireEvent.input(input, { target: { value: 'delete' } })
+      expect(confirm).not.toBeDisabled()
+      fireEvent.click(confirm)
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('accepts case and whitespace variations of the phrase', () => {
+      const onConfirm = vi.fn()
+      render(() => (
+        <ConfirmDialog
+          {...baseProps}
+          open={true}
+          confirmPhrase="delete"
+          onConfirm={onConfirm}
+        />
+      ))
+      fireEvent.input(screen.getByTestId('confirm-phrase'), {
+        target: { value: '  DELETE ' },
+      })
+      fireEvent.click(screen.getByTestId('confirm-delete'))
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the typed phrase when reopened, so the next delete is not one click', () => {
+      const [open, setOpen] = createSignal(true)
+      render(() => (
+        <ConfirmDialog {...baseProps} open={open()} confirmPhrase="delete" />
+      ))
+      fireEvent.input(screen.getByTestId('confirm-phrase'), {
+        target: { value: 'delete' },
+      })
+      expect(screen.getByTestId('confirm-delete')).not.toBeDisabled()
+
+      setOpen(false)
+      setOpen(true)
+      expect(screen.getByTestId('confirm-delete')).toBeDisabled()
+    })
+
+    it('confirms on Enter once the phrase matches', () => {
+      const onConfirm = vi.fn()
+      render(() => (
+        <ConfirmDialog
+          {...baseProps}
+          open={true}
+          confirmPhrase="delete"
+          onConfirm={onConfirm}
+        />
+      ))
+      const input = screen.getByTestId('confirm-phrase')
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(onConfirm).not.toHaveBeenCalled()
+
+      fireEvent.input(input, { target: { value: 'delete' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves dialogs without a phrase working as a plain confirm', () => {
+      const onConfirm = vi.fn()
+      render(() => (
+        <ConfirmDialog {...baseProps} open={true} onConfirm={onConfirm} />
+      ))
+      expect(screen.queryByTestId('confirm-phrase')).toBeNull()
+      expect(screen.getByTestId('confirm-delete')).not.toBeDisabled()
+      fireEvent.click(screen.getByTestId('confirm-delete'))
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+  })
 })

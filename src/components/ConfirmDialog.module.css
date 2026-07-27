@@ -118,3 +118,39 @@
     animation: none;
   }
 }
+
+/* ── Type-to-confirm (unrecoverable actions) ────────────────────────── */
+
+.phraseLabel {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.phraseInput {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  color: var(--text-primary, #eee);
+  font-size: 0.9rem;
+}
+
+.phraseInput:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
+/* Disabled-until-typed is a gate, not work in progress — `cursor: wait`
+   above would claim the app is busy when it is simply waiting on the user. */
+.delete:disabled {
+  cursor: not-allowed;
+}
+
+.dialog[aria-busy='true'] .cancel:disabled,
+.dialog[aria-busy='true'] .delete:disabled {
+  cursor: wait;
+}

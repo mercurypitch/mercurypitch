@@ -11,7 +11,7 @@ import '@/styles/mixer-shared.css'
 import '@/styles/mobile-kit.css'
 import './karaoke-night.css'
 import { setupConsent } from '@/components/ConsentBanner'
-import { consumeEmailVerifyRedirect, consumeGoogleRedirect, ensureAuth, } from '@/db/services/auth-service'
+import { consumeEmailVerifyRedirect, consumeGoogleRedirect, restoreAuth, } from '@/db/services/auth-service'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { trackKaraoke } from './funnel'
 import { KaraokeNightApp } from './KaraokeNightApp'
@@ -31,10 +31,12 @@ installAudioUnlock(() => null)
 // loads, so EEA/UK/CH clicks are gated from the first paint.
 setupConsent()
 
-// Anonymous-first: exchange the persisted device id for a JWT so credit
-// lookups and server processing work for signed-in visitors. No-op when no
+// Restore an existing session so credit lookups and server processing work
+// for returning/signed-in visitors. Never provisions: this is an ad landing
+// page, and a click that bounces must not create an account. Paid paths
+// (UVR dispatch, checkout) call requireAuth() themselves. No-op when no
 // backend is configured (e2e/tour builds).
-void ensureAuth()
+void restoreAuth()
 
 // Funnel: one view event per browser session.
 trackKaraoke('karaoke_view')

@@ -2,15 +2,23 @@
 // Auth Service — client for the db-worker /api/auth endpoints
 // ============================================================
 //
-// Anonymous-first: ensureAuth() silently exchanges the persisted
-// device id for a JWT at startup. Register/login/Google upgrade the
-// same userId server-side (deviceId is passed along), so local
-// attribution stays valid. See docs/plans/users-auth-plan.md.
+// Lazy-anonymous: the device id lives in localStorage from the first
+// page load, but it is only exchanged for a server identity once the
+// visitor does something worth saving. restoreAuth() reuses an existing
+// session and never creates one; requireAuth() provisions on demand and
+// is called from write paths. Register/login/Google upgrade the same
+// userId server-side (deviceId is passed along), so local attribution
+// stays valid. See docs/plans/users-auth-plan.md.
+//
+// Provisioning eagerly at startup used to mint a users + userProfiles row
+// for every page load — 93% of them bounces that never practiced — which
+// buried the real signal and wrote personal data before the consent
+// banner was answered.
 
 import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
-import { getAuthToken, getUserId, setAuthToken } from './user-service'
+import { getAuthToken, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
 // so account-aware UI (e.g. the verify-email banner) can re-check /me
@@ -181,28 +189,53 @@ async function verifyTokenWithServer(): Promise<boolean> {
 }
 
 /**
- * Make sure a JWT is available, requesting an anonymous one when
- * needed. Returns false when no API is configured, the network is
- * down, or the account was upgraded and requires an explicit login.
- * Never throws — callers must stay usable offline.
+ * Reuse an existing session, and never create one. Returns false when no
+ * API is configured, no valid token is stored, or the server rejected it.
+ * This is what startup and account UI call: a visitor who only browses
+ * never gets a server-side identity. Never throws — callers must stay
+ * usable offline.
  */
-export async function ensureAuth(): Promise<boolean> {
+export async function restoreAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
-  if (hasValidToken() && (await verifyTokenWithServer())) return true
+  return hasValidToken() && (await verifyTokenWithServer())
+}
+
+// Concurrent first writes (a session save racing a settings push) must not
+// each POST /api/auth/anonymous. The server is idempotent on deviceId, so
+// this only avoids redundant round-trips and token churn.
+let provisioning: Promise<boolean> | null = null
+
+/**
+ * Make sure a cloud identity exists, provisioning an anonymous one on
+ * demand. Call this from paths that are about to persist something —
+ * the ServerAdapter write hook covers the generic CRUD surface; direct
+ * fetch callers (billing, weekly attempts) call it themselves.
+ *
+ * Returns false when no API is configured, the network is down, or the
+ * account was upgraded and requires an explicit login. Never throws.
+ */
+export async function requireAuth(): Promise<boolean> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return false
+  if (await restoreAuth()) return true
   if (requiresLogin()) return false
-  try {
-    await postAuth('anonymous', { deviceId: getUserId() })
-    return true
-  } catch (err) {
-    if (err instanceof AuthHttpError && err.status === 403) {
-      // Upgraded account signed out — needs an explicit login.
-      setRequiresLogin(true)
-      console.info('[auth] signed out — log in to sync personal data')
-    } else {
-      console.warn('[auth] anonymous auth failed:', err)
+  provisioning ??= (async () => {
+    try {
+      await postAuth('anonymous', { deviceId: getUserId() })
+      return true
+    } catch (err) {
+      if (err instanceof AuthHttpError && err.status === 403) {
+        // Upgraded account signed out — needs an explicit login.
+        setRequiresLogin(true)
+        console.info('[auth] signed out — log in to sync personal data')
+      } else {
+        console.warn('[auth] anonymous auth failed:', err)
+      }
+      return false
+    } finally {
+      provisioning = null
     }
-    return false
-  }
+  })()
+  return provisioning
 }
 
 export async function registerWithPassword(
@@ -373,7 +406,7 @@ export function logout(): void {
 
   // Clear token immediately so the UI reflects signed-out state.
   // An upgraded device can't fall back to anonymous auth — remember
-  // that so ensureAuth() doesn't retry a doomed handshake at startup.
+  // that so requireAuth() doesn't retry a doomed handshake on the next write.
   if (payload != null && payload.provider !== 'anonymous') {
     setRequiresLogin(true)
   }
@@ -396,6 +429,43 @@ export function logout(): void {
       // Network failure is non-fatal
     })
   }
+}
+
+/**
+ * Permanently delete the signed-in account and everything the server holds
+ * for it, then drop the local session. Irreversible; the caller confirms
+ * first. Throws with the server's message so the UI can surface a failure
+ * rather than pretending the data is gone.
+ */
+export async function deleteAccount(): Promise<void> {
+  const token = getAuthToken()
+  if (token == null || token === '') throw new Error('Not signed in')
+  const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    let message = ''
+    try {
+      message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(
+      message !== '' ? message : `Could not delete account (${res.status})`,
+    )
+  }
+  // The account is gone, so there is nothing to sign back into and no
+  // upgraded identity to remember — clear the signed-out flag too, letting
+  // this device start fresh as a new visitor. Rotate the device id as well:
+  // /api/auth/anonymous keys on it, so keeping it would resurrect the very
+  // user id the erasure just removed.
+  setRequiresLogin(false)
+  setAuthToken(null)
+  resetUserId()
+  tokenServerVerified = false
+  authChanged()
 }
 
 /** Current user + profile, or null when not authenticated / unreachable. */

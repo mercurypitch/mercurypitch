@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createUniqueId, Show } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, Show } from 'solid-js'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './ConfirmDialog.module.css'
 import { Trash2 } from './icons'
@@ -22,6 +22,13 @@ interface ConfirmDialogProps {
   /** Icon on the confirm button. Defaults to a trash can (delete actions).
    *  Pass a different icon for non-delete confirms (e.g. replace/overwrite). */
   confirmIcon?: JSX.Element
+  /**
+   * Require the exact word to be typed before Confirm enables. For the
+   * unrecoverable actions where a reflex click is the real risk — an
+   * ordinary confirm button is one keystroke away from an accident.
+   * Matching ignores case and surrounding whitespace, nothing else.
+   */
+  confirmPhrase?: string
   onConfirm: () => void
   onCancel: () => void
 }
@@ -30,9 +37,26 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   let dialogRef: HTMLDivElement | undefined
   const titleId = createUniqueId()
   const bodyId = createUniqueId()
+  const phraseId = createUniqueId()
+  const [typed, setTyped] = createSignal('')
+
+  // Reopening must not inherit the previous attempt's typed text, or the
+  // second delete would be a single click.
+  createEffect(() => {
+    if (props.open) setTyped('')
+  })
+
+  const phraseSatisfied = (): boolean =>
+    props.confirmPhrase == null ||
+    typed().trim().toLowerCase() === props.confirmPhrase.toLowerCase()
 
   const cancel = (): void => {
     if (props.busy !== true) props.onCancel()
+  }
+
+  const confirm = (): void => {
+    if (props.busy === true || !phraseSatisfied()) return
+    props.onConfirm()
   }
 
   useFocusTrap(() => dialogRef, {
@@ -59,6 +83,26 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
         >
           <h4 id={titleId}>{props.title}</h4>
           <p id={bodyId}>{props.message}</p>
+          <Show when={props.confirmPhrase != null}>
+            <label class={styles.phraseLabel} for={phraseId}>
+              Type <strong>{props.confirmPhrase}</strong> to confirm
+            </label>
+            <input
+              id={phraseId}
+              class={styles.phraseInput}
+              type="text"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck={false}
+              value={typed()}
+              disabled={props.busy}
+              data-testid="confirm-phrase"
+              onInput={(e) => setTyped(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirm()
+              }}
+            />
+          </Show>
           <div class={styles.actions}>
             <button
               type="button"
@@ -73,8 +117,8 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
               type="button"
               class={styles.delete}
               data-testid="confirm-delete"
-              disabled={props.busy}
-              onClick={() => props.onConfirm()}
+              disabled={props.busy === true || !phraseSatisfied()}
+              onClick={confirm}
             >
               {props.confirmIcon ?? <Trash2 />} {props.confirmLabel ?? 'Delete'}
             </button>

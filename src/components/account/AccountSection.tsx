@@ -2,18 +2,20 @@
 // AccountSection — cloud account management (settings)
 // ============================================================
 //
-// Anonymous-first: everyone gets a silent anonymous identity; this
-// section lets them upgrade to email/password or Google so progress,
-// challenges and leaderboard entries follow them across devices.
-// Karaoke/UVR data stays on-device regardless of login state.
+// An identity is created lazily — the first thing worth saving provisions
+// it — and this section lets it be upgraded to email/password or Google so
+// progress, challenges and leaderboard entries follow the user across
+// devices. Karaoke/UVR data stays on-device regardless of login state.
+// It is also where an account (anonymous or not) can be erased outright.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Eye, EyeOff } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
+import { deleteAccount, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, restoreAuth, } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { isPasswordValid } from '@/lib/password-policy'
@@ -37,6 +39,7 @@ export const AccountSection: Component = () => {
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
+  const [confirmDelete, setConfirmDelete] = createSignal(false)
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -88,7 +91,9 @@ export const AccountSection: Component = () => {
   onMount(() => {
     if (!cloudConfigured) return
     void (async () => {
-      await ensureAuth()
+      // Restore only: opening Settings → Account is not an action worth
+      // an account. With no session this shows the signed-out state.
+      await restoreAuth()
       await refreshMe()
     })()
   })
@@ -152,6 +157,33 @@ export const AccountSection: Component = () => {
     setMe(null)
     setMode('none')
     showNotification('Signed out', 'info')
+  }
+
+  async function handleDeleteAccount(): Promise<void> {
+    setBusy(true)
+    setError('')
+    try {
+      await deleteAccount()
+      setMe(null)
+      setMode('none')
+      setConfirmDelete(false)
+      showNotification('Account deleted', 'info')
+      // Reload rather than carry on in a page still holding the deleted
+      // account's state: stores keep its streak/profile in memory, and a
+      // debounced settings push landing after the delete would provision a
+      // fresh account seconds later. Same full reset as "clear storage".
+      // The delay lets the confirmation land before the page goes.
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 900)
+    } catch (err) {
+      // Stay on the dialog: silently "succeeding" would tell someone their
+      // data is gone when it is still there.
+      setError(err instanceof Error ? err.message : 'Could not delete account')
+      setConfirmDelete(false)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
@@ -424,7 +456,45 @@ export const AccountSection: Component = () => {
             </form>
           </Match>
         </Switch>
+
+        {/* Erasure is offered whenever a server identity exists — anonymous
+            accounts hold streaks, scores and settings too, and GDPR doesn't
+            care whether you ever typed an email. */}
+        <Show when={me() != null}>
+          <div class={styles.dangerZone}>
+            <button
+              class={styles.dangerButton}
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy()}
+              data-testid="delete-account"
+            >
+              Delete account
+            </button>
+            <p class={styles.mutedNote}>
+              Permanently erases your profile, scores, streaks, badges and
+              settings from our servers. Unspent credits are lost. Files on this
+              device are not affected.
+            </p>
+          </div>
+        </Show>
       </Show>
+
+      <ConfirmDialog
+        open={confirmDelete()}
+        title="Delete account"
+        message={
+          <>
+            This permanently erases your profile, scores, streaks, badges,
+            settings and any unspent credits from our servers.{' '}
+            <strong>It cannot be undone.</strong>
+          </>
+        }
+        confirmLabel="Delete forever"
+        confirmPhrase="delete"
+        busy={busy()}
+        onConfirm={() => void handleDeleteAccount()}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

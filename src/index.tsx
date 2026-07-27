@@ -22,7 +22,7 @@ initGlobalErrorHandlers()
 // Boot Consent Mode + the cookie banner before anything ad-related loads.
 setupConsent()
 // Store the JWT from a Google sign-in redirect (#gauth=…) before the
-// app boots and ensureAuth() runs.
+// app boots and restoreAuth() runs.
 consumeGoogleRedirect()
 // Likewise pick up the emailed confirm link's outcome (#everified=…).
 consumeEmailVerifyRedirect()
