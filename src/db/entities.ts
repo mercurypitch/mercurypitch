@@ -192,6 +192,67 @@ export interface LeaderboardEntry extends DbEntity {
   accuracy: number
 }
 
+// ── Leagues (weekly promotion ladder) ───────────────────────────
+// Foundation data model for the Duolingo-style weekly league (see
+// docs — league-system-plan). League config lives in `leagues` rows
+// (admin-editable); cohorts/membership/point-events are server-written
+// only. Leagues are a REGISTERED-users-only surface (enforced on the
+// award/cut request path, not in these types).
+
+/** One of the seven ascending league rungs (l1..l7); l7 is the mystery. */
+export interface League extends DbEntity {
+  rank: number // 1..7, ascending
+  name: string // branded rung name; '???' while a mystery
+  /** Trophy art URL ('/leagues/lN.svg' or R2 key); null for the mystery rung. */
+  trophyAsset: string | null
+  /** True for a locked "coming soon" rung (l7) until it is revealed. */
+  isMystery: boolean
+  promoteCount: number // top N of a cohort promote up a rung
+  relegateCount: number // bottom M relegate down a rung (0 = safe rung)
+}
+
+/**
+ * A league instance for one ISO week (one global cohort per league/week at
+ * launch). Immutable once minted, so it carries `createdAt` but no
+ * `updatedAt` — hence it does not extend {@link DbEntity}.
+ */
+export interface LeagueCohort {
+  id: string
+  createdAt: string // ISO 8601
+  leagueId: string
+  weekStart: string // ISO Monday 00:00 UTC
+}
+
+/**
+ * A user's standing in the current ISO week. Created then mutated in place as
+ * points accrue, so it carries `updatedAt` but no `createdAt` — hence it does
+ * not extend {@link DbEntity}. `points` resets to 0 each Monday.
+ */
+export interface LeagueMembership {
+  id: string
+  updatedAt: string // ISO 8601
+  userId: string
+  cohortId: string
+  weekStart: string // ISO Monday 00:00 UTC
+  points: number
+}
+
+/**
+ * The single-row (id='default') tunable point weights. Mirrors the pure
+ * calculator's config in workers/db-worker/src/league-points.ts (which omits
+ * these DbEntity bookkeeping fields).
+ */
+export interface LeaguePointsConfig extends DbEntity {
+  exerciseBase: number
+  challengeBase: number
+  weeklyBase: number
+  scoreDivisor: number
+  dailyVarietyBonus: number
+  goalMetBonus: number
+  streakMilestoneBonus: number
+  milestoneEvery: number
+}
+
 // ── Shared Content ──────────────────────────────────────────────
 
 export interface SharedMelody extends DbEntity {

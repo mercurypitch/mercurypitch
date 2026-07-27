@@ -1,0 +1,104 @@
+-- 0005 — weekly-league foundation: rungs, cohorts, membership, point weights.
+--
+-- Duolingo-style weekly promotion ladder (see the league plan doc). This is
+-- the DATA foundation only: no request path writes these tables yet — the
+-- points award, weekly cut cron, API, and UI land in follow-up changes, so
+-- everything here is inert until they do.
+--
+-- League config is DB-driven (like pricingPlans / leaderboardConfig): rung
+-- names, trophy art, promote/relegate counts, and point weights are all
+-- admin-editable without a deploy.
+--
+-- ELIGIBILITY (enforced later, on the award/cut request path — not here):
+-- leagues are REGISTERED-users only (users.authProvider != 'anonymous').
+
+-- The rung a user sits on between weekly cuts.
+ALTER TABLE userProfiles ADD COLUMN currentLeagueId TEXT NOT NULL DEFAULT 'l1';
+
+-- Seven ascending league rungs (config-driven, admin-editable).
+CREATE TABLE IF NOT EXISTS leagues (
+  id TEXT PRIMARY KEY,                    -- 'l1'..'l7'
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  rank INTEGER NOT NULL UNIQUE,           -- 1..7, ascending
+  name TEXT NOT NULL,                     -- branded rung name ('???' while mystery)
+  trophyAsset TEXT,                       -- '/leagues/lN.*' or R2 URL; NULL = no art yet
+  isMystery INTEGER NOT NULL DEFAULT 0,   -- 1 = locked "coming soon" rung (l7)
+  promoteCount INTEGER NOT NULL,          -- top N of a cohort promote up a rung
+  relegateCount INTEGER NOT NULL          -- bottom M relegate down a rung (0 = safe)
+);
+
+-- One league instance per ISO week (one global cohort per league/week at launch).
+CREATE TABLE IF NOT EXISTS leagueCohorts (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  leagueId TEXT NOT NULL,
+  weekStart TEXT NOT NULL,
+  UNIQUE(leagueId, weekStart)
+);
+
+CREATE INDEX IF NOT EXISTS idx_leagueCohorts_week ON leagueCohorts(weekStart);
+
+-- A user's standing in the current ISO week (points reset each Monday).
+CREATE TABLE IF NOT EXISTS leagueMembership (
+  id TEXT PRIMARY KEY,
+  updatedAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  cohortId TEXT NOT NULL,
+  weekStart TEXT NOT NULL,
+  points INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(userId, weekStart)
+);
+
+CREATE INDEX IF NOT EXISTS idx_leagueMembership_standings
+  ON leagueMembership(cohortId, points DESC);
+
+-- Append-only audit of every points award (server-written).
+CREATE TABLE IF NOT EXISTS leaguePointEvents (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  weekStart TEXT NOT NULL,
+  source TEXT NOT NULL,
+  points INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaguePointEvents_user
+  ON leaguePointEvents(userId, weekStart);
+
+-- Single-row tunable point weights (mirrors src/league-points.ts defaults).
+CREATE TABLE IF NOT EXISTS leaguePointsConfig (
+  id TEXT PRIMARY KEY,                              -- always 'default' (single row)
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  exerciseBase INTEGER NOT NULL DEFAULT 10,
+  challengeBase INTEGER NOT NULL DEFAULT 15,
+  weeklyBase INTEGER NOT NULL DEFAULT 20,
+  scoreDivisor INTEGER NOT NULL DEFAULT 10,
+  dailyVarietyBonus INTEGER NOT NULL DEFAULT 5,
+  goalMetBonus INTEGER NOT NULL DEFAULT 25,
+  streakMilestoneBonus INTEGER NOT NULL DEFAULT 50,
+  milestoneEvery INTEGER NOT NULL DEFAULT 7
+);
+
+-- Seed the 7 rungs (Merc mascot family). l1 is a grace rung (relegateCount 0);
+-- l6 is the top playable rung (promoteCount 0 — l7 is locked); l7 is the
+-- mystery (0/0), shipped with teaser art but flagged isMystery so the client
+-- renders it as locked. l1–l5 use placeholder SVGs pending the final
+-- Higgsfield set; l6/l7 carry the approved "Sung Note" art direction renders.
+INSERT OR IGNORE INTO leagues
+  (id, createdAt, updatedAt, rank, name, trophyAsset, isMystery, promoteCount, relegateCount)
+VALUES
+  ('l1', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 1, 'Mercling',  '/leagues/l1.svg',  0, 15, 0),
+  ('l2', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 2, 'Sparkwing', '/leagues/l2.svg',  0, 10, 10),
+  ('l3', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 3, 'Skyvox',    '/leagues/l3.svg',  0, 10, 10),
+  ('l4', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 4, 'Highnova',  '/leagues/l4.svg',  0, 10, 10),
+  ('l5', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 5, 'Starcrest', '/leagues/l5.svg',  0, 10, 10),
+  ('l6', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 6, 'Mercapex',  '/leagues/l6.webp', 0, 0,  10),
+  ('l7', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 7, '???',       '/leagues/l7.webp', 1, 0,  0);
+
+-- Seed the single tunable points-config row (all weights default).
+INSERT OR IGNORE INTO leaguePointsConfig
+  (id, createdAt, updatedAt)
+VALUES
+  ('default', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z');

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 112" role="img" aria-label="Starcrest league trophy, rank 5">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#58a6ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cup" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a9d6ff"/>
+      <stop offset="55%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#1f6feb"/>
+    </linearGradient>
+  </defs>
+  <circle cx="48" cy="46" r="46" fill="url(#glow)"/>
+  <g opacity="1">
+  <path d="M48,5 L51.5,13 L60,16 L51.5,19 L48,27 L44.5,19 L36,16 L44.5,13 Z" fill="#bfe0ff"/>
+  <circle cx="48" cy="16" r="2.2" fill="#ffffff" fill-opacity="0.9"/>
+  <path transform="translate(79,29) scale(1)" d="M0,-4 L1.4,-1.4 L4,0 L1.4,1.4 L0,4 L-1.4,1.4 L-4,0 L-1.4,-1.4 Z" fill="#bfe0ff" fill-opacity="0.85"/>
+  <path transform="translate(17,29) scale(1)" d="M0,-4 L1.4,-1.4 L4,0 L1.4,1.4 L0,4 L-1.4,1.4 L-4,0 L-1.4,-1.4 Z" fill="#bfe0ff" fill-opacity="0.85"/>
+  <path transform="translate(84,49) scale(1)" d="M0,-4 L1.4,-1.4 L4,0 L1.4,1.4 L0,4 L-1.4,1.4 L-4,0 L-1.4,-1.4 Z" fill="#bfe0ff" fill-opacity="0.85"/>
+  <path transform="translate(12,49) scale(1)" d="M0,-4 L1.4,-1.4 L4,0 L1.4,1.4 L0,4 L-1.4,1.4 L-4,0 L-1.4,-1.4 Z" fill="#bfe0ff" fill-opacity="0.85"/>
+  <path d="M28,31 C13,32 13,50 29,47" fill="none" stroke="url(#cup)" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M68,31 C83,32 83,50 67,47" fill="none" stroke="url(#cup)" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M27,27 L69,27 C69,49 60,63 48,63 C36,63 27,49 27,27 Z" fill="url(#cup)" stroke="#58a6ff" stroke-width="1.5"/>
+  <path d="M30,29 L66,29" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2" stroke-linecap="round"/>
+  <path d="M45,63 L51,63 L52,75 L44,75 Z" fill="url(#cup)"/>
+  <path d="M38,75 L58,75 L58,80 L38,80 Z" fill="url(#cup)"/>
+  <path d="M32,80 L64,80 L67,89 L29,89 Z" fill="url(#cup)" stroke="#58a6ff" stroke-width="1.2"/>
+  <text x="48" y="52" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="24" font-weight="700" fill="#ffffff" fill-opacity="0.95">5</text>
+  </g>
+</svg>

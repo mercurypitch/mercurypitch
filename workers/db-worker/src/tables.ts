@@ -55,4 +55,12 @@ export const TABLES: Record<string, TableDef> = {
   // thresholds it will be judged by; writes require the X-Admin-Key, so
   // sources and thresholds are tunable without a deploy.
   leaderboardConfig: { access: 'admin', boolCols: ['requireOptIn'] },
+  // League rung config + tunable point weights: public reads (client renders
+  // the ladder + trophies), writes require the X-Admin-Key — so names,
+  // promote/relegate counts, trophy art, and point weights are editable
+  // without a deploy. leagueCohorts / leagueMembership / leaguePointEvents are
+  // deliberately NOT here: only the server (points award + weekly cut) writes
+  // them, exactly like leaderboardEntries. See migrations/0005_leagues.sql.
+  leagues: { access: 'admin', boolCols: ['isMystery'] },
+  leaguePointsConfig: { access: 'admin' },
 }
