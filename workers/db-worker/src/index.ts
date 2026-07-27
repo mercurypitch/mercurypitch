@@ -512,6 +512,199 @@ interface AggRow {
   bestScore: number
   accuracy: number
   totalSessions: number
+  /** Profile's best-ever streak — the sticky half of the publication gate. */
+  longestStreak: number
+}
+
+// ── Leaderboard configuration ────────────────────────────────────────
+//
+// Read from the DB so sources and thresholds are tunable against real numbers
+// without a deploy (same reasoning as pricingPlans). The defaults below are
+// what a fresh/absent row means, and they are the conservative choice: fixed
+// tasks only, opt-in required.
+
+interface LeaderboardConfig {
+  eligibleSources: string[]
+  minStreakDays: number
+  minSessions: number
+  requireOptIn: boolean
+}
+
+const DEFAULT_LEADERBOARD_CONFIG: LeaderboardConfig = {
+  eligibleSources: ['challenge', 'weekly', 'exercise'],
+  minStreakDays: 3,
+  minSessions: 1,
+  requireOptIn: true,
+}
+
+async function loadLeaderboardConfig(env: Env): Promise<LeaderboardConfig> {
+  try {
+    const row = await env.DB.prepare(
+      'SELECT eligibleSources, minStreakDays, minSessions, requireOptIn FROM leaderboardConfig WHERE id = ?',
+    )
+      .bind('default')
+      .first<{
+        eligibleSources: string
+        minStreakDays: number
+        minSessions: number
+        requireOptIn: number
+      }>()
+    if (!row) return DEFAULT_LEADERBOARD_CONFIG
+
+    // A malformed or empty source list would silently rank everything or
+    // nothing; fall back rather than let bad config change who is published.
+    let sources: unknown = null
+    try {
+      sources = JSON.parse(row.eligibleSources)
+    } catch {
+      sources = null
+    }
+    const eligibleSources =
+      Array.isArray(sources) && sources.every((s) => typeof s === 'string') && sources.length > 0
+        ? (sources as string[])
+        : DEFAULT_LEADERBOARD_CONFIG.eligibleSources
+
+    return {
+      eligibleSources,
+      minStreakDays: Number(row.minStreakDays) || 0,
+      minSessions: Number(row.minSessions) || 0,
+      requireOptIn: !!row.requireOptIn,
+    }
+  } catch {
+    // Table missing (pre-migration) — the defaults are the intended policy.
+    return DEFAULT_LEADERBOARD_CONFIG
+  }
+}
+
+// ── Friend codes ─────────────────────────────────────────────────────
+//
+// Following someone used to require finding them on the public leaderboard.
+// Once the board is opt-in and threshold-gated that stops being a discovery
+// surface at all, so friends need their own path in: a short code you can
+// read out loud, paste into a chat, or carry in a link.
+//
+// Crockford base32 minus the ambiguous glyphs (I, L, O, U) — no confusing 0/O
+// or 1/I when someone reads a code aloud, and no accidental English words.
+
+const FRIEND_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+const FRIEND_CODE_LENGTH = 8
+
+function generateFriendCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(FRIEND_CODE_LENGTH))
+  let out = ''
+  for (const b of bytes) out += FRIEND_CODE_ALPHABET[b % FRIEND_CODE_ALPHABET.length]
+  return out
+}
+
+/** Accept the pretty form (`K7QM-2X4B`), lower case, and stray spaces. */
+export function normalizeFriendCode(raw: string): string {
+  return raw.replace(/[\s-]/g, '').toUpperCase()
+}
+
+/**
+ * The caller's friend code, minted on first request. Registered accounts
+ * only: an anonymous identity disappears with a cleared browser, and a dead
+ * entry in someone else's friend list is worse than no entry.
+ */
+async function handleFriendCode(request: Request, env: Env): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  const user = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
+    .bind(auth.userId)
+    .first<{ authProvider: string }>()
+  if (!user || user.authProvider === 'anonymous') {
+    return respond(
+      { error: 'Create an account to add friends' },
+      { status: 403 },
+    )
+  }
+
+  const existing = await env.DB.prepare(
+    'SELECT friendCode FROM userProfiles WHERE id = ?',
+  )
+    .bind(auth.userId)
+    .first<{ friendCode: string | null }>()
+  if (existing?.friendCode) return respond({ code: existing.friendCode })
+
+  // Retry on the (vanishingly unlikely) collision rather than trusting one draw.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateFriendCode()
+    try {
+      const res = await env.DB.prepare(
+        'UPDATE userProfiles SET friendCode = ?, updatedAt = ? WHERE id = ? AND friendCode IS NULL',
+      )
+        .bind(code, new Date().toISOString(), auth.userId)
+        .run()
+      if (res.meta.changes > 0) return respond({ code })
+      // Someone else minted ours concurrently — re-read and return that.
+      const now = await env.DB.prepare(
+        'SELECT friendCode FROM userProfiles WHERE id = ?',
+      )
+        .bind(auth.userId)
+        .first<{ friendCode: string | null }>()
+      if (now?.friendCode) return respond({ code: now.friendCode })
+    } catch {
+      // UNIQUE violation — the code was taken, draw another.
+    }
+  }
+  return respond({ error: 'Could not allocate a code, try again' }, { status: 503 })
+}
+
+/**
+ * Redeem someone's code. Sharing a code IS the consent, so this links both
+ * directions immediately — a pending-request queue would be machinery with
+ * nothing to decide. Both parties must be registered.
+ */
+async function handleFriendRedeem(request: Request, env: Env): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { code?: string }
+  try {
+    body = await request.json<{ code?: string }>()
+  } catch {
+    return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const code = normalizeFriendCode(body.code ?? '')
+  if (code.length !== FRIEND_CODE_LENGTH) {
+    return respond({ error: 'That code doesn’t look right' }, { status: 400 })
+  }
+
+  const me = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
+    .bind(auth.userId)
+    .first<{ authProvider: string }>()
+  if (!me || me.authProvider === 'anonymous') {
+    return respond({ error: 'Create an account to add friends' }, { status: 403 })
+  }
+
+  const target = await env.DB.prepare(
+    'SELECT id, displayName FROM userProfiles WHERE friendCode = ?',
+  )
+    .bind(code)
+    .first<{ id: string; displayName: string }>()
+  // Same message for "no such code" and "that's you" would be confusing; but
+  // an unknown code must not reveal whether it merely belongs to nobody yet.
+  if (!target) return respond({ error: 'No one found for that code' }, { status: 404 })
+  if (target.id === auth.userId) {
+    return respond({ error: 'That’s your own code' }, { status: 400 })
+  }
+
+  const now = new Date().toISOString()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
+       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
+         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
+    ).bind(crypto.randomUUID(), now, now, auth.userId, target.id, auth.userId, target.id),
+    env.DB.prepare(
+      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
+       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
+         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
+    ).bind(crypto.randomUUID(), now, now, target.id, auth.userId, target.id, auth.userId),
+  ])
+
+  return respond({ ok: true, userId: target.id, displayName: target.displayName })
 }
 
 async function handleLeaderboard(
@@ -534,6 +727,17 @@ async function handleLeaderboard(
   if (view === 'friends' && !auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
   }
+  // Streak measures showing up, not skill, and it is derived from every
+  // practice day. Among friends that's a fine thing to compare; on a public
+  // board it publishes a behavioural record nobody asked to share.
+  if (category === 'streak' && view !== 'friends') {
+    return respond(
+      { error: 'Streaks rank among friends only' },
+      { status: 400 },
+    )
+  }
+
+  const config = await loadLeaderboardConfig(env)
   const limitRaw = Number(url.searchParams.get('limit'))
   const limit =
     Number.isFinite(limitRaw) && limitRaw > 0
@@ -545,6 +749,13 @@ async function handleLeaderboard(
   // Shared filters on sessionRecords.
   const clauses: string[] = []
   const binds: SqlValue[] = []
+  // Only fixed tasks rank. Averaging scores over self-chosen melodies of
+  // self-chosen difficulty compares nothing — someone repeating one easy
+  // melody would outrank someone working through hard material.
+  clauses.push(
+    `s."source" IN (${config.eligibleSources.map(() => '?').join(', ')})`,
+  )
+  binds.push(...config.eligibleSources)
   if (period === 'weekly') {
     clauses.push('s."endedAt" >= ?')
     binds.push(weekStartIso())
@@ -554,6 +765,13 @@ async function handleLeaderboard(
       '(s."userId" = ? OR s."userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
     )
     binds.push((auth as AuthUser).userId, (auth as AuthUser).userId)
+  } else if (config.requireOptIn) {
+    // The public board carries only people who qualified AND said yes. Your
+    // own row is exempt so you can always see where you'd stand.
+    clauses.push(
+      '(s."userId" = ? OR s."userId" IN (SELECT "id" FROM "userProfiles" WHERE "leaderboardOptIn" = 1))',
+    )
+    binds.push(auth?.userId ?? '')
   }
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
@@ -565,7 +783,8 @@ async function handleLeaderboard(
             AVG(s."score") AS score,
             MAX(s."score") AS bestScore,
             AVG(s."accuracy") AS accuracy,
-            COUNT(*) AS totalSessions
+            COUNT(*) AS totalSessions,
+            COALESCE(p."longestStreak", 0) AS longestStreak
      FROM "sessionRecords" s
      LEFT JOIN "userProfiles" p ON p."id" = s."userId"${where}
      GROUP BY s."userId"`,
@@ -606,6 +825,7 @@ async function handleLeaderboard(
 
   // Load all users' aggregates, then rank + paginate in memory. Fine at the
   // current scale; revisit with a materialized table if the user base grows.
+  const selfId = auth?.userId ?? ''
   const ranked = aggRows
     .map((r) => ({
       userId: r.userId,
@@ -616,7 +836,23 @@ async function handleLeaderboard(
       accuracy: Math.round(r.accuracy),
       totalSessions: r.totalSessions,
       streak: streakFromDays(daysByUser.get(r.userId) ?? new Set<string>()),
+      longestStreak: r.longestStreak,
     }))
+    // Thresholds apply to the public board only: among friends you asked to
+    // see each other, and a brand-new friend showing 0 is the point. Your own
+    // row always survives so you can see your standing before you qualify.
+    //
+    // The streak gate reads longestStreak, not the current one: qualifying is
+    // something you earn once. Gating on the current streak would drop a
+    // strong player off the board the week they take a break, and re-publish
+    // them without asking when they came back.
+    .filter(
+      (row) =>
+        view === 'friends' ||
+        row.userId === selfId ||
+        (row.totalSessions >= config.minSessions &&
+          row.longestStreak >= config.minStreakDays),
+    )
     .sort((a, b) => rankValue(b) - rankValue(a))
 
   const page = ranked
@@ -1295,6 +1531,24 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
     return handleMirrorEvent(request, env)
+  }
+
+  if (url.pathname === '/api/friends/code' && request.method === 'GET') {
+    return handleFriendCode(request, env)
+  }
+
+  if (url.pathname === '/api/friends/redeem' && request.method === 'POST') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    // Codes are 8 chars from a 32-symbol alphabet, so guessing is hopeless —
+    // but a cap stops anyone trying, and stops a redeem loop spamming follows.
+    const rl = await checkRateLimit(env.DB, ip, 'friend-redeem')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleFriendRedeem(request, env)
   }
 
   if (

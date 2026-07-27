@@ -130,12 +130,16 @@ export function endPracticeSession(): SessionResult | null {
 
   // Persist the record, then check for newly-earned badges/achievements
   // (grant check reads the just-saved record, so chain it after the save).
+  // Free practice over a self-chosen melody: kept for personal history, the
+  // badge engine and streaks, but never publicly ranked — the difficulty is
+  // whatever the singer picked, so the scores compare nothing.
   void saveSessionRecord({
     melodyName: session.name,
     score: avgScore,
     accuracy: avgScore,
     notesHit: results.length,
     notesTotal: session.items.length,
+    source: 'practice',
   })
     .then(() => checkAndGrantBadges())
     .catch(() => {})

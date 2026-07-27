@@ -82,6 +82,7 @@ export async function recordWeeklyAttempt(entry: {
       notesHit: 0,
       notesTotal: 0,
       weeklyChallengeId: a.challengeId,
+      source: 'weekly',
     })
     trackEvent('weekly_attempt')
 

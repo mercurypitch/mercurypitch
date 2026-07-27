@@ -77,8 +77,24 @@ CREATE TABLE IF NOT EXISTS userProfiles (
   lastFreezeUsedDate TEXT,
   previousStreak INTEGER NOT NULL DEFAULT 0,
   streakResetDate TEXT,
-  lastRepairDate TEXT
+  lastRepairDate TEXT,
+  -- Public-board consent. Nobody is published without having qualified AND
+  -- said yes (see leaderboardConfig.requireOptIn). Existing DBs:
+  -- scripts/migrate-userProfiles-add-leaderboard-optin.sql.
+  leaderboardOptIn INTEGER NOT NULL DEFAULT 0,
+  leaderboardOptInAt TEXT,
+  -- Shareable friend code (Crockford base32, ambiguous letters removed;
+  -- rendered as XXXX-XXXX). Minted on request for REGISTERED accounts only —
+  -- an anonymous identity can vanish with a cleared browser, which would
+  -- leave dead friends in other people's lists. Regenerating invalidates the
+  -- old code, which is the escape hatch if one leaks.
+  friendCode TEXT
 );
+
+-- Partial unique index: many profiles have no code, but a code that exists
+-- must resolve to exactly one person.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_userProfiles_friendCode
+  ON userProfiles(friendCode) WHERE friendCode IS NOT NULL;
 
 -- ── Sessions & Practice Results (scores only — no audio) ────────────
 CREATE TABLE IF NOT EXISTS sessionRecords (
@@ -101,8 +117,17 @@ CREATE TABLE IF NOT EXISTS sessionRecords (
   -- board can aggregate best-per-user. NULL for ordinary practice. Existing
   -- DBs: scripts/migrate-sessionRecords-add-weeklyChallengeId.sql.
   weeklyChallengeId TEXT,
+  -- What kind of attempt this was: 'practice' (free singing), 'challenge',
+  -- 'weekly', 'exercise'. Drives leaderboard eligibility — ranking is only
+  -- meaningful between people who attempted the SAME task, so free practice
+  -- across arbitrary melodies of arbitrary difficulty is excluded (see
+  -- leaderboardConfig.eligibleSources). Existing DBs:
+  -- scripts/migrate-sessionRecords-add-source.sql.
+  source TEXT NOT NULL DEFAULT 'practice',
   results TEXT NOT NULL -- JSON
 );
+
+CREATE INDEX IF NOT EXISTS idx_sessionRecords_source ON sessionRecords(source);
 
 CREATE INDEX IF NOT EXISTS idx_sessionRecords_userId ON sessionRecords(userId);
 CREATE INDEX IF NOT EXISTS idx_sessionRecords_endedAt ON sessionRecords(endedAt);
@@ -251,6 +276,30 @@ CREATE TABLE IF NOT EXISTS leaderboardEntries (
   totalSessions INTEGER NOT NULL,
   bestScore REAL NOT NULL,
   accuracy REAL NOT NULL
+);
+
+-- ── Leaderboard configuration (live-editable, no deploy) ─────────────
+-- Single row (id = 'default'). Public reads so the client can mirror the
+-- rules it will be judged by; writes require X-Admin-Key, same as pricing.
+-- Kept as config rather than constants because the right thresholds are a
+-- product judgement that will be tuned against real numbers.
+CREATE TABLE IF NOT EXISTS leaderboardConfig (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  -- JSON array of sessionRecords.source values that may rank, e.g.
+  -- ["challenge","weekly","exercise"]. Free 'practice' is excluded: scores
+  -- averaged over self-chosen melodies aren't comparable between people.
+  eligibleSources TEXT NOT NULL DEFAULT '["challenge","weekly","exercise"]',
+  -- Consecutive practice days before a user may be published at all. Keeps
+  -- drive-by visitors off the public board entirely.
+  minStreakDays INTEGER NOT NULL DEFAULT 3,
+  -- Eligible attempts required before ranking (the "provisional rating"
+  -- convention — one lucky run shouldn't top a board).
+  minSessions INTEGER NOT NULL DEFAULT 1,
+  -- When 1, a qualifying user must also have opted in (userProfiles
+  -- .leaderboardOptIn) before appearing.
+  requireOptIn INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_leaderboard_userId ON leaderboardEntries(userId);

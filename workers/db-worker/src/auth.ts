@@ -409,6 +409,9 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // one minute leaves ample room for retries while stopping a loop or multiple
   // tabs from rapidly burning GPU spend. The sustained cap mirrors the
   // 15-song upload queue and bounds any one account to one full batch/hour.
+  // Friend-code redemption: generous for a human typing a code, tight enough
+  // that nobody scripts their way through the code space.
+  'friend-redeem': { max: 20, windowMs: 300_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
 }

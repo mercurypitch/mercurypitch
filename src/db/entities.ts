@@ -54,6 +54,13 @@ export interface PracticeResultRecord {
   noteResult: NoteResultRecord[]
 }
 
+/**
+ * What kind of attempt produced a SessionRecord. Only fixed tasks are
+ * publicly ranked — 'practice' is free singing over a self-chosen melody,
+ * which is not comparable between people (see leaderboardConfig).
+ */
+export type SessionSource = 'practice' | 'challenge' | 'weekly' | 'exercise'
+
 export interface SessionRecord extends DbEntity {
   userId: string
   melodyId?: string
@@ -69,6 +76,8 @@ export interface SessionRecord extends DbEntity {
   rating?: string
   /** Set when this attempt was a weekly "Sing the Legend" challenge take. */
   weeklyChallengeId?: string
+  /** Drives leaderboard eligibility. Older rows predate it — treat as 'practice'. */
+  source?: SessionSource
   results: PracticeResultRecord[]
 }
 

@@ -9,6 +9,13 @@ import { getCurrentStreak } from '@/db/services/streak-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 
+/**
+ * Sources that rank locally — the offline mirror of
+ * leaderboardConfig.eligibleSources. The cloud value is authoritative and
+ * live-editable; this constant only governs local (no-API) mode.
+ */
+const LOCAL_ELIGIBLE_SOURCES = new Set(['challenge', 'weekly', 'exercise'])
+
 /** ISO-week start (Monday 00:00 UTC) — mirrors the worker's weekly cut. */
 function weekStartIso(): string {
   const now = new Date()
@@ -46,10 +53,17 @@ export async function loadLeaderboard(
       .getRepository<SessionRecord>('sessionRecords')
       .findAll({})
     const weekStart = weekStartIso()
+    // Mirror the worker's eligibility rule so local mode ranks the same
+    // things the cloud board does: fixed tasks only, never free practice.
+    // Rows predating the `source` column are practice by definition —
+    // exercises and challenges started tagging themselves at the same time.
+    const eligible = sessions.filter((s) =>
+      LOCAL_ELIGIBLE_SOURCES.has(s.source ?? 'practice'),
+    )
     const rows =
       period === 'weekly'
-        ? sessions.filter((s) => s.endedAt >= weekStart)
-        : sessions
+        ? eligible.filter((s) => s.endedAt >= weekStart)
+        : eligible
 
     // Aggregate per user (avg score/accuracy, max best, session count).
     const byUser = new Map<string, SessionRecord[]>()

@@ -51,4 +51,8 @@ export const TABLES: Record<string, TableDef> = {
   // ledger, entitlements, and billing events are deliberately NOT here: only
   // the server (billing webhook) may write them. See src/billing.ts.
   pricingPlans: { access: 'admin', boolCols: ['active'] },
+  // Leaderboard rules: public reads so the client can show the same
+  // thresholds it will be judged by; writes require the X-Admin-Key, so
+  // sources and thresholds are tunable without a deploy.
+  leaderboardConfig: { access: 'admin', boolCols: ['requireOptIn'] },
 }

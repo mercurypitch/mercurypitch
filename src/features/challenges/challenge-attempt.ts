@@ -148,12 +148,14 @@ export async function recordChallengeAttempt(entry: {
 
     // The attempt counts as a real practice session: it feeds the
     // server-derived leaderboard and the badge engine's session stats.
+    // A challenge is a fixed task, so it is one of the sources that rank.
     await saveSessionRecord({
       melodyName: `Challenge: ${attempt.title}`,
       score,
       accuracy: score,
       notesHit: 0,
       notesTotal: 0,
+      source: 'challenge',
     })
 
     if (outcome.newlyCompleted) {
