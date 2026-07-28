@@ -11,6 +11,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import type { DestinationVisual } from '@/features/home/DestinationGallery'
+import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
@@ -61,6 +63,24 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
               data-room={room.id}
               onClick={() => props.onEnter(room.target, room.id)}
             >
+              {/* The Home gallery's own cover art, revealed behind the
+                  card. On pointer devices it settles in on hover; on
+                  touch it simply sits at a low resting opacity, because
+                  a tap-to-reveal would cost a second tap to actually
+                  enter the room. */}
+              <span class={styles.roomArt} aria-hidden="true">
+                <Show
+                  when={room.visual !== undefined}
+                  fallback={<span class={styles.roomArtFallback} />}
+                >
+                  <DestinationArtwork
+                    visual={room.visual as DestinationVisual}
+                    compact
+                  />
+                </Show>
+              </span>
+              <span class={styles.roomScrim} aria-hidden="true" />
+
               <Show when={isFirst(room)}>
                 <span class={styles.roomFlag}>Your first stop</span>
               </Show>

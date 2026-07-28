@@ -233,8 +233,41 @@ configured. Without this we cannot tell whether any of it worked.
 
 ## Art
 
-Higgsfield, same rules and budget as the Jam stills in PR #359 — brand palette,
-**no people, no text**, webp. Assets land in `public/onboarding/`.
+**Direction (locked after three rounds):** obsidian ground, **hair-fine wavy
+silver filament threads** across the top only, and small sparse clusters of
+glowing teal and violet stars at the far left and right edges. Centre and lower
+two thirds stay empty — that is where every beat's copy sits.
+
+What the rounds taught, in order:
+
+1. *Liquid mercury nebula* filling the frame — rejected, far too much mercury.
+   Naming "nebula" in the prompt is what let it run away; negate it explicitly.
+2. Restrained near-empty skies — correct composition, but boring. Being empty
+   is not the same as being quiet.
+3. A single thick quicksilver **ribbon** — right motif (BRAND.md §5), wrong
+   weight. It read as a chrome band and competed with the headline.
+4. **Thin filaments.** The silver should read as drifting strands of light, not
+   a poured ribbon. This is the line quality to hold.
+
+Reference images live in `~/.dotfiles/personal/mercurypitch/assets/covers/`
+(outside the repo). Feed the chosen one to Higgsfield as an image reference
+rather than describing it — prose does not carry line weight, and the
+reference-driven round was the first to land.
+
+Same rules and budget as the Jam stills in PR #359 — brand palette, **no
+people, no text**, webp. Assets land in `public/onboarding/`.
+
+**Integration notes** (all three found only by looking at it on screen):
+
+- `mix-blend-mode: screen` on the plate. Its blacks then contribute nothing, so
+  the plate can never be darker than the ground and needs no black-point
+  matching at any aspect ratio.
+- Size to **width**, anchor **top** — not `cover`. Cover fills both axes, so a
+  tall viewport scales a 16:9 plate until the artwork swallows the headline.
+- **Bake a fade-to-black into the plate's lower half.** Bottom rows that are not
+  quite black lighten the ground under `screen` and leave a visible horizontal
+  seam where the image ends. Baking it into the asset fixes it at every
+  viewport; a CSS mask would have to guess where the image ends.
 
 | Asset | Spec | Budget |
 |---|---|---|

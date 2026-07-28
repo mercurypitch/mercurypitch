@@ -517,3 +517,23 @@
     transform: none;
   }
 }
+
+/* ── Compact reuse (onboarding Map) ──────────────────────────────
+   The artwork is drawn for a full-width cover. Reused at card scale
+   its captions, metric readouts and mascot become unreadable specks
+   sitting on top of the card's real copy — so the compact variant
+   drops them and keeps only the drawing. */
+
+.artCompact,
+.artCompact > * {
+  width: 100%;
+  height: 100%;
+}
+
+.artCompact .visualNugget,
+.artCompact .karaokeNuggets,
+.artCompact .analysisMetrics,
+.artCompact .intervalText,
+.artCompact .practiceMascot {
+  display: none;
+}

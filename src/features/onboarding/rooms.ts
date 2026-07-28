@@ -10,6 +10,7 @@
 // The verb-led line is the whole point — "See every note as you sing
 // it" tells someone what happens; "Practice Engine" does not.
 
+import type { DestinationVisual } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_PATH, TAB_SINGING, } from '@/features/tabs/constants'
 
@@ -38,6 +39,13 @@ export interface Room {
    * something the app isn't rendering.
    */
   tourTab?: ActiveTab
+  /**
+   * Cover artwork reused from the Home gallery, revealed behind the
+   * card. Absent where no drawing exists yet — those rooms fall back to
+   * a plain spectrum wash rather than borrowing another room's picture,
+   * which would misdescribe where the card goes.
+   */
+  visual?: DestinationVisual
 }
 
 export const ROOMS: readonly Room[] = [
@@ -47,6 +55,7 @@ export const ROOMS: readonly Room[] = [
     line: 'See every note as you sing it, with per-note accuracy.',
     target: { kind: 'tab', tab: TAB_SINGING },
     tourTab: TAB_SINGING,
+    visual: 'practice',
   },
   {
     id: 'exercises',
@@ -54,6 +63,7 @@ export const ROOMS: readonly Room[] = [
     line: 'Fourteen drills for range, agility, intervals and control.',
     target: { kind: 'tab', tab: TAB_EXERCISES },
     tourTab: TAB_EXERCISES,
+    visual: 'exercises',
   },
   {
     id: 'ascent',
@@ -67,6 +77,7 @@ export const ROOMS: readonly Room[] = [
     title: 'Karaoke',
     line: 'Load any song, split the vocal out, and sing it with lyrics and scoring.',
     target: { kind: 'page', href: '/karaoke' },
+    visual: 'karaoke',
   },
   {
     id: 'jam',
@@ -81,6 +92,7 @@ export const ROOMS: readonly Room[] = [
     line: 'Pitch traces, harmonics and consistency, in plain language.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     tourTab: TAB_ANALYSIS,
+    visual: 'analysis',
   },
 ]
 

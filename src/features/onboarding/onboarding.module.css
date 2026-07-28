@@ -78,9 +78,11 @@
   }
 }
 
-/* Behind the Map's grid the plate steps back, like the star field. */
+/* Behind the Map the plate steps well back. That beat is dense — six
+   cards, a side-door strip and a CTA — and the artwork has to stop
+   competing with the thing it is framing. */
 .plateRecede {
-  opacity: 0.45;
+  opacity: 0.28;
 }
 
 /* The quicksilver wash — the meniscus glow the composition centres on. */
@@ -588,14 +590,100 @@
   color: inherit;
   cursor: pointer;
   text-decoration: none;
+  /* Contains the artwork, which is drawn much larger than the card and
+     scales past its edges as it settles in. */
+  overflow: hidden;
+  isolation: isolate;
   transition:
-    border-color 0.25s var(--ob-ease),
-    transform 0.25s var(--ob-ease);
+    border-color 0.4s var(--ob-ease),
+    transform 0.4s var(--ob-ease),
+    box-shadow 0.4s var(--ob-ease);
+}
+
+/* ── The reveal ───────────────────────────────────────────────────
+   The Home gallery's cover art, parked behind the card: pushed back,
+   blurred and dim. Bringing it forward is the whole gesture — it reads
+   as the room opening up rather than a picture fading in. */
+.roomArt {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.16;
+  transform: scale(1.18);
+  filter: blur(7px) saturate(0.8);
+  transition:
+    opacity 0.75s var(--ob-ease),
+    transform 0.75s var(--ob-ease),
+    filter 0.75s var(--ob-ease);
+  pointer-events: none;
+}
+
+.roomArt > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Rooms with no drawing yet get a quiet spectrum wash rather than
+   another room's picture. */
+.roomArtFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(
+      70% 90% at 20% 0%,
+      color-mix(in srgb, var(--ob-blue) 55%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      70% 90% at 90% 100%,
+      color-mix(in srgb, var(--ob-violet) 50%, transparent),
+      transparent 70%
+    );
+}
+
+/* Keeps the copy readable at every stage of the reveal. */
+.roomScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, #0d1117 62%, transparent),
+    color-mix(in srgb, #0d1117 88%, transparent) 70%
+  );
+  opacity: 0;
+  transition: opacity 0.75s var(--ob-ease);
+  pointer-events: none;
+}
+
+/* The card's own content sits above both layers. */
+.roomCard > *:not(.roomArt):not(.roomScrim) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Pointer devices only. On touch the art stays at its resting opacity
+   and a tap enters the room — a tap-to-reveal would make entering cost
+   two taps, and sticky :hover on touch is a known trap (PR #359). */
+@media (hover: hover) {
+  .roomCard:hover .roomArt,
+  .roomCard:focus-visible .roomArt {
+    opacity: 0.62;
+    transform: scale(1);
+    filter: blur(0) saturate(1);
+  }
+
+  .roomCard:hover .roomScrim,
+  .roomCard:focus-visible .roomScrim {
+    opacity: 1;
+  }
 }
 
 .roomCard:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--ob-blue) 46%, var(--ob-rule));
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
 }
 
 .roomCard:focus-visible {
@@ -627,15 +715,17 @@
   );
 }
 
+/* In flow, not absolute. Absolutely positioned it sat on top of the
+   title as soon as the card narrowed — the label is longer than the
+   corner it was pinned into. */
 .roomFlag {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+  align-self: flex-start;
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ob-blue);
+  white-space: nowrap;
 }
 
 .roomTitle {
@@ -741,6 +831,19 @@
   .roomCard:hover,
   .primary:hover {
     transform: none;
+  }
+
+  /* The artwork still resolves on hover — losing it entirely would cost
+     the information, not just the flourish — it simply arrives without
+     the settle. */
+  .roomArt,
+  .roomScrim {
+    transition: none;
+  }
+
+  .roomArt {
+    transform: none;
+    filter: none;
   }
 
   .meterFill {
