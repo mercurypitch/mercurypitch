@@ -7,6 +7,15 @@
 // Mirror's (`computeMirrorResult`) — this beat owns only the script
 // and the staging.
 //
+// Each task opens on its own intro: the looping TaskDemo animation,
+// its audible guide cue, the instruction, and an "I'm ready" gate.
+// Nothing records until the singer says so. That makes the flow
+// longer, and it is the right trade — someone who has never done a
+// vocal glide cannot be rushed into one. The demo is deliberately
+// audible as well as animated: an animation alone does not tell you
+// what your VOICE should do, so TaskDemo pairs the drawing with a
+// synthesized siren or held tone.
+//
 // Every await is followed by an alive() check before the next side
 // effect. Without it, a visitor who backs out mid-take leaves a
 // running script that dispatches into a torn-down session — the same
@@ -14,8 +23,9 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { Mascot } from '@/components/Mascot'
+import { TaskDemo } from '@/features/mirror/TaskDemo'
 import { playReferenceTone } from '@/features/mirror/tone-player'
+import type { DemoKind } from '@/lib/mirror/demo-timeline'
 import type { F0Frame, MatchTake, MirrorResult } from '@/lib/mirror/metrics'
 import { computeMirrorResult, computeRange, pickMatchTargets, } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -29,12 +39,12 @@ const MATCH_TAKE_SEC = 3
 const REFERENCE_SEC = 1.4
 /** Hear the note, then a beat to prepare before singing it back. */
 const MATCH_PREPARE_SEC = 2
-const BRIEF_SEC = 3
 const MATCH_COUNT = 5
 
 type Stage =
-  | { kind: 'brief'; title: string; body: string; seconds: number }
-  | { kind: 'record'; title: string; body: string; seconds: number }
+  | { kind: 'intro'; demo: DemoKind; title: string; body: string }
+  | { kind: 'brief'; title: string; body: string }
+  | { kind: 'record'; title: string; body: string }
   | { kind: 'listen'; title: string; body: string }
   | { kind: 'done' }
 
@@ -47,27 +57,35 @@ export interface BeatVoiceprintProps {
 export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   const [stage, setStage] = createSignal<Stage>({
     kind: 'brief',
-    title: 'Slide from low to high',
-    body: "On an 'ooo', glide as low as you comfortably can up to as high as you comfortably can. Don't strain — we want your easy range.",
-    seconds: BRIEF_SEC,
+    title: 'Getting ready',
+    body: 'Waking the microphone…',
   })
-  const [remaining, setRemaining] = createSignal(BRIEF_SEC)
+  const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
 
   let session: VoiceSession | null = null
   let cancelled = false
   let timer = 0
+  let readyResolve: (() => void) | null = null
 
   const alive = (): boolean => !cancelled
+
+  /** Let go of the "I'm ready" promise so `run()` can unwind and bail. */
+  const releaseGate = (): void => {
+    readyResolve?.()
+    readyResolve = null
+  }
 
   onCleanup(() => {
     cancelled = true
     clearInterval(timer)
+    // Without this an unmount during an intro leaves run() parked on a
+    // promise nobody will ever resolve, holding the session with it.
+    releaseGate()
     session?.close()
     session = null
   })
 
-  /** A visible countdown, so nobody wonders whether it's still going. */
   const countdown = async (seconds: number): Promise<void> => {
     setRemaining(seconds)
     clearInterval(timer)
@@ -78,9 +96,30 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     clearInterval(timer)
   }
 
-  const brief = async (title: string, body: string): Promise<void> => {
-    setStage({ kind: 'brief', title, body, seconds: BRIEF_SEC })
-    await countdown(BRIEF_SEC)
+  /**
+   * Show a task's demo and instruction, and wait. The pacing of the
+   * whole beat rests on this: it never resolves on a timer, only when
+   * the singer says they are ready.
+   */
+  const taskIntro = (
+    demo: DemoKind,
+    title: string,
+    body: string,
+  ): Promise<void> => {
+    if (!alive()) return Promise.resolve()
+    setStage({ kind: 'intro', demo, title, body })
+    return new Promise<void>((resolve) => {
+      readyResolve = resolve
+    })
+  }
+
+  const brief = async (
+    title: string,
+    body: string,
+    seconds = 3,
+  ): Promise<void> => {
+    setStage({ kind: 'brief', title, body })
+    await countdown(seconds)
   }
 
   const record = async (
@@ -88,7 +127,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     body: string,
     seconds: number,
   ): Promise<F0Frame[]> => {
-    setStage({ kind: 'record', title, body, seconds })
+    setStage({ kind: 'record', title, body })
     if (session === null) return []
     setRemaining(seconds)
     clearInterval(timer)
@@ -116,10 +155,13 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
     // ── Task A: glide up, then down. Their union is the range. ──
     setStep(1)
-    await brief(
+    await taskIntro(
+      'glide-up',
       'Slide from low to high',
-      "On an 'ooo', glide as low as you comfortably can up to as high as you comfortably can. Don't strain — we want your easy range.",
+      "Listen to the sweep, then do the same on an 'ooo' — from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
     )
+    if (!alive()) return
+    await brief('Ready…', 'Take a breath.')
     if (!alive()) return
     const glideUp = await record(
       'Glide up',
@@ -129,7 +171,13 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     if (!alive()) return
 
     setStep(2)
-    await brief('Now back down', 'Same thing, high to low.')
+    await taskIntro(
+      'glide-down',
+      'Now the same, downwards',
+      'High to low this time, one smooth slide.',
+    )
+    if (!alive()) return
+    await brief('Ready…', 'Take a breath.', 2)
     if (!alive()) return
     const glideDown = await record(
       'Glide down',
@@ -140,16 +188,15 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
     // ── Task B: hold. ──
     setStep(3)
-    await brief(
-      'Hold one note',
-      "Pick a note in the middle of your range and hold it steady on an 'ahh'.",
+    await taskIntro(
+      'hold',
+      'Hold one note steady',
+      "Pick any note in the middle of your range and hold it on an 'ahh'. This measures control, not volume — quiet and steady beats loud and wobbly.",
     )
     if (!alive()) return
-    const hold = await record(
-      'Hold it',
-      'Steady as you can — this measures your control, not your volume.',
-      HOLD_SEC,
-    )
+    await brief('Ready…', 'Take a breath.', 2)
+    if (!alive()) return
+    const hold = await record('Hold it', 'Steady as you can.', HOLD_SEC)
     if (!alive()) return
 
     // ── Task C: match five. Reference then record, never together. ──
@@ -164,11 +211,18 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     const matches: MatchTake[] = []
 
     if (targets.length > 0) {
-      await brief(
-        'Now match five notes',
-        "You'll hear a note, then sing it back. Listen first — we'll tell you when.",
+      // One gate before the series, not one per note: rounds 2-5 keeping
+      // their rhythm is what makes it feel like call-and-response rather
+      // than five separate exercises.
+      await taskIntro(
+        'match',
+        'Last one — match five notes',
+        "You'll hear a note, then sing it back. Listen first; we'll tell you when it's your turn.",
       )
+      if (!alive()) return
+      await brief('Ready…', 'Here comes the first note.', 2)
     }
+
     for (let i = 0; i < Math.min(MATCH_COUNT, targets.length); i++) {
       if (!alive()) return
       const target = targets[i]
@@ -185,13 +239,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       }
       if (!alive()) return
 
-      setStage({
-        kind: 'brief',
-        title: 'Ready…',
-        body: `Sing ${name} back.`,
-        seconds: MATCH_PREPARE_SEC,
-      })
-      await countdown(MATCH_PREPARE_SEC)
+      await brief('Your turn', `Sing ${name} back.`, MATCH_PREPARE_SEC)
       if (!alive()) return
 
       const frames = await record(
@@ -219,24 +267,44 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   onMount(() => void run())
 
   const current = () => stage()
+  const titled = () => current() as { title: string; body: string }
 
   return (
     <div class={styles.beat} data-beat="voiceprint">
-      <span class={styles.mascot} aria-hidden="true">
-        <Mascot
-          state={current().kind === 'record' ? 'listening' : 'idle'}
-          size={72}
-          title=""
-        />
-      </span>
-
       <p class={styles.eyebrow}>Step {step()} of 4 · mapping your voice</p>
 
       <Show when={current().kind !== 'done'}>
-        <h1 class={styles.headline}>
-          {(current() as { title: string }).title}
-        </h1>
-        <p class={styles.sub}>{(current() as { body: string }).body}</p>
+        <h1 class={styles.headlineSmall}>{titled().title}</h1>
+      </Show>
+
+      {/* Animation plus its audible siren/hold cue. Mounted only during
+          the intro, so every task gets a fresh instance and the cue
+          replays for the task it belongs to. */}
+      <Show when={current().kind === 'intro'}>
+        <div class={styles.demoStage}>
+          <TaskDemo
+            kind={(current() as { demo: DemoKind }).demo}
+            size="stage"
+            label={titled().title}
+            getAudioContext={() => session?.context() ?? null}
+          />
+        </div>
+      </Show>
+
+      <Show when={current().kind !== 'done'}>
+        <p class={styles.sub}>{titled().body}</p>
+      </Show>
+
+      <Show when={current().kind === 'intro'}>
+        <div class={styles.actions}>
+          <button
+            type="button"
+            class={styles.primary}
+            onClick={() => releaseGate()}
+          >
+            I'm ready
+          </button>
+        </div>
       </Show>
 
       <Show when={current().kind === 'record' || current().kind === 'brief'}>

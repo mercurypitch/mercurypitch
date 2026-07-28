@@ -351,6 +351,15 @@ and not the other is exactly the bug this creates. `MirrorApp` also has device
 re-selection and a retry notice that the module deliberately keeps simpler;
 check those against `useDevice()` when migrating.
 
+**Finish the funnel consolidation.** `src/lib/funnel.ts` now owns the anonymous
+client id, the local ring buffer, the keepalive beacon and the Google Ads
+hand-off; the Voice Mirror and First Light are thin vocabularies over it.
+**Karaoke Night and Glass are not yet migrated** — both add a "send this event
+only once per session" guard (`kn.funnel.viewSent.v1`, `glass.funnel.viewSent.v1`,
+plus Karaoke's per-event ad dedup), which is real behaviour rather than config.
+Lifting it into the factory is the right move, but it touches two live Google
+Ads conversion paths, so it wants its own change and its own verification.
+
 **Consolidate `#/guide` and `#/map`.** Two routes that both mean "help me get
 oriented". The Map now offers per-room tours, so `GuideSelection` and the Map
 overlap in purpose — merging them is the remaining step.

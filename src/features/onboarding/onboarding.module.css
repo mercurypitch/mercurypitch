@@ -349,6 +349,36 @@
   gap: 8px;
 }
 
+/* ── Beat 4: demo stage, countdown ───────────────────────────── */
+
+/* Holds the Voice Mirror's TaskDemo canvas. It draws at a fixed size,
+   so the wrapper scales it down rather than letting it overflow a
+   phone. */
+.demoStage {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  justify-content: center;
+}
+
+.demoStage canvas {
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+}
+
+/* Task titles are instructions, not the flow's headline — at display
+   size they shout, and they change every few seconds. */
+.headlineSmall {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
 /* ── Beat 4: countdown ───────────────────────────────────────── */
 
 .countdown {
