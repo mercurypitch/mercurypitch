@@ -23,6 +23,21 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   harmonic richness now come from the real frequency analysis that was already
   running, instead of being estimated from the pitch track alongside it.
 
+### Added
+
+- **See the shape of a take.** Every take now gets a pitch plot: your live
+  contour as you sing, the detected notes of a song you separated in Karaoke,
+  or a practice run drawn note by note and coloured by how close each one
+  landed. Practice notes are laid out by how long you actually spent on each,
+  so a held note is a wide bar.
+- **A real spectrogram for a separated vocal.** Pick a song you've separated
+  and hit "Analyse audio" — it reads the whole vocal in the background and
+  gives you a spectrogram plus breathiness, resonance and harmonics measured
+  across the take, not just the moment.
+- **Depth without clutter on a phone.** The heavier sections start folded on
+  mobile and open on desktop; tap a heading to expand one. Nothing is
+  desktop-only any more — the phone gets every section, just tidier.
+
 ### Fixed
 
 - **Your practice streak was wrong on the Analysis page.** It counted every day

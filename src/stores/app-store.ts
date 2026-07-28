@@ -1305,9 +1305,18 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_ANALYSIS,
   },
   {
+    title: 'Your pitch, plotted',
+    description:
+      'Every take gets a pitch plot — your live contour here, the detected notes of a separated song, or a practice run coloured by how close each note landed. On a phone the deeper sections start folded; tap a heading to open one.',
+    targetSelector: '[data-tour="analysis.trace"]',
+    placement: 'top',
+    requiredTab: TAB_ANALYSIS,
+    reveal: '[data-collapsible="analysis_open_trace"]',
+  },
+  {
     title: 'Progress over time',
     description:
-      'Your streak and score trend across practice sessions. Pick a past session above to see its accuracy, tuning bias and range in full.',
+      'Your streak and score trend across practice sessions. Pick a past session or a separated song above and this page fills in with its accuracy, tuning bias, range — and for a real vocal, a full spectrogram.',
     targetSelector: '[data-tour="analysis.trends"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,

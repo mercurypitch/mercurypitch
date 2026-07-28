@@ -253,6 +253,93 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Collapsible cards ────────────────────────────────────── */
+
+.collapseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* The title must shrink so the chevron always has room — a long note on a
+   narrow screen otherwise pushes the chevron past the card edge. */
+.collapseHeader > .cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.collapseHeader > svg {
+  flex: 0 0 auto;
+}
+
+.collapseHeader:hover .cardTitle {
+  color: var(--accent);
+}
+
+.collapseBody {
+  padding-top: var(--spacing-lg);
+}
+
+/* ── Take trace & spectrogram ─────────────────────────────── */
+
+.traceWrap,
+.spectrogramWrap {
+  display: flex;
+  gap: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+}
+
+/* Note-name / frequency ticks pinned to the top and bottom of the plot. */
+.traceAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.traceChart {
+  flex: 1;
+  min-width: 0;
+  height: 150px;
+  display: block;
+  overflow: visible;
+}
+
+.traceLine {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Drawn at the worker's native grid size and stretched by CSS — crisp
+   interpolation would smear the harmonic lines, so keep it pixelated. */
+.spectrogramCanvas {
+  flex: 1;
+  min-width: 0;
+  height: 220px;
+  display: block;
+  border-radius: var(--radius-sm);
+  image-rendering: pixelated;
+}
+
 /* ── Trends ───────────────────────────────────────────────── */
 
 .trendChart {

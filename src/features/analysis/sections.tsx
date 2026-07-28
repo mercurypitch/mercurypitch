@@ -10,6 +10,7 @@ import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { StreakState } from '@/db/services/streak-service'
 import type { MobileAnalysisSummary } from '@/lib/mobile-analysis-summary'
+import type { BreathinessResult, HarmonicRichnessResult, ResonanceResult, } from '@/lib/vocal-analyzer'
 import type { AccuracyRating, SessionResult } from '@/types'
 import styles from './AnalysisDashboard.module.css'
 import type { PracticeMetrics, TrendPoint } from './metrics'
@@ -125,6 +126,47 @@ export const TuningCard: Component<{ metrics: PracticeMetrics }> = (props) => {
     </section>
   )
 }
+
+// ── Timbre (audio tier) ─────────────────────────────────────
+
+/**
+ * The three spectral readings, shared by live capture and offline takes so
+ * both report the same numbers from the same functions. Extra tiles (live
+ * intensity, vibrato, stability) come in as children and join the grid.
+ */
+export const TimbreCard: Component<{
+  breathiness: BreathinessResult
+  richness: HarmonicRichnessResult
+  resonance: ResonanceResult
+  note: string
+  children?: JSX.Element
+}> = (props) => (
+  <section class={styles.card} data-tour="analysis.timbre">
+    <h3 class={styles.cardTitle}>
+      Voice
+      <span class={styles.cardNote}>{props.note}</span>
+    </h3>
+    <div class={styles.statGrid}>
+      <StatTile
+        label="Breathiness"
+        value={props.breathiness.quality}
+        detail={`HNR ${props.breathiness.hnrDb} dB`}
+        tone={props.breathiness.quality === 'resonant' ? 'good' : undefined}
+      />
+      <StatTile
+        label="Resonance"
+        value={props.resonance.dominantZone}
+        detail={`centroid ${Math.round(props.resonance.spectralCentroid)} Hz`}
+      />
+      <StatTile
+        label="Harmonics"
+        value={props.richness.quality}
+        detail={`${props.richness.richnessScore}/100 · ~${props.richness.harmonicCount} harmonics`}
+      />
+      {props.children}
+    </div>
+  </section>
+)
 
 // ── Detected notes (notes tier) ─────────────────────────────
 

@@ -84,6 +84,37 @@ test.describe('Analysis Dashboard', () => {
     await expect(page.locator('[data-tour="analysis.timbre"]')).toHaveCount(0)
   })
 
+  // ── Progressive depth ───────────────────────────────────────
+
+  test('the pitch section is present before anything is sung', async ({
+    page,
+  }) => {
+    await switchTab(page, 'analysis')
+
+    // A section that only materialises mid-song is one the user never learns
+    // exists, so it renders with its own empty state instead.
+    const trace = page.locator('[data-tour="analysis.trace"]')
+    await expect(trace).toBeVisible({ timeout: 10000 })
+    await expect(trace).toContainText('Pitch')
+  })
+
+  test('dense sections fold and unfold', async ({ page }) => {
+    await switchTab(page, 'analysis')
+
+    const toggle = page.locator('[data-collapsible="analysis_open_trace"]')
+    await expect(toggle).toBeVisible({ timeout: 10000 })
+
+    const before = await toggle.getAttribute('aria-expanded')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute(
+      'aria-expanded',
+      before === 'true' ? 'false' : 'true',
+    )
+
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', before ?? 'true')
+  })
+
   // ── Progress ────────────────────────────────────────────────
 
   test('progress section renders with an honest empty state', async ({
@@ -179,7 +210,14 @@ test.describe('Analysis Dashboard', () => {
     await expect(overview).toContainText('C4–G4')
     await expect(page.locator('[data-tour="analysis.tuning"]')).toBeVisible()
 
+    // The trace is drawn from recorded per-note durations, and says so rather
+    // than implying a wall clock the data never had.
+    const trace = page.locator('[data-tour="analysis.trace"]')
+    await expect(trace).toBeVisible()
+    await expect(trace).toContainText('note sequence')
+
     // Not supported — a practice record holds no waveform.
     await expect(page.locator('[data-tour="analysis.timbre"]')).toHaveCount(0)
+    await expect(page.locator('[data-tour="analysis.spectrum"]')).toHaveCount(0)
   })
 })
