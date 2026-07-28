@@ -109,6 +109,7 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
+import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
@@ -123,7 +124,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -136,7 +137,7 @@ import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import { openSettingsSection, setSingingSheetView, settingsSection, singingSheetView, triggerTargetFocus, } from '@/stores/ui-store'
-import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
+import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
@@ -2107,28 +2108,57 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative
-  // foreground time AND at least one real action (playback run, exercise or
-  // practice session finished) — so they have something to say.
-  const SURVEY_MIN_USAGE_MS = 12 * 60_000
-  const surveyUsageGateMet = () => {
+  // foreground time AND enough FINISHED runs — so they have something to say.
+  // Thresholds and the rules live in lib/survey-timing.ts so they're testable.
+  const surveyForced = (): boolean => {
     try {
-      // The dev force flag skips the usage gate along with the host gate.
-      if (localStorage.getItem('pitchperfect_survey_force') === '1') return true
+      return localStorage.getItem('pitchperfect_survey_force') === '1'
     } catch {
-      /* localStorage unavailable — fall through to the usage signals */
+      return false
     }
-    return usageMs() >= SURVEY_MIN_USAGE_MS && activityCount() > 0
   }
+  const surveyUsageGateMet = () =>
+    surveyUsageEarned({
+      usageMs: usageMs(),
+      completions: completionCount(),
+      forced: surveyForced(),
+    })
+
+  // Never interrupt someone mid-run. Singing at a modal you can't read is how
+  // a survey gets dismissed by reflex — and it's once per browser, so that
+  // answer is final. Every signal here is reactive, so the effect re-runs and
+  // the prompt lands the moment they stop rather than being lost.
+  const practiceInProgress = () =>
+    isPlaying() || micActive() || sessionMode() || countIn() > 0
+
+  // Result, summary and celebration modals own the screen after a run — which
+  // is exactly when the usage gate tends to open. Queue behind them too.
+  const resultSurfaceOpen = () =>
+    (showPracticeResultPopup() && practiceResult() !== null) ||
+    (showPracticeResultPopup() && sessionSummary() !== null) ||
+    celebrationData() !== null ||
+    showSessionBrowser() ||
+    showShortcutHelp() ||
+    showAdminWeekly()
 
   // Show optional survey after welcome screen is dismissed (once per browser,
   // tracked via the persisted surveySeen flag — same as the welcome screen).
   createEffect(() => {
     if (showWelcome() || surveyChecked()) return
-    // Defer while a tour surface is open — the effect re-runs when it closes,
-    // so the survey is postponed until after the tour, not lost.
-    if (tourSurfaceOpen()) return
+    // Defer while a tour surface is open, a run is in progress, or a result
+    // modal owns the screen — the effect re-runs when each clears, so the
+    // survey is postponed, never lost.
+    if (
+      !surveyMomentOk({
+        practicing: practiceInProgress(),
+        tourOpen: tourSurfaceOpen(),
+        modalOpen: resultSurfaceOpen(),
+      })
+    ) {
+      return
+    }
     // Defer until real usage: both signals are reactive, so the effect
-    // re-runs as time accrues / activity lands and the survey shows then.
+    // re-runs as time accrues / completions land and the survey shows then.
     if (!surveyUsageGateMet()) return
     setSurveyChecked(true)
     if (!surveyEnabledHere() || surveySeen()) return
@@ -2146,8 +2176,16 @@ const AppShell: Component<AppProps> = (props) => {
         // Re-check at show time: effects run synchronously on signal writes,
         // so "Take a Tour" dismisses the welcome (running this effect) a tick
         // before the guide dialog opens — and the async check above widens
-        // the window further. Re-arm instead of showing over a tour.
-        if (tourSurfaceOpen()) {
+        // the window further. The same gap lets someone start a run between
+        // the gate passing and the modal mounting, so re-test the whole
+        // moment, not just tours. Re-arm instead of showing over anything.
+        if (
+          !surveyMomentOk({
+            practicing: practiceInProgress(),
+            tourOpen: tourSurfaceOpen(),
+            modalOpen: resultSurfaceOpen(),
+          })
+        ) {
           setSurveyChecked(false)
           return
         }
@@ -3282,11 +3320,19 @@ const AppShell: Component<AppProps> = (props) => {
 
         <Show when={showSurvey()}>
           <UserSurveyModal
+            mode="onboarding"
             onClose={() => {
               dismissSurvey()
               setShowSurvey(false)
             }}
           />
+        </Show>
+
+        {/* User-opened feedback. Separate from the one-shot prompt above: it
+            must not mark the survey "seen", or opening it once would cancel
+            an onboarding prompt the user never actually saw. */}
+        <Show when={feedbackSurveyOpen()}>
+          <UserSurveyModal mode="feedback" onClose={closeFeedbackSurvey} />
         </Show>
       </div>
     </PlaybackProvider>

@@ -4,8 +4,13 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as Defaults from '@/lib/defaults'
 
-vi.mock('@/lib/defaults', () => ({
+// Spread the real module rather than replacing it: only API_BASE_URL needs
+// faking, and a bare object breaks the moment the component pulls in anything
+// else from defaults transitively (IS_TEST, via ui-store → test-utils).
+vi.mock('@/lib/defaults', async (importOriginal) => ({
+  ...(await importOriginal<typeof Defaults>()),
   API_BASE_URL: 'http://api.test',
 }))
 

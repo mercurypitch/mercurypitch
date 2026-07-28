@@ -21,6 +21,7 @@ import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
 import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
+import { openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { PasswordRequirements } from './PasswordRequirements'
 
@@ -455,6 +456,22 @@ export const AccountSection: Component = () => {
           Questions, ideas, or something broken? We read everything.
         </p>
         <div class={styles.helloLinks}>
+          {/* First, because it is the only one that costs nothing to use:
+              anonymous, no account, no email address revealed. */}
+          <button
+            class={styles.helloLink}
+            type="button"
+            onClick={openFeedbackSurvey}
+            data-testid="say-hello-feedback"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 5H7v-2h6v2zm4-6H7V6h10v2z"
+              />
+            </svg>
+            Share feedback
+          </button>
           <a
             class={styles.helloLink}
             href={`mailto:${CONTACT_EMAIL}`}

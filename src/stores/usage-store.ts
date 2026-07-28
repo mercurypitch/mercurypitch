@@ -25,9 +25,26 @@ export const [activityCount, setActivityCount] = createPersistedSignal<number>(
   0,
 )
 
+/**
+ * Count of FINISHED exercises and practice sessions across sessions.
+ *
+ * Deliberately separate from activityCount, which also counts "pressed play".
+ * Pressing play is not evidence of an opinion; finishing a run is — so the
+ * survey gates on this instead (see lib/survey-timing.ts).
+ */
+export const [completionCount, setCompletionCount] =
+  createPersistedSignal<number>('pitchperfect_completion_count', 0)
+
 /** Record one real activity (a playback start, a finished session/exercise). */
 export const recordActivity = (): void => {
   setActivityCount((c) => c + 1)
+}
+
+/** Record one FINISHED exercise or practice session. Also counts as activity,
+ *  so callers do not have to remember both. */
+export const recordCompletion = (): void => {
+  setActivityCount((c) => c + 1)
+  setCompletionCount((c) => c + 1)
 }
 
 const TICK_MS = 15_000

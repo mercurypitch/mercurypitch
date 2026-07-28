@@ -5,7 +5,7 @@ import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { trackEvent } from '@/lib/analytics'
 import { createPersistedSignal } from '@/lib/storage'
-import { recordActivity } from './usage-store'
+import { recordCompletion } from './usage-store'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 
@@ -55,7 +55,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   void addScoredMs(runMs !== undefined && runMs > 0 ? runMs : NOMINAL_RUN_MS)
 
   trackEvent('session_complete')
-  recordActivity()
+  recordCompletion()
 }
 
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
