@@ -244,3 +244,28 @@ from `postmortems/mic-state-desync.md` was already in
 
 `docs/` is now `agent/` (6), `branding/` (2.1 MB), `claude/` (4), `plans/`
 (18, all with status), `specs/` (27, all `.ears.md`).
+
+## 9. Post-conversion regression review
+
+Requirement IDs dropped from 380 to 234 across the 11 rewritten specs. Most of
+that is legitimate merging — the tabular originals frequently split one
+behaviour across several rows (`SED-TIMELINE-01` and `-05` both said "ordered
+by startBeat"; `MET-VIS-01..05` were one requirement about the beat indicator).
+
+Checked by mapping every original ID to its replacement. One real loss found
+and restored:
+
+- **`session-editor`** had an entire *Timeline Navigation* section with no
+  counterpart — wheel scrolling, piano-roll scroll sync, and drag scrolling.
+  Restored as `REQ-SED-027..029`, plus the header chrome requirements as
+  `REQ-SED-030..031`.
+
+Section-level coverage on the other ten is complete. Two apparent gaps were
+false positives: "Favorites" versus "Favourites", and "Mode-Independent
+Behavior" renamed to "Shared settings".
+
+One over-correction also fixed: `melody-library` requirements had been
+generalised from `localStorage` to "storage" on the assumption that melodies
+had moved to Dexie. They have not — `src/stores/melody-store.ts` still uses
+`localStorage` under `STORAGE_KEY_LIBRARY`. The specific mechanism is back in
+`REQ-MEL-007` and `REQ-MEL-019`.

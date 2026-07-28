@@ -118,6 +118,30 @@ shift subsequent items earlier.
 **WHEN** the user loads a session, the editor **shall** replace the current
 timeline with the stored one.
 
+## Timeline navigation — `REQ-SED-027..029`
+
+### REQ-SED-027 — Wheel scrolls horizontally
+**WHEN** the user scrolls the wheel over the timeline, the timeline **shall**
+scroll horizontally.
+
+### REQ-SED-028 — Piano roll stays in sync
+**WHILE** the timeline is scrolled, the piano roll **shall** scroll with it so
+the two views show the same time range.
+
+### REQ-SED-029 — Drag scrolling
+**WHERE** drag-scrolling is available, it **shall** track the pointer without
+perceptible lag.
+
+## Editor chrome — `REQ-SED-030..031`
+
+### REQ-SED-030 — Header identity
+The editor header **shall** display its title and a chevron indicating the
+collapse state.
+
+### REQ-SED-031 — Collapse is animated
+**WHEN** the editor collapses or expands, the transition **shall** be animated
+rather than instant.
+
 ## Item types — `REQ-SED-025..026`
 
 ### REQ-SED-025 — Four types

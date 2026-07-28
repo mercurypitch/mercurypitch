@@ -49,7 +49,8 @@ into the editor.
 
 ### REQ-MEL-007 — Save updates in place
 **WHEN** the user saves an edited melody, the app **shall** update the existing
-record rather than create a second one.
+record in `localStorage` (key `STORAGE_KEY_LIBRARY`) rather than create a
+second one.
 
 ### REQ-MEL-008 — Cancel reverts
 **WHEN** the user cancels an edit, the app **shall** restore the last saved
@@ -95,8 +96,8 @@ an ellipsis.
 **shall** say so before proceeding.
 
 ### REQ-MEL-019 — Irreversible
-**WHEN** deletion is confirmed, the melody **shall** be removed from storage
-and the list. There is no undo.
+**WHEN** deletion is confirmed, the melody **shall** be removed from both
+`localStorage` and the rendered list. There is no undo.
 
 ## Favourites — `REQ-MEL-020..022`
 
