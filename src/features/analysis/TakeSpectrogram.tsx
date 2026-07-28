@@ -7,7 +7,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onMount } from 'solid-js'
+import { createEffect } from 'solid-js'
 import type { ColourMapId } from '@/lib/colour-maps'
 import { getColourMap } from '@/lib/colour-maps'
 import type { TakeAnalysisResult } from '@/lib/take-analysis-client'
@@ -54,7 +54,8 @@ export const TakeSpectrogram: Component<TakeSpectrogramProps> = (props) => {
     ctx.putImageData(imageData, 0, 0)
   }
 
-  onMount(draw)
+  // createEffect runs after mount, by which point the ref is set — an extra
+  // onMount(draw) would just paint the same image twice.
   createEffect(draw)
 
   return (

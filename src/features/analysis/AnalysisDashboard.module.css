@@ -329,15 +329,17 @@
   vector-effect: non-scaling-stroke;
 }
 
-/* Drawn at the worker's native grid size and stretched by CSS — crisp
-   interpolation would smear the harmonic lines, so keep it pixelated. */
+/* Drawn at the worker's native grid size (up to 1200x256) and scaled by CSS.
+   That is almost always a DOWNscale — the card is ~860px wide at most — so
+   the browser's filtered scaling is what we want. `image-rendering: pixelated`
+   would drop roughly a quarter of the columns via nearest-neighbour and alias
+   the harmonic lines into moiré. */
 .spectrogramCanvas {
   flex: 1;
   min-width: 0;
   height: 220px;
   display: block;
   border-radius: var(--radius-sm);
-  image-rendering: pixelated;
 }
 
 /* ── Trends ───────────────────────────────────────────────── */

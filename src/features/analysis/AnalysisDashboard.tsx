@@ -42,8 +42,15 @@ export const AnalysisDashboard: Component = () => {
   const [selectedId, setSelectedId] = createSignal<string>(LIVE_TAKE_ID)
   const capture = useLiveCapture()
 
+  // listTakes() rebuilds every take object on each run, and it re-runs
+  // whenever the UVR store ticks (including separation progress) or a session
+  // is saved. Comparing by id keeps the selected take referentially stable
+  // across that churn, so the resource below doesn't refetch from IndexedDB on
+  // every progress update.
   const selected = createMemo<AnalysisTake | null>(
     () => takes().find((t) => t.id === selectedId()) ?? null,
+    null,
+    { equals: (a, b) => a?.id === b?.id },
   )
 
   // Selecting a different take must not leave the mic running.
