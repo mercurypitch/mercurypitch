@@ -685,6 +685,25 @@ const FUNNEL_EVENTS = new Set([
   'glass_card_generated',
   'glass_card_shared',
   'glass_cta_app_click',
+  // First Light onboarding funnel (src/features/onboarding/funnel.ts).
+  // Registered ahead of the client rollout so later phases need no worker
+  // redeploy — same reason as the reserved names below.
+  'onboarding_sky',
+  'onboarding_first_light',
+  'onboarding_fork',
+  'onboarding_voiceprint',
+  'onboarding_twin',
+  'onboarding_map',
+  'onboarding_keep',
+  'onboarding_track_short',
+  'onboarding_track_full',
+  'onboarding_mic_granted',
+  'onboarding_mic_denied',
+  'onboarding_map_room',
+  'onboarding_skipped',
+  'onboarding_done',
+  'onboarding_account_created',
+  'onboarding_account_dismissed',
   // Reserved for the weekly-challenge/email releases, so those client
   // rollouts need no worker redeploy.
   'weekly_join',

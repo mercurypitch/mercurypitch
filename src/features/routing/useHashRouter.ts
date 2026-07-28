@@ -35,6 +35,8 @@ export interface UseHashRouterDeps {
   settingsSection: Accessor<SettingsSection>
   /** Open the owner-only weekly-challenge authoring overlay. */
   openAdminWeekly: () => void
+  /** Replay the First Light Map (#/map). */
+  openOnboardingMap: () => void
   /** Whether that overlay is open (keeps the tab→hash sync off it). */
   showAdminWeekly: Accessor<boolean>
 
@@ -91,6 +93,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.openWalkthroughChapter(route.chapterId)
     } else if (route.type === 'guide') {
       deps.setShowGuideSelection(true)
+    } else if (route.type === 'onboarding-map') {
+      deps.dismissWelcome()
+      deps.openOnboardingMap()
     } else if (route.type === 'jam-room') {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_JAM)

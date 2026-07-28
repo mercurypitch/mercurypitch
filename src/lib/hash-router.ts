@@ -24,6 +24,11 @@ export type HashRoute =
   | { type: 'learn-chapter'; chapterId: string }
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
+  /** Replay the First Light Map — "what can I do here", on demand.
+   *  Distinct from `guide`, which opens the spotlight-tour picker. Phase 3
+   *  folds the tour catalog into the Map, at which point the two should be
+   *  consolidated onto one route. */
+  | { type: 'onboarding-map' }
   /** Return from Stripe checkout (success_url / cancel_url in the
    *  db-worker's billing.ts) — lands on Settings → Credits. */
   | { type: 'billing-return'; outcome: 'success' | 'cancel' }
@@ -188,6 +193,11 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'guide' }
   }
 
+  // Match: /map (replay the First Light Map)
+  if (hash === '/map') {
+    return { type: 'onboarding-map' }
+  }
+
   // Stripe checkout return URLs (see workers/db-worker/src/billing.ts):
   // success lands on Settings → Account with a confirmation; the cancel URL
   // is /pricing, which is where the pricing panel lives too.
@@ -253,6 +263,8 @@ export function buildHash(route: HashRoute): string {
       return route.sectionId === 'all'
         ? '/guide/all'
         : `/guide/${route.sectionId}`
+    case 'onboarding-map':
+      return '/map'
     case 'billing-return':
       return route.outcome === 'success' ? '/billing/success' : '/pricing'
     case 'settings-section':

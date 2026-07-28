@@ -1,4 +1,7 @@
-/* Extracted from: Welcome Screen (GH #131) */
+/* Welcome door (GH #131)
+   Trimmed when the screen became a two-choice door — the mic/voice/Mirror
+   pills, section heads, info dots and tier-select wrappers all moved into
+   the First Light flow, so their styles went with them. */
 
 .welcomeOverlay {
   position: fixed;
@@ -47,7 +50,6 @@
   }
 }
 
-/* Close button */
 .welcomeClose {
   position: absolute;
   top: 12px;
@@ -69,19 +71,20 @@
   color: var(--text-primary);
 }
 
-/* Hero section */
+/* Hero */
 .welcomeHero {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
 
-.welcomeIcon {
-  color: var(--accent);
-  margin-bottom: 12px;
-  filter: drop-shadow(0 0 16px rgba(88, 166, 255, 0.4));
+.welcomeDoorMascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
 }
 
 .welcomeTitle {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 6px;
@@ -103,217 +106,15 @@
   margin: 0;
 }
 
-/* Quick actions row (hero): a subtle grouped toolbar holding the mic, voice
-   detection, and Voice Mirror pills. */
-.welcomeQuickActions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 8px 10px;
-  background: rgba(22, 27, 34, 0.4);
-  border: 1px solid rgba(48, 54, 61, 0.5);
-  border-radius: 12px;
-}
-
-.welcomeQuickBtnPrimary,
-.welcomeQuickBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-/* Voice Mirror pill — the deep-space fill + brand-gradient border marks it as a
-   doorway to the mirror, kept pill-sized so it sits inline with the toolbar. */
-.welcomeMirrorPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--text-primary);
-  border: 1.5px solid transparent;
-  background:
-    linear-gradient(135deg, rgba(11, 16, 38, 0.95), rgba(24, 18, 58, 0.95))
-      padding-box,
-    linear-gradient(135deg, var(--accent), var(--purple)) border-box;
-  transition: all 0.2s ease;
-}
-
-.welcomeMirrorPillIcon {
-  flex-shrink: 0;
-  color: #ffe9a8;
-  filter: drop-shadow(0 0 5px rgba(255, 210, 77, 0.5));
-}
-
-/* Each pill + its corner info dot share a relative wrapper. */
-.welcomePillWrap {
-  position: relative;
-  display: inline-flex;
-}
-
-/* Tap-target "i" for touch devices (which have no hover tooltips). Hidden on
-   pointer devices — they get the pill's hover tooltip instead. */
-.welcomePillInfo {
-  position: absolute;
-  top: -5px;
-  right: -4px;
-  z-index: 1;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  cursor: help;
-}
-
-@media (hover: none) {
-  .welcomePillInfo {
-    display: inline-flex;
-  }
-}
-
-.welcomeQuickBtnPrimary {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.85),
-    rgba(100, 130, 255, 0.8)
-  );
-  color: #fff;
-  border: 1px solid rgba(120, 190, 255, 0.35);
-  box-shadow: 0 2px 10px rgba(88, 166, 255, 0.15);
-}
-
-.welcomeQuickBtn {
-  background: rgba(22, 27, 34, 0.5);
-  border: 1.5px solid rgba(48, 54, 61, 0.7);
-  color: var(--text-secondary);
-}
-
-@media (hover: hover) {
-  .welcomeQuickBtnPrimary:hover {
-    background: linear-gradient(
-      135deg,
-      rgba(100, 180, 255, 0.95),
-      rgba(115, 145, 255, 0.9)
-    );
-    border-color: rgba(140, 200, 255, 0.5);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
-  }
-
-  .welcomeQuickBtn:hover {
-    background: rgba(30, 38, 48, 0.7);
-    border-color: rgba(88, 166, 255, 0.4);
-    color: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  .welcomeMirrorPill:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(130, 80, 223, 0.3);
-  }
-}
-
-.welcomeQuickBtnPrimary:active,
-.welcomeQuickBtn:active,
-.welcomeMirrorPill:active {
-  transform: translateY(0);
-}
-
-/* Numbered section headers — identical spacing and left alignment on both */
-.welcomeSectionHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.welcomeSectionTitle {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin: 0;
-  text-align: left;
-}
-
-.welcomeInfoDot {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  cursor: help;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.welcomeInfoDot:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.welcomeMicSuccess {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--green);
-  font-size: 0.78rem;
-  font-weight: 500;
-  padding: 6px 12px;
-  background: rgba(34, 197, 94, 0.1);
-  border-radius: 6px;
-}
-
-.welcomeMicError {
-  color: var(--red);
-  font-size: 0.75rem;
-  padding: 6px 10px;
-  margin: 10px 0 0;
-  background: rgba(248, 81, 73, 0.1);
-  border-radius: 6px;
-}
-
-/* Actions */
+/* Actions — two clear choices, stacked so neither has to be abbreviated. */
 .welcomeActions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
 }
 
-/* Small Merc tucked beside Start Singing; watches the cursor and nudges. */
-.welcomeCtaMascot {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .welcomeCta {
-  flex: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -354,12 +155,11 @@
 }
 
 .welcomeTourBtn {
-  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 16px;
+  padding: 11px 16px;
   border-radius: 10px;
   background: rgba(22, 27, 34, 0.5);
   border: 1.5px solid rgba(48, 54, 61, 0.7);
@@ -385,69 +185,50 @@
   transform: translateY(0);
 }
 
-/* Tier selection styles moved to TierSelector.css (global)
-   so they resolve for both WelcomeScreen and SettingsPanel. */
+/* Consent — the canonical Terms/Privacy live on the landing site; we link
+   out rather than duplicate them in the app. */
+.welcomeConsent {
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+}
 
-/* Responsive: narrow viewports */
+.welcomeConsent a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.welcomeConsent a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .welcomeCard {
-    padding: 20px 16px 18px;
+    padding: 22px 18px 20px;
     border-radius: 10px;
   }
 
   .welcomeTitle {
     font-size: 1.25rem;
   }
+}
 
-  .welcomeSubtitle {
-    font-size: 0.8rem;
-  }
-
-  .welcomeHero {
-    margin-bottom: 16px;
-  }
-
-  .welcomeQuickActions {
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .welcomeQuickBtnPrimary,
-  .welcomeQuickBtn {
-    font-size: 0.74rem;
-    padding: 7px 13px;
-  }
-
-  /* Tour is compact now, so keep Merc + both buttons on one row. */
-  .welcomeActions {
-    gap: 8px;
+@media (prefers-reduced-motion: reduce) {
+  .welcomeOverlay,
+  .welcomeCard {
+    animation: none;
   }
 
   .welcomeCta,
-  .welcomeTourBtn {
-    font-size: 0.82rem;
-    padding: 10px 14px;
-  }
-}
-
-@media (max-width: 360px) {
-  .welcomeCard {
-    padding: 16px 12px 14px;
+  .welcomeTourBtn,
+  .welcomeClose {
+    transition: none;
   }
 
-  .welcomeTitle {
-    font-size: 1.1rem;
+  .welcomeCta:hover,
+  .welcomeTourBtn:hover {
+    transform: none;
   }
-}
-
-.welcomeTierSelect {
-  margin-top: 20px;
-  padding: 10px 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 27, 34, 0.6),
-    rgba(13, 17, 23, 0.5)
-  );
-  border-radius: 12px;
-  border: 1px solid rgba(48, 54, 61, 0.6);
 }

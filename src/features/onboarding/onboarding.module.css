@@ -1,0 +1,520 @@
+/* ============================================================
+   First Light — the shared branded frame
+   ============================================================
+
+   Every beat wears the same structure: a thin progress hairline and
+   an escape at the top, a radially symmetric stage in the middle, and
+   one primary action in the bottom third. Rotating a beat 180° should
+   still balance (BRAND.md — branded symmetry).
+
+   The flow carries its OWN tokens instead of inheriting the app's
+   nine theme presets. It is a full-screen cinematic moment on the
+   brand's home ground, and the star field only reads against
+   obsidian; a light-theme replay would otherwise wash it out. The app
+   returns to the visitor's chosen theme the moment the flow closes.
+   ============================================================ */
+
+.overlay {
+  --ob-ground: #0d1117;
+  --ob-ink: #e6edf3;
+  --ob-ink-2: #a8b3bf;
+  --ob-ink-3: #6e7681;
+  --ob-rule: #30363d;
+  --ob-card: rgba(28, 33, 40, 0.72);
+  --ob-blue: #58a6ff;
+  --ob-teal: #2dd4bf;
+  --ob-violet: #bc8cff;
+  --star-dim: rgba(230, 237, 243, 0.18);
+  --ob-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: var(--ob-ground);
+  color: var(--ob-ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The quicksilver wash — the meniscus glow the composition centres on. */
+.overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    68% 52% at 50% 46%,
+    rgba(88, 166, 255, 0.1),
+    transparent 68%
+  );
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Rail: progress + escape ─────────────────────────────────── */
+
+.rail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px 0;
+  flex: 0 0 auto;
+}
+
+.progress {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ob-rule);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  transition: width 0.5s var(--ob-ease);
+}
+
+.skip {
+  background: none;
+  border: 0;
+  color: var(--ob-ink-3);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: color 0.2s var(--ob-ease);
+}
+
+.skip:hover {
+  color: var(--ob-ink-2);
+}
+
+.skip:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+  color: var(--ob-ink);
+}
+
+/* ── Stage: the symmetric middle ─────────────────────────────── */
+
+.frame {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 24px 22px 40px;
+  text-align: center;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 620px;
+  animation: beatIn 0.55s var(--ob-ease) both;
+}
+
+/* The Map carries a grid, so it gets more room than the narrow beats. */
+.beatWide {
+  max-width: 1000px;
+}
+
+@keyframes beatIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+.headline {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.headline .lit {
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+  max-width: 42ch;
+  text-wrap: balance;
+}
+
+.mascot {
+  display: block;
+  filter: drop-shadow(0 8px 26px rgba(88, 166, 255, 0.22));
+}
+
+/* ── Actions ─────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 30px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #06090f;
+  cursor: pointer;
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 60%,
+    var(--ob-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  transition:
+    transform 0.25s var(--ob-ease),
+    box-shadow 0.25s var(--ob-ease);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+}
+
+.primary:focus-visible {
+  outline: 2px solid var(--ob-ink);
+  outline-offset: 3px;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ob-ink-2);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ob-ease),
+    color 0.2s var(--ob-ease);
+}
+
+.secondary:hover {
+  border-color: var(--ob-ink-3);
+  color: var(--ob-ink);
+}
+
+.secondary:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* ── Fork ────────────────────────────────────────────────────── */
+
+.forkOptions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+@media (min-width: 620px) {
+  .forkOptions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.forkCard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--ob-rule);
+  background: var(--ob-card);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.25s var(--ob-ease),
+    transform 0.25s var(--ob-ease);
+}
+
+.forkCard:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ob-blue) 50%, var(--ob-rule));
+}
+
+.forkCard:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.forkLead {
+  border-color: color-mix(in srgb, var(--ob-violet) 44%, var(--ob-rule));
+}
+
+.forkTitle {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.forkTime {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+.forkBody {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+/* ── Map ─────────────────────────────────────────────────────── */
+
+/* auto-fit, so a 4-, 6- or 8-room set lays out without reflowing —
+   PR #359's two extra cards become a data change and nothing else. */
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.roomCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 18px;
+  border-radius: 13px;
+  border: 1px solid var(--ob-rule);
+  background: var(--ob-card);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.25s var(--ob-ease),
+    transform 0.25s var(--ob-ease);
+}
+
+.roomCard:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ob-blue) 46%, var(--ob-rule));
+}
+
+.roomCard:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.roomFirst {
+  border-color: color-mix(in srgb, var(--ob-blue) 54%, var(--ob-rule));
+  background:
+    linear-gradient(180deg, rgba(88, 166, 255, 0.08), transparent 62%),
+    var(--ob-card);
+}
+
+.roomPlate {
+  width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ob-ink-3);
+}
+
+.roomFirst .roomPlate {
+  width: 56px;
+  background: linear-gradient(
+    90deg,
+    var(--ob-blue),
+    var(--ob-teal),
+    var(--ob-violet)
+  );
+}
+
+.roomFlag {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ob-blue);
+}
+
+.roomTitle {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.roomLine {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+.roomReason {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ob-blue);
+}
+
+.sideDoors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sideDoor {
+  border: 1px solid var(--ob-rule);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  color: var(--ob-ink-2);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.2s var(--ob-ease),
+    color 0.2s var(--ob-ease);
+}
+
+.sideDoor:hover {
+  border-color: var(--ob-ink-3);
+  color: var(--ob-ink);
+}
+
+.sideDoor:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.sideLabel {
+  margin: 14px 0 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+/* ── Motion ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .beat {
+    animation: none;
+  }
+
+  .progressFill,
+  .primary,
+  .secondary,
+  .forkCard,
+  .roomCard,
+  .sideDoor,
+  .skip {
+    transition: none;
+  }
+
+  .forkCard:hover,
+  .roomCard:hover,
+  .primary:hover {
+    transform: none;
+  }
+}
+
+/* ── Phone ───────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .frame {
+    justify-content: flex-start;
+    padding-top: 40px;
+    gap: 20px;
+  }
+
+  .actions {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .actions .primary,
+  .actions .secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mapGrid {
+    grid-template-columns: 1fr;
+  }
+}
