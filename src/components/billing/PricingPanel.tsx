@@ -7,6 +7,7 @@
 
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
+import { DonatePanel } from '@/components/billing/DonatePanel'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
@@ -17,8 +18,6 @@ import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PricingPanel.module.css'
-
-const KOFI_URL = 'https://ko-fi.com/chaosmatters'
 
 // Distinct, subtle per-card accent hues, cycled by card position. Drive the
 // gradient tint, colored outline and animated sheen; kept theme-adaptive via
@@ -267,30 +266,9 @@ export const PricingPanel: Component = () => {
         )}
       </Show>
 
-      <div class={styles.supportRow}>
-        <a
-          class={styles.supportBtn}
-          href={KOFI_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="pricing-support"
-          aria-label="Support development on Ko-fi"
-        >
-          <svg
-            class={styles.supportHeart}
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            aria-hidden="true"
-          >
-            <path
-              fill="currentColor"
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-            />
-          </svg>
-          <span>Support development</span>
-        </a>
-      </div>
+      {/* Donations live below the packs: this is where someone who does not
+          want to buy credits still has a way to back the project. */}
+      <DonatePanel />
 
       {/* Purchases touch the refund policy — link to the canonical Terms. */}
       <p style="margin: 14px auto 0; max-width: 46ch; text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted);">

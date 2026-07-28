@@ -17,6 +17,7 @@ import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
+import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
@@ -1641,7 +1642,7 @@ export const SettingsPanel: Component = () => {
                   Website
                 </a>
                 <a
-                  href="https://github.com/mercurypitch/mercurypitch"
+                  href={GITHUB_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   class={styles.aboutLink}

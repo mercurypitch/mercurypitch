@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
 
 const row = (over: Partial<PricingRow>): PricingRow => ({
   id: 'x',
@@ -63,6 +63,123 @@ describe('mapPricingPlans', () => {
 
   it('defaults currency to eur when empty', () => {
     expect(mapPricingPlans([]).currency).toBe('eur')
+  })
+
+  it('buckets donations separately from tiers and packs', () => {
+    const res = mapPricingPlans([
+      row({ id: 'd1', kind: 'donation', sortOrder: 1 }),
+      row({ id: 'p1', kind: 'pack', sortOrder: 0 }),
+      row({ id: 't1', kind: 'tier', sortOrder: 2 }),
+    ])
+    expect(res.donations.map((d) => d.id)).toEqual(['d1'])
+    expect(res.packs.map((p) => p.id)).toEqual(['p1'])
+    expect(res.tiers.map((t) => t.id)).toEqual(['t1'])
+  })
+
+  // The whole point of the "Other amount" row: Stripe holds the amount, so
+  // requiring one here would leave it permanently showing "Soon".
+  it('a custom-amount row is purchasable with a NULL amount', () => {
+    const res = mapPricingPlans([
+      row({
+        kind: 'donation',
+        amount: null,
+        customAmount: 1,
+        stripePriceId: 'price_custom',
+      }),
+    ])
+    expect(res.donations[0].amount).toBeNull()
+    expect(res.donations[0].customAmount).toBe(true)
+    expect(res.donations[0].purchasable).toBe(true)
+  })
+
+  it('a custom-amount row still needs a Stripe price', () => {
+    const res = mapPricingPlans([
+      row({ kind: 'donation', customAmount: 1, stripePriceId: null }),
+    ])
+    expect(res.donations[0].purchasable).toBe(false)
+  })
+
+  it('parses perks, and degrades malformed JSON to no bullets', () => {
+    const res = mapPricingPlans([
+      row({ id: 'ok', kind: 'donation', perks: '["Badge","Costumes"]' }),
+      row({ id: 'bad', kind: 'donation', perks: '{not json' }),
+      row({ id: 'mixed', kind: 'donation', perks: '["Badge",42,null]' }),
+      row({ id: 'none', kind: 'donation', perks: null }),
+    ])
+    const byId = (id: string) => res.donations.find((d) => d.id === id)
+    expect(byId('ok')?.perks).toEqual(['Badge', 'Costumes'])
+    expect(byId('bad')?.perks).toEqual([])
+    expect(byId('mixed')?.perks).toEqual(['Badge'])
+    expect(byId('none')?.perks).toEqual([])
+  })
+})
+
+describe('donationDays', () => {
+  it('gives a fixed tier exactly its configured days', () => {
+    expect(donationDays({ entitlementDays: 90, customAmount: 0 }, 1000)).toBe(
+      90,
+    )
+    // …regardless of what was actually paid.
+    expect(donationDays({ entitlementDays: 90, customAmount: 0 }, 99999)).toBe(
+      90,
+    )
+  })
+
+  it('scales a custom amount by EUR 5 per 30 days', () => {
+    const plan = { entitlementDays: 30, customAmount: 1 }
+    expect(donationDays(plan, 500)).toBe(30)
+    expect(donationDays(plan, 1500)).toBe(90)
+    expect(donationDays(plan, 1700)).toBe(90) // partial block rounds down
+  })
+
+  it('floors a small custom donation at the row default', () => {
+    expect(donationDays({ entitlementDays: 30, customAmount: 1 }, 200)).toBe(30)
+  })
+
+  it('caps a very large custom donation at a year', () => {
+    expect(
+      donationDays({ entitlementDays: 30, customAmount: 1 }, 500_000),
+    ).toBe(365)
+  })
+
+  it('survives a missing amount_total', () => {
+    expect(donationDays({ entitlementDays: 30, customAmount: 1 }, null)).toBe(
+      30,
+    )
+    expect(donationDays({ entitlementDays: null, customAmount: 0 }, 500)).toBe(
+      0,
+    )
+  })
+})
+
+describe('extendSupporterExpiry', () => {
+  const now = '2026-07-28T00:00:00.000Z'
+
+  it('starts from now when there is no existing grant', () => {
+    expect(extendSupporterExpiry(null, now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
+  })
+
+  // Donating again mid-term must ADD time, not reset the clock to 30 days out.
+  it('stacks on top of a live grant', () => {
+    const live = '2026-09-01T00:00:00.000Z'
+    expect(extendSupporterExpiry(live, now, 30)).toBe(
+      '2026-10-01T00:00:00.000Z',
+    )
+  })
+
+  it('restarts from now when the previous grant already lapsed', () => {
+    const lapsed = '2026-01-01T00:00:00.000Z'
+    expect(extendSupporterExpiry(lapsed, now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
+  })
+
+  it('treats an unparseable stored expiry as absent', () => {
+    expect(extendSupporterExpiry('not-a-date', now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
   })
 })
 

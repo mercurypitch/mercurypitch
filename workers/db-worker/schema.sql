@@ -365,12 +365,12 @@ CREATE INDEX IF NOT EXISTS idx_mirrorEvents_event ON mirrorEvents(event, created
 -- Pricing is DB-driven so prices/tiers change without a deploy and no price
 -- lives in the repo. `amount` is in minor units (e.g. cents); NULL renders
 -- as "Soon" on the client and disables purchase. Seed rows (null amounts)
--- live in seed-pricing.sql.
+-- live in seed-pricing.sql and seed-donations.sql.
 CREATE TABLE IF NOT EXISTS pricingPlans (
   id TEXT PRIMARY KEY,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL,
-  kind TEXT NOT NULL,              -- 'tier' | 'pack'
+  kind TEXT NOT NULL,              -- 'tier' | 'pack' | 'donation'
   label TEXT NOT NULL,
   description TEXT,
   unit TEXT,                       -- e.g. 'song' (tiers)
@@ -380,7 +380,11 @@ CREATE TABLE IF NOT EXISTS pricingPlans (
   stripePriceId TEXT,              -- wired in Stripe later
   badge TEXT,                      -- e.g. 'Default', 'Beta 2x'
   sortOrder INTEGER NOT NULL DEFAULT 0,
-  active BOOLEAN NOT NULL DEFAULT 1
+  active BOOLEAN NOT NULL DEFAULT 1,
+  -- Donations only (see scripts/migrate-pricingPlans-add-donations.sql):
+  entitlementDays INTEGER,         -- days of `supporter` entitlement granted
+  customAmount INTEGER NOT NULL DEFAULT 0, -- 1 = Stripe custom_unit_amount price
+  perks TEXT                       -- JSON array of strings (card bullet list)
 );
 
 CREATE INDEX IF NOT EXISTS idx_pricingPlans_kind ON pricingPlans(kind);

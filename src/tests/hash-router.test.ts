@@ -248,10 +248,22 @@ describe('parseHash', () => {
     expect(parseHash('#/billing/success')).toEqual({
       type: 'billing-return',
       outcome: 'success',
+      kind: 'credits',
     })
     expect(parseHash('#/pricing')).toEqual({
       type: 'billing-return',
       outcome: 'cancel',
+      kind: 'credits',
+    })
+  })
+
+  // Donations return to their own hash: the app must confirm a donation
+  // without polling for credits that are never coming.
+  it('parses the donation thank-you return', () => {
+    expect(parseHash('#/donate/thanks')).toEqual({
+      type: 'billing-return',
+      outcome: 'success',
+      kind: 'donation',
     })
   })
 

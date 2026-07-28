@@ -25,12 +25,20 @@ export interface PricingPlan {
   credits: number | null
   badge: string | null
   purchasable: boolean
+  /** Donations: the donor names the amount on Stripe's hosted page. */
+  customAmount?: boolean
+  /** Donations: days of `supporter` entitlement granted. */
+  entitlementDays?: number | null
+  /** Donations: perk bullet list. */
+  perks?: string[]
 }
 
 export interface Pricing {
   currency: string
   tiers: PricingPlan[]
   packs: PricingPlan[]
+  /** Supporter donation tiers. Absent on an older db-worker. */
+  donations?: PricingPlan[]
   /** Per-song credit cost by server model (registry names: roformer, mdx,
    *  karaoke, ensemble) — tier base cost × the model's multiplier. Absent
    *  on an older db-worker. */
@@ -76,6 +84,22 @@ export function withModelCredits(pricing: Pricing): Pricing {
     uvrModelCredits[model] = gpuBase * mult
   }
   return { ...pricing, uvrModelCredits }
+}
+
+/** The live `supporter` grant, or null when absent or lapsed.
+ *
+ *  A row with `expiresAt` in the past is a donation that ran out — the worker
+ *  leaves it in place as history, so the expiry check belongs here. A null
+ *  `expiresAt` means "no expiry" (a manual grant). */
+export function supporterEntitlement(
+  me: BillingMe | null,
+  now: number = Date.now(),
+): BillingMe['entitlements'][number] | null {
+  const grant = me?.entitlements.find((e) => e.feature === 'supporter')
+  if (grant == null) return null
+  if (grant.expiresAt == null || grant.expiresAt === '') return grant
+  const expires = Date.parse(grant.expiresAt)
+  return Number.isFinite(expires) && expires <= now ? null : grant
 }
 
 /** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */
@@ -204,6 +228,17 @@ export function formatPrice(amount: number | null, currency: string): string {
   } catch {
     return `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`
   }
+}
+
+/** How long a donation's perks last, in the roundest words that fit.
+ *  Months once it divides evenly, so "90 days" reads as "3 months". */
+export function formatSupportDuration(days: number | null): string {
+  if (days == null || days <= 0) return ''
+  if (days % 30 === 0) {
+    const months = days / 30
+    return `${months} month${months === 1 ? '' : 's'} of perks`
+  }
+  return `${days} day${days === 1 ? '' : 's'} of perks`
 }
 
 /** Cost label for a separation tier. Tiers are priced in CREDITS per song,
