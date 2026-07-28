@@ -17,7 +17,6 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
-import { LOCAL_CAP } from '@/db/services/voiceprint-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import styles from '../onboarding.module.css'
 
@@ -53,11 +52,9 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => (
 
     <ul class={styles.keepList}>
       <li>Your twin and your numbers, on every device you sing on</li>
+      <li>Make as many voiceprints as you like, and never lose one</li>
       <li>
-        Every voiceprint you make, not just the last {LOCAL_CAP} on this browser
-      </li>
-      <li>
-        A timeline of how your voice changes — <em>+3 semitones since March</em>
+        Watch your voice change over time — <em>+3 semitones since March</em>
       </li>
     </ul>
 

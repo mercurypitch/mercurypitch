@@ -184,6 +184,10 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       aria-modal="true"
       aria-label="Welcome to MercuryPitch"
     >
+      <div
+        class={`${styles.plate} ${currentBeat() === 'map' ? styles.plateRecede : ''}`}
+        aria-hidden="true"
+      />
       <StarField recede={currentBeat() === 'map'} />
 
       <div class={styles.rail}>

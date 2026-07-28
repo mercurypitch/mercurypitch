@@ -140,7 +140,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
-import { flowOpen, openBeat, startOnboarding } from '@/stores/onboarding-store'
+import { flowOpen, isFirstRun, openBeat, startOnboarding, } from '@/stores/onboarding-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -2216,7 +2216,12 @@ const AppShell: Component<AppProps> = (props) => {
           Skip to main content
         </a>
         {/* Welcome Screen (shown on first visit) */}
-        <Show when={showWelcome() && !flowOpen()}>
+        {/* The door is gated on the onboarding flag too, not just its own.
+            Without that, finishing or skipping the flow left `showWelcome`
+            true and the door came straight back — over the Map, and over
+            whichever room the visitor had just chosen. Either flag being
+            spent retires it for good. */}
+        <Show when={showWelcome() && !flowOpen() && isFirstRun()}>
           <WelcomeScreen onStart={startFirstLight} />
         </Show>
 

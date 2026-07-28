@@ -24,7 +24,10 @@
   --ob-blue: #58a6ff;
   --ob-teal: #2dd4bf;
   --ob-violet: #bc8cff;
-  --star-dim: rgba(230, 237, 243, 0.18);
+  /* Dimmer than it would be on its own: the plate already supplies
+     ambient stars, and two overlapping fields read as noise. The
+     canvas is here for the ignition, not the ambience. */
+  --star-dim: rgba(230, 237, 243, 0.1);
   --ob-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   position: fixed;
@@ -35,6 +38,49 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Contains the plate's blend mode, so it can never reach through to
+     whatever the app is painting behind this overlay. */
+  isolation: isolate;
+}
+
+/* ── The sky plate ───────────────────────────────────────────────
+   Generated backdrop: a quicksilver ribbon across the top, star
+   clusters at the edges, empty in the middle where the copy sits.
+
+   `screen` is doing real work here, not decoration. The plate's dark
+   areas are not the same black as --ob-ground, so painting it
+   normally would leave a visible rectangle edge wherever `cover`
+   didn't reach. Under screen, black contributes nothing and only the
+   ribbon and stars composite through — the plate can never be darker
+   than the ground, at any aspect ratio, with no black-point matching.
+
+   Missing files degrade to the bare ground plus the canvas field. */
+.plate {
+  position: absolute;
+  inset: 0;
+  /* Sized to WIDTH and anchored top — deliberately not `cover`. Cover has
+     to fill both axes, so on a tall or square viewport it scales a 16:9
+     plate enormously and the ribbon swallows the headline. At `100% auto`
+     the ribbon stays proportionate to the viewport width at every shape,
+     and the area below the image simply isn't painted — which under
+     `screen` is exactly the obsidian ground, seamlessly. */
+  background: url('/onboarding/sky-wide.webp') top center / 100% auto no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* A genuine portrait recomposition, not a crop — the ribbon sits in
+   the top fifth and the stars run down the sides. */
+@media (max-aspect-ratio: 1/1) {
+  .plate {
+    background-image: url('/onboarding/sky-tall.webp');
+  }
+}
+
+/* Behind the Map's grid the plate steps back, like the star field. */
+.plateRecede {
+  opacity: 0.45;
 }
 
 /* The quicksilver wash — the meniscus glow the composition centres on. */
@@ -345,10 +391,12 @@
 
 /* ── Beat 5: twin ────────────────────────────────────────────── */
 
+/* The caricature carries real drawn detail — at the old size it read as a
+   generic blob. It is the payoff of the whole flow, so it gets the room. */
 .twinArt {
   display: block;
-  width: clamp(120px, 26vw, 168px);
-  filter: drop-shadow(0 10px 30px rgba(188, 140, 255, 0.24));
+  width: clamp(200px, 34vw, 320px);
+  filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
 }
 
 .twinArt svg {
@@ -391,11 +439,12 @@
 
 /* ── Beat 7: keep ────────────────────────────────────────────── */
 
-/* Smaller than beat 5's: the twin is the reason here, not the subject. */
+/* Smaller than beat 5's: the twin is the reason here, not the subject —
+   but still large enough to recognise who it is. */
 .twinArtSmall {
   display: block;
-  width: clamp(84px, 16vw, 108px);
-  filter: drop-shadow(0 8px 22px rgba(188, 140, 255, 0.2));
+  width: clamp(130px, 22vw, 180px);
+  filter: drop-shadow(0 10px 28px rgba(188, 140, 255, 0.22));
 }
 
 .twinArtSmall svg {

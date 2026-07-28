@@ -18,7 +18,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
-import { listVoiceprints, LOCAL_CAP } from '@/db/services/voiceprint-service'
+import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -159,13 +159,13 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             when={props.signedIn}
             fallback={
               <>
-                These live on this device only, and the last {LOCAL_CAP} are
-                kept. Create an account above and they follow you everywhere,
-                with no limit.
+                These are saved on this device. Create an account above to make
+                as many as you like, keep them all, and have them follow you to
+                any device you sing on.
               </>
             }
           >
-            Saved to your account — on every device, with no limit.
+            Kept on your account — every one, on every device you sing on.
           </Show>
         </p>
       </Show>
