@@ -10,15 +10,25 @@
 //
 // See docs/plans/onboarding-first-light.md.
 
-/** The seven beats, in the order they are walked. */
+/**
+ * The seven beats, in the order they are walked.
+ *
+ * `keep` sits BEFORE `map`, which the plan originally had the other way
+ * round. The Map's entire job is to send someone into a room, so an ask
+ * placed after it either never fires (they clicked a room and left) or
+ * interrupts them on their way out — and interrupting is the wall this
+ * flow exists to avoid. Asking while the twin portrait is still on
+ * screen is both the stronger moment and the politer one, and it leaves
+ * the Map as the last thing they see either way.
+ */
 export const BEAT_ORDER = [
   'sky',
   'first-light',
   'fork',
   'voiceprint',
   'twin',
-  'map',
   'keep',
+  'map',
 ] as const
 
 export type Beat = (typeof BEAT_ORDER)[number]

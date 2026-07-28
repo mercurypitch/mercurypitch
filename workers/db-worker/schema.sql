@@ -343,6 +343,36 @@ CREATE TABLE IF NOT EXISTS userSurveyResponses (
 
 CREATE INDEX IF NOT EXISTS idx_userSurveyResponses_userId ON userSurveyResponses(userId);
 
+-- ── Voiceprints ──────────────────────────────────────────────────────
+-- A singer's measured voice over time: range, pitch accuracy and
+-- steadiness, plus the legend their range overlaps with. This is what an
+-- account keeps — anonymous visitors get the same numbers in
+-- localStorage, capped and lost with the browser.
+--
+-- Derived numbers ONLY. No audio, and no pitch frames: the trace is a
+-- rendering detail that belongs to the take that produced it, and
+-- storing it here would turn a small row into an unbounded one.
+--
+-- `takenAt` is when the singer actually sang, which may predate
+-- `createdAt` — a take made anonymously is uploaded when they sign in,
+-- and the growth timeline must plot it at the moment it happened.
+CREATE TABLE IF NOT EXISTS voiceprints (
+  id TEXT PRIMARY KEY,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  userId TEXT NOT NULL,
+  summary TEXT NOT NULL, -- JSON: MirrorSummary
+  -- The legend whose range overlaps, e.g. 'Freddie Mercury'. NULL when the
+  -- range task produced nothing to match against.
+  twin TEXT,
+  -- 'onboarding' | 'mirror'
+  source TEXT NOT NULL,
+  takenAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_voiceprints_userId ON voiceprints(userId);
+CREATE INDEX IF NOT EXISTS idx_voiceprints_takenAt ON voiceprints(takenAt);
+
 -- ── Voice Mirror funnel ──────────────────────────────────────────────
 -- Anonymous funnel events from /mirror (spec §11). clientId is a random
 -- localStorage id, never an account; metricsJson is only stored for

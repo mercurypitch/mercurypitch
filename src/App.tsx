@@ -74,6 +74,8 @@ import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
+import { authVersion } from '@/db/services/user-service'
+import { syncLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -1594,6 +1596,16 @@ const AppShell: Component<AppProps> = (props) => {
   // Product funnel: app_open, deduped to one per browser session inside
   // the analytics module.
   onMount(() => trackEvent('app_open'))
+
+  // Rescue anonymous voiceprints on sign-in. Someone who made one during
+  // onboarding and then created the account we told them would keep it
+  // must not find it missing — which is what would happen, since the
+  // local copy is all they had. Re-runs on every auth transition; it is
+  // idempotent (deduped by takenAt) and a no-op with nothing to upload.
+  createEffect(() => {
+    authVersion()
+    void syncLocalVoiceprints()
+  })
 
   // Restore the imported song behind the current melody on reload. Melodies
   // persist (melody store), but singingSong is a fresh signal each load, so

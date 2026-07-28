@@ -1,7 +1,7 @@
 # First Light — onboarding
 
-Status: **in progress** — Phases 1 and 2 shipped 2026-07-28. Phases 3–4 not
-started; no generated art yet (the flow runs on the canvas star field).
+Status: **in progress** — Phases 1–3 shipped 2026-07-28 (PR #366). Phase 4 (art)
+not started; the flow runs on the canvas star field and needs no plate to work.
 
 The first-run experience: a branded, two-track onboarding that replaces the
 setup-first welcome modal. Design artifact (beats, Map, art direction):
@@ -281,6 +281,25 @@ fallbacks, motion pass, reduced-motion pass, mobile pass, then the tour walker
 - Lighthouse on the first-run route: the added assets must not push LCP past
   2.5s on a throttled 4G profile.
 
+## Changed during build
+
+**`keep` moved before `map`.** The plan had the account ask last, after the
+Map. But the Map's whole job is to send someone into a room, so an ask placed
+after it either never fires (they clicked a room and left) or interrupts them
+on the way out — and interrupting is the wall this flow exists to avoid. Asking
+while the twin portrait is still on screen is both the stronger moment and the
+politer one, and it leaves the Map as the last thing they see either way.
+
+**The voiceprint is saved before the account is mentioned.** Beat 7's offer is
+only honest if declining it costs nothing in that second, so the take is
+already on the device by the time the ask renders. It also means backing out
+mid-flow no longer loses the take.
+
+**The account ask is a renderable beat, not a conditional inside one.** When
+the nudge is not due (declined within the last 7 days, or an account already
+exists) the beat is withheld from the traversal's `available` set — so the
+progress bar shortens to match rather than promising a step that never arrives.
+
 ## Follow-ups this work created
 
 **Migrate `MirrorApp` onto `src/lib/voice-session.ts`.** Opening a mic for
@@ -300,8 +319,17 @@ re-selection and a retry notice that the module deliberately keeps simpler;
 check those against `useDevice()` when migrating.
 
 **Consolidate `#/guide` and `#/map`.** Two routes that both mean "help me get
-oriented". Phase 3 folds `PAGE_TOUR_CATALOG` into the Map, which is the moment
-to merge them.
+oriented". The Map now offers per-room tours, so `GuideSelection` and the Map
+overlap in purpose — merging them is the remaining step.
+
+**Inline registration at beat 7.** "Create a free account" currently closes the
+flow and deep-links to Settings → Account. A hand-off at the moment of peak
+intent converts worse than an inline form would, but duplicating a credential
+form is not something to do casually — it needs its own review.
+
+**Deploy prerequisite:** the `voiceprints` table is created by `schema.sql`
+(`CREATE TABLE IF NOT EXISTS`), so it lands on the next db-worker deploy with no
+migration — same as `weeklyChallenges`. Nothing to run by hand.
 
 ## Settled
 

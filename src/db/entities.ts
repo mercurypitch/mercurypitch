@@ -72,6 +72,35 @@ export interface SessionRecord extends DbEntity {
   results: PracticeResultRecord[]
 }
 
+// ── Voiceprints ─────────────────────────────────────────────────
+
+/** Where a voiceprint was measured. */
+export type VoiceprintSource = 'onboarding' | 'mirror'
+
+/**
+ * A singer's measured voice at one moment: range, accuracy, steadiness,
+ * and the legend their range overlaps with.
+ *
+ * Derived numbers only — no audio and no pitch frames. `takenAt` is when
+ * they actually sang, which may predate `createdAt` for a take made
+ * anonymously and uploaded on sign-in.
+ */
+export interface Voiceprint extends DbEntity {
+  userId: string
+  /** JSON-encoded MirrorSummary (src/lib/mirror/metrics.ts). */
+  summary: {
+    lowMidi: number | null
+    highMidi: number | null
+    semitones: number | null
+    accuracy: number | null
+    steadiness: number | null
+  }
+  /** e.g. 'Freddie Mercury'; absent when no range was measured. */
+  twin?: string
+  source: VoiceprintSource
+  takenAt: string
+}
+
 // ── Challenges ──────────────────────────────────────────────────
 
 export type ChallengeCategory =

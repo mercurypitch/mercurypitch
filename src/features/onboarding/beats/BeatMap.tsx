@@ -11,7 +11,9 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { hasPageTour } from '@/stores/app-store'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
 import type { Room, RoomTarget, SideDoor } from '../rooms'
@@ -23,6 +25,8 @@ export interface BeatMapProps {
   /** Replays say "Done"; the first run says "Start singing". */
   replay?: boolean
   onEnter: (target: RoomTarget, roomId: string) => void
+  /** Open a room AND start its spotlight tour. */
+  onTour: (target: RoomTarget, tab: ActiveTab) => void
   onDone: () => void
 }
 
@@ -73,6 +77,32 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 fallback={<span class={styles.roomLine}>{room.line}</span>}
               >
                 <span class={styles.roomReason}>{stop().reason}</span>
+              </Show>
+
+              {/* A tour is offered only where one exists and can actually
+                  spotlight something. Nested inside the card's button, so
+                  it stops the click that would otherwise just open the
+                  room without the tour. */}
+              <Show
+                when={room.tourTab !== undefined && hasPageTour(room.tourTab)}
+              >
+                <span
+                  class={styles.roomTour}
+                  role="button"
+                  tabindex="0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.onTour(room.target, room.tourTab as ActiveTab)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return
+                    e.preventDefault()
+                    e.stopPropagation()
+                    props.onTour(room.target, room.tourTab as ActiveTab)
+                  }}
+                >
+                  Take the tour
+                </span>
               </Show>
             </button>
           )}

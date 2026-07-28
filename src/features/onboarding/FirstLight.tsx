@@ -12,13 +12,19 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, Match, onMount, Show, Switch } from 'solid-js'
+import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
+import { summarize } from '@/lib/mirror/metrics'
+import { singerForRange } from '@/lib/mirror/singer-match'
+import { startPageTour } from '@/stores/app-store'
 import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingProgress, recordFirstNote, recordVoiceprint, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { setActiveTab } from '@/stores/ui-store'
+import { dismissNudge, shouldShowNudge } from './account-nudge'
 import { BeatFirstLight } from './beats/BeatFirstLight'
 import { BeatFork } from './beats/BeatFork'
+import { BeatKeep } from './beats/BeatKeep'
 import { BeatMap } from './beats/BeatMap'
 import { BeatSky } from './beats/BeatSky'
 import { BeatTwin } from './beats/BeatTwin'
@@ -40,6 +46,7 @@ const RENDERABLE: readonly Beat[] = [
   'fork',
   'voiceprint',
   'twin',
+  'keep',
   'map',
 ]
 
@@ -49,7 +56,18 @@ export interface FirstLightProps {
 }
 
 export const FirstLight: Component<FirstLightProps> = (props) => {
-  onMount(() => setBeatsAvailable(RENDERABLE))
+  const [twin, setTwin] = createSignal<string | null>(null)
+
+  onMount(() => {
+    // The account ask is a renderable beat only while it is due. A
+    // visitor who declined last week walks the same flow without being
+    // asked again — and the progress bar shortens to match, rather than
+    // promising a step that never arrives.
+    const beats = shouldShowNudge('onboarding-twin')
+      ? RENDERABLE
+      : RENDERABLE.filter((beat) => beat !== 'keep')
+    setBeatsAvailable(beats)
+  })
 
   // One funnel event per beat entered, including the first.
   createEffect(() => {
@@ -83,6 +101,47 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
   const handleVoiceprint = (result: MirrorResult, _glides: F0Frame[][]) => {
     recordVoiceprint(result)
+    const matched = singerForRange(result.range)
+    setTwin(matched)
+
+    // Save immediately, before the account is ever mentioned. The offer
+    // at beat 7 is only honest if declining it costs nothing right now —
+    // and it also means backing out mid-flow doesn't lose the take.
+    void saveVoiceprint({
+      summary: summarize(result),
+      twin: matched,
+      source: 'onboarding',
+    })
+
+    advanceBeat()
+  }
+
+  /**
+   * Open a room and immediately walk its spotlight tour. The tour has
+   * to start AFTER the overlay closes and the tab has rendered, or it
+   * spotlights elements that are not on screen yet — hence the frame
+   * of delay rather than a straight call.
+   */
+  const handleRoomTour = (target: RoomTarget, tab: ActiveTab) => {
+    trackOnboarding('onboarding_map_room')
+    if (target.kind === 'tab') setActiveTab(target.tab as ActiveTab)
+    leave()
+    requestAnimationFrame(() => startPageTour(tab))
+  }
+
+  const handleCreateAccount = () => {
+    trackOnboarding('onboarding_account_created')
+    leave()
+    // Reuse the real account form rather than shipping a second auth
+    // surface. Follow-up: an inline register step would convert better
+    // than a hand-off, but duplicating a credential form is not
+    // something to do casually.
+    window.location.hash = '#/settings/account'
+  }
+
+  const handleDismissAccount = () => {
+    trackOnboarding('onboarding_account_dismissed')
+    dismissNudge('onboarding-twin')
     advanceBeat()
   }
 
@@ -173,7 +232,15 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               voiceprint={voiceprint()}
               replay={props.replay}
               onEnter={handleEnterRoom}
+              onTour={handleRoomTour}
               onDone={handleDone}
+            />
+          </Match>
+          <Match when={currentBeat() === 'keep'}>
+            <BeatKeep
+              twin={twin()}
+              onCreateAccount={handleCreateAccount}
+              onDismiss={handleDismissAccount}
             />
           </Match>
         </Switch>

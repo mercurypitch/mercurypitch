@@ -60,9 +60,27 @@ describe('nextBeat', () => {
     expect(nextBeat('first-light', full, ALL)).toBe('fork')
     expect(nextBeat('fork', full, ALL)).toBe('voiceprint')
     expect(nextBeat('voiceprint', full, ALL)).toBe('twin')
-    expect(nextBeat('twin', full, ALL)).toBe('map')
-    expect(nextBeat('map', full, ALL)).toBe('keep')
-    expect(nextBeat('keep', full, ALL)).toBeNull()
+    expect(nextBeat('twin', full, ALL)).toBe('keep')
+    expect(nextBeat('keep', full, ALL)).toBe('map')
+    expect(nextBeat('map', full, ALL)).toBeNull()
+  })
+
+  it('always ends on the Map, so the last screen is a way into the app', () => {
+    // Whatever the track and whether or not the account was asked for.
+    for (const s of [
+      state({ track: 'short' }),
+      state({ track: 'full', hasVoiceprint: true }),
+      state({ micDenied: true }),
+    ]) {
+      expect(nextBeat('map', s, ALL)).toBeNull()
+    }
+  })
+
+  it('skips the account ask when it is not renderable, landing on the Map', () => {
+    // A visitor who declined last week: 'keep' is withheld by the caller.
+    const withoutKeep = new Set(BEAT_ORDER.filter((b) => b !== 'keep'))
+    const full = state({ track: 'full', hasVoiceprint: true })
+    expect(nextBeat('twin', full, withoutKeep)).toBe('map')
   })
 
   it('skips the fork entirely on the short track', () => {
@@ -128,7 +146,9 @@ describe('beatProgress', () => {
   it('paces the full track across all seven beats', () => {
     const full = state({ track: 'full', hasVoiceprint: true })
     expect(beatProgress('sky', full, ALL)).toBe(0)
-    expect(beatProgress('keep', full, ALL)).toBe(1)
     expect(beatProgress('fork', full, ALL)).toBeCloseTo(2 / 6)
+    // The Map is last, so the account ask is not yet the end of the bar.
+    expect(beatProgress('keep', full, ALL)).toBeCloseTo(5 / 6)
+    expect(beatProgress('map', full, ALL)).toBe(1)
   })
 })

@@ -31,6 +31,13 @@ export interface Room {
   /** One verb-led line: what happens when you go there. */
   line: string
   target: RoomTarget
+  /**
+   * The tab whose spotlight tour this room can offer, when one exists
+   * (PAGE_TOURS in src/stores/app-store.ts). Absent for rooms that are
+   * a separate page rather than a tab — a tour cannot spotlight
+   * something the app isn't rendering.
+   */
+  tourTab?: ActiveTab
 }
 
 export const ROOMS: readonly Room[] = [
@@ -39,18 +46,21 @@ export const ROOMS: readonly Room[] = [
     title: 'Practice',
     line: 'See every note as you sing it, with per-note accuracy.',
     target: { kind: 'tab', tab: TAB_SINGING },
+    tourTab: TAB_SINGING,
   },
   {
     id: 'exercises',
     title: 'Exercises',
     line: 'Fourteen drills for range, agility, intervals and control.',
     target: { kind: 'tab', tab: TAB_EXERCISES },
+    tourTab: TAB_EXERCISES,
   },
   {
     id: 'ascent',
     title: 'The Ascent',
     line: 'A seven-week guided path — one orb at a time.',
     target: { kind: 'tab', tab: TAB_PATH },
+    tourTab: TAB_PATH,
   },
   {
     id: 'karaoke',
@@ -63,12 +73,14 @@ export const ROOMS: readonly Room[] = [
     title: 'Jam',
     line: 'Sing together in real time — share a room code.',
     target: { kind: 'tab', tab: TAB_JAM },
+    tourTab: TAB_JAM,
   },
   {
     id: 'analysis',
     title: 'Analysis',
     line: 'Pitch traces, harmonics and consistency, in plain language.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
+    tourTab: TAB_ANALYSIS,
   },
 ]
 

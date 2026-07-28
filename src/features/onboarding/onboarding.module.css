@@ -389,6 +389,65 @@
   color: var(--ob-ink-3);
 }
 
+/* ── Beat 7: keep ────────────────────────────────────────────── */
+
+/* Smaller than beat 5's: the twin is the reason here, not the subject. */
+.twinArtSmall {
+  display: block;
+  width: clamp(84px, 16vw, 108px);
+  filter: drop-shadow(0 8px 22px rgba(188, 140, 255, 0.2));
+}
+
+.twinArtSmall svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.keepList {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  max-width: 44ch;
+  text-align: left;
+}
+
+.keepList li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+.keepList li::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--ob-blue), var(--ob-teal));
+}
+
+.keepList em {
+  color: var(--ob-teal);
+  font-style: normal;
+}
+
+.keepFootnote {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ob-ink-3);
+  max-width: 44ch;
+}
+
 /* ── Fork ────────────────────────────────────────────────────── */
 
 .forkOptions {
@@ -547,6 +606,28 @@
   font-size: 0.84rem;
   line-height: 1.5;
   color: var(--ob-blue);
+}
+
+.roomTour {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ob-ink-3);
+  border-bottom: 1px solid currentColor;
+  cursor: pointer;
+  transition: color 0.2s var(--ob-ease);
+}
+
+.roomTour:hover {
+  color: var(--ob-teal);
+}
+
+.roomTour:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .sideDoors {

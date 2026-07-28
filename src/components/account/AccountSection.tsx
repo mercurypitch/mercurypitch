@@ -20,6 +20,7 @@ import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AccountSection.module.css'
 import { PasswordRequirements } from './PasswordRequirements'
+import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
 
@@ -425,6 +426,9 @@ export const AccountSection: Component = () => {
           </Match>
         </Switch>
       </Show>
+
+      {/* The other half of onboarding's promise: what an account keeps. */}
+      <VoiceSection signedIn={isUpgraded()} />
     </div>
   )
 }
