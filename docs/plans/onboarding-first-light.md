@@ -1,11 +1,38 @@
 # First Light — onboarding
 
-Status: **in progress** — Phases 1–3 shipped 2026-07-28 (PR #366). Phase 4 (art)
-not started; the flow runs on the canvas star field and needs no plate to work.
+Status: **in review** — Phases 1–4 on `feat/onboarding-first-light`, PR #366.
+Last worked 2026-07-29.
 
 The first-run experience: a branded, two-track onboarding that replaces the
 setup-first welcome modal. Design artifact (beats, Map, art direction):
 published separately; this file is the implementation source of truth.
+
+## Where this stands — read this first
+
+Everything below is built and pushed. `pnpm check` clean, **3357 tests
+passing**, production build clean, desktop tour walk at the `origin/main`
+baseline (115 steps / 2 pre-existing misses).
+
+**Verified in a real browser (desktop, 1440×900 and ~1100×1100):** the welcome
+door, beat 1 (sky), beat 3 (fork), beat 6 (the Map) including the hover reveal
+on room cards, the `#/map` replay route, and both skip paths sticking.
+
+**NOT verified — this is where to start:**
+
+1. **Mobile.** Nothing has been opened at 390×844. The 9:16 sky plate, the Map
+   grid collapsing to one column, every beat's layout, and the `hover: hover`
+   gating on the room cards are all unverified on a phone. The mobile tour walk
+   aborts before reaching anything of ours (pre-existing, see below), so it
+   gives no signal here.
+2. **Anything needing a microphone** — beats 2, 4 and 5. They cannot be reached
+   headlessly, so the mic ask, the note read-back, the task demos and their
+   audible cues, the twin at its enlarged size, and beat 7's offer have only
+   ever been verified by construction. maff walked the flow once and reported
+   the beats "fine" and a David Bowie twin; the "I'm ready" gates and audible
+   demos were added *after* that walk and have not been heard by anyone.
+3. **Reduced motion.** The rules are written; no run has forced it.
+4. **`src/e2e/onboarding.spec.ts` was never written.** It is specified under
+   Verification below and remains outstanding.
 
 ## Why
 
@@ -283,20 +310,32 @@ no-`prefers-reduced-motion`.
 
 ## Phases
 
-**Phase 1 — Spine.** Store, `FirstLight` shell, the shared branded frame, beats
-1/3/6 with placeholder art, minimal `WelcomeScreen` door, `#/guide` replay
-route, telemetry. Runs end to end with no mic and no generated art.
+**Phase 1 — Spine. DONE** (`1f64d969`). Store, `FirstLight` shell, the shared
+branded frame, beats 1/3/6, minimal `WelcomeScreen` door, `#/map` replay route,
+telemetry. Runs end to end with no mic and no generated art.
 
-**Phase 2 — Voice.** Beat 2 (mic + single-note ignition), beat 4 (voiceprint via
-the Mirror engine), beat 5 (twin + share). The mic-denied path is built here as
-a first-class route.
+**Phase 2 — Voice. DONE** (`dc7d36bd`, refined in `8785e6f3`). Beat 2 (mic +
+note read-back), beat 4 (voiceprint via the Mirror engine, with per-task demos
+and "I'm ready" gates), beat 5 (twin). Mic-denied is a first-class route.
+Extracted `src/lib/voice-session.ts`.
 
-**Phase 3 — Map & account.** Real Map content, `first-stop.ts` + tests, per-room
-tour hooks, the `voiceprints` table and sync, Profile → Voice, beat 7, and the
-three later earned-moment nudges.
+**Phase 3 — Map & account. DONE** (`ae2ec578`). Map content, `first-stop.ts` +
+tests, per-room tour offers, the `voiceprints` table and sign-in sync,
+Settings → Account "Your voice", beat 7, and the day-2 streak nudge.
 
-**Phase 4 — Art & polish.** Higgsfield generation, the ambient loop and its
-fallbacks, motion pass, reduced-motion pass, mobile pass, tour walker.
+**Phase 4 — Art & polish. MOSTLY DONE** (`6d0ed594`, `916aa8a0`, `d82e0c02`).
+Sky plates generated and integrated, Map cards reveal the Home gallery's
+artwork, tour handling settled and the walker baselined.
+
+Remaining in Phase 4:
+- **Mobile pass at 390×844** — not started, highest priority.
+- **Reduced-motion pass** — rules written, never exercised.
+- **The ambient sky loop** — specced under Art, not built. Optional; the still
+  plate carries the beat perfectly well without it.
+- **Covers for Ascent and Jam.** Those two Map cards fall back to a spectrum
+  wash because no drawing exists. Deliberate — borrowing another room's picture
+  would misdescribe where the card goes — but two proper covers would finish
+  the set.
 
 **Tours: the Map is deliberately not spotlight-toured.** It sits in a modal
 overlay, and the Walkthrough engine can switch tabs but has no way to open an
@@ -325,9 +364,16 @@ dedicated polish pass once the queued PRs land.
   Assert the mic-denied path reaches the Map.
 - Manual: 1440×900 and 390×844, dark and light, plus one forced reduced-motion
   run.
-- `pnpm run test:tours` — required once Phase 4 adds a tour step.
+- `pnpm run test:tours` — done, and matches the `origin/main` baseline exactly
+  (see the walker baseline above). This branch adds no tour step, so it is not
+  a gate here; re-run it if the Map ever gains one.
 - Lighthouse on the first-run route: the added assets must not push LCP past
-  2.5s on a throttled 4G profile.
+  2.5s on a throttled 4G profile. **Not run.**
+
+Done so far: `pnpm check`, `pnpm test:run` (3357 passing, including the 35 new
+onboarding tests), `pnpm typecheck:db`, `pnpm build:e2e`, and the desktop tour
+walk. The Playwright spec, the mobile pass, the reduced-motion run and
+Lighthouse are all still outstanding — see "Where this stands" at the top.
 
 ## Changed during build
 
@@ -384,14 +430,27 @@ flow and deep-links to Settings → Account. A hand-off at the moment of peak
 intent converts worse than an inline form would, but duplicating a credential
 form is not something to do casually — it needs its own review.
 
+**Write `src/e2e/onboarding.spec.ts`.** Specified under Verification and never
+written. It is the only thing that would catch a regression in the door/skip
+gating — the bug where the welcome screen came back over the Map and over a
+chosen room was found by hand, and nothing currently stops it returning.
+
+**Covers for the Ascent and Jam Map cards.** See Phase 4 remaining.
+
 **Deploy prerequisite:** the `voiceprints` table is created by `schema.sql`
 (`CREATE TABLE IF NOT EXISTS`), so it lands on the next db-worker deploy with no
 migration — same as `weeklyChallenges`. Nothing to run by hand.
 
 ## Settled
 
-- Branch `feat/onboarding-first-light`, based on `main`.
+- Branch `feat/onboarding-first-light`, based on `main`. PR #366.
 - Two-track first run: ~25s spine, ~90s optional fork.
 - Account CTA is earned-moment and dismissible; the twin is the offer.
 - The old welcome becomes a minimal door (onboard, or skip straight in).
-- Art: backdrops, six room plates, and the ambient loop with fallbacks.
+- Beat 4 is gated, not timed: every task waits on "I'm ready", and its demo is
+  audible as well as animated. Longer on purpose — a beginner cannot be rushed
+  into a vocal glide.
+- **Art:** obsidian sky plates (16:9 + a true 9:16 recomposition) shipped. The
+  Map reuses the Home gallery's cover drawings via `DestinationArtwork` rather
+  than a second set — so "six room plates" from the original plan is settled as
+  *reuse*, not new art. The ambient loop stays optional.
