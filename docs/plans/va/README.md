@@ -1,8 +1,19 @@
 # Vocal Analysis & Visualization Enhancement Plans
 
+> **SUPERSEDED.** These phases shipped into `VocalAnalysis.tsx` and made the
+> Analysis page an audio-research workbench grafted onto a singing app — most
+> controls were unreachable (every Phase 4/5 tool needed accumulated spectra,
+> which only exist while the mic is live), and metrics were computed from note
+> metadata that could not support them.
+>
+> The Analysis page is now a capability-tiered singer's dashboard
+> (`src/features/analysis/`). The tooling described below still exists, but on
+> the hidden Lab surface (`src/features/lab/`, reached at `#/lab`). Keep these
+> documents for the DSP background; do not treat them as the current plan.
+
 **Source:** [Sonic Visualiser Feature Audit](../../reports/sonic-visualiser-audit.md)  
 **Branch:** `feature/vocal-analysis-enhancements`  
-**Status:** Planning — awaiting approval per phase
+**Status:** Superseded by the Analysis redesign
 
 ---
 

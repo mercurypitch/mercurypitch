@@ -8,7 +8,9 @@ See [docs/plans/feature-proposals.md](docs/plans/feature-proposals.md) for detai
 ## In Progress (on branches)
 
 - [ ] **Guitar practice page** (`feat/guitar-practice`)
-- [ ] **Vocal analysis enhancements** (`feature/vocal-analysis-enhancements`)
+- [x] **Vocal analysis redesign** — one responsive dashboard, capability-tiered
+      metrics, Sonic-Visualiser tooling moved to the hidden Lab. Supersedes the
+      phased plans in `docs/plans/va/`.
 - [ ] **Server-side RunPod separation** (`feat/runpods-server-rendering-8v2oxt`) — GPU + CPU tiers, off by default
 - [ ] **Header support badge** (`feat/support-badge`) — version + Ko-fi pill
 - [x] **Practice Intelligence** (`feat/practice-intelligence`) — adaptive difficulty engine, weakness drill generator, practice summary & trends dashboard
