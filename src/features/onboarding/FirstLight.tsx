@@ -117,16 +117,20 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * Open a room and immediately walk its spotlight tour. The tour has
-   * to start AFTER the overlay closes and the tab has rendered, or it
-   * spotlights elements that are not on screen yet — hence the frame
-   * of delay rather than a straight call.
+   * Open a room and walk its spotlight tour.
+   *
+   * No delay before `startPageTour`, matching every other caller
+   * (usePageTourOffer, offerTourOnce): page-tour steps carry
+   * `requiredTab`, so the Walkthrough switches tabs itself, and it
+   * already waits ~1s per step for a target to become visible. Closing
+   * the overlay first is enough — a hand-rolled frame of delay would
+   * be a second, weaker copy of a budget the engine owns.
    */
   const handleRoomTour = (target: RoomTarget, tab: ActiveTab) => {
     trackOnboarding('onboarding_map_room')
     if (target.kind === 'tab') setActiveTab(target.tab as ActiveTab)
     leave()
-    requestAnimationFrame(() => startPageTour(tab))
+    startPageTour(tab)
   }
 
   const handleCreateAccount = () => {

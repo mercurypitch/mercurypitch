@@ -296,8 +296,23 @@ tour hooks, the `voiceprints` table and sync, Profile → Voice, beat 7, and the
 three later earned-moment nudges.
 
 **Phase 4 — Art & polish.** Higgsfield generation, the ambient loop and its
-fallbacks, motion pass, reduced-motion pass, mobile pass, then the tour walker
-(the Map adds `data-tour` targets and a new Home tour step).
+fallbacks, motion pass, reduced-motion pass, mobile pass, tour walker.
+
+**Tours: the Map is deliberately not spotlight-toured.** It sits in a modal
+overlay, and the Walkthrough engine can switch tabs but has no way to open an
+overlay — so a step targeting it could never resolve. Touring the orientation
+surface would also be circular. Instead the Map *offers* each room's own tour,
+calling `startPageTour(tab)` with no delay, exactly like `usePageTourOffer`:
+page-tour steps carry `requiredTab`, so the engine switches tabs itself and
+already waits ~1s per step for a target. No `data-tour` hook is left on the
+Map — an unused one is a selector implying coverage that doesn't exist.
+
+**Walker baseline (2026-07-29), measured on `origin/main` and unchanged by this
+branch:** desktop 115 steps, 2 misses — Path steps 3 (`.path-week-card`) and 4
+(`.path-cta`), whose targets exist but are not visible in the default Path
+view. Mobile aborts at the Analysis entry in the guide picker. Both reproduce
+identically on `origin/main`, so neither is this branch's. Tours get a
+dedicated polish pass once the queued PRs land.
 
 ## Verification
 

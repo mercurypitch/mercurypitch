@@ -54,7 +54,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
         pointed you, or go anywhere you like — nothing is locked.
       </p>
 
-      <div class={styles.mapGrid} data-tour="onboarding-map">
+      {/* No `data-tour` hook here on purpose. The Map is not spotlight-
+          toured: it lives in a modal overlay the Walkthrough has no way
+          to open (it can switch tabs, not open overlays), and touring
+          the orientation surface would be circular anyway. It offers
+          the ROOMS' tours instead. An unused data-tour attribute would
+          just be a selector implying coverage that doesn't exist. */}
+      <div class={styles.mapGrid}>
         <For each={ordered()}>
           {(room) => (
             <button
