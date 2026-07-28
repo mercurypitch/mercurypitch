@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Beat, FlowState } from '@/features/onboarding/flow'
-import { beatProgress, BEAT_ORDER, firstBeat, isBeatApplicable, nextBeat, } from '@/features/onboarding/flow'
+import { BEAT_ORDER, beatProgress, firstBeat, isBeatApplicable, nextBeat, } from '@/features/onboarding/flow'
 
 /** Everything renderable — the Phase 4 end state. */
 const ALL: ReadonlySet<Beat> = new Set(BEAT_ORDER)
@@ -10,6 +10,7 @@ const PHASE_1: ReadonlySet<Beat> = new Set<Beat>(['sky', 'fork', 'map'])
 const state = (over: Partial<FlowState> = {}): FlowState => ({
   track: null,
   hasVoiceprint: false,
+  micDenied: false,
   ...over,
 })
 
@@ -22,7 +23,9 @@ describe('isBeatApplicable', () => {
   })
 
   it('gates the voiceprint pair behind the full track', () => {
-    expect(isBeatApplicable('voiceprint', state({ track: 'short' }))).toBe(false)
+    expect(isBeatApplicable('voiceprint', state({ track: 'short' }))).toBe(
+      false,
+    )
     expect(isBeatApplicable('twin', state({ track: 'short' }))).toBe(false)
     expect(isBeatApplicable('voiceprint', state({ track: 'full' }))).toBe(true)
     expect(isBeatApplicable('twin', state({ track: 'full' }))).toBe(true)
@@ -33,6 +36,20 @@ describe('isBeatApplicable', () => {
     expect(
       isBeatApplicable('keep', state({ track: 'full', hasVoiceprint: true })),
     ).toBe(true)
+  })
+
+  it('leaves only the Map applicable once the mic is refused', () => {
+    const denied = state({ micDenied: true })
+    for (const beat of BEAT_ORDER) {
+      expect(isBeatApplicable(beat, denied)).toBe(beat === 'map')
+    }
+  })
+
+  it('does not offer the voiceprint fork to someone who refused the mic', () => {
+    // Even if a track was somehow already chosen.
+    const denied = state({ micDenied: true, track: 'full' })
+    expect(isBeatApplicable('fork', denied)).toBe(false)
+    expect(isBeatApplicable('voiceprint', denied)).toBe(false)
   })
 })
 
@@ -65,6 +82,16 @@ describe('nextBeat', () => {
   it('still ends the flow when the last beats are unavailable', () => {
     const full = state({ track: 'full', hasVoiceprint: true })
     expect(nextBeat('map', full, PHASE_1)).toBeNull()
+  })
+
+  it('routes a refused mic straight to the Map from wherever it happened', () => {
+    const denied = state({ micDenied: true })
+    // Denied at the mic ask.
+    expect(nextBeat('first-light', denied, ALL)).toBe('map')
+    // Denied mid-voiceprint (device unplugged).
+    expect(nextBeat('voiceprint', denied, ALL)).toBe('map')
+    // And the Map is still the end of the line.
+    expect(nextBeat('map', denied, ALL)).toBeNull()
   })
 })
 

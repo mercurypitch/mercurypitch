@@ -269,6 +269,126 @@
   outline-offset: 2px;
 }
 
+/* ── Beat 2: mic meter, readout ──────────────────────────────── */
+
+.meter {
+  width: min(280px, 80%);
+  height: 4px;
+  border-radius: 3px;
+  background: var(--ob-rule);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--ob-blue), var(--ob-teal));
+  transition: width 0.08s linear;
+}
+
+.readout {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ob-teal);
+}
+
+.deviceList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── Beat 4: countdown ───────────────────────────────────────── */
+
+.countdown {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ob-ink);
+}
+
+.recordingTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-violet);
+}
+
+.recordingTag::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ob-violet);
+  animation: recPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ── Beat 5: twin ────────────────────────────────────────────── */
+
+.twinArt {
+  display: block;
+  width: clamp(120px, 26vw, 168px);
+  filter: drop-shadow(0 10px 30px rgba(188, 140, 255, 0.24));
+}
+
+.twinArt svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.stat {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 12px;
+  background: var(--ob-card);
+}
+
+.statValue {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.statLabel {
+  font-size: 0.72rem;
+  color: var(--ob-ink-3);
+}
+
 /* ── Fork ────────────────────────────────────────────────────── */
 
 .forkOptions {
@@ -491,6 +611,16 @@
   .roomCard:hover,
   .primary:hover {
     transform: none;
+  }
+
+  .meterFill {
+    transition: none;
+  }
+
+  /* The dot stays visible rather than pulsing — "recording" must still
+     read at a glance when motion is off. */
+  .recordingTag::before {
+    animation: none;
   }
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { AccuracyResult, MirrorResult, RangeResult, SteadinessResult, } from '@/lib/mirror/metrics'
 import { NARROW_RANGE_SEMITONES, pickFirstStop, WEAK_SCORE, } from '@/features/onboarding/first-stop'
+import type { AccuracyResult, MirrorResult, RangeResult, SteadinessResult, } from '@/lib/mirror/metrics'
 
 const range = (semitones: number): RangeResult => ({
   lowMidi: 48,
@@ -88,7 +88,10 @@ describe('pickFirstStop', () => {
 
   it('treats the threshold itself as solid, not weak', () => {
     const stop = pickFirstStop(
-      result({ steadiness: steadiness(WEAK_SCORE), accuracy: accuracy(WEAK_SCORE) }),
+      result({
+        steadiness: steadiness(WEAK_SCORE),
+        accuracy: accuracy(WEAK_SCORE),
+      }),
     )
     expect(stop.room).toBe('karaoke')
   })

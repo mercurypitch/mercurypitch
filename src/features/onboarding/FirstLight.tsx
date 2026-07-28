@@ -14,23 +14,34 @@
 import type { Component } from 'solid-js'
 import { createEffect, Match, onMount, Show, Switch } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, onboardingProgress, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingProgress, recordFirstNote, recordVoiceprint, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { setActiveTab } from '@/stores/ui-store'
+import { BeatFirstLight } from './beats/BeatFirstLight'
 import { BeatFork } from './beats/BeatFork'
 import { BeatMap } from './beats/BeatMap'
 import { BeatSky } from './beats/BeatSky'
+import { BeatTwin } from './beats/BeatTwin'
+import { BeatVoiceprint } from './beats/BeatVoiceprint'
 import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
 import type { RoomTarget } from './rooms'
+import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
 
 /**
- * The beats this build can render. Phase 2 adds 'first-light',
- * 'voiceprint' and 'twin'; Phase 3 adds 'keep'. Anything absent is
- * skipped by the traversal, so no half-built beat reaches a visitor.
+ * The beats this build can render. Phase 3 adds 'keep'. Anything absent
+ * is skipped by the traversal, so no half-built beat reaches a visitor.
  */
-const RENDERABLE: readonly Beat[] = ['sky', 'fork', 'map']
+const RENDERABLE: readonly Beat[] = [
+  'sky',
+  'first-light',
+  'fork',
+  'voiceprint',
+  'twin',
+  'map',
+]
 
 export interface FirstLightProps {
   /** True when opened as a replay (#/map) rather than on first run. */
@@ -51,6 +62,27 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     trackOnboarding(
       track === 'full' ? 'onboarding_track_full' : 'onboarding_track_short',
     )
+    advanceBeat()
+  }
+
+  const handleHeard = (note: SettledNote) => {
+    trackOnboarding('onboarding_mic_granted')
+    recordFirstNote(note.note)
+  }
+
+  /**
+   * The mic is unusable. Marking it denied makes every beat except the
+   * Map inapplicable, so a single advance lands there — no special-case
+   * jump, and the progress bar stays honest.
+   */
+  const handleMicDenied = () => {
+    trackOnboarding('onboarding_mic_denied')
+    markMicDenied()
+    advanceBeat()
+  }
+
+  const handleVoiceprint = (result: MirrorResult, _glides: F0Frame[][]) => {
+    recordVoiceprint(result)
     advanceBeat()
   }
 
@@ -114,8 +146,27 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
           <Match when={currentBeat() === 'sky'}>
             <BeatSky onContinue={() => advanceBeat()} />
           </Match>
+          <Match when={currentBeat() === 'first-light'}>
+            <BeatFirstLight
+              onHeard={handleHeard}
+              onContinue={() => advanceBeat()}
+              onDenied={handleMicDenied}
+            />
+          </Match>
           <Match when={currentBeat() === 'fork'}>
-            <BeatFork onChoose={handleTrack} />
+            <BeatFork firstNote={firstNote()} onChoose={handleTrack} />
+          </Match>
+          <Match when={currentBeat() === 'voiceprint'}>
+            <BeatVoiceprint
+              onComplete={handleVoiceprint}
+              onDenied={handleMicDenied}
+            />
+          </Match>
+          <Match when={currentBeat() === 'twin' && voiceprint() !== null}>
+            <BeatTwin
+              result={voiceprint() as MirrorResult}
+              onContinue={() => advanceBeat()}
+            />
           </Match>
           <Match when={currentBeat() === 'map'}>
             <BeatMap

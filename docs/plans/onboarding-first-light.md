@@ -1,6 +1,7 @@
 # First Light — onboarding
 
-Status: **in progress** — Phase 1 started 2026-07-28. Phases 2–4 not started.
+Status: **in progress** — Phases 1 and 2 shipped 2026-07-28. Phases 3–4 not
+started; no generated art yet (the flow runs on the canvas star field).
 
 The first-run experience: a branded, two-track onboarding that replaces the
 setup-first welcome modal. Design artifact (beats, Map, art direction):
@@ -189,6 +190,7 @@ Plus `src/stores/onboarding-store.ts` (beat index, chosen track, captured
 
 | Need | Already exists |
 |---|---|
+| Mic + context + f0 as one lifecycle | `src/lib/voice-session.ts` (`createVoiceSession`) |
 | Mic acquisition, device fallback, error states | `src/lib/mic-manager.ts` (`micManager`) |
 | Live f0 frames | `src/lib/pitch-f0-stream.ts` (`createF0Stream`) |
 | Range / accuracy / steadiness maths | `src/lib/mirror/metrics.ts` (`computeMirrorResult`) |
@@ -278,6 +280,28 @@ fallbacks, motion pass, reduced-motion pass, mobile pass, then the tour walker
 - `pnpm run test:tours` — required once Phase 4 adds a tour step.
 - Lighthouse on the first-run route: the added assets must not push LCP past
   2.5s on a throttled 4G profile.
+
+## Follow-ups this work created
+
+**Migrate `MirrorApp` onto `src/lib/voice-session.ts`.** Opening a mic for
+pitch analysis has four failure modes that all present as "it just doesn't
+work" — the iOS gesture requirement, the WebKit sample-rate silence, the
+wrong-default-device that is quiet rather than dead, and the AudioContext leak
+on every denial that eventually breaks the retry button. Every one was found
+the hard way in the Voice Mirror.
+
+Phase 2 extracted that sequence into `voice-session.ts` and built First Light
+on it, but left `MirrorApp.tsx` on its own copy: it is a 1600-line shipped flow
+on a live funnel with Google Ads conversions attached, and destabilising it was
+not worth bundling into onboarding work. The duplication is real and should not
+survive long — the module is the canonical home, and a fix applied to one copy
+and not the other is exactly the bug this creates. `MirrorApp` also has device
+re-selection and a retry notice that the module deliberately keeps simpler;
+check those against `useDevice()` when migrating.
+
+**Consolidate `#/guide` and `#/map`.** Two routes that both mean "help me get
+oriented". Phase 3 folds `PAGE_TOUR_CATALOG` into the Map, which is the moment
+to merge them.
 
 ## Settled
 

@@ -10,10 +10,13 @@
 // heard ("That's a G3. Want the whole map?").
 
 import type { Component } from 'solid-js'
+import { Show } from 'solid-js'
 import type { OnboardingTrack } from '../flow'
 import styles from '../onboarding.module.css'
 
 export interface BeatForkProps {
+  /** The note heard at beat 2, e.g. 'G3'. Null if the mic was skipped. */
+  firstNote: string | null
   onChoose: (track: OnboardingTrack) => void
 }
 
@@ -22,8 +25,12 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
     <p class={styles.eyebrow}>Two ways in</p>
     <h1 class={styles.headline}>Want the whole map?</h1>
     <p class={styles.sub}>
-      A minute and a half of singing tells us your range, how steady you hold a
-      note, and how close your ear lands. Or skip it — you can do this any time.
+      <Show when={props.firstNote !== null}>
+        You sang a {props.firstNote}.{' '}
+      </Show>
+      A minute and a half of singing tells us the rest — your range, how steady
+      you hold a note, and how close your ear lands. Or skip it; you can do this
+      any time.
     </p>
 
     <div class={styles.forkOptions}>

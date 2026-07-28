@@ -33,6 +33,8 @@ export interface FlowState {
   track: OnboardingTrack | null
   /** True once a voiceprint has actually been measured. */
   hasVoiceprint: boolean
+  /** True once the visitor has refused (or cannot use) the microphone. */
+  micDenied: boolean
 }
 
 /**
@@ -41,6 +43,13 @@ export interface FlowState {
  * that is a build-phase concern, this is a product rule.
  */
 export function isBeatApplicable(beat: Beat, state: FlowState): boolean {
+  if (state.micDenied) {
+    // Every remaining beat except the Map needs a working microphone.
+    // Offering "map my whole voice" to someone who just refused the mic
+    // is the kind of thing that makes a product feel like it wasn't
+    // paying attention.
+    return beat === 'map'
+  }
   switch (beat) {
     // The voiceprint pair is the opt-in fork.
     case 'voiceprint':

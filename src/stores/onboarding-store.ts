@@ -40,8 +40,11 @@ const [flowOpen, setFlowOpen] = createSignal(false)
 const [currentBeat, setCurrentBeat] = createSignal<Beat>('sky')
 const [track, setTrack] = createSignal<OnboardingTrack | null>(null)
 const [voiceprint, setVoiceprint] = createSignal<MirrorResult | null>(null)
+const [micDenied, setMicDenied] = createSignal(false)
+/** The one note heard at beat 2, kept so beat 3 can name it back. */
+const [firstNote, setFirstNote] = createSignal<string | null>(null)
 
-export { currentBeat, flowOpen, track, voiceprint }
+export { currentBeat, firstNote, flowOpen, micDenied, track, voiceprint }
 
 /**
  * The beats the app can currently render. Beats land phase by phase;
@@ -61,7 +64,11 @@ export function setBeatsAvailable(beats: readonly Beat[]): void {
 }
 
 function flowState(): FlowState {
-  return { track: track(), hasVoiceprint: voiceprint() !== null }
+  return {
+    track: track(),
+    hasVoiceprint: voiceprint() !== null,
+    micDenied: micDenied(),
+  }
 }
 
 /** 0–1 across the beats THIS visitor will see (not all seven). */
@@ -91,6 +98,20 @@ export function chooseTrack(next: OnboardingTrack): void {
 
 export function recordVoiceprint(result: MirrorResult | null): void {
   setVoiceprint(result)
+}
+
+/** Remember the single note heard at beat 2, e.g. 'G3'. */
+export function recordFirstNote(note: string | null): void {
+  setFirstNote(note)
+}
+
+/**
+ * Mark the microphone unusable — refused, unavailable, or silent. Every
+ * beat after this except the Map needs one, so the traversal routes
+ * straight to the Map from wherever the visitor is.
+ */
+export function markMicDenied(): void {
+  setMicDenied(true)
 }
 
 /**
@@ -126,6 +147,8 @@ export function resetOnboarding(): void {
   setOnboardingDone('')
   setTrack(null)
   setVoiceprint(null)
+  setMicDenied(false)
+  setFirstNote(null)
   setCurrentBeat('sky')
   setFlowOpen(false)
 }
