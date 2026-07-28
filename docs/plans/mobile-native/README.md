@@ -1,5 +1,7 @@
 # Mobile Native v2 — app-wide mobile-first redesign
 
+**Status:** in progress — index for the mobile program. `karaoke-night-polish.md` shipped and has been archived to dotfiles.
+
 **Date**: 2026-07-18 · **Status**: planned (decisions locked with user)
 **Why now**: Google Ads shows most users arrive on phones. Karaoke Night's
 mobile stage proved the formula; this plan generalizes it to the core app —
@@ -7,7 +9,7 @@ starting with **Singing**, **Piano**, and **Exercises** — and prepares the
 codebase for a Capacitor-packaged native app.
 
 This replaces the archived squeeze-the-desktop approach
-(`docs/archive/plans/mobile-ux-v1.md`). We no longer shrink desktop chrome
+(`~/.dotfiles/personal/mercurypitch/archive-2026-07/docs-archive/plans/mobile-ux-v1.md`). We no longer shrink desktop chrome
 onto phones; each core surface gets a **purpose-built mobile stage** while
 desktop keeps its full power. Mobile is the clean daily loop; desktop is the
 studio users graduate to.

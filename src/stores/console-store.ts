@@ -1,3 +1,13 @@
+// ============================================================
+// Console Store — in-app console log capture for the debug overlay
+// ============================================================
+//
+// Mirrors console output into a ring buffer the ConsoleLog panel renders, so
+// bug reports from phones (where no devtools exist) still carry a trace.
+// Entries are stringified defensively: circular refs and BigInt both throw
+// under plain JSON.stringify, and a logging path must never be the thing that
+// crashes the app.
+
 import { createSignal } from 'solid-js'
 
 export interface LogEntry {

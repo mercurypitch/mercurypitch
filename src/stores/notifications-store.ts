@@ -1,3 +1,12 @@
+// ============================================================
+// Notifications Store — toast queue
+// ============================================================
+//
+// Toasts are pushed from anywhere and rendered by Notifications.tsx. Use a
+// `channel` for any toast a user could trigger repeatedly (tour offers, save
+// confirmations): showing a channelled toast clears the previous one on that
+// channel, so a category can never stack up the screen.
+
 import { createSignal } from 'solid-js'
 
 export interface Notification {

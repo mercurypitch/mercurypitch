@@ -1,3 +1,12 @@
+// ============================================================
+// usePianoRollEvents — bridges eventBus messages into app state
+// ============================================================
+//
+// The canvas piano roll is not a Solid component, so it cannot call stores
+// directly. It emits on @/lib/event-bus instead, and this hook subscribes and
+// translates those into store writes (tempo, scale, melody edits). Mount once,
+// alongside the editor.
+
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'

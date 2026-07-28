@@ -1,3 +1,15 @@
+// ============================================================
+// useHashRouter — binds the URL hash to app state, both directions
+// ============================================================
+//
+// The app has no file-system router. Adding a route is two edits: the shape
+// and parser in @/lib/hash-router.ts, then a handler pair here. This hook owns
+// the sync loop -- hash changes drive state, and state changes rewrite the
+// hash via `replaceHash` so back/forward and deep links both work.
+//
+// Deep links carry sub-state too (settings section, karaoke view, jam room),
+// which is why the deps object is wider than "which tab".
+
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'

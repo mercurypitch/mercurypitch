@@ -1,3 +1,11 @@
+// ============================================================
+// useEditorController — Compose-tab actions (MIDI import/export, share)
+// ============================================================
+//
+// The thin action layer over the piano-roll editor: import a MIDI file into
+// the melody store, export the current melody, and build a share URL. Editing
+// itself lives in @/lib/piano-roll.ts.
+
 import type { AudioEngine } from '@/lib/audio-engine'
 import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
 import { melodyTotalBeats } from '@/lib/scale-data'

@@ -1,3 +1,13 @@
+// ============================================================
+// Exercise History Store — completed-run log and per-exercise stats
+// ============================================================
+//
+// `recordExerciseResult` is the single funnel every exercise calls on finish,
+// and it fans out well beyond local history: practice minutes, challenge and
+// weekly attempts, routine auto-advance, and analytics all hang off it. Adding
+// a new exercise means calling this once, not wiring each consumer -- and
+// calling it twice double-counts practice credit.
+
 import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'

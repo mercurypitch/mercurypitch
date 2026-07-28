@@ -1,3 +1,15 @@
+// ============================================================
+// useSessionSequencer — drives a multi-item practice session item by item
+// ============================================================
+//
+// Between items it rewrites global musical context (key, scale, bpm) to match
+// the next SessionItem, builds that item's melody via `buildSessionItemMelody`,
+// and hands it to the PlaybackRuntime. Those store writes are global, so an
+// aborted session must restore the user's own key/scale rather than leaving
+// the last item's settings behind.
+//
+// State lives in practice-session-store; this hook is the transport for it.
+
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'

@@ -1,3 +1,13 @@
+// ============================================================
+// DestinationGallery — the Home page's card grid
+// ============================================================
+//
+// `HOME_DESTINATIONS` is the content; the component is the renderer. Adding a
+// card means adding an entry there and, if it needs new artwork, a
+// `DestinationVisual` variant with matching CSS. Each card targets a tab via
+// `setActiveTab`, so a card pointing at a tab that is hidden in the current
+// practice scope will render but lead nowhere -- check TAB_SCOPES.
+
 import type { Component, JSX } from 'solid-js'
 import { For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'

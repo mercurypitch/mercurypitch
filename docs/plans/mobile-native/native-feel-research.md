@@ -1,5 +1,7 @@
 # Native-feel web apps — research (2026-07-18)
 
+**Status:** reference — research notes, not a work item.
+
 Method: multi-angle web research (5 search angles, ~20 sources fetched, 75
 falsifiable claims extracted with quotes) + inline review of every claim
 against platform documentation. The formal multi-agent adversarial pass was

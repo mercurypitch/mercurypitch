@@ -1,3 +1,15 @@
+// ============================================================
+// UI Store — active tab, modal/library visibility, focus mode, first-run flags
+// ============================================================
+//
+// `setActiveTab` is the app's navigation primitive; `onTabTransition` lets
+// features clean up (release the mic, stop playback) when the user leaves.
+// Register listeners rather than polling the tab signal.
+//
+// Also owns the first-run gates -- welcome and survey dismissal, keyed by
+// APP_VERSION. Headless preview runs must set those localStorage keys and
+// reload, or the welcome overlay covers the page under test.
+
 import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'

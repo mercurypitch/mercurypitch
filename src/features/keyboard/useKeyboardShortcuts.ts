@@ -1,3 +1,17 @@
+// ============================================================
+// useKeyboardShortcuts — global hotkeys, mounted once by App
+// ============================================================
+//
+// One document-level keydown listener for the whole app. Two guards matter and
+// both are easy to forget when adding a shortcut:
+//
+//   isTyping -- true when the event target sits inside an input, textarea,
+//               select or [contenteditable]. Check it before any bare-letter
+//               or Space binding, or typing a lyric line triggers playback.
+//   tab      -- most shortcuts are tab-scoped. The Karaoke tab (StemMixer)
+//               drives its own audio graph, so global transport keys are
+//               explicitly excluded there rather than merely unhandled.
+
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'

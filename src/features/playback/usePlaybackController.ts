@@ -1,3 +1,16 @@
+// ============================================================
+// usePlaybackController — the Singing tab's transport
+// ============================================================
+//
+// Start/stop/seek across the three playback modes (free practice, session,
+// backing track). Every start path goes through `activateAudioPlayback` first:
+// browsers keep the AudioContext suspended until a user gesture, and skipping
+// the unlock produces silent playback with no error.
+//
+// Note that PlaybackRuntime's `.on('state')` handler receives the whole event
+// object, not a bare state string -- use the `isPlaying` signal to detect
+// pause/stop rather than comparing the handler argument.
+
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal } from 'solid-js'
 import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'

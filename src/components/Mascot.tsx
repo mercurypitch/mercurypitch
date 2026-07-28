@@ -6,7 +6,8 @@ import styles from './Mascot.module.css'
  * Merc — the MercuryPitch mascot.
  *
  * Original hand-authored vector (copyright-clean per BRAND.md section 7), rebuilt
- * from the locked look-dev sheet in docs/branding/mascot/. Renders as a single
+ * from the locked look-dev sheet (turnarounds and expression sheets, ~22 MB, in
+ * ~/.dotfiles/personal/mercurypitch/branding/mascot/). Renders as a single
  * inline SVG (~5 KB), theme-agnostic, crisp at any size, animated with CSS so it
  * can react to the live pitch signals. See docs/branding/MASCOT.md (Phase 1).
  *

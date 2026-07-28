@@ -2,7 +2,7 @@
 // CanvasGlassRenderer — the "lite" mirror backend (plan §5.3).
 //
 // Ported from the look-dev prototype's pane painter
-// (docs/plans/prototypes/glass-shatter-prototype.html): the
+// (~/.dotfiles/personal/mercurypitch/archive-2026-07/prototypes/glass-shatter-prototype.html): the
 // quicksilver pane with a chrome bevel, the live waveform ribbon
 // dancing inside it, the gold target etch, resonance ripples, a
 // perimeter charge meter, permanent cracks, and a drifting

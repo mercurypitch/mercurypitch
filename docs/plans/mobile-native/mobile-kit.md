@@ -1,5 +1,7 @@
 # Mobile Kit — the modular mobile design system
 
+**Status:** in progress — `src/styles/mobile-kit.css` and `src/lib/use-viewport.ts` shipped; the full kit is incomplete.
+
 Everything mobile-specific lives in one place so any future surface is an
 assembly job. Two layers: **tokens** (CSS custom properties in
 `src/styles/app.css`) and **primitives** (`src/components/mobile/*` +

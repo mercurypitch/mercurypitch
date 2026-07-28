@@ -1,5 +1,7 @@
 # Advanced lyric marker mapping
 
+**Status:** proposed — forward-looking design for the lyric marker mapper. Not started.
+
 ## Outcome
 
 The lyric text itself is the timing surface. During playback, the mapper presses

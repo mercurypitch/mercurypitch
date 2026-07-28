@@ -1,3 +1,12 @@
+// ============================================================
+// DailyRoutinePanel — the Home page's daily practice routine card
+// ============================================================
+//
+// Renders one routine (warm-up, drills, cool-down segments) from
+// @/data/routine-templates, tracks per-segment completion, and hands off to
+// the exercise runner via `startExercise`. Segment auto-advance is driven from
+// exercise-history-store, not from here -- this panel only reflects state.
+
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'

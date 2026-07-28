@@ -1,30 +1,89 @@
-# Agent Instructions
+# Agent instructions — MercuryPitch
 
-## PR Workflow
-- Each prompt or task must be addressed in a separate PR.
-- PRs must always target `mercurypitch/mercurypitch:main`, even if the repo is a fork.
-- Always assign `Komediruzecki` as the reviewer on every PR.
-- Never push directly to main. All changes go through branches and PRs.
-- Never merge a PR without explicit permission.
+Canonical agent context. `CLAUDE.md` points here; keep the content in this file
+so the two cannot drift.
 
-## Emoji Usage
-- Never use emojis in any communication, including:
-  - Pull Request titles and descriptions.
-  - Commit messages.
-  - Issue comments.
-  - Responses to the user.
+**Before exploring the codebase, read [docs/agent/INDEX.md](docs/agent/INDEX.md).**
+It is a generated module map with entry points for every feature, store and
+worker — cheaper than grepping, and it will not be stale (CI checks it).
 
-## Code Quality
-- Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
+| Document | Read it when |
+|---|---|
+| [docs/agent/INDEX.md](docs/agent/INDEX.md) | Orienting, or looking for where something lives |
+| [docs/agent/CONVENTIONS.md](docs/agent/CONVENTIONS.md) | Writing code — naming, state, styling, tests |
+| [docs/agent/MISTAKES.md](docs/agent/MISTAKES.md) | Before a first change in an unfamiliar area |
+| [docs/agent/REFACTOR-PLAN.md](docs/agent/REFACTOR-PLAN.md) | Touching one of the oversized files |
+| [docs/specs/](docs/specs/) | Changing behaviour that has an EARS spec — 25 files, `*.ears.md` |
+| [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md) | Before trusting anything in `docs/plans/` — many "pending" plans have shipped |
 
-## SolidJS Reactivity Rules & Gotchas
-- **"computations created outside component root" warning**: This happens when a reactive accessor (like a `createMemo` or `createSignal` getter, e.g., `activeTrack()`) is invoked inside an asynchronous callback (like a `setTimeout`, `setInterval`, or an `async` function execution context).
-  - *Mistake*: `onClick={() => { void (async () => { const track = activeTrack(); await delete(track.id) })() }}`
-  - *Correct*: `onClick={() => { const track = activeTrack(); void (async () => { await delete(track.id) })() }}`
-  - *Rule*: Always extract reactive values synchronously outside the async block.
+---
 
-## Canvas Performance
-- Avoid looping over large arrays (like an entire audio waveform float array) purely per-pixel inside `requestAnimationFrame`. If `samples.length` is large, iterating `samples.length / width` per pixel will cause extreme lag (hundreds of millions of iterations per frame).
-  - *Solution*: Cache the drawn background to an `OffscreenCanvas`, or aggressively downsample inside the draw loop (e.g., jump by `stepSize = Math.max(1, Math.floor(samplesPerPixel / 100))` to calculate min/max values for waveform envelopes).
-- **Moire Banding / Aliasing on Waveforms**: Be careful when downsampling waveforms visually by skipping samples (e.g. jumping by `stepSize`). If the visual skip rate aligns with the audio frequencies, you'll see "stripes" or Moire patterns that appear to move or pulse at different zoom levels.
-  - *Solution*: Instead of skipping samples during rendering, precalculate a "Peak Cache" (min/max mipmap) in `Float32Array` blocks (e.g. 256 samples per block) during load time. Draw by iterating the precomputed blocks instead of the raw audio data. This gives $O(1)$ constant rendering time with zero aliasing.
+## Guardrails
+
+1. **Never test against production.** Local or dev only (`api-dev`, localhost
+   workers). Prod deploys go through `/prod-upd`.
+2. **Never push to `main`; never force-push.** Feature branches prefixed
+   `feat/` (never `claude/`), PRs target `main`. `--force-with-lease` is fine
+   for rebases; plain `--force` is not.
+3. **Do not commit, push, or open a PR unless asked.** Write the code, report
+   what changed, stop. The user tests first and says when to commit.
+4. **Never merge a PR** without an explicit go-ahead in the current
+   conversation. Report CI green and stop.
+5. **No Claude attribution anywhere** — no `Co-Authored-By`, no "Generated
+   with", in commits, PR bodies, or any other artifact. The user is the sole
+   author. Verify `git log --format='%an|%ae'` before merging; cloud sessions
+   have authored as Claude before.
+6. **No emojis** in code, UI, logs, commits, or PR text. Use an SVG icon
+   component from `src/components/icons`.
+7. **Run `pnpm check`** after any code change.
+
+Use `gh` for issues and PRs, not WebFetch. Merge with `--rebase`, never squash,
+unless told otherwise.
+
+## Build and verify
+
+```bash
+pnpm check          # typecheck + eslint --fix + prettier --write
+pnpm check:syntax   # same, non-mutating (what CI runs)
+pnpm test:run       # vitest
+pnpm test:e2e       # playwright
+```
+
+### Which gate for which change
+
+| Change touches | Required check |
+|---|---|
+| Any code | `pnpm check` |
+| Tour steps or tour-targeted DOM | Verify the affected `targetSelector`s resolve — **not** the full walk |
+| Exercise chrome, mobile layout | `pnpm audit:mobile` |
+| Pointer-driven controls (drag, scrub, swipe) | A real-mouse Playwright spec, red→green, tagged `@smoke` |
+| Release | `/prod-upd`, which includes the full `pnpm test:tours` walk |
+
+`pnpm test:tours` takes 20+ minutes. It is a **release gate, not a per-change
+gate** — do not run it per PR, even when editing tour steps. Only *new* misses
+introduced by your change are blockers outside a release.
+
+Tours should cover ≥80% of a page's user-visible features. Adding a feature to
+a page that has a tour means updating that tour in the same PR.
+
+## Stack
+
+SolidJS + TypeScript, Vite, Web Audio API, Dexie/IndexedDB, Cloudflare Workers
++ D1. Conventions in [docs/agent/CONVENTIONS.md](docs/agent/CONVENTIONS.md);
+the two rules that bite hardest are **never destructure props** and **read
+signals synchronously before going async**.
+
+## Keeping the docs honest
+
+```bash
+node scripts/gen-agent-index.mjs        # after adding/moving/renaming modules
+node scripts/gen-agent-index.mjs --check # CI: fails if stale
+```
+
+New modules need a banner header comment — the index harvests its first
+sentence. See [CONVENTIONS.md](docs/agent/CONVENTIONS.md) §7.
+
+When you hit something that cost real time and would cost the next agent the
+same, append it to [docs/agent/MISTAKES.md](docs/agent/MISTAKES.md) using the
+template at the top of that file. That is the intended way to leave insight
+behind — not a comment in a PR, and not a new document.

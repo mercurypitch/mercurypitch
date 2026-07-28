@@ -1,3 +1,7 @@
+// ============================================================
+// UVR Upload Queue Store — app-lifetime holder for the stem-upload queue
+// ============================================================
+
 import { createSignal } from 'solid-js'
 import { createUvrUploadQueue } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode } from './uvr-store'
