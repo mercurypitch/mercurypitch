@@ -141,6 +141,57 @@ export function donationDays(
   return Math.min(DONATION_MAX_DAYS, Math.max(base, scaled))
 }
 
+/** A fixed-price donation tier, for level resolution. */
+export interface DonationTier {
+  id: string
+  amount: number | null
+}
+
+/** Which supporter level an amount earns.
+ *
+ *  Fixed tiers resolve to themselves; a custom amount reaches the highest tier
+ *  it covers, so EUR 59 lands on Voice rather than a nameless "custom" badge.
+ *  Below the cheapest tier it still counts — a donation is a thank-you, not a
+ *  purchase — so it floors at the lowest tier rather than resolving to nothing.
+ *  Null only when no priced tier exists at all. */
+export function supporterLevel(
+  tiers: DonationTier[],
+  amountPaidMinor: number | null | undefined,
+): string | null {
+  const priced = tiers
+    .filter((t): t is { id: string; amount: number } => t.amount != null)
+    .sort((a, b) => b.amount - a.amount)
+  if (priced.length === 0) return null
+  const paid =
+    typeof amountPaidMinor === 'number' && Number.isFinite(amountPaidMinor)
+      ? amountPaidMinor
+      : 0
+  return (priced.find((t) => paid >= t.amount) ?? priced[priced.length - 1]).id
+}
+
+/** Keep the better of two levels when donations stack.
+ *
+ *  Donating EUR 5 after EUR 59 must not demote a Voice supporter to Fund — the
+ *  badge reflects the high-water mark for as long as the grant runs. */
+export function bestSupporterLevel(
+  tiers: DonationTier[],
+  a: string | null,
+  b: string | null,
+): string | null {
+  if (a == null) return b
+  if (b == null) return a
+  const rank = (id: string): number =>
+    tiers.find((t) => t.id === id)?.amount ?? -1
+  return rank(a) >= rank(b) ? a : b
+}
+
+/** The planId embedded in an entitlement's `source` (`donation:<planId>`). */
+export function sourcePlanId(source: string | null | undefined): string | null {
+  if (source == null || !source.startsWith('donation:')) return null
+  const id = source.slice('donation:'.length)
+  return id === '' ? null : id
+}
+
 /** New `supporter` expiry after a donation.
  *
  *  Stacks: a second donation while the first is still live ADDS its days on top

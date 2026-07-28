@@ -12,9 +12,10 @@
 
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
+import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { ensureAuth, fetchMe } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
-import { fetchBillingMe, fetchPricing, formatPrice, formatSupportDuration, startCheckout, supporterEntitlement, } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing, formatPrice, formatSupportDuration, startCheckout, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { GITHUB_SPONSORS_URL, KOFI_URL, SPONSORS_LIVE, } from '@/lib/contact-links'
 import { balanceVersion } from '@/stores/billing-store'
@@ -53,16 +54,6 @@ function CheckIcon() {
       />
     </svg>
   )
-}
-
-/** Local date, no year — "until 12 Oct" reads better than a full timestamp. */
-function shortDate(iso: string): string {
-  const ms = Date.parse(iso)
-  if (!Number.isFinite(ms)) return ''
-  return new Date(ms).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  })
 }
 
 export const DonatePanel: Component = () => {
@@ -133,17 +124,14 @@ export const DonatePanel: Component = () => {
 
       <Show when={supporter()}>
         {(grant) => (
-          <p class={styles.supporterNote} data-testid="donate-supporter-note">
-            <HeartIcon />
-            <span>
-              You are a supporter
-              <Show when={grant().expiresAt != null}>
-                {' '}
-                until {shortDate(grant().expiresAt as string)}
-              </Show>
-              . Thank you.
-            </span>
-          </p>
+          <div data-testid="donate-supporter-note">
+            <SupporterBadge
+              planId={supporterPlanId(grant())}
+              label={grant().sourceLabel}
+              expiresAt={grant().expiresAt}
+              verbose
+            />
+          </div>
         )}
       </Show>
 

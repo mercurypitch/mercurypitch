@@ -279,28 +279,6 @@
   border-color: var(--red, #e05555);
 }
 
-/* Supporter badge — a live donation entitlement, next to the display name. */
-.supporterPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  border: 1px solid
-    color-mix(
-      in srgb,
-      #ef6f9b 45%,
-      var(--border-color, rgba(255, 255, 255, 0.12))
-    );
-  background: color-mix(in srgb, #ef6f9b 14%, transparent);
-  color: color-mix(in srgb, #ef6f9b 80%, var(--text-primary, #eee));
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 /* Say hello — contact + support links, always visible. */
 .helloBlock {
   display: flex;

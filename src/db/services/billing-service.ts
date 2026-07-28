@@ -52,6 +52,9 @@ export interface BillingMe {
     feature: string
     source: string | null
     expiresAt: string | null
+    /** Display name of the tier in `source` (e.g. "Voice"). Absent on an
+     *  older db-worker, or when the source is not a donation. */
+    sourceLabel?: string | null
   }>
   stripeConfigured: boolean
 }
@@ -100,6 +103,39 @@ export function supporterEntitlement(
   if (grant.expiresAt == null || grant.expiresAt === '') return grant
   const expires = Date.parse(grant.expiresAt)
   return Number.isFinite(expires) && expires <= now ? null : grant
+}
+
+/** The donation tier id behind a grant (`donation:sup-voice` → `sup-voice`). */
+export function supporterPlanId(
+  grant: { source?: string | null } | null,
+): string | null {
+  const source = grant?.source
+  if (source == null || !source.startsWith('donation:')) return null
+  const id = source.slice('donation:'.length)
+  return id === '' ? null : id
+}
+
+/** Expiry date for a supporter grant.
+ *
+ *  The year is included whenever it differs from the current one — a bare
+ *  "23 Jul" on a grant that runs into next year reads as if it already
+ *  expired. Same-year dates stay short.
+ */
+export function formatSupporterExpiry(
+  iso: string | null,
+  now: Date = new Date(),
+): string {
+  if (iso == null || iso === '') return ''
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return ''
+  const date = new Date(ms)
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() !== now.getFullYear()
+      ? { year: 'numeric' }
+      : undefined),
+  })
 }
 
 /** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */

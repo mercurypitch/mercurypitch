@@ -9,12 +9,13 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { Eye, EyeOff } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
-import { fetchBillingMe, supporterEntitlement, } from '@/db/services/billing-service'
+import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -27,15 +28,7 @@ import { PasswordRequirements } from './PasswordRequirements'
 
 type FormMode = 'none' | 'login' | 'register'
 
-/** Local day + month — a supporter pill has no room for a full timestamp. */
-function formatShortDate(iso: string): string {
-  const ms = Date.parse(iso)
-  if (!Number.isFinite(ms)) return ''
-  return new Date(ms).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  })
-}
+type SupporterGrant = NonNullable<ReturnType<typeof supporterEntitlement>>
 
 export const AccountSection: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
@@ -51,9 +44,7 @@ export const AccountSection: Component = () => {
   const [nameDraft, setNameDraft] = createSignal('')
   // Supporter status rides along with the account fetch — it is the same
   // round trip the header already makes, and drives the badge below.
-  const [supporter, setSupporter] = createSignal<{
-    expiresAt: string | null
-  } | null>(null)
+  const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -168,6 +159,7 @@ export const AccountSection: Component = () => {
   function handleLogout(): void {
     logout()
     setMe(null)
+    setSupporter(null)
     setMode('none')
     showNotification('Signed out', 'info')
   }
@@ -203,27 +195,12 @@ export const AccountSection: Component = () => {
                 </span>
                 <Show when={supporter()}>
                   {(grant) => (
-                    <span
-                      class={styles.supporterPill}
-                      data-testid="account-supporter-pill"
-                      title={
-                        grant().expiresAt != null
-                          ? `Supporter until ${formatShortDate(grant().expiresAt as string)}`
-                          : 'Supporter'
-                      }
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="11"
-                        height="11"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                        />
-                      </svg>
-                      Supporter
+                    <span data-testid="account-supporter-pill">
+                      <SupporterBadge
+                        planId={supporterPlanId(grant())}
+                        label={grant().sourceLabel}
+                        expiresAt={grant().expiresAt}
+                      />
                     </span>
                   )}
                 </Show>

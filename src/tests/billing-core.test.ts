@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
 
 const row = (over: Partial<PricingRow>): PricingRow => ({
   id: 'x',
@@ -149,6 +149,67 @@ describe('donationDays', () => {
     expect(donationDays({ entitlementDays: null, customAmount: 0 }, 500)).toBe(
       0,
     )
+  })
+})
+
+describe('supporterLevel / bestSupporterLevel', () => {
+  const TIERS = [
+    { id: 'sup-fund', amount: 500 },
+    { id: 'sup-extras', amount: 1000 },
+    { id: 'sup-voice', amount: 2500 },
+  ]
+
+  it('resolves a fixed tier to itself', () => {
+    expect(supporterLevel(TIERS, 500)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, 1000)).toBe('sup-extras')
+    expect(supporterLevel(TIERS, 2500)).toBe('sup-voice')
+  })
+
+  // The whole point: a generous custom amount should earn a real badge name.
+  it('lifts a custom amount to the highest tier it covers', () => {
+    expect(supporterLevel(TIERS, 5900)).toBe('sup-voice')
+    expect(supporterLevel(TIERS, 1500)).toBe('sup-extras')
+    expect(supporterLevel(TIERS, 999)).toBe('sup-fund')
+  })
+
+  it('floors below the cheapest tier rather than resolving to nothing', () => {
+    expect(supporterLevel(TIERS, 200)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, 0)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, null)).toBe('sup-fund')
+  })
+
+  it('ignores unpriced tiers, and gives up only when none are priced', () => {
+    expect(supporterLevel([{ id: 'x', amount: null }, ...TIERS], 5900)).toBe(
+      'sup-voice',
+    )
+    expect(supporterLevel([{ id: 'x', amount: null }], 5900)).toBeNull()
+    expect(supporterLevel([], 5900)).toBeNull()
+  })
+
+  // Donating EUR 5 after EUR 59 must not demote a Voice supporter.
+  it('keeps the high-water mark when donations stack', () => {
+    expect(bestSupporterLevel(TIERS, 'sup-voice', 'sup-fund')).toBe('sup-voice')
+    expect(bestSupporterLevel(TIERS, 'sup-fund', 'sup-voice')).toBe('sup-voice')
+    expect(bestSupporterLevel(TIERS, null, 'sup-extras')).toBe('sup-extras')
+    expect(bestSupporterLevel(TIERS, 'sup-extras', null)).toBe('sup-extras')
+    expect(bestSupporterLevel(TIERS, null, null)).toBeNull()
+  })
+
+  it('treats an unknown stored level as the lowest rank', () => {
+    expect(bestSupporterLevel(TIERS, 'sup-custom', 'sup-fund')).toBe('sup-fund')
+  })
+})
+
+describe('sourcePlanId', () => {
+  it('extracts the planId from a donation source', () => {
+    expect(sourcePlanId('donation:sup-voice')).toBe('sup-voice')
+  })
+
+  it('returns null for anything else', () => {
+    expect(sourcePlanId(null)).toBeNull()
+    expect(sourcePlanId('')).toBeNull()
+    expect(sourcePlanId('donation:')).toBeNull()
+    expect(sourcePlanId('subscription:pro')).toBeNull()
   })
 })
 

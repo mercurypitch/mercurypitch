@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -209,5 +209,36 @@ describe('expected-credits stash (checkout round trip)', () => {
 
   it('returns null when nothing was stashed', () => {
     expect(takeExpectedCredits()).toBeNull()
+  })
+})
+
+describe('formatSupporterExpiry', () => {
+  const now = new Date('2026-07-28T00:00:00.000Z')
+
+  // A bare "23 Jul" on a grant running into next year reads as already expired.
+  it('includes the year when it differs from the current one', () => {
+    expect(formatSupporterExpiry('2027-07-23T00:00:00.000Z', now)).toContain(
+      '2027',
+    )
+  })
+
+  it('omits the year for a same-year expiry', () => {
+    expect(
+      formatSupporterExpiry('2026-10-12T00:00:00.000Z', now),
+    ).not.toContain('2026')
+  })
+
+  it('returns empty for missing or unparseable input', () => {
+    expect(formatSupporterExpiry(null, now)).toBe('')
+    expect(formatSupporterExpiry('', now)).toBe('')
+    expect(formatSupporterExpiry('not-a-date', now)).toBe('')
+  })
+})
+
+describe('supporterPlanId', () => {
+  it('reads the tier id out of the grant source', () => {
+    expect(supporterPlanId({ source: 'donation:sup-voice' })).toBe('sup-voice')
+    expect(supporterPlanId({ source: 'manual' })).toBeNull()
+    expect(supporterPlanId(null)).toBeNull()
   })
 })

@@ -31,12 +31,15 @@ import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
 import {
   UVR_TIER_PLAN_IDS,
+  bestSupporterLevel,
   creditBalance,
   donationDays,
   extendSupporterExpiry,
   isUvrTier,
   isValidJobRef,
   mapPricingPlans,
+  sourcePlanId,
+  supporterLevel,
   timingSafeEqualStr,
   uvrDebitKey,
   uvrJobCost,
@@ -159,11 +162,22 @@ async function handleMe(
   )
     .bind(auth.userId)
     .all<{ delta: number }>()
+  // sourceLabel resolves `donation:<planId>` to that tier's display name, so
+  // the badge can say "Voice supporter" from this one call. It stays editable
+  // in the DB — the client never hardcodes a tier name.
   const { results: entitlements } = await env.DB.prepare(
-    'SELECT feature, source, expiresAt FROM entitlements WHERE userId = ?',
+    `SELECT e.feature, e.source, e.expiresAt, p.label AS sourceLabel
+       FROM entitlements e
+       LEFT JOIN pricingPlans p ON p.id = REPLACE(e.source, 'donation:', '')
+      WHERE e.userId = ?`,
   )
     .bind(auth.userId)
-    .all<{ feature: string; source: string | null; expiresAt: string | null }>()
+    .all<{
+      feature: string
+      source: string | null
+      expiresAt: string | null
+      sourceLabel: string | null
+    }>()
 
   return respond({
     creditBalance: creditBalance(ledger.results),
@@ -372,39 +386,72 @@ async function grantSupporterEntitlement(
     return { granted: 0, userId, duplicate: true, unit: 'supporter days' }
   }
 
-  // Read-then-write: safe because the ledger claim above admits exactly one
-  // caller per event, and D1 serializes writes. Two DIFFERENT donations from
-  // the same user in the same instant could still interleave — at donation
-  // volume that is a manual fix, not worth a compare-and-swap loop.
-  const existing = await env.DB.prepare(
-    "SELECT expiresAt FROM entitlements WHERE userId = ? AND feature = 'supporter'",
-  )
-    .bind(userId)
-    .first<{ expiresAt: string | null }>()
-  const expiresAt = extendSupporterExpiry(existing?.expiresAt, now, days)
-
-  await env.DB.prepare(
-    `INSERT INTO entitlements (id, createdAt, updatedAt, userId, feature, source, expiresAt)
-     VALUES (?, ?, ?, ?, 'supporter', ?, ?)
-     ON CONFLICT(userId, feature) DO UPDATE SET
-       updatedAt = excluded.updatedAt,
-       source    = excluded.source,
-       expiresAt = excluded.expiresAt`,
-  )
-    .bind(
-      crypto.randomUUID(),
-      now,
-      now,
-      userId,
-      `donation:${planId ?? 'unknown'}`,
-      expiresAt,
+  // From here the claim row exists but the entitlement does not, so ANY failure
+  // below must release the claim — otherwise Stripe's retry (and the
+  // reconciliation sweep) would both see "duplicate" and skip, leaving a paid
+  // donation with no perks and no way to notice. The credits path needs no such
+  // care: there the ledger row IS the grant, one atomic statement.
+  try {
+    // Read-then-write is safe because the claim above admits exactly one caller
+    // per event, and D1 serializes writes. Two DIFFERENT donations from the
+    // same user in the same instant could still interleave — at donation volume
+    // that is a manual fix, not worth a compare-and-swap loop.
+    const existing = await env.DB.prepare(
+      "SELECT expiresAt, source FROM entitlements WHERE userId = ? AND feature = 'supporter'",
     )
-    .run()
+      .bind(userId)
+      .first<{ expiresAt: string | null; source: string | null }>()
+    const expiresAt = extendSupporterExpiry(existing?.expiresAt, now, days)
 
-  console.log(
-    `[billing] donation ${eventId}: +${days}d supporter user=${userId} until=${expiresAt}`,
-  )
-  return { granted: days, userId, duplicate: false, unit: 'supporter days' }
+    // Name the level from what was PAID, not from which card was clicked — that
+    // is what lets a custom EUR 59 wear the Anthem badge instead of a nameless
+    // "Other amount" one. Stacking keeps the high-water mark.
+    const { results: tiers } = await env.DB.prepare(
+      "SELECT id, amount FROM pricingPlans WHERE kind = 'donation' AND customAmount = 0 AND active = 1",
+    ).all<{ id: string; amount: number | null }>()
+    const level =
+      bestSupporterLevel(
+        tiers,
+        sourcePlanId(existing?.source),
+        supporterLevel(tiers, amountTotal),
+      ) ?? planId
+
+    await env.DB.prepare(
+      `INSERT INTO entitlements (id, createdAt, updatedAt, userId, feature, source, expiresAt)
+       VALUES (?, ?, ?, ?, 'supporter', ?, ?)
+       ON CONFLICT(userId, feature) DO UPDATE SET
+         updatedAt = excluded.updatedAt,
+         source    = excluded.source,
+         expiresAt = excluded.expiresAt`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        now,
+        userId,
+        `donation:${level ?? 'unknown'}`,
+        expiresAt,
+      )
+      .run()
+
+    console.log(
+      `[billing] donation ${eventId}: +${days}d supporter user=${userId} level=${level ?? 'unknown'} until=${expiresAt}`,
+    )
+    return { granted: days, userId, duplicate: false, unit: 'supporter days' }
+  } catch (err) {
+    await env.DB.prepare('DELETE FROM creditLedger WHERE idempotencyKey = ?')
+      .bind(`evt:${eventId}`)
+      .run()
+      .catch(() => {
+        // Releasing the claim is itself best-effort. If even this fails the
+        // event stays claimed-but-ungranted, which the thrown error below
+        // surfaces as a 500 → Stripe retry → the reconciliation alert.
+        console.error(
+          `[billing] donation ${eventId}: claim release FAILED — grant may need manual repair`,
+        )
+      })
+    throw err
+  }
 }
 
 /** Grant credits for a completed checkout, idempotent on the event id. */

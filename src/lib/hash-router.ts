@@ -263,8 +263,10 @@ export function buildHash(route: HashRoute): string {
         ? '/guide/all'
         : `/guide/${route.sectionId}`
     case 'billing-return':
-      if (route.kind === 'donation') return '/donate/thanks'
-      return route.outcome === 'success' ? '/billing/success' : '/pricing'
+      // Only the SUCCESS return has a donation-specific hash; a cancelled
+      // donation goes back to the credits tab, same as a cancelled purchase.
+      if (route.outcome === 'cancel') return '/pricing'
+      return route.kind === 'donation' ? '/donate/thanks' : '/billing/success'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
     case 'admin-weekly':

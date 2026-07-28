@@ -30,25 +30,6 @@
   margin: 0;
 }
 
-/* "You are a supporter until …" — shown above the tiers when a grant is live. */
-.supporterNote {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, #ef6f9b 40%, var(--border));
-  background: color-mix(in srgb, #ef6f9b 10%, var(--bg-secondary));
-  font-size: 0.82rem;
-  color: var(--text-primary);
-}
-
-.supporterNote svg {
-  color: #ef6f9b;
-  flex-shrink: 0;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));

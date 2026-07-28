@@ -1,0 +1,59 @@
+/* SupporterBadge — tier-coloured "you gave" mark */
+
+.pill {
+  --tier: #ef6f9b; /* base: overridden per tier below */
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tier) 45%, var(--border));
+  background: color-mix(in srgb, var(--tier) 14%, transparent);
+  color: color-mix(in srgb, var(--tier) 82%, var(--text-primary));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pill svg {
+  flex-shrink: 0;
+  /* Block strips the inline-baseline descender gap, so the glyph centres on
+     the text rather than riding a couple of pixels high. */
+  display: block;
+  color: var(--tier);
+}
+
+/* Ascending warmth: rose, violet, gold. The top tier should read as the
+   scarcest thing on screen, so only it gets a glow. */
+.fund {
+  --tier: #ef6f9b;
+}
+
+.extras {
+  --tier: #b57bf0;
+}
+
+.voice {
+  --tier: #f5b73c;
+}
+
+.pill.voice {
+  box-shadow: 0 0 12px color-mix(in srgb, #f5b73c 30%, transparent);
+}
+
+/* Verbose form — the donate panel's "you are a … until …" line. */
+.note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--tier) 40%, var(--border));
+  background: color-mix(in srgb, var(--tier) 10%, var(--bg-secondary));
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
