@@ -12,7 +12,7 @@ import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
-import { TERMS_URL } from '@/lib/legal-links'
+import { PAYMENTS_TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
@@ -270,19 +270,20 @@ export const PricingPanel: Component = () => {
           want to buy credits still has a way to back the project. */}
       <DonatePanel />
 
-      {/* Purchases touch the refund policy — link to the canonical Terms. */}
+      {/* Sits below BOTH panels, so it has to speak to both: credits are a
+          refundable-on-failure purchase, a donation is neither. */}
       <p style="margin: 14px auto 0; max-width: 46ch; text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted);">
-        Credits are prepaid and spent per server-side separation. Purchases are
-        subject to our{' '}
+        Credits are prepaid and spent per server-side separation. Donations are
+        voluntary and not refundable. Both are subject to our{' '}
         <a
-          href={TERMS_URL}
+          href={PAYMENTS_TERMS_URL}
           target="_blank"
           rel="noopener noreferrer"
           style="color: var(--accent); text-decoration: none;"
         >
           Terms
         </a>
-        , including the refund policy.
+        .
       </p>
     </div>
   )
