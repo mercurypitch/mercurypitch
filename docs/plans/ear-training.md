@@ -1,7 +1,12 @@
 # The Ear Lab — ear training that proves you improved
 
-> Status: **proposal / plan**. Nothing implemented yet.
-> Owner: TBD · Target: a new top-level surface alongside Exercises and The Ascent.
+> Status: **Phase 0 landed** — the measurement core is built and tested in
+> `src/lib/ear/`. Everything from Phase 1 on is still a plan.
+> Owner: TBD · Target: **a new top-level tab** alongside Exercises and The Ascent.
+>
+> **Decisions taken:** naming is `Ear Lab` / `Mercury Index` / `Calibration`; the
+> feature gets its own top-level tab rather than living inside Exercises; the
+> measurement core ships headless first, before any UI.
 
 ---
 
@@ -273,22 +278,59 @@ and it's cheap to compute from data we're already storing.
 
 ## 7. Technical design
 
-### New modules
+### Modules
+
+Pure logic goes in `src/lib/ear/` and UI in `src/features/ear-lab/`, matching the
+existing `lib/glass` ↔ `features/glass` split. It also puts the engine inside vitest's
+`src/lib/**/*.test.ts` glob, so the tests run without touching the config.
 
 ```
-src/features/ear-lab/
-  ear-lab-store.ts            # session state, current item, answer mode
+src/lib/ear/                  # ── built (Phase 0) ──
   staircase.ts                # 2-down-1-up transformed up-down + reversal averaging
-  elo.ts                      # rating update, decaying K, uncertainty tracking
-  item-bank.ts                # calibrated practice items (difficulty frozen post-calibration)
+  elo.ts                      # rating update, decaying K, guess floor, item freezing
+  calibration.ts              # interleaved tracks + pooling into one reading
+  drills.ts                   # the drill catalogue: units, staircase configs, scales
+  mercury-index.ts            # readings in mixed units → one 0–1000 number
+
+src/lib/ear/                  # ── still to build ──
+  item-bank.ts                # calibrated practice items
   benchmark-bank.ts           # SEALED — never served in practice
   scheduler.ts                # half-life regression / next-review selection
   confusion.ts                # confusion matrix accumulation + decay
-  faculties.ts                # the six faculties, their units, drills, display config
+
+src/features/ear-lab/
+  ear-lab-store.ts            # session state, current item, answer mode
   answer-modes/               # tap | play | sing → normalised Answer
   drills/<one dir per drill>  # mirrors features/exercises/<drill>/ convention
   components/                 # MercuryColumn, EarReport, ConfusionHeatmap, PullOrbit
 ```
+
+### What Phase 0 established (simulation, 150–300 runs per condition)
+
+Against a simulated listener with a known 70.7% threshold, on a Weibull psychometric
+function — see `staircase.test.ts` and `calibration.test.ts`:
+
+| Protocol | Trials | Bias | Precision (±, p10–p90) |
+| --- | --- | --- | --- |
+| 1 track, 8 reversals | ~30 | +1–4% | **±28%** |
+| 1 track, 12 reversals | ~42 | <2% | ±23% |
+| 1 track, 20 reversals | ~66 | <2% | ±19% |
+| **3 pooled tracks × 8 reversals** | ~90 | <5% | **<±20%**, tighter than 20 reversals |
+
+Two things fall out of this, and both changed the design:
+
+1. **The staircase is essentially unbiased and converges in ~30 trials** — about a minute.
+   A practice drill can produce a usable reading inside a coffee break.
+2. **A single track is only precise to ±28%, and lengthening it barely helps.** Precision
+   improves as 1/√(tracks) but only weakly with track length, so Calibration Day runs
+   **three short interleaved tracks and pools them geometrically** rather than one long
+   one. Random track selection (not round-robin) also denies the listener the chance to
+   predict which way the next trial moves.
+
+This is exactly why the practice estimate and the calibrated reading are shown
+differently: a ±28% practice number would swing by a third on an ear that did not change.
+The pooled reading is tight enough that a real 20¢ → 12¢ gain reads as a gain — there is a
+test asserting precisely that.
 
 ### Persistence (Dexie, `src/db/entities.ts`)
 
@@ -326,7 +368,7 @@ Without it, "you resolve 14 ms" is a lie.
 
 | Phase | Ships | Why this order |
 | --- | --- | --- |
-| **0. Spike** | `staircase.ts` + `elo.ts` + unit tests, headless | The measurement core is the product. Prove it converges before any UI. |
+| **0. Spike** ✅ | `staircase.ts`, `elo.ts`, `calibration.ts`, `drills.ts`, `mercury-index.ts` + 74 tests, headless | The measurement core is the product. Prove it converges before any UI. **Done** — see the table above. |
 | **1. Vertical slice** | **Home** (Faculty II) + **Hairline** (Faculty I), tap-only, Mercury Column, one Calibration | Proves both rulers, both interaction models, and the hero visual end to end. |
 | **2. Answer modes** | Play + Sing, ear-vs-voice split diagnostic | The differentiator of §4. |
 | **3. Breadth** | Faculties III, IV, V; Ear Report + confusion matrix | Enough content that spaced repetition has something to schedule. |
@@ -340,16 +382,24 @@ Phase 1 is the honest MVP: **you can measure your ear in cents, and prove the nu
 
 ## 9. Open questions
 
-1. **Naming.** `Ear Lab` / `Mercury Index` / `Calibration` is the recommendation — instrument-
-   grade, on-brand, not childish. Alternatives: "The Resolve", "Signal", "Perfect Column".
-2. **Where does it live?** New top-level tab, or a mode inside Exercises? (Recommendation: new
-   tab — it has its own path, dashboard and progression, and burying it undersells it.)
-3. **Item-bank calibration.** Ship with author-estimated difficulties and let Elo refine them
-   from real play, or hand-calibrate a seed set first? (Recommendation: author-estimate + freeze
-   after N=200 attempts per item.)
-4. **Does the Mercury Index replace or sit beside the existing score/leaderboard?**
-5. **Offline/local-first.** Everything above works fully client-side in Dexie. Does calibration
+Settled: naming (`Ear Lab` / `Mercury Index` / `Calibration`), placement (new top-level tab),
+and build order (measurement core first). Still open:
+
+1. **Item-bank calibration.** Ship with author-estimated difficulties and let Elo refine them
+   from real play, or hand-calibrate a seed set first? The engine already freezes an item after
+   200 attempts; the question is only what difficulty it starts at. (Recommendation:
+   author-estimate, and log how far each item drifts before freezing as a sanity check on the
+   authoring.)
+2. **Does the Mercury Index replace or sit beside the existing score/leaderboard?**
+3. **Offline/local-first.** Everything above works fully client-side in Dexie. Does calibration
    history need to sync to the D1 worker for cross-device continuity?
+4. **The novice/expert anchors in `drills.ts` are authored estimates**, drawn from the
+   published JND literature rather than from MercuryPitch users. They set where 0 and 1000 sit
+   on the column, so they should be re-fitted against real percentiles once there is a cohort —
+   until then the Mercury Index is correctly *ordered* but its absolute value is a guess.
+5. **Timbre.** Every reading so far is on synthetic tones. Do thresholds measured on a sine
+   transfer to the guitar and piano voices the drills will actually use? Worth a calibration
+   run per timbre before claiming one number covers all instruments.
 
 ---
 
