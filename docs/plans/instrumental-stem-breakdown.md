@@ -4,7 +4,15 @@ Research + implementation plan for splitting the existing instrumental stem
 into its constituent parts, on demand, after a session already has
 vocal + instrumental.
 
-Status: **proposal** — nothing implemented yet.
+Status: **Phase 1 (server) implemented**; phases 2-5 still proposed.
+
+Decisions taken since the original proposal:
+- Six stems is the default, not an opt-in — `demucs-6s` is
+  `UVR_DEFAULT_MULTI_STEM_MODEL`. Piano ships marked experimental
+  (`experimentalStems`) rather than hidden.
+- Both separation paths accept `source_stem: "instrumental"`, so the
+  "rerun on the instrumental" flow the mixer needs is a server feature,
+  not something the client has to assemble.
 
 ---
 
@@ -193,7 +201,19 @@ export interface UvrStemBlob extends DbEntity {
 
 ## 6. Phased plan
 
-**Phase 1 — server registry (small, self-contained, independently shippable)**
+**Phase 1 — server registry — DONE**
+
+Shipped: `demucs` / `demucs-ft` / `demucs-6s` in both registries with declared
+`stems`; `demucs_params` with `UVR_DEMUCS_SHIFTS` as the cost dial;
+guitar/piano in the stem keys and marker regex; `api.py` switched to
+marker-first classification (it had the substring bug the handler already
+fixed); weights baked into the Dockerfile; provisional credit multipliers;
+`source_stem` / `drop_stems` / `reconcile_residual` / `residual_stem` on both
+servers; `/registry` on the FastAPI path; `runpod/test_stem_contract.py`
+covering classification, registry invariants, reconciliation across
+WAV/FLAC and 16/24-bit/float, the clipping guard, and handler↔api parity.
+
+Original scope, for reference:
 - Add `demucs` → `htdemucs.yaml`, `demucs-ft` → `htdemucs_ft.yaml`,
   `demucs-6s` → `htdemucs_6s.yaml` to `MODEL_REGISTRY` in **both**
   `runpod/handler.py` and `uvr-api/api.py` (they are documented mirrors).

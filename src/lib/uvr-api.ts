@@ -64,6 +64,23 @@ export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 export const LOCAL_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 /**
+ * Every stem the server registry can produce. Widen this (and the server
+ * MODEL_REGISTRY) rather than adding a parallel union somewhere — nothing
+ * in the app should assume a two-stem world.
+ */
+export const UVR_STEM_NAMES = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+] as const
+
+export type UvrStemName = (typeof UVR_STEM_NAMES)[number]
+
+/**
  * Processing request parameters
  */
 export interface ProcessRequest {
@@ -71,6 +88,20 @@ export interface ProcessRequest {
   output_format?: string
   stems?: string[]
   cpu_profile?: 'high' | 'mid' | 'low'
+  /** What the submitted audio IS. 'original' (a full mix) is the default;
+   *  'instrumental' marks a second pass over a stem an earlier job
+   *  produced, which makes the server drop the near-silent vocal output
+   *  and reconcile the residual so the stems sum back to the input. */
+  source_stem?: 'original' | UvrStemName
+  /** Stems to discard server-side. Defaults to ['vocal'] when
+   *  source_stem is 'instrumental', [] otherwise. */
+  drop_stems?: UvrStemName[]
+  /** Force residual reconciliation on/off. Defaults to on for a
+   *  second pass, off for a full mix (where it would fold the vocal
+   *  into the residual). */
+  reconcile_residual?: boolean
+  /** Stem that absorbs the residual. Defaults to 'other'. */
+  residual_stem?: UvrStemName
   /** Server-tier opt-in (X-UVR-Provider): 'runpod' = GPU (default server
    *  tier), 'runpod-cpu' = cheaper tier. The worker rejects unconfigured or
    *  headerless server processing instead of using unmetered compute. */
@@ -178,13 +209,31 @@ const HealthCheckSchema = z.object({
  * server — see runpod/handler.py MODEL_REGISTRY). Descriptions are the
  * user-facing story for a future quality selector.
  */
-export const UVR_MODELS = [
+export interface UvrModelInfo {
+  name: string
+  display: string
+  quality: string
+  speed: string
+  description: string
+  /** Stems this model produces — mirrors MODEL_REGISTRY[...].stems on the
+   *  server. UI reads this instead of assuming vocal + instrumental. */
+  stems: readonly UvrStemName[]
+  /** True for the multi-stem tiers that break a mix (or an instrumental)
+   *  into its parts, rather than splitting vocal from everything else. */
+  multiStem?: boolean
+  /** Stems that work but are visibly rougher than the rest — surfaced to
+   *  the user rather than quietly shipped as equals. */
+  experimentalStems?: readonly UvrStemName[]
+}
+
+export const UVR_MODELS: readonly UvrModelInfo[] = [
   {
     name: 'roformer',
     display: 'Studio (BS-RoFormer)',
     quality: 'Highest',
     speed: 'Medium',
     description: 'Cleanest vocals and instrumental — the default.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'mdx',
@@ -192,6 +241,7 @@ export const UVR_MODELS = [
     quality: 'Good',
     speed: 'Fast',
     description: 'The previous default; quicker, slightly more bleed.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'karaoke',
@@ -199,6 +249,7 @@ export const UVR_MODELS = [
     quality: 'High',
     speed: 'Medium',
     description: 'Removes only the lead vocal; harmonies stay in the mix.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'ensemble',
@@ -206,8 +257,48 @@ export const UVR_MODELS = [
     quality: 'Maximum',
     speed: 'Slow',
     description: 'Blends two top models per stem; roughly twice the time.',
+    stems: ['vocal', 'instrumental'],
+  },
+  {
+    name: 'demucs',
+    display: 'Parts — Fast (Demucs)',
+    quality: 'Good',
+    speed: 'Medium',
+    description: 'Splits the music into drums, bass and everything else.',
+    stems: ['vocal', 'drums', 'bass', 'other'],
+    multiStem: true,
+  },
+  {
+    name: 'demucs-ft',
+    display: 'Parts — Studio (Demucs fine-tuned)',
+    quality: 'Highest',
+    speed: 'Slow',
+    description:
+      'Best drums and bass separation; four models blended, so ~4x the time.',
+    stems: ['vocal', 'drums', 'bass', 'other'],
+    multiStem: true,
+  },
+  {
+    name: 'demucs-6s',
+    display: 'Parts — Six stems (adds guitar & piano)',
+    quality: 'Mixed',
+    speed: 'Slow',
+    description:
+      'Adds guitar and piano. Guitar is solid; piano still bleeds heavily.',
+    stems: ['vocal', 'drums', 'bass', 'guitar', 'piano', 'other'],
+    multiStem: true,
+    experimentalStems: ['piano'],
   },
 ]
+
+/** The multi-stem tiers, for a "split this further" picker. */
+export const UVR_MULTI_STEM_MODELS = UVR_MODELS.filter(
+  (m) => m.multiStem === true,
+)
+
+/** Default model for splitting an instrumental into its parts. Six stems
+ *  by default — the extra guitar/piano tracks are opt-out, not opt-in. */
+export const UVR_DEFAULT_MULTI_STEM_MODEL = 'demucs-6s'
 
 /**
  * List available UVR models
@@ -243,6 +334,20 @@ export async function processAudio(
   }
   if (options.cpu_profile) {
     formData.append('cpu_profile', options.cpu_profile)
+  }
+  // Second-pass fields. Omitted entirely for a normal full-mix job so the
+  // server applies its own defaults (and older servers ignore them).
+  if (options.source_stem !== undefined) {
+    formData.append('source_stem', options.source_stem)
+  }
+  if (options.drop_stems !== undefined) {
+    formData.append('drop_stems', JSON.stringify(options.drop_stems))
+  }
+  if (options.reconcile_residual !== undefined) {
+    formData.append('reconcile_residual', String(options.reconcile_residual))
+  }
+  if (options.residual_stem !== undefined) {
+    formData.append('residual_stem', options.residual_stem)
   }
 
   const headers: Record<string, string> = { ...authHeaders() }

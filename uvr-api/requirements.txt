@@ -9,6 +9,13 @@
 # the RunPod GPU handler — keep versions aligned with runpod/requirements.txt)
 audio-separator>=0.44.2
 
+# Imported directly by the residual-reconciliation pass (_reconcile_residual):
+# read/write stems and decode the source at the stems' sample rate. Already
+# transitive deps of audio-separator — pinned here because we import them.
+numpy
+soundfile
+librosa
+
 # Web framework
 fastapi
 uvicorn
