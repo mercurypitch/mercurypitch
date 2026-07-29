@@ -17,22 +17,34 @@ baseline (115 steps / 2 pre-existing misses).
 door, beat 1 (sky), beat 3 (fork), beat 6 (the Map) including the hover reveal
 on room cards, the `#/map` replay route, and both skip paths sticking.
 
-**NOT verified — this is where to start:**
+**Now covered by `src/e2e/onboarding.spec.ts` + `onboarding-mic.spec.ts`** (11
+tests, all passing):
 
-1. **Mobile.** Nothing has been opened at 390×844. The 9:16 sky plate, the Map
-   grid collapsing to one column, every beat's layout, and the `hover: hover`
-   gating on the room cards are all unverified on a phone. The mobile tour walk
-   aborts before reaching anything of ours (pre-existing, see below), so it
-   gives no signal here.
-2. **Anything needing a microphone** — beats 2, 4 and 5. They cannot be reached
-   headlessly, so the mic ask, the note read-back, the task demos and their
-   audible cues, the twin at its enlarged size, and beat 7's offer have only
-   ever been verified by construction. maff walked the flow once and reported
-   the beats "fine" and a David Bowie twin; the "I'm ready" gates and audible
-   demos were added *after* that walk and have not been heard by anyone.
-3. **Reduced motion.** The rules are written; no run has forced it.
-4. **`src/e2e/onboarding.spec.ts` was never written.** It is specified under
-   Verification below and remains outstanding.
+- The door, and that it no longer asks the three setup questions.
+- Short track through to the Map, and the Map's first-stop reason line.
+- Skipping and the `#/map` replay both sticking across a reload.
+- **Phone (390×844):** no horizontal overflow, the CTA on screen, and the Map
+  collapsing to a single column.
+- **Reduced motion:** beats render fully opaque and the Map is reachable.
+- **The mic beats.** Chromium is fed a generated 220 Hz tone via
+  `--use-file-for-fake-audio-capture` (`src/e2e/helpers/tone-wav.ts`), so beat
+  2's note read-back (asserts A3 + Hz), the fork carrying that note, and the
+  **full ~90s voiceprint through to the twin and the Map** all run headlessly.
+  The plain fake device is silent, which `voice-session` rejects on purpose —
+  that path is covered as its own case, asserting the fork is never offered to
+  someone we cannot hear.
+
+**Still NOT verified:**
+
+1. **Beat 7's registration form.** The e2e build sets `VITE_API_BASE_URL` empty,
+   so Keep renders its no-cloud fallback instead of the email/password offer.
+   Needs a run against a real db-worker.
+2. **Visual quality on a phone.** The specs prove the layout does not break;
+   nobody has *looked* at it. The 9:16 sky plate and the `hover: hover` gating
+   on room cards still want a human eye.
+3. **Audible cues.** The task demos' sounds have never been heard by anyone —
+   they were added after the only manual walk.
+4. **Lighthouse** on the first-run route.
 
 ## Why
 
@@ -359,9 +371,12 @@ dedicated polish pass once the queued PRs land.
 - `pnpm test:run` — unit tests for `first-stop.ts` (every branch plus the
   no-voiceprint fallback) and the onboarding store's resume/skip/replay
   transitions.
-- `src/e2e/onboarding.spec.ts`: fresh profile → door → short track → Map → Home;
-  and fresh profile → full track with a synthetic mic → voiceprint → twin → Map.
-  Assert the mic-denied path reaches the Map.
+- `src/e2e/onboarding.spec.ts` + `src/e2e/onboarding-mic.spec.ts` — **written,
+  11 tests passing.** The synthetic mic is a generated tone WAV fed to Chromium
+  (`src/e2e/helpers/tone-wav.ts`); the plain fake device is silent and
+  `voice-session` rejects it by design, so the tone is what makes beats 2, 4
+  and 5 reachable at all. Run them with:
+  `pnpm exec playwright test src/e2e/onboarding.spec.ts src/e2e/onboarding-mic.spec.ts --project=chromium`
 - Manual: 1440×900 and 390×844, dark and light, plus one forced reduced-motion
   run.
 - `pnpm run test:tours` — done, and matches the `origin/main` baseline exactly
