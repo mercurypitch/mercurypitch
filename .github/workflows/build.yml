@@ -125,6 +125,14 @@ jobs:
         run: |
           set -o pipefail
           pnpm exec wrangler versions upload --env preview 2>&1 | tee upload.log
+          # `versions upload` runs Wrangler's custom build a second time. Guard
+          # against the preview environment silently replacing the dev bundle
+          # with a production-API bundle during that upload.
+          grep -R -q --include='*.js' 'https://api-dev.mercurypitch.com' dist/assets
+          if grep -R -q --include='*.js' 'https://api.mercurypitch.com' dist/assets; then
+            echo "Preview bundle unexpectedly targets the production API."
+            exit 1
+          fi
           # Prefer the explicit "Version Preview URL" line; fall back to any
           # workers.dev URL in the output.
           url=$(grep -iE 'preview url' upload.log \

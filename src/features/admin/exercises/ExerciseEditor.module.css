@@ -11,6 +11,7 @@
   position: relative;
   min-width: 0;
   min-height: 720px;
+  container: exercise-editor / inline-size;
   color: var(--studio-ink);
   background:
     radial-gradient(
@@ -759,6 +760,145 @@
 
   .compactGrid {
     grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+}
+
+/*
+ * The editor is nested inside both the Content Studio rail and the exercise
+ * catalogue, so viewport breakpoints alone cannot describe its real space.
+ */
+@container exercise-editor (max-width: 900px) {
+  .appBar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .viewSwitch {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .authorLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .validationRail {
+    position: static;
+  }
+
+  .issueList {
+    max-height: none;
+  }
+
+  .compactGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .scoringGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container exercise-editor (max-width: 680px) {
+  .appBar {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .identityMark {
+    display: none;
+  }
+
+  .identity h2 {
+    max-width: none;
+  }
+
+  .lifecycle,
+  .status {
+    display: none;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .viewSwitch {
+    width: 100%;
+  }
+
+  .viewSwitch button {
+    min-height: 40px;
+    flex: 1;
+  }
+
+  .actionError {
+    grid-template-columns: 1fr auto;
+    margin: 10px 10px 0;
+  }
+
+  .actionError strong {
+    grid-column: 1 / -1;
+  }
+
+  .authorLayout,
+  .previewView {
+    padding: 10px;
+  }
+
+  .section {
+    padding: 14px;
+  }
+
+  .sectionHeading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .formGrid,
+  .compactGrid,
+  .scoringGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wideField {
+    grid-column: 1 / -1;
+  }
+
+  .audioUpload {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .noAudio {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .previewHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .previewGuide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container exercise-editor (max-width: 460px) {
+  .formGrid,
+  .compactGrid,
+  .scoringGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wideField {
+    grid-column: auto;
   }
 }
 

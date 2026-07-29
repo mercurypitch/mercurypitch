@@ -312,7 +312,12 @@
   border: 0;
 }
 
-@media (max-width: 980px) {
+/*
+ * Content Studio already owns a 248px navigation rail. Stack the catalogue
+ * before the nested master/detail layout leaves the authoring pane unusably
+ * narrow.
+ */
+@media (max-width: 1180px) {
   .page {
     height: auto;
     min-height: 100%;

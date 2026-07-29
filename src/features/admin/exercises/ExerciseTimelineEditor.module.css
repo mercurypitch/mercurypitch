@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  container: timeline-editor / inline-size;
   color: var(--studio-ink, #edf3fc);
 }
 
@@ -297,7 +298,7 @@
   line-height: 1.5;
 }
 
-@media (max-width: 1180px) {
+@container timeline-editor (max-width: 900px) {
   .eventRow {
     grid-template-columns:
       minmax(80px, 0.7fr) minmax(130px, 1.4fr)
@@ -316,7 +317,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@container timeline-editor (max-width: 680px) {
   .header,
   .eventListHeading {
     align-items: stretch;
@@ -363,5 +364,11 @@
 
   .rowActions button {
     flex: 1;
+  }
+}
+
+@container timeline-editor (max-width: 380px) {
+  .eventRow {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

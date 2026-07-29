@@ -116,6 +116,9 @@
       "vars": {
         "ENVIRONMENT": "preview",
         "DB_API_URL": "https://api-dev.mercurypitch.com"
+      },
+      "build": {
+        "command": "pnpm run build:dev"
       }
     }
   }
