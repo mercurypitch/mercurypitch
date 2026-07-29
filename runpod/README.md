@@ -64,7 +64,7 @@ returned as `model_stems` — so nothing downstream hard-codes a two-stem world.
 | `ensemble` | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | vocal, instrumental | Max quality; ~2x the time of `roformer`, and ensemble members reload per job |
 | `demucs` | htdemucs | vocal, drums, bass, other | Fast multi-stem tier; one model pass |
 | `demucs-ft` | htdemucs_ft | vocal, drums, bass, other | Best 4-stem quality — **four** fine-tuned models bagged, so ~4x `demucs` |
-| `demucs-6s` | htdemucs_6s | + guitar, piano | Adds guitar (solid) and piano (**bleeds heavily** — surfaced as experimental) |
+| `demucs-6s` | htdemucs_6s | + guitar, piano | The only source of a guitar stem. Piano rides along on the same compute but **bleeds heavily**, so the app drops it by default (`defaultDropStems` in `src/lib/uvr-api.ts`) and the residual pass folds its audio into `other`. The server stays neutral and will return it on request. |
 
 `UVR_DEMUCS_SHIFTS` (default 2) is the main cost dial for the Demucs
 tiers: it runs N passes at different offsets and averages them, so

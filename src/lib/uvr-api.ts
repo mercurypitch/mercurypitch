@@ -222,8 +222,15 @@ export interface UvrModelInfo {
    *  into its parts, rather than splitting vocal from everything else. */
   multiStem?: boolean
   /** Stems that work but are visibly rougher than the rest — surfaced to
-   *  the user rather than quietly shipped as equals. */
+   *  the user rather than quietly shipped as equals. A quality LABEL only;
+   *  whether a stem ships at all is `defaultDropStems`. */
   experimentalStems?: readonly UvrStemName[]
+  /** Stems this model emits that we discard by default. Deliberately
+   *  separate from `experimentalStems`: turning a stem on later means
+   *  removing it here while it stays labelled rough, which is the whole
+   *  migration path. Only safe alongside residual reconciliation — a
+   *  dropped stem's audio is folded into the residual, not lost. */
+  defaultDropStems?: readonly UvrStemName[]
 }
 
 export const UVR_MODELS: readonly UvrModelInfo[] = [
@@ -280,14 +287,20 @@ export const UVR_MODELS: readonly UvrModelInfo[] = [
   },
   {
     name: 'demucs-6s',
-    display: 'Parts — Six stems (adds guitar & piano)',
-    quality: 'Mixed',
+    display: 'Parts — Drums, bass & guitar',
+    quality: 'Good',
     speed: 'Slow',
     description:
-      'Adds guitar and piano. Guitar is solid; piano still bleeds heavily.',
+      'Splits the music into drums, bass, guitar and everything else.',
     stems: ['vocal', 'drums', 'bass', 'guitar', 'piano', 'other'],
     multiStem: true,
     experimentalStems: ['piano'],
+    // Guitar is only available from the 6-stem model, so piano comes along
+    // for the same compute whether we want it or not. It bleeds badly
+    // enough to read as a bug, so it is dropped and its audio folded into
+    // `other` by the residual pass. Delete this line to ship piano — the
+    // model, the cost and the plumbing are already there.
+    defaultDropStems: ['piano'],
   },
 ]
 
@@ -296,9 +309,93 @@ export const UVR_MULTI_STEM_MODELS = UVR_MODELS.filter(
   (m) => m.multiStem === true,
 )
 
-/** Default model for splitting an instrumental into its parts. Six stems
- *  by default — the extra guitar/piano tracks are opt-out, not opt-in. */
+/** Default model for splitting an instrumental into its parts. The 6-stem
+ *  model because guitar is only available there; piano rides along on the
+ *  same compute and is dropped via `defaultDropStems`. */
 export const UVR_DEFAULT_MULTI_STEM_MODEL = 'demucs-6s'
+
+export const getUvrModel = (name: string): UvrModelInfo | undefined =>
+  UVR_MODELS.find((m) => m.name === name)
+
+/**
+ * The stems a split with this model actually yields — what it produces,
+ * minus the source stem and anything dropped by default. This is what a
+ * "you'll get: …" UI should list, and it stays correct when a stem is
+ * later switched on.
+ */
+export function splitStemsFor(
+  modelName: string = UVR_DEFAULT_MULTI_STEM_MODEL,
+  sourceStem: UvrStemName = 'instrumental',
+): UvrStemName[] {
+  const model = getUvrModel(modelName)
+  if (!model) return []
+  const dropped = new Set<UvrStemName>([
+    'vocal',
+    sourceStem,
+    ...(model.defaultDropStems ?? []),
+  ])
+  return model.stems.filter((s) => !dropped.has(s))
+}
+
+export interface StemSplitOptions {
+  /** Registry model; defaults to UVR_DEFAULT_MULTI_STEM_MODEL. */
+  model?: string
+  /** The stem being split. Defaults to 'instrumental'. */
+  sourceStem?: UvrStemName
+  /** Override what to discard. Defaults to 'vocal' plus the model's
+   *  `defaultDropStems` — pass [] to keep everything the model emits. */
+  dropStems?: readonly UvrStemName[]
+  /** Stem that absorbs the residual. Defaults to 'other'. */
+  residualStem?: UvrStemName
+  outputFormat?: string
+  provider?: 'runpod' | 'runpod-cpu'
+}
+
+/**
+ * Build the request for a second pass that splits an existing stem into
+ * its parts. Reconciliation is always on here: dropped stems are folded
+ * into the residual rather than lost, and the kept stems sum back to the
+ * stem that was fed in, so muting every part silences the whole.
+ *
+ * Throws if the residual stem is itself dropped — that combination would
+ * silently discard everything the model failed to place.
+ */
+export function buildStemSplitRequest(
+  options: StemSplitOptions = {},
+): ProcessRequest {
+  const modelName = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
+  const model = getUvrModel(modelName)
+  if (!model) throw new Error(`Unknown UVR model: ${modelName}`)
+  if (model.multiStem !== true) {
+    throw new Error(`${modelName} does not produce multiple stems`)
+  }
+
+  const sourceStem = options.sourceStem ?? 'instrumental'
+  const residualStem = options.residualStem ?? 'other'
+  const dropStems = [
+    ...new Set<UvrStemName>(
+      options.dropStems ?? ['vocal', ...(model.defaultDropStems ?? [])],
+    ),
+  ]
+
+  if (dropStems.includes(residualStem)) {
+    throw new Error(
+      `residual stem '${residualStem}' cannot also be dropped — it is what ` +
+        `absorbs the dropped stems' audio`,
+    )
+  }
+
+  return {
+    model: modelName,
+    output_format: options.outputFormat ?? 'WAV',
+    stems: splitStemsFor(modelName, sourceStem),
+    source_stem: sourceStem,
+    drop_stems: dropStems,
+    reconcile_residual: true,
+    residual_stem: residualStem,
+    ...(options.provider !== undefined ? { provider: options.provider } : {}),
+  }
+}
 
 /**
  * List available UVR models
