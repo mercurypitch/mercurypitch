@@ -18,6 +18,8 @@ import { beatProgress, firstBeat, nextBeat } from '@/features/onboarding/flow'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+// One-way: ui-store knows nothing about onboarding, so this is not a cycle.
+import { dismissWelcome } from '@/stores/ui-store'
 
 const DONE_KEY = 'pitchperfect_onboarding_done'
 
@@ -132,6 +134,13 @@ export function advanceBeat(): Beat | null {
 export function finishOnboarding(): void {
   setFlowOpen(false)
   setOnboardingDone('1')
+  // Spend the door's own flag too. The flow is entered THROUGH the door,
+  // so leaving `welcomeSeen` unspent left `showWelcome` true forever —
+  // which the render site then had to mask with an extra `isFirstRun()`
+  // condition, and that in turn made Settings → "Show welcome screen" a
+  // dead button for anyone who had finished onboarding. One flag per
+  // thing, spent when that thing is done.
+  dismissWelcome()
 }
 
 /**

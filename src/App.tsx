@@ -140,7 +140,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
-import { flowOpen, isFirstRun, openBeat, startOnboarding, } from '@/stores/onboarding-store'
+import { flowOpen, openBeat, startOnboarding } from '@/stores/onboarding-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -2215,13 +2215,14 @@ const AppShell: Component<AppProps> = (props) => {
         <a class="skip-link" href="#main-content">
           Skip to main content
         </a>
-        {/* Welcome Screen (shown on first visit) */}
-        {/* The door is gated on the onboarding flag too, not just its own.
-            Without that, finishing or skipping the flow left `showWelcome`
-            true and the door came straight back — over the Map, and over
-            whichever room the visitor had just chosen. Either flag being
-            spent retires it for good. */}
-        <Show when={showWelcome() && !flowOpen() && isFirstRun()}>
+        {/* Welcome Screen (first visit, and on demand from Settings) */}
+        {/* Gated only on its own flag and on the flow not being open.
+            `finishOnboarding` now spends `welcomeSeen` itself, so the door
+            no longer comes back over the Map once the flow ends — which is
+            what an extra `isFirstRun()` condition here used to paper over,
+            at the cost of making Settings → "Show welcome screen" dead for
+            anyone who had finished onboarding. */}
+        <Show when={showWelcome() && !flowOpen()}>
           <WelcomeScreen onStart={startFirstLight} />
         </Show>
 

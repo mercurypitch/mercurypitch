@@ -127,6 +127,30 @@ test.describe('First Light onboarding', () => {
     await expect(door(page)).toHaveCount(0)
   })
 
+  test('Settings can reopen the intro after onboarding is finished', async ({
+    page,
+  }) => {
+    // Regression: the door was gated on `isFirstRun()` as well as its own
+    // flag, so once onboarding had been finished or skipped the Settings
+    // action was a dead button — it set `showWelcome` and nothing
+    // happened. The real fix was to make `finishOnboarding` spend
+    // `welcomeSeen`, so the extra gate is not needed at all.
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/')
+    await page.getByRole('button', { name: /Skip .* take me in/ }).click()
+    await expect(page.locator('#app-tabs')).toBeVisible()
+    await expect(door(page)).toHaveCount(0)
+
+    await page.goto('/#/settings/account')
+    const replay = page.getByRole('button', { name: 'Replay the intro' })
+    await expect(replay).toBeVisible({ timeout: 10000 })
+    await replay.click()
+
+    await expect(door(page)).toBeVisible()
+    await door(page).click()
+    await expect(beat(page, 'sky')).toBeVisible()
+  })
+
   test('the Map replay does not rewind the seen-flag', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')

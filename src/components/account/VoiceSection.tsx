@@ -16,10 +16,10 @@
 // locked panel.
 
 import type { Component } from 'solid-js'
-import { createResource, For, Show } from 'solid-js'
+import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
-import { LegendCaricature } from '@/features/mirror/LegendCaricature'
+import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import styles from './VoiceSection.module.css'
@@ -48,6 +48,20 @@ export interface VoiceSectionProps {
 
 export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   const [prints] = createResource(listVoiceprints)
+  const [zoomed, setZoomed] = createSignal(false)
+
+  /** The raster portrait for the current twin, if one has been drawn. */
+  const portraitSrc = (): string | undefined => {
+    const twin = latest()?.twin
+    if (twin == null || twin === '') return undefined
+    return legendArt(twin).imageSrc
+  }
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') setZoomed(false)
+  }
+  window.addEventListener('keydown', onKeyDown)
+  onCleanup(() => window.removeEventListener('keydown', onKeyDown))
 
   const latest = (): VoiceprintRecord | null => prints()?.[0] ?? null
   const first = (): VoiceprintRecord | null => {
@@ -80,9 +94,36 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
       >
         <div class={styles.latest}>
           <Show when={latest()?.twin != null && latest()?.twin !== ''}>
-            <span class={styles.twin} aria-hidden="true">
-              <LegendCaricature legend={latest()?.twin ?? ''} />
-            </span>
+            <Show
+              when={portraitSrc() !== undefined}
+              fallback={
+                <span class={styles.twin} aria-hidden="true">
+                  <LegendCaricature legend={latest()?.twin ?? ''} />
+                </span>
+              }
+            >
+              {/* A plain <img>, not the SVG the reveal uses. These portraits
+                  are 928×1152; an SVG <image> scaled into a thumbnail box
+                  gets a cheap resample and the face turns to mush. <img>
+                  takes the browser's high-quality downscale path, and the
+                  intrinsic width/height let it pick the right mip. */}
+              <button
+                type="button"
+                class={styles.twinBtn}
+                onClick={() => setZoomed(true)}
+                title={`See ${latest()?.twin ?? ''} full size`}
+                aria-label={`See ${latest()?.twin ?? ''} full size`}
+              >
+                <img
+                  class={styles.twinImg}
+                  src={portraitSrc()}
+                  width="928"
+                  height="1152"
+                  alt=""
+                  decoding="async"
+                />
+              </button>
+            </Show>
           </Show>
           <div class={styles.latestBody}>
             <Show when={latest()?.twin != null && latest()?.twin !== ''}>
@@ -168,6 +209,30 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             Kept on your account — every one, on every device you sing on.
           </Show>
         </p>
+      </Show>
+
+      {/* Full-size portrait. The thumbnail is deliberately small — this is
+          a settings panel, not a gallery — so there has to be a way to
+          actually look at the thing you were given. */}
+      <Show when={zoomed() && portraitSrc() !== undefined}>
+        <div
+          class={styles.zoomOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${latest()?.twin ?? ''} portrait`}
+          onClick={() => setZoomed(false)}
+        >
+          <figure class={styles.zoomFigure}>
+            <img
+              class={styles.zoomImg}
+              src={portraitSrc()}
+              width="928"
+              height="1152"
+              alt={`${latest()?.twin ?? ''} — your voice twin`}
+            />
+            <figcaption class={styles.zoomCaption}>{latest()?.twin}</figcaption>
+          </figure>
+        </div>
       </Show>
     </div>
   )

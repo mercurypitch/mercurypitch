@@ -63,6 +63,26 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
 
+  /**
+   * A note from the middle of the measured range, offered during the
+   * hold task's gate. Null outside that task — the tone must never be
+   * available while a take is recording, or the mic captures it.
+   */
+  const [suggestedMidi, setSuggestedMidi] = createSignal<number | null>(null)
+  const [tonePlaying, setTonePlaying] = createSignal(false)
+
+  const playSuggested = async (): Promise<void> => {
+    const midi = suggestedMidi()
+    const context = session?.context() ?? null
+    if (midi === null || context === null || tonePlaying()) return
+    setTonePlaying(true)
+    try {
+      await playReferenceTone(context, midi, 1.6)
+    } finally {
+      setTonePlaying(false)
+    }
+  }
+
   let session: VoiceSession | null = null
   let cancelled = false
   let timer = 0
@@ -187,7 +207,20 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     if (!alive()) return
 
     // ── Task B: hold. ──
+    //
+    // The glides are already in, so we know their range and can offer a
+    // note from the middle of it. This is SAFE for the measurement:
+    // computeSteadiness detrends against the singer's own mean and slope
+    // (see metrics.ts), so which note they choose has no effect on the
+    // score whatsoever. It would NOT be safe on the match task, which
+    // scores deviation from a target.
     setStep(3)
+    const glideRange = computeRange([glideUp, glideDown])
+    if (glideRange !== null) {
+      setSuggestedMidi(
+        Math.round((glideRange.lowMidi + glideRange.highMidi) / 2),
+      )
+    }
     await taskIntro(
       'hold',
       'Hold one note steady',
@@ -201,7 +234,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
     // ── Task C: match five. Reference then record, never together. ──
     setStep(4)
-    const range = computeRange([glideUp, glideDown])
+    setSuggestedMidi(null)
+    const range = glideRange
     // No usable range means both glides were silent — there is nothing to
     // pitch the targets against, so finish on what we have rather than
     // firing arbitrary notes at someone we evidently cannot hear.
@@ -297,6 +331,21 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
       <Show when={current().kind === 'intro'}>
         <div class={styles.actions}>
+          {/* Offered only where a note has been suggested (the hold task,
+              once the glides have given us a range). Never during a take:
+              a tone still sounding would be captured by the mic. */}
+          <Show when={suggestedMidi() !== null}>
+            <button
+              type="button"
+              class={styles.secondary}
+              onClick={() => void playSuggested()}
+              disabled={tonePlaying()}
+            >
+              {tonePlaying()
+                ? 'Playing…'
+                : `Hear a note (${midiToNoteNameOctave(suggestedMidi() ?? 0)})`}
+            </button>
+          </Show>
           <button
             type="button"
             class={styles.primary}
