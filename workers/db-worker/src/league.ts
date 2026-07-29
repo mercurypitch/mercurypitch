@@ -317,6 +317,14 @@ export async function runWeeklyLeagueCut(env: Env): Promise<void> {
 
 export interface LeagueMe {
   eligible: boolean
+  /**
+   * Why the caller is not playing, when they aren't:
+   *  'anonymous'   — registered accounts only (the product rule)
+   *  'unavailable' — the league tables aren't in this database yet (an
+   *                  environment that predates migration 0005). Distinct so
+   *                  the UI never tells a signed-in user to sign up.
+   */
+  reason?: 'anonymous' | 'unavailable'
   weekStart?: string
   league?: {
     id: string
@@ -338,9 +346,27 @@ export interface LeagueMe {
   }>
 }
 
-/** Everything the League view needs, or {eligible:false} for anonymous. */
+/**
+ * Everything the League view needs.
+ *
+ * Never throws: an environment whose database predates migration 0005 has no
+ * league tables, and a 500 there would make the client fall back to the
+ * anonymous copy — telling a signed-in user to create an account. Report
+ * {eligible:false, reason:'unavailable'} instead.
+ */
 export async function getLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
-  if (!(await isRegistered(env, userId))) return { eligible: false }
+  try {
+    return await readLeagueMe(env, userId)
+  } catch (err) {
+    console.error('[league] /me unavailable (missing tables?):', err)
+    return { eligible: false, reason: 'unavailable' }
+  }
+}
+
+async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
+  if (!(await isRegistered(env, userId))) {
+    return { eligible: false, reason: 'anonymous' }
+  }
 
   const weekStart = isoWeekStart()
   const leagueId = await userLeagueId(env, userId)

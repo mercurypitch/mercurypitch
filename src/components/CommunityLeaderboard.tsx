@@ -513,9 +513,22 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               fallback={
                 <div class="league-locked" data-testid="league-locked">
                   <p class="weekly-challenges-desc">
-                    Leagues are for registered singers — create an account in
-                    Settings → Account to climb the ladder. Practice earns
-                    weekly points; the top of each league advances every Monday.
+                    <Show
+                      when={leagueMe()?.reason !== 'unavailable'}
+                      fallback={
+                        <>
+                          Leagues aren’t enabled on this environment yet — its
+                          database predates the league tables. Apply the D1
+                          migrations that ship with this change and the ladder
+                          lights up.
+                        </>
+                      }
+                    >
+                      Leagues are for registered singers — create an account in
+                      Settings → Account to climb the ladder. Practice earns
+                      weekly points; the top of each league advances every
+                      Monday.
+                    </Show>
                   </p>
                 </div>
               }

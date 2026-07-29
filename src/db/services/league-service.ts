@@ -29,6 +29,8 @@ export interface LeagueStanding {
 
 export interface LeagueMe {
   eligible: boolean
+  /** 'anonymous' = registered-only rule; 'unavailable' = env predates leagues. */
+  reason?: 'anonymous' | 'unavailable'
   weekStart?: string
   league?: LeagueRung
   points?: number
