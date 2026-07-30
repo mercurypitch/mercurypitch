@@ -51,12 +51,25 @@ import { StemMixerTransport } from './StemMixerTransport'
 
 // ── Types ──────────────────────────────────────────────────────
 
+/** A dynamic extra track for the mixer — an instrument part (drums, bass,
+ *  guitar, …) selected on the results screen. Any combination is legal,
+ *  including redundant ones (drums + the full instrumental). */
+export interface ExtraStemInput {
+  key: string
+  label: string
+  color: string
+  url: string
+}
+
 interface StemMixerProps {
   stems: {
     vocal?: string
     instrumental?: string
     vocalMidi?: string
   }
+  /** Extra tracks beyond vocal/instrumental/MIDI. Snapshotted at mount —
+   *  the mixer is keyed-remounted per mix request. */
+  extraStems?: readonly ExtraStemInput[]
   sessionId: string
   songTitle: string
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
@@ -233,6 +246,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
   const [midi, setMidi] = createSignal<StemTrack>(midiTrack())
 
+  // Extra tracks (instrument parts). Mount-time snapshot, like the named
+  // tracks above — the mixer remounts (keyed) for every mix request.
+  const extraTracks = (): StemTrack[] =>
+    (props.extraStems ?? []).map((e) => ({
+      label: e.label,
+      url: e.url,
+      color: e.color,
+      buffer: null,
+      gainNode: null,
+      analyserNode: null,
+      sourceNode: null,
+      muted: false,
+      soloed: false,
+      volume: 0.8,
+    }))
+  const [extras, setExtras] = createSignal<StemTrack[]>(extraTracks())
+
   const tracks = () => {
     const req = props.requestedStems
     const show = (stem: string) => {
@@ -243,6 +273,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (show('vocal')) t.push(vocal())
     if (show('instrumental')) t.push(instrumental())
     if (show('midi') && midi().buffer) t.push(midi())
+    // Extras are not gated by requestedStems — being passed in IS the
+    // request.
+    t.push(...extras())
     return t.filter((tr) => !!(tr.url || tr.buffer))
   }
 
@@ -286,6 +319,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setInstrumental,
     midi,
     setMidi,
+    extras,
+    setExtras,
     tracks,
     anySoloed,
     PITCH_WINDOW_FILL_RATIO,
@@ -1352,28 +1387,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
+  // One label-keyed updater covers the named tracks AND the dynamic extras
+  // (labels are unique: Vocal/Instrumental/MIDI vs Drums/Bass/Guitar/…).
+  const setTrackByLabel = (
+    label: string,
+    update: (prev: StemTrack) => StemTrack,
+  ) => {
+    if (label === 'Vocal') setVocal(update)
+    else if (label === 'Instrumental') setInstrumental(update)
+    else if (label === 'MIDI') setMidi(update)
+    else
+      setExtras((list) => list.map((t) => (t.label === label ? update(t) : t)))
+  }
+
   const setTrackVolume = (label: string, volume: number) => {
-    const setter =
-      label === 'Vocal'
-        ? setVocal
-        : label === 'Instrumental'
-          ? setInstrumental
-          : setMidi
-    setter((prev) => {
+    setTrackByLabel(label, (prev) => {
       if (prev.gainNode) prev.gainNode.gain.value = sliderToGain(volume)
       return { ...prev, volume, muted: false }
     })
   }
 
   const toggleMute = (label: string) => {
-    const setter =
-      label === 'Vocal'
-        ? setVocal
-        : label === 'Instrumental'
-          ? setInstrumental
-          : setMidi
     const hasSolo = anySoloed()
-    setter((prev) => {
+    setTrackByLabel(label, (prev) => {
       const muted = !prev.muted
       const isAudible = prev.soloed || (!muted && !hasSolo)
       if (prev.gainNode)
@@ -1383,15 +1419,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const toggleSolo = (label: string) => {
-    const setter =
-      label === 'Vocal'
-        ? setVocal
-        : label === 'Instrumental'
-          ? setInstrumental
-          : setMidi
     const otherTracks = tracks().filter((t) => t.label !== label)
 
-    setter((prev) => {
+    setTrackByLabel(label, (prev) => {
       const soloed = !prev.soloed
       const newAnySoloed = soloed || otherTracks.some((t) => t.soloed)
       setAnySoloed(newAnySoloed)
@@ -1404,13 +1434,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             : sliderToGain(prev.volume)
 
       for (const ot of otherTracks) {
-        const otherSetter =
-          ot.label === 'Vocal'
-            ? setVocal
-            : ot.label === 'Instrumental'
-              ? setInstrumental
-              : setMidi
-        otherSetter((oPrev) => {
+        setTrackByLabel(ot.label, (oPrev) => {
           if (oPrev.gainNode)
             oPrev.gainNode.gain.value =
               oPrev.soloed || (!oPrev.muted && !soloed)
@@ -1428,6 +1452,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     vocal,
     midi,
     instrumental,
+    extras,
     anySoloed,
     toggleSolo,
     toggleMute,
@@ -3061,21 +3086,107 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
 }
 
-/* Controls content */
-.sm-strips-row {
+/* Controls content — two views, toggled and persisted.
+   compact:  vertical list, one horizontal row per stem
+   expanded: fader deck, vertical sliders side by side (scrolls on overflow) */
+.sm-strips {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* View toggle lives in the panel HEADER row (all three workspaces). */
+.sm-strip-view-toggle {
+  margin-left: auto;
+}
+
+.sm-strips-body {
   display: flex;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .sm-stem-strip {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 0.5rem;
-  flex: 1;
   padding: 0.75rem 0.4rem;
   background: var(--bg-primary, #0d1117);
   border-radius: 0.6rem;
+}
+
+/* ── Expanded: the classic deck ── */
+/* Wrap into extra rows first (vertical space is usually free in the side
+   panel); the horizontal scroll only engages when a single strip is wider
+   than the panel itself. */
+.sm-strips-expanded .sm-strips-body {
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
+
+.sm-strips-expanded .sm-stem-strip {
+  flex: 1 1 5rem;
+  min-width: 5rem;
+  max-width: 9rem;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Actions run top-to-bottom above the fader, per strip. */
+.sm-strips-expanded .sm-stem-actions {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* ── Compact: one row per stem ── */
+.sm-strips-compact .sm-strips-body {
+  flex-direction: column;
+}
+
+.sm-strips-compact .sm-stem-strip {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.sm-strips-compact .sm-stem-header {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin-right: auto;
+}
+
+/* Inline when the row is wide enough; wraps to its own full-width line in
+   narrow panels instead of being squeezed out. */
+.sm-strips-compact .sm-volume-slider {
+  writing-mode: horizontal-tb;
+  direction: ltr;
+  flex: 1 1 7rem;
+  width: auto;
+  min-width: 7rem;
+  height: 4px;
+}
+
+.sm-strips-compact .sm-volume-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+}
+
+.sm-strips-compact .sm-volume-slider::-webkit-slider-thumb {
+  margin-left: 0;
+  margin-top: -5px;
+}
+
+.sm-strips-compact .sm-volume-slider::-moz-range-track {
+  width: 100%;
+  height: 4px;
 }
 
 .sm-stem-header {

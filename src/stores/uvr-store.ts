@@ -186,6 +186,10 @@ export interface UvrSession {
   processingMode?: UvrProcessingMode
   provider?: string
   numChunks?: number
+  /** Server uploads only: after vocal/instrumental separation completes,
+   *  automatically chain a second pass that splits the instrumental into
+   *  drums/bass/guitar/other (the "Full band" upload choice). */
+  bandSplit?: boolean
   createdAt: number
   groupId?: string
 }
@@ -1025,6 +1029,7 @@ export function startUvrSession(
   processingMode?: UvrProcessingMode,
   fileHash?: string,
   focus = true,
+  bandSplit = false,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -1036,6 +1041,7 @@ export function startUvrSession(
     fileHash,
     originalFile: { name: fileName, size: fileSize, mimeType },
     processingMode: processingMode ?? getUvrProcessingMode(),
+    ...(bandSplit ? { bandSplit: true } : {}),
     createdAt: now,
   }
 

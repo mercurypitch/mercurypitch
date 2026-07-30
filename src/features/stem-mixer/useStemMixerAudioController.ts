@@ -53,6 +53,11 @@ export interface StemMixerAudioDeps {
   setInstrumental: Setter<StemTrack>
   midi: Accessor<StemTrack>
   setMidi: Setter<StemTrack>
+  /** Dynamic extra tracks (instrument parts like drums/bass/guitar) —
+   *  loaded and reset alongside the named three; the transport already
+   *  handles any number of tracks via tracks(). */
+  extras: Accessor<StemTrack[]>
+  setExtras: Setter<StemTrack[]>
   tracks: Accessor<StemTrack[]>
   anySoloed: Accessor<boolean>
 
@@ -416,9 +421,12 @@ export const useStemMixerAudioController = (
     setLoadProgressLocal(0)
 
     const ctx = ensureAudioCtx()
-    const urls = [deps.stems.vocal, deps.stems.instrumental].filter(
-      Boolean,
-    ) as string[]
+    const extraTracks = deps.extras().filter((t) => t.url !== '')
+    const urls = [
+      deps.stems.vocal,
+      deps.stems.instrumental,
+      ...extraTracks.map((t) => t.url),
+    ].filter(Boolean) as string[]
     const total = urls.length
     let loadedCount = 0
 
@@ -458,6 +466,28 @@ export const useStemMixerAudioController = (
         if (d > duration()) setDuration(d)
       } else if (deps.stems.instrumental !== undefined) {
         console.warn('Failed to load instrumental stem:', instResult.reason)
+      }
+
+      // Extra tracks (instrument parts) — same load path, keyed by label.
+      if (extraTracks.length > 0) {
+        const settled = await Promise.allSettled(
+          extraTracks.map((t) => loadOne(t.url)),
+        )
+        settled.forEach((res, i) => {
+          const label = extraTracks[i].label
+          if (res.status === 'fulfilled') {
+            deps.setExtras((list) =>
+              list.map((t) =>
+                t.label === label ? { ...t, buffer: res.value } : t,
+              ),
+            )
+            if (res.value.duration > duration()) {
+              setDuration(res.value.duration)
+            }
+          } else {
+            console.warn(`Failed to load ${label} stem:`, res.reason)
+          }
+        })
       }
 
       if (total > 0 && loadedCount === 0) {
@@ -574,6 +604,10 @@ export const useStemMixerAudioController = (
         }
       }
 
+      // Store the live nodes on the exact track they belong to. The extras
+      // fallback matters: without it their sources are started but never
+      // recorded, so stop() can't reach them and every play layers a new
+      // copy over the still-running old ones.
       if (track.label === 'Vocal') {
         deps.setVocal((prev) => ({
           ...prev,
@@ -588,13 +622,26 @@ export const useStemMixerAudioController = (
           gainNode: gain,
           analyserNode: analyser,
         }))
-      } else {
+      } else if (track.label === 'MIDI') {
         deps.setMidi((prev) => ({
           ...prev,
           sourceNode: src,
           gainNode: gain,
           analyserNode: analyser,
         }))
+      } else {
+        deps.setExtras((list) =>
+          list.map((t) =>
+            t.label === track.label
+              ? {
+                  ...t,
+                  sourceNode: src,
+                  gainNode: gain,
+                  analyserNode: analyser,
+                }
+              : t,
+          ),
+        )
       }
     }
   }
@@ -650,6 +697,14 @@ export const useStemMixerAudioController = (
       gainNode: null,
       analyserNode: null,
     }))
+    deps.setExtras((list) =>
+      list.map((t) => ({
+        ...t,
+        sourceNode: null,
+        gainNode: null,
+        analyserNode: null,
+      })),
+    )
 
     setTimeout(() => {
       for (const nodes of nodesToDisconnect) {

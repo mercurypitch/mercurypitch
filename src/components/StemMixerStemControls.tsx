@@ -1,10 +1,17 @@
 // ============================================================
 // StemMixerStemControls — stem control strips (shared by both layouts)
 // ============================================================
+// Two user-switchable views, persisted across sessions:
+//   compact  — a vertical list; each stem is one horizontal row
+//              (name · actions · left-to-right slider). Scales to any
+//              number of stems and any screen width.
+//   expanded — classic mixer deck; stems side by side, actions stacked
+//              above a vertical fader, horizontal scroll on overflow.
 
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
-import { Download, Ear, Volume2, VolumeX } from './icons'
+import { createSignal, Index } from 'solid-js'
+import { Download, Ear, ListRows, SlidersVertical, Volume2, VolumeX, } from './icons'
 
 interface StemTrack {
   label: string
@@ -23,6 +30,8 @@ export interface StemMixerStemControlsProps {
   vocal: Accessor<StemTrack>
   midi: Accessor<StemTrack>
   instrumental: Accessor<StemTrack>
+  /** Dynamic extra tracks (instrument parts) — one strip each. */
+  extras: Accessor<StemTrack[]>
   anySoloed: Accessor<boolean>
   toggleSolo: (label: string) => void
   toggleMute: (label: string) => void
@@ -31,6 +40,54 @@ export interface StemMixerStemControlsProps {
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
   requestedStems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }
   direction?: 'row' | 'column'
+}
+
+type StripView = 'compact' | 'expanded'
+
+const VIEW_STORAGE_KEY = 'pitchperfect_mixer_strip_view'
+
+const loadStripView = (): StripView => {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY) === 'expanded'
+      ? 'expanded'
+      : 'compact'
+  } catch {
+    return 'compact'
+  }
+}
+
+// Module-scope so the panel-header button (rendered by the workspaces) and
+// the strips (rendered here) share one persisted preference.
+const [stripView, setStripView] = createSignal<StripView>(loadStripView())
+
+/** Compact ⟷ expanded toggle for the stem strips. Lives in the panel's
+ *  HEADER row (all three workspaces), not inside the strips themselves. */
+export const StemStripViewToggle: Component = () => {
+  const toggleView = () => {
+    const next: StripView = stripView() === 'compact' ? 'expanded' : 'compact'
+    setStripView(next)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, next)
+    } catch {
+      /* private mode — the toggle still works for this session */
+    }
+  }
+  return (
+    <button
+      class="sm-action-btn sm-strip-view-toggle"
+      onClick={toggleView}
+      // The grid workspace's header doubles as a drag handle — the toggle
+      // must not start a panel drag.
+      onPointerDown={(e) => e.stopPropagation()}
+      title={
+        stripView() === 'compact'
+          ? 'Switch to the fader deck (vertical sliders)'
+          : 'Switch to the compact list'
+      }
+    >
+      {stripView() === 'compact' ? <SlidersVertical /> : <ListRows />}
+    </button>
+  )
 }
 
 const calcVolPct = (track: StemTrack, anySoloed: boolean) =>
@@ -104,52 +161,67 @@ const StemStrip: Component<{
 export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
   props,
 ) => {
+  /** Strips in display order: the named tracks, then every extra part. */
+  const strips = () => {
+    const list: {
+      track: () => StemTrack
+      label: string
+      downloadTitle?: string
+    }[] = []
+    if (props.vocal().url) list.push({ track: props.vocal, label: 'Vocal' })
+    if (
+      props.midi().buffer &&
+      (props.practiceMode === 'midi' || props.requestedStems?.midi === true)
+    ) {
+      list.push({
+        track: props.midi,
+        label: 'MIDI',
+        downloadTitle: 'Download MIDI',
+      })
+    }
+    if (props.instrumental().url) {
+      list.push({ track: props.instrumental, label: 'Instrumental' })
+    }
+    props.extras().forEach((extra, i) => {
+      list.push({
+        // Read through the accessor so volume/mute updates flow into the
+        // strip without Index recreating it (see the Index note below).
+        track: () => props.extras()[i] ?? extra,
+        label: extra.label,
+      })
+    })
+    return list
+  }
+
   return (
     <div
-      class="sm-strips-row"
+      class="sm-strips"
+      classList={{
+        'sm-strips-compact': stripView() === 'compact',
+        'sm-strips-expanded': stripView() === 'expanded',
+      }}
       data-tour="mixer.stems"
-      style={
-        props.direction === 'column'
-          ? { 'flex-direction': 'column', 'align-items': 'stretch' }
-          : undefined
-      }
     >
-      {props.vocal().url && (
-        <StemStrip
-          track={props.vocal}
-          label="Vocal"
-          anySoloed={props.anySoloed}
-          toggleSolo={props.toggleSolo}
-          toggleMute={props.toggleMute}
-          setTrackVolume={props.setTrackVolume}
-          handleDownload={props.handleDownload}
-        />
-      )}
-      {props.midi().buffer &&
-        (props.practiceMode === 'midi' ||
-          props.requestedStems?.midi === true) && (
-          <StemStrip
-            track={props.midi}
-            label="MIDI"
-            anySoloed={props.anySoloed}
-            toggleSolo={props.toggleSolo}
-            toggleMute={props.toggleMute}
-            setTrackVolume={props.setTrackVolume}
-            handleDownload={props.handleDownload}
-            downloadTitle="Download MIDI"
-          />
-        )}
-      {props.instrumental().url && (
-        <StemStrip
-          track={props.instrumental}
-          label="Instrumental"
-          anySoloed={props.anySoloed}
-          toggleSolo={props.toggleSolo}
-          toggleMute={props.toggleMute}
-          setTrackVolume={props.setTrackVolume}
-          handleDownload={props.handleDownload}
-        />
-      )}
+      {/* Index, not For: a volume/mute commit replaces the track object,
+          and For would recreate the strip mid-gesture (dropping the slider
+          drag). Index keys by position and streams updates through the
+          accessor instead. */}
+      <div class="sm-strips-body">
+        <Index each={strips()}>
+          {(strip) => (
+            <StemStrip
+              track={strip().track}
+              label={strip().label}
+              downloadTitle={strip().downloadTitle}
+              anySoloed={props.anySoloed}
+              toggleSolo={props.toggleSolo}
+              toggleMute={props.toggleMute}
+              setTrackVolume={props.setTrackVolume}
+              handleDownload={props.handleDownload}
+            />
+          )}
+        </Index>
+      </div>
     </div>
   )
 }

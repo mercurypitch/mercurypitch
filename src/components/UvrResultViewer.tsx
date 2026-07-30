@@ -3,13 +3,93 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
+import { getStemBlobUrl } from '@/db/services/uvr-service'
+import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { createPreviewPlayer } from '@/lib/preview-player'
+import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
+import type { StemSplitPart, StemSplitProgress } from '@/lib/uvr-stem-split'
+import { PART_STEM_DISPLAY, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
 import { getUvrSession } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
-import { Clock, Download, Headphones, Midi, MusicBoard, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
 import { UvrSessionActions } from './UvrSessionActions'
+
+/** Icons for the part stems the instrumental split produces. */
+const PART_STEM_ICONS: Record<StemSplitPart, Component> = {
+  drums: Drum,
+  bass: AudioWave,
+  guitar: Guitar,
+  piano: Music,
+  other: Music,
+}
+
+/** Translucent waveform + playback-progress layer behind a stem card's
+ *  content. Pointer-transparent — the card handles select/scrub clicks.
+ *  Only shown (and only decoded) while the stem is playing: the visible
+ *  waveform doubles as the "this card scrubs now" mode indicator; hidden
+ *  cards stay plain select-toggles. */
+const StemCardWave: Component<{
+  url: string
+  color: string
+  /** True while this stem is the one playing — fades the layer in and
+   *  triggers the (lazy, cached) peak decode. */
+  visible: boolean
+  /** 0..1 playback position; 0 hides the fill. */
+  progress: number
+}> = (props) => {
+  let canvasRef: HTMLCanvasElement | undefined
+  createEffect(() => {
+    // Decode lazily: nothing is fetched until the stem is first played.
+    if (!props.visible) return
+    const url = props.url
+    const color = props.color
+    const canvas = canvasRef
+    if (!canvas) return
+    let alive = true
+    let peaks: Float32Array | null = null
+    const redraw = () => {
+      // Guard the zero-size window: the effect can run before layout, and
+      // a one-shot draw then paints a 1px-wide (invisible) waveform. The
+      // observer fires again the moment the card gets real dimensions.
+      if (alive && peaks !== null && canvas.clientWidth > 0) {
+        drawStemPeaks(canvas, peaks, color)
+      }
+    }
+    const observer = new ResizeObserver(redraw)
+    observer.observe(canvas)
+    getStemPeaks(url)
+      .then((p) => {
+        peaks = p
+        redraw()
+      })
+      .catch(() => {
+        /* no waveform is fine — the card still works */
+      })
+    onCleanup(() => {
+      alive = false
+      observer.disconnect()
+    })
+  })
+  return (
+    <div
+      class="rv-stem-wave-layer"
+      classList={{ 'rv-stem-wave-visible': props.visible }}
+      aria-hidden="true"
+    >
+      <div
+        class="rv-stem-wave-progress"
+        style={{
+          width: `${Math.min(100, Math.max(0, props.progress * 100))}%`,
+          background: props.color,
+        }}
+      />
+      <canvas ref={canvasRef} class="rv-stem-wave-canvas" />
+    </div>
+  )
+}
 
 interface StemMeta {
   duration?: number
@@ -36,6 +116,9 @@ interface ResultViewerProps {
   ) => void
   onClose?: () => void
   onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
+  /** Credit cost of the instrumental split, when known (server pricing).
+   *  Shown on the Split button so a paid second pass is never a surprise. */
+  splitCostCredits?: number
 }
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
@@ -138,6 +221,176 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     setTimeout(() => setShareToast(''), 2500)
   }
 
+  // ── Instrument parts (drums / bass / guitar / other) ─────────
+  // Loaded from IndexedDB by (sessionId, stemType); produced on demand by
+  // a second separation pass over the instrumental (runStemSplit).
+  const ALL_PARTS = Object.keys(PART_STEM_DISPLAY) as StemSplitPart[]
+  const [partUrls, setPartUrls] = createSignal<
+    Partial<Record<StemSplitPart, string>>
+  >({})
+  const [splitBusy, setSplitBusy] = createSignal(false)
+  const [splitProgress, setSplitProgress] =
+    createSignal<StemSplitProgress | null>(null)
+  // ── Inline preview player ────────────────────────────────────
+  // One shared player for every stem card: Play previews the stem right
+  // here (the mixer is reached by selecting stems and mixing), an rAF
+  // clock drives the card's progress fill, and clicking the card while
+  // its stem is loaded scrubs. Playback goes through preview-player's
+  // gain envelope — bare HTMLAudioElement play()/pause()/seek pops, and
+  // on a PA that pop is LOUD (see .claude/memory/audio-pop-free-playback.md).
+  const [previewKey, setPreviewKey] = createSignal<string | null>(null)
+  const [previewPlaying, setPreviewPlaying] = createSignal(false)
+  const [previewTime, setPreviewTime] = createSignal(0)
+  const [previewDuration, setPreviewDuration] = createSignal(0)
+  let previewRaf = 0
+
+  const player = createPreviewPlayer({
+    onEnded: () => {
+      cancelAnimationFrame(previewRaf)
+      setPreviewPlaying(false)
+      setPreviewTime(player.duration)
+    },
+  })
+
+  const tickPreview = () => {
+    setPreviewTime(player.currentTime)
+    if (player.duration > 0) setPreviewDuration(player.duration)
+    if (player.playing) previewRaf = requestAnimationFrame(tickPreview)
+  }
+
+  const stopPreview = () => {
+    cancelAnimationFrame(previewRaf)
+    player.stop()
+    setPreviewKey(null)
+    setPreviewPlaying(false)
+    setPreviewTime(0)
+    setPreviewDuration(0)
+  }
+
+  const togglePreview = (key: string, url: string) => {
+    if (previewKey() === key) {
+      // Same stem: pause/resume, keeping the position.
+      if (previewPlaying()) {
+        player.pause()
+        setPreviewPlaying(false)
+        cancelAnimationFrame(previewRaf)
+        setPreviewTime(player.currentTime)
+      } else {
+        void player.play(url)
+        setPreviewPlaying(true)
+        cancelAnimationFrame(previewRaf)
+        previewRaf = requestAnimationFrame(tickPreview)
+      }
+      return
+    }
+    cancelAnimationFrame(previewRaf)
+    setPreviewKey(key)
+    setPreviewTime(0)
+    setPreviewDuration(0)
+    void player.play(url)
+    setPreviewPlaying(true)
+    previewRaf = requestAnimationFrame(tickPreview)
+  }
+
+  const seekPreview = (fraction: number) => {
+    player.seekToFraction(fraction)
+    if (previewDuration() > 0) setPreviewTime(fraction * previewDuration())
+  }
+
+  const loadPartUrls = async (sessionId: string) => {
+    const entries = await Promise.all(
+      ALL_PARTS.map(async (part) => {
+        const url = await getStemBlobUrl(sessionId, part)
+        return [part, url] as const
+      }),
+    )
+    const next: Partial<Record<StemSplitPart, string>> = {}
+    for (const [part, url] of entries) if (url !== null) next[part] = url
+    setPartUrls((prev) => {
+      for (const url of Object.values(prev)) {
+        URL.revokeObjectURL(url)
+        evictStemPeaks(url)
+      }
+      return next
+    })
+  }
+
+  createEffect(() => {
+    const sessionId = props.sessionId
+    stopPreview()
+    if (sessionId === undefined || sessionId === '') {
+      setPartUrls({})
+      return
+    }
+    void loadPartUrls(sessionId)
+  })
+
+  // A "Full band" upload chains the split in the panel after separation —
+  // refresh the part cards the moment those stems land. Subscribed in
+  // onMount per the eventBus house pattern (usePianoRollEvents).
+  let unsubPartsUpdated: (() => void) | undefined
+  onMount(() => {
+    unsubPartsUpdated = eventBus.on<{ sessionId: string }>(
+      'uvr:parts-updated',
+      // The event callback must compare against the CURRENT sessionId at
+      // fire time — an untracked read is the point, not an oversight.
+      // eslint-disable-next-line solid/reactivity
+      (detail) => {
+        if (detail.sessionId === props.sessionId) {
+          void loadPartUrls(detail.sessionId)
+        }
+      },
+    )
+  })
+
+  onCleanup(() => {
+    unsubPartsUpdated?.()
+    stopPreview()
+    player.dispose()
+    for (const url of Object.values(partUrls())) {
+      URL.revokeObjectURL(url)
+      evictStemPeaks(url)
+    }
+  })
+
+  const partsList = () => {
+    const urls = partUrls()
+    return ALL_PARTS.filter((p) => urls[p] !== undefined).map((part) => ({
+      part,
+      url: urls[part]!,
+      ...PART_STEM_DISPLAY[part],
+    }))
+  }
+
+  const handleSplit = async () => {
+    const sessionId = props.sessionId
+    if (sessionId === undefined || sessionId === '' || splitBusy()) return
+    setSplitBusy(true)
+    setSplitProgress(null)
+    try {
+      await runStemSplit(sessionId, { onProgress: setSplitProgress })
+      await loadPartUrls(sessionId)
+      showNotification('Instrumental split into parts', 'success')
+    } catch (err) {
+      const message =
+        err instanceof StemSplitError
+          ? err.message
+          : 'Splitting the instrumental failed.'
+      showNotification(message, 'error')
+    } finally {
+      setSplitBusy(false)
+      setSplitProgress(null)
+    }
+  }
+
+  const splitProgressLabel = () => {
+    const p = splitProgress()
+    if (p === null) return 'Starting…'
+    if (p.phase === 'uploading') return 'Uploading instrumental…'
+    if (p.phase === 'saving') return 'Saving stems…'
+    return `Separating… ${Math.round(p.pct)}%`
+  }
+
   const stems = () => {
     const list: {
       key: string
@@ -148,6 +401,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       format: string
       practiceMode: 'vocal' | 'instrumental' | 'midi'
       exportType: 'vocal' | 'instrumental' | 'vocal-midi'
+      /** Part stems (drums/bass/…) have no practice/export/replace flows —
+       *  they preview inline and join mixes via selection. */
+      isPart?: boolean
     }[] = []
 
     if (props.outputs?.vocal !== undefined) {
@@ -172,6 +428,22 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         format: 'WAV',
         practiceMode: 'instrumental',
         exportType: 'instrumental',
+      })
+    }
+    // Instrument parts sit with the stems they came from, selectable into
+    // any mix combination — including "redundant" ones like drums + full
+    // instrumental, if that's the experiment the user wants.
+    for (const entry of partsList()) {
+      list.push({
+        key: entry.part,
+        label: entry.label,
+        icon: PART_STEM_ICONS[entry.part],
+        color: entry.color,
+        url: entry.url,
+        format: 'WAV',
+        practiceMode: 'instrumental',
+        exportType: 'instrumental',
+        isPart: true,
       })
     }
     if (props.outputs?.vocal !== undefined) {
@@ -303,14 +575,51 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             return (
               <div
                 class="rv-stem-card"
-                classList={{ 'rv-stem-card-selected': isSelected() }}
+                classList={{
+                  'rv-stem-card-selected': isSelected(),
+                  'rv-stem-card-playing':
+                    previewKey() === stem.key && previewPlaying(),
+                }}
                 style={{ '--stem-color': stem.color }}
-                onClick={() => toggleSelected(stem.key)}
+                onClick={(e) => {
+                  // While this stem is PLAYING the card surface is a
+                  // scrubber (the visible waveform signals the mode);
+                  // otherwise — including paused — clicking selects. The
+                  // select circle always selects (it stops propagation).
+                  if (
+                    previewKey() === stem.key &&
+                    previewPlaying() &&
+                    previewDuration() > 0
+                  ) {
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    seekPreview((e.clientX - rect.left) / rect.width)
+                  } else {
+                    toggleSelected(stem.key)
+                  }
+                }}
               >
+                <Show when={stem.url}>
+                  {(url) => (
+                    <StemCardWave
+                      url={url()}
+                      color={stem.color}
+                      visible={previewKey() === stem.key && previewPlaying()}
+                      progress={
+                        previewKey() === stem.key && previewDuration() > 0
+                          ? previewTime() / previewDuration()
+                          : 0
+                      }
+                    />
+                  )}
+                </Show>
                 <div class="rv-stem-card-top">
                   <div
                     class="rv-stem-select"
                     classList={{ 'rv-stem-select-active': isSelected() }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleSelected(stem.key)
+                    }}
                   >
                     <Show
                       when={isSelected()}
@@ -372,9 +681,26 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 >
                   <button
                     class="rv-stem-btn rv-stem-btn-play"
-                    onClick={() => handleStartPractice(stem.practiceMode)}
+                    onClick={() => {
+                      // Audio stems preview inline; MIDI (generated on
+                      // demand, no URL) still opens the practice view.
+                      if (stem.key === 'vocalMidi' || stem.url === undefined) {
+                        handleStartPractice(stem.practiceMode)
+                        return
+                      }
+                      togglePreview(stem.key, stem.url)
+                    }}
                   >
-                    <Play /> Play
+                    <Show
+                      when={previewKey() === stem.key && previewPlaying()}
+                      fallback={
+                        <>
+                          <Play /> Play
+                        </>
+                      }
+                    >
+                      <Pause /> Pause
+                    </Show>
                   </button>
                   <button
                     class="rv-stem-btn rv-stem-btn-download"
@@ -488,6 +814,52 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         </Show>
       </div>
 
+      {/* Instrument parts — split of the instrumental stem */}
+      <Show when={props.sessionId !== undefined && hasInstrumental()}>
+        <div class="rv-parts">
+          <div class="rv-parts-header">
+            <span class="rv-parts-title">Instrument parts</span>
+            <Show
+              when={!splitBusy()}
+              fallback={
+                <span class="rv-parts-progress">{splitProgressLabel()}</span>
+              }
+            >
+              <button
+                class="rv-stem-btn rv-parts-split-btn"
+                onClick={() => void handleSplit()}
+                disabled={props.disabled}
+                title={`${
+                  partsList().length > 0
+                    ? 'Run the split again (replaces the parts)'
+                    : 'Separate the instrumental into drums, bass, guitar and other'
+                }${
+                  props.splitCostCredits !== undefined
+                    ? ` — ${props.splitCostCredits} credit${props.splitCostCredits === 1 ? '' : 's'}`
+                    : ''
+                }`}
+              >
+                <SlidersHorizontal />
+                {partsList().length > 0 ? 'Re-split' : 'Split into parts'}
+                <Show when={props.splitCostCredits !== undefined}>
+                  <span class="rv-split-cost">
+                    {props.splitCostCredits}
+                    {' cr'}
+                  </span>
+                </Show>
+              </button>
+            </Show>
+          </div>
+          <Show when={partsList().length === 0 && !splitBusy()}>
+            <p class="rv-parts-hint">
+              Break the instrumental into {SPLIT_PART_STEMS.join(', ')} stems on
+              the separation server — they appear above with the other stems,
+              and always add back up to the instrumental.
+            </p>
+          </Show>
+        </div>
+      </Show>
+
       {/* Full Mix — always visible when both stems exist */}
       <Show
         when={
@@ -516,15 +888,19 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         </div>
       </Show>
 
-      {/* Mix Selected — only when individual stems are checked */}
-      <Show when={selectedCount() >= 2}>
+      {/* Mix Selected — any combination of checked stems opens the mixer */}
+      <Show when={selectedCount() >= 1}>
         <div class="rv-mix-selected-card">
           <div class="rv-full-mix-left">
             <div class="rv-stem-icon" style={{ color: '#8b5cf6' }}>
               <SlidersHorizontal />
             </div>
             <div class="rv-stem-info">
-              <span class="rv-stem-name">Mix</span>
+              <span class="rv-stem-name">
+                {selectedCount() === 1
+                  ? '1 stem selected'
+                  : `${selectedCount()} stems selected`}
+              </span>
               <span class="rv-stem-format">{selectedLabel()}</span>
             </div>
           </div>
@@ -533,7 +909,8 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               class="rv-stem-btn rv-stem-btn-play"
               onClick={handleMixPlay}
             >
-              <Play /> Play
+              <SlidersHorizontal /> Mix{' '}
+              {selectedCount() === 1 ? 'this stem' : 'these stems'}
             </button>
           </div>
         </div>

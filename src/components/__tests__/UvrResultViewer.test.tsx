@@ -220,13 +220,17 @@ describe('UvrResultViewer Component', () => {
   })
 
   describe('Stem Card Actions', () => {
-    it('Play button calls onStartPractice with vocal mode', () => {
+    it('Play button previews the vocal inline instead of opening practice', () => {
+      // Audio stems preview right on the results screen; the mixer is
+      // reached by selecting stems and pressing Mix.
       render(() => <UvrResultViewer {...defaultProps} />)
 
       const playButtons = screen.getAllByText('Play')
       fireEvent.click(playButtons[0])
 
-      expect(defaultProps.onStartPractice).toHaveBeenCalledWith('vocal')
+      expect(defaultProps.onStartPractice).not.toHaveBeenCalled()
+      // The card flips to a pause control while its stem is loaded.
+      expect(screen.getByText('Pause')).toBeInTheDocument()
     })
 
     it('Play button calls onStartPractice with midi mode for MIDI stem', () => {

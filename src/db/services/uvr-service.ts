@@ -5,7 +5,7 @@
 import { getDb } from '@/db'
 import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite } from '@/db/durable-write'
-import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, } from '@/db/entities'
+import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, UvrStemType, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import type { DatabaseAdapter } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
@@ -30,9 +30,10 @@ function supportsLocalTransactions(
  *  (retries + reports) for the paid stem/original data that must not be lost. */
 async function writeStemBlob(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
   blob: Blob,
   fileName: string,
+  meta?: StemBlobMeta,
 ): Promise<string> {
   const db = await getDb()
   const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
@@ -45,14 +46,21 @@ async function writeStemBlob(
     data,
     size: blob.size,
     fileName,
+    ...meta,
   })
   return created.id
+}
+
+/** Provenance for derived stems (the drums/bass/guitar/other parts). */
+export interface StemBlobMeta {
+  derivedFrom?: UvrStemType
+  producedBy?: string
 }
 
 /** Best-effort save — logs and returns null on failure (never throws). */
 export async function saveStemBlob(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
   blob: Blob,
   fileName: string,
 ): Promise<string | null> {
@@ -69,12 +77,13 @@ export async function saveStemBlob(
  *  on (surface an error, fail the session) rather than silently losing audio. */
 export function saveStemBlobDurable(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
   blob: Blob,
   fileName: string,
+  meta?: StemBlobMeta,
 ): Promise<DurableWriteResult<string>> {
   return durableWrite(`save ${stemType} stem`, () =>
-    writeStemBlob(sessionId, stemType, blob, fileName),
+    writeStemBlob(sessionId, stemType, blob, fileName, meta),
   )
 }
 
@@ -113,7 +122,7 @@ export async function sessionHasPlayableStems(
 
 export async function getStemBlobUrl(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
 ): Promise<string | null> {
   try {
     const db = await getDb()
@@ -137,7 +146,7 @@ export async function getStemBlobUrl(
 /** Delete all stored blobs for a session's stem (used when replacing a stem). */
 export async function deleteStemBlobs(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
 ): Promise<void> {
   try {
     const db = await getDb()
@@ -151,7 +160,7 @@ export async function deleteStemBlobs(
 
 export async function getStemBlob(
   sessionId: string,
-  stemType: 'vocal' | 'instrumental' | 'original',
+  stemType: UvrStemType,
 ): Promise<Blob | null> {
   try {
     const db = await getDb()

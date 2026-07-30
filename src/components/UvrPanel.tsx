@@ -15,6 +15,7 @@ import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHa
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
+import { eventBus } from '@/lib/event-bus'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
@@ -23,9 +24,11 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/uvr-api'
+import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import type { StemSplitPart } from '@/lib/uvr-stem-split'
+import { PART_STEM_DISPLAY, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
@@ -38,6 +41,7 @@ import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
+import type { ExtraStemInput } from './StemMixer'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -392,9 +396,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     vocalMidi?: string
     instrumental?: string
   }>({})
+  // Instrument-part tracks (drums/bass/…) selected into the mix. Only
+  // handleMixStart sets these; every other mixer entry clears them.
+  const [mixerExtraStems, setMixerExtraStems] = createSignal<ExtraStemInput[]>(
+    [],
+  )
   const [mixerSessionId, setMixerSessionId] = createSignal('')
   // Bumped once per successful playlist-song load to key the StemMixer remount.
   const [mixerLoadToken, setMixerLoadToken] = createSignal(0)
+  // Bumped per Mix request so re-mixing the SAME session with a different
+  // stem combination still remounts the mixer (it loads stems on mount).
+  const [mixerMixToken, setMixerMixToken] = createSignal(0)
   const [mixerPracticeMode, setMixerPracticeMode] = createSignal<
     'vocal' | 'instrumental' | 'full' | 'midi'
   >('full')
@@ -574,6 +586,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         vocal: hydrated.outputs?.vocal,
         instrumental: hydrated.outputs?.instrumental,
       })
+      setMixerExtraStems([])
       setMixerRequestedStems({ vocal: true, instrumental: true })
       setMixerSessionId(hydrated.sessionId)
       setMixerInitialSeekSec(undefined)
@@ -596,6 +609,64 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const songCost = (): number | undefined => {
     const cost = pricing()?.uvrModelCredits?.roformer
     return cost !== undefined && cost > 0 ? cost : undefined
+  }
+  /** Credit cost of the instrumental-split second pass (demucs-6s). */
+  const splitCost = (): number | undefined => {
+    const cost = pricing()?.uvrModelCredits?.[UVR_DEFAULT_MULTI_STEM_MODEL]
+    return cost !== undefined && cost > 0 ? cost : undefined
+  }
+  /** Combined cost of a "Full band" upload (separation + split chain). */
+  const bandCost = (): number | undefined => {
+    const base = songCost()
+    const split = splitCost()
+    return base !== undefined && split !== undefined ? base + split : undefined
+  }
+
+  // Upload-time stem choice: plain vocal/instrumental, or the full band
+  // (server chains a demucs-6s split of the instrumental after separation).
+  const BAND_SPLIT_KEY = 'pitchperfect_uvr_band_split'
+  const [bandSplitChoice, setBandSplitChoice] = createSignal(
+    (() => {
+      try {
+        return localStorage.getItem(BAND_SPLIT_KEY) === '1'
+      } catch {
+        return false
+      }
+    })(),
+  )
+  const chooseBandSplit = (on: boolean) => {
+    setBandSplitChoice(on)
+    try {
+      localStorage.setItem(BAND_SPLIT_KEY, on ? '1' : '0')
+    } catch {
+      /* private mode */
+    }
+  }
+
+  /** Second stage of a "Full band" upload: split the freshly separated
+   *  instrumental into parts. Skips (never double-charges) when the
+   *  session already has parts — e.g. an HQ re-run completing again. */
+  const runBandSplitChain = async (sessionId: string) => {
+    const existing = await getStemBlobUrl(sessionId, 'drums')
+    if (existing !== null) {
+      URL.revokeObjectURL(existing)
+      return
+    }
+    showNotification('Splitting the band — drums, bass, guitar…', 'info')
+    try {
+      await runStemSplit(sessionId)
+      eventBus.dispatch('uvr:parts-updated', { sessionId })
+      refreshBalance()
+      showNotification('Instrumental split into parts', 'success')
+    } catch (err) {
+      refreshBalance()
+      showNotification(
+        err instanceof StemSplitError
+          ? err.message
+          : 'Splitting the instrumental failed.',
+        'error',
+      )
+    }
   }
   const creditBalanceLabel = (): string => {
     const balance = billingMe()?.creditBalance
@@ -696,6 +767,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         )
       }
       if (processingMode === 'server') refreshBalance()
+      // "Full band" uploads: chain the instrumental split now that the
+      // stems are persisted. Server-only by construction (the flag is only
+      // ever set on server sessions).
+      if (
+        processingMode === 'server' &&
+        getUvrSession(sessionId)?.bandSplit === true
+      ) {
+        void runBandSplitChain(sessionId)
+      }
       // Auto-extract stem fingerprint for Shazam matching; delay so the heavy
       // WebGPU/WASM thread yields before the AudioContext work.
       setTimeout(() => {
@@ -989,6 +1069,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       processingMode,
       hash,
       false,
+      // "Full band" upload choice — server only; the browser model is
+      // 2-stem, so a local run ignores it.
+      processingMode === 'server' && bandSplitChoice(),
     )
     const groupId = activeGroupId()
     if (groupId !== null && groupId !== '') {
@@ -1320,6 +1403,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           vocal: hydrated.outputs.vocal,
           instrumental: hydrated.outputs.instrumental,
         })
+        setMixerExtraStems([])
         setMixerRequestedStems({ vocal: true, instrumental: true })
       }
 
@@ -1339,6 +1423,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setPrevView(currentView())
     setMixerPracticeMode(mode)
     setMixerSessionId(s.sessionId)
+    setMixerExtraStems([])
 
     // Set stems and requestedStems based on mode
     if (mode === 'vocal') {
@@ -1381,6 +1466,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       instrumental?: boolean
       midi?: boolean
     } = {}
+    const extras: ExtraStemInput[] = []
 
     for (const key of selectedStems) {
       if (key === 'vocal') {
@@ -1393,12 +1479,28 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         // MIDI needs the vocal audio to generate from
         stemUrls.vocal = s.outputs?.vocal
         requested.midi = true
+      } else if (key in PART_STEM_DISPLAY) {
+        // Instrument part (drums/bass/guitar/…) — hydrate from IndexedDB.
+        // Any combination is legal, including parts alongside the full
+        // instrumental they came from.
+        const part = key as StemSplitPart
+        const url = await getStemBlobUrl(s.sessionId, part)
+        if (url !== null) {
+          extras.push({
+            key: part,
+            label: PART_STEM_DISPLAY[part].label,
+            color: PART_STEM_DISPLAY[part].color,
+            url,
+          })
+        }
       }
     }
 
     setMixerStems(stemUrls)
+    setMixerExtraStems(extras)
     setMixerRequestedStems(requested)
     setMixerPracticeMode('full')
+    setMixerMixToken((t) => t + 1)
     setCurrentView('mixer')
   }
 
@@ -1438,6 +1540,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       vocal: wantsVocal || wantsMidi ? s.outputs.vocal : undefined,
       instrumental: wantsInst ? s.outputs.instrumental : undefined,
     })
+    setMixerExtraStems([])
     setMixerRequestedStems(
       Object.keys(filter).length > 0
         ? { vocal: wantsVocal, instrumental: wantsInst, midi: wantsMidi }
@@ -1573,6 +1676,33 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   >
                     Browser
                   </button>
+                  <Show when={uvrProcessingMode() === 'server'}>
+                    <div
+                      class="uvr-device-toggle"
+                      data-testid="uvr-stem-choice"
+                    >
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: !bandSplitChoice() }}
+                        onClick={() => chooseBandSplit(false)}
+                        title={`Vocal + instrumental${songCost() !== undefined ? ` — ${songCost()} credit${songCost() === 1 ? '' : 's'}` : ''}`}
+                        disabled={uploadQueue.isRunning()}
+                        data-testid="uvr-stems-two"
+                      >
+                        <span>2 stems</span>
+                      </button>
+                      <button
+                        class="device-toggle-btn"
+                        classList={{ active: bandSplitChoice() }}
+                        onClick={() => chooseBandSplit(true)}
+                        title={`Vocal, drums, bass, guitar & other — separation plus a band split${bandCost() !== undefined ? ` — ${bandCost()} credits` : ''}`}
+                        disabled={uploadQueue.isRunning()}
+                        data-testid="uvr-stems-band"
+                      >
+                        <span>Full band</span>
+                      </button>
+                    </div>
+                  </Show>
                   <Show when={uvrProcessingMode() === 'local'}>
                     <div class="uvr-device-toggle">
                       <button
@@ -2117,6 +2247,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     processingTime={sess().processingTime}
                     sessionId={sess().sessionId}
                     originalFileName={sess().originalFile?.name}
+                    splitCostCredits={splitCost()}
                     onStartPractice={(mode) => {
                       void handlePracticeStart(mode)
                     }}
@@ -2149,12 +2280,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 when={
                   isPlaylistActive()
                     ? `pl-${mixerLoadToken()}`
-                    : mixerSessionId()
+                    : `${mixerSessionId()}-${mixerMixToken()}`
                 }
                 keyed
               >
                 <StemMixer
                   stems={mixerStems()}
+                  extraStems={mixerExtraStems()}
                   sessionId={mixerSessionId()}
                   songTitle={
                     currentUvrSession()?.originalFile?.name ?? 'Unknown'
