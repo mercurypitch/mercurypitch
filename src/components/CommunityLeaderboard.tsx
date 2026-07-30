@@ -12,7 +12,7 @@ import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/
 import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
 import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
-import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, smallArt, } from '@/db/services/league-service'
+import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
@@ -614,10 +614,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       } ${rung.isMystery ? 'mystery' : ''}`}
                       title={rung.isMystery ? 'Coming soon' : rung.name}
                     >
-                      <Show when={smallArt(rung)}>
+                      <Show when={rung.trophyAsset}>
                         <img
                           class="league-ladder-trophy"
-                          src={smallArt(rung) ?? ''}
+                          src={rung.trophyAsset ?? ''}
                           alt={rung.isMystery ? 'Mystery league' : rung.name}
                         />
                       </Show>

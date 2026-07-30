@@ -4795,7 +4795,13 @@
   width: 92px;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 10px;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  /* The trophy renders are squares on their own studio backdrop, and that
+     backdrop is essentially black at the corners (sampled: rgb 0-3, 1-6,
+     8-25). Any lighter card turns each render into a visible dark tile in a
+     pale frame — a pasted image rather than a mounted trophy. Matching the
+     corners makes the edge disappear. Not themed: the renders are always
+     dark, so this stays dark in both themes. */
+  background: #03040e;
 }
 
 .league-ladder-rung.current {

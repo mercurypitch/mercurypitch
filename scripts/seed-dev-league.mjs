@@ -24,12 +24,15 @@
 // --reset can find them without touching anything you created by hand.
 
 import { execFileSync } from 'node:child_process'
+import { rmSync, writeFileSync } from 'node:fs'
+
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CONFIG = 'workers/db-worker/wrangler.jsonc'
 const DB = 'mercurypitch-db'
+const WORKER_PORT = 8788
 
 const args = process.argv.slice(2)
 const arg = (name) => {
@@ -39,24 +42,100 @@ const arg = (name) => {
 const RESET = args.includes('--reset')
 const EMAIL = arg('email')
 
-function sql(command, { json = false } = {}) {
-  const out = execFileSync(
-    'pnpm',
-    [
-      'exec', 'wrangler', 'd1', 'execute', DB,
-      '--local', '--config', CONFIG, '-y',
-      ...(json ? ['--json'] : []),
-      '--command', command,
-    ],
-    { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  )
-  if (!json) return null
+// ── The lock ─────────────────────────────────────────────────────────
+//
+// `wrangler dev` holds a write lock on the local D1 sqlite file for as long
+// as it runs, and `wrangler d1 execute --local` is a SEPARATE process that
+// wants the same lock. Every write below would otherwise block until the
+// worker touched the database (a page reload is enough) and then die with
+// `SQLITE_BUSY`. So: writes are buffered and land in ONE execute call, and
+// we refuse up front if the worker is up rather than hanging on the lock.
+
+const busyHelp = () =>
+  [
+    '',
+    'The local database is locked by a running db-worker.',
+    '',
+    'wrangler dev holds the sqlite write lock, so seeding cannot run at the',
+    'same time. Stop it, seed, start it again:',
+    '',
+    '  1. stop `pnpm dev:db` (Ctrl-C in its terminal)',
+    '  2. pnpm dev:seed',
+    '  3. pnpm dev:db',
+    '',
+    'Your app can keep running throughout — only the worker has to pause.',
+  ].join('\n')
+
+/** Is something listening on the db-worker port? */
+function workerRunning() {
   try {
-    const parsed = JSON.parse(out)
+    execFileSync(
+      'node',
+      [
+        '-e',
+        `const s=require('net').connect(${WORKER_PORT},'127.0.0.1');` +
+          `s.on('connect',()=>{s.destroy();process.exit(0)});` +
+          `s.on('error',()=>process.exit(1));` +
+          `setTimeout(()=>process.exit(1),700)`,
+      ],
+      { stdio: 'ignore' },
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+const writes = []
+/** Buffer a write. Nothing touches the database until flush(). */
+function sql(command) {
+  writes.push(command.trim().replace(/;+\s*$/, '') + ';')
+}
+
+function run(wranglerArgs) {
+  try {
+    return execFileSync(
+      'pnpm',
+      ['exec', 'wrangler', 'd1', 'execute', DB, '--local', '--config', CONFIG, '-y', ...wranglerArgs],
+      { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    )
+  } catch (err) {
+    const text = `${err.stdout ?? ''}${err.stderr ?? ''}`
+    if (/SQLITE_BUSY|database is locked/i.test(text)) {
+      console.error(busyHelp())
+      process.exit(1)
+    }
+    throw err
+  }
+}
+
+/** Apply every buffered write in a single statement batch. */
+function flush() {
+  if (writes.length === 0) return
+  const file = join(REPO_ROOT, '.seed-dev-league.sql')
+  writeFileSync(file, writes.join('\n') + '\n')
+  try {
+    run(['--file', file])
+  } finally {
+    rmSync(file, { force: true })
+    writes.length = 0
+  }
+}
+
+/** Read immediately (reads still need the buffered writes applied first). */
+function query(command) {
+  flush()
+  try {
+    const parsed = JSON.parse(run(['--json', '--command', command]))
     return (Array.isArray(parsed) ? parsed[0] : parsed)?.results ?? []
   } catch {
     return []
   }
+}
+
+if (workerRunning()) {
+  console.error(busyHelp())
+  process.exit(1)
 }
 
 const q = (s) => String(s).replace(/'/g, "''")
@@ -74,9 +153,8 @@ function weekStart(weeksAgo = 0) {
 
 // ── Preflight: are the league tables even here? ──────────────────────
 
-const tables = sql(
+const tables = query(
   "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('leagues','leagueMembership','leagueCohorts','userProfiles')",
-  { json: true },
 ).map((r) => r.name)
 
 if (!tables.includes('leagues') || !tables.includes('userProfiles')) {
@@ -183,13 +261,11 @@ for (const p of CAST) {
 // Without this you sit alone in Mercling with nothing to compare against.
 
 const me = EMAIL
-  ? sql(
+  ? query(
       `SELECT id FROM users WHERE email = '${q(EMAIL)}' AND authProvider != 'anonymous'`,
-      { json: true },
     )[0]
-  : sql(
+  : query(
       "SELECT id FROM users WHERE authProvider != 'anonymous' AND id NOT LIKE 'dev-%' ORDER BY createdAt DESC LIMIT 1",
-      { json: true },
     )[0]
 
 if (me) {
@@ -214,11 +290,10 @@ if (me) {
   )
 }
 
-const counts = sql(
+const counts = query(
   `SELECT (SELECT COUNT(*) FROM leagueMembership WHERE weekStart='${thisWeek}') AS members,
           (SELECT COUNT(*) FROM sessionRecords WHERE userId LIKE 'dev-%') AS sessions,
           (SELECT COUNT(*) FROM leagues) AS rungs`,
-  { json: true },
 )[0]
 
 console.log(
