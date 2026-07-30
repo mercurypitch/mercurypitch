@@ -14,6 +14,7 @@ import { FACULTY_LABEL, findThresholdDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
 import { calibrationHistory, earPlayerRating, latestCalibration, latestThresholdReading, practiceIndexEstimate, } from '@/stores/ear-lab-store'
 import styles from './EarLabDashboard.module.css'
+import { LatencyWizard } from './LatencyWizard'
 import { MercuryColumn } from './MercuryColumn'
 
 export type EarLabView = 'dashboard' | 'hairline' | 'calibration' | 'home'
@@ -46,7 +47,10 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
       const rating = earPlayerRating('home')
       if (rating.attempts === 0) return null
       const provisional = isProvisional(rating) ? ' · settling' : ''
-      return `${Math.round(rating.rating)}${provisional}`
+      const voice = earPlayerRating('home-sing')
+      const voicePart =
+        voice.attempts > 0 ? ` · voice ${Math.round(voice.rating)}` : ''
+      return `${Math.round(rating.rating)}${provisional}${voicePart}`
     }
     return null
   }
@@ -198,6 +202,10 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             Open
           </button>
         </article>
+      </section>
+
+      <section class={styles.drills}>
+        <LatencyWizard />
       </section>
 
       <section class={styles.rulers}>

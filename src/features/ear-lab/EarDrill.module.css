@@ -329,6 +329,40 @@
   background: var(--red);
 }
 
+.outcomeDot.skip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.modeToggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.modeOption {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.modeOption.modeActive {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.micError {
+  color: var(--yellow);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
 .cadenceDots {
   display: flex;
   gap: var(--spacing-lg);

@@ -19,8 +19,15 @@ import { targetDifficulty } from './elo'
 
 export const HOME_DRILL_ID = 'home'
 
+/** The sung/played answer mode rates under its own id: the same
+ *  frozen item yardsticks, but a separate player rating, so "ear
+ *  (tap) vs voice (sing)" is a real comparison instead of one
+ *  blurred number. */
+export const HOME_SING_DRILL_ID = 'home-sing'
+
 /** Guess floor for a 7-button answer, kept next to the items so the
- *  store and the drill cannot drift apart on it. */
+ *  store and the drill cannot drift apart on it. Sung answers have
+ *  no menu to guess from — their floor is zero. */
 export const HOME_CHOICES = 7
 
 export interface HomeDegree {

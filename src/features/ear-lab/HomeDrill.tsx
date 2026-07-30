@@ -2,19 +2,29 @@
 // HomeDrill — scale-degree identification, the Ear Lab's spine.
 //
 // A cadence plants the key (four dots light as the chords land), a
-// probe note sounds, and the answer is one of seven degree buttons.
-// The reveal colours the truth: the correct degree goes green; a
-// wrong pick goes red beside it while the probe replays and falls
-// to the tonic, so the misjudged distance is heard again with the
-// answer known.
+// probe note sounds, and the answer comes by tap (seven buttons) or
+// by mic — sing or play the degree on any instrument. The reveal
+// colours the truth: the correct degree goes green; a wrong pick
+// goes red beside it while the probe replays and falls to the
+// tonic. Mic answers add the production half of the diagnostic:
+// "Yes — Sol, 12¢ sharp."
+//
+// The component owns the microphone lifecycle (micManager + f0
+// stream); the controller only opens answer windows on it.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, onCleanup, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional } from '@/lib/ear/elo'
-import { HOME_DEGREES } from '@/lib/ear/item-bank'
+import { HOME_DEGREES, HOME_DRILL_ID, HOME_SING_DRILL_ID, } from '@/lib/ear/item-bank'
+import { micManager } from '@/lib/mic-manager'
+import type { F0Stream } from '@/lib/pitch-f0-stream'
+import { createF0Stream } from '@/lib/pitch-f0-stream'
+import { createPersistedSignal } from '@/lib/storage'
+import { earPlayerRating } from '@/stores/ear-lab-store'
 import styles from './EarDrill.module.css'
+import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
 
 interface HomeDrillProps {
@@ -22,11 +32,59 @@ interface HomeDrillProps {
 }
 
 const CADENCE_LABELS = ['I', 'IV', 'V', 'I']
+const MIC_CONSUMER = 'ear-home-drill'
+
+const [preferredMode, setPreferredMode] = createPersistedSignal<HomeAnswerMode>(
+  'mercurypitch_ear_home_mode',
+  'tap',
+)
 
 export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
-  const controller = useHomeController(audioEngine)
-  onCleanup(() => controller.dispose())
+  const [micError, setMicError] = createSignal('')
+
+  let f0: F0Stream | null = null
+  const capture: SingCapture = {
+    startWindow: () => f0?.startTask(),
+    takeFrames: () =>
+      (f0?.takeFrames() ?? []).map((frame) => ({
+        f0: frame.f0,
+        conf: frame.conf,
+      })),
+  }
+
+  const controller = useHomeController(audioEngine, capture)
+
+  function releaseMic(): void {
+    f0?.dispose()
+    f0 = null
+    micManager.release(MIC_CONSUMER)
+  }
+  onCleanup(() => {
+    controller.dispose()
+    releaseMic()
+  })
+
+  async function handleStart(): Promise<void> {
+    setMicError('')
+    let mode = preferredMode()
+    if (mode === 'mic' && f0 === null) {
+      try {
+        await audioEngine.init()
+        await audioEngine.resume()
+        const ctx = audioEngine.getAudioContext()
+        if (!ctx) throw new Error('Audio engine has no context')
+        const stream = await micManager.acquire(MIC_CONSUMER)
+        f0 = createF0Stream(ctx, stream)
+      } catch {
+        setMicError(
+          'Microphone unavailable — starting in tap mode. Allow mic access to sing your answers.',
+        )
+        mode = 'tap'
+      }
+    }
+    controller.start(mode)
+  }
 
   const running = () =>
     controller.phase() !== 'idle' && controller.phase() !== 'done'
@@ -38,9 +96,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     return `${styles.stage} ${correct ? styles.correct : styles.wrong}`
   })
 
-  /** How many cadence chords have sounded (drives the dots). The
-   *  controller phase is 'cadence' for the whole progression, so the
-   *  dots light on a coarse timer illusion — all lit by probe time. */
+  const centsLabel = (): string => {
+    const cents = controller.lastCents()
+    if (cents === null) return ''
+    if (Math.abs(cents) < 8) return ', dead in tune'
+    return `, ${Math.abs(cents)}¢ ${cents > 0 ? 'sharp' : 'flat'}`
+  }
+
   const stageHint = () => {
     switch (controller.phase()) {
       case 'cadence':
@@ -48,13 +110,21 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       case 'probe':
         return 'The note — which degree is it?'
       case 'answer':
+        if (controller.mode() === 'mic') {
+          return controller.unclear()
+            ? 'Did not catch that — once more, louder and steadier'
+            : 'Sing or play the degree you heard…'
+        }
         return 'Which degree was that?'
       case 'reveal': {
         const target = controller.currentDegree()
         if (!target) return ''
+        if (controller.answeredDegree() === null) {
+          return `No clear take — that was ${target.solfege} (${target.degree}). Round skipped, rating untouched.`
+        }
         const correct = controller.answeredDegree() === target.degree
         return correct
-          ? `Yes — ${target.solfege} (${target.degree})`
+          ? `Yes — ${target.solfege} (${target.degree})${centsLabel()}`
           : `That was ${target.solfege} (${target.degree}) — hear it fall home`
       }
       default:
@@ -83,6 +153,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         </button>
         <h2>Home</h2>
         <span class={styles.modeChip}>
+          {controller.mode() === 'mic' && running() ? 'Voice · ' : ''}
           Rating {Math.round(controller.rating().rating)}
           {isProvisional(controller.rating()) ? ' · settling' : ''}
         </span>
@@ -110,7 +181,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
       <Show
         when={controller.phase() !== 'done'}
-        fallback={<HomeDone controller={controller} onBack={props.onBack} />}
+        fallback={
+          <HomeDone
+            controller={controller}
+            onBack={props.onBack}
+            onAgain={() => void handleStart()}
+          />
+        }
       >
         <div class={stageClass()}>
           <Show
@@ -123,10 +200,46 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   transfers to real music: not "a major sixth", but "that note
                   is La, and it wants to fall to Sol".
                 </p>
+
+                <div class={styles.modeToggle} role="radiogroup">
+                  <button
+                    type="button"
+                    class={`${styles.modeOption} ${
+                      preferredMode() === 'tap' ? styles.modeActive : ''
+                    }`}
+                    role="radio"
+                    aria-checked={preferredMode() === 'tap'}
+                    onClick={() => setPreferredMode('tap')}
+                  >
+                    Tap
+                  </button>
+                  <button
+                    type="button"
+                    class={`${styles.modeOption} ${
+                      preferredMode() === 'mic' ? styles.modeActive : ''
+                    }`}
+                    role="radio"
+                    aria-checked={preferredMode() === 'mic'}
+                    onClick={() => setPreferredMode('mic')}
+                  >
+                    Sing or play
+                  </button>
+                </div>
+                <Show when={preferredMode() === 'mic'}>
+                  <p>
+                    Mic mode answers by ear alone — no buttons to luck into —
+                    and reads your intonation on every note. Octave does not
+                    matter; sing or play the degree anywhere comfortable.
+                  </p>
+                </Show>
+                <Show when={micError() !== ''}>
+                  <p class={styles.micError}>{micError()}</p>
+                </Show>
+
                 <button
                   type="button"
                   class={styles.primaryBtn}
-                  onClick={() => controller.start()}
+                  onClick={() => void handleStart()}
                 >
                   Start (12 rounds)
                 </button>
@@ -157,7 +270,10 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   <button
                     type="button"
                     class={degreeClass(degree.degree)}
-                    disabled={controller.phase() !== 'answer'}
+                    disabled={
+                      controller.phase() !== 'answer' ||
+                      controller.mode() === 'mic'
+                    }
                     onClick={() => controller.answer(degree.degree)}
                   >
                     <span class={styles.degreeNumber}>{degree.degree}</span>
@@ -184,8 +300,21 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 function HomeDone(props: {
   controller: ReturnType<typeof useHomeController>
   onBack: () => void
+  onAgain: () => void
 }): JSX.Element {
   const result = () => props.controller.result()
+
+  /** The ear-vs-voice line, once both modes have been rated. */
+  const earVsVoice = (): string | null => {
+    const ear = earPlayerRating(HOME_DRILL_ID)
+    const voice = earPlayerRating(HOME_SING_DRILL_ID)
+    if (ear.attempts === 0 || voice.attempts === 0) return null
+    const gap = Math.round(ear.rating - voice.rating)
+    if (Math.abs(gap) < 40) return 'Ear and voice are moving together.'
+    return gap > 0
+      ? `Your ear (tap ${Math.round(ear.rating)}) leads your voice (sing ${Math.round(voice.rating)}) — the hearing is there; drill the production.`
+      : `Your voice (sing ${Math.round(voice.rating)}) leads your ear (tap ${Math.round(ear.rating)}) — rare, and worth more tap rounds.`
+  }
 
   return (
     <div class={styles.stage}>
@@ -197,7 +326,9 @@ function HomeDone(props: {
                 <span class={styles.reading}>
                   {Math.round(r().rating.rating)}
                 </span>{' '}
-                <span class={styles.readingUnit}>Function rating</span>
+                <span class={styles.readingUnit}>
+                  {r().mode === 'mic' ? 'Voice rating' : 'Function rating'}
+                </span>
               </div>
               <span
                 class={r().ratingDelta >= 0 ? styles.deltaUp : styles.deltaDown}
@@ -213,16 +344,31 @@ function HomeDone(props: {
               </Show>
               <p class={styles.stageHint}>
                 {r().correct} of {r().total} named correctly
+                {r().skipped > 0 ? ` · ${r().skipped} skipped (unclear)` : ''}
+                {r().medianAbsCents !== null
+                  ? ` · voice typically ${r().medianAbsCents}¢ off when right`
+                  : ''}
               </p>
+              <Show when={earVsVoice()}>
+                {(line) => <p class={styles.stageHint}>{line()}</p>}
+              </Show>
               <div class={styles.outcomeDots}>
                 <For each={r().outcomes}>
                   {(outcome) => (
                     <div
                       class={`${styles.outcomeDot} ${
-                        outcome.correct ? '' : styles.miss
+                        outcome.correct
+                          ? ''
+                          : outcome.answered === 0
+                            ? styles.skip
+                            : styles.miss
                       }`}
                       title={`Degree ${outcome.degree}${
-                        outcome.correct ? '' : ` — answered ${outcome.answered}`
+                        outcome.correct
+                          ? ''
+                          : outcome.answered === 0
+                            ? ' — skipped'
+                            : ` — answered ${outcome.answered}`
                       }`}
                     />
                   )}
@@ -236,7 +382,7 @@ function HomeDone(props: {
           <button
             type="button"
             class={styles.primaryBtn}
-            onClick={() => props.controller.start()}
+            onClick={() => props.onAgain()}
           >
             Run again
           </button>

@@ -66,6 +66,32 @@ const [confusions, setConfusions] = createPersistedSignal<
   Record<string, number>
 >(`${KEY_PREFIX}confusions`, {})
 
+export interface LatencyEntry {
+  /** Round-trip audio latency, milliseconds (median over clicks). */
+  medianMs: number
+  /** MAD spread of the measurement, ms. */
+  spreadMs: number
+  at: number
+}
+
+const [latency, setLatency] = createPersistedSignal<LatencyEntry | null>(
+  `${KEY_PREFIX}latency`,
+  null,
+)
+
+/** Device round-trip latency, or null before the wizard has run.
+ *  Millisecond drills subtract this; they stay locked while null. */
+export function earLatency(): LatencyEntry | null {
+  return latency()
+}
+
+export function recordLatencyReading(reading: {
+  medianMs: number
+  spreadMs: number
+}): void {
+  setLatency({ ...reading, at: Date.now() })
+}
+
 // ── Ratings (Ruler B) ───────────────────────────────────────────
 
 export function earPlayerRating(drillId: string): Rating {
@@ -90,6 +116,10 @@ export function recordIdentificationAnswer(args: {
   /** Confusion bookkeeping: what the item was, what the user said. */
   expected: string
   answered: string
+  /** Whether this answer refines the item's difficulty. Mic answers
+   *  pass false: items are calibrated as *tap* yardsticks, and mixing
+   *  in production error would blur the scale for everyone. */
+  updateItem?: boolean
 }): Rating {
   const player = earPlayerRating(args.drillId)
   const nextPlayer = updateRating(
@@ -100,13 +130,15 @@ export function recordIdentificationAnswer(args: {
   )
   setRatings((prev) => ({ ...prev, [args.drillId]: nextPlayer }))
 
-  const nextItem = updateItemDifficulty(
-    args.itemDifficulty,
-    player.rating,
-    args.correct,
-    args.guessRate,
-  )
-  setItemStates((prev) => ({ ...prev, [args.itemId]: nextItem }))
+  if (args.updateItem !== false) {
+    const nextItem = updateItemDifficulty(
+      args.itemDifficulty,
+      player.rating,
+      args.correct,
+      args.guessRate,
+    )
+    setItemStates((prev) => ({ ...prev, [args.itemId]: nextItem }))
+  }
 
   if (!args.correct) {
     const key = `${args.drillId}|${args.expected}>${args.answered}`
