@@ -4672,163 +4672,269 @@
 .league-view {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   padding: 4px 0 16px;
 }
 
-.league-rung-card {
+/* 1 · The trophy rail. One horizontal line of all seven rungs, your rung
+   spotlit and auto-centered, the rest dimmed to supporting cast. On narrow
+   screens it scrolls sideways (Duolingo-style) instead of shrinking the
+   art — the renders are the best thing in this feature and they stay big. */
+.league-strip {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 18px;
-  padding: 16px 18px;
+  padding: 28px 20px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 12px;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(88, 166, 255, 0.09),
+      transparent 62%
+    ),
+    var(--bg-secondary, rgba(255, 255, 255, 0.03));
 }
 
-.league-rung-trophy {
-  width: 96px;
-  height: 96px;
-  object-fit: contain;
-  border-radius: 10px;
-  flex-shrink: 0;
+.league-strip::-webkit-scrollbar {
+  display: none;
 }
 
-.league-rung-info {
+.league-strip-rung {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  scroll-snap-align: center;
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
 }
 
-.league-rung-label {
+.league-strip-trophy {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.league-strip-name {
+  font-size: 11px;
+  color: var(--text-secondary, #9aa4b2);
+  white-space: nowrap;
+}
+
+/* Your rung is the protagonist; everything else steps back. Only once a
+   current rung exists — signed-out visitors see all seven at full volume. */
+.league-strip.has-current .league-strip-rung:not(.current) {
+  opacity: 0.45;
+  filter: saturate(0.75);
+}
+
+.league-strip.has-current .league-strip-rung:not(.current):hover {
+  opacity: 0.85;
+  filter: saturate(1);
+}
+
+.league-strip-rung.mystery {
+  opacity: 0.55;
+}
+
+.league-strip.has-current .league-strip-rung.mystery {
+  opacity: 0.3;
+}
+
+.league-strip-rung.current {
+  transform: translateY(-6px);
+}
+
+.league-strip-rung.current .league-strip-trophy {
+  width: 124px;
+  height: 124px;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 2px var(--accent, #58a6ff),
+    0 14px 40px rgba(88, 166, 255, 0.35);
+}
+
+.league-strip-rung.current .league-strip-name {
+  color: var(--text-primary, #e6edf3);
+  font-weight: 600;
+}
+
+/* 2 · Your league, written large under the rail. The trophy lives in the
+   rail, so this block is pure typography — no second image. */
+.league-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 2px 16px 0;
+}
+
+.league-locked {
+  text-align: center;
+  padding: 2px 16px 0;
+}
+
+.league-hero-eyebrow {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   color: var(--text-secondary, #9aa4b2);
 }
 
-.league-rung-name {
+.league-hero-name {
   margin: 0;
-  font-size: 22px;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--text-primary, #eee);
 }
 
-.league-rung-stats {
-  margin: 0;
-  font-size: 14px;
+.league-hero-stats {
+  margin: 2px 0 0;
+  font-size: 15px;
   color: var(--text-primary, #ddd);
 }
 
-.league-rung-zones {
+.league-hero-stats strong {
+  color: var(--accent, #58a6ff);
+}
+
+.league-hero-zones {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary, #9aa4b2);
+  max-width: 52ch;
 }
 
 .league-cut-countdown {
-  margin-top: 4px;
-  align-self: flex-start;
+  margin-top: 6px;
   font-size: 12px;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--accent, #58a6ff);
   color: var(--accent, #58a6ff);
 }
 
+/* 3 · Standings, cut into promotion / safe / relegation zones. */
 .league-standings {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: 10px;
-  overflow: hidden;
+  gap: 6px;
 }
 
 .league-standing-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 14px;
+  padding: 10px 14px;
   font-size: 14px;
   color: var(--text-primary, #ddd);
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
-}
-
-.league-standing-row:last-child {
-  border-bottom: none;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
 }
 
 .league-standing-row.me {
+  border-color: var(--accent, #58a6ff);
   background: var(--accent-dim, rgba(88, 166, 255, 0.15));
 }
 
 .league-standing-rank {
-  width: 44px;
-  color: var(--text-secondary, #9aa4b2);
+  width: 30px;
   flex-shrink: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.league-standing-row.promote .league-standing-rank {
+  color: #3fb950;
+}
+
+.league-standing-row.demote .league-standing-rank {
+  color: #f85149;
 }
 
 .league-standing-name {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.league-standing-you {
+  margin-left: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
 }
 
 .league-standing-points {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
   color: var(--accent, #58a6ff);
-  flex-shrink: 0;
 }
 
-.league-ladder {
+.league-zone-divider {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* Deliberately the same recipe as .league-rung-card above: same background,
-   border, and radius, with the trophy rounded to match. The renders are
-   squares on a near-black studio backdrop, so rounding the IMAGE turns that
-   backdrop into an intentional tile instead of a pasted square — which is
-   what makes the "your league" card read as finished. The ladder is the same
-   object at a smaller size, so it gets the same treatment rather than its
-   own. */
-.league-ladder-rung {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 10px 8px 8px;
-  width: 92px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 12px;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  gap: 8px;
+  padding: 4px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.league-ladder-rung.current {
-  border-color: var(--accent, #58a6ff);
-  box-shadow: 0 0 0 1px var(--accent, #58a6ff);
+.league-zone-divider::before,
+.league-zone-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
 }
 
-.league-ladder-rung.mystery {
-  opacity: 0.75;
+.league-zone-divider.promote {
+  color: #3fb950;
 }
 
-.league-ladder-trophy {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-  /* Same radius:size ratio as .league-rung-trophy (10 on 96). */
-  border-radius: 7px;
-  flex-shrink: 0;
+.league-zone-divider.demote {
+  color: #f85149;
 }
 
-.league-ladder-name {
-  font-size: 11px;
-  color: var(--text-secondary, #9aa4b2);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
+/* Phones: the rail scrolls; the art stays big. */
+@media (max-width: 640px) {
+  .league-strip {
+    gap: 14px;
+    padding: 22px 14px 12px;
+  }
+
+  .league-strip-trophy {
+    width: 72px;
+    height: 72px;
+  }
+
+  .league-strip-rung.current .league-strip-trophy {
+    width: 104px;
+    height: 104px;
+  }
+
+  .league-hero-name {
+    font-size: 26px;
+  }
 }

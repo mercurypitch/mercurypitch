@@ -183,7 +183,10 @@ if (RESET) {
 // ── The cast ─────────────────────────────────────────────────────────
 // Spread across rungs so every ladder state is visible: a packed mid
 // league around you, a couple of high rungs, and inactive members who
-// demonstrate the relegation zone.
+// demonstrate the relegation zone. l3 is deliberately 22 strong (23 with
+// you): its promote/relegate counts are 10/10, and the zone dividers in the
+// League view only draw when the cohort is bigger than the zones — a
+// 10-person cohort where all 10 promote has no boundary to show.
 
 const CAST = [
   { id: 'dev-ava',   name: 'Ava Quill',      league: 'l3', points: 412, streak: 11, longest: 14 },
@@ -195,6 +198,19 @@ const CAST = [
   { id: 'dev-gus',   name: 'Gus Halloway',   league: 'l3', points: 40,  streak: 2,  longest: 5 },
   { id: 'dev-hana',  name: 'Hana Reyes',     league: 'l3', points: 0,   streak: 0,  longest: 4 },
   { id: 'dev-iris',  name: 'Iris Bloom',     league: 'l3', points: 0,   streak: 0,  longest: 2 },
+  { id: 'dev-nia',   name: 'Nia Solene',     league: 'l3', points: 322, streak: 8,  longest: 10 },
+  { id: 'dev-remy',  name: 'Remy Falk',      league: 'l3', points: 288, streak: 6,  longest: 9 },
+  { id: 'dev-sable', name: 'Sable Kade',     league: 'l3', points: 214, streak: 5,  longest: 5 },
+  { id: 'dev-theo',  name: 'Theo Brisk',     league: 'l3', points: 158, streak: 3,  longest: 6 },
+  { id: 'dev-una',   name: 'Una Vex',        league: 'l3', points: 132, streak: 3,  longest: 4 },
+  { id: 'dev-vera',  name: 'Vera Lume',      league: 'l3', points: 118, streak: 2,  longest: 8 },
+  { id: 'dev-wren',  name: 'Wren Odari',     league: 'l3', points: 74,  streak: 2,  longest: 3 },
+  { id: 'dev-xan',   name: 'Xan Pyre',       league: 'l3', points: 58,  streak: 1,  longest: 2 },
+  { id: 'dev-yara',  name: 'Yara Moss',      league: 'l3', points: 34,  streak: 1,  longest: 4 },
+  { id: 'dev-zeke',  name: 'Zeke Hollow',    league: 'l3', points: 22,  streak: 1,  longest: 1 },
+  { id: 'dev-pia',   name: 'Pia Nightly',    league: 'l3', points: 8,   streak: 1,  longest: 2 },
+  { id: 'dev-quill', name: 'Quill Farrow',   league: 'l3', points: 0,   streak: 0,  longest: 3 },
+  { id: 'dev-rho',   name: 'Rho Ember',      league: 'l3', points: 0,   streak: 0,  longest: 1 },
   { id: 'dev-juno',  name: 'Juno Sparks',    league: 'l5', points: 620, streak: 21, longest: 25 },
   { id: 'dev-kai',   name: 'Kai Rivers',     league: 'l6', points: 910, streak: 34, longest: 40 },
   { id: 'dev-lux',   name: 'Lux Amari',      league: 'l1', points: 18,  streak: 1,  longest: 1 },

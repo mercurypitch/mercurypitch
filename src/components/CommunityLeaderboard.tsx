@@ -11,7 +11,7 @@ import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBL
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
-import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
+import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -335,6 +335,68 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     }
   })
 
+  type LeagueBoardItem =
+    | { kind: 'row'; row: LeagueStanding; zone: '' | 'promote' | 'demote' }
+    | { kind: 'divider'; zone: 'promote' | 'demote'; to?: string }
+
+  /**
+   * Standings cut into promotion / safe / relegation zones, with divider
+   * rows at the boundaries (the Duolingo pattern). Zones render only when
+   * they carve a real subset of the cohort — a 10-strong cohort with
+   * promoteCount 10 has no boundary worth drawing.
+   */
+  const leagueBoard = createMemo<LeagueBoardItem[]>(() => {
+    const me = leagueMe()
+    const rows = me?.standings ?? []
+    const n = rows.length
+    const promoteCount = me?.league?.promoteCount ?? 0
+    const relegateCount = me?.league?.relegateCount ?? 0
+    const promoteEnd = promoteCount > 0 && promoteCount < n ? promoteCount : 0
+    const demoteStart =
+      relegateCount > 0 && n - relegateCount > promoteEnd
+        ? n - relegateCount
+        : n
+    const items: LeagueBoardItem[] = []
+    rows.forEach((row, i) => {
+      if (promoteEnd > 0 && i === promoteEnd)
+        items.push({
+          kind: 'divider',
+          zone: 'promote',
+          to: leagueNeighbours().up?.name,
+        })
+      if (demoteStart < n && i === demoteStart)
+        items.push({
+          kind: 'divider',
+          zone: 'demote',
+          to: leagueNeighbours().down?.name,
+        })
+      items.push({
+        kind: 'row',
+        row,
+        zone: i < promoteEnd ? 'promote' : i >= demoteStart ? 'demote' : '',
+      })
+    })
+    return items
+  })
+
+  // Center the signed-in rung in the trophy rail (it scrolls on phones).
+  let stripEl: HTMLDivElement | undefined
+  const centerCurrentRung = (): void => {
+    const strip = stripEl
+    if (!strip) return
+    requestAnimationFrame(() => {
+      const cur = strip.querySelector<HTMLElement>('[data-current="true"]')
+      if (cur)
+        strip.scrollLeft =
+          cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2
+    })
+  }
+  createEffect(() => {
+    leagueLadder()
+    leagueMe()
+    centerCurrentRung()
+  })
+
   createEffect(() => {
     authVersion()
     void getFollowing().then(setFollowing)
@@ -508,6 +570,46 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               </p>
             }
           >
+            {/* The trophy rail — the first thing the tab shows. All seven
+                rungs at full size; the signed-in rung is spotlit and
+                auto-centered, the rest step back. Scrolls sideways on
+                phones instead of shrinking the art. All rungs are visible
+                for now — gating the view to "your league and below" (the
+                surprise reveal) is a planned follow-up. */}
+            <Show when={leagueLadder().length > 0}>
+              <div
+                class={`league-strip ${leagueMe()?.league != null ? 'has-current' : ''}`}
+                data-testid="league-ladder"
+                ref={(el) => {
+                  stripEl = el
+                  centerCurrentRung()
+                }}
+              >
+                <For each={leagueLadder()}>
+                  {(rung) => (
+                    <div
+                      class={`league-strip-rung ${
+                        rung.id === leagueMe()?.league?.id ? 'current' : ''
+                      } ${rung.isMystery ? 'mystery' : ''}`}
+                      data-current={
+                        rung.id === leagueMe()?.league?.id ? 'true' : undefined
+                      }
+                      title={rung.isMystery ? 'Coming soon' : rung.name}
+                    >
+                      <Show when={rung.trophyAsset}>
+                        <img
+                          class="league-strip-trophy"
+                          src={rung.trophyAsset ?? ''}
+                          alt={rung.isMystery ? 'Mystery league' : rung.name}
+                        />
+                      </Show>
+                      <span class="league-strip-name">{rung.name}</span>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </Show>
+
             <Show
               when={leagueMe()?.eligible === true}
               fallback={
@@ -533,43 +635,36 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 </div>
               }
             >
-              <div class="league-rung-card" data-testid="league-rung-card">
-                <Show when={leagueMe()?.league?.trophyAsset}>
-                  <img
-                    class="league-rung-trophy"
-                    src={leagueMe()?.league?.trophyAsset ?? ''}
-                    alt={`${leagueMe()?.league?.name ?? 'League'} trophy`}
-                  />
-                </Show>
-                <div class="league-rung-info">
-                  <span class="league-rung-label">Your league</span>
-                  <h3 class="league-rung-name" data-testid="league-rung-name">
-                    {leagueMe()?.league?.name}
-                  </h3>
-                  <p class="league-rung-stats">
-                    {leagueMe()?.points ?? 0} pts this week
-                    <Show when={leagueMe()?.rank != null}>
-                      {' '}
-                      · #{leagueMe()?.rank} of {leagueMe()?.cohortSize}
-                    </Show>
-                  </p>
-                  <p class="league-rung-zones">
-                    <Show
-                      when={leagueNeighbours().up}
-                      fallback={<>Top of the playable ladder — defend it.</>}
-                    >
-                      Top {leagueMe()?.league?.promoteCount} advance to{' '}
-                      {leagueNeighbours().up?.name}.
-                    </Show>{' '}
-                    <Show when={(leagueMe()?.league?.relegateCount ?? 0) > 0}>
-                      Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
-                      {leagueNeighbours().down?.name}.
-                    </Show>
-                  </p>
-                  <span class="league-cut-countdown">
-                    Weekly cut in {formatCutCountdown(msUntilNextCut(nowMs()))}
-                  </span>
-                </div>
+              {/* Your league, written large. The trophy itself lives in the
+                  rail above — spotlit — so the hero is pure typography. */}
+              <div class="league-hero" data-testid="league-rung-card">
+                <span class="league-hero-eyebrow">Your league</span>
+                <h3 class="league-hero-name" data-testid="league-rung-name">
+                  {leagueMe()?.league?.name}
+                </h3>
+                <p class="league-hero-stats">
+                  <strong>{leagueMe()?.points ?? 0} pts</strong> this week
+                  <Show when={leagueMe()?.rank != null}>
+                    {' '}
+                    · #{leagueMe()?.rank} of {leagueMe()?.cohortSize}
+                  </Show>
+                </p>
+                <p class="league-hero-zones">
+                  <Show
+                    when={leagueNeighbours().up}
+                    fallback={<>Top of the playable ladder — defend it.</>}
+                  >
+                    Top {leagueMe()?.league?.promoteCount} advance to{' '}
+                    {leagueNeighbours().up?.name}.
+                  </Show>{' '}
+                  <Show when={(leagueMe()?.league?.relegateCount ?? 0) > 0}>
+                    Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
+                    {leagueNeighbours().down?.name}.
+                  </Show>
+                </p>
+                <span class="league-cut-countdown">
+                  Weekly cut in {formatCutCountdown(msUntilNextCut(nowMs()))}
+                </span>
               </div>
 
               <Show
@@ -582,50 +677,56 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 }
               >
                 <div class="league-standings" data-testid="league-standings">
-                  <For each={leagueMe()?.standings ?? []}>
-                    {(row) => (
-                      <div
-                        class={`league-standing-row ${
-                          row.userId === getUserId() ? 'me' : ''
-                        }`}
-                      >
-                        <span class="league-standing-rank">#{row.rank}</span>
-                        <span class="league-standing-name">
-                          {row.displayName}
-                        </span>
-                        <span class="league-standing-points">
-                          {row.points} pts
-                        </span>
-                      </div>
-                    )}
+                  <For each={leagueBoard()}>
+                    {(item) =>
+                      item.kind === 'divider' ? (
+                        <div class={`league-zone-divider ${item.zone}`}>
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="11"
+                            height="11"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fill="currentColor"
+                              d={
+                                item.zone === 'promote'
+                                  ? 'M12 4l7 8h-4.5v8h-5v-8H5z'
+                                  : 'M12 20l-7-8h4.5V4h5v8H19z'
+                              }
+                            />
+                          </svg>
+                          <span>
+                            {item.zone === 'promote'
+                              ? 'Promotion zone'
+                              : 'Relegation zone'}
+                            <Show when={item.to}> · {item.to}</Show>
+                          </span>
+                        </div>
+                      ) : (
+                        <div
+                          class={`league-standing-row ${
+                            item.row.userId === getUserId() ? 'me' : ''
+                          } ${item.zone}`}
+                        >
+                          <span class="league-standing-rank">
+                            {item.row.rank}
+                          </span>
+                          <span class="league-standing-name">
+                            {item.row.displayName}
+                            <Show when={item.row.userId === getUserId()}>
+                              <span class="league-standing-you">you</span>
+                            </Show>
+                          </span>
+                          <span class="league-standing-points">
+                            {item.row.points} pts
+                          </span>
+                        </div>
+                      )
+                    }
                   </For>
                 </div>
               </Show>
-            </Show>
-
-            {/* The 7-rung ladder, mystery included, for everyone */}
-            <Show when={leagueLadder().length > 0}>
-              <div class="league-ladder" data-testid="league-ladder">
-                <For each={leagueLadder()}>
-                  {(rung) => (
-                    <div
-                      class={`league-ladder-rung ${
-                        rung.id === leagueMe()?.league?.id ? 'current' : ''
-                      } ${rung.isMystery ? 'mystery' : ''}`}
-                      title={rung.isMystery ? 'Coming soon' : rung.name}
-                    >
-                      <Show when={rung.trophyAsset}>
-                        <img
-                          class="league-ladder-trophy"
-                          src={rung.trophyAsset ?? ''}
-                          alt={rung.isMystery ? 'Mystery league' : rung.name}
-                        />
-                      </Show>
-                      <span class="league-ladder-name">{rung.name}</span>
-                    </div>
-                  )}
-                </For>
-              </div>
             </Show>
           </Show>
         </div>
